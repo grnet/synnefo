@@ -864,8 +864,6 @@ def object_write(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except AttributeError, e:
-        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if 'ETag' not in meta:
@@ -1050,8 +1048,6 @@ def object_update(request, v_account, v_container, v_object):
                 raise ItemNotFound('Object does not exist')
             except ValueError:
                 raise BadRequest('Invalid sharing header')
-            except AttributeError, e:
-                raise Conflict(simple_list_response(request, e.data))
         if public is not None:
             try:
                 request.backend.update_object_public(request.user_uniq, v_account,
@@ -1196,8 +1192,6 @@ def object_update(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except AttributeError, e:
-        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:

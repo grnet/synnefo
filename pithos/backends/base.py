@@ -395,11 +395,6 @@ class BaseBackend(object):
             NameError: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
-            
-            AttributeError: Can not set permissions, as this object
-                is already shared/private by another object higher
-                in the hierarchy, or setting permissions here will
-                invalidate other permissions deeper in the hierarchy
         """
         return
     
@@ -457,8 +452,6 @@ class BaseBackend(object):
             
             ValueError: Invalid users/groups in permissions
             
-            AttributeError: Can not set permissions
-            
             QuotaError: Account or container quota exceeded
         """
         return ''
@@ -486,8 +479,6 @@ class BaseBackend(object):
             
             ValueError: Invalid users/groups in permissions
             
-            AttributeError: Can not set permissions
-            
             QuotaError: Account or container quota exceeded
         """
         return ''
@@ -510,8 +501,6 @@ class BaseBackend(object):
             NameError: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
-            
-            AttributeError: Can not set permissions
             
             QuotaError: Account or container quota exceeded
         """

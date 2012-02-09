@@ -923,13 +923,6 @@ class ModularBackend(BaseBackend):
     def _check_permissions(self, path, permissions):
         # raise ValueError('Bad characters in permissions')
         pass
-        
-        # Check for existing permissions.
-#         paths = self.permissions.access_list(path)
-#         if paths:
-#             ae = AttributeError()
-#             ae.data = paths
-#             raise ae
     
     def _get_permissions_path(self, account, container, name):
         path = '/'.join((account, container, name))

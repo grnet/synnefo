@@ -326,8 +326,6 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except AttributeError, e:
-        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:

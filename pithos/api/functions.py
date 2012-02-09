@@ -854,8 +854,8 @@ def object_write(request, v_account, v_container, v_object):
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, size, hashmap,
-                        content_type, 'pithos', meta, True, permissions)
+                        v_account, v_container, v_object, size, content_type,
+                        hashmap, 'pithos', meta, True, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except IndexError, e:
@@ -909,8 +909,8 @@ def object_write_form(request, v_account, v_container, v_object):
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, file.size, file.hashmap,
-                        content_type, 'pithos', meta, True)
+                        v_account, v_container, v_object, file.size, content_type,
+                        file.hashmap, 'pithos', meta, True)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -1180,8 +1180,8 @@ def object_update(request, v_account, v_container, v_object):
     meta.update({'ETag': hashmap_md5(request, hashmap, size)}) # Update ETag.
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, size, hashmap,
-                        prev_meta['type'], 'pithos', meta, replace, permissions)
+                        v_account, v_container, v_object, size, prev_meta['type'],
+                        hashmap, 'pithos', meta, replace, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:

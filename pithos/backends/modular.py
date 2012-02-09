@@ -935,9 +935,7 @@ class ModularBackend(BaseBackend):
             if node is not None:
                 props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is not None:
-                # XXX: Put type in properties...
-                meta = dict(self.node.attribute_get(props[self.SERIAL], 'pithos'))
-                if meta['Content-Type'] == 'application/directory':
+                if props[self.TYPE] in ('application/directory', 'application/folder'):
                     formatted.append((p.rstrip('/') + '/', 'prefix'))
                 else:
                     formatted.append((p, 'exact'))
@@ -952,22 +950,25 @@ class ModularBackend(BaseBackend):
             if p == path:
                 return p
             else:
-                if p.count('/') < 3:
-                    return None
+                if p.count('/') < 2:
+                    continue
                 node = self.node.node_lookup(p)
                 if node is not None:
                     props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
                 if props is not None:
-                    # XXX: Put type in properties...
-                    meta = dict(self.node.attribute_get(props[self.SERIAL], 'pithos'))
-                    if meta['Content-Type'] == 'application/directory':
+                    if props[self.TYPE] in ('application/directory', 'application/folder'):
                         return p
         return None
     
     def _can_read(self, user, account, container, name):
         if user == account:
             return True
+        path = '/'.join((account, container, name))
+        if self.permissions.access_check(path, self.READ, user) or self.permissions.access_check(path, self.WRITE, user):
+            return True
         path = self._get_permissions_path(account, container, name)
+        if not path:
+            raise NotAllowedError
         if not self.permissions.access_check(path, self.READ, user) and not self.permissions.access_check(path, self.WRITE, user):
             raise NotAllowedError
     
@@ -975,6 +976,11 @@ class ModularBackend(BaseBackend):
         if user == account:
             return True
         path = '/'.join((account, container, name))
+        if self.permissions.access_check(path, self.WRITE, user):
+            return True
+        path = self._get_permissions_path(account, container, name)
+        if not path:
+            raise NotAllowedError
         if not self.permissions.access_check(path, self.WRITE, user):
             raise NotAllowedError
     

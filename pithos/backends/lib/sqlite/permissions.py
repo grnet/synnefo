@@ -67,16 +67,17 @@ class Permissions(XFeatures, Groups, Public):
             self.xfeature_destroy(path)
             return
         feature = self.xfeature_create(path)
-        self.feature_clear(feature)
         if r:
+            self.feature_clear(feature, READ)
             self.feature_setmany(feature, READ, r)
         if w:
+            self.feature_clear(feature, WRITE)
             self.feature_setmany(feature, WRITE, w)
     
     def access_get(self, path):
         feature = self.xfeature_get(path)
         if not feature:
-            return False
+            return {}
         permissions = self.feature_dict(feature)
         if READ in permissions:
             permissions['read'] = permissions[READ]

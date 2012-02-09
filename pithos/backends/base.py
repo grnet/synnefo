@@ -435,7 +435,7 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, type, domain, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, domain, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes and return the new version.
         
         Parameters:

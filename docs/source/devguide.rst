@@ -31,7 +31,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.1 (Jub 24, 2012)         Initial release.
+0.1 (Feb 10, 2012)         Initial release.
 =========================  ================================
 
 Overview
@@ -76,12 +76,12 @@ Registration Flow
 -----------------
 
 .. image:: images/signup.jpg
-    :scale: 150%
+    :scale: 100%
 
 Login Flow
 ----------
 .. image:: images/login.jpg
-    :scale: 150%
+    :scale: 100%
 
 .. _authentication-label:
 
@@ -104,7 +104,7 @@ Logged on users can perform a number of actions:
 
 User entries can also be modified/added via the administrative interface available at ``/im/admin``.
 
-A superuser account can be created the first time you run the ``manage.py syncdb`` django command. At a later date, the ``manage.py createsuperuser`` command line utility can be used.
+A superuser account can be created the first time you run the ``manage.py syncdb`` django command and then loading the extra user data from the ``admin_user`` fixture. At a later date, the ``manage.py createsuperuser`` command line utility can be used (as long as the extra user data for Astakos is added with a fixture or by hand).
 
 Internal Astakos requests are handled using cookie-based django user sessions.
 

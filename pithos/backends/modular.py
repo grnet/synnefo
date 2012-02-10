@@ -115,7 +115,7 @@ class ModularBackend(BaseBackend):
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
-        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'TYPE', 'MTIME', 'MUSER', 'UUID', 'CLUSTER']:
+        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'TYPE', 'MTIME', 'MUSER', 'UUID', 'CLUSTER', 'MATCH_PREFIX', 'MATCH_EXACT']:
             setattr(self, x, getattr(self.db_module, x))
         
         self.block_module = load_module(block_module)
@@ -419,7 +419,7 @@ class ModularBackend(BaseBackend):
                 if not allowed:
                     return []
         path, node = self._lookup_container(account, container)
-        # XXX: Format allowed...
+        allowed = self._get_formatted_paths(allowed)
         return self._list_objects(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed)
     
     @backend_method
@@ -436,7 +436,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
         path, node = self._lookup_container(account, container)
         before = until if until is not None else inf
-        # XXX: Format allowed...
+        allowed = self._get_formatted_paths(allowed)
         return self.node.latest_attribute_keys(node, domain, before, CLUSTER_DELETED, allowed)
     
     @backend_method
@@ -936,9 +936,8 @@ class ModularBackend(BaseBackend):
                 props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is not None:
                 if props[self.TYPE] in ('application/directory', 'application/folder'):
-                    formatted.append((p.rstrip('/') + '/', 'prefix'))
-                else:
-                    formatted.append((p, 'exact'))
+                    formatted.append((p.rstrip('/') + '/', self.MATCH_PREFIX))
+                formatted.append((p, self.MATCH_EXACT))
         return formatted
     
     def _get_permissions_path(self, account, container, name):

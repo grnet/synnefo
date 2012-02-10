@@ -42,6 +42,8 @@ ROOTNODE  = 0
 
 ( SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(10)
 
+( MATCH_PREFIX, MATCH_EXACT ) = range(2)
+
 inf = float('inf')
 
 
@@ -642,10 +644,19 @@ class Node(DBWorker):
         if not pathq:
             return None, None
         
-        subq = " and ("
-        subq += ' or '.join(("n.path like ? escape '\\'" for x in pathq))
-        subq += ")"
-        args = tuple([self.escape_like(x) + '%' for x in pathq])
+        subqlist = []
+        args = []
+        print pathq
+        for path, match in pathq:
+            if match == MATCH_PREFIX:
+                subqlist.append("n.path like ? escape '\\'")
+                args.append(self.escape_like(path) + '%')
+            elif match == MATCH_EXACT:
+                subqlist.append("n.path = ?")
+                args.append(path)
+        
+        subq = ' and (' + ' or '.join(subqlist) + ')'
+        args = tuple(args)
         
         return subq, args
     

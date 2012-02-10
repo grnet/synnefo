@@ -16,9 +16,11 @@
     <li class="{% if not tab %}active{% endif %}">
         <a href="{% url django.contrib.auth.views.password_change %}">Change password</a>
     </li>
+    {% if invitations_enabled %}
     <li class="{% if tab == "im/invitations" %}active{% endif %}">
         <a href="{% url astakos.im.views.invite %}">Invitations</a>
     </li>
+    {% endif %}
     <li class="{% if tab == "im/feedback" %}active{% endif %}">
         <a href="{% url astakos.im.views.send_feedback %}">Send feedback</a>
     </li>

@@ -39,6 +39,7 @@ from django.utils.translation import ugettext as _
 from django.contrib.sites.models import Site
 from django.contrib import messages
 from django.db import transaction
+from django.core.urlresolvers import reverse
 
 from smtplib import SMTPException
 from urllib import quote
@@ -46,7 +47,7 @@ from urllib import quote
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED
 
 import socket
 import logging
@@ -221,16 +222,18 @@ class SimpleBackend(object):
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """
-        user = None
-        try:
-            user = form.save()
-            status = messages.SUCCESS
-            _send_verification(self.request, user, email_template_name)
-            message = _('Verification sent to %s' % user.email)
-        except (SMTPException, socket.error) as e:
-            status = messages.ERROR
-            name = 'strerror'
-            message = getattr(e, name) if hasattr(e, name) else e
+        user = form.save()
+        status = messages.SUCCESS
+        if MODERATION_ENABLED:
+            message = _('Registration completed. You will receive an email upon your account\'s activation.')
+        else:
+            try:
+                _send_verification(self.request, user, email_template_name)
+                message = _('Verification sent to %s' % user.email)
+            except (SMTPException, socket.error) as e:
+                status = messages.ERROR
+                name = 'strerror'
+                message = getattr(e, name) if hasattr(e, name) else e
         
         # rollback in case of error
         if status == messages.ERROR:
@@ -243,8 +246,9 @@ def _send_verification(request, user, template_name):
     site = Site.objects.get_current()
     baseurl = request.build_absolute_uri('/').rstrip('/')
     url = '%s%s?auth=%s&next=%s' % (baseurl,
-                                    reverse('astakos.im.target.activate'),
-                                    quote(user.auth_token))
+                                    reverse('astakos.im.views.activate'),
+                                    quote(user.auth_token),
+                                    quote(baseurl))
     message = render_to_string(template_name, {
             'user': user,
             'url': url,

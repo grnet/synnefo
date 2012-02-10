@@ -71,21 +71,6 @@ class XFeatures(DBWorker):
         self.execute(q, (path, path))
         return self.fetchall()
     
-#     def xfeature_list(self, path):
-#         """Return the list of the (prefix, feature) pairs matching path.
-#            A prefix matches path if either the prefix includes the path,
-#            or the path includes the prefix.
-#         """
-#         
-#         inherited = self.xfeature_inherit(path)
-#         if inherited:
-#             return [inherited]
-#         
-#         q = ("select path, feature_id from xfeatures "
-#              "where path like ? escape '\\' and path != ? order by path")
-#         self.execute(q, (self.escape_like(path) + '%', path,))
-#         return self.fetchall()
-    
     def xfeature_get(self, path):
         """Return feature for path."""
         
@@ -94,6 +79,7 @@ class XFeatures(DBWorker):
         r = self.fetchone()
         if r is not None:
             return r[0]
+        return None
     
     def xfeature_create(self, path):
         """Create and return a feature for path.

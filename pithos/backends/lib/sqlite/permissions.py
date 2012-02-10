@@ -75,6 +75,8 @@ class Permissions(XFeatures, Groups, Public):
             self.feature_setmany(feature, WRITE, w)
     
     def access_get(self, path):
+        """Get permissions for path."""
+        
         feature = self.xfeature_get(path)
         if not feature:
             return {}

@@ -46,7 +46,9 @@ from pithos.lib.filter import parse_filters
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(9)
+( SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(10)
+
+( MATCH_PREFIX, MATCH_EXACT ) = range(2)
 
 inf = float('inf')
 
@@ -90,11 +92,12 @@ _propnames = {
     'node'      : 1,
     'hash'      : 2,
     'size'      : 3,
-    'source'    : 4,
-    'mtime'     : 5,
-    'muser'     : 6,
-    'uuid'      : 7,
-    'cluster'   : 8
+    'type'      : 4,
+    'source'    : 5,
+    'mtime'     : 6,
+    'muser'     : 7,
+    'uuid'      : 8,
+    'cluster'   : 9
 }
 
 
@@ -157,6 +160,7 @@ class Node(DBWorker):
                                          onupdate='CASCADE')))
         columns.append(Column('hash', String(255)))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
+        columns.append(Column('type', String(255), nullable=False, default=''))
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
         columns.append(Column('muser', String(255), nullable=False, default=''))
@@ -229,13 +233,14 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid, cluster).
         """
         
         s = select([self.versions.c.serial,
                     self.versions.c.node,
                     self.versions.c.hash,
                     self.versions.c.size,
+                    self.versions.c.type,
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
@@ -488,6 +493,7 @@ class Node(DBWorker):
                     self.versions.c.node,
                     self.versions.c.hash,
                     self.versions.c.size,
+                    self.versions.c.type,
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
@@ -550,13 +556,13 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, hash, size, source, muser, uuid, cluster=0):
+    def version_create(self, node, hash, size, type, source, muser, uuid, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
         mtime = time()
-        s = self.versions.insert().values(node=node, hash=hash, size=size, source=source,
+        s = self.versions.insert().values(node=node, hash=hash, size=size, type=type, source=source,
                                           mtime=mtime, muser=muser, uuid=uuid, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
@@ -565,14 +571,15 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, hash, size, source, mtime, muser, uuid, cluster)
+           (serial, node, hash, size, type, source, mtime, muser, uuid, cluster)
            or None if the current version is not found in the given cluster.
         """
         
         v = self.versions.alias('v')
         s = select([v.c.serial, v.c.node, v.c.hash,
-                    v.c.size, v.c.source, v.c.mtime,
-                    v.c.muser, v.c.uuid, v.c.cluster])
+                    v.c.size, v.c.type, v.c.source,
+                    v.c.mtime, v.c.muser, v.c.uuid,
+                    v.c.cluster])
         c = select([func.max(self.versions.c.serial)],
             self.versions.c.node == node)
         if before != inf:
@@ -590,13 +597,14 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid, cluster).
         """
         
         v = self.versions.alias()
         s = select([v.c.serial, v.c.node, v.c.hash,
-                    v.c.size, v.c.source, v.c.mtime,
-                    v.c.muser, v.c.uuid, v.c.cluster], v.c.serial == serial)
+                    v.c.size, v.c.type, v.c.source,
+                    v.c.mtime, v.c.muser, v.c.uuid,
+                    v.c.cluster], v.c.serial == serial)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
@@ -748,8 +756,11 @@ class Node(DBWorker):
         s = s.where(a.c.domain == domain)
         s = s.where(n.c.node == v.c.node)
         conj = []
-        for x in pathq:
-            conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
+        for path, match in pathq:
+            if match == MATCH_PREFIX:
+                conj.append(n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+            elif match == MATCH_EXACT:
+                conj.append(n.c.path == path)
         if conj:
             s = s.where(or_(*conj))
         rp = self.conn.execute(s)
@@ -826,8 +837,11 @@ class Node(DBWorker):
         s = s.where(n.c.node == v.c.node)
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
         conj = []
-        for x in pathq:
-            conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
+        for path, match in pathq:
+            if match == MATCH_PREFIX:
+                conj.append(n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+            elif match == MATCH_EXACT:
+                conj.append(n.c.path == path)
         if conj:
             s = s.where(or_(*conj))
         

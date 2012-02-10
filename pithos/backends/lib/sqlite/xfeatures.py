@@ -61,15 +61,15 @@ class XFeatures(DBWorker):
                             foreign key (feature_id) references xfeatures(feature_id)
                             on delete cascade ) """)
     
-    def xfeature_inherit(self, path):
-        """Return the (path, feature) inherited by the path, or None."""
-        
-        q = ("select path, feature_id from xfeatures "
-             "where path <= ? "
-             "and ? like path || '%' " # XXX: Escape like...
-             "order by path desc")
-        self.execute(q, (path, path))
-        return self.fetchall()
+#     def xfeature_inherit(self, path):
+#         """Return the (path, feature) inherited by the path, or None."""
+#         
+#         q = ("select path, feature_id from xfeatures "
+#              "where path <= ? "
+#              "and ? like path || '%' " # XXX: Escape like...
+#              "order by path desc")
+#         self.execute(q, (path, path))
+#         return self.fetchall()
     
     def xfeature_get(self, path):
         """Return feature for path."""

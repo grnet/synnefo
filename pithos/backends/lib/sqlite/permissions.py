@@ -112,9 +112,11 @@ class Permissions(XFeatures, Groups, Public):
     def access_inherit(self, path):
         """Return the paths influencing the access for path."""
         
-        r = self.xfeature_inherit(path)
-        if not r:
-            return []
+#         r = self.xfeature_inherit(path)
+#         if not r:
+#             return []
+#         # Compute valid.
+#         return [x[0] for x in r if x[0] in valid]
         
         # Only keep path components.
         parts = path.rstrip('/').split('/')
@@ -122,8 +124,9 @@ class Permissions(XFeatures, Groups, Public):
         for i in range(1, len(parts)):
             subp = '/'.join(parts[:i + 1])
             valid.append(subp)
-            valid.append(subp + '/')
-        return [x[0] for x in r if x[0] in valid]
+            if subp != path:
+                valid.append(subp + '/')
+        return [x for x in valid if self.xfeature_get(x)]
     
     def access_list_paths(self, member, prefix=None):
         """Return the list of paths granted to member."""

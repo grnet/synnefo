@@ -67,17 +67,17 @@ class XFeatures(DBWorker):
         
         metadata.create_all(self.engine)
     
-    def xfeature_inherit(self, path):
-        """Return the (path, feature) inherited by the path, or None."""
-        
-        s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
-        s = s.where(self.xfeatures.c.path <= path)
-        #s = s.where(self.xfeatures.c.path.like(self.escape_like(path) + '%', escape='\\')) # XXX: Implement reverse and escape like...
-        s = s.order_by(desc(self.xfeatures.c.path))
-        r = self.conn.execute(s)
-        l = r.fetchall()
-        r.close()
-        return l
+#     def xfeature_inherit(self, path):
+#         """Return the (path, feature) inherited by the path, or None."""
+#         
+#         s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
+#         s = s.where(self.xfeatures.c.path <= path)
+#         #s = s.where(self.xfeatures.c.path.like(self.escape_like(path) + '%', escape='\\')) # XXX: Implement reverse and escape like...
+#         s = s.order_by(desc(self.xfeatures.c.path))
+#         r = self.conn.execute(s)
+#         l = r.fetchall()
+#         r.close()
+#         return l
     
     def xfeature_get(self, path):
         """Return feature for path."""

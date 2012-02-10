@@ -84,8 +84,34 @@ TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
-# Use to log to a file.
-LOGFILE = None
+# Setup logging (use this name for the setting to avoid conflicts with django > 1.2.x).
+LOGGING_SETUP = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'simple': {
+            'format': '%(message)s'
+        },
+        'verbose': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s %(message)s'
+        },
+    },
+    'handlers': {
+        'null': {
+            'class': 'logging.NullHandler',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        'pithos': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO'
+        },
+    }
+}
 
 # The server is behind a proxy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False

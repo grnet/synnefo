@@ -136,7 +136,7 @@ body.alt {
 .container {
   width: 870px;
   margin: 0 auto;
-  margin-top: 30px;
+  margin-top: 20px;
 }
 .inner {
   margin-top: 2.5em;
@@ -2805,7 +2805,6 @@ body, html {
 }
 .container {
   width: 670px;
-  margin-top: 0;
 }
 .container .logo img {
   margin: 0;

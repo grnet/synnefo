@@ -557,6 +557,7 @@ def object_list(request, v_account, v_container):
             else:
                 rename_meta_key(meta, 'hash', 'x_object_hash') # Will be replaced by ETag.
                 rename_meta_key(meta, 'ETag', 'hash')
+                rename_meta_key(meta, 'type', 'content_type')
                 rename_meta_key(meta, 'uuid', 'x_object_uuid')
                 rename_meta_key(meta, 'modified', 'last_modified')
                 rename_meta_key(meta, 'modified_by', 'x_object_modified_by')

@@ -964,7 +964,7 @@ class ModularBackend(BaseBackend):
         if user == account:
             return True
         path = '/'.join((account, container, name))
-        if self.permissions.access_check(path, self.READ, user) or self.permissions.access_check(path, self.WRITE, user):
+        if self.permissions.public_get(path) is not None:
             return True
         path = self._get_permissions_path(account, container, name)
         if not path:
@@ -976,8 +976,6 @@ class ModularBackend(BaseBackend):
         if user == account:
             return True
         path = '/'.join((account, container, name))
-        if self.permissions.access_check(path, self.WRITE, user):
-            return True
         path = self._get_permissions_path(account, container, name)
         if not path:
             raise NotAllowedError

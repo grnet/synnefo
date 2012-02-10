@@ -65,7 +65,7 @@ class XFeatures(DBWorker):
         """Return the (path, feature) inherited by the path, or None."""
         
         q = ("select path, feature_id from xfeatures "
-             "where path < ? "
+             "where path <= ? "
              "and ? like path || '%' " # XXX: Escape like...
              "order by path desc")
         self.execute(q, (path, path))

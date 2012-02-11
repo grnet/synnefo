@@ -1092,7 +1092,7 @@ List of differences from the OOS API:
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
 * Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Available actions in cross-user requests are reported with ``X-Object-Allowed-To``. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
-* Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
+* Support for directory-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Copy and move between accounts with ``X-Source-Account`` and ``Destination-Account`` headers.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.

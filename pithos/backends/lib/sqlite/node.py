@@ -235,7 +235,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the hashes of versions deleted.
+           the hashes and size of versions deleted.
            Clears out nodes with no remaining versions.
         """
         
@@ -250,7 +250,7 @@ class Node(DBWorker):
         execute(q, args)
         nr, size = self.fetchone()
         if not nr:
-            return ()
+            return (), 0
         mtime = time()
         self.statistics_update(parent, -nr, -size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
@@ -277,12 +277,12 @@ class Node(DBWorker):
                                    "where node = n.node) = 0 "
                             "and parent = ?)")
         execute(q, (parent,))
-        return hashes
+        return hashes, size
     
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
            node and cluster, and return
-           the hashes of versions deleted.
+           the hashes and size of versions deleted.
            Clears out the node if it has no remaining versions.
         """
         
@@ -295,7 +295,7 @@ class Node(DBWorker):
         execute(q, args)
         nr, size = self.fetchone()
         if not nr:
-            return ()
+            return (), 0
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
         
@@ -317,7 +317,7 @@ class Node(DBWorker):
                                    "where node = n.node) = 0 "
                             "and node = ?)")
         execute(q, (node,))
-        return hashes
+        return hashes, size
     
     def node_remove(self, node):
         """Remove the node specified.
@@ -549,7 +549,7 @@ class Node(DBWorker):
         
         q = "delete from versions where serial = ?"
         self.execute(q, (serial,))
-        return hash
+        return hash, size
     
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.

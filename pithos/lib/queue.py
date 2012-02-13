@@ -93,7 +93,7 @@ def queue_start(conn):
     channel.start_consuming()
 
 class Receipt(object):
-    def __init__(self, client, user, resource, value, details=None):
+    def __init__(self, client, user, resource, value, details={}):
         self.eventVersion = 1
         self.id = str(uuid.uuid4())
         self.timestamp = int(time() * 1000)
@@ -101,8 +101,7 @@ class Receipt(object):
         self.userId = user
         self.resource = resource
         self.value = value
-        if details:
-            self.details = details
+        self.details = details
     
     def format(self):
         return self.__dict__

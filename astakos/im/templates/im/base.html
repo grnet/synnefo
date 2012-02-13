@@ -60,11 +60,12 @@
       })
   </script>
   <script>
-    var CLOUDBAR_LOC = "http://docs.dev.grnet.gr/cloudbar/";
-    var CLOUDBAR_ACTIVE_SERVICE = 'accounts';
+    var CLOUDBAR_LOCATION = "{{ CLOUDBAR_LOC }}";
+    var CLOUDBAR_COOKIE_NAME = "{{ CLOUDBAR_COOKIE_NAME }}";
+    var CLOUDBAR_ACTIVE_SERVICE = '{{ CLOUDBAR_ACTIVE_SERVICE }}';
 
     $(document).ready(function(){
-      $.getScript(CLOUDBAR_LOC + 'servicesbar.js');
+      $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
     })
   </script>
 </head>

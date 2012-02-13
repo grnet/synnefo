@@ -27,17 +27,8 @@
 
         display_size: function() {
             return this.get_readable_size();
-        },
-        
-        display_owner: function() {
-            var owner = this.get_owner();
-            if (_.include(_.keys(synnefo.config.system_images_owners), owner)) {
-                return synnefo.config.system_images_owners[owner];
-            } else {
-                return owner;
-            }
         }
-
+        
     })
 
     models.GlanceImages = snf.models.Images.extend({

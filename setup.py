@@ -32,6 +32,8 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+import distribute_setup
+distribute_setup.use_setuptools()
 
 import os
 import sys
@@ -46,9 +48,10 @@ from astakos import get_version
 VERSION = get_version().replace(' ', '')
 
 INSTALL_REQUIRES = [
-    'Django==1.2.3',
+    'Django==1.2.3, <1.3',
     'South==0.7',
-    'httplib2==0.6.0'
+    'httplib2==0.6.0',
+    'snf-pithos-backend'
 ]
 
 
@@ -99,7 +102,7 @@ def find_package_data(
     Note patterns use wildcards, or can be exact paths (including
     leading ``./``), and all searching is case-insensitive.
     """
-    
+
     out = {}
     stack = [(convert_path(where), '', package, only_in_packages)]
     while stack:
@@ -146,7 +149,7 @@ def find_package_data(
     return out
 
 setup(
-    name='Astakos',
+    name='snf-astakos-app',
     version=VERSION,
     license='BSD',
     url='http://code.grnet.gr/projects/astakos',
@@ -159,18 +162,29 @@ setup(
         'Topic :: Utilities',
         'License :: OSI Approved :: BSD License',
     ],
-    
+
     author='GRNET',
     author_email='astakos@grnet.gr',
-    
+
     packages=find_packages(),
     include_package_data=True,
     package_data=find_package_data('.'),
     zip_safe=False,
-    
-    #install_requires = INSTALL_REQUIRES,
-    
+
+    install_requires = INSTALL_REQUIRES,
+
+    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+
     entry_points={
-        'console_scripts': ['astakos-manage = astakos.manage:main']
+        'console_scripts': ['astakos-manage = astakos.manage:main'],
+        'synnefo': [
+             'default_settings = astakos.im.synnefo_settings',
+             'web_apps = astakos.im.synnefo_settings:installed_apps',
+             'web_middleware = astakos.im.synnefo_settings:middlware_classes',
+             'web_context_processors = astakos.im.synnefo_settings:context_processors',
+             'urls = astakos.urls:urlpatterns',
+             'web_static = astakos.im.synnefo_settings:static_files'
+        ]
     }
 )
+

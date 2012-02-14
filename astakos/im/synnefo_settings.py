@@ -30,10 +30,45 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+#
 
-from django.conf.urls.defaults import include, patterns
+"""
+Django settings metadata. To be used in setup.py snf-webproject entry points.
+"""
+
+installed_apps = [
+        {'before': 'django.contrib.admin',
+         'insert': 'astakos.im',},
+        'django.contrib.auth'
+]
+
+context_processors = [
+    'django.core.context_processors.media',
+    'django.core.context_processors.request',
+    'astakos.im.context_processors.media',
+    #'astakos.im.context_processors.cloudbar',
+    'astakos.im.context_processors.im_modules',
+    'astakos.im.context_processors.next',
+    'astakos.im.context_processors.code',
+    'astakos.im.context_processors.invitations'
+]
+
+middlware_classes = [
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'astakos.middleware.LoggingConfigMiddleware',
+    'astakos.middleware.SecureMiddleware'
+]
 
 
-urlpatterns = patterns('',
-    (r'^im/', include('astakos.im.urls'))
-)
+static_files = {'im': ''}
+
+# The following settings will replace the default django settings
+AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',
+                            'astakos.im.auth_backends.TokenBackend')
+LOGIN_URL = '/im'
+
+# The server is behind a proxy (apache and gunicorn setup).
+USE_X_FORWARDED_HOST = False
+
+CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
+

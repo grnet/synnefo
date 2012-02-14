@@ -176,7 +176,6 @@ setup(
     dependency_links = ['http://docs.dev.grnet.gr/pypi'],
 
     entry_points={
-        'console_scripts': ['astakos-manage = astakos.manage:main'],
         'synnefo': [
              'default_settings = astakos.im.synnefo_settings',
              'web_apps = astakos.im.synnefo_settings:installed_apps',

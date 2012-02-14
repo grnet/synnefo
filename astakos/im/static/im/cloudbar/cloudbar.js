@@ -6,14 +6,15 @@ $(document).ready(function(){
 
     var PROFILE_URL = "https://accounts.cloud.grnet.gr";
     var SERVICES_LINKS = window.CLOUDBAR_SERVICES_LINKS || {
-        'cloud':   { url:'http://pithos.dev.grnet.gr/im/', name:'grnet cloud', id:'cloud', icon:'home-icon.png' },
-        'okeanos': { url:'http://staging.okeanos.grnet.gr/ui/', name:'~okeanos', id:'okeanos' },
+        'cloud':   { url:'http://pithos.dev.grnet.gr/', name:'grnet cloud', id:'cloud', icon:'home-icon.png' },
+        'okeanos': { url:'http://pithos.dev.grnet.gr/okeanos.html', name:'~okeanos', id:'okeanos' },
         'pithos':  { url:'http://pithos.dev.grnet.gr/ui/', name:'pithos+', id:'pithos' }
     };
     
     var PROFILE_LINKS = window.CLOUDBAR_PROFILE_LINKS || {
         'login': { url: '/im/login?next=' + window.location.toString(), auth:false, name: "login...", visible:false },
-        'profile': { url: '/im/profile', auth:true, name: "change your profile..." },
+        'profile': { url: '/im/profile', auth:true, name: "view your profile..." },
+        'password': { url: '/im/password', auth:true, name: "change your password..." },
         'invitations': { url: '/im/invite', auth:true, name: "invite some friends..." },
         'feedback': { url: '/im/feedback', auth:true, name: "feedback..." },
         'logout': { url: '/im/logout', auth:true, name: "logout..." }

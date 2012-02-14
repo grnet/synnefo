@@ -78,22 +78,22 @@
             </div>
             
             <ul class="mainnav inline quicknav">
-                {% block page.quicknav.items %}
+                {% comment %}{% block page.quicknav.items %}
                     <li class="{% block signup_class %}{% endblock %}">
                         <a href="{% url astakos.im.views.index %}">Login</a>
                     </li>
                     <li class="{% block signin_class %}{% endblock %}">
                         <a href="{% url astakos.im.views.signup %}">Sign up</a>
                     </li>
-                {% endblock %}
+                {% endblock %}{% endcomment %}
             </ul>
 
-            {% block page.nav %}
+            {% comment %}{% block page.nav %}
             <ul class="mainnav inline">
                 {% block page.nav.items %}
                 {% endblock %}
             </ul>
-            {% endblock %}
+            {% endblock %}{% endcomment %}
         </div>
         <div class="page">
             {% if messages %}

@@ -36,6 +36,8 @@ import json
 import uuid
 
 from urlparse import urlparse
+from hashlib import sha1
+from random import random
 from time import time
 
 
@@ -94,14 +96,17 @@ def queue_start(conn):
 
 class Receipt(object):
     def __init__(self, client, user, resource, value, details={}):
-        self.eventVersion = 1
-        self.id = str(uuid.uuid4())
-        self.timestamp = int(time() * 1000)
-        self.clientId = client
-        self.userId = user
+        self.eventVersion = '1.0'
+        self.occurredMillis = int(time() * 1000)
+        self.receivedMillis = self.occurredMillis
+        self.clientID = client
+        self.userID = user
         self.resource = resource
         self.value = value
         self.details = details
+        hash = sha1()
+        hash.update(json.dumps([client, user, resource, value, details, random()]))
+        self.id = hash.hexdigest()
     
     def format(self):
         return self.__dict__

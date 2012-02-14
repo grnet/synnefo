@@ -121,6 +121,10 @@ LOGGING_SETUP = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
+        'file': {
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose'
+        },
     },
     'loggers': {
         'astakos': {

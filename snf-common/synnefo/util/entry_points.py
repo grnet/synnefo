@@ -44,6 +44,7 @@ import inspect
 # from snf-common settings extension mechanism
 EXCLUDED_PACKAGES = os.environ.get('SYNNEFO_EXCLUDE_PACKAGES', '').split(":")
 
+
 def get_entry_points(ns, name):
     for entry_point in pkg_resources.iter_entry_points(group=ns):
         if entry_point.name == name and \
@@ -136,6 +137,7 @@ def collect_defaults(ns):
         settings[e.dist.key] = settings[e.dist.key] + attrs
 
     return settings
+
 
 def extend_settings(mname, ns):
     extend_module_from_entry_point(mname, ns)

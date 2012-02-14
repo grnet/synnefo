@@ -4,9 +4,6 @@ Changelog
 0.8.0 -> dev
 ------------
 
-* Skip entry points for python distributions names existing in 
-  ``SYNNEFO_EXCLUDE_PACKAGES`` environmental variable
-* Avoid duplicate entries in list settings objects
 * Removed dependency from snf-cyclades-app
 * Added set_language view
 

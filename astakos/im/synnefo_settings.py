@@ -96,7 +96,7 @@ LOGGING_SETUP = {
     'loggers': {
         'astakos': {
             'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO'
+            'level': 'INFO'
         },
     }
 }

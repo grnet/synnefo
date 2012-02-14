@@ -31,7 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL
+from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
+        COOKIE_NAME
+from django.conf import settings
 
 def im_modules(request):
     return {'im_modules': IM_MODULES}
@@ -47,4 +49,16 @@ def invitations(request):
 
 def media(request):
     return {'IM_STATIC_URL' : IM_STATIC_URL}
+
+def cloudbar(request):
+    """
+    Cloudbar configuration
+    """
+    CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION', IM_STATIC_URL + 'cloudbar/')
+    CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME', COOKIE_NAME)
+    CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE', 'cloud')
+
+    return {'CLOUDBAR_LOC': CB_LOCATION,
+            'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
+            'ACTIVE_SERVICE': CB_ACTIVE_SERVICE}
 

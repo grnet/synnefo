@@ -61,47 +61,34 @@ class XFeatures(DBWorker):
                             foreign key (feature_id) references xfeatures(feature_id)
                             on delete cascade ) """)
     
-    def xfeature_inherit(self, path):
-        """Return the (path, feature) inherited by the path, or None."""
+#     def xfeature_inherit(self, path):
+#         """Return the (path, feature) inherited by the path, or None."""
+#         
+#         q = ("select path, feature_id from xfeatures "
+#              "where path <= ? "
+#              "and ? like path || '%' " # XXX: Escape like...
+#              "order by path desc")
+#         self.execute(q, (path, path))
+#         return self.fetchall()
+    
+    def xfeature_get(self, path):
+        """Return feature for path."""
         
-        q = ("select path, feature_id from xfeatures "
-             "where path <= ? "
-             "order by path desc limit 1")
+        q = "select feature_id from xfeatures where path = ?"
         self.execute(q, (path,))
         r = self.fetchone()
-        if r is not None and path.startswith(r[0]):
-            return r
+        if r is not None:
+            return r[0]
         return None
-    
-    def xfeature_list(self, path):
-        """Return the list of the (prefix, feature) pairs matching path.
-           A prefix matches path if either the prefix includes the path,
-           or the path includes the prefix.
-        """
-        
-        inherited = self.xfeature_inherit(path)
-        if inherited:
-            return [inherited]
-        
-        q = ("select path, feature_id from xfeatures "
-             "where path like ? escape '\\' and path != ? order by path")
-        self.execute(q, (self.escape_like(path) + '%', path,))
-        return self.fetchall()
     
     def xfeature_create(self, path):
         """Create and return a feature for path.
-           If the path already inherits a feature or
-           bestows to paths already inheriting a feature,
-           create no feature and return None.
            If the path has a feature, return it.
         """
         
-        prefixes = self.xfeature_list(path)
-        pl = len(prefixes)
-        if (pl > 1) or (pl == 1 and prefixes[0][0] != path):
-            return None
-        if pl == 1 and prefixes[0][0] == path:
-            return prefixes[0][1]
+        feature = self.xfeature_get(path)
+        if feature is not None:
+            return feature
         q = "insert into xfeatures (path) values (?)"
         id = self.execute(q, (path,)).lastrowid
         return id

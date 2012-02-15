@@ -67,53 +67,39 @@ class XFeatures(DBWorker):
         
         metadata.create_all(self.engine)
     
-    def xfeature_inherit(self, path):
-        """Return the (path, feature) inherited by the path, or None."""
+#     def xfeature_inherit(self, path):
+#         """Return the (path, feature) inherited by the path, or None."""
+#         
+#         s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
+#         s = s.where(self.xfeatures.c.path <= path)
+#         #s = s.where(self.xfeatures.c.path.like(self.escape_like(path) + '%', escape='\\')) # XXX: Implement reverse and escape like...
+#         s = s.order_by(desc(self.xfeatures.c.path))
+#         r = self.conn.execute(s)
+#         l = r.fetchall()
+#         r.close()
+#         return l
+    
+    def xfeature_get(self, path):
+        """Return feature for path."""
         
-        s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
-        s = s.where(self.xfeatures.c.path <= path)
-        s = s.order_by(desc(self.xfeatures.c.path)).limit(1)
+        s = select([self.xfeatures.c.feature_id])
+        s = s.where(self.xfeatures.c.path == path)
+        s = s.order_by(self.xfeatures.c.path)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
-        if row and path.startswith(row[0]):
-            return row
-        else:
-            return None
-    
-    def xfeature_list(self, path):
-        """Return the list of the (prefix, feature) pairs matching path.
-           A prefix matches path if either the prefix includes the path,
-           or the path includes the prefix.
-        """
-        
-        inherited = self.xfeature_inherit(path)
-        if inherited:
-            return [inherited]
-        
-        s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
-        s = s.where(and_(self.xfeatures.c.path.like(self.escape_like(path) + '%', escape='\\'),
-                     self.xfeatures.c.path != path))
-        s = s.order_by(self.xfeatures.c.path)
-        r = self.conn.execute(s)
-        l = r.fetchall()
-        r.close()
-        return l
+        if row:
+            return row[0]
+        return None
     
     def xfeature_create(self, path):
         """Create and return a feature for path.
-           If the path already inherits a feature or
-           bestows to paths already inheriting a feature,
-           create no feature and return None.
            If the path has a feature, return it.
         """
         
-        prefixes = self.xfeature_list(path)
-        pl = len(prefixes)
-        if (pl > 1) or (pl == 1 and prefixes[0][0] != path):
-            return None
-        if pl == 1 and prefixes[0][0] == path:
-            return prefixes[0][1]
+        feature = self.xfeature_get(path)
+        if feature is not None:
+            return feature
         s = self.xfeatures.insert()
         r = self.conn.execute(s, path=path)
         inserted_primary_key = r.inserted_primary_key[0]

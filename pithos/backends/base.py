@@ -328,6 +328,8 @@ class BaseBackend(object):
             
             'bytes': The total data size
             
+            'type': The content type
+            
             'hash': The hashmap hash
             
             'modified': Last modification timestamp (overall)
@@ -395,11 +397,6 @@ class BaseBackend(object):
             NameError: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
-            
-            AttributeError: Can not set permissions, as this object
-                is already shared/private by another object higher
-                in the hierarchy, or setting permissions here will
-                invalidate other permissions deeper in the hierarchy
         """
         return
     
@@ -438,7 +435,7 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, domain, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, domain, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes and return the new version.
         
         Parameters:
@@ -457,13 +454,11 @@ class BaseBackend(object):
             
             ValueError: Invalid users/groups in permissions
             
-            AttributeError: Can not set permissions
-            
             QuotaError: Account or container quota exceeded
         """
         return ''
     
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata and return the new version.
         
         Parameters:
@@ -486,13 +481,11 @@ class BaseBackend(object):
             
             ValueError: Invalid users/groups in permissions
             
-            AttributeError: Can not set permissions
-            
             QuotaError: Account or container quota exceeded
         """
         return ''
     
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata and return the new version.
         
         Parameters:
@@ -510,8 +503,6 @@ class BaseBackend(object):
             NameError: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
-            
-            AttributeError: Can not set permissions
             
             QuotaError: Account or container quota exceeded
         """

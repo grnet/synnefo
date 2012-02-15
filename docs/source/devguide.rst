@@ -27,7 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Jan 24, 2012)         Update allowed versioning values.
+0.8 (Feb 9, 2012)          Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
@@ -37,6 +37,7 @@ Revision                   Description
 \                          Note that ``/login`` will only work if an external authentication system is defined.
 \                          Include option to ignore Content-Type on ``COPY``/``MOVE``.
 \                          Use format parameter for conflict (409) and uploaded hash list (container level) replies.
+\                          Change permissions model.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -863,7 +864,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
-409 (Conflict)                  The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply)
+409 (Conflict)                  The object can not be created from the provided hashmap (a list of missing hashes will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 422 (Unprocessable Entity)      The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
@@ -913,7 +914,6 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
-409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply)
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
 
@@ -991,7 +991,6 @@ Return Code                     Description
 ==============================  ==============================
 202 (Accepted)                  The request has been accepted (not a data update)
 204 (No Content)                The request succeeded (data updated)
-409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 416 (Range Not Satisfiable)     The supplied range is invalid
@@ -1045,7 +1044,7 @@ Return Code                  Description
 Sharing and Public Objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Read and write control in Pithos is managed by setting appropriate permissions with the ``X-Object-Sharing`` header. The permissions are applied using prefix-based inheritance. Thus, each set of authorization directives is applied to all objects sharing the same prefix with the object where the corresponding ``X-Object-Sharing`` header is defined. For simplicity, nested/overlapping permissions are not allowed. Setting ``X-Object-Sharing`` will fail, if the object is already "covered", or another object with a longer common-prefix name already has permissions. When retrieving an object, the ``X-Object-Shared-By`` header reports where it gets its permissions from. If not present, the object is the actual source of authorization directives.
+Read and write control in Pithos is managed by setting appropriate permissions with the ``X-Object-Sharing`` header. The permissions are applied using directory-based inheritance. A directory is an object with the corresponding content type. The default delimiter is ``/``. Thus, each set of authorization directives is applied to all objects in the directory object where the corresponding ``X-Object-Sharing`` header is defined. If there are nested/overlapping permissions, the closest to the object is applied. When retrieving an object, the ``X-Object-Shared-By`` header reports where it gets its permissions from. If not present, the object is the actual source of authorization directives.
 
 A user may ``GET`` another account or container. The result will include a limited reply, containing only the allowed containers or objects respectively. A top-level request with an authentication token, will return a list of allowed accounts, so the user can easily find out which other users share objects. The ``X-Object-Allowed-To`` header lists the actions allowed on an object, if it does not belong to the requesting user.
 
@@ -1093,7 +1092,7 @@ List of differences from the OOS API:
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
 * Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Available actions in cross-user requests are reported with ``X-Object-Allowed-To``. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
-* Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
+* Support for directory-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Copy and move between accounts with ``X-Source-Account`` and ``Destination-Account`` headers.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.

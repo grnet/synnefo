@@ -55,17 +55,39 @@ class Permissions(XFeatures, Groups, Public):
         if not members:
             return
         feature = self.xfeature_create(path)
-        if feature is None:
-            return
         self.feature_setmany(feature, access, members)
     
     def access_set(self, path, permissions):
         """Set permissions for path. The permissions dict
            maps 'read', 'write' keys to member lists."""
         
-        self.xfeature_destroy(path)
-        self.access_grant(path, READ, permissions.get('read', []))
-        self.access_grant(path, WRITE, permissions.get('write', []))
+        r = permissions.get('read', [])
+        w = permissions.get('write', [])
+        if not r and not w:
+            self.xfeature_destroy(path)
+            return
+        feature = self.xfeature_create(path)
+        if r:
+            self.feature_clear(feature, READ)
+            self.feature_setmany(feature, READ, r)
+        if w:
+            self.feature_clear(feature, WRITE)
+            self.feature_setmany(feature, WRITE, w)
+    
+    def access_get(self, path):
+        """Get permissions for path."""
+        
+        feature = self.xfeature_get(path)
+        if not feature:
+            return {}
+        permissions = self.feature_dict(feature)
+        if READ in permissions:
+            permissions['read'] = permissions[READ]
+            del(permissions[READ])
+        if WRITE in permissions:
+            permissions['write'] = permissions[WRITE]
+            del(permissions[WRITE])
+        return permissions
     
     def access_clear(self, path):
         """Revoke access to path (both permissions and public)."""
@@ -76,13 +98,9 @@ class Permissions(XFeatures, Groups, Public):
     def access_check(self, path, access, member):
         """Return true if the member has this access to the path."""
         
-        if access == READ and self.public_get(path) is not None:
-            return True
-        
-        r = self.xfeature_inherit(path)
-        if not r:
+        feature = self.xfeature_get(path)
+        if not feature:
             return False
-        fpath, feature = r
         members = self.feature_get(feature, access)
         if member in members or '*' in members:
             return True
@@ -92,25 +110,23 @@ class Permissions(XFeatures, Groups, Public):
         return False
     
     def access_inherit(self, path):
-        """Return the inherited or assigned (path, permissions) pair for path."""
+        """Return the paths influencing the access for path."""
         
-        r = self.xfeature_inherit(path)
-        if not r:
-            return (path, {})
-        fpath, feature = r
-        permissions = self.feature_dict(feature)
-        if READ in permissions:
-            permissions['read'] = permissions[READ]
-            del(permissions[READ])
-        if WRITE in permissions:
-            permissions['write'] = permissions[WRITE]
-            del(permissions[WRITE])
-        return (fpath, permissions)
-    
-    def access_list(self, path):
-        """List all permission paths inherited by or inheriting from path."""
+#         r = self.xfeature_inherit(path)
+#         if not r:
+#             return []
+#         # Compute valid.
+#         return [x[0] for x in r if x[0] in valid]
         
-        return [x[0] for x in self.xfeature_list(path) if x[0] != path]
+        # Only keep path components.
+        parts = path.rstrip('/').split('/')
+        valid = []
+        for i in range(1, len(parts)):
+            subp = '/'.join(parts[:i + 1])
+            valid.append(subp)
+            if subp != path:
+                valid.append(subp + '/')
+        return [x for x in valid if self.xfeature_get(x)]
     
     def access_list_paths(self, member, prefix=None):
         """Return the list of paths granted to member."""

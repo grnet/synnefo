@@ -341,6 +341,8 @@ class BaseBackend(object):
             'version_timestamp': The version's modification timestamp
             
             'uuid': A unique identifier that persists data or metadata updates and renames
+            
+            'checksum': The MD5 sum of the object (may be empty)
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -435,7 +437,7 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, domain, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes and return the new version.
         
         Parameters:
@@ -457,6 +459,10 @@ class BaseBackend(object):
             QuotaError: Account or container quota exceeded
         """
         return ''
+    
+    def update_object_checksum(self, user, account, container, name, version, checksum):
+        """Update an object's checksum."""
+        return
     
     def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata and return the new version.

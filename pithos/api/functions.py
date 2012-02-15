@@ -555,8 +555,8 @@ def object_list(request, v_account, v_container):
             except NameError:
                 pass
             else:
-                rename_meta_key(meta, 'hash', 'x_object_hash') # Will be replaced by ETag.
-                rename_meta_key(meta, 'ETag', 'hash')
+                rename_meta_key(meta, 'hash', 'x_object_hash') # Will be replaced by checksum.
+                rename_meta_key(meta, 'checksum', 'hash')
                 rename_meta_key(meta, 'type', 'content_type')
                 rename_meta_key(meta, 'uuid', 'x_object_uuid')
                 rename_meta_key(meta, 'modified', 'last_modified')
@@ -616,7 +616,7 @@ def object_meta(request, v_account, v_container, v_object):
         validate_matching_preconditions(request, meta)
     except NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['ETag']
+        response['ETag'] = meta['checksum']
         return response
     
     response = HttpResponse(status=200)
@@ -685,7 +685,7 @@ def object_read(request, v_account, v_container, v_object):
         validate_matching_preconditions(request, meta)
     except NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['ETag']
+        response['ETag'] = meta['checksum']
         return response
     
     sizes = []
@@ -836,6 +836,8 @@ def object_write(request, v_account, v_container, v_object):
                     hashmap.append(hash.firstChild.data)
             except:
                 raise BadRequest('Invalid data formatting')
+        
+        checksum = '' # Do not set to None (will copy previous value).
     else:
         md5 = hashlib.md5()
         size = 0
@@ -848,15 +850,15 @@ def object_write(request, v_account, v_container, v_object):
             hashmap.append(request.backend.put_block(data))
             md5.update(data)
         
-        meta['ETag'] = md5.hexdigest().lower()
+        checksum = md5.hexdigest().lower()
         etag = request.META.get('HTTP_ETAG')
-        if etag and parse_etags(etag)[0].lower() != meta['ETag']:
+        if etag and parse_etags(etag)[0].lower() != checksum:
             raise UnprocessableEntity('Object ETag does not match')
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, content_type,
-                        hashmap, 'pithos', meta, True, permissions)
+                        hashmap, checksum, 'pithos', meta, True, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except IndexError, e:
@@ -867,14 +869,12 @@ def object_write(request, v_account, v_container, v_object):
         raise BadRequest('Invalid sharing header')
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
-    if 'ETag' not in meta:
+    if not checksum:
         # Update the MD5 after the hashmap, as there may be missing hashes.
-        # TODO: This will create a new version, even if done synchronously...
-        etag = hashmap_md5(request, hashmap, size)
-        meta.update({'ETag': etag}) # Update ETag.
+        checksum = hashmap_md5(request, hashmap, size)
         try:
-            version_id = request.backend.update_object_meta(request.user_uniq,
-                            v_account, v_container, v_object, 'pithos', {'ETag': etag}, False)
+            version_id = request.backend.update_object_checksum(request.user_uniq,
+                            v_account, v_container, v_object, version_id, checksum)
         except NotAllowedError:
             raise Forbidden('Not allowed')
     if public is not None:
@@ -887,7 +887,8 @@ def object_write(request, v_account, v_container, v_object):
             raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=201)
-    response['ETag'] = meta['ETag']
+    if checksum:
+        response['ETag'] = checksum
     response['X-Object-Version'] = version_id
     return response
 
@@ -904,14 +905,11 @@ def object_write_form(request, v_account, v_container, v_object):
         raise BadRequest('Missing X-Object-Data field')
     file = request.FILES['X-Object-Data']
     
-    content_type = file.content_type
-    meta = {}
-    meta['ETag'] = file.etag
-    
+    checksum = file.etag
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, file.size, content_type,
-                        file.hashmap, 'pithos', meta, True)
+                        v_account, v_container, v_object, file.size, file.content_type,
+                        file.hashmap, checksum, 'pithos', {}, True)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -920,9 +918,9 @@ def object_write_form(request, v_account, v_container, v_object):
         raise RequestEntityTooLarge('Quota exceeded')
     
     response = HttpResponse(status=201)
-    response['ETag'] = meta['ETag']
+    response['ETag'] = checksum
     response['X-Object-Version'] = version_id
-    response.content = meta['ETag']
+    response.content = checksum
     return response
 
 @api_method('COPY', format_allowed=True)
@@ -1021,13 +1019,9 @@ def object_update(request, v_account, v_container, v_object):
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         validate_matching_preconditions(request, prev_meta)
     
-    # If replacing, keep previous value of 'ETag'.
     replace = True
     if 'update' in request.GET:
         replace = False
-    if replace:
-        if 'ETag' in prev_meta:
-            meta['ETag'] = prev_meta['ETag']
     
     # A Content-Type or X-Source-Object header indicates data updates.
     src_object = request.META.get('HTTP_X_SOURCE_OBJECT')
@@ -1178,11 +1172,11 @@ def object_update(request, v_account, v_container, v_object):
     if dest_bytes is not None and dest_bytes < size:
         size = dest_bytes
         hashmap = hashmap[:(int((size - 1) / request.backend.block_size) + 1)]
-    meta.update({'ETag': hashmap_md5(request, hashmap, size)}) # Update ETag.
+    checksum = hashmap_md5(request, hashmap, size)
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, prev_meta['type'],
-                        hashmap, 'pithos', meta, replace, permissions)
+                        hashmap, checksum, 'pithos', meta, replace, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -1201,7 +1195,7 @@ def object_update(request, v_account, v_container, v_object):
             raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=204)
-    response['ETag'] = meta['ETag']
+    response['ETag'] = checksum
     response['X-Object-Version'] = version_id
     return response
 

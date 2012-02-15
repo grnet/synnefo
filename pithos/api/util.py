@@ -183,8 +183,7 @@ def get_object_headers(request):
     return content_type, meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
-    if 'ETag' in meta:
-        response['ETag'] = meta['ETag']
+    response['ETag'] = meta['checksum']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
@@ -219,8 +218,7 @@ def update_manifest_meta(request, v_account, meta):
             for x in objects:
                 src_meta = request.backend.get_object_meta(request.user_uniq,
                                         v_account, src_container, x[0], 'pithos', x[1])
-                if 'ETag' in src_meta:
-                    etag += src_meta['ETag']
+                etag += src_meta['checksum']
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.
@@ -228,7 +226,7 @@ def update_manifest_meta(request, v_account, meta):
         meta['bytes'] = bytes
         md5 = hashlib.md5()
         md5.update(etag)
-        meta['ETag'] = md5.hexdigest().lower()
+        meta['checksum'] = md5.hexdigest().lower()
 
 def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
     if permissions is None:
@@ -275,7 +273,9 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
     
-    etag = meta.get('ETag', None)
+    etag = meta['checksum']
+    if not etag:
+        etag = None
     
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None:
@@ -713,7 +713,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
                     ranges = [(0, size)]
                     ret = 200
             except ValueError:
-                if if_range != meta['ETag']:
+                if if_range != meta['checksum']:
                     ranges = [(0, size)]
                     ret = 200
     

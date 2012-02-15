@@ -40,7 +40,7 @@ from pithos.lib.filter import parse_filters
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(10)
+( SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM, CLUSTER ) = range(11)
 
 ( MATCH_PREFIX, MATCH_EXACT ) = range(2)
 
@@ -92,7 +92,8 @@ _propnames = {
     'mtime'     : 6,
     'muser'     : 7,
     'uuid'      : 8,
-    'cluster'   : 9
+    'checksum'  : 9,
+    'cluster'   : 10
 }
 
 
@@ -153,6 +154,7 @@ class Node(DBWorker):
                             mtime      integer,
                             muser      text    not null default '',
                             uuid       text    not null default '',
+                            checksum   text    not null default '',
                             cluster    integer not null default 0,
                             foreign key (node)
                             references nodes(node)
@@ -211,10 +213,10 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, type, source, mtime, muser, uuid, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
         """
         
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
              "from versions "
              "where node = ?")
         self.execute(q, (node,))
@@ -417,7 +419,7 @@ class Node(DBWorker):
         parent, path = props
         
         # The latest version.
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -467,15 +469,15 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, hash, size, type, source, muser, uuid, cluster=0):
+    def version_create(self, node, hash, size, type, source, muser, uuid, checksum, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
-        q = ("insert into versions (node, hash, size, type, source, mtime, muser, uuid, cluster) "
-             "values (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        q = ("insert into versions (node, hash, size, type, source, mtime, muser, uuid, checksum, cluster) "
+             "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
-        props = (node, hash, size, type, source, mtime, muser, uuid, cluster)
+        props = (node, hash, size, type, source, mtime, muser, uuid, checksum, cluster)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -483,11 +485,11 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, hash, size, type, source, mtime, muser, uuid, cluster)
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster)
            or None if the current version is not found in the given cluster.
         """
         
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -503,10 +505,10 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, type, source, mtime, muser, uuid, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
         """
         
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
              "from versions "
              "where serial = ?")
         self.execute(q, (serial,))
@@ -517,6 +519,14 @@ class Node(DBWorker):
         if not keys:
             return r
         return [r[propnames[k]] for k in keys if k in propnames]
+    
+    def version_put_property(self, serial, key, value):
+        """Set value for the property of version specified by key."""
+        
+        if key not in _propnames:
+            return
+        q = "update versions set %s = ? where serial = ?" % key
+        self.execute(q, (value, serial))
     
     def version_recluster(self, serial, cluster):
         """Move the version into another cluster."""

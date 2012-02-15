@@ -32,10 +32,10 @@
 # or implied, of GRNET S.A.
 
 from dbwrapper import DBWrapper
-from node import Node, ROOTNODE, SERIAL, HASH, SIZE, TYPE, MTIME, MUSER, UUID, CLUSTER, MATCH_PREFIX, MATCH_EXACT
+from node import Node, ROOTNODE, SERIAL, HASH, SIZE, TYPE, MTIME, MUSER, UUID, CHECKSUM, CLUSTER, MATCH_PREFIX, MATCH_EXACT
 from permissions import Permissions, READ, WRITE
 
 __all__ = ["DBWrapper",
-           "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "TYPE", "MTIME", "MUSER", "UUID", "CLUSTER", "MATCH_PREFIX", "MATCH_EXACT",
+           "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "TYPE", "MTIME", "MUSER", "UUID", "CHECKSUM", "CLUSTER", "MATCH_PREFIX", "MATCH_EXACT",
            "Permissions", "READ", "WRITE"]
 

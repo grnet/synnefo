@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.lib.queue import exchange_connect, exchange_send, Receipt
+from pithos.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
 
 
 class Queue(object):
@@ -48,3 +48,6 @@ class Queue(object):
     def send(self, user, resource, value, details):
         body = Receipt(self.client_id, user, resource, value, details).format()
         exchange_send(self.conn, self.message_key, body)
+    
+    def close(self):
+        exchange_close(self.conn)

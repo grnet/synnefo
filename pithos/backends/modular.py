@@ -134,11 +134,15 @@ class ModularBackend(BaseBackend):
             class NoQueue:
                 def send(self, *args):
                     pass
+                
+                def close(self):
+                    pass
             
             self.queue = NoQueue()
     
     def close(self):
         self.wrapper.close()
+        self.queue.close()
     
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):

@@ -41,12 +41,6 @@ urlpatterns = patterns('',
     url(r'userdata/', include('synnefo.ui.userdata.urls'))
 )
 
-# serve static files for convenience
-urlpatterns += patterns('',
-    url(r'^static/(.*)$', 'django.views.static.serve',
-    {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
-)
-
 if settings.DEBUG or settings.TEST:
     urlpatterns += patterns('',
         url(r'^jstests$', 'synnefo.ui.views.js_tests', name='js_tests'),)

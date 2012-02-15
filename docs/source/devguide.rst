@@ -27,7 +27,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Feb 9, 2012)          Update allowed versioning values.
+0.9 (Feb 15, 2012)         Change permissions model.
+0.8 (Jan 24, 2012)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
@@ -37,7 +38,6 @@ Revision                   Description
 \                          Note that ``/login`` will only work if an external authentication system is defined.
 \                          Include option to ignore Content-Type on ``COPY``/``MOVE``.
 \                          Use format parameter for conflict (409) and uploaded hash list (container level) replies.
-\                          Change permissions model.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.

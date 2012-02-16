@@ -610,6 +610,7 @@ class ObjectWrapper(object):
     """
     
     def __init__(self, backend, ranges, sizes, hashmaps, boundary):
+        print '***', ranges, sizes, hashmaps, boundary
         self.backend = backend
         self.ranges = ranges
         self.sizes = sizes
@@ -648,7 +649,10 @@ class ObjectWrapper(object):
             
             # Get the data from the block.
             bo = self.offset % self.backend.block_size
-            bl = min(self.length, len(self.block) - bo)
+            bs = self.backend.block_size
+            if self.block_index == len(self.hashmaps[self.file_index]) - 1:
+                bs = self.sizes[self.file_index] % self.backend.block_size
+            bl = min(self.length, bs - bo)
             data = self.block[bo:bo + bl]
             self.offset += bl
             self.length -= bl
@@ -753,11 +757,10 @@ def hashmap_md5(request, hashmap, size):
     md5 = hashlib.md5()
     bs = request.backend.block_size
     for bi, hash in enumerate(hashmap):
-        data = request.backend.get_block(hash)
+        data = request.backend.get_block(hash) # Blocks come in padded.
         if bi == len(hashmap) - 1:
-            bs = size % bs
-        pad = bs - min(len(data), bs)
-        md5.update(data + ('\x00' * pad))
+            data = data[:size % bs]
+        md5.update(data)
     return md5.hexdigest().lower()
 
 def simple_list_response(request, l):

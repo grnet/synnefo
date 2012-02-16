@@ -76,7 +76,7 @@ class Store(object):
         return hashes[0]
     
     def block_update(self, hash, offset, data):
-        h, e = self.blocker.block_delta(hash, ((offset, data),))
+        h, e = self.blocker.block_delta(hash, offset, data)
         return h
     
     def block_search(self, map):

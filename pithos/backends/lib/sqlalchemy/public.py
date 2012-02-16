@@ -85,6 +85,15 @@ class Public(DBWorker):
             return row[0]
         return None
     
+    def public_list(self, prefix):
+        s = select([self.public.c.path, self.public.c.public_id])
+        s = s.where(self.xfeatures.c.path.like(self.escape_like(prefix) + '%', escape='\\'))
+        s = s.where(self.public.c.active == True)
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return rows
+    
     def public_path(self, public):
         s = select([self.public.c.path])
         s = s.where(and_(self.public.c.public_id == public,

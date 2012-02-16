@@ -423,21 +423,25 @@ class ModularBackend(BaseBackend):
         self._report_size_change(user, account, -size, {'action': 'container delete'})
     
     def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props):
+        if user != account and until:
+            raise NotAllowedError
+        allowed = self._list_object_permissions(user, account, container, prefix, shared)
+        path, node = self._lookup_container(account, container)
+        allowed = self._get_formatted_paths(allowed)
+        return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
+    
+    def _list_object_permissions(self, user, account, container, prefix, shared):
         allowed = []
         if user != account:
-            if until:
-                raise NotAllowedError
-            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
+            allowed = self.permissions.access_list_paths(user, '/'.join((account, container, prefix)))
             if not allowed:
                 raise NotAllowedError
         else:
             if shared:
-                allowed = self.permissions.access_list_shared('/'.join((account, container)))
+                allowed = self.permissions.access_list_shared('/'.join((account, container, prefix)))
                 if not allowed:
                     return []
-        path, node = self._lookup_container(account, container)
-        allowed = self._get_formatted_paths(allowed)
-        return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
+        return allowed
     
     @backend_method
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
@@ -468,6 +472,23 @@ class ModularBackend(BaseBackend):
                                 'uuid': p[self.UUID + 1],
                                 'checksum': p[self.CHECKSUM + 1]})
         return objects
+    
+    @backend_method
+    def list_object_permissions(self, user, account, container, prefix=''):
+        """Return a list of paths that enforce permissions under a container."""
+        
+        logger.debug("list_object_permissions: %s %s %s", account, container, prefix)
+        return self._list_object_permissions(user, account, container, prefix, True)
+    
+    @backend_method
+    def list_object_public(self, user, account, container, prefix=''):
+        """Return a dict mapping paths to public ids for objects that are public under a container."""
+        
+        logger.debug("list_object_public: %s %s %s", account, container, prefix)
+        public = {}
+        for path, p in self.permissions.public_list('/'.join((account, container, prefix))):
+            public[path] = p + ULTIMATE_ANSWER
+        return public
     
     @backend_method
     def get_object_meta(self, user, account, container, name, domain, version=None):

@@ -66,6 +66,11 @@ class Public(DBWorker):
             return row[0]
         return None
     
+    def public_list(self, prefix):
+        q = "select path, public_id from public where path like ? escape '\\' and active = 1"
+        self.execute(q, (self.escape_like(prefix) + '%',))
+        return self.fetchall()
+    
     def public_path(self, public):
         q = "select path from public where public_id = ? and active = 1"
         self.execute(q, (public,))

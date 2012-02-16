@@ -537,56 +537,22 @@ def object_list(request, v_account, v_container):
         objects = request.backend.list_object_meta(request.user_uniq, v_account,
                                     v_container, prefix, delimiter, marker,
                                     limit, virtual, 'pithos', keys, shared, until)
+        object_permissions = {}
+        object_public = {}
+        if until is None:
+            name_idx = len('/'.join((v_account, v_container, '')))
+            for x in request.backend.list_object_permissions(request.user_uniq,
+                                    v_account, v_container, prefix):
+                object = x[name_idx:]
+                object_permissions[object] = request.backend.get_object_permissions(
+                                    request.user_uniq, v_account, v_container, object)
+            for k, v in request.backend.list_object_public(request.user_uniq,
+                                    v_account, v_container, prefix).iteritems():
+                object_public[k[name_idx:]] = v
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
-    
-#     object_meta = []
-#     for x in objects:
-#         if x[1] is None:
-#             # Virtual objects/directories.
-#             object_meta.append({'subdir': x[0]})
-#         else:
-#             try:
-#                 meta = request.backend.get_object_meta(request.user_uniq, v_account,
-#                                                         v_container, x[0], 'pithos', x[1])
-#                 if until is None:
-#                     permissions = request.backend.get_object_permissions(
-#                                     request.user_uniq, v_account, v_container, x[0])
-#                     public = request.backend.get_object_public(request.user_uniq,
-#                                                 v_account, v_container, x[0])
-#                 else:
-#                     permissions = None
-#                     public = None
-#             except NotAllowedError:
-#                 raise Forbidden('Not allowed')
-#             except NameError:
-#                 pass
-#             else:
-#                 rename_meta_key(meta, 'hash', 'x_object_hash') # Will be replaced by checksum.
-#                 rename_meta_key(meta, 'checksum', 'hash')
-#                 rename_meta_key(meta, 'type', 'content_type')
-#                 rename_meta_key(meta, 'uuid', 'x_object_uuid')
-#                 rename_meta_key(meta, 'modified', 'last_modified')
-#                 rename_meta_key(meta, 'modified_by', 'x_object_modified_by')
-#                 rename_meta_key(meta, 'version', 'x_object_version')
-#                 rename_meta_key(meta, 'version_timestamp', 'x_object_version_timestamp')
-#                 m = dict([(k[14:], v) for k, v in meta.iteritems() if k.startswith('X-Object-Meta-')])
-#                 for k in m:
-#                     del(meta['X-Object-Meta-' + k])
-#                 if m:
-#                     meta['X-Object-Meta'] = printable_header_dict(m)
-#                 update_sharing_meta(request, permissions, v_account, v_container, x[0], meta)
-#                 update_public_meta(public, meta)
-#                 object_meta.append(printable_header_dict(meta))
-#     if request.serialization == 'xml':
-#         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
-#     elif request.serialization  == 'json':
-#         data = json.dumps(object_meta, default=json_encode_decimal)
-#     response.status_code = 200
-#     response.content = data
-#     return response
     
     object_meta = []
     for meta in objects:
@@ -605,6 +571,12 @@ def object_list(request, v_account, v_container):
             rename_meta_key(meta, 'modified_by', 'x_object_modified_by')
             rename_meta_key(meta, 'version', 'x_object_version')
             rename_meta_key(meta, 'version_timestamp', 'x_object_version_timestamp')
+            permissions = object_permissions.get(meta['name'], None)
+            if permissions:
+                update_sharing_meta(request, permissions, v_account, v_container, meta['name'], meta)
+            public = object_public.get(meta['name'], None)
+            if public:
+                update_public_meta(public, meta)
             object_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})

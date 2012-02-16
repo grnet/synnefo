@@ -325,8 +325,25 @@ class BaseBackend(object):
         
         Same parameters with list_objects. Returned dicts have no user-defined
         metadata and, if until is not None, a None 'modified' timestamp.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            NameError: Container does not exist
         """
         return []
+    
+    def list_object_permissions(self, user, account, container, prefix=''):
+        """Return a list of paths that enforce permissions under a container.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
+        return []
+    
+    def list_object_public(self, user, account, container, prefix=''):
+        """Return a dict mapping paths to public ids for objects that are public under a container."""
+        return {}
     
     def get_object_meta(self, user, account, container, name, domain, version=None):
         """Return a dictionary with the object metadata for the domain.

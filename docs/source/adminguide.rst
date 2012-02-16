@@ -64,6 +64,16 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
     CustomLog ${APACHE_LOG_DIR}/pithos.access.log combined
   </VirtualHost>
 
+To disable non-SSL connections, ``/etc/apache2/sites-available/pithos`` should be::
+
+  <VirtualHost *:80>
+    ServerAdmin webmaster@pithos.dev.grnet.gr
+    ServerName pithos.dev.grnet.gr
+
+    RewriteEngine On
+    RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+  </VirtualHost>
+
 Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/private/pithos.dev.grnet.gr.key`` and ``/etc/ssl/certs/pithos.dev.grnet.gr.crt`` - change the ``ServerName`` directive)::
 
   <IfModule mod_ssl.c>

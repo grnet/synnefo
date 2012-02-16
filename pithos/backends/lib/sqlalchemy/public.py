@@ -87,7 +87,7 @@ class Public(DBWorker):
     
     def public_list(self, prefix):
         s = select([self.public.c.path, self.public.c.public_id])
-        s = s.where(self.xfeatures.c.path.like(self.escape_like(prefix) + '%', escape='\\'))
+        s = s.where(self.public.c.path.like(self.escape_like(prefix) + '%', escape='\\'))
         s = s.where(self.public.c.active == True)
         r = self.conn.execute(s)
         rows = r.fetchall()

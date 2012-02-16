@@ -296,7 +296,24 @@ class ModularBackend(BaseBackend):
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         node = self.node.node_lookup(account)
-        return [x[0] for x in self._list_objects(node, account, '', '/', marker, limit, False, None, [], until)]
+        return [x[0] for x in self._list_object_properties(node, account, '', '/', marker, limit, False, None, [], until)]
+    
+    @backend_method
+    def list_container_meta(self, user, account, container, domain, until=None):
+        """Return a list with all the container's object meta keys for the domain."""
+        
+        logger.debug("list_container_meta: %s %s %s %s", account, container, domain, until)
+        allowed = []
+        if user != account:
+            if until:
+                raise NotAllowedError
+            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
+            if not allowed:
+                raise NotAllowedError
+        path, node = self._lookup_container(account, container)
+        before = until if until is not None else inf
+        allowed = self._get_formatted_paths(allowed)
+        return self.node.latest_attribute_keys(node, domain, before, CLUSTER_DELETED, allowed)
     
     @backend_method
     def get_container_meta(self, user, account, container, domain, until=None):
@@ -405,11 +422,7 @@ class ModularBackend(BaseBackend):
         self.node.node_remove(node)
         self._report_size_change(user, account, -size, {'action': 'container delete'})
     
-    @backend_method
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
-        """Return a list of objects existing under a container."""
-        
-        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until)
+    def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props):
         allowed = []
         if user != account:
             if until:
@@ -424,24 +437,37 @@ class ModularBackend(BaseBackend):
                     return []
         path, node = self._lookup_container(account, container)
         allowed = self._get_formatted_paths(allowed)
-        return self._list_objects(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed)
+        return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
     
     @backend_method
-    def list_object_meta(self, user, account, container, domain, until=None):
-        """Return a list with all the container's object meta keys for the domain."""
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+        """Return a list of object (name, version_id) tuples existing under a container."""
         
-        logger.debug("list_object_meta: %s %s %s %s", account, container, domain, until)
-        allowed = []
-        if user != account:
-            if until:
-                raise NotAllowedError
-            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
-            if not allowed:
-                raise NotAllowedError
-        path, node = self._lookup_container(account, container)
-        before = until if until is not None else inf
-        allowed = self._get_formatted_paths(allowed)
-        return self.node.latest_attribute_keys(node, domain, before, CLUSTER_DELETED, allowed)
+        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range)
+        return self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, False)
+    
+    @backend_method
+    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+        """Return a list of object metadata dicts existing under a container."""
+        
+        logger.debug("list_object_meta: %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range)
+        props = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, True)
+        objects = []
+        for p in props:
+            if len(p) == 2:
+                objects.append({'subdir': p[0]})
+            else:
+                objects.append({'name': p[0],
+                                'bytes': p[self.SIZE + 1],
+                                'type': p[self.TYPE + 1],
+                                'hash': p[self.HASH + 1],
+                                'version': p[self.SERIAL + 1],
+                                'version_timestamp': p[self.MTIME + 1],
+                                'modified': p[self.MTIME + 1] if until is None else None,
+                                'modified_by': p[self.MUSER + 1],
+                                'uuid': p[self.UUID + 1],
+                                'checksum': p[self.CHECKSUM + 1]})
+        return objects
     
     @backend_method
     def get_object_meta(self, user, account, container, name, domain, version=None):
@@ -466,7 +492,7 @@ class ModularBackend(BaseBackend):
         meta.update({'name': name,
                      'bytes': props[self.SIZE],
                      'type': props[self.TYPE],
-                     'hash':props[self.HASH],
+                     'hash': props[self.HASH],
                      'version': props[self.SERIAL],
                      'version_timestamp': props[self.MTIME],
                      'modified': modified,
@@ -894,7 +920,7 @@ class ModularBackend(BaseBackend):
             limit = 10000
         return start, limit
     
-    def _list_objects(self, parent, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], until=None, size_range=None, allowed=[]):
+    def _list_object_properties(self, parent, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], until=None, size_range=None, allowed=[], all_props=False):
         cont_prefix = path + '/'
         prefix = cont_prefix + prefix
         start = cont_prefix + marker if marker else None
@@ -902,10 +928,10 @@ class ModularBackend(BaseBackend):
         filterq = keys if domain else []
         sizeq = size_range
         
-        objects, prefixes = self.node.latest_version_list(parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED, allowed, domain, filterq, sizeq)
+        objects, prefixes = self.node.latest_version_list(parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED, allowed, domain, filterq, sizeq, all_props)
         objects.extend([(p, None) for p in prefixes] if virtual else [])
         objects.sort(key=lambda x: x[0])
-        objects = [(x[0][len(cont_prefix):], x[1]) for x in objects]
+        objects = [(x[0][len(cont_prefix):],) + x[1:] for x in objects]
         
         start, limit = self._list_limits([x[0] for x in objects], marker, limit)
         return objects[start:start + limit]

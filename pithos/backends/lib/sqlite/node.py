@@ -714,7 +714,8 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], domain=None, filterq=[], sizeq=None):
+                            except_cluster=0, pathq=[], domain=None,
+                            filterq=[], sizeq=None, all_props=False):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -761,6 +762,8 @@ class Node(DBWorker):
            will always match.
            
            Limit applies to the first list of tuples returned.
+           
+           If all_props is True, return all properties after path, not just serial.
         """
         
         execute = self.execute
@@ -769,7 +772,7 @@ class Node(DBWorker):
             start = strprevling(prefix)
         nextling = strnextling(prefix)
         
-        q = ("select distinct n.path, v.serial "
+        q = ("select distinct n.path, %s "
              "from versions v, nodes n "
              "where v.serial = (select max(serial) "
                                "from versions "
@@ -780,6 +783,10 @@ class Node(DBWorker):
                             "where parent = ?) "
              "and n.node = v.node "
              "and n.path > ? and n.path < ?")
+        if not all_props:
+            q = q % "v.serial"
+        else:
+            q = q % "v.serial, v.node, v.hash, v.size, v.type, v.source, v.mtime, v.muser, v.uuid, v.checksum, v.cluster"
         args = [before, except_cluster, parent, start, nextling]
         
         subq, subargs = self._construct_paths(pathq)
@@ -819,7 +826,8 @@ class Node(DBWorker):
             props = fetchone()
             if props is None:
                 break
-            path, serial = props
+            path = props[0]
+            serial = props[1]
             idx = path.find(delimiter, pfz)
             
             if idx < 0:

@@ -104,7 +104,7 @@ def printable_header_dict(d):
     Format 'last_modified' timestamp.
     """
     
-    if 'last_modified' in d:
+    if 'last_modified' in d and d['last_modified']:
         d['last_modified'] = isoformat(datetime.fromtimestamp(d['last_modified']))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 

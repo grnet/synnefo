@@ -185,6 +185,16 @@ class BaseBackend(object):
         """
         return []
     
+    def list_container_meta(self, user, account, container, domain, until=None):
+        """Return a list with all the container's object meta keys for the domain.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            NameError: Container does not exist
+        """
+        return []
+    
     def get_container_meta(self, user, account, container, domain, until=None):
         """Return a dictionary with the container metadata for the domain.
         
@@ -310,13 +320,11 @@ class BaseBackend(object):
         """
         return []
     
-    def list_object_meta(self, user, account, container, domain, until=None):
-        """Return a list with all the container's object meta keys for the domain.
+    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+        """Return a list of object metadata dicts existing under a container.
         
-        Raises:
-            NotAllowedError: Operation not permitted
-            
-            NameError: Container does not exist
+        Same parameters with list_objects. Returned dicts have no user-defined
+        metadata and, if until is not None, a None 'modified' timestamp.
         """
         return []
     

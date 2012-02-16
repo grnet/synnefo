@@ -784,7 +784,8 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], domain=None, filterq=[], sizeq=None):
+                            except_cluster=0, pathq=[], domain=None,
+                            filterq=[], sizeq=None, all_props=False):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -831,6 +832,8 @@ class Node(DBWorker):
            will always match.
            
            Limit applies to the first list of tuples returned.
+           
+           If all_props is True, return all properties after path, not just serial.
         """
         
         if not start or start < prefix:
@@ -839,7 +842,14 @@ class Node(DBWorker):
         
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
-        s = select([n.c.path, v.c.serial]).distinct()
+        if not all_props:
+            s = select([n.c.path, v.c.serial]).distinct()
+        else:
+            s = select([n.c.path,
+                        v.c.serial, v.c.node, v.c.hash,
+                        v.c.size, v.c.type, v.c.source,
+                        v.c.mtime, v.c.muser, v.c.uuid,
+                        v.c.checksum, v.c.cluster]).distinct()
         filtered = select([func.max(self.versions.c.serial)])
         if before != inf:
             filtered = filtered.where(self.versions.c.mtime < before)
@@ -910,7 +920,8 @@ class Node(DBWorker):
             props = rp.fetchone()
             if props is None:
                 break
-            path, serial = props
+            path = props[0]
+            serial = props[1]
             idx = path.find(delimiter, pfz)
             
             if idx < 0:

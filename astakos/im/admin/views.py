@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
 import socket
 import csv
 
@@ -39,7 +38,6 @@ from functools import wraps
 from math import ceil
 from smtplib import SMTPException
 
-from django.core.mail import send_mail
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
@@ -56,8 +54,7 @@ from astakos.im.views import render_response, index
 from astakos.im.admin.forms import AdminProfileForm
 from astakos.im.admin.forms import AdminUserCreationForm
 from astakos.im.settings import BYPASS_ADMIN_AUTH, ADMIN_PAGE_LIMIT, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
-
-logger = logging.getLogger(__name__)
+from astakos.im.admin.functions import activate
 
 def requires_admin(func):
     """
@@ -302,20 +299,6 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
     return render_response(template_name,
                             context_instance = get_context(request, extra_context,**kwargs))
 
-def _send_greeting(request, user, template_name):
-    sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
-    subject = _('Welcome to %s' % sitename)
-    baseurl = request.build_absolute_uri('/').rstrip('/')
-    message = render_to_string(template_name, {
-                'user': user,
-                'url': sitedomain,
-                'baseurl': baseurl,
-                'site_name': sitename,
-                'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
-    sender = DEFAULT_FROM_EMAIL % sitename
-    send_mail(subject, message, sender, [user.email])
-    logger.info('Sent greeting %s', user)
-
 @requires_admin
 @transaction.commit_manually
 def users_activate(request, user_id, template_name='pending_users.html', extra_context={}, email_template_name='welcome_email.txt'):
@@ -350,11 +333,11 @@ def users_activate(request, user_id, template_name='pending_users.html', extra_c
     * next: the current page
     """
     user = AstakosUser.objects.get(id=user_id)
-    user.is_active = True
-    user.save()
     status = messages.SUCCESS
     try:
-        _send_greeting(request, user, email_template_name)
+        sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
+        baseurl = request.build_absolute_uri('/').rstrip('/')
+        activate(user, sitename, sitedomain, baseurl, email_template_name)
         message = _('Greeting sent to %s' % user.email)
         transaction.commit()
     except (SMTPException, socket.error) as e:

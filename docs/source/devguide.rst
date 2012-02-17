@@ -27,7 +27,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.9 (Feb 15, 2012)         Change permissions model.
+0.9 (Feb 17, 2012)         Change permissions model.
+\                          Do not include user-defined metadata in account/container/object listings.
 0.8 (Jan 24, 2012)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
@@ -277,7 +278,7 @@ The reply is a list of container names. Account headers (as in a ``HEAD`` reques
 Cross-user requests are not allowed to use ``until`` and only include the account/container modification dates in the reply.
 
 If a ``format=xml`` or ``format=json`` argument is given, extended information on the containers will be returned, serialized in the chosen format.
-For each container, the information will include all container metadata (names will be in lower case and with hyphens replaced with underscores):
+For each container, the information will include all container metadata, except user-defined (names will be in lower case and with hyphens replaced with underscores):
 
 ===========================  ============================
 Name                         Description
@@ -287,8 +288,7 @@ count                        The number of objects inside the container
 bytes                        The total size of the objects inside the container
 last_modified                The last container modification date (regardless of ``until``)
 x_container_until_timestamp  The last container modification date until the timestamp provided
-x_container_policy_*         Container behavior and limits
-x_container_meta_*           Optional user defined metadata
+x_container_policy           Container behavior and limits
 ===========================  ============================
 
 Example ``format=json`` reply:
@@ -299,8 +299,7 @@ Example ``format=json`` reply:
     "bytes": 62452,
     "count": 8374,
     "last_modified": "2011-12-02T08:10:41.565891+00:00",
-    "x_container_policy": {"quota": "53687091200", "versioning": "auto"},
-    "x_container_meta": {"a": "b", "1": "2"}}, ...]
+    "x_container_policy": {"quota": "53687091200", "versioning": "auto"}}, ...]
 
 Example ``format=xml`` reply:
 
@@ -317,15 +316,11 @@ Example ``format=xml`` reply:
         <key>quota</key><value>53687091200</value>
         <key>versioning</key><value>auto</value>
       </x_container_policy>
-      <x_container_meta>
-        <key>a</key><value>b</value>
-        <key>1</key><value>2</value>
-      </x_container_meta>
     </container>
     <container>...</container>
   </account>
 
-For more examples of container details returned in JSON/XML formats refer to the OOS API documentation. In addition to the OOS API, Pithos returns all fields. Policy and metadata values are grouped and returned as key-value pairs.
+For more examples of container details returned in JSON/XML formats refer to the OOS API documentation. In addition to the OOS API, Pithos returns policy fields, grouped as key-value pairs.
 
 ===========================  =====================
 Return Code                  Description
@@ -471,7 +466,7 @@ Last-Modified                The last container modification date
 ===========================  ===============================
 
 If a ``format=xml`` or ``format=json`` argument is given, extended information on the objects will be returned, serialized in the chosen format.
-For each object, the information will include all object metadata (names will be in lower case and with hyphens replaced with underscores):
+For each object, the information will include all object metadata, except user-defined (names will be in lower case and with hyphens replaced with underscores). User-defined metadata includes ``X-Object-Meta-*``, ``X-Object-Manifest``, ``Content-Disposition`` and ``Content-Encoding`` keys. Also, sharing directives will only be included with the actual shared objects (inherited permissions are not calculated):
 
 ==========================  ======================================
 Name                        Description
@@ -480,23 +475,18 @@ name                        The name of the object
 hash                        The ETag of the object
 bytes                       The size of the object
 content_type                The MIME content type of the object
-content_encoding            The encoding of the object (optional)
-content-disposition         The presentation style of the object (optional)
 last_modified               The last object modification date (regardless of version)
 x_object_hash               The Merkle hash
 x_object_uuid               The object's UUID
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
 x_object_modified_by        The user that committed the object's version
-x_object_manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 x_object_sharing            Object permissions (optional)
-x_object_shared_by          Object inheriting permissions (optional)
 x_object_allowed_to         Allowed actions on object (optional)
 x_object_public             Object's publicly accessible URI (optional)
-x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
 
-Sharing metadata will only be returned if there is no ``until`` parameter defined.
+Sharing metadata and last modification timestamp will only be returned if there is no ``until`` parameter defined.
 
 Extended replies may also include virtual directory markers in separate sections of the ``json`` or ``xml`` results.
 Virtual directory markers are only included when ``delimiter`` is explicitly set. They correspond to the substrings up to and including the first occurrence of the delimiter.
@@ -512,7 +502,6 @@ Example ``format=json`` reply:
     "hash": "d41d8cd98f00b204e9800998ecf8427e",
     "content_type": "application/octet-stream",
     "last_modified": "2011-12-02T08:10:41.565891+00:00",
-    "x_object_meta": {"asdf": "qwerty"},
     "x_object_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "x_object_uuid": "8ed9af1b-c948-4bb6-82b0-48344f5c822c",
     "x_object_version": 98,
@@ -531,9 +520,6 @@ Example ``format=xml`` reply:
       <hash>d41d8cd98f00b204e9800998ecf8427e</hash>
       <content_type>application/octet-stream</content_type>
       <last_modified>2011-12-02T08:10:41.565891+00:00</last_modified>
-      <x_object_meta>
-        <key>asdf</key><value>qwerty</value>
-      </x_object_meta>
       <x_object_hash>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</x_object_hash>
       <x_object_uuid>8ed9af1b-c948-4bb6-82b0-48344f5c822c</x_object_uuid>
       <x_object_version>98</x_object_version>
@@ -543,7 +529,7 @@ Example ``format=xml`` reply:
     <object>...</object>
   </container>
 
-For more examples of container details returned in JSON/XML formats refer to the OOS API documentation. In addition to the OOS API, Pithos returns all fields. Metadata values are grouped and returned as key-value pairs.
+For more examples of container details returned in JSON/XML formats refer to the OOS API documentation. In addition to the OOS API, Pithos returns more fields that should help with synchronization.
 
 ===========================  ===============================
 Return Code                  Description
@@ -1076,7 +1062,7 @@ List of differences from the OOS API:
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``HEAD`` or ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
-* Container/object lists include all associated metadata if the reply is of type JSON/XML. Some names are kept to their OOS API equivalents for compatibility.
+* Container/object lists include more fields if the reply is of type JSON/XML. Some names are kept to their OOS API equivalents for compatibility.
 * Option to include only shared containers/objects in listings.
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object ``GET`` support as outlined in RFC2616.

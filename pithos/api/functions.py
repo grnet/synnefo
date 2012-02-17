@@ -166,18 +166,13 @@ def account_list(request):
         if x == request.user_uniq:
             continue
         try:
-            meta = request.backend.get_account_meta(request.user_uniq, x, 'pithos')
+            meta = request.backend.get_account_meta(request.user_uniq, x, 'pithos', include_user_defined=False)
             groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         else:
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(meta, 'until_timestamp', 'x_account_until_timestamp')
-            m = dict([(k[15:], v) for k, v in meta.iteritems() if k.startswith('X-Account-Meta-')])
-            for k in m:
-                del(meta['X-Account-Meta-' + k])
-            if m:
-                meta['X-Account-Meta'] = printable_header_dict(m)
             if groups:
                 meta['X-Account-Group'] = printable_header_dict(dict([(k, ','.join(v)) for k, v in groups.iteritems()]))
             account_meta.append(printable_header_dict(meta))
@@ -288,7 +283,7 @@ def container_list(request, v_account):
     for x in containers:
         try:
             meta = request.backend.get_container_meta(request.user_uniq, v_account,
-                                                        x, 'pithos', until)
+                                                        x, 'pithos', until, include_user_defined=False)
             policy = request.backend.get_container_policy(request.user_uniq,
                                                             v_account, x)
         except NotAllowedError:
@@ -298,11 +293,6 @@ def container_list(request, v_account):
         else:
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(meta, 'until_timestamp', 'x_container_until_timestamp')
-            m = dict([(k[17:], v) for k, v in meta.iteritems() if k.startswith('X-Container-Meta-')])
-            for k in m:
-                del(meta['X-Container-Meta-' + k])
-            if m:
-                meta['X-Container-Meta'] = printable_header_dict(m)
             if policy:
                 meta['X-Container-Policy'] = printable_header_dict(dict([(k, v) for k, v in policy.iteritems()]))
             container_meta.append(printable_header_dict(meta))
@@ -695,9 +685,13 @@ def object_read(request, v_account, v_container, v_object):
         response['ETag'] = meta['checksum']
         return response
     
+    hashmap_reply = False
+    if 'hashmap' in request.GET and request.serialization != 'text':
+        hashmap_reply = True
+    
     sizes = []
     hashmaps = []
-    if 'X-Object-Manifest' in meta:
+    if 'X-Object-Manifest' in meta and not hashmap_reply:
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
             objects = request.backend.list_objects(request.user_uniq, v_account,
@@ -735,7 +729,7 @@ def object_read(request, v_account, v_container, v_object):
             raise ItemNotFound('Version does not exist')
     
     # Reply with the hashmap.
-    if 'hashmap' in request.GET and request.serialization != 'text':
+    if hashmap_reply:
         size = sum(sizes)
         hashmap = sum(hashmaps, [])
         d = {

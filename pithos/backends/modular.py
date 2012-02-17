@@ -154,7 +154,7 @@ class ModularBackend(BaseBackend):
         return allowed[start:start + limit]
     
     @backend_method
-    def get_account_meta(self, user, account, domain, until=None):
+    def get_account_meta(self, user, account, domain, until=None, include_user_defined=True):
         """Return a dictionary with the account metadata for the domain."""
         
         logger.debug("get_account_meta: %s %s %s", account, domain, until)
@@ -180,7 +180,7 @@ class ModularBackend(BaseBackend):
             meta = {'name': account}
         else:
             meta = {}
-            if props is not None:
+            if props is not None and include_user_defined:
                 meta.update(dict(self.node.attribute_get(props[self.SERIAL], domain)))
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
@@ -316,7 +316,7 @@ class ModularBackend(BaseBackend):
         return self.node.latest_attribute_keys(node, domain, before, CLUSTER_DELETED, allowed)
     
     @backend_method
-    def get_container_meta(self, user, account, container, domain, until=None):
+    def get_container_meta(self, user, account, container, domain, until=None, include_user_defined=True):
         """Return a dictionary with the container metadata for the domain."""
         
         logger.debug("get_container_meta: %s %s %s %s", account, container, domain, until)
@@ -337,7 +337,9 @@ class ModularBackend(BaseBackend):
         if user != account:
             meta = {'name': container}
         else:
-            meta = dict(self.node.attribute_get(props[self.SERIAL], domain))
+            meta = {}
+            if include_user_defined:
+                meta.update(dict(self.node.attribute_get(props[self.SERIAL], domain)))
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': container, 'count': count, 'bytes': bytes})
@@ -491,7 +493,7 @@ class ModularBackend(BaseBackend):
         return public
     
     @backend_method
-    def get_object_meta(self, user, account, container, name, domain, version=None):
+    def get_object_meta(self, user, account, container, name, domain, version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain."""
         
         logger.debug("get_object_meta: %s %s %s %s %s", account, container, name, domain, version)
@@ -509,7 +511,9 @@ class ModularBackend(BaseBackend):
                     raise NameError('Object does not exist')
                 modified = del_props[self.MTIME]
         
-        meta = dict(self.node.attribute_get(props[self.SERIAL], domain))
+        meta = {}
+        if include_user_defined:
+            meta.update(dict(self.node.attribute_get(props[self.SERIAL], domain)))
         meta.update({'name': name,
                      'bytes': props[self.SIZE],
                      'type': props[self.TYPE],

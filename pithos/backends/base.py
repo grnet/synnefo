@@ -74,7 +74,7 @@ class BaseBackend(object):
         """
         return []
     
-    def get_account_meta(self, user, account, domain, until=None):
+    def get_account_meta(self, user, account, domain, until=None, include_user_defined=True):
         """Return a dictionary with the account metadata for the domain.
         
         The keys returned are all user-defined, except:
@@ -195,7 +195,7 @@ class BaseBackend(object):
         """
         return []
     
-    def get_container_meta(self, user, account, container, domain, until=None):
+    def get_container_meta(self, user, account, container, domain, until=None, include_user_defined=True):
         """Return a dictionary with the container metadata for the domain.
         
         The keys returned are all user-defined, except:
@@ -345,7 +345,7 @@ class BaseBackend(object):
         """Return a dict mapping paths to public ids for objects that are public under a container."""
         return {}
     
-    def get_object_meta(self, user, account, container, name, domain, version=None):
+    def get_object_meta(self, user, account, container, name, domain, version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain.
         
         The keys returned are all user-defined, except:

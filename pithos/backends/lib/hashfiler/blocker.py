@@ -74,6 +74,9 @@ class Blocker(object):
         self.hashlen = len(emptyhash)
         self.emptyhash = emptyhash
 
+    def _pad(self, block):
+        return block + ('\x00' * (self.blocksize - len(block)))
+
     def _get_rear_block(self, blkhash, create=0):
         filename = hexlify(blkhash)
         dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
@@ -116,7 +119,7 @@ class Blocker(object):
 
         for h in hashes:
             if h == self.emptyhash:
-                append('')
+                append(self._pad(''))
                 continue
             with self._get_rear_block(h, 0) as rbl:
                 if not rbl:
@@ -125,7 +128,7 @@ class Blocker(object):
                     break # there should be just one block there
             if not block:
                 break
-            append(block)
+            append(self._pad(block))
 
         return blocks
 
@@ -145,36 +148,26 @@ class Blocker(object):
 
         return hashlist, missing
 
-    def block_delta(self, blkhash, offdata=()):
+    def block_delta(self, blkhash, offset, data):
         """Construct and store a new block from a given block
-           and a list of (offset, data) 'patches'. Return:
+           and a data 'patch' applied at offset. Return:
            (the hash of the new block, if the block already existed)
         """
-        if not offdata:
-            return None, None
 
         blocksize = self.blocksize
+        if offset >= blocksize or not data:
+            return None, None
+
         block = self.block_retr((blkhash,))
         if not block:
             return None, None
-
+        
         block = block[0]
-        newblock = ''
-        idx = 0
-        size = 0
-        trunc = 0
-        for off, data in offdata:
-            if not data:
-                trunc = 1
-                break
-            newblock += block[idx:off] + data
-            size += off - idx + len(data)
-            if size >= blocksize:
-                break
-            off = size
-
-        if not trunc:
-            newblock += block[size:len(block)]
+        newblock = block[:offset] + data
+        if len(newblock) > blocksize:
+            newblock = newblock[:blocksize]
+        elif len(newblock) < blocksize:
+            newblock += block[len(newblock):]
 
         h, a = self.block_stor((newblock,))
         return h[0], 1 if a else 0

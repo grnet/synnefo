@@ -695,9 +695,13 @@ def object_read(request, v_account, v_container, v_object):
         response['ETag'] = meta['checksum']
         return response
     
+    hashmap_reply = False
+    if 'hashmap' in request.GET and request.serialization != 'text':
+        hashmap_reply = True
+    
     sizes = []
     hashmaps = []
-    if 'X-Object-Manifest' in meta:
+    if 'X-Object-Manifest' in meta and not hashmap_reply:
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
             objects = request.backend.list_objects(request.user_uniq, v_account,
@@ -735,7 +739,7 @@ def object_read(request, v_account, v_container, v_object):
             raise ItemNotFound('Version does not exist')
     
     # Reply with the hashmap.
-    if 'hashmap' in request.GET and request.serialization != 'text':
+    if hashmap_reply:
         size = sum(sizes)
         hashmap = sum(hashmaps, [])
         d = {

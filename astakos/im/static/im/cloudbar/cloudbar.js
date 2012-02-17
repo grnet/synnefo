@@ -6,9 +6,9 @@ $(document).ready(function(){
 
     var PROFILE_URL = "https://accounts.cloud.grnet.gr";
     var SERVICES_LINKS = window.CLOUDBAR_SERVICES_LINKS || {
-        'cloud':   { url:'http://pithos.dev.grnet.gr/', name:'grnet cloud', id:'cloud', icon:'home-icon.png' },
-        'okeanos': { url:'http://pithos.dev.grnet.gr/okeanos.html', name:'~okeanos', id:'okeanos' },
-        'pithos':  { url:'http://pithos.dev.grnet.gr/ui/', name:'pithos+', id:'pithos' }
+        'cloud':   { url:'/', name:'grnet cloud', id:'cloud', icon:'home-icon.png' },
+        'okeanos': { url:'/okeanos.html', name:'~okeanos', id:'okeanos' },
+        'pithos':  { url:'/ui/', name:'pithos+', id:'pithos' }
     };
     
     var PROFILE_LINKS = window.CLOUDBAR_PROFILE_LINKS || {

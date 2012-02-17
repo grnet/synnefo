@@ -164,8 +164,10 @@ class Blocker(object):
         
         block = block[0]
         newblock = block[:offset] + data
-        if len(block) >= blocksize:
+        if len(newblock) > blocksize:
             newblock = newblock[:blocksize]
+        elif len(newblock) < blocksize:
+            newblock += block[len(newblock):]
 
         h, a = self.block_stor((newblock,))
         return h[0], 1 if a else 0

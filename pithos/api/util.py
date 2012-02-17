@@ -610,7 +610,6 @@ class ObjectWrapper(object):
     """
     
     def __init__(self, backend, ranges, sizes, hashmaps, boundary):
-        print '***', ranges, sizes, hashmaps, boundary
         self.backend = backend
         self.ranges = ranges
         self.sizes = sizes

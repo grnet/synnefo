@@ -356,13 +356,13 @@ class OOS_Client(Client):
             data = minidom.parseString(data)
         return data
     
-    def retrieve_object_hashmap(self, container, object, params={},
+    def retrieve_object_hashmap(self, container, object, format='json', params={},
                         account=None, **headers):
         """returns the hashmap representing object's data"""
-        args = locals().copy()
-        for elem in ['self', 'container', 'object']:
-            args.pop(elem)
-        return self.retrieve_object(container, object, format='json', **args)
+        if not params:
+            params = {}
+        params.update({'hashmap':None})
+        return self.retrieve_object(container, object, params, format, account, **headers)
     
     def create_directory_marker(self, container, object, account=None):
         """creates a dierectory marker"""

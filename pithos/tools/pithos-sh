@@ -291,10 +291,13 @@ class GetObject(Command):
         parser.add_option('--versionlist', action='store_true',
                           dest='versionlist', default=False,
                           help='get the full object version list')
+        parser.add_option('--hashmap', action='store_true',
+                          dest='hashmap', default=False,
+                          help='get the object hashmap instead')
     
     def execute(self, path):
         attrs = ['if_match', 'if_none_match', 'if_modified_since',
-                 'if_unmodified_since']
+                 'if_unmodified_since', 'hashmap']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         if self.range:
@@ -313,11 +316,17 @@ class GetObject(Command):
         elif self.version:
             data = self.client.retrieve_object_version(container, object,
                                                        self.version, **args)
+        elif self.hashmap:
+            if 'detail' in args.keys():
+                args.pop('detail')
+            args.pop('format')
+            self.detail = True
+            data = self.client.retrieve_object_hashmap(container, object, **args)
         else:
             data = self.client.retrieve_object(container, object, **args)    
         
         f = open(self.file, 'w') if self.file else stdout
-        if self.detail:
+        if self.detail or type(data) == types.DictionaryType:
             if self.versionlist:
                 print_versions(data, f=f)
             else:
@@ -358,7 +367,7 @@ class PutObject(Command):
         #                  help='use for large file support')
         parser.add_option('--manifest', action='store',
                           dest='x_object_manifest', default=None,
-                          help='upload a manifestation file')
+                          help='provide object parts prefix in <container>/<object> form')
         parser.add_option('--content-type', action='store',
                           dest='content_type', default=None,
                           help='create object with specific content type')
@@ -485,7 +494,7 @@ class UpdateObject(Command):
         parser.add_option('--offset', action='store',
                           dest='offset',
                           default=None, help='starting offest to be updated')
-        parser.add_option('--range', action='store', dest='content-range',
+        parser.add_option('--range', action='store', dest='content_range',
                           default=None, help='range of data to be updated')
         parser.add_option('--chunked', action='store_true', dest='chunked',
                           default=False, help='set chunked transfer mode')
@@ -526,7 +535,8 @@ class UpdateObject(Command):
         
         
         attrs = ['content_encoding', 'content_disposition', 'x_object_sharing',
-                 'x_object_public', 'replace']
+                 'x_object_public', 'x_object_manifest', 'replace', 'offset',
+                 'content_range']
         args = self._build_args(attrs)
         
         if self.no_sharing:

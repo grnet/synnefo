@@ -154,29 +154,9 @@ def create_image(request):
     #                       resizeNotAllowed (403),
     #                       backupOrResizeInProgress (409),
     #                       overLimit (413)
-
-    req = util.get_request_dict(request)
-    log.debug('create_image %s', req)
     
-    try:
-        d = req['image']
-        server_id = d['serverRef']
-        name = d['name']
-    except (KeyError, ValueError):
-        raise BadRequest('Malformed request.')
+    raise ServiceUnavailable('Create image not supported')
 
-    owner = request.user
-    vm = util.get_vm(server_id, owner)
-    image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
-    log.info('User %d created image %d', owner.id, image.id)
-
-    imagedict = image_to_dict(image)
-    if request.serialization == 'xml':
-        data = render_to_string('image.xml', {'image': imagedict})
-    else:
-        data = json.dumps({'image': imagedict})
-
-    return HttpResponse(data, status=202)
 
 @util.api_method('GET')
 def get_image_details(request, image_id):

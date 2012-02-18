@@ -39,7 +39,7 @@ from django.utils import simplejson as json
 
 from synnefo.api import util
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest
+from synnefo.api.faults import BadRequest, ServiceUnavailable, Unauthorized
 from synnefo.db.models import Image, ImageMetadata
 from synnefo.util.log import getLogger
 
@@ -190,6 +190,9 @@ def delete_image(request, image_id):
     
     log.debug('delete_image %s', image_id)
     image = util.get_image(image_id, request.user)
+    if image.owner != request.user:
+        raise Unauthorized('Permission denied')
+    
     image.state = 'DELETED'
     image.save()
     log.info('User %d deleted image %d', request.user.id, image.id)
@@ -223,6 +226,9 @@ def update_metadata(request, image_id):
     req = util.get_request_dict(request)
     log.debug('update_image_metadata %s %s', image_id, req)
     image = util.get_image(image_id, request.user)
+    if image.owner != request.user:
+        raise Unauthorized('Permission denied')
+    
     try:
         metadata = req['metadata']
         assert isinstance(metadata, dict)
@@ -268,6 +274,9 @@ def create_metadata_item(request, image_id, key):
     req = util.get_request_dict(request)
     log.debug('create_image_metadata_item %s %s %s', image_id, key, req)
     image = util.get_image(image_id, request.user)
+    if image.owner != request.user:
+        raise Unauthorized('Permission denied')
+    
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -299,6 +308,9 @@ def delete_metadata_item(request, image_id, key):
     
     log.debug('delete_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user)
+    if image.owner != request.user:
+        raise Unauthorized('Permission denied')
+    
     meta = util.get_image_meta(image, key)
     meta.delete()
     image.save()

@@ -294,10 +294,11 @@ class OOS_Client(Client):
             l = self._filter_trashed(l)
         return l
     
-    def create_container(self, container, account=None, **meta):
+    def create_container(self, container, account=None, meta={}, **headers):
         """creates a container"""
         account = account or self.account
-        headers = {}
+        if not headers:
+            headers = {}
         for k,v in meta.items():
             headers['x-container-meta-%s' %k.strip().upper()] = v.strip()
         status, header, data = self.put('/%s/%s' % (account, container),
@@ -632,6 +633,12 @@ class Pithos_Client(OOS_Client):
         return self.post(path, headers=headers)
     
     # Storage Container Services
+    def create_container(self, container, account=None, meta={}, policies={}):
+        """creates a container"""
+        args = {}
+        for k, v in policies.items():
+            args['X-Container-Policy-%s' % k.capitalize()] = v
+        return OOS_Client.create_container(self, container, account, meta, **args)
     
     def list_objects(self, container, format='text',
                      limit=None, marker=None, prefix=None, delimiter=None,

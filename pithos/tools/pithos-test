@@ -1452,9 +1452,10 @@ class ObjectPost(BaseTestCase):
             if content_length:
                 args['content_length'] = content_length
             
-            status = self.client.update_object(self.containers[0], self.obj[0]['name'],
-                                      StringIO(data), **args)[0]
-            
+            r = self.client.update_object(self.containers[0], self.obj[0]['name'],
+                                      StringIO(data), **args)
+            status = r[0]
+            etag = r[1]['etag']
             if partial < 0 or (instance_length and l <= last_byte_pos):
                 self.assertEqual(status, 202)    
             else:
@@ -1465,6 +1466,7 @@ class ObjectPost(BaseTestCase):
                 self.assertEqual(content[:first_byte_pos], self.obj[0]['data'][:first_byte_pos])
                 self.assertEqual(content[first_byte_pos:last_byte_pos+1], data)
                 self.assertEqual(content[last_byte_pos+1:], self.obj[0]['data'][last_byte_pos+1:])
+                self.assertEqual(etag, compute_md5_hash(content))
     
     def test_update_object_lt_blocksize(self):
         self.test_update_object(10, 20, content_length=None)
@@ -2074,6 +2076,36 @@ class TestPublish(BaseTestCase):
         data = resp.read(length)
         self.assertEqual(o_data, data)
 
+class TestPolicies(BaseTestCase):
+    def test_none_versioning(self):
+        self.client.create_container('c', policies={'versioning':'none'})
+        o = self.upload_random_data('c', 'o')
+        meta = self.client.retrieve_object_metadata('c', 'o')
+        v = meta['x-object-version']
+        more_data = get_random_data()
+        self.client.update_object('c', 'o', StringIO(more_data))
+        vlist = self.client.retrieve_object_versionlist('c', 'o')
+        self.assert_raises_fault(404, self.client.retrieve_object_version,
+                                 'c', 'o', v)
+        data = self.client.retrieve_object('c', 'o')
+        end = len(o['data'])
+        self.assertEqual(data[:end], o['data'])
+        self.assertEqual(data[end:], more_data)
+    
+    def test_quota(self):
+        self.client.create_container('c', policies={'quota':'1'})
+        meta = self.client.retrieve_container_metadata('c')
+        self.assertEqual(meta['x-container-policy-quota'], '1')
+        self.assert_raises_fault(413, self.upload_random_data, 'c', 'o',
+                                 length=1024*1024+1)
+    
+    def test_quota_none(self):
+        self.client.create_container('c', policies={'quota':'0'})
+        meta = self.client.retrieve_container_metadata('c')
+        self.assertEqual(meta['x-container-policy-quota'], '0')
+        self.assert_not_raises_fault(413, self.upload_random_data, 'c', 'o',
+                                 length=1024*1024+1)
+
 class AssertUUidInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable
@@ -2142,7 +2174,7 @@ def compute_block_hash(data, algorithm):
 
 def get_random_data(length=500):
     char_set = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(char_set) for x in range(length))
+    return ''.join(random.choice(char_set) for x in xrange(length))
 
 def is_date(date):
     MONTHS = 'jan feb mar apr may jun jul aug sep oct nov dec'.split()

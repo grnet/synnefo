@@ -61,7 +61,7 @@
 
         beforeOpen: function() {
             var cont = this.$(".copy-content p");
-            var token = $.cookie("X-Auth-Token");
+            var token = snf.user.token;
 
             cont.html("");
             cont.text(token);
@@ -78,7 +78,7 @@
 
         onClose: function() {
             var cont = this.$(".copy-content p");
-            var token = $.cookie("X-Auth-Token");
+            var token = snf.user.token;
             cont.html("");
         }
     });
@@ -496,7 +496,7 @@
             var args = util.parse_api_error.apply(util, arguments);
             
             // force logout if UNAUTHORIZED request arrives
-            if (args.code == 401) { snf.ui.logout(); return };
+            if (args.code == 401) { snf.auth_client.logout(); return };
 
             var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
             this.error_view.show_error.apply(this.error_view, error_entry);
@@ -640,7 +640,6 @@
             synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
 
             this.feedback_view = new views.FeedbackView();
-            this.invitations_view = new views.InvitationsView();
             this.public_keys_view = new views.PublicKeysOverlay();
             
             if (synnefo.config.use_glance) {
@@ -685,10 +684,6 @@
         },
 
         init_menu: function() {
-            $(".usermenu .invitations").click(_.bind(function(e){
-                e.preventDefault();
-                this.invitations_view.show();
-            }, this));
             $(".usermenu .feedback").click(_.bind(function(e){
                 e.preventDefault();
                 this.feedback_view.show();
@@ -715,7 +710,7 @@
           
           bb.history.start();
 
-          this.trigger("initial");
+          this.trigger("ready");
         },
 
         show_vm_details: function(vm) {
@@ -957,16 +952,6 @@
 
     snf.ui.main = new views.MainView();
     
-    snf.ui.logout = function() {
-        $.cookie("X-Auth-Token", null);
-        if (snf.config.logout_url !== undefined)
-        {
-            window.location = snf.config.logout_url;
-        } else {
-            window.location.reload();
-        }
-    }
-
     snf.ui.init = function() {
         if (snf.config.handle_window_exceptions) {
             window.onerror = function(msg, file, line) {

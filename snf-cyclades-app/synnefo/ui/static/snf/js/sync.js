@@ -180,6 +180,10 @@
                 this.date_send = new Date;
             }
 
+            if (handler_type == "beforeSend") {
+                arguments[0].setRequestHeader('X-Auth-Token', synnefo.user.token);
+            }
+
             // error with status code 0 in opera
             // act as 304 response
             if (handler_type == "error" && $.browser.opera) {

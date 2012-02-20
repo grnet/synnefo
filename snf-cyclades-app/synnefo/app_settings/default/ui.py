@@ -45,9 +45,11 @@ FEEDBACK_CONTACTS = (
 # Email from which the feedback emails will be sent from
 FEEDBACK_EMAIL_FROM = DEFAULT_FROM_EMAIL
 
-# URL to redirect user to when he logs out from the ui (if not set
-# settings.LOGIN_URL will be used)
-#LOGOUT_URL = ""
+# URL to redirect not authenticated users
+UI_LOGIN_URL = "/im/login"
+
+# URL to redirect user to when he logs out from the ui
+UI_LOGOUT_URL = "/im/logout"
 
 # Flavor options that we provide to the user as predefined
 # cpu/ram/disk combinations on vm create wizard

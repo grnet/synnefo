@@ -1416,7 +1416,7 @@ class ObjectPost(BaseTestCase):
                                  self.containers[0],
                                  self.obj[0]['name']):
             #perform update metadata
-            more = {'foo':'foo', 'bar':'bar'}
+            more = {'foo': 'foo', 'bar': 'bar', 'f' * 114: 'b' * 256}
             status = self.client.update_object_metadata(self.containers[0],
                                                         self.obj[0]['name'],
                                                         **more)[0]
@@ -1431,6 +1431,13 @@ class ObjectPost(BaseTestCase):
             for k,v in more.items():
                 self.assertTrue(k in headers.keys())
                 self.assertTrue(headers[k], v)
+            
+            #out of limits
+            more = {'f' * 114: 'b' * 257}
+            self.assert_raises_fault(400, self.client.update_object_metadata,
+                                                        self.containers[0],
+                                                        self.obj[0]['name'],
+                                                        **more)
     
     def test_update_object(self,
                            first_byte_pos=0,

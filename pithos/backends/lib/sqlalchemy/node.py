@@ -122,8 +122,7 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               autoincrement=False))
-        path_length = 2048
-        columns.append(Column('path', String(path_length), default='', nullable=False))
+        columns.append(Column('path', String(2048), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
         Index('idx_nodes_path', self.nodes.c.path, unique=True)
         
@@ -134,8 +133,8 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               primary_key=True))
-        columns.append(Column('key', String(255), primary_key=True))
-        columns.append(Column('value', String(255)))
+        columns.append(Column('key', String(128), primary_key=True))
+        columns.append(Column('value', String(256)))
         self.policies = Table('policy', metadata, *columns, mysql_engine='InnoDB')
         
         #create statistics table
@@ -159,14 +158,14 @@ class Node(DBWorker):
                               ForeignKey('nodes.node',
                                          ondelete='CASCADE',
                                          onupdate='CASCADE')))
-        columns.append(Column('hash', String(255)))
+        columns.append(Column('hash', String(256)))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
-        columns.append(Column('type', String(255), nullable=False, default=''))
+        columns.append(Column('type', String(256), nullable=False, default=''))
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
-        columns.append(Column('muser', String(255), nullable=False, default=''))
+        columns.append(Column('muser', String(256), nullable=False, default=''))
         columns.append(Column('uuid', String(64), nullable=False, default=''))
-        columns.append(Column('checksum', String(255), nullable=False, default=''))
+        columns.append(Column('checksum', String(256), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
         self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
         Index('idx_versions_node_mtime', self.versions.c.node, self.versions.c.mtime)
@@ -179,9 +178,9 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               primary_key=True))
-        columns.append(Column('domain', String(255), primary_key=True))
-        columns.append(Column('key', String(255), primary_key=True))
-        columns.append(Column('value', String(255)))
+        columns.append(Column('domain', String(256), primary_key=True))
+        columns.append(Column('key', String(128), primary_key=True))
+        columns.append(Column('value', String(256)))
         self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
         
         metadata.create_all(self.engine)

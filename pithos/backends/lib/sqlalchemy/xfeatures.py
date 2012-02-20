@@ -62,7 +62,7 @@ class XFeatures(DBWorker):
                               primary_key=True))
         columns.append(Column('key', Integer, primary_key=True,
                               autoincrement=False))
-        columns.append(Column('value', String(255), primary_key=True))
+        columns.append(Column('value', String(256), primary_key=True))
         self.xfeaturevals = Table('xfeaturevals', metadata, *columns, mysql_engine='InnoDB')
         
         metadata.create_all(self.engine)

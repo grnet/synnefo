@@ -39,7 +39,8 @@ Django settings metadata. To be used in setup.py snf-webproject entry points.
 installed_apps = [
         {'before': 'django.contrib.admin',
          'insert': 'astakos.im',},
-        'django.contrib.auth'
+        'django.contrib.auth',
+        'django.contrib.sessions'
 ]
 
 context_processors = [

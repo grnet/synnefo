@@ -428,19 +428,22 @@ class ModularBackend(BaseBackend):
         if user != account and until:
             raise NotAllowedError
         allowed = self._list_object_permissions(user, account, container, prefix, shared)
+        if shared and not allowed:
+            return []
         path, node = self._lookup_container(account, container)
         allowed = self._get_formatted_paths(allowed)
         return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
     
     def _list_object_permissions(self, user, account, container, prefix, shared):
         allowed = []
+        path = '/'.join((account, container, prefix)).rstrip('/')
         if user != account:
-            allowed = self.permissions.access_list_paths(user, '/'.join((account, container, prefix)))
+            allowed = self.permissions.access_list_paths(user, path)
             if not allowed:
                 raise NotAllowedError
         else:
             if shared:
-                allowed = self.permissions.access_list_shared('/'.join((account, container, prefix)))
+                allowed = self.permissions.access_list_shared(path)
                 if not allowed:
                     return []
         return allowed

@@ -41,6 +41,7 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
+from pithos.lib.user import get_user
 from pithos.lib.filter import parse_filters
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
@@ -52,6 +53,7 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
 from pithos.backends.base import NotAllowedError, QuotaError
+from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
 
 import logging
 import hashlib
@@ -62,6 +64,7 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def top_demux(request):
+    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'GET':
         if getattr(request, 'user', None) is not None:
             return account_list(request)
@@ -71,6 +74,7 @@ def top_demux(request):
 
 @csrf_exempt
 def account_demux(request, v_account):
+    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return account_meta(request, v_account)
     elif request.method == 'POST':
@@ -82,6 +86,7 @@ def account_demux(request, v_account):
 
 @csrf_exempt
 def container_demux(request, v_account, v_container):
+    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return container_meta(request, v_account, v_container)
     elif request.method == 'PUT':
@@ -97,6 +102,7 @@ def container_demux(request, v_account, v_container):
 
 @csrf_exempt
 def object_demux(request, v_account, v_container, v_object):
+    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)
     elif request.method == 'GET':

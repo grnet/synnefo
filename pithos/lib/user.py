@@ -32,23 +32,30 @@
 # or implied, of GRNET S.A.
 
 from time import time, mktime
-from httplib import HTTPConnection
+from urlparse import urlparse
+from httplib import HTTPConnection, HTTPSConnection
 from urllib import quote, unquote
 
 from django.conf import settings
 from django.utils import simplejson as json
 
 
-def authenticate(authentication_host, token):
-    con = HTTPConnection(authentication_host)
+def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
+    p = urlparse(authentication_url)
+    if p.scheme == 'http':
+        conn = HTTPConnection(p.netloc)
+    elif p.scheme == 'https':
+        conn = HTTPSConnection(p.netloc)
+    else:
+        raise Exception('Unknown URL scheme')
+    
     kwargs = {}
     kwargs['headers'] = {}
     kwargs['headers']['X-Auth-Token'] = token
     kwargs['headers']['Content-Length'] = 0
     
-    path = '/im/authenticate'
-    con.request('GET', path, **kwargs)
-    response = con.getresponse()
+    conn.request('GET', p.path, **kwargs)
+    response = conn.getresponse()
     
     headers = response.getheaders()
     headers = dict((unquote(h), unquote(v)) for h,v in headers)
@@ -61,34 +68,31 @@ def authenticate(authentication_host, token):
     
     return json.loads(data)
 
-def get_user_from_token(token):
+def user_for_token(token, authentication_url, override_users):
     if not token:
         return None
     
-    users = settings.AUTHENTICATION_USERS
-    if users is not None:
+    if override_users:
         try:
-            return {'id': 0, 'uniq': users[token].decode('utf8')}
+            return {'uniq': override_users[token].decode('utf8')}
         except:
             return None
     
-    host = settings.AUTHENTICATION_HOST
     try:
-        return authenticate(host, token)
+        return authenticate(token, authentication_url)
     except:
         return None
 
-class UserMiddleware(object):
-    def process_request(self, request):
-        request.user = None
-        request.user_uniq = None
-        
-        # Try to find token in a parameter, in a request header, or in a cookie.
-        user = get_user_from_token(request.GET.get('X-Auth-Token'))
-        if not user:
-            user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
-        if not user:
-            return
-        
-        request.user = user
-        request.user_uniq = user['uniq']
+def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate', override_users={}):
+    request.user = None
+    request.user_uniq = None
+    
+    # Try to find token in a parameter or in a request header.
+    user = user_for_token(request.GET.get('X-Auth-Token'), authentication_url, override_users)
+    if not user:
+        user = user_for_token(request.META.get('HTTP_X_AUTH_TOKEN'), authentication_url, override_users)
+    if not user:
+        return
+    
+    request.user = user
+    request.user_uniq = user['uniq']

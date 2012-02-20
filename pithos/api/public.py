@@ -36,11 +36,14 @@ import logging
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from pithos.lib.user import get_user
+
 from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
     validate_modification_preconditions, validate_matching_preconditions,
     object_data_response, api_method)
 from pithos.api.short_url import decode_url
+from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
 
 
 logger = logging.getLogger(__name__)
@@ -48,6 +51,7 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def public_demux(request, v_public):
+    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return public_meta(request, v_public)
     elif request.method == 'GET':

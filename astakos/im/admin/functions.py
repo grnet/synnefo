@@ -36,12 +36,16 @@ import logging
 from django.utils.translation import ugettext as _
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
+from urlparse import urljoin
+from random import randint
 
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITEURL, SITENAME, BASEURL
+from astakos.im.models import Invitation
 
 logger = logging.getLogger(__name__)
 
-def activate(user, sitename, sitedomain, baseurl, email_template_name='welcome_email.txt'):
+def activate(user, email_template_name='welcome_email.txt'):
     """
     Activates the specific user and sends email.
     
@@ -49,13 +53,48 @@ def activate(user, sitename, sitedomain, baseurl, email_template_name='welcome_e
     """
     user.is_active = True
     user.save()
-    subject = _('Welcome to %s' % sitename)
+    subject = _('Welcome to %s' % SITENAME)
     message = render_to_string(email_template_name, {
                 'user': user,
-                'url': sitedomain,
-                'baseurl': baseurl,
-                'site_name': sitename,
-                'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
-    sender = DEFAULT_FROM_EMAIL % sitename
+                'url': SITEURL,
+                'baseurl': BASEURL,
+                'site_name': SITENAME,
+                'support': DEFAULT_CONTACT_EMAIL % SITENAME.lower()})
+    sender = DEFAULT_FROM_EMAIL % SITENAME
     send_mail(subject, message, sender, [user.email])
     logger.info('Sent greeting %s', user)
+
+def _generate_invitation_code():
+    while True:
+        code = randint(1, 2L**63 - 1)
+        try:
+            Invitation.objects.get(code=code)
+            # An invitation with this code already exists, try again
+        except Invitation.DoesNotExist:
+            return code
+
+def invite(inviter, username, realname):
+    """
+    Send an invitation email and upon success reduces inviter's invitation by one.
+    
+    Raises SMTPException, socket.error
+    """
+    code = _generate_invitation_code()
+    invitation = Invitation(inviter=inviter,
+                            username=username,
+                            code=code,
+                            realname=realname)
+    invitation.save()
+    subject = _('Invitation to %s' % SITENAME)
+    url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.signup')), code)
+    message = render_to_string('im/invitation.txt', {
+                'invitation': invitation,
+                'url': url,
+                'baseurl': BASEURL,
+                'service': SITENAME,
+                'support': DEFAULT_CONTACT_EMAIL % SITENAME.lower()})
+    sender = DEFAULT_FROM_EMAIL % SITENAME
+    send_mail(subject, message, sender, [invitation.username])
+    logger.info('Sent invitation %s', invitation)
+    inviter.invitations = max(0, inviter.invitations - 1)
+    inviter.save()

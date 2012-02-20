@@ -94,14 +94,6 @@ def get_context(request, extra_context={}, **kwargs):
     extra_context.update(kwargs)
     return RequestContext(request, extra_context)
 
-def get_current_site(request, use_https=False):
-    """
-    returns the current site name and full domain (including prorocol)
-    """
-    protocol = use_https and 'https' or 'http'
-    site = Site.objects.get_current()
-    return site.name, '%s://%s' % (protocol, site.domain)
-
 def get_invitation(request):
     """
     Returns the invitation identified by the ``code``.

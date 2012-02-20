@@ -38,10 +38,10 @@ from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
 from django.utils.http import int_to_base36
+from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser
-from astakos.im.util import get_current_site
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, SITEURL
 
 import logging
 
@@ -218,17 +218,15 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         Generates a one-use only link for resetting password and sends to the user.
         """
         for user in self.users_cache:
-            site_name, sitedomain = get_current_site(request, use_https=use_https)
             t = loader.get_template(email_template_name)
             c = {
                 'email': user.email,
-                'domain': sitedomain.split('://')[-1],
-                'site_name': site_name,
+                'domain': SITEURL,
+                'site_name': SITENAME,
                 'uid': int_to_base36(user.id),
                 'user': user,
-                'token': token_generator.make_token(user),
-                'protocol': use_https and 'https' or 'http',
+                'token': token_generator.make_token(user)
             }
-            from_email = DEFAULT_FROM_EMAIL % site_name
-            send_mail(_("Password reset on %s") % site_name,
+            from_email = DEFAULT_FROM_EMAIL % SITENAME
+            send_mail(_("Password reset on %s") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])

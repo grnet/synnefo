@@ -119,8 +119,18 @@ def get_header_prefix(request, prefix):
     # TODO: Document or remove '~' replacing.
     return dict([(format_header_key(k[5:]), v.replace('~', '')) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
 
+def check_meta_headers(meta):
+    if len(meta) > 90:
+        raise BadRequest('Too many headers.')
+    for k, v in meta.iteritems():
+        if len(k) > 128:
+            raise BadRequest('Header name too large.')
+        if len(v) > 256:
+            raise BadRequest('Header value too large.')
+
 def get_account_headers(request):
     meta = get_header_prefix(request, 'X-Account-Meta-')
+    check_meta_headers(meta)
     groups = {}
     for k, v in get_header_prefix(request, 'X-Account-Group-').iteritems():
         n = k[16:].lower()
@@ -151,6 +161,7 @@ def put_account_headers(response, meta, groups, policy):
 
 def get_container_headers(request):
     meta = get_header_prefix(request, 'X-Container-Meta-')
+    check_meta_headers(meta)
     policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in get_header_prefix(request, 'X-Container-Policy-').iteritems()])
     return meta, policy
 
@@ -174,6 +185,7 @@ def put_container_headers(request, response, meta, policy):
 def get_object_headers(request):
     content_type = request.META.get('CONTENT_TYPE', None)
     meta = get_header_prefix(request, 'X-Object-Meta-')
+    check_meta_headers(meta)
     if request.META.get('HTTP_CONTENT_ENCODING'):
         meta['Content-Encoding'] = request.META['HTTP_CONTENT_ENCODING']
     if request.META.get('HTTP_CONTENT_DISPOSITION'):
@@ -783,15 +795,8 @@ def get_backend():
 
 def update_request_headers(request):
     # Handle URL-encoded keys and values.
-    # Handle URL-encoded keys and values.
     meta = dict([(k, v) for k, v in request.META.iteritems() if k.startswith('HTTP_')])
-    if len(meta) > 90:
-        raise BadRequest('Too many headers.')
     for k, v in meta.iteritems():
-        if len(k) > 128:
-            raise BadRequest('Header name too large.')
-        if len(v) > 256:
-            raise BadRequest('Header value too large.')
         try:
             k.decode('ascii')
             v.decode('ascii')

@@ -44,9 +44,9 @@ class Groups(DBWorker):
         DBWorker.__init__(self, **params)
         metadata = MetaData()
         columns=[]
-        columns.append(Column('owner', String(255), primary_key=True))
-        columns.append(Column('name', String(255), primary_key=True))
-        columns.append(Column('member', String(255), primary_key=True))
+        columns.append(Column('owner', String(256), primary_key=True))
+        columns.append(Column('name', String(256), primary_key=True))
+        columns.append(Column('member', String(256), primary_key=True))
         self.groups = Table('groups', metadata, *columns, mysql_engine='InnoDB')
         
         # place an index on member

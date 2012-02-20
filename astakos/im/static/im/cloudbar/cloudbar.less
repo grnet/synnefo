@@ -1,0 +1,79 @@
+@import "less/bootstrap.less";
+
+@toolbarBg: #222;
+@toolbarColor: darken(@white, 10%);
+@toolbarHeight: 30px;
+
+.servicesbar {
+
+    // mini reset
+    ol, ul { list-style:none; margin:0; padding:0;}
+    li {margin:0; padding:0;}
+    font-family: arial, sans-serif;
+    font-size: 13px !important;
+    line-height: 13px;
+    letter-spacing: 0px;
+    .clearfix();
+    color: #ccc;
+    z-index: 1000;
+    border-bottom: 1px solid #444;
+
+    background-color: darken(@toolbarBg, 40%);
+
+    a {
+        border: none !important;
+        font-size: inherit !important;
+        color: @toolbarColor;    
+        text-decoration: none;
+        display: block;
+        float: left;
+        padding: 11px;
+        height: 13px;
+        &:hover {
+            background-color: #444;
+        }
+        &.active {
+            font-weight: bold;
+            background-color: #333;
+        }
+    }
+
+    .services {
+        .clearfix();
+    }    
+
+    position: relative;
+
+    .profile {
+        margin-top: -35px;
+        .clearfix();
+        text-align: right;
+        min-width: 200px;
+        a {
+                    float: none;
+        }
+        ul {
+            display: none;    
+            li {
+                width: 100%;
+                border-bottom: 1px solid #444;
+                background-color: #333;
+                a {
+                    float: none;
+                    display: block;
+                }
+            }
+        }
+        &:hover {
+            background-color: #222;
+            ul {
+                display: block;    
+            }
+        }
+        background-color: @black;
+        .clearfix();
+        position: absolute;
+        right: 0;
+        float: right;    
+    }
+}

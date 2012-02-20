@@ -60,11 +60,12 @@
       })
   </script>
   <script>
-    var CLOUDBAR_LOC = "http://docs.dev.grnet.gr/cloudbar/";
-    var CLOUDBAR_ACTIVE_SERVICE = 'accounts';
+    var CLOUDBAR_LOCATION = "{{ CLOUDBAR_LOC }}";
+    var CLOUDBAR_COOKIE_NAME = "{{ CLOUDBAR_COOKIE_NAME }}";
+    var CLOUDBAR_ACTIVE_SERVICE = '{{ CLOUDBAR_ACTIVE_SERVICE }}';
 
     $(document).ready(function(){
-      $.getScript(CLOUDBAR_LOC + 'servicesbar.js');
+      $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
     })
   </script>
 </head>
@@ -77,22 +78,22 @@
             </div>
             
             <ul class="mainnav inline quicknav">
-                {% block page.quicknav.items %}
+                {% comment %}{% block page.quicknav.items %}
                     <li class="{% block signup_class %}{% endblock %}">
                         <a href="{% url astakos.im.views.index %}">Login</a>
                     </li>
                     <li class="{% block signin_class %}{% endblock %}">
                         <a href="{% url astakos.im.views.signup %}">Sign up</a>
                     </li>
-                {% endblock %}
+                {% endblock %}{% endcomment %}
             </ul>
 
-            {% block page.nav %}
+            {% comment %}{% block page.nav %}
             <ul class="mainnav inline">
                 {% block page.nav.items %}
                 {% endblock %}
             </ul>
-            {% endblock %}
+            {% endblock %}{% endcomment %}
         </div>
         <div class="page">
             {% if messages %}

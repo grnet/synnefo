@@ -45,6 +45,9 @@ COOKIE_DOMAIN = getattr(settings, 'ASTAKOS_COOKIE_DOMAIN', None)
 
 IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/im/static/im/')
 
+# If set to False and invitations not enabled newly created user will be automatically accepted
+MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
+
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
 BACKEND_DB_MODULE =  getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
 BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:///' + join(PROJECT_PATH, 'backend.db'))

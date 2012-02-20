@@ -273,6 +273,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                                                           extra_context,
                                                           user=request.user))
 
+@requires_anonymous
 def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.

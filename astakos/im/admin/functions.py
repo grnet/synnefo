@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-#
+# 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-#
+# 
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-#
+# 
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-#
+# 
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,40 +25,37 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
+# 
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME
-from django.conf import settings
+import logging
 
-def im_modules(request):
-    return {'im_modules': IM_MODULES}
+from django.utils.translation import ugettext as _
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
 
-def next(request):
-    return {'next' : request.GET.get('next', '')}
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
 
-def code(request):
-    return {'code' : request.GET.get('code', '')}
+logger = logging.getLogger(__name__)
 
-def invitations(request):
-    return {'invitations_enabled' :INVITATIONS_ENABLED}
-
-def media(request):
-    return {'IM_STATIC_URL' : IM_STATIC_URL}
-
-def cloudbar(request):
+def activate(user, sitename, sitedomain, baseurl, email_template_name='welcome_email.txt'):
     """
-    Cloudbar configuration
+    Activates the specific user and sends email.
+    
+    Raises SMTPException, socket.error
     """
-    CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION', IM_STATIC_URL + 'cloudbar/')
-    CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME', COOKIE_NAME)
-    CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE', 'cloud')
-
-    return {'CLOUDBAR_LOC': CB_LOCATION,
-            'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
-            'ACTIVE_SERVICE': CB_ACTIVE_SERVICE}
-
+    user.is_active = True
+    user.save()
+    subject = _('Welcome to %s' % sitename)
+    message = render_to_string(email_template_name, {
+                'user': user,
+                'url': sitedomain,
+                'baseurl': baseurl,
+                'site_name': sitename,
+                'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
+    sender = DEFAULT_FROM_EMAIL % sitename
+    send_mail(subject, message, sender, [user.email])
+    logger.info('Sent greeting %s', user)

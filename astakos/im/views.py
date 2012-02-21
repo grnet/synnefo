@@ -55,7 +55,7 @@ from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
 from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, IM_MODULES, SITENAME, SITEURL, BASEURL
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, SITEURL, BASEURL
 from astakos.im.admin.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
@@ -377,7 +377,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     """
     auth_logout(request)
     response = HttpResponse()
-    response.delete_cookie(COOKIE_NAME)
+    response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
     next = request.GET.get('next')
     if next:
         response['Location'] = next

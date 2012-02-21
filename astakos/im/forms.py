@@ -42,7 +42,6 @@ from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, SITEURL
-from astakos.im.widgets import TokenWidget
 
 import logging
 

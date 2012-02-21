@@ -48,7 +48,7 @@ from urlparse import urljoin
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITEURL, BASEURL
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL
 
 import socket
 import logging
@@ -244,7 +244,6 @@ class SimpleBackend(object):
         return status, message, user
 
 def _send_verification(request, user, template_name):
-    site = Site.objects.get_current()
     url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('astakos.im.views.activate')),
                                     quote(user.auth_token),
                                     quote(BASEURL))
@@ -252,8 +251,8 @@ def _send_verification(request, user, template_name):
             'user': user,
             'url': url,
             'baseurl': BASEURL,
-            'site_name': site.name,
-            'support': DEFAULT_CONTACT_EMAIL
+            'site_name': SITENAME,
+            'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s account activation' % site.name, message, sender, [user.email])
+    send_mail('%s account activation' % SITENAME, message, sender, [user.email])
     logger.info('Sent activation %s', user)

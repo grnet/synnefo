@@ -37,8 +37,5 @@ Then run:
     python manage.py loaddata admin_user
     python manage.py runserver
 
-Go to:
-	http://127.0.0.1:8000/im/admin?user=admin&token=0000
-
 This server is useful during development, but should not be used for deployment.
 To deploy Astakos using Apache, take a look at the Administrator Guide in docs.

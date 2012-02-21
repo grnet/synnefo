@@ -40,7 +40,7 @@ from django.core.urlresolvers import reverse
 from urlparse import urljoin
 from random import randint
 
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITEURL, SITENAME, BASEURL
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITENAME, BASEURL
 from astakos.im.models import Invitation
 
 logger = logging.getLogger(__name__)
@@ -56,11 +56,11 @@ def activate(user, email_template_name='welcome_email.txt'):
     subject = _('Welcome to %s' % SITENAME)
     message = render_to_string(email_template_name, {
                 'user': user,
-                'url': SITEURL,
+                'url': urljoin(BASEURL, reverse('astakos.im.views')),
                 'baseurl': BASEURL,
                 'site_name': SITENAME,
-                'support': DEFAULT_CONTACT_EMAIL % SITENAME.lower()})
-    sender = DEFAULT_FROM_EMAIL % SITENAME
+                'support': DEFAULT_CONTACT_EMAIL})
+    sender = DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [user.email])
     logger.info('Sent greeting %s', user)
 
@@ -92,8 +92,8 @@ def invite(inviter, username, realname):
                 'url': url,
                 'baseurl': BASEURL,
                 'service': SITENAME,
-                'support': DEFAULT_CONTACT_EMAIL % SITENAME.lower()})
-    sender = DEFAULT_FROM_EMAIL % SITENAME
+                'support': DEFAULT_CONTACT_EMAIL})
+    sender = DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [invitation.username])
     logger.info('Sent invitation %s', invitation)
     inviter.invitations = max(0, inviter.invitations - 1)

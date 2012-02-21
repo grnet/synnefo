@@ -30,7 +30,7 @@
   {% endblock page.favicons %}
 
   {% block page.css %}
-      <link href='http://fonts.googleapis.com/css?family=Antic' 
+      <link href='https://fonts.googleapis.com/css?family=Antic' 
         rel='stylesheet' type='text/css'>
       <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/styles.css" 
         type='text/css'>
@@ -45,9 +45,7 @@
           type="text/javascript"></script>
       <script src="{{ IM_STATIC_URL }}js/jquery.infieldlabel.js" 
           type="text/javascript"></script>
-      <script src="{{ IM_STATIC_URL }}js/bootstrap-tooltip.js" 
-          type="text/javascript"></script>
-      <script src="{{ IM_STATIC_URL }}js/form-errors.js" 
+      <script src="{{ IM_STATIC_URL }}js/forms.js" 
           type="text/javascript"></script>
   {% endblock headjs %}
   {% block endhead %}{% endblock endhead %}
@@ -55,8 +53,8 @@
   <script type="text/javascript">
       $(document).ready(function() {
           $("form.innerlabels label").inFieldLabels();
-          $("form input").attr('autocomplete', 'off');
           $("form .form-row").formErrors();
+          $("form .form-row input[type=checkbox]").formCheckBoxes();
       })
   </script>
   <script>

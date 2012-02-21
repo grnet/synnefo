@@ -1,18 +1,18 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
-# 
+# Copyright 2012 GRNET S.A. All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,26 +25,38 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, url
+from django.core.management.base import BaseCommand, CommandError
 
-urlpatterns = patterns('astakos.im.admin.views',
-    url(r'^$', 'admin'),
+from astakos.im.functions import activate
+
+from ._common import get_user
     
-    url(r'^users/?$', 'users_list'),
-    url(r'^users/(\d+)/?$', 'users_info'),
-    url(r'^users/create$', 'users_create'),
-    url(r'^users/(\d+)/modify/?$', 'users_modify'),
-    url(r'^users/(\d+)/delete/?$', 'users_delete'),
-    url(r'^users/export/?$', 'users_export'),
-    url(r'^users/pending/?$', 'pending_users'),
-    url(r'^users/activate/(\d+)/?$', 'users_activate'),
+
+class Command(BaseCommand):
+    args = "<user id or email> [user id or email] ..."
+    help = "Activates one or more users"
     
-    url(r'^invitations/?$', 'invitations_list'),
-    url(r'^invitations/export/?$', 'invitations_export'),
-)
+    def handle(self, *args, **options):
+        if not args:
+            raise CommandError("No user was given")
+        
+        for email_or_id in args:
+            user = get_user(email_or_id)
+            if not user:
+                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
+                continue
+            
+            if user.is_active:
+                msg = "User '%s' already active\n" % (user.email,)
+                self.stderr.write(msg)
+                continue
+            
+            activate(user)
+            
+            self.stdout.write("Activated '%s'\n" % (user.email,))

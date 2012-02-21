@@ -55,8 +55,8 @@ from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
 from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, SITEURL, BASEURL
-from astakos.im.admin.functions import invite as invite_func
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL
+from astakos.im.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
 
@@ -353,7 +353,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
         if form.is_valid():
             subject = _("Feedback from %s" % SITENAME)
             from_email = request.user.email
-            recipient_list = [DEFAULT_CONTACT_EMAIL % SITENAME.lower()]
+            recipient_list = [DEFAULT_CONTACT_EMAIL]
             content = render_to_string(email_template_name, {
                         'message': form.cleaned_data['feedback_msg'],
                         'data': form.cleaned_data['feedback_data'],

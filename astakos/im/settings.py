@@ -8,12 +8,6 @@ PROJECT_PATH = getattr(settings, 'PROJECT_PATH', dirname(dirname(abspath(__file_
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
 
-# Bypass authentication for user administration.
-BYPASS_ADMIN_AUTH = getattr(settings, 'ASTAKOS_BYPASS_ADMIN_AUTH', False)
-
-# Show these many users per page in admin interface.
-ADMIN_PAGE_LIMIT = getattr(settings, 'ASTAKOS_ADMIN_PAGE_LIMIT', 100)
-
 # Authenticate via Twitter.
 TWITTER_KEY = getattr(settings, 'ASTAKOS_TWITTER_KEY', '')
 TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
@@ -29,8 +23,8 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 })
 
 # Address to use for outgoing emails
-DEFAULT_FROM_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_FROM_EMAIL', '%s <no-reply@grnet.gr>')
-DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@%s.grnet.gr')
+DEFAULT_FROM_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_FROM_EMAIL', 'GRNET Cloud <no-reply@grnet.gr>')
+DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
 
 # Identity Management enabled modules
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'twitter', 'shibboleth'])
@@ -50,20 +44,7 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/im/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-SITEURL = getattr(settings, 'ASTAKOS_SITEURL', 'http://pithos.dev.grnet.gr/im')
 BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 
 # Set service name
-SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Pithos+')
-
-# SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
-BACKEND_DB_MODULE =  getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
-BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:///' + join(PROJECT_PATH, 'backend.db'))
-
-# Block storage.
-BACKEND_BLOCK_MODULE = getattr(settings, 'PITHOS_BACKEND_BLOCK_MODULE', 'pithos.backends.lib.hashfiler')
-BACKEND_BLOCK_PATH = getattr(settings, 'PITHOS_BACKEND_BLOCK_PATH', join(PROJECT_PATH, 'data/'))
-
-# Default setting for new accounts.
-BACKEND_QUOTA = getattr(settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
-BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
+SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')

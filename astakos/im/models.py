@@ -41,7 +41,6 @@ from base64 import b64encode
 from django.db import models
 from django.contrib.auth.models import User, UserManager
 
-from astakos.im.interface import get_quota, set_quota
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION
 
 class AstakosUser(User):
@@ -82,14 +81,6 @@ class AstakosUser(User):
             self.last_name = parts[1]
         else:
             self.last_name = parts[0]
-    
-    @property
-    def quota(self):
-        return get_quota(self.username)
-
-    @quota.setter
-    def quota(self, value):
-        set_quota(self.username, value)
     
     @property
     def invitation(self):

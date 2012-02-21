@@ -30,6 +30,7 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+from urlparse import urljoin
 
 from django import forms
 from django.utils.translation import ugettext as _
@@ -222,14 +223,16 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         Generates a one-use only link for resetting password and sends to the user.
         """
         for user in self.users_cache:
+            url = urljoin(BASEURL,
+                          '/im/local/reset/confirm/%s-%s' %(int_to_base36(user.id),
+                                                            token_generator.make_token(user)))
             t = loader.get_template(email_template_name)
             c = {
                 'email': user.email,
-                'domain': BASEURL,
+                'url': url,
                 'site_name': SITENAME,
-                'uid': int_to_base36(user.id),
                 'user': user,
-                'token': token_generator.make_token(user)
+                'baseurl': BASEURL
             }
             from_email = DEFAULT_FROM_EMAIL
             send_mail(_("Password reset on %s") % SITENAME,

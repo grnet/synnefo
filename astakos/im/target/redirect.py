@@ -43,6 +43,7 @@ from urllib import quote
 from urlparse import urlunsplit, urlsplit
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
+from astakos.im.util import set_cookie
 
 import logging
 
@@ -68,13 +69,7 @@ def login(request):
                 # authenticate before login
                 user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
                 auth_login(request, user)
-                
-                # set cookie
-                expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-                cookie_value = quote(user.email + '|' + user.auth_token)
-                response.set_cookie(COOKIE_NAME, value=cookie_value,
-                                    expires=expire_fmt, path='/',
-                                    domain = COOKIE_DOMAIN)
+                set_cookie(response, user)
                 logger.info('Token reset for %s' % request.user.email)
             parts = list(urlsplit(next))
             parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})

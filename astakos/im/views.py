@@ -34,7 +34,6 @@
 import logging
 import socket
 
-from random import randint
 from smtplib import SMTPException
 from urllib import quote
 from functools import wraps
@@ -54,13 +53,14 @@ from django.http import HttpResponseRedirect
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
-from astakos.im.util import get_context, get_current_site, prepare_response
+from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, IM_MODULES
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, IM_MODULES, SITENAME, SITEURL, BASEURL
+from astakos.im.admin.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
 
-def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, reset_cookie=False, context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
     keyword argument and returns an ``django.http.HttpResponse`` with the
@@ -70,7 +70,10 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
         tab = template.partition('_')[0].partition('.html')[0]
     kwargs.setdefault('tab', tab)
     html = render_to_string(template, kwargs, context_instance=context_instance)
-    return HttpResponse(html, status=status)
+    response = HttpResponse(html, status=status)
+    if reset_cookie:
+        set_cookie(response, context_instance['request'].user)
+    return response
 
 
 def requires_anonymous(func):
@@ -120,30 +123,6 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
                            form = globals()[formclass](**kwargs),
                            context_instance = get_context(request, extra_context))
 
-def _generate_invitation_code():
-    while True:
-        code = randint(1, 2L**63 - 1)
-        try:
-            Invitation.objects.get(code=code)
-            # An invitation with this code already exists, try again
-        except Invitation.DoesNotExist:
-            return code
-
-def _send_invitation(request, baseurl, inv):
-    sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
-    subject = _('Invitation to %s' % sitename)
-    baseurl = request.build_absolute_uri('/').rstrip('/')
-    url = '%s%s?code=%d' % (baseurl, reverse('astakos.im.views.signup'), inv.code)
-    message = render_to_string('im/invitation.txt', {
-                'invitation': inv,
-                'url': url,
-                'baseurl': baseurl,
-                'service': sitename,
-                'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
-    sender = DEFAULT_FROM_EMAIL % sitename
-    send_mail(subject, message, sender, [inv.username])
-    logger.info('Sent invitation %s', inv)
-
 @login_required
 @transaction.commit_manually
 def invite(request, template_name='im/invitations.html', extra_context={}):
@@ -189,18 +168,8 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
         realname = request.POST.get('realname')
         
         if inviter.invitations > 0:
-            code = _generate_invitation_code()
-            invitation = Invitation(inviter=inviter,
-                                    username=username,
-                                    code=code,
-                                    realname=realname)
-            invitation.save()
-            
             try:
-                baseurl = request.build_absolute_uri('/').rstrip('/')
-                _send_invitation(request, baseurl, invitation)
-                inviter.invitations = max(0, inviter.invitations - 1)
-                inviter.save()
+                invite_func(inviter, username, realname)
                 status = messages.SUCCESS
                 message = _('Invitation sent to %s' % username)
                 transaction.commit()
@@ -255,11 +224,15 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
     """
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
+    reset_cookie = False
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             try:
-                form.save()
+                prev_token = request.user.auth_token
+                user = form.save()
+                reset_cookie = user.auth_token != prev_token
+                form = ProfileForm(instance=user)
                 next = request.POST.get('next')
                 if next:
                     return redirect(next)
@@ -268,10 +241,10 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
     return render_response(template_name,
+                           reset_cookie = reset_cookie,
                            form = form,
                            context_instance = get_context(request,
-                                                          extra_context,
-                                                          user=request.user))
+                                                          extra_context))
 
 @requires_anonymous
 def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
@@ -378,10 +351,9 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
         
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
-            subject = _("Feedback from %s" % sitename)
+            subject = _("Feedback from %s" % SITENAME)
             from_email = request.user.email
-            recipient_list = [DEFAULT_CONTACT_EMAIL % sitename.lower()]
+            recipient_list = [DEFAULT_CONTACT_EMAIL % SITENAME.lower()]
             content = render_to_string(email_template_name, {
                         'message': form.cleaned_data['feedback_msg'],
                         'data': form.cleaned_data['feedback_data'],

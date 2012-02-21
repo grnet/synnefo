@@ -1,5 +1,6 @@
 from django.conf import settings
 from os.path import abspath, dirname, join
+from urlparse import urlparse
 
 PROJECT_PATH = getattr(settings, 'PROJECT_PATH', dirname(dirname(abspath(__file__))))
 
@@ -48,6 +49,13 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/im/static/im/')
 # If set to False and invitations not enabled newly created user will be automatically accepted
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
+# Set baseurl
+SITEURL = getattr(settings, 'ASTAKOS_SITEURL', 'http://pithos.dev.grnet.gr/im')
+BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
+
+# Set service name
+SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Pithos+')
+
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
 BACKEND_DB_MODULE =  getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
 BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:///' + join(PROJECT_PATH, 'backend.db'))
@@ -59,4 +67,3 @@ BACKEND_BLOCK_PATH = getattr(settings, 'PITHOS_BACKEND_BLOCK_PATH', join(PROJECT
 # Default setting for new accounts.
 BACKEND_QUOTA = getattr(settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
-

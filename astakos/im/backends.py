@@ -43,11 +43,12 @@ from django.core.urlresolvers import reverse
 
 from smtplib import SMTPException
 from urllib import quote
+from urlparse import urljoin
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITEURL, BASEURL
 
 import socket
 import logging
@@ -244,15 +245,13 @@ class SimpleBackend(object):
 
 def _send_verification(request, user, template_name):
     site = Site.objects.get_current()
-    baseurl = request.build_absolute_uri('/').rstrip('/')
-    url = '%s%s?auth=%s&next=%s' % (baseurl,
-                                    reverse('astakos.im.views.activate'),
+    url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('astakos.im.views.activate')),
                                     quote(user.auth_token),
-                                    quote(baseurl))
+                                    quote(BASEURL))
     message = render_to_string(template_name, {
             'user': user,
             'url': url,
-            'baseurl': baseurl,
+            'baseurl': BASEURL,
             'site_name': site.name,
             'support': DEFAULT_CONTACT_EMAIL % site.name.lower()})
     sender = DEFAULT_FROM_EMAIL % site.name

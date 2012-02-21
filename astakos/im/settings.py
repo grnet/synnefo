@@ -8,12 +8,6 @@ PROJECT_PATH = getattr(settings, 'PROJECT_PATH', dirname(dirname(abspath(__file_
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
 
-# Bypass authentication for user administration.
-BYPASS_ADMIN_AUTH = getattr(settings, 'ASTAKOS_BYPASS_ADMIN_AUTH', False)
-
-# Show these many users per page in admin interface.
-ADMIN_PAGE_LIMIT = getattr(settings, 'ASTAKOS_ADMIN_PAGE_LIMIT', 100)
-
 # Authenticate via Twitter.
 TWITTER_KEY = getattr(settings, 'ASTAKOS_TWITTER_KEY', '')
 TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
@@ -55,15 +49,3 @@ BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Pithos+')
-
-# SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
-BACKEND_DB_MODULE =  getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
-BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:///' + join(PROJECT_PATH, 'backend.db'))
-
-# Block storage.
-BACKEND_BLOCK_MODULE = getattr(settings, 'PITHOS_BACKEND_BLOCK_MODULE', 'pithos.backends.lib.hashfiler')
-BACKEND_BLOCK_PATH = getattr(settings, 'PITHOS_BACKEND_BLOCK_PATH', join(PROJECT_PATH, 'data/'))
-
-# Default setting for new accounts.
-BACKEND_QUOTA = getattr(settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
-BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')

@@ -43,8 +43,7 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup'),
     url(r'^logout/?$', 'logout'),
-    url(r'^activate/?$', 'activate'),
-    url(r'^admin/', include('astakos.im.admin.urls')),
+    url(r'^activate/?$', 'activate')
 )
 
 urlpatterns += patterns('astakos.im.target',
@@ -73,7 +72,7 @@ if 'local' in IM_MODULES:
 
 if INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
-        url(r'^invite/?$', 'invite'),
+        url(r'^invite/?$', 'invite')
     )
 
 if 'shibboleth' in IM_MODULES:
@@ -90,4 +89,3 @@ if 'twitter' in IM_MODULES:
 urlpatterns += patterns('astakos.im.api',
     url(r'^authenticate/?$', 'authenticate')
 )
-    

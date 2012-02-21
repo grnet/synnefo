@@ -66,5 +66,16 @@ if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
                       'show_indexes': getattr(settings,
                           'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
 
+    # also serve the media root after all explicitly defined paths
+    # to be able to serve uploaded files
+    urlpatterns += patterns('', url(r'^%s(?P<path>.*)$' % \
+         settings.MEDIA_URL.lstrip("/"),
+         'django.views.static.serve',
+         {'document_root': settings.MEDIA_ROOT,
+          'show_indexes': getattr(settings,
+              'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+
+
+
 urlpatterns = extend_urls(urlpatterns, 'synnefo')
 

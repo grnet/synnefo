@@ -511,7 +511,7 @@ a img {
 }
 div.header {
   position: relative;
-  margin-top: 88px;
+  margin-top: 42px;
   margin-bottom: 22px;
 }
 div.header h1 {
@@ -588,7 +588,7 @@ ul.inline li {
 .page {
   zoom: 1;
   margin-left: -22px;
-  margin-top: 132px;
+  margin-top: 42px;
   font-size: 1.1em;
 }
 .page:before, .page:after {

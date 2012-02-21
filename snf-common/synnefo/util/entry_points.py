@@ -35,13 +35,20 @@ import sys
 import pkg_resources
 import inspect
 import types
+import os
 
 from collections import defaultdict
 import inspect
 
+# List of python distribution names which entry points will get excluded
+# from snf-common settings extension mechanism
+EXCLUDED_PACKAGES = os.environ.get('SYNNEFO_EXCLUDE_PACKAGES', '').split(":")
+
+
 def get_entry_points(ns, name):
     for entry_point in pkg_resources.iter_entry_points(group=ns):
-        if entry_point.name == name:
+        if entry_point.name == name and \
+                not entry_point.dist.project_name in EXCLUDED_PACKAGES:
             yield entry_point
 
 
@@ -93,6 +100,10 @@ def extend_list_from_entry_point(settings_object, ns, entry_point_name,
     for e in get_entry_points(ns, entry_point_name):
         obj = entry_point_to_object(e)
         for row in obj:
+            # skip duplicate entries
+            if row in settings_object:
+                continue
+
             if type(row) == dict and (row.get('before', False) or \
                     row.get('after', False)):
                 if row.get('before', False):
@@ -126,6 +137,7 @@ def collect_defaults(ns):
         settings[e.dist.key] = settings[e.dist.key] + attrs
 
     return settings
+
 
 def extend_settings(mname, ns):
     extend_module_from_entry_point(mname, ns)

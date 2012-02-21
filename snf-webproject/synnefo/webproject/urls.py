@@ -31,11 +31,51 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import os
+
 from django.conf.urls.defaults import *
 from synnefo.util.entry_points import extend_urls
+from django.utils.importlib import import_module
+from django.conf import settings
 
 urlpatterns = patterns('',
-    (r'^lang/$', 'synnefo.ui.i18n.set_language')
+    (r'^lang/$', 'synnefo.webproject.i18n.set_language')
 )
 
+if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
+    for module, ns in settings.STATIC_FILES.iteritems():
+        module = import_module(module)
+        static_root = os.path.join(os.path.dirname(module.__file__), 'static')
+        if ns:
+            # app contains static files in <appname>/static/
+            urlns = ns
+            urlpatterns += patterns('', url(r'^%s%s/(?P<path>.*)$' % \
+                 (settings.MEDIA_URL.lstrip("/"), urlns),
+                 'django.views.static.serve',
+                 {'document_root': static_root,
+                  'show_indexes': getattr(settings,
+                      'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+        else:
+            # app contains static files in <appname>/static/<appname>
+            for fpath in os.listdir(static_root):
+                urlns = ns + fpath
+                urlpatterns += patterns('', url(r'^%s%s/(?P<path>.*)$' % \
+                     (settings.MEDIA_URL.lstrip("/"), urlns),
+                     'django.views.static.serve',
+                     {'document_root': os.path.join(static_root, urlns),
+                      'show_indexes': getattr(settings,
+                          'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+
+    # also serve the media root after all explicitly defined paths
+    # to be able to serve uploaded files
+    urlpatterns += patterns('', url(r'^%s(?P<path>.*)$' % \
+         settings.MEDIA_URL.lstrip("/"),
+         'django.views.static.serve',
+         {'document_root': settings.MEDIA_ROOT,
+          'show_indexes': getattr(settings,
+              'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+
+
+
 urlpatterns = extend_urls(urlpatterns, 'synnefo')
+

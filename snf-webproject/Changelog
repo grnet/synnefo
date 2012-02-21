@@ -1,2 +1,11 @@
 Changelog
 =========
+
+v0.8.0 -> dev
+-------------
+
+* Be able to serve synnefo components static files by django
+* Added link_static management command
+* Removed dependency from snf-cyclades-app
+* Added set_language view
+

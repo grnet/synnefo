@@ -42,3 +42,5 @@ MIDDLEWARE_CLASSES = extend_list_from_entry_point(MIDDLEWARE_CLASSES, \
         'synnefo', 'web_middleware')
 STATIC_FILES = extend_dict_from_entry_point(STATIC_FILES, 'synnefo', \
         'web_static')
+TEMPLATE_CONTEXT_PROCESSORS = extend_list_from_entry_point(
+        TEMPLATE_CONTEXT_PROCESSORS, 'synnefo', 'web_context_processors')

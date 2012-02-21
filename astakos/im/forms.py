@@ -42,6 +42,7 @@ from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, SITEURL
+from astakos.im.widgets import TokenWidget
 
 import logging
 
@@ -133,6 +134,8 @@ class ProfileForm(forms.ModelForm):
     The class defines a save method which sets ``is_verified`` to True so as the user
     during the next login will not to be redirected to profile page.
     """
+    renew = forms.BooleanField(label='Renew token', required=False)
+    
     class Meta:
         model = AstakosUser
         fields = ('email', 'first_name', 'last_name', 'auth_token', 'auth_token_expires')
@@ -148,6 +151,8 @@ class ProfileForm(forms.ModelForm):
     def save(self, commit=True):
         user = super(ProfileForm, self).save(commit=False)
         user.is_verified = True
+        if self.cleaned_data.get('renew'):
+            user.renew_token()
         if commit:
             user.save()
         return user

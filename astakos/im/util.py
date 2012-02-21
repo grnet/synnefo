@@ -146,12 +146,7 @@ def prepare_response(request, user, next='', renew=False):
     # authenticate before login
     user = authenticate(email=user.email, auth_token=user.auth_token)
     login(request, user)
-    # set cookie
-    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    cookie_value = quote(user.email + '|' + user.auth_token)
-    response.set_cookie(COOKIE_NAME, value=cookie_value,
-                        expires=expire_fmt, path='/',
-                        domain = COOKIE_DOMAIN)
+    set_cookie(response, user)
     
     if not next:
         next = reverse('astakos.im.views.index')
@@ -159,3 +154,10 @@ def prepare_response(request, user, next='', renew=False):
     response['Location'] = next
     response.status_code = 302
     return response
+
+def set_cookie(response, user):
+    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    cookie_value = quote(user.email + '|' + user.auth_token)
+    response.set_cookie(COOKIE_NAME, value=cookie_value,
+                        expires=expire_fmt, path='/',
+                        domain = COOKIE_DOMAIN)

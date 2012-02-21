@@ -353,7 +353,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
         if form.is_valid():
             subject = _("Feedback from %s" % SITENAME)
             from_email = request.user.email
-            recipient_list = [DEFAULT_CONTACT_EMAIL % SITENAME.lower()]
+            recipient_list = [DEFAULT_CONTACT_EMAIL]
             content = render_to_string(email_template_name, {
                         'message': form.cleaned_data['feedback_msg'],
                         'data': form.cleaned_data['feedback_data'],

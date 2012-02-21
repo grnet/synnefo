@@ -253,7 +253,7 @@ def _send_verification(request, user, template_name):
             'url': url,
             'baseurl': BASEURL,
             'site_name': site.name,
-            'support': DEFAULT_CONTACT_EMAIL % site.name.lower()})
-    sender = DEFAULT_FROM_EMAIL % site.name
+            'support': DEFAULT_CONTACT_EMAIL
+    sender = DEFAULT_FROM_EMAIL
     send_mail('%s account activation' % site.name, message, sender, [user.email])
     logger.info('Sent activation %s', user)

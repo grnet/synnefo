@@ -23,8 +23,8 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 })
 
 # Address to use for outgoing emails
-DEFAULT_FROM_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_FROM_EMAIL', '%s <no-reply@grnet.gr>')
-DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@%s.grnet.gr')
+DEFAULT_FROM_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_FROM_EMAIL', 'GRNET Cloud <no-reply@grnet.gr>')
+DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
 
 # Identity Management enabled modules
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'twitter', 'shibboleth'])
@@ -48,4 +48,4 @@ SITEURL = getattr(settings, 'ASTAKOS_SITEURL', 'http://pithos.dev.grnet.gr/im')
 BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 
 # Set service name
-SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Pithos+')
+SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')

@@ -1,18 +1,18 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+# Copyright 2012 GRNET S.A. All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,33 +25,43 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH, BACKEND_DB_CONNECTION, BACKEND_DB_MODULE, BACKEND_QUOTA, BACKEND_VERSIONING
+import socket
 
-from pithos.backends import connect_backend
+from smtplib import SMTPException
 
-def get_backend():
-    backend = connect_backend(db_module=BACKEND_DB_MODULE,
-                              db_connection=BACKEND_DB_CONNECTION,
-                              block_module=BACKEND_BLOCK_MODULE,
-                              block_path=BACKEND_BLOCK_PATH)
-    backend.default_policy['quota'] = BACKEND_QUOTA
-    backend.default_policy['versioning'] = BACKEND_VERSIONING
-    return backend
+from django.core.management.base import BaseCommand, CommandError
 
-def get_quota(user):
-    backend = get_backend()
-    quota = backend.get_account_policy(user, user)['quota']
-    backend.close()
-    return quota
+from astakos.im.functions import invite
 
-def set_quota(user, quota):
-    backend = get_backend()
-    backend.update_account_policy(user, user, {'quota': quota})
-    backend.close()
-    return quota
+from ._common import get_user
+
+
+class Command(BaseCommand):
+    args = "<inviter id or email> <email> <real name>"
+    help = "Activates one or more users"
+    
+    def handle(self, *args, **options):
+        if len(args) != 3:
+            raise CommandError("Invalid number of arguments")
+        
+        user = get_user(args[0])
+        if not user:
+            raise CommandError("Unknown inviter")
+        
+        if inviter.invitations > 0:
+            email = args[1]
+            realname = args[2]
+            
+            try:
+                invite(inviter, email, realname)
+                self.stdout.write("Invitation sent to '%s'\n" % (email,))
+            except (SMTPException, socket.error) as e:
+                raise CommandError("Error sending the invitation")
+        else:
+            raise CommandError("No invitations left")

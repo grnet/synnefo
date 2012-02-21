@@ -231,6 +231,6 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'user': user,
                 'token': token_generator.make_token(user)
             }
-            from_email = DEFAULT_FROM_EMAIL % SITENAME
+            from_email = DEFAULT_FROM_EMAIL
             send_mail(_("Password reset on %s") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])

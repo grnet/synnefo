@@ -37,7 +37,7 @@ from smtplib import SMTPException
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.admin.functions import invite
+from astakos.im.functions import invite
 
 from ._common import get_user
 

@@ -56,7 +56,7 @@ from astakos.im.backends import get_backend
 from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, SITEURL, BASEURL
-from astakos.im.admin.functions import invite as invite_func
+from astakos.im.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
 

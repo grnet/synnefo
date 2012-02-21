@@ -33,7 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.admin.functions import activate
+from astakos.im.functions import activate
 
 from ._common import get_user
     

@@ -456,7 +456,8 @@ def get_metadata_item(request, server_id, key):
     log.debug('get_server_metadata_item %s %s', server_id, key)
     vm = util.get_vm(server_id, request.user)
     meta = util.get_vm_meta(vm, key)
-    return util.render_meta(request, meta, status=200)
+    d = {meta.meta_key: meta.meta_value}
+    return util.render_meta(request, d, status=200)
 
 
 @util.api_method('PUT')
@@ -489,7 +490,8 @@ def create_metadata_item(request, server_id, key):
     meta.meta_value = metadict[key]
     meta.save()
     vm.save()
-    return util.render_meta(request, meta, status=201)
+    d = {meta.meta_key: meta.meta_value}
+    return util.render_meta(request, d, status=201)
 
 
 @util.api_method('DELETE')

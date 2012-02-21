@@ -44,7 +44,6 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/im/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-SITEURL = getattr(settings, 'ASTAKOS_SITEURL', 'http://pithos.dev.grnet.gr/im')
 BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 
 # Set service name

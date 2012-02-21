@@ -41,7 +41,7 @@ from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, SITEURL
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME
 
 import logging
 
@@ -225,7 +225,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             t = loader.get_template(email_template_name)
             c = {
                 'email': user.email,
-                'domain': SITEURL,
+                'domain': BASEURL,
                 'site_name': SITENAME,
                 'uid': int_to_base36(user.id),
                 'user': user,

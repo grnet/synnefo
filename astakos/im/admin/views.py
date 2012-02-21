@@ -297,7 +297,7 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
               'prev':prev,
               'next':next}
     return render_response(template_name,
-                            context_instance = get_context(request, extra_context,**kwargs))
+                           context_instance = get_context(request, extra_context,**kwargs))
 
 @requires_admin
 @transaction.commit_manually
@@ -520,5 +520,5 @@ def users_create(request, template_name='users_create.html', extra_context={}):
             except ValueError, e:
                 messages.add_message(request, messages.ERROR, e)
     return render_response(template_name,
-                               form = form,
-                               context_instance=get_context(request, extra_context))
+                           form = form,
+                           context_instance=get_context(request, extra_context))

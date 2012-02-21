@@ -53,14 +53,14 @@ from django.http import HttpResponseRedirect
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
-from astakos.im.util import get_context, prepare_response
+from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, IM_MODULES, SITENAME, SITEURL, BASEURL
 from astakos.im.admin.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
 
-def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, reset_cookie=False, context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
     keyword argument and returns an ``django.http.HttpResponse`` with the
@@ -70,7 +70,10 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
         tab = template.partition('_')[0].partition('.html')[0]
     kwargs.setdefault('tab', tab)
     html = render_to_string(template, kwargs, context_instance=context_instance)
-    return HttpResponse(html, status=status)
+    response = HttpResponse(html, status=status)
+    if reset_cookie:
+        set_cookie(response, context_instance['request'].user)
+    return response
 
 
 def requires_anonymous(func):
@@ -221,11 +224,15 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
     """
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
+    reset_cookie = False
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             try:
-                form.save()
+                prev_token = request.user.auth_token
+                user = form.save()
+                reset_cookie = user.auth_token != prev_token
+                form = ProfileForm(instance=user)
                 next = request.POST.get('next')
                 if next:
                     return redirect(next)
@@ -234,10 +241,10 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
     return render_response(template_name,
+                           reset_cookie = reset_cookie,
                            form = form,
                            context_instance = get_context(request,
-                                                          extra_context,
-                                                          user=request.user))
+                                                          extra_context))
 
 @requires_anonymous
 def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):

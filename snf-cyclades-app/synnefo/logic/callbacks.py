@@ -37,7 +37,7 @@ import json
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend, email_send
+from synnefo.logic import utils, backend
 
 
 log = logging.getLogger()

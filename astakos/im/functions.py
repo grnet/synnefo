@@ -59,7 +59,7 @@ def activate(user, email_template_name='welcome_email.txt'):
                 'url': SITEURL,
                 'baseurl': BASEURL,
                 'site_name': SITENAME,
-                'support': DEFAULT_CONTACT_EMAIL
+                'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [user.email])
     logger.info('Sent greeting %s', user)
@@ -92,7 +92,7 @@ def invite(inviter, username, realname):
                 'url': url,
                 'baseurl': BASEURL,
                 'service': SITENAME,
-                'support': DEFAULT_CONTACT_EMAIL
+                'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [invitation.username])
     logger.info('Sent invitation %s', invitation)

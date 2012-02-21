@@ -35,11 +35,12 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
+from astakos.im.admin.functions import activate
 from astakos.im.models import AstakosUser
     
 
 class Command(BaseCommand):
-    args = "<user_id or email> [user_id or email] ..."
+    args = "<user id or email> [user id or email] ..."
     help = "Activates one or more users"
     
     def handle(self, *args, **options):
@@ -63,7 +64,6 @@ class Command(BaseCommand):
                 self.stderr.write(msg)
                 continue
             
-            user.is_active = True
-            user.save()
+            activate(user)
             
             self.stdout.write("Activated '%s'\n" % (user.email,))

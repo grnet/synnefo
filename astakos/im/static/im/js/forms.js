@@ -1,4 +1,27 @@
 (function($){
+  
+  $.fn.formCheckBoxes = function(options) {
+    
+    return this.each(function() {
+      var $this = $(this);
+      var el = $('<span class="checkbox-widget" />');
+    
+      $this.hide();
+      
+      if ($this.is("checked")) {
+        el.addClass("checked");  
+      }
+
+      el.click(function() {
+        el.toggleClass("checked");
+        $this.attr('checked', el.hasClass("checked"));
+      })
+
+      $this.after(el);
+    });
+
+
+  }
 
   $.fn.formErrors = function(options) {  
     return this.each(function() {

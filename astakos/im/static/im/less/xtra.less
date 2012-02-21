@@ -1,6 +1,7 @@
 // row helper
 .makeRow { .clearfix(); margin-left: -@gridGutterWidth; }
 
+
 #font {
   .main(@weight: normal, @size: 14px, @lineHeight: 22px) {
     font-family: 'Antic', sans-serif;
@@ -10,6 +11,7 @@
     letter-spacing: 1px;
   }
 }
+
 
 .button {
     #font.main();
@@ -23,3 +25,10 @@
         background-color: @linkColor;    
     }
 }
+
+
+.transit(@type:color, @time:.15s, @easing:linear) {
+    -webkit-transition: @type @time @easing;
+    transition: @type @time @easing;
+}
+

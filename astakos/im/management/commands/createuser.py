@@ -79,6 +79,12 @@ class Command(BaseCommand):
         if password is None:
             password = generate_password()
         
+        try:
+            AstakosUser.objects.get(email=email)
+            raise CommandError("A user with this email already exists")
+        except AstakosUser.DoesNotExist:
+            pass
+        
         user = AstakosUser(username=username, first_name=first, last_name=last,
                            email=email, affiliation=affiliation,
                            provider='local')

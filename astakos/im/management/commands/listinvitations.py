@@ -37,6 +37,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Invitation
 
+from ._common import format_bool
+
 
 class Command(BaseCommand):
     help = "List users"
@@ -67,8 +69,8 @@ class Command(BaseCommand):
         for invitation in invitations:
             id = str(invitation.id)
             code = str(invitation.code)
-            used = 'YES' if invitation.is_accepted else 'NO'
-            consumed = 'YES' if invitation.is_consumed else 'NO'
+            used = format_bool(invitation.is_accepted)
+            consumed = format_bool(invitation.is_consumed)
             fields = (id, invitation.username, invitation.realname,
                       code, used, consumed)
             

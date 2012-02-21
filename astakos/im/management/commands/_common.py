@@ -31,32 +31,32 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from datetime import datetime
 
-from astakos.im.admin.functions import activate
+from django.utils.timesince import timesince, timeuntil
 
-from ._common import get_user
-    
+from astakos.im.models import AstakosUser
 
-class Command(BaseCommand):
-    args = "<user id or email> [user id or email] ..."
-    help = "Activates one or more users"
-    
-    def handle(self, *args, **options):
-        if not args:
-            raise CommandError("No user was given")
-        
-        for email_or_id in args:
-            user = get_user(email_or_id)
-            if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
-            
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
-                continue
-            
-            activate(user)
-            
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+
+def get_user(email_or_id):
+    try:
+        if email_or_id.isdigit():
+            return AstakosUser.objects.get(id=int(email_or_id))
+        else:
+            return AstakosUser.objects.get(email=email_or_id)
+    except AstakosUser.DoesNotExist:
+        return None
+
+
+def format_bool(b):
+    return 'YES' if b else 'NO'
+
+
+def format_date(d):
+    if not d:
+        return ''
+
+    if d < datetime.now():
+        return timesince(d) + ' ago'
+    else:
+        return 'in ' + timeuntil(d)

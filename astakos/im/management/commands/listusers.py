@@ -37,6 +37,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import AstakosUser
 
+from ._common import format_bool
+
 
 class Command(BaseCommand):
     help = "List users"
@@ -73,8 +75,8 @@ class Command(BaseCommand):
         
         for user in users:
             id = str(user.id)
-            active = 'YES' if user.is_active else 'NO'
-            admin = 'YES' if user.is_superuser else 'NO'
+            active = format_bool(user.is_active)
+            admin = format_bool(user.is_superuser)
             fields = (id, user.email, user.realname, user.affiliation, active,
                       admin)
             

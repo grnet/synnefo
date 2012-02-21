@@ -31,23 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import datetime
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
-from django.utils.timesince import timesince, timeuntil
 
 from astakos.im.models import AstakosUser
 
-
-def format_bool(b):
-    return 'YES' if b else 'NO'
-
-def format_date(d):
-    if d < datetime.now():
-        return timesince(d) + ' ago'
-    else:
-        return 'in ' + timeuntil(d)
+from ._common import format_bool, format_date
 
 
 class Command(BaseCommand):

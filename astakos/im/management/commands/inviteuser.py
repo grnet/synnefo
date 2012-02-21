@@ -38,7 +38,8 @@ from smtplib import SMTPException
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.admin.functions import invite
-from astakos.im.models import AstakosUser
+
+from ._common import get_user
 
 
 class Command(BaseCommand):
@@ -49,21 +50,14 @@ class Command(BaseCommand):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")
         
-        email_or_id = args[0]
-        email = args[1]
-        realname = args[2]
-        
-        try:
-            if email_or_id.isdigit():
-                inviter = AstakosUser.objects.get(id=int(email_or_id))
-            else:
-                inviter = AstakosUser.objects.get(email=email_or_id)
-        except AstakosUser.DoesNotExist:
-            field = 'id' if email_or_id.isdigit() else 'email'
-            msg = "Unknown inviter with %s '%s'" % (field, email_or_id)
-            raise CommandError(msg + '\n')
+        user = get_user(args[0])
+        if not user:
+            raise CommandError("Unknown inviter")
         
         if inviter.invitations > 0:
+            email = args[1]
+            realname = args[2]
+            
             try:
                 invite(inviter, email, realname)
                 self.stdout.write("Invitation sent to '%s'\n" % (email,))

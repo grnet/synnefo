@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import AstakosUser
+from ._common import get_user
 
 
 class Command(BaseCommand):
@@ -72,16 +72,9 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a user_id or email")
         
-        email_or_id = args[0]
-        try:
-            if email_or_id.isdigit():
-                user = AstakosUser.objects.get(id=int(email_or_id))
-            else:
-                user = AstakosUser.objects.get(email=email_or_id)
-        except AstakosUser.DoesNotExist:
-            field = 'id' if email_or_id.isdigit() else 'email'
-            msg = "Unknown user with %s '%s'" % (field, email_or_id)
-            raise CommandError(msg)
+        user = get_user(args[0])
+        if not user:
+            raise CommandError("Unknown user")
         
         if options.get('admin'):
             user.is_superuser = True

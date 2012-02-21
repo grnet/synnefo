@@ -78,12 +78,12 @@ INSTALL_REQUIRES = [
     'snf-common>=0.7.3',
     'vncauthproxy>=1.0',
     'south>=0.7, <=0.7.3',
-    'snf-pithos-backend >= 0.8.3'
+    'snf-pithos-backend>=0.8.3',
+    'lockfile==0.8'
 ]
 
 EXTRAS_REQUIRES = {
-        'DISPATCHER': ['amqplib==0.6.1', 'python-daemon==1.5.5',],
-        'INVITATIONS': ['pycrypto==2.1.0'],
+        'DISPATCHER': ['amqplib==0.6.1', 'python-daemon==1.5.5', 'lockfile==0.8'],
         'SSH_KEYS': ['pycrypto==2.1.0'],
         'BURNIN': ['unittest2==0.5.1', 'paramiko==1.7.6', 'python-prctl==1.3.0']
 }

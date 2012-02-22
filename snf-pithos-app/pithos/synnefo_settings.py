@@ -4,15 +4,13 @@ Hooks for snf-webproject used in snf-pithos-app setup.py entry_points
 
 from django.conf.urls.defaults import include, patterns
 
-synnefo_installed_apps = ['pithos.ui', 'pithos.api']
+synnefo_installed_apps = ['pithos.api']
 synnefo_urls = patterns('',
     (r'', include('pithos.urls')),
 )
 synnefo_middlewares = [
     'pithos.middleware.LoggingConfigMiddleware',
-    'pithos.middleware.SecureMiddleware',
-    'pithos.middleware.UserMiddleware'
+    'pithos.middleware.SecureMiddleware'
 ]
 
-from pithos.api.settings import *
-from pithos.ui.settings import *
+from pithos.api.synnefo_settings import *

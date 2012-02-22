@@ -170,7 +170,7 @@ def co(c):
 # Debian packaging helpers
 #
 
-env.debian_branch = 'debian-0.8'
+env.debian_branch = 'debian-0.9'
 env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
                     'snf-pithos-tools', 'snf-pithos-app']
 env.signdebs = False
@@ -226,7 +226,7 @@ def signdebs():
     env.signdebs = True
 
 
-def builddeb(p, master="packaging", branch="debian-0.8"):
+def builddeb(p, master="packaging", branch="debian-0.9"):
     with co(branch):
         info("Building debian package for %s" % p)
         with lcd(package_root(p)):
@@ -242,7 +242,7 @@ def builddeb(p, master="packaging", branch="debian-0.8"):
         info("Done building debian package for %s" % p)
 
 
-def builddeball(b="debian-0.8"):
+def builddeball(b="debian-0.9"):
     for p in env.deb_packages:
         builddeb(p=p, branch=b)
 

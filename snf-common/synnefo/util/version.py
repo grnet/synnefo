@@ -1,6 +1,7 @@
 import pkg_resources
 import os
 import pprint
+import re
 
 def get_dist_from_module(modname):
     pkgroot = pkg_resources.get_provider(modname).egg_root
@@ -38,7 +39,13 @@ def get_component_version(modname):
 
 def vcs_info():
     """
-    Return current git HEAD commit information
+    Return current git HEAD commit information.
+
+    Returns a tuple containing
+        - branch name
+        - commit id
+        - commit index
+        - git describe output
     """
     import subprocess
     callgit = lambda(cmd): subprocess.Popen(
@@ -54,22 +61,36 @@ def vcs_info():
     return branch, revid, revno, desc
 
 
-def vcs_version():
+def get_version_from_describe(describe):
     """
-    Package version based on `git describe`, compatible with setuptools
+    Package version based on `git describe` output. Compatible with setuptools
     version format
-    """
-    return "-".join(vcs_info()[3].lstrip('v').split("-")[:-1])
 
+    >>> get_version_from_describe("v0.8.0")
+    '0.8.0'
+    >>> get_version_from_describe("debian/v0.8.0")
+    '0.8.0'
+    >>> get_version_from_describe("0.8.0")
+    '0.8.0'
+    >>> get_version_from_describe("v0.8.0-34-g8f9a1bf")
+    '0.8.0-34-g8f9a1bf'
+    >>> get_version_from_describe("debian/v0.8.0-34-g8f9a1bf")
+    '0.8.0-34-g8f9a1bf'
+    """
+
+    version = describe.split("/")[-1].lstrip('v')
+    version = version.lstrip('v')
+    return version
 
 def update_version(module, name='version', root="."):
     """
     Helper util to generate/replace a version.py file containing version
-    information retrieved from vcs_version as a submodule of passed `module`
+    information retrieved from get_version_from_describe as a submodule of passed `module`
     """
 
     # exit early if not in development environment
-    if not os.path.exists(os.path.join(root, '..', '.git')):
+    if not os.path.exists(os.path.join(root, '..', '.git')) and \
+        not os.path.exists(os.path.join(root, '.git')):
         return
 
     paths = [root] + module.split(".") + ["%s.py" % name]
@@ -78,7 +99,7 @@ def update_version(module, name='version', root="."):
 __version__ = "%(version)s"
 __version_info__ = __version__.split(".")
 __version_vcs_info__ = %(vcs_info)s
-    """ % dict(version=vcs_version(),
+    """ % dict(version=get_version_from_describe(vcs_info()[3]),
             vcs_info=pprint.PrettyPrinter().pformat(vcs_info()))
 
     module_file = file(module_filename, "w+")

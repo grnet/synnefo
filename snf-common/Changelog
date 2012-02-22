@@ -4,6 +4,8 @@ Changelog
 0.8.0 -> dev
 ------------
 
+* Fixed update_version util to handle namespaced tags (see
+  get_version_from_describe doctests)
 * Skip entry points for python distributions names existing in 
   ``SYNNEFO_EXCLUDE_PACKAGES`` environmental variable
 * Avoid duplicate entries in list settings objects

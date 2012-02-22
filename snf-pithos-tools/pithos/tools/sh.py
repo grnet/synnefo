@@ -40,7 +40,7 @@ from sys import argv, exit, stdin, stdout
 from datetime import datetime
 
 from pithos.lib.client import Pithos_Client, Fault
-from pithos.lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.util import get_user, get_auth, get_url
 from pithos.lib.transfer import upload, download
 
 import json
@@ -68,20 +68,18 @@ class Command(object):
     
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
-        parser.add_option('--host', dest='host', metavar='HOST',
-                          default=get_server(), help='use server HOST')
-        parser.add_option('--user', dest='user', metavar='USERNAME',
+        parser.add_option('--url', dest='url', metavar='URL',
+                          default=get_url(), help='server URL (currently: %s)' % get_url())
+        parser.add_option('--user', dest='user', metavar='USER',
                           default=get_user(),
-                          help='use account USERNAME')
-        parser.add_option('--token', dest='token', metavar='AUTH',
+                          help='account USER (currently: %s)' % get_user())
+        parser.add_option('--token', dest='token', metavar='TOKEN',
                           default=get_auth(),
-                          help='use account AUTH')
-        parser.add_option('--api', dest='api', metavar='API',
-                          default=get_api(), help='use api API')
+                          help='account TOKEN (currently: %s)' % get_auth())
         parser.add_option('-v', action='store_true', dest='verbose',
-                          default=False, help='use verbose output')
+                          default=False, help='verbose output')
         parser.add_option('-d', action='store_true', dest='debug',
-                          default=False, help='use debug output')
+                          default=False, help='debug output')
         self.add_options(parser)
         options, args = parser.parse_args(argv)
         
@@ -92,7 +90,7 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
         
-        self.client = Pithos_Client(self.host, self.token, self.user, self.api, self.verbose,
+        self.client = Pithos_Client(self.url, self.token, self.user, self.verbose,
                              self.debug)
         
         self.parser = parser
@@ -227,13 +225,20 @@ class Meta(Command):
 class CreateContainer(Command):
     syntax = '<container> [key=val] [...]'
     description = 'create a container'
+    policy={}
+    
+    def add_options(self, parser):
+        parser.add_option('--versioning', action='store', dest=policy['versioning'],
+                          default=None, help='set container versioning (auto/none)')
+        parser.add_option('--quota', action='store', dest=policy['quota'],
+                          default=None, help='set default container quota')
     
     def execute(self, container, *args):
         meta = {}
         for arg in args:
             key, sep, val = arg.partition('=')
             meta[key] = val
-        ret = self.client.create_container(container, **meta)
+        ret = self.client.create_container(container, meta=meta, policies=policy)
         if not ret:
             print 'Container already exists'
 
@@ -293,10 +298,13 @@ class GetObject(Command):
         parser.add_option('--versionlist', action='store_true',
                           dest='versionlist', default=False,
                           help='get the full object version list')
+        parser.add_option('--hashmap', action='store_true',
+                          dest='hashmap', default=False,
+                          help='get the object hashmap instead')
     
     def execute(self, path):
         attrs = ['if_match', 'if_none_match', 'if_modified_since',
-                 'if_unmodified_since']
+                 'if_unmodified_since', 'hashmap']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         if self.range:
@@ -315,11 +323,17 @@ class GetObject(Command):
         elif self.version:
             data = self.client.retrieve_object_version(container, object,
                                                        self.version, **args)
+        elif self.hashmap:
+            if 'detail' in args.keys():
+                args.pop('detail')
+            args.pop('format')
+            self.detail = True
+            data = self.client.retrieve_object_hashmap(container, object, **args)
         else:
             data = self.client.retrieve_object(container, object, **args)    
         
         f = open(self.file, 'w') if self.file else stdout
-        if self.detail:
+        if self.detail or type(data) == types.DictionaryType:
             if self.versionlist:
                 print_versions(data, f=f)
             else:
@@ -360,7 +374,7 @@ class PutObject(Command):
         #                  help='use for large file support')
         parser.add_option('--manifest', action='store',
                           dest='x_object_manifest', default=None,
-                          help='upload a manifestation file')
+                          help='provide object parts prefix in <container>/<object> form')
         parser.add_option('--content-type', action='store',
                           dest='content_type', default=None,
                           help='create object with specific content type')
@@ -487,7 +501,7 @@ class UpdateObject(Command):
         parser.add_option('--offset', action='store',
                           dest='offset',
                           default=None, help='starting offest to be updated')
-        parser.add_option('--range', action='store', dest='content-range',
+        parser.add_option('--range', action='store', dest='content_range',
                           default=None, help='range of data to be updated')
         parser.add_option('--chunked', action='store_true', dest='chunked',
                           default=False, help='set chunked transfer mode')
@@ -528,7 +542,8 @@ class UpdateObject(Command):
         
         
         attrs = ['content_encoding', 'content_disposition', 'x_object_sharing',
-                 'x_object_public', 'replace']
+                 'x_object_public', 'x_object_manifest', 'replace', 'offset',
+                 'content_range']
         args = self._build_args(attrs)
         
         if self.no_sharing:

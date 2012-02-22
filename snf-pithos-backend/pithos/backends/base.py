@@ -74,7 +74,7 @@ class BaseBackend(object):
         """
         return []
     
-    def get_account_meta(self, user, account, domain, until=None):
+    def get_account_meta(self, user, account, domain, until=None, include_user_defined=True):
         """Return a dictionary with the account metadata for the domain.
         
         The keys returned are all user-defined, except:
@@ -185,7 +185,17 @@ class BaseBackend(object):
         """
         return []
     
-    def get_container_meta(self, user, account, container, domain, until=None):
+    def list_container_meta(self, user, account, container, domain, until=None):
+        """Return a list with all the container's object meta keys for the domain.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            NameError: Container does not exist
+        """
+        return []
+    
+    def get_container_meta(self, user, account, container, domain, until=None, include_user_defined=True):
         """Return a dictionary with the container metadata for the domain.
         
         The keys returned are all user-defined, except:
@@ -310,8 +320,11 @@ class BaseBackend(object):
         """
         return []
     
-    def list_object_meta(self, user, account, container, domain, until=None):
-        """Return a list with all the container's object meta keys for the domain.
+    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+        """Return a list of object metadata dicts existing under a container.
+        
+        Same parameters with list_objects. Returned dicts have no user-defined
+        metadata and, if until is not None, a None 'modified' timestamp.
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -320,13 +333,27 @@ class BaseBackend(object):
         """
         return []
     
-    def get_object_meta(self, user, account, container, name, domain, version=None):
+    def list_object_permissions(self, user, account, container, prefix=''):
+        """Return a list of paths that enforce permissions under a container.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
+        return []
+    
+    def list_object_public(self, user, account, container, prefix=''):
+        """Return a dict mapping paths to public ids for objects that are public under a container."""
+        return {}
+    
+    def get_object_meta(self, user, account, container, name, domain, version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain.
         
         The keys returned are all user-defined, except:
             'name': The object name
             
             'bytes': The total data size
+            
+            'type': The content type
             
             'hash': The hashmap hash
             
@@ -339,6 +366,8 @@ class BaseBackend(object):
             'version_timestamp': The version's modification timestamp
             
             'uuid': A unique identifier that persists data or metadata updates and renames
+            
+            'checksum': The MD5 sum of the object (may be empty)
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -395,11 +424,6 @@ class BaseBackend(object):
             NameError: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
-            
-            AttributeError: Can not set permissions, as this object
-                is already shared/private by another object higher
-                in the hierarchy, or setting permissions here will
-                invalidate other permissions deeper in the hierarchy
         """
         return
     
@@ -438,7 +462,7 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, domain, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes and return the new version.
         
         Parameters:
@@ -457,13 +481,15 @@ class BaseBackend(object):
             
             ValueError: Invalid users/groups in permissions
             
-            AttributeError: Can not set permissions
-            
             QuotaError: Account or container quota exceeded
         """
         return ''
     
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
+    def update_object_checksum(self, user, account, container, name, version, checksum):
+        """Update an object's checksum."""
+        return
+    
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata and return the new version.
         
         Parameters:
@@ -486,13 +512,11 @@ class BaseBackend(object):
             
             ValueError: Invalid users/groups in permissions
             
-            AttributeError: Can not set permissions
-            
             QuotaError: Account or container quota exceeded
         """
         return ''
     
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata and return the new version.
         
         Parameters:
@@ -510,8 +534,6 @@ class BaseBackend(object):
             NameError: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
-            
-            AttributeError: Can not set permissions
             
             QuotaError: Account or container quota exceeded
         """

@@ -44,7 +44,7 @@ from time import time
 from pithos.lib.transfer import download, upload
 from pithos.lib.client import Pithos_Client, Fault
 from pithos.lib.hashmap import merkle
-from pithos.lib.util import get_user, get_auth, get_server
+from pithos.lib.util import get_user, get_auth, get_url
 
 
 DEFAULT_CONTAINER = 'pithos'
@@ -57,7 +57,7 @@ SQL_CREATE_FILES_TABLE = '''CREATE TABLE IF NOT EXISTS files (
                                 timestamp INTEGER)'''
 
 
-client = Pithos_Client(get_server(), get_auth(), get_user())
+client = Pithos_Client(get_url(), get_auth(), get_user())
 
 
 def _makedirs(path):

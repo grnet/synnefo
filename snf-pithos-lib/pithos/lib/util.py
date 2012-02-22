@@ -33,10 +33,9 @@
 
 import os
 
-DEFAULT_SERVER = 'plus.pithos.grnet.gr'
-DEFAULT_API = 'v1'
+DEFAULT_URL = 'https://plus.pithos.grnet.gr/v1'
 DEFAULT_USER = 'test'
-DEFAULT_AUTH = '0000'
+DEFAULT_TOKEN = '0000'
 
 def get_user():
     try:
@@ -46,18 +45,12 @@ def get_user():
 
 def get_auth():
     try:
-        return os.environ['PITHOS_AUTH']
+        return os.environ['PITHOS_TOKEN']
     except KeyError:
-        return DEFAULT_AUTH
+        return DEFAULT_TOKEN
 
-def get_server():
+def get_url():
     try:
-        return os.environ['PITHOS_SERVER']
+        return os.environ['PITHOS_URL'].rstrip('/')
     except KeyError:
-        return DEFAULT_SERVER
-
-def get_api():
-    try:
-        return os.environ['PITHOS_API']
-    except KeyError:
-        return DEFAULT_API
+        return DEFAULT_URL

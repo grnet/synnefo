@@ -46,7 +46,9 @@ from pithos.lib.filter import parse_filters
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(9)
+( SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM, CLUSTER ) = range(11)
+
+( MATCH_PREFIX, MATCH_EXACT ) = range(2)
 
 inf = float('inf')
 
@@ -90,11 +92,13 @@ _propnames = {
     'node'      : 1,
     'hash'      : 2,
     'size'      : 3,
-    'source'    : 4,
-    'mtime'     : 5,
-    'muser'     : 6,
-    'uuid'      : 7,
-    'cluster'   : 8
+    'type'      : 4,
+    'source'    : 5,
+    'mtime'     : 6,
+    'muser'     : 7,
+    'uuid'      : 8,
+    'checksum'  : 9,
+    'cluster'   : 10
 }
 
 
@@ -118,8 +122,7 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               autoincrement=False))
-        path_length = 2048
-        columns.append(Column('path', String(path_length), default='', nullable=False))
+        columns.append(Column('path', String(2048), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
         Index('idx_nodes_path', self.nodes.c.path, unique=True)
         
@@ -130,8 +133,8 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               primary_key=True))
-        columns.append(Column('key', String(255), primary_key=True))
-        columns.append(Column('value', String(255)))
+        columns.append(Column('key', String(128), primary_key=True))
+        columns.append(Column('value', String(256)))
         self.policies = Table('policy', metadata, *columns, mysql_engine='InnoDB')
         
         #create statistics table
@@ -155,12 +158,14 @@ class Node(DBWorker):
                               ForeignKey('nodes.node',
                                          ondelete='CASCADE',
                                          onupdate='CASCADE')))
-        columns.append(Column('hash', String(255)))
+        columns.append(Column('hash', String(256)))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
+        columns.append(Column('type', String(256), nullable=False, default=''))
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
-        columns.append(Column('muser', String(255), nullable=False, default=''))
+        columns.append(Column('muser', String(256), nullable=False, default=''))
         columns.append(Column('uuid', String(64), nullable=False, default=''))
+        columns.append(Column('checksum', String(256), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
         self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
         Index('idx_versions_node_mtime', self.versions.c.node, self.versions.c.mtime)
@@ -173,9 +178,9 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               primary_key=True))
-        columns.append(Column('domain', String(255), primary_key=True))
-        columns.append(Column('key', String(255), primary_key=True))
-        columns.append(Column('value', String(255)))
+        columns.append(Column('domain', String(256), primary_key=True))
+        columns.append(Column('key', String(128), primary_key=True))
+        columns.append(Column('value', String(256)))
         self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
         
         metadata.create_all(self.engine)
@@ -229,17 +234,19 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
         """
         
         s = select([self.versions.c.serial,
                     self.versions.c.node,
                     self.versions.c.hash,
                     self.versions.c.size,
+                    self.versions.c.type,
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
                     self.versions.c.uuid,
+                    self.versions.c.checksum,
                     self.versions.c.cluster], self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
@@ -267,7 +274,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the hashes of versions deleted.
+           the hashes and size of versions deleted.
            Clears out nodes with no remaining versions.
         """
         #update statistics
@@ -284,7 +291,7 @@ class Node(DBWorker):
         row = r.fetchone()
         r.close()
         if not row:
-            return ()
+            return (), 0
         nr, size = row[0], -row[1] if row[1] else 0
         mtime = time()
         self.statistics_update(parent, -nr, size, mtime, cluster)
@@ -312,12 +319,12 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
         
-        return hashes
+        return hashes, size
     
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
            node and cluster, and return
-           the hashes of versions deleted.
+           the hashes and size of versions deleted.
            Clears out the node if it has no remaining versions.
         """
         
@@ -334,7 +341,7 @@ class Node(DBWorker):
         nr, size = row[0], row[1]
         r.close()
         if not nr:
-            return ()
+            return (), 0
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
         
@@ -360,7 +367,7 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
         
-        return hashes
+        return hashes, size
     
     def node_remove(self, node):
         """Remove the node specified.
@@ -488,10 +495,12 @@ class Node(DBWorker):
                     self.versions.c.node,
                     self.versions.c.hash,
                     self.versions.c.size,
+                    self.versions.c.type,
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
                     self.versions.c.uuid,
+                    self.versions.c.checksum,
                     self.versions.c.cluster])
         filtered = select([func.max(self.versions.c.serial)],
                             self.versions.c.node == node)
@@ -529,7 +538,7 @@ class Node(DBWorker):
             return (0, 0, mtime)
         
         # All children (get size and mtime).
-        # XXX: This is why the full path is stored.
+        # This is why the full path is stored.
         s = select([func.count(v.c.serial),
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])
@@ -550,14 +559,14 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, hash, size, source, muser, uuid, cluster=0):
+    def version_create(self, node, hash, size, type, source, muser, uuid, checksum, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
         mtime = time()
-        s = self.versions.insert().values(node=node, hash=hash, size=size, source=source,
-                                          mtime=mtime, muser=muser, uuid=uuid, cluster=cluster)
+        s = self.versions.insert().values(node=node, hash=hash, size=size, type=type, source=source,
+                                          mtime=mtime, muser=muser, uuid=uuid, checksum=checksum, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -565,14 +574,15 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, hash, size, source, mtime, muser, uuid, cluster)
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster)
            or None if the current version is not found in the given cluster.
         """
         
         v = self.versions.alias('v')
         s = select([v.c.serial, v.c.node, v.c.hash,
-                    v.c.size, v.c.source, v.c.mtime,
-                    v.c.muser, v.c.uuid, v.c.cluster])
+                    v.c.size, v.c.type, v.c.source,
+                    v.c.mtime, v.c.muser, v.c.uuid,
+                    v.c.checksum, v.c.cluster])
         c = select([func.max(self.versions.c.serial)],
             self.versions.c.node == node)
         if before != inf:
@@ -590,13 +600,14 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
         """
         
         v = self.versions.alias()
         s = select([v.c.serial, v.c.node, v.c.hash,
-                    v.c.size, v.c.source, v.c.mtime,
-                    v.c.muser, v.c.uuid, v.c.cluster], v.c.serial == serial)
+                    v.c.size, v.c.type, v.c.source,
+                    v.c.mtime, v.c.muser, v.c.uuid,
+                    v.c.checksum, v.c.cluster], v.c.serial == serial)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
@@ -606,6 +617,16 @@ class Node(DBWorker):
         if not keys:
             return r
         return [r[propnames[k]] for k in keys if k in propnames]
+    
+    def version_put_property(self, serial, key, value):
+        """Set value for the property of version specified by key."""
+        
+        if key not in _propnames:
+            return
+        s = self.versions.update()
+        s = s.where(self.versions.c.serial == serial)
+        s = s.values(**{key: value})
+        self.conn.execute(s).close()
     
     def version_recluster(self, serial, cluster):
         """Move the version into another cluster."""
@@ -644,7 +665,7 @@ class Node(DBWorker):
         
         s = self.versions.delete().where(self.versions.c.serial == serial)
         self.conn.execute(s).close()
-        return hash
+        return hash, size
     
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.
@@ -748,8 +769,11 @@ class Node(DBWorker):
         s = s.where(a.c.domain == domain)
         s = s.where(n.c.node == v.c.node)
         conj = []
-        for x in pathq:
-            conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
+        for path, match in pathq:
+            if match == MATCH_PREFIX:
+                conj.append(n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+            elif match == MATCH_EXACT:
+                conj.append(n.c.path == path)
         if conj:
             s = s.where(or_(*conj))
         rp = self.conn.execute(s)
@@ -759,7 +783,8 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], domain=None, filterq=[], sizeq=None):
+                            except_cluster=0, pathq=[], domain=None,
+                            filterq=[], sizeq=None, all_props=False):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -806,6 +831,8 @@ class Node(DBWorker):
            will always match.
            
            Limit applies to the first list of tuples returned.
+           
+           If all_props is True, return all properties after path, not just serial.
         """
         
         if not start or start < prefix:
@@ -814,7 +841,14 @@ class Node(DBWorker):
         
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
-        s = select([n.c.path, v.c.serial]).distinct()
+        if not all_props:
+            s = select([n.c.path, v.c.serial]).distinct()
+        else:
+            s = select([n.c.path,
+                        v.c.serial, v.c.node, v.c.hash,
+                        v.c.size, v.c.type, v.c.source,
+                        v.c.mtime, v.c.muser, v.c.uuid,
+                        v.c.checksum, v.c.cluster]).distinct()
         filtered = select([func.max(self.versions.c.serial)])
         if before != inf:
             filtered = filtered.where(self.versions.c.mtime < before)
@@ -826,8 +860,11 @@ class Node(DBWorker):
         s = s.where(n.c.node == v.c.node)
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
         conj = []
-        for x in pathq:
-            conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
+        for path, match in pathq:
+            if match == MATCH_PREFIX:
+                conj.append(n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+            elif match == MATCH_EXACT:
+                conj.append(n.c.path == path)
         if conj:
             s = s.where(or_(*conj))
         
@@ -882,7 +919,8 @@ class Node(DBWorker):
             props = rp.fetchone()
             if props is None:
                 break
-            path, serial = props
+            path = props[0]
+            serial = props[1]
             idx = path.find(delimiter, pfz)
             
             if idx < 0:

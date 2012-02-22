@@ -31,11 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from httplib import HTTPConnection, HTTP
+from httplib import HTTPConnection, HTTPSConnection, HTTP
 from sys import stdin
 from xml.dom import minidom
 from StringIO import StringIO
 from urllib import quote, unquote
+from urlparse import urlparse
 
 import json
 import types
@@ -66,20 +67,26 @@ class Fault(Exception):
         self.status = status
 
 class Client(object):
-    def __init__(self, host, token, account, api='v1', verbose=False, debug=False):
-        """`host` can also include a port, e.g '127.0.0.1:8000'."""
+    def __init__(self, url, token, account, verbose=False, debug=False):
+        """`url` can also include a port, e.g '127.0.0.1:8000'."""
         
-        self.host = host
+        self.url = url
         self.account = account
-        self.api = api
         self.verbose = verbose or debug
         self.debug = debug
         self.token = token
     
     def _req(self, method, path, body=None, headers={}, format='text', params={}):
-        full_path = _prepare_path(path, self.api, format, params)
+        p = urlparse(self.url)
+        if p.scheme == 'http':
+            conn = HTTPConnection(p.netloc)
+        elif p.scheme == 'https':
+            conn = HTTPSConnection(p.netloc)
+        else:
+            raise Exception('Unknown URL scheme')
         
-        conn = HTTPConnection(self.host)
+        full_path = _prepare_path(p.path + path, format, params)
+        
         kwargs = {}
         kwargs['headers'] = _prepare_headers(headers)
         kwargs['headers']['X-Auth-Token'] = self.token
@@ -100,9 +107,16 @@ class Client(object):
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024, params={}):
         """perfomrs a chunked request"""
-        full_path = _prepare_path(path, self.api, params=params)
+        p = urlparse(self.url)
+        if p.scheme == 'http':
+            conn = HTTPConnection(p.netloc)
+        elif p.scheme == 'https':
+            conn = HTTPSConnection(p.netloc)
+        else:
+            raise Exception('Unknown URL scheme')
         
-        conn = HTTPConnection(self.host)
+        full_path = _prepare_path(p.path + path, params=params)
+        
         conn.putrequest(method, full_path)
         conn.putheader('x-auth-token', self.token)
         conn.putheader('content-type', 'application/octet-stream')
@@ -280,10 +294,11 @@ class OOS_Client(Client):
             l = self._filter_trashed(l)
         return l
     
-    def create_container(self, container, account=None, **meta):
+    def create_container(self, container, account=None, meta={}, **headers):
         """creates a container"""
         account = account or self.account
-        headers = {}
+        if not headers:
+            headers = {}
         for k,v in meta.items():
             headers['x-container-meta-%s' %k.strip().upper()] = v.strip()
         status, header, data = self.put('/%s/%s' % (account, container),
@@ -342,13 +357,13 @@ class OOS_Client(Client):
             data = minidom.parseString(data)
         return data
     
-    def retrieve_object_hashmap(self, container, object, params={},
+    def retrieve_object_hashmap(self, container, object, format='json', params={},
                         account=None, **headers):
         """returns the hashmap representing object's data"""
-        args = locals().copy()
-        for elem in ['self', 'container', 'object']:
-            args.pop(elem)
-        return self.retrieve_object(container, object, format='json', **args)
+        if not params:
+            params = {}
+        params.update({'hashmap':None})
+        return self.retrieve_object(container, object, params, format, account, **headers)
     
     def create_directory_marker(self, container, object, account=None):
         """creates a dierectory marker"""
@@ -618,6 +633,12 @@ class Pithos_Client(OOS_Client):
         return self.post(path, headers=headers)
     
     # Storage Container Services
+    def create_container(self, container, account=None, meta={}, policies={}):
+        """creates a container"""
+        args = {}
+        for k, v in policies.items():
+            args['X-Container-Policy-%s' % k.capitalize()] = v
+        return OOS_Client.create_container(self, container, account, meta, **args)
     
     def list_objects(self, container, format='text',
                      limit=None, marker=None, prefix=None, delimiter=None,
@@ -919,9 +940,8 @@ class Pithos_Client(OOS_Client):
         sharing = '%s=%s' % (action, ','.join(l))
         self.update_object(container, object, f=None, x_object_sharing=sharing)
 
-def _prepare_path(path, api, format='text', params={}):
-    slash = '/' if api else ''
-    full_path = '%s%s%s?format=%s' % (slash, api, quote(path), format)
+def _prepare_path(path, format='text', params={}):
+    full_path = '%s?format=%s' % (quote(path), format)
     
     for k,v in params.items():
         value = quote(str(v)) if v else ''

@@ -36,17 +36,10 @@
 import sys
 import logging
 
+from pithos.lib.queue import (exchange_connect, exchange_close,
+    exchange_send, exchange_route, queue_callback, queue_start)
+
 from optparse import OptionParser
-
-try:
-    from carrot.connection import BrokerConnection
-    from carrot.messaging import Consumer
-    from carrot.messaging import Publisher
-except ImportError:
-    sys.stderr.write("Dispatcher requires 'carrot' python library to " \
-                     "be installed\n")
-    sys.exit(1)
-
 
 
 BROKER_HOST = 'localhost'
@@ -87,29 +80,21 @@ def main():
     parser.add_option('--test', action='store_true', default=False,
                       dest='test', help='Produce a dummy message for testing')
     opts, args = parser.parse_args()
-
+    
     if opts.verbose:
         DEBUG = True
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.DEBUG if DEBUG else logging.INFO)
     logger = logging.getLogger('dispatcher')
-
-    conn = BrokerConnection(hostname=opts.host, port=opts.port,
-                            userid=opts.user, password=opts.password,
-                            virtual_host=opts.vhost)
+    
+    exchange = 'rabbitmq://%s:%s@%s:%s/%s' % (opts.user, opts.password, opts.host, opts.port, opts.exchange)
+    connection = exchange_connect(exchange)
     if opts.test:
-        publisher = Publisher(connection=conn,
-                              exchange=opts.exchange, routing_key=opts.key,
-                              exchange_type="topic")
-        publisher.send({"test": "0123456789"})
-        publisher.close()
-        conn.close()
+        exchange_send(connection, opts.key, {"test": "0123456789"})
+        exchange_close(connection)
         sys.exit()
-    consumer = Consumer(connection=conn, queue=opts.queue,
-                        exchange=opts.exchange, routing_key=opts.key,
-                        exchange_type="topic")
-
+    
     callback = None
     if opts.callback:
         cb = opts.callback.rsplit('.', 1)
@@ -117,19 +102,19 @@ def main():
             __import__(cb[0])
             cb_module = sys.modules[cb[0]]
             callback = getattr(cb_module, cb[1])
-
-    def process_message(message_data, message):
-        logger.debug('%s', message_data)
+    
+    def handle_message(msg):
+        logger.debug('%s', msg)
         if callback:
-            callback(message_data)
-        message.ack()
-
-    consumer.register_callback(process_message)
+            callback(msg)
+    
+    exchange_route(connection, opts.key, opts.queue)
+    queue_callback(connection, opts.queue, handle_message)
     try:
-        consumer.wait()
+        queue_start(connection)
     except KeyboardInterrupt:
         pass
 
+
 if __name__ == '__main__':
     main()
-

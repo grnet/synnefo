@@ -24,6 +24,15 @@
   
   <link rel="stylesheet" href="site_media/css/site.css">
   <script src="site_media/js/libs/modernizr-1.7.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script>
+    var CLOUDBAR_ACTIVE_SERVICE = 'cloud';
+    var CLOUDBAR_LOCATION = "/im/static/im/cloudbar/";
+
+    $(document).ready(function(){
+      $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
+    })
+  </script>
 </head>
 <body id="index">
     <div class="container">
@@ -48,7 +57,7 @@
     </div>
     <div class="inner-bottom">
         <a class="gotoapp" 
-            href="/login?next=/ui" 
+            href="/ui" 
             title="Enter Pithos+">Είσοδος</a>
     </div>
     <div class="downloads clearfix">

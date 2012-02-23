@@ -1,9 +1,12 @@
 Changelog
 =========
 
-v0.8.0 -> dev
--------------
+v0.8.0 -> v0.8.1
+----------------
 
+* Handle synnefo.loggers entry point to append synnefo components loggers
+  in logging configuration
+* Added logging middleware provided by snf-common in project MIDDLWARE_CLASSES
 * Be able to serve synnefo components static files by django
 * Added link_static management command
 * Removed dependency from snf-cyclades-app

@@ -33,20 +33,24 @@
 
 import logging
 
+from urlparse import urlparse
+
 from django.http import HttpResponseNotFound, HttpResponseRedirect
 from django.utils.http import urlencode
-from django.conf import settings
+
+from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
 
 
 logger = logging.getLogger(__name__)
 
 
 def redirect_to_login_service(request):
-    users = settings.AUTHENTICATION_USERS
-    host = settings.AUTHENTICATION_HOST
-    if users is not None or host is None:
+    url = AUTHENTICATION_URL
+    users = AUTHENTICATION_USERS
+    if users or not url:
         return HttpResponseNotFound()
     
+    p = urlparse(url)
     if request.is_secure():
         proto = 'https://'
     else:
@@ -56,5 +60,5 @@ def redirect_to_login_service(request):
     renew = 'renew' in request.GET
     if renew:
         params['renew'] = True
-    uri = proto + host + '/login?' + urlencode(params)
+    uri = proto + p.netloc + '/login?' + urlencode(params)
     return HttpResponseRedirect(uri)

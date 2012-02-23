@@ -46,7 +46,7 @@ INSTALLED_APPS = (
     'synnefo.webproject'
 )
 
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (

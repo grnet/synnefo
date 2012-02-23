@@ -42,8 +42,7 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
-env.packages = ['snf-pithos-lib', 'snf-pithos-backend', 'snf-pithos-app',
-                        'snf-pithos-tools']
+env.packages = ['snf-pithos-backend', 'snf-pithos-app', 'snf-pithos-tools']
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'
@@ -171,8 +170,7 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.9'
-env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
-                    'snf-pithos-tools', 'snf-pithos-app']
+env.deb_packages = ['snf-pithos-backend', 'snf-pithos-tools', 'snf-pithos-app']
 env.signdebs = False
 env.debrelease = False  # Increase release number in Debian changelogs
 env.upstream = 'packaging'

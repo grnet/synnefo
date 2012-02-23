@@ -67,7 +67,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-pithos-lib'
+    'snf-common'
 ]
 
 EXTRAS_REQUIRES = {

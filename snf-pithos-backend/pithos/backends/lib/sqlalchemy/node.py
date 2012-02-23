@@ -41,7 +41,7 @@ from sqlalchemy.engine.reflection import Inspector
 
 from dbworker import DBWorker
 
-from pithos.lib.filter import parse_filters
+from pithos.backends.filter import parse_filters
 
 
 ROOTNODE  = 0

@@ -46,9 +46,9 @@ from django.conf import settings
 from pithos.backends.modular import CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED
 from pithos.backends.lib.sqlalchemy.node import Node, ROOTNODE
 
-from pithos.lib.transfer import upload
-from pithos.lib.hashmap import HashMap
-from pithos.lib.client import Fault
+from pithos.tools.lib.transfer import upload
+from pithos.tools.lib.hashmap import HashMap
+from pithos.tools.lib.client import Fault
 
 from migrate import Migration, Cache
 

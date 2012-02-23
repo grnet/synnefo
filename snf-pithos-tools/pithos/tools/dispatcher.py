@@ -36,7 +36,7 @@
 import sys
 import logging
 
-from pithos.lib.queue import (exchange_connect, exchange_close,
+from synnefo.lib.queue import (exchange_connect, exchange_close,
     exchange_send, exchange_route, queue_callback, queue_start)
 
 from optparse import OptionParser

@@ -41,10 +41,11 @@ from stat import S_IFDIR, S_IFREG
 from sys import argv
 from time import time
 
-from pithos.lib.compat import parse_http_date
-from pithos.lib.client import OOS_Client, Fault
-from pithos.lib.fuse import FUSE, FuseOSError, Operations
-from pithos.lib.util import get_user, get_auth, get_url
+from synnefo.lib.parsedate import parse_http_date
+
+from pithos.tools.lib.client import OOS_Client, Fault
+from pithos.tools.lib.fuse import FUSE, FuseOSError, Operations
+from pithos.tools.lib.util import get_user, get_auth, get_url
 
 
 epoch = int(time())

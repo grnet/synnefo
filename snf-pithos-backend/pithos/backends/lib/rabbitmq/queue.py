@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
+from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
 
 
 class Queue(object):

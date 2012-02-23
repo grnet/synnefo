@@ -36,7 +36,7 @@ import logging
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from pithos.lib.user import get_user
+from synnefo.lib.astakos import get_user
 
 from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
 from pithos.api.util import (put_object_headers, update_manifest_meta,

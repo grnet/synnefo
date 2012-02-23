@@ -41,8 +41,7 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
-from pithos.lib.user import get_user
-from pithos.lib.filter import parse_filters
+from synnefo.lib.astakos import get_user
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
@@ -52,8 +51,10 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
-from pithos.backends.base import NotAllowedError, QuotaError
 from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
+
+from pithos.backends.base import NotAllowedError, QuotaError
+from pithos.backends.filter import parse_filters
 
 import logging
 import hashlib

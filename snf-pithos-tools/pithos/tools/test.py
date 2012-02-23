@@ -34,8 +34,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.lib.client import Pithos_Client, Fault
-from pithos.lib.util import get_user, get_auth, get_url
+from pithos.tools.lib.client import Pithos_Client, Fault
+from pithos.tools.lib.util import get_user, get_auth, get_url
 
 from xml.dom import minidom
 from StringIO import StringIO

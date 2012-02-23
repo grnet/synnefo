@@ -39,9 +39,9 @@ from os import environ
 from sys import argv, exit, stdin, stdout
 from datetime import datetime
 
-from pithos.lib.client import Pithos_Client, Fault
-from pithos.lib.util import get_user, get_auth, get_url
-from pithos.lib.transfer import upload, download
+from pithos.tools.lib.client import Pithos_Client, Fault
+from pithos.tools.lib.util import get_user, get_auth, get_url
+from pithos.tools.lib.transfer import upload, download
 
 import json
 import logging

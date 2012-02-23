@@ -36,11 +36,38 @@ import os
 import time
 import uuid as uuidlib
 import logging
+import hashlib
 import binascii
 
 from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend
 
-from pithos.lib.hashmap import HashMap
+# Stripped-down version of the HashMap class found in tools.
+class HashMap(list):
+
+    def __init__(self, blocksize, blockhash):
+        super(HashMap, self).__init__()
+        self.blocksize = blocksize
+        self.blockhash = blockhash
+
+    def _hash_raw(self, v):
+        h = hashlib.new(self.blockhash)
+        h.update(v)
+        return h.digest()
+
+    def hash(self):
+        if len(self) == 0:
+            return self._hash_raw('')
+        if len(self) == 1:
+            return self.__getitem__(0)
+
+        h = list(self)
+        s = 2
+        while s < len(h):
+            s = s * 2
+        h += [('\x00' * len(h[0]))] * (s - len(h))
+        while len(h) > 1:
+            h = [self._hash_raw(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
+        return h[0]
 
 # Default modules and settings.
 DEFAULT_DB_MODULE = 'pithos.backends.lib.sqlalchemy'

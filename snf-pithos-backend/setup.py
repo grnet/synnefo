@@ -66,7 +66,7 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     'snf-common>=0.8.1',
-    'SQLAlchemy>=0.6.3',
+    'SQLAlchemy==0.6.3',
 ]
 
 EXTRAS_REQUIRES = {

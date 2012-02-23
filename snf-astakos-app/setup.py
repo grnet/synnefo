@@ -204,7 +204,8 @@ setup(
              'web_middleware = astakos.im.synnefo_settings:middlware_classes',
              'web_context_processors = astakos.im.synnefo_settings:context_processors',
              'urls = astakos.urls:urlpatterns',
-             'web_static = astakos.im.synnefo_settings:static_files'
+             'web_static = astakos.im.synnefo_settings:static_files',
+             'loggers = astakos.im.synnefo_settings:loggers'
         ]
     }
 )

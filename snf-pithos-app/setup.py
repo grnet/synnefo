@@ -204,7 +204,7 @@ setup(
          'web_apps = pithos.api.synnefo_settings:synnefo_installed_apps',
          'web_middleware = pithos.api.synnefo_settings:synnefo_middlewares',
          'urls = pithos.api.urls:urlpatterns',
-         'loggers = pithos.api.synnefo_settings:logging'
+         'loggers = pithos.api.synnefo_settings:loggers'
          ]
       },
 )

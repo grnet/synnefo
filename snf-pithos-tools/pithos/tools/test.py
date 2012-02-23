@@ -1778,7 +1778,7 @@ class TestGreek(BaseTestCase):
 
     def test_container_meta(self):
         meta = {'ποιότητα':'ΑΑΑ'}
-        self.client.create_container('φάκελος', **meta)
+        self.client.create_container('φάκελος', meta=meta)
 
         meta = self.client.retrieve_container_metadata('φάκελος', restricted=True)
         self.assertTrue('ποιότητα' in meta.keys())

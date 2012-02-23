@@ -65,7 +65,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-common',
+    'snf-common>=0.8.1',
     'snf-pithos-backend',
     'Django>=1.2, <1.3',
     'south>=0.7, <=0.7.3'
@@ -200,10 +200,11 @@ setup(
      'console_scripts': [
          ],
      'synnefo': [
-         'default_settings = pithos.synnefo_settings',
-         'web_apps = pithos.synnefo_settings:synnefo_installed_apps',
-         'web_middleware = pithos.synnefo_settings:synnefo_middlewares',
-         'urls = pithos.synnefo_settings:synnefo_urls'
+         'default_settings = pithos.api.synnefo_settings',
+         'web_apps = pithos.api.synnefo_settings:synnefo_installed_apps',
+         'web_middleware = pithos.api.synnefo_settings:synnefo_middlewares',
+         'urls = pithos.api.urls:urlpatterns',
+         'loggers = pithos.api.synnefo_settings:logging'
          ]
       },
 )

@@ -2,8 +2,6 @@ from django.conf import settings
 from os.path import abspath, dirname, join
 from urlparse import urlparse
 
-PROJECT_PATH = getattr(settings, 'PROJECT_PATH', dirname(dirname(abspath(__file__))))
-
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
@@ -39,7 +37,7 @@ COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
 COOKIE_DOMAIN = getattr(settings, 'ASTAKOS_COOKIE_DOMAIN', None)
 COOKIE_SECURE = getattr(settings, 'ASTAKOS_COOKIE_SECURE', True)
 
-IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/im/static/im/')
+IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 
 # If set to False and invitations not enabled newly created user will be automatically accepted
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)

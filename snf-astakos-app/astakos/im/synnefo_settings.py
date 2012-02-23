@@ -63,7 +63,7 @@ middlware_classes = [
 ]
 
 
-static_files = {'im': ''}
+static_files = {'astakos.im': ''}
 
 # The following settings will replace the default django settings
 AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',

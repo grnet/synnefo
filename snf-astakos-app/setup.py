@@ -45,33 +45,63 @@ from setuptools import setup, find_packages
 from astakos import get_version
 
 
-VERSION = get_version().replace(' ', '')
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+try:
+    # try to update the version file
+    from synnefo.util import version
+    version.update_version('astakos', 'version', HERE)
+except ImportError:
+    pass
 
-INSTALL_REQUIRES = [
-    'Django==1.2.3, <1.3',
-    'South==0.7',
-    'httplib2==0.6.0',
-    'snf-pithos-backend'
+from astakos.version import __version__
+
+# Package info
+VERSION = __version__
+README = open(os.path.join(HERE, 'README')).read()
+CHANGES = open(os.path.join(HERE, 'Changelog')).read()
+SHORT_DESCRIPTION = 'Package short description'
+
+PACKAGES_ROOT = '.'
+PACKAGES = find_packages(PACKAGES_ROOT)
+
+# Package meta
+CLASSIFIERS = [
+        'Development Status :: 3 - Alpha',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Topic :: Utilities',
+        'License :: OSI Approved :: BSD License',
 ]
 
+# Package requirements
+INSTALL_REQUIRES = [
+    'Django>=1.2, <1.3',
+    'South>=0.7, <=0.7.3',
+    'httplib2==0.6.0',
+    'snf-common>=0.8.1'
+]
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+EXTRAS_REQUIRES = {
+}
+
+TESTS_REQUIRES = [
+]
+
+# Provided as an attribute, so you can append to these instead
+# of replicating them:
+standard_exclude = ["*.py", "*.pyc", "*$py.class", "*~", ".*", "*.bak"]
+standard_exclude_directories = [
+    ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info", "snf-0.7"
+]
 
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 # Note: you may want to copy this into your setup.py file verbatim, as
 # you can't import this from another package, when you don't know if
 # that package is installed yet.
-
-# Provided as an attribute, so you can append to these instead
-# of replicating them:
-standard_exclude = ('*.py', '*.pyc', '*$py.class', '*~', '.*', '*.bak')
-standard_exclude_directories = ('.*', 'CVS', '_darcs', './build',
-                                './dist', 'EGG-INFO', '*.egg-info')
-
 def find_package_data(
-    where='.', package='',
+    where=".",
+    package="",
     exclude=standard_exclude,
     exclude_directories=standard_exclude_directories,
     only_in_packages=True,
@@ -82,29 +112,28 @@ def find_package_data(
 
     The dictionary looks like::
 
-        {'package': [files]}
+        {"package": [files]}
 
     Where ``files`` is a list of all the files in that package that
-    don't match anything in ``exclude``.
+    don"t match anything in ``exclude``.
 
     If ``only_in_packages`` is true, then top-level directories that
-    are not packages won't be included (but directories under packages
+    are not packages won"t be included (but directories under packages
     will).
 
     Directories matching any pattern in ``exclude_directories`` will
     be ignored; by default directories with leading ``.``, ``CVS``,
     and ``_darcs`` will be ignored.
 
-    If ``show_ignored`` is true, then all the files that aren't
+    If ``show_ignored`` is true, then all the files that aren"t
     included in package data are shown on stderr (for debugging
     purposes).
 
     Note patterns use wildcards, or can be exact paths (including
     leading ``./``), and all searching is case-insensitive.
     """
-
     out = {}
-    stack = [(convert_path(where), '', package, only_in_packages)]
+    stack = [(convert_path(where), "", package, only_in_packages)]
     while stack:
         where, prefix, package, only_in_packages = stack.pop(0)
         for name in os.listdir(where):
@@ -122,15 +151,15 @@ def find_package_data(
                         break
                 if bad_name:
                     continue
-                if (os.path.isfile(os.path.join(fn, '__init__.py'))
+                if (os.path.isfile(os.path.join(fn, "__init__.py"))
                     and not prefix):
                     if not package:
                         new_package = name
                     else:
-                        new_package = package + '.' + name
-                    stack.append((fn, '', new_package, False))
+                        new_package = package + "." + name
+                    stack.append((fn, "", new_package, False))
                 else:
-                    stack.append((fn, prefix + name + '/', package, only_in_packages))
+                    stack.append((fn, prefix + name + "/", package, only_in_packages))
             elif package or not only_in_packages:
                 # is a file
                 bad_name = False
@@ -153,16 +182,9 @@ setup(
     version=VERSION,
     license='BSD',
     url='http://code.grnet.gr/projects/astakos',
-    description='Astakos identity management service and tools',
-	long_description=read('README'),
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Topic :: Utilities',
-        'License :: OSI Approved :: BSD License',
-    ],
-
+    description = SHORT_DESCRIPTION,
+    long_description=README + '\n\n' +  CHANGES,
+    classifiers = CLASSIFIERS,
     author='GRNET',
     author_email='astakos@grnet.gr',
 

@@ -40,7 +40,9 @@ installed_apps = [
         {'before': 'django.contrib.admin',
          'insert': 'astakos.im',},
         'django.contrib.auth',
-        'django.contrib.sessions'
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages'
 ]
 
 context_processors = [
@@ -56,8 +58,8 @@ context_processors = [
 
 middlware_classes = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'astakos.middleware.LoggingConfigMiddleware',
-    'astakos.middleware.SecureMiddleware'
+    'synnefo.lib.middleware.LoggingConfigMiddleware',
+    'synnefo.lib.middleware.SecureMiddleware'
 ]
 
 

@@ -1,5 +1,0 @@
-global-include */templates/* */fixtures/* */static/*
-global-exclude */.DS_Store
-include pithos/settings.d/*
-prune docs
-prune other

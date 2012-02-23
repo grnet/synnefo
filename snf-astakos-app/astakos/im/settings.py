@@ -37,6 +37,7 @@ INVITATIONS_ENABLED = getattr(settings, 'ASTAKOS_INVITATIONS_ENABLED', True)
 
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
 COOKIE_DOMAIN = getattr(settings, 'ASTAKOS_COOKIE_DOMAIN', None)
+COOKIE_SECURE = getattr(settings, 'ASTAKOS_COOKIE_SECURE', True)
 
 IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/im/static/im/')
 

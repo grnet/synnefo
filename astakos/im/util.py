@@ -47,7 +47,7 @@ from django.contrib.auth import login, authenticate
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, FORCE_PROFILE_UPDATE
+from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE
 
 logger = logging.getLogger(__name__)
 
@@ -160,4 +160,4 @@ def set_cookie(response, user):
     cookie_value = quote(user.email + '|' + user.auth_token)
     response.set_cookie(COOKIE_NAME, value=cookie_value,
                         expires=expire_fmt, path='/',
-                        domain=COOKIE_DOMAIN)
+                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)

@@ -225,12 +225,11 @@ class Meta(Command):
 class CreateContainer(Command):
     syntax = '<container> [key=val] [...]'
     description = 'create a container'
-    policy={}
     
     def add_options(self, parser):
-        parser.add_option('--versioning', action='store', dest=policy['versioning'],
+        parser.add_option('--versioning', action='store', dest='versioning',
                           default=None, help='set container versioning (auto/none)')
-        parser.add_option('--quota', action='store', dest=policy['quota'],
+        parser.add_option('--quota', action='store', dest='quota',
                           default=None, help='set default container quota')
     
     def execute(self, container, *args):
@@ -238,6 +237,11 @@ class CreateContainer(Command):
         for arg in args:
             key, sep, val = arg.partition('=')
             meta[key] = val
+        policy = {}
+        if getattr(self, 'versioning'):
+            policy['versioning'] = self.versioning
+        if getattr(self, 'quota'):
+            policy['quota'] = self.quota
         ret = self.client.create_container(container, meta=meta, policies=policy)
         if not ret:
             print 'Container already exists'

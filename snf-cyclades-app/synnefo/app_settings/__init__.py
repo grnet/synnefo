@@ -8,12 +8,7 @@ synnefo_web_apps = [
     'synnefo.ui.userdata',
 ]
 
-synnefo_web_middleware = [
-    {'after': 'django.middleware.locale.LocaleMiddleware', 'insert': [
-        'synnefo.api.middleware.ApiAuthMiddleware'
-        ]
-    }
-]
+synnefo_web_middleware = []
 
 synnefo_static_files = {
     'synnefo.ui': 'ui',

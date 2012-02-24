@@ -228,7 +228,7 @@ class UserCollectionView(CollectionView):
     Filter collection queryset for request user entries
     """
     def queryset(self):
-        return super(UserCollectionView, self).queryset().filter(user=self.request.user)
+        return super(UserCollectionView, self).queryset().filter(user=self.request.user_uniq)
 
     def POST(self, request, data, *args, **kwargs):
         instance = self.model()

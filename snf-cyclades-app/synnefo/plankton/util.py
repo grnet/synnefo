@@ -41,21 +41,11 @@ from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
                          HttpResponseServerError)
 
+from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend, BackendException
 
 
 log = getLogger('synnefo.plankton')
-
-
-def get_user_from_token(token):
-    return None
-
-
-def get_request_user(request):
-    user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
-    if not user:
-        user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
-    return user
 
 
 def plankton_method(method):
@@ -63,11 +53,14 @@ def plankton_method(method):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
+                get_user(request, settings.ASTAKOS_URL)
+                if not request.user_uniq:
+                    raise Unauthorized('No user found.')
                 if request.method != method:
                     return HttpResponse(status=405)
-                if not request.user:
+                if not request.user_uniq:
                     return HttpResponse(status=401)
-                request.backend = ImageBackend(request.user)
+                request.backend = ImageBackend(request.user_uniq)
                 return func(request, *args, **kwargs)
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''

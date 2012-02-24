@@ -58,6 +58,7 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface)
+from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
 
 
@@ -315,7 +316,8 @@ def api_method(http_method=None, atom_allowed=False):
             try:
                 request.serialization = request_serialization(request,
                                                               atom_allowed)
-                if not request.user:
+                get_user(request, settings.ASTAKOS_URL)
+                if not request.user_uniq:
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')

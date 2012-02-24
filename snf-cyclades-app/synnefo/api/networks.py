@@ -110,7 +110,7 @@ def list_networks(request, detail=False):
     log.debug('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(
-                                    Q(userid=request.user) | Q(public=True))
+                                Q(userid=request.user_uniq) | Q(public=True))
     
     if since:
         user_networks = user_networks.filter(updated__gte=since)
@@ -119,7 +119,7 @@ def list_networks(request, detail=False):
     else:
         user_networks = user_networks.filter(state='ACTIVE')
     
-    networks = [network_to_dict(network, request.user, detail)
+    networks = [network_to_dict(network, request.user_uniq, detail)
                 for network in user_networks]
     
     if request.serialization == 'xml':
@@ -151,11 +151,11 @@ def create_network(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
     
-    network = backend.create_network(name, request.user)
+    network = backend.create_network(name, request.user_uniq)
     if not network:
         raise OverLimit('Network count limit exceeded for your account.')
     
-    networkdict = network_to_dict(network, request.user)
+    networkdict = network_to_dict(network, request.user_uniq)
     return render_network(request, networkdict, status=202)
 
 
@@ -170,8 +170,8 @@ def get_network_details(request, network_id):
     #                       overLimit (413)
     
     log.debug('get_network_details %s', network_id)
-    net = util.get_network(network_id, request.user)
-    netdict = network_to_dict(net, request.user)
+    net = util.get_network(network_id, request.user_uniq)
+    netdict = network_to_dict(net, request.user_uniq)
     return render_network(request, netdict)
 
 
@@ -194,7 +194,7 @@ def update_network_name(request, network_id):
     except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
 
-    net = util.get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not rename the public network.')
     net.name = name
@@ -213,7 +213,7 @@ def delete_network(request, network_id):
     #                       overLimit (413)
     
     log.debug('delete_network %s', network_id)
-    net = util.get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
     backend.delete_network(net)
@@ -227,7 +227,7 @@ def network_action(request, network_id):
     if len(req) != 1:
         raise BadRequest('Malformed request.')
     
-    net = util.get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not modify the public network.')
     

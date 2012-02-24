@@ -33,6 +33,8 @@
 
 import json
 
+from logging import getLogger
+
 from django.conf import settings
 from django.db import transaction
 
@@ -40,7 +42,6 @@ from synnefo.db.models import (VirtualMachine, Network, NetworkInterface,
                                 NetworkLink)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.logic')

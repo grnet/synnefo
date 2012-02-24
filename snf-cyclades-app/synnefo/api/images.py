@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from logging import getLogger
+
 import dateutil.parser
 
 from django.conf.urls.defaults import patterns
@@ -43,7 +45,6 @@ from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
 from synnefo.api.util import api_method, isoformat, isoparse
 from synnefo.plankton.backend import ImageBackend
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')

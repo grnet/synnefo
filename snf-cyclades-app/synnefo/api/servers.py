@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from base64 import b64decode
+from logging import getLogger
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns
@@ -46,7 +47,6 @@ from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.util.rapi import GanetiApiError
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')

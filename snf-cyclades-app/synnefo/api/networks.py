@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from logging import getLogger
+
 from django.conf.urls.defaults import patterns
 from django.db.models import Q
 from django.http import HttpResponse
@@ -43,7 +45,6 @@ from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
 from synnefo.db.models import Network
 from synnefo.logic import backend
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')

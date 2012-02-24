@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from functools import wraps
+from logging import getLogger
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -40,7 +41,6 @@ from django.template.loader import render_to_string
 
 from synnefo.db import models
 from synnefo.logic import backend, users
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.admin')

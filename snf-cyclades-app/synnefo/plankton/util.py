@@ -34,14 +34,14 @@
 import datetime
 
 from functools import wraps
+from logging import getLogger
 from traceback import format_exc
 
 from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
-        HttpResponseServerError)
+                         HttpResponseServerError)
 
 from synnefo.plankton.backend import ImageBackend, BackendException
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.plankton')

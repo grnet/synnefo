@@ -32,17 +32,19 @@
 # or implied, of GRNET S.A.
 
 import datetime
-import dateutil.parser
 
 from base64 import b64encode
 from datetime import timedelta, tzinfo
 from functools import wraps
 from hashlib import sha256
+from logging import getLogger
 from random import choice
 from string import digits, lowercase, uppercase
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
+
+import dateutil.parser
 
 from Crypto.Cipher import AES
 
@@ -57,7 +59,6 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface)
 from synnefo.plankton.backend import ImageBackend
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')

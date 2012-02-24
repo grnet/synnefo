@@ -33,6 +33,7 @@
 
 import json
 
+from logging import getLogger
 from string import punctuation
 from StringIO import StringIO
 from urllib import unquote
@@ -41,7 +42,6 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseNotFound
 
 from synnefo.plankton.util import plankton_method
-from synnefo.util.log import getLogger
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',

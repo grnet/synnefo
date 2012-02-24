@@ -21,12 +21,11 @@ LOGGING_SETUP = {
         'file': {
             'class': 'logging.FileHandler',
             'formatter': 'verbose',
-
         },
     },
     'loggers': {
         'root': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO'
         },
     }

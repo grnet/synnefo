@@ -67,7 +67,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'synnefo.lib.middleware.LoggingConfigMiddleware',
+    'synnefo.lib.middleware.LoggingConfigMiddleware'
 )
 
 ROOT_URLCONF = 'synnefo.webproject.urls'

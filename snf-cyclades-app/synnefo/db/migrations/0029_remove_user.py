@@ -8,15 +8,15 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         for image in orm.Image.objects.all():
-            image.userid = str(image.owner.id) if image.owner else ''
+            image.userid = image.owner.uniq if image.owner else ''
             image.save()
         
         for vm in orm.VirtualMachine.objects.all():
-            vm.userid = str(vm.owner.id) if vm.owner else ''
+            vm.userid = vm.owner.uniq if vm.owner else ''
             vm.save()
         
         for network in orm.Network.objects.all():
-            network.userid = str(network.owner.id) if network.owner else ''
+            network.userid = network.owner.uniq if network.owner else ''
             network.save()
     
     def backwards(self, orm):

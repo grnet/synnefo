@@ -1,3 +1,9 @@
+snf-common (0.8.1-1) natty; urgency=low
+
+  * New upstream version
+
+ -- Kostas Papadimitriou <kpap@kpap-edet>  Fri, 24 Feb 2012 16:21:19 +0200
+
 snf-common (0.8.0-2) stable; urgency=low
 
   * Depend on python-setuptools

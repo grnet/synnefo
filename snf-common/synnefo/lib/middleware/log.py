@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,19 +30,35 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
-from django.conf.urls.defaults import *
+
 from django.conf import settings
-import os
+from django.core.exceptions import MiddlewareNotUsed
 
-urlpatterns = patterns('',
-    url(r'^$', 'synnefo.ui.views.home', name='index'),
-    url(r'^feedback$', 'synnefo.ui.views.feedback_submit', name='feedback'),
-    url(r'userdata/', include('synnefo.ui.userdata.urls'))
-)
+from synnefo.lib.dictconfig import dictConfig
 
-if settings.DEBUG or settings.TEST:
-    urlpatterns += patterns('',
-        url(r'^jstests$', 'synnefo.ui.views.js_tests', name='js_tests'),)
+import logging
 
 
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+
+class LoggingConfigMiddleware:
+    def __init__(self):
+        '''Initialise the logging setup from settings, called on first request.'''
+        logging_setting = getattr(settings, 'LOGGING_SETUP', None)
+        if logging_setting:
+            # Disable handlers that are not used by any logger.
+            active_handlers = set()
+            loggers = logging_setting.get('loggers', {})
+            for logger in loggers.values():
+                active_handlers.update(logger.get('handlers', []))
+            handlers = logging_setting.get('handlers', {})
+            for handler in handlers:
+                if handler not in active_handlers:
+                    handlers[handler] = {'class': 'logging.NullHandler'}
+
+            logging.NullHandler = NullHandler
+            dictConfig(logging_setting)
+        raise MiddlewareNotUsed('Logging setup only.')

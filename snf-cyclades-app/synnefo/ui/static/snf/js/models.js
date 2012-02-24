@@ -232,6 +232,15 @@
             return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
+        display_owner: function() {
+            var owner = this.get_owner();
+            if (_.include(_.keys(synnefo.config.system_images_owners), owner)) {
+                return synnefo.config.system_images_owners[owner];
+            } else {
+                return owner;
+            }
+        },
+
         get_readable_size: function() {
             return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : "unknown";
         },

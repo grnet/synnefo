@@ -231,6 +231,51 @@ requests to :ref:`snf-webproject <snf-webproject>`.
 
 Static files
 ````````````
+
+:ref:`snf-webproject <snf-webproject>` provides a helper mechanism to avoid tedious
+tasks involving the collection and deployment of installed applications static
+files (js/css/images etc.). The mechanism tries to mimic the ``staticfiles``
+application included in ``Django>=1.3`` but its far less robust and adequate
+regarding its capabilities. When ``Django>=1.3`` become available as a package 
+for the stable release of ``Debian``, the current mechanism will get wiped off
+to be replaced by the ``staticfiles`` contrib application.
+
+The current mechanism provides a tool to collect the static files of the synnefo
+components installed and enabled in your system and an automatic way of serving
+those files directly from your django project. Be concerned that the latter is
+for debugging pupropses only since serving static files from your django project
+is considered as a bad practice.
+
+Each django based synnefo component informs webproject mechanism for the static 
+files it contains using the ``synnefo.web_static`` entry point which should point
+to a dict containing a map of a python module and a namespace for the url under
+which the files will be served from. As an example of use we can see how 
+snf-cyclades-app informs webproject for the static files of ui and admin applications.
+
+in ``setup.py``::
+    
+    ...
+    entry_points = {
+     ...
+     'synnefo': [
+         ...
+         'web_static = synnefo.app_settings:synnefo_static_files',
+         ...
+         ]
+      },
+    ...
+
+and inside ``synnefo/app_settings/__init__.py``::
+
+    synnefo_static_files = {
+        'synnefo.ui': 'ui',
+        'synnefo.admin': 'admin',
+    }
+
+
+Collecting static files
+^^^^^^^^^^^^^^^^^^^^^^^
+
 * Choose an appropriate path (e.g. :file:`/var/lib/synnefo/static/`) from which
   your web server will serve all static files (js/css) required by the synnefo
   web frontend to run.
@@ -249,6 +294,15 @@ Static files
 
 .. todo:: Make the location of static files configurable. This has already
    been done for the UI, see ``UI_MEDIA_URL``.
+
+
+Serving static files
+^^^^^^^^^^^^^^^^^^^^
+
+By default will serve the static files if ``DEBUG`` setting is set to True.
+You can override this behaviour by using the ``WEBPROJECT_SERVE_STATIC`` 
+setting.
+
 
 Apache
 ``````

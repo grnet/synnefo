@@ -26,3 +26,4 @@ OKEANOS_VIDEO_POSTER_IMAGE_URL = "/intro_video/intro_video.png"
 # flowplayer.controls swf should be placed on the same url as flowplayer swf
 OKEANOS_VIDEO_FLOWPLAYER_URL = "http://okeanos.grnet.gr/intro_video/flowplayer-3.2.1.swf"
 
+skip_auth_urls = ['/about', '/intro', '/okeanos_static']

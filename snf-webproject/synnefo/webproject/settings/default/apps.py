@@ -66,7 +66,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware'
+    'django.contrib.messages.middleware.MessageMiddleware',
     'synnefo.lib.middleware.LoggingConfigMiddleware',
 )
 

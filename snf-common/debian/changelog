@@ -1,8 +1,8 @@
-snf-common (0.8.1-1) natty; urgency=low
+snf-common (0.9.0rc1-1) stable; urgency=low
 
   * New upstream version
 
- -- Kostas Papadimitriou <kpap@kpap-edet>  Fri, 24 Feb 2012 16:21:19 +0200
+ -- Kostas Papadimitriou <kpap@kpap-edet>  Fri, 24 Feb 2012 17:37:03 +0200
 
 snf-common (0.8.0-2) stable; urgency=low
 

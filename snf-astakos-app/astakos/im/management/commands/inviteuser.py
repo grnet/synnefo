@@ -50,8 +50,8 @@ class Command(BaseCommand):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")
         
-        user = get_user(args[0])
-        if not user:
+        inviter = get_user(args[0])
+        if not inviter:
             raise CommandError("Unknown inviter")
         
         if inviter.invitations > 0:

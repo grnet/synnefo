@@ -45,7 +45,7 @@ from astakos.im.models import Invitation
 
 logger = logging.getLogger(__name__)
 
-def activate(user, email_template_name='welcome_email.txt'):
+def activate(user, email_template_name='im/welcome_email.txt'):
     """
     Activates the specific user and sends email.
     
@@ -56,7 +56,7 @@ def activate(user, email_template_name='welcome_email.txt'):
     subject = _('Welcome to %s' % SITENAME)
     message = render_to_string(email_template_name, {
                 'user': user,
-                'url': urljoin(BASEURL, reverse('astakos.im.views')),
+                'url': urljoin(BASEURL, reverse('astakos.im.views.index')),
                 'baseurl': BASEURL,
                 'site_name': SITENAME,
                 'support': DEFAULT_CONTACT_EMAIL})

@@ -66,6 +66,11 @@ class Command(BaseCommand):
             dest='noadmin',
             default=False,
             help="Revoke user's admin rights"),
+        make_option('--inactive',
+            action='store_true',
+            dest='inactive',
+            default=False,
+            help="Change user's state to inactive"),
         )
     
     def handle(self, *args, **options):
@@ -92,4 +97,6 @@ class Command(BaseCommand):
         if options['renew_token']:
             user.renew_token()
         
+        if options.get('inactive'):
+            user.is_active = False
         user.save()

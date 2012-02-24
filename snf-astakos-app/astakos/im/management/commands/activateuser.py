@@ -57,6 +57,11 @@ class Command(BaseCommand):
                 self.stderr.write(msg)
                 continue
             
-            activate(user)
+            try:
+                activate(user)
+                transaction.commit()
+            except Exception, e:
+                transaction.rollback()
+                raise e
             
             self.stdout.write("Activated '%s'\n" % (user.email,))

@@ -210,6 +210,14 @@ Uri                  Method     Description
 ``/im/get_menu``     GET        Get cloud bar menu
 ==================== =========  ==================
 
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+location                Location to pass in the next parameter
+======================  =========================
+
 Example reply if request user is not authenticated:
 
 ::

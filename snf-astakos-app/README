@@ -51,10 +51,15 @@ Administrator functions
 
 Available as extensions to Django's command-line management utility:
 
-============  ======================
-Name          Description
-============  ======================
-...
-============  ======================
-
-
+===============  ===========================
+Name             Description
+===============  ===========================
+activateuser     Activates one or more users
+createuser       Create a user
+inviteuser       Invite a user
+listinvitations  List invitations
+listusers        List users
+modifyuser       Modify a user's attributes
+showinvitation   Show invitation info
+showuser         Show user info
+===============  ===========================

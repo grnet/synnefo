@@ -33,12 +33,17 @@
 
 from traceback import format_exc
 from time import time, mktime
+from urllib import quote
+from urlparse import urlparse
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
 
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
 from astakos.im.models import AstakosUser
+from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED
 
 def render_fault(request, fault):
     if isinstance(fault, InternalServerError) and settings.DEBUG:
@@ -91,3 +96,30 @@ def authenticate(request):
     except BaseException, e:
         fault = InternalServerError('Unexpected error')
         return render_fault(request, fault)
+
+def get_services(request):
+    if request.method != 'GET':
+        raise BadRequest('Method not allowed.')
+    data = json.dumps(CLOUD_SERVICES)
+    return HttpResponse(content=data, mimetype="application/json")
+
+def get_menu(request):
+    if request.method != 'GET':
+        raise BadRequest('Method not allowed.')
+    location = request.GET.get('location', '')
+    index_url = reverse('astakos.im.views.index')
+    if urlparse(location).query.rfind('next=') == -1:
+        index_url = '%s?next=%s' % (index_url, quote(location))
+    l = [{ 'url': index_url, 'name': "login..."}]
+    if request.user.is_authenticated():
+        l = []
+        l.append({ 'url': reverse('astakos.im.views.edit_profile'), 'name': request.user.email})
+        l.append({ 'url': reverse('astakos.im.views.edit_profile'), 'name': "view your profile..." })
+        if request.user.password:
+            l.append({ 'url': reverse('password_change'), 'name': "change your password..." })
+        if INVITATIONS_ENABLED:
+            l.append({ 'url': reverse('astakos.im.views.invite'), 'name': "invite some friends..." })
+        l.append({ 'url': reverse('astakos.im.views.send_feedback'), 'name': "feedback..." })
+        l.append({ 'url': reverse('astakos.im.views.logout'), 'name': "logout..."})
+    data = json.dumps(tuple(l))
+    return HttpResponse(content=data, mimetype="application/json")

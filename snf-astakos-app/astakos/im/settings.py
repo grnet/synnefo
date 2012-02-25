@@ -47,3 +47,9 @@ BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
+
+# Set cloud services appear in the horizontal bar
+CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
+        { 'url':'/', 'name':'grnet cloud', 'id':'cloud', 'icon':'home-icon.png' },
+        { 'url':'/okeanos.html', 'name':'~okeanos', 'id':'okeanos' },
+        { 'url':'/ui/', 'name':'pithos+', 'id':'pithos' }))

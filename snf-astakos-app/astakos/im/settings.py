@@ -1,6 +1,4 @@
 from django.conf import settings
-from os.path import abspath, dirname, join
-from urlparse import urlparse
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.

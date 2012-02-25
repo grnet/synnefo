@@ -1,6 +1,5 @@
 #coding=utf8
 from django.conf import settings
-from os.path import abspath, dirname, join
 
 # Set local users, or a remote host. To disable local users set them to None.
 sample_users = {

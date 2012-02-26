@@ -58,9 +58,11 @@ def cloudbar(request):
     CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION', IM_STATIC_URL + 'cloudbar/')
     CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME', COOKIE_NAME)
     CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE', 'cloud')
-
+    
+    absolute = lambda (url): request.build_absolute_uri(url)
+    
     return {'CLOUDBAR_LOC': CB_LOCATION,
             'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
             'ACTIVE_SERVICE': CB_ACTIVE_SERVICE,
-            'GET_SERVICES_URL': reverse('astakos.im.api.get_services'),
-            'GET_MENU_URL': reverse('astakos.im.api.get_menu')}
+            'GET_SERVICES_URL': absolute(reverse('astakos.im.api.get_services')),
+            'GET_MENU_URL': absolute(reverse('astakos.im.api.get_menu'))}

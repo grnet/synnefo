@@ -107,19 +107,26 @@ def get_menu(request):
     if request.method != 'GET':
         raise BadRequest('Method not allowed.')
     location = request.GET.get('location', '')
-    index_url = reverse('astakos.im.views.index')
+    absolute = lambda (url): request.build_absolute_uri(url)
+    index_url = absolute(reverse('astakos.im.views.index'))
     if urlparse(location).query.rfind('next=') == -1:
         index_url = '%s?next=%s' % (index_url, quote(location))
     l = [{ 'url': index_url, 'name': "login..."}]
     if request.user.is_authenticated():
         l = []
-        l.append({ 'url': reverse('astakos.im.views.edit_profile'), 'name': request.user.email})
-        l.append({ 'url': reverse('astakos.im.views.edit_profile'), 'name': "view your profile..." })
+        l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
+                  'name': request.user.email})
+        l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
+                  'name': "view your profile..." })
         if request.user.password:
-            l.append({ 'url': reverse('password_change'), 'name': "change your password..." })
+            l.append({ 'url': absolute(reverse('password_change')),
+                      'name': "change your password..." })
         if INVITATIONS_ENABLED:
-            l.append({ 'url': reverse('astakos.im.views.invite'), 'name': "invite some friends..." })
-        l.append({ 'url': reverse('astakos.im.views.send_feedback'), 'name': "feedback..." })
-        l.append({ 'url': reverse('astakos.im.views.logout'), 'name': "logout..."})
+            l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
+                      'name': "invite some friends..." })
+        l.append({ 'url': absolute(reverse('astakos.im.views.send_feedback')),
+                  'name': "feedback..." })
+        l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
+                  'name': "logout..."})
     data = json.dumps(tuple(l))
     return HttpResponse(content=data, mimetype="application/json")

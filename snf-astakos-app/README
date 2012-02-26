@@ -1,1 +1,65 @@
+README
+======
 
+Astakos is an identity management service, built by GRNET using Django (https://www.djangoproject.com/).
+Learn more about Astakos at: http://code.grnet.gr/projects/astakos
+
+Consult COPYRIGHT for licensing information.
+
+About Astakos application
+-------------------------
+
+This package contains the Django application that implements all identity management functions.
+
+How to run
+----------
+
+Use snf-webproject to run Astakos automatically.
+
+To use Astakos in a custom Django project, add ``astakos.im`` to ``INSTALLED_APPS``. Astakos requires South (http://south.aeracode.org/).
+
+Also, add the following to your ``settings.py``::
+
+    TEMPLATE_CONTEXT_PROCESSORS = (
+        ...
+        'astakos.im.context_processors.cloudbar',
+        'astakos.im.context_processors.im_modules',
+        'astakos.im.context_processors.next',
+        'astakos.im.context_processors.code',
+        'astakos.im.context_processors.invitations')
+    
+    AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',
+                               'astakos.im.auth_backends.TokenBackend')
+    
+    CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
+    
+    LOGIN_URL = '/im'
+
+Settings
+--------
+
+Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using snf-webproject.
+
+===============================  ================================================  ============================================================
+Name                             Default value                                     Description
+===============================  ================================================  ============================================================
+...
+===============================  ================================================  ============================================================
+
+Administrator functions
+-----------------------
+
+Available as extensions to Django's command-line management utility:
+
+===============  ===========================
+Name             Description
+===============  ===========================
+activateuser     Activates one or more users
+createuser       Create a user
+inviteuser       Invite a user
+listinvitations  List invitations
+listusers        List users
+modifyuser       Modify a user's attributes
+showinvitation   Show invitation info
+showuser         Show user info
+===============  ===========================

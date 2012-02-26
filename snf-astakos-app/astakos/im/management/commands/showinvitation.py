@@ -39,7 +39,7 @@ from ._common import format_bool, format_date
 
 
 class Command(BaseCommand):
-    help = "Show user info"
+    help = "Show invitation info"
     
     def handle(self, *args, **options):
         if len(args) != 1:

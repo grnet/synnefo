@@ -44,7 +44,7 @@ from ._common import get_user
 
 class Command(BaseCommand):
     args = "<inviter id or email> <email> <real name>"
-    help = "Activates one or more users"
+    help = "Invite a user"
     
     def handle(self, *args, **options):
         if len(args) != 3:

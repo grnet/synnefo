@@ -48,7 +48,7 @@ def generate_password():
 
 class Command(BaseCommand):
     args = "<email> <first name> <last name> <affiliation>"
-    help = "Modify a user's attributes"
+    help = "Create a user"
     
     option_list = BaseCommand.option_list + (
         make_option('--active',

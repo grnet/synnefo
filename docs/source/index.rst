@@ -7,7 +7,6 @@ Contents:
    :maxdepth: 3
    
    devguide
-   adminguide
    views
    models
    forms

@@ -24,10 +24,12 @@
   
   <link rel="stylesheet" href="site_media/css/site.css">
   <script src="site_media/js/libs/modernizr-1.7.min.js"></script>
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
   <script>
     var CLOUDBAR_ACTIVE_SERVICE = 'okeanos';
-    var CLOUDBAR_LOCATION = "/im/static/im/cloudbar/";
+    var CLOUDBAR_LOCATION = "/static/im/cloudbar/";
+    var CLOUDBAR_SERVICES = "/im/get_services";
+    var CLOUDBAR_MENU = "/im/get_menu";
 
     $(document).ready(function(){
       $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');

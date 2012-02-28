@@ -1266,7 +1266,15 @@ class ObjectPut(BaseTestCase):
         self.assert_object_exists(self.container, 'large-object')
         self.assertEqual(data, self.client.retrieve_object(self.container,
                                                            'large-object'))
-
+        
+        r = self.client.retrieve_object_hashmap(self.container,'large-object')
+        hashes = r['hashes']
+        block_size = int(r['block_size'])
+        block_hash = r['block_hash']
+        l = len(data)
+        block_num = l/block_size if l/block_size != 0 else l/block_size + 1
+        self.assertEqual(block_num, len(hashes))
+        
         #wrong manifestation
         self.client.create_manifestation(self.container, 'large-object',
                                          '%s/invalid' % self.container)
@@ -1438,7 +1446,31 @@ class ObjectPost(BaseTestCase):
                                                         self.containers[0],
                                                         self.obj[0]['name'],
                                                         **more)
-
+            
+            #perform update metadata
+            more = {'α': 'β' * 256}
+            status = self.client.update_object_metadata(self.containers[0],
+                                                        self.obj[0]['name'],
+                                                        **more)[0]
+            #assert request accepted
+            self.assertEqual(status, 202)
+            
+            #assert old metadata are still there
+            headers = self.client.retrieve_object_metadata(self.containers[0],
+                                                           self.obj[0]['name'],
+                                                           restricted=True)
+            #assert new metadata have been updated
+            for k,v in more.items():
+                self.assertTrue(k in headers.keys())
+                self.assertTrue(headers[k], v)
+            
+            #out of limits
+            more = {'α': 'β' * 257}
+            self.assert_raises_fault(400, self.client.update_object_metadata,
+                                                        self.containers[0],
+                                                        self.obj[0]['name'],
+                                                        **more)
+    
     def test_update_object(self,
                            first_byte_pos=0,
                            last_byte_pos=499,

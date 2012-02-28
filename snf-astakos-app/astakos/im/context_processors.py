@@ -34,6 +34,7 @@
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
         COOKIE_NAME
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 def im_modules(request):
     return {'im_modules': IM_MODULES}
@@ -57,8 +58,11 @@ def cloudbar(request):
     CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION', IM_STATIC_URL + 'cloudbar/')
     CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME', COOKIE_NAME)
     CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE', 'cloud')
-
+    
+    absolute = lambda (url): request.build_absolute_uri(url)
+    
     return {'CLOUDBAR_LOC': CB_LOCATION,
             'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
-            'ACTIVE_SERVICE': CB_ACTIVE_SERVICE}
-
+            'ACTIVE_SERVICE': CB_ACTIVE_SERVICE,
+            'GET_SERVICES_URL': absolute(reverse('astakos.im.api.get_services')),
+            'GET_MENU_URL': absolute(reverse('astakos.im.api.get_menu'))}

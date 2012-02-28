@@ -78,7 +78,7 @@ INSTALL_REQUIRES = [
     'snf-common>=0.7.3',
     'vncauthproxy>=1.0',
     'south>=0.7, <=0.7.3',
-    'snf-pithos-backend>=0.8.3',
+    'snf-pithos-backend>=0.9.1',
     'lockfile==0.8'
 ]
 

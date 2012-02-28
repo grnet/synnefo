@@ -187,7 +187,7 @@ class ImageBackend(object):
     def _update(self, location, size, hashmap, meta, permissions):
         account, container, object = split_location(location)
         self.backend.update_object_hashmap(self.user, account, container,
-                object, size, hashmap, PLANKTON_DOMAIN,
+                object, size, hashmap, '', PLANKTON_DOMAIN,
                 permissions=permissions)
         self._update_meta(location, meta, replace=True)
     

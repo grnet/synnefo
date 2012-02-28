@@ -2,3 +2,4 @@ docs/build
 *.db
 *.pyc
 .DS_Store
+snf-astakos-app/astakos/version.py

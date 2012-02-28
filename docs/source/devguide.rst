@@ -4,22 +4,26 @@ Astakos Developer Guide
 Introduction
 ------------
 
-Astakos is a identity management service implemented by GRNET (http://www.grnet.gr). Users can create and manage their account, invite others and send feedback for GRNET services. During the account creation the user can select against which provider wants to authenticate:
+Astakos serves as the point of authentication for GRNET (http://www.grnet.gr) services. It is a platform-wide service, allowing users to register, login, and keep track of permissions.
 
-* Astakos
+Users in astakos can be authenticated via several identity providers:
+
+* Local
 * Twitter
 * Shibboleth
 
-Astakos provides also an administrative interface for managing user accounts.
+It provides also an administrative interface for managing user accounts.
 
-Astakos is build over django and extends its authentication mechanism.
+It is build over django and extends its authentication mechanism.
 
 This document's goals are:
 
-* Define the Astakos ReST API that allows the GRNET services to retrieve user information via HTTP calls
-* Describe the Astakos views and provide guidelines for a developer to extend them
+* present the overall architectural design.
+* provide basic use cases.
+* describe the APIs to the outer world.
+* document the views and provide guidelines for a developer to extend them.
 
-The present document is meant to be read alongside the Django documentation. Thus, it is suggested that the reader is familiar with associated technologies.
+The present document is meant to be read alongside the Django documentation (https://www.djangoproject.com/). Thus, it is suggested that the reader is familiar with associated technologies.
 
 Document Revisions
 ^^^^^^^^^^^^^^^^^^
@@ -27,29 +31,84 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.1 (Jub 24, 2012)         Initial release.
+0.1 (Feb 10, 2012)         Initial release.
 =========================  ================================
+
+Overview
+--------
+
+Astakos service co-ordinates the access to resources (and the subsequent permission model) and acts as the single point of registry and entry to the GRNET cloud offering, comprising of Cyclades and Pithos subsystems.
+
+It also propagates the user state to the Aquarium pricing subsystem.
+
+.. image:: images/~okeanos.jpg
+
+Registration Use Cases
+----------------------
+
+The following subsections describe two basic registration use cases. All the registration cases are covered in :ref:`registration-flow-label`
+
+Invited user
+^^^^^^^^^^^^
+
+A registered ~okeanos user, invites student Alice to subscribe to ~okeanos services. Alice receives an email and through a link is navigated to Astakos's signup page. The system prompts her to select one of the available authentication mechanisms (Shibboleth, Twitter or local authentication) in order to register to the system. Alice already has a Shibboleth account so chooses that and then she is redirected to her institution's login page. Upon successful login, her account is created.
+
+Since she is invited his account is automaticaly activated and she is redirected to Astakos's login page. As this is the first time Alice has accessed the system she is redirected to her profile page where she can edit or provide more information.
+
+Not invited user
+^^^^^^^^^^^^^^^^
+
+Tony while browsing in the internet finds out about ~okeanos services. He visits the signup page and since his has already a twitter account selects the twitter authentication mechanism and he is redirected to twitter login page where he is promted to provide his credentials. Upon successful login, twitter redirects him back to the Astakos and the account is created.
+
+Since his not an invited user his account has to be activated from an administrator first, in order to be able to login. Upon the account's activation he receives an email and through a link he is redirected to the login page.
+
+Authentication Use Cases
+------------------------
+
+Cloud service user
+^^^^^^^^^^^^^^^^^^
+
+Alice requests a specific resource from a cloud service ex. Pithos. In the request supplies the `X-Auth-Token`` to identify whether she is eligible to perform the specific task. The service contacts Astakos through its ``/im/authenticate`` api call (see :ref:`authenticate-api-label`) providing the specific ``X-Auth-Token``. Astakos checkes whether the token belongs to an active user and it has not expired and returns a dictionary containing user related information. Finally the service uses the ``uniq`` field included in the dictionary as the account string to identify the user accessible resources. 
+
+.. _registration-flow-label:
+
+Registration Flow
+-----------------
+
+.. image:: images/signup.jpg
+    :scale: 100%
+
+Login Flow
+----------
+.. image:: images/login.jpg
+    :scale: 100%
+
+.. _authentication-label:
 
 Astakos Users and Authentication
 --------------------------------
 
-Astakos extends django User model.
+Astakos incorporates django user authentication system and extends its User model.
 
-Each user is uniquely identified by the ``username`` field. An astakos user instance is assigned also with a ``auth_token`` field used by the astakos clients to authenticate a user. All API requests require a token.
+Since username field of django User model has a limitation of 30 characters, AstakosUser is **uniquely** identified by the ``email`` instead. Therefore, ``astakos.im.authentication_backends.EmailBackend`` is served to authenticate a user using email if the first argument is actually an email, otherwise tries the username.
+
+A new AstakosUser instance is assigned with a uui as username and also with a ``auth_token`` used by the cloud services to authenticate the user. ``astakos.im.authentication_backends.TokenBackend`` is also specified in order to authenticate the user using the email and the token fields.
 
 Logged on users can perform a number of actions:
 
-* access and edit their profile via: ``https://hostname/im/profile``.
-* change their password via: ``https://hostname/im/password``
-* invite somebody else via: ``https://hostname/im/invite``
-* send feedback for grnet services via: ``https://hostname/im/send_feedback``
-* logout via: ``https://hostname/im/logout``
+* access and edit their profile via: ``/im/profile``.
+* change their password via: ``/im/password``
+* invite somebody else via: ``/im/invite``
+* send feedback for grnet services via: ``/im/send_feedback``
+* logout (and delete cookie) via: ``/im/logout``
 
-User entries can also be modified/added via the management interface available at ``https://hostname/im/admin``.
+User entries can also be modified/added via the administrative interface available at ``/im/admin``.
 
-A superuser account can be created the first time you run the manage.py syncdb django command. At a later date, the manage.py createsuperuser command line utility can be used.
+A superuser account can be created the first time you run the ``manage.py syncdb`` django command and then loading the extra user data from the ``admin_user`` fixture. At a later date, the ``manage.py createsuperuser`` command line utility can be used (as long as the extra user data for Astakos is added with a fixture or by hand).
 
-Astakos is also compatible with Twitter and Shibboleth (http://shibboleth.internet2.edu/). The connection between Twitter and Astakos is done by ``https://hostname/im/target/twitter/login``. The connection between Shibboleth and Astakos is done by ``https://hostname/im/target/shibboleth/login``. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``https://hostname/im/login``.
+Internal Astakos requests are handled using cookie-based django user sessions.
+
+External systems in the same domain can delgate ``/login`` URI. The server, depending on its configuration will redirect to the appropriate login page. When done with logging in, the service's login URI should redirect to the URI provided with next, adding user and token parameters, which contain the email and token fields respectively.
 
 The login URI accepts the following parameters:
 
@@ -60,23 +119,25 @@ next                    The URI to redirect to when the process is finished
 renew                   Force token renewal (no value parameter)
 ======================  =========================
 
-In case the user wants to authenticate via Astakos fills the login form and post it to ``https://hostname/im/local/login``.
+External systems outside the domain scope can acquire the user information by a cookie set identified by ASTAKOS_COOKIE_NAME setting.
 
-Otherwise (the user selects a third party authentication) the login process starts by redirecting the user to an external URI (controlled by the third party), where the actual authentication credentials are entered. Then, the user is redirected back to the login URI, with various identification information in the request headers.
-
-If the user does not exist in the database, Astakos adds the user and creates a random token. If the user exists, the token has not expired and ``renew`` is not set, the existing token is reused. Finally, the login URI redirects to the URI provided with ``next``, adding the ``user`` and ``token`` parameters, which contain the ``Uniq`` and ``Token`` fields respectively.
+Finally, backend systems having acquired a token can use the :ref:`authenticate-api-label` api call from a private network or through HTTPS.
 
 The Astakos API
 ---------------
 
+All API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
+
+.. _authenticate-api-label:
+
 Authenticate
 ^^^^^^^^^^^^
 
-==================================== =========  ==================
+==================== =========  ==================
 Uri                                  Method     Description
-==================================== =========  ==================
-``https://hostname/im/authenticate`` GET        Authenticate user using token
-==================================== =========  ==================
+==================== =========  ==================
+``/im/authenticate`` GET        Authenticate user using token
+==================== =========  ==================
 
 |
 
@@ -91,7 +152,8 @@ Extended information on the user serialized in the json format will be returned:
 ===========================  ============================
 Name                         Description
 ===========================  ============================
-uniq                         User uniq identifier
+username                     User uniq identifier
+uniq                         User email (uniq identifier used by Astakos)
 auth_token                   Authentication token
 auth_token_expires           Token expiration date
 auth_token_created           Token creation date
@@ -101,7 +163,8 @@ Example reply:
 
 ::
 
-  {"uniq": "admin",
+  {"username": "4ad9f34d6e7a4992b34502d40f40cb",
+  "uniq": "papagian@example.com"
   "auth_token": "0000",
   "auth_token_expires": "Tue, 11-Sep-2012 09:17:14 ",
   "auth_token_created": "Sun, 11-Sep-2011 09:17:14 "}

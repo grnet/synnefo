@@ -1,0 +1,590 @@
+@import "../less/bootstrap.less";
+@import "../less/django_forms.less";
+@import "../less/tables.less";
+
+
+@gradCol: #ddd;
+body {
+    #font.main();
+}
+
+.topbar {
+    background-color: @shadowColor;
+    .head {
+        float: left;    
+            padding: @gridGutterWidth/2-5;
+    }
+    .links {
+        .clearfix();
+        a {
+            color: @black;
+            text-decoration: none;
+            display: block;
+            float: left;
+            margin-left: 10px;
+            padding: @gridGutterWidth/2+1;
+
+            &:hover {
+                background-color: lighten(@black, 10%);
+                color: @white;
+            }
+        }
+
+        float: right;    
+    }
+}
+
+// default link styles
+section a, p a, form a, .section a {
+    color: @black;
+    text-decoration: none;
+    border-bottom: 1px solid @linkColor;
+
+    &:hover {
+        color: @linkColor;
+    }
+
+    &.noborder {
+        border: none;   
+    }
+
+    em {
+        color: @blue;    
+    }
+}
+
+a.action {
+    color: @linkColor;
+    border-bottom: none;
+}
+
+a img {
+    border-bottom: none;
+}
+
+// body borders
+.content-border {
+    border-right: 1px solid @mainBorderColor;
+    border-left: 1px solid @mainBorderColor;
+}
+
+.hidden {
+    display: none !important;
+}
+
+// container sizing
+.container, .topbar, .footer {
+    .fixed-container();
+    .content-border();
+    padding: 0 @siteWhiteSpace;
+}
+
+.container {
+    padding-bottom: @siteWhiteSpace;
+    background-color: @white;
+}
+
+.topbar {
+}
+
+
+div.header {
+    position: relative;
+    margin-top: 4*@gridGutterWidth;
+    margin-bottom: @gridGutterWidth;
+    h1 {
+        color: @shadowColor;
+        display: inline;
+        font-size: 2.3em;
+        border-bottom: 1px solid @shadowColor;
+        padding-bottom: 3px;
+    }
+}
+.mainlogo {
+    img {
+        margin-left: -10px;
+    }
+}
+
+.footer {
+    border-bottom: 1px solid @mainBorderColor;
+    border-top: 1px solid lighten(@mainBorderColor, 15%);
+    padding-top: @gridGutterWidth;
+    padding-bottom: @gridGutterWidth;
+}
+
+ul.inline {
+    .clearfix();
+    li {
+        display: block;    
+        float: left;
+        margin-right: 1em;
+    }
+}
+
+.mainnav.quicknav {
+    position: absolute;
+    right: 0;
+    top: -2.6*@gridGutterWidth;
+    margin:0;
+
+    li {
+        margin-right:0;
+        margin-left: 1em;
+    }
+}
+
+
+.mainnav {
+    font-size: 1.1em;
+    
+    &.subnav {
+        margin-bottom: -@gridGutterWidth;
+        li {
+            margin-top: @gridGutterWidth/2;
+        }
+    }
+
+    li {
+        margin-top: 3*@gridGutterWidth;
+    }
+
+    li.active {
+        a {
+            /*border-bottom: 1px solid @linkColor;*/
+            border-bottom: none;
+            color: @linkColor;
+        }
+    }
+    a {
+        color: @black;
+        text-decoration: none;
+
+        &:hover {
+            border-bottom: 1px solid @linkColor;
+        }
+
+        &.active, &:active {
+            border-bottom: 1px solid @linkColor;
+            color: @linkColor;
+        }
+    }
+}
+
+.page {
+    .makeRow();
+    margin-top: 6*@gridGutterWidth;
+    font-size: 1.1em;
+    .page-inner {
+        position: relative;    
+    }
+}
+
+// columnlayout
+.maincol {
+    .makeColumn(5);
+    
+    &.wide {
+        .makeColumn(6);    
+    }
+
+    &.full {
+        .makeRow();
+        margin-left: 0;
+        .makeColumn(10);
+    }
+}
+
+.appbar {
+    height: 30px;
+    background-color: @blue;
+}
+
+.rightcol {
+    .offset(6.5);
+    .columns(4);
+
+    &.narrow {
+        .offset(7.5);
+        .columns(3);    
+    }
+    input[type=text], input[type=password] {
+        width: 3*@gridColumnWidth + 4*@gridGutterWidth + 5;    
+    }
+}
+
+/* generic form styles */
+input, textarea, .form-widget {
+    background-color: @white;
+    color: @black;
+    border-color: @black;
+}
+
+.checkbox-widget.checked {
+    background-color: #f00;
+    background-image: url("../images/checkbox.png");
+    background-position: 50% 50%;
+}
+
+.checkbox-widget {
+    border: 1px solid @gray;
+    width: 25px;
+    height: 25px;
+    display: block;
+    float: left;
+    cursor: pointer;
+    margin-top: @gridGutterWidth/2 - 2;
+}
+
+#forms {
+    .input, input {
+        #font.main();
+        border: 1px solid @gray;
+        margin-bottom: -1px;
+        padding: 0.8em;
+        padding-left: 1.5em;
+        z-index: 2;
+
+        &:focus {
+            position: relative;
+            border: 1px solid #000;
+            z-index: 100;
+        }
+    }
+}
+
+.altcol {
+    background-color: @altColor !important;
+
+    &:hover {
+        background-color: @linkColor !important;
+    }
+}
+
+.section {
+
+    &.positioned {
+        
+        .content {
+            .makeColumn(4);
+        }
+
+        img {
+        }
+
+        &.withimg {
+            .img {
+                .makeColumn(4);
+            }
+
+            img {
+                float: left;    
+            }
+        }
+        
+        h3 {
+            margin-bottom: @gridGutterWidth;    
+        }
+
+        .text {
+            color: @black;    
+        }
+    }
+
+    margin-bottom: 2em; 
+
+    .left, .right {
+        width: 50%;
+        float: left;
+    }
+
+    &.imagelist {
+        margin-top: 2em;
+        .clearfix();
+        img {
+            float: left;    
+            margin-right: 4em;
+            vertical-align: middle;
+        }    
+    }
+}
+
+input[readonly=true] {
+    background-color: #ddd;
+    color: darken(#ddd, 70%);
+}
+
+form.withlabels {
+    label {
+        width: 3*@gridColumnWidth + 2*@gridGutterWidth;
+        display: block;
+        float: left;
+        padding-top: 1em;
+    }
+
+    input[type=text], input[type=password], textarea {
+        width: 3*@gridColumnWidth + 2*@gridGutterWidth;
+
+        &.long {
+            width: 3*@gridColumnWidth + 2*@gridGutterWidth;
+        }
+    }
+}
+
+
+@errorColor: lighten(@red, 30%);
+// forms
+form {
+    
+    &.login {
+        margin-bottom: 3em; 
+    }
+
+    h2 {
+        color: @black;
+        margin-bottom: @gridGutterWidth;
+        font-size: 1.1em;
+
+        span {
+            padding-bottom: 3px;
+        }
+    }
+
+    .form-row {
+        min-height: 2*@gridGutterWidth;
+        position: relative;
+        &.submit {
+            margin-top: @gridGutterWidth;
+        }
+
+        .extra-link {
+            color: @gray;
+            text-decoration: none;
+            border: none;
+            font-size: 0.8em;
+            margin-top: 1.3em;
+            float: right;
+        }
+    }
+    
+    &.innerlabels label { 
+        position: absolute;
+        top:1em;
+        left:1.5em;
+        color: #aaa;
+    }
+
+    &.innerlabels p {
+        position: relative;    
+    }
+
+    textarea, input.text, input[type="text"], input[type="password"] {
+        #forms.input();
+    }
+
+    input.submit, input[type="submit"] {
+        .button();
+    }
+
+    
+    .with-errors {
+        input, textarea, select {
+            color: @red;
+        }
+        label {
+            color: @errorColor;
+        }
+    }
+}
+
+.form-error {
+    background-color: @red;
+    color: #fff;
+    font-size: 0.8em;
+    padding: 5px 5px;
+}
+
+.form-errors.all {
+    .form-error {
+        position: relative;
+        border-radius: 0;
+        margin-bottom: 1.3em;
+        padding: 0.5em;
+    }
+}
+
+div.form-stacked {
+    margin-bottom: 4em;
+}
+// content types
+.section {
+    h2 {
+        font-size: 1.1em;
+        margin-bottom: 1.5*@gridGutterWidth;    
+
+        a {
+            color: #4085A6;
+            border: none;
+        }
+    }
+
+    p {
+        line-height: 1.7em;    
+    }
+}
+
+
+// page messages
+.messages {
+    .makeColumn(10);
+
+    margin-bottom: 2em;
+    background-color: #ddd;
+
+    li {
+        padding: 1em;    
+
+        &.success { background-color: @green; color: @white }
+        &.error { background-color: @red; color: @white }
+        &.warning { background-color: @yellow; color: @black }
+    }
+
+}
+
+// accounts specific styles
+.service-desc {
+    margin-top: 4em;    
+
+}
+
+
+// invitations table
+table {
+
+    td.consumed {
+        color: @red;
+    }
+
+    tr.consumed {
+        td.consumed {
+            color: @green;    
+        }
+    }
+}
+
+
+.row { .makeRow() }
+
+// footer
+.footer {
+    .makeRow()
+    
+    &:hover {
+        a {
+            color: @gray !important;
+            .transit();
+        }
+    }
+
+    a {
+        color: lighten(@gray, 20%);    
+        .transit();
+        text-decoration: none;
+
+        &:hover {
+            color: darken(@gray, 50%);    
+        }
+    }
+
+    li {
+        margin-bottom: @gridGutterWidth/2;
+
+        &.header {
+            margin-bottom: @gridGutterWidth;    
+        }
+    }
+
+    .col {
+        .makeColumn(4);
+        &:last-child, &.last {
+            width: 140px;
+            margin-right:0;
+        }
+    }
+
+    .bottom.row {
+        .col {
+            .makeColumn(2);    
+            &:last-child, &.last {
+                width: 140px;
+                margin-right:0;
+            }
+        }
+    }
+}
+
+
+/*pagination*/
+
+
+/*blog styles*/
+.blog-entries {
+
+}
+
+.blog-entry {
+
+    .section();
+    .clearfix();
+    margin-bottom: 2*@gridGutterWidth;    
+
+    .title {
+        margin-bottom: 1em;    
+        font-size: 1.1em;
+    }    
+
+    .media {
+        img {
+            border: 1px solid @gray;    
+        }    
+    }
+    
+    .intro-content, .content {
+        margin-top: @gridGutterWidth;
+
+        object {
+            margin: @gridGutterWidth 0;    
+        }
+    }
+
+    .entry-info {
+        font-size: 0.7em;
+        margin-top: @gridGutterWidth;    
+    }
+
+    &.single {
+        .entry-info {
+            margin-top: 0;
+            margin-bottom: @gridGutterWidth;
+        }    
+    }
+}
+
+.section.twitter-feed {
+    
+    .tweet {
+        line-height: 1.3em;
+        font-size: 0.9em;
+        margin-bottom: @gridGutterWidth;
+        color: @gray;
+
+        .date {
+            display: block;
+            font-size: 0.7em;
+            a {
+                text-decoration: none !important;
+                border: none;
+            }
+        }
+    }
+}

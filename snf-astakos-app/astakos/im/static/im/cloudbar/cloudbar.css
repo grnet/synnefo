@@ -1,0 +1,121 @@
+/*!
+ * Bootstrap @VERSION
+ *
+ * Copyright 2011 Twitter, Inc
+ * Licensed under the Apache License v2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Designed and built with all the love in the world @twitter by @mdo and @fat.
+ * Date: @DATE
+ */
+/* Variables.less
+ * Variables to customize the look and feel of Bootstrap
+ * ----------------------------------------------------- */
+/* Mixins.less
+ * Snippets of reusable CSS to develop faster and keep code readable
+ * ----------------------------------------------------------------- */
+.servicesbar {
+  font-family: arial, sans-serif;
+  font-size: 13px !important;
+  line-height: 13px;
+  letter-spacing: 0px;
+  zoom: 1;
+  color: #ccc;
+  z-index: 1000;
+  border-bottom: 1px solid #444;
+  background-color: #000000;
+  position: relative;
+}
+.servicesbar ol, .servicesbar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.servicesbar li {
+  margin: 0;
+  padding: 0;
+}
+.servicesbar:before, .servicesbar:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.servicesbar:after {
+  clear: both;
+}
+.servicesbar a {
+  border: none !important;
+  font-size: inherit !important;
+  color: #e6e6e6;
+  text-decoration: none;
+  display: block;
+  float: left;
+  padding: 11px;
+  height: 13px;
+}
+.servicesbar a:hover {
+  background-color: #444;
+}
+.servicesbar a.active {
+  font-weight: bold;
+  background-color: #333;
+}
+.servicesbar .services {
+  zoom: 1;
+}
+.servicesbar .services:before, .servicesbar .services:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.servicesbar .services:after {
+  clear: both;
+}
+.servicesbar .profile {
+  margin-top: -35px;
+  zoom: 1;
+  text-align: right;
+  min-width: 200px;
+  background-color: #000000;
+  zoom: 1;
+  position: absolute;
+  right: 0;
+  float: right;
+}
+.servicesbar .profile:before, .servicesbar .profile:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.servicesbar .profile:after {
+  clear: both;
+}
+.servicesbar .profile a {
+  float: none;
+}
+.servicesbar .profile ul {
+  display: none;
+}
+.servicesbar .profile ul li {
+  width: 100%;
+  border-bottom: 1px solid #444;
+  background-color: #333;
+}
+.servicesbar .profile ul li a {
+  float: none;
+  display: block;
+}
+.servicesbar .profile:hover {
+  background-color: #222;
+}
+.servicesbar .profile:hover ul {
+  display: block;
+}
+.servicesbar .profile:before, .servicesbar .profile:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.servicesbar .profile:after {
+  clear: both;
+}

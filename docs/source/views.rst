@@ -5,8 +5,3 @@ Views
    :show-inheritance:
    :members:
    :undoc-members:
-
-.. automodule:: astakos.im.admin.views
-   :show-inheritance:
-   :members:
-   :undoc-members:

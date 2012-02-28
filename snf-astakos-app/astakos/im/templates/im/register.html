@@ -1,0 +1,17 @@
+{% extends "im/base.html" %}
+
+{% block title%}
+        <h1>Welcome</h1>
+{% endblock title%}
+
+{% block body %}
+<form action={%url astakos.im.views.register%} method="post">{% csrf_token %}
+    {{ form.as_p }}
+<div>
+    <button type="submit" class="btn primary">Register</button>
+</div>
+<input type="hidden" name="code" value="{{ code }}">
+<input type="hidden" name="next" value="{{ next }}">
+
+</form>
+{% endblock body %}

@@ -23,8 +23,6 @@ Setup the files::
   python manage.py migrate im 0001 --fake
   python manage.py migrate im
   python loaddata im/fixtures/admin_user.json (Load additional information for the newly created superuser)
-  edit im/fixtures/site.json (Change the ``domain`` and ``name`` values according to your site information)
-  python loaddata im/fixtures/site.json
   cd /astakos
   python setup.py build_sphinx
   python manage runserver

@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 from astakos.im.functions import activate
 
@@ -42,6 +43,7 @@ class Command(BaseCommand):
     args = "<user id or email> [user id or email] ..."
     help = "Activates one or more users"
     
+    @transaction.commit_manually
     def handle(self, *args, **options):
         if not args:
             raise CommandError("No user was given")

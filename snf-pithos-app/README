@@ -18,6 +18,10 @@ Use snf-webproject to run Pithos automatically.
 
 To use Pithos in a custom Django project, just add ``pithos.api`` to ``INSTALLED_APPS``.
 
+Pithos has been tested with SQLite and PostgreSQL backend databases. When using PostgreSQL, ensure that the has been created with the appropriate encoding and collation::
+
+    CREATE DATABASE pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
+
 Settings
 --------
 

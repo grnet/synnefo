@@ -36,8 +36,10 @@ $(document).ready(function(){
     var services = $('<div class="services"></div>');
     var profile = $('<div class="profile"></div>');
     
+    var get_services_url = window.GET_SERVICES_URL || window.CLOUDBAR_SERVICES;
+    
     // create services links and set the active class to the current service
-    $.getJSON(window.GET_SERVICES_URL || window.CLOUDBAR_SERVICES, function(data) {
+    $.getJSON(get_services_url + "?callback=?", function(data) {
             $.each(data, function(i, el){
             var slink = $("<a>");
             if (el.icon) {
@@ -58,8 +60,8 @@ $(document).ready(function(){
     var user = $('<div class="user"></div>');    
     var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
-    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU).concat('?location=').concat(window.location.toString());
-    $.getJSON(get_menu_url, function(data) {
+    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString();
+    $.getJSON(get_menu_url + "&callback=?", function(data) {
         $.each(data, function(i,el) {
             if (i == 0){
                 username.text(el.name);

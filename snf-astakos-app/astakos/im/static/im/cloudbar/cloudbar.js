@@ -61,7 +61,8 @@ $(document).ready(function(){
     var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
     var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString();
-    $.getJSON(get_menu_url + "&callback=?", function(data) {
+
+    $.getJSON(get_menu_url, function(data) {
         $.each(data, function(i,el) {
             if (i == 0){
                 username.text(el.name);

@@ -76,6 +76,8 @@
 
     <!-- the following views require refactor -->
     <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
+
+    {{ CLOUDBAR_CODE }}
     
     <script>
         // empty object for console to avoid errors in browsers that don't support it
@@ -584,7 +586,11 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
                 logout_url: synnefo.config.logout_redirect,
-                cookie_name: synnefo.config.auth_cookie_name
+                cookie_name: synnefo.config.auth_cookie_name,
+                logout_callback: function(client) {
+                    Backbone.history.navigate(client.config.logout_url);
+                    window.location = client.config.logout_url; 
+                }
             });
 
             // user config

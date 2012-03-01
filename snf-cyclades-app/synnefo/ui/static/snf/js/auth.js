@@ -82,7 +82,8 @@
     }
 
     snf.auth.AstakosClient.prototype.redirect_to_logout = function() {
-        window.location = this.config.logout_url;
+        Backbone.history.navigate(this.config.logout_url); 
+        window.location = this.config.logout_url + "?next=";
     }
     
     snf.auth.AstakosClient.prototype.redirect_to_login = function() {

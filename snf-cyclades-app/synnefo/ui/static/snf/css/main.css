@@ -20,6 +20,7 @@ body {
     background: url("../images/body-bg.png") repeat-x #FFFFFF;
     text-align:center;
     font-size: 16px;
+    background-position: 0px 35px; 
 }
 
 a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
@@ -47,7 +48,7 @@ pre {
 
 #header {
     height: 93px;
-    background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("../images/header-bg.png") repeat-x scroll 0 0 transparent;
     margin: 0 auto;
     width: 700px;
     text-align: left;
@@ -2077,7 +2078,7 @@ div#user .usermenu {
     cursor: pointer;
     overflow: hidden;
     padding-top: 5px;
-    margin-top: -5px;
+    margin-top: -6px;
     position: relative;
 }
 

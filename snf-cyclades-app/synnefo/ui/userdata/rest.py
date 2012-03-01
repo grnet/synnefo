@@ -40,6 +40,9 @@ from django.core.urlresolvers import reverse
 
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
+from synnefo.lib.astakos import get_user
+from django.conf import settings
+
 # base view class
 # https://github.com/bfirsh/django-class-based-views/blob/master/class_based_views/base.py
 
@@ -78,6 +81,7 @@ class View(object):
         Main entry point for a request-response process.
         """
         def view(request, *args, **kwargs):
+            get_user(request, settings.ASTAKOS_URL)
             self = cls(*initargs, **initkwargs)
             return self.dispatch(request, *args, **kwargs)
         return view

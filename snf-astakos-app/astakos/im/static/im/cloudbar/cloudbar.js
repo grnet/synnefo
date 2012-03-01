@@ -90,4 +90,7 @@ $(document).ready(function(){
     root.prepend(bar);
     var firstlink = profile.find("ul li:first-child a").attr("href");
     profile.find(".user > a").attr("href", firstlink);
+
+    // ie fix
+    user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
 });

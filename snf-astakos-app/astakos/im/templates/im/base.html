@@ -53,9 +53,16 @@
   <script type="text/javascript">
       $(document).ready(function() {
           $("form.innerlabels label").inFieldLabels();
+          $("form").each(function(){
+            if ($(this).hasClass("login")) { return }
+            $(this).find("input").attr("autocomplete","off");
+          })
           $("form .form-row").formErrors();
           $("form .form-row input[type=checkbox]").formCheckBoxes();
-      })
+            
+          // hide label for captcha field
+          $("label[for=id_recaptcha_challenge_field]").closest('.form-row').hide();
+    })
   </script>
   <script>
     var CLOUDBAR_LOCATION = "{{ CLOUDBAR_LOC }}";

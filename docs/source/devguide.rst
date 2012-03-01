@@ -12,7 +12,7 @@ Users in astakos can be authenticated via several identity providers:
 * Twitter
 * Shibboleth
 
-It provides also an administrative interface for managing user accounts.
+It provides also a command line tool for managing user accounts.
 
 It is build over django and extends its authentication mechanism.
 
@@ -102,7 +102,7 @@ Logged on users can perform a number of actions:
 * send feedback for grnet services via: ``/im/send_feedback``
 * logout (and delete cookie) via: ``/im/logout``
 
-User entries can also be modified/added via the administrative interface available at ``/im/admin``.
+User entries can also be modified/added via the ``snf-manage activateuser`` command.
 
 A superuser account can be created the first time you run the ``manage.py syncdb`` django command and then loading the extra user data from the ``admin_user`` fixture. At a later date, the ``manage.py createsuperuser`` command line utility can be used (as long as the extra user data for Astakos is added with a fixture or by hand).
 
@@ -126,15 +126,15 @@ Finally, backend systems having acquired a token can use the :ref:`authenticate-
 The Astakos API
 ---------------
 
-All API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
-
 .. _authenticate-api-label:
 
 Authenticate
 ^^^^^^^^^^^^
 
+Authenticate API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
+
 ==================== =========  ==================
-Uri                                  Method     Description
+Uri                  Method     Description
 ==================== =========  ==================
 ``/im/authenticate`` GET        Authenticate user using token
 ==================== =========  ==================
@@ -179,3 +179,59 @@ Return Code                 Description
 401 (Unauthorized)          Missing token or inactive user
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
+
+Get Services
+^^^^^^^^^^^^
+
+Returns a json formatted list containing information about the supported cloud services.
+
+==================== =========  ==================
+Uri                  Method     Description
+==================== =========  ==================
+``/im/get_services`` GET        Get cloud services
+==================== =========  ==================
+
+Example reply:
+
+::
+
+[{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "cloud"},
+ {"url": "/okeanos.html", "name": "~okeanos", "id": "okeanos"},
+ {"url": "/ui/", "name": "pithos+", "id": "pithos"}]
+ 
+Get Menu
+^^^^^^^^
+
+Returns a json formatted list containing the cloud bar links. 
+
+==================== =========  ==================
+Uri                  Method     Description
+==================== =========  ==================
+``/im/get_menu``     GET        Get cloud bar menu
+==================== =========  ==================
+
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+location                Location to pass in the next parameter
+======================  =========================
+
+Example reply if request user is not authenticated:
+
+::
+
+[{"url": "/im/login?next=", "name": "login..."}]
+
+Example reply if request user is authenticated:
+
+[{"url": "/im/profile", "name": "spapagian@grnet.gr"},
+ {"url": "/im/profile", "name": "view your profile..."},
+ {"url": "/im/password", "name": "change your password..."},
+ {"url": "/im/feedback", "name": "feedback..."},
+ {"url": "/im/logout", "name": "logout..."}]
+
+
+
+

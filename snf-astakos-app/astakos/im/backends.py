@@ -48,7 +48,7 @@ from urlparse import urljoin
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL
 
 import socket
 import logging
@@ -61,7 +61,7 @@ def get_backend(request):
     according to the INVITATIONS_ENABLED setting
     (if True returns ``astakos.im.backends.InvitationsBackend`` and if False
     returns ``astakos.im.backends.SimpleBackend``).
-    
+
     If the backend cannot be located ``django.core.exceptions.ImproperlyConfigured``
     is raised.
     """
@@ -93,10 +93,10 @@ class InvitationsBackend(object):
         """
         self.request = request
         self.invitation = get_invitation(request)
-    
+
     def get_signup_form(self, provider):
         """
-        Returns the form class name 
+        Returns the form class name
         """
         invitation = self.invitation
         initial_data = self.get_signup_initial_data(provider)
@@ -104,12 +104,14 @@ class InvitationsBackend(object):
         main = provider.capitalize() if provider == 'local' else 'ThirdParty'
         suffix  = 'UserCreationForm'
         formclass = '%s%s%s' % (prefix, main, suffix)
-        return globals()[formclass](initial_data)
-    
+        ip = self.request.META.get('REMOTE_ADDR',
+                self.request.META.get('HTTP_X_REAL_IP', None))
+        return globals()[formclass](initial_data, ip=ip)
+
     def get_signup_initial_data(self, provider):
         """
         Returns the necassary registration form depending the user is invited or not
-        
+
         Throws Invitation.DoesNotExist in case ``code`` is not valid.
         """
         request = self.request
@@ -128,7 +130,7 @@ class InvitationsBackend(object):
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
         return initial_data
-    
+
     def _is_preaccepted(self, user):
         """
         If there is a valid, not-consumed invitation code for the specific user
@@ -141,15 +143,15 @@ class InvitationsBackend(object):
             invitation.consume()
             return True
         return False
-    
+
     @transaction.commit_manually
-    def signup(self, form):
+    def signup(self, form, admin_email_template_name='im/admin_notification.txt'):
         """
         Initially creates an inactive user account. If the user is preaccepted
         (has a valid invitation code) the user is activated and if the request
         param ``next`` is present redirects to it.
         In any other case the method returns the action status and a message.
-        
+
         The method uses commit_manually decorator in order to ensure the user
         will be created only if the procedure has been completed successfully.
         """
@@ -161,6 +163,7 @@ class InvitationsBackend(object):
                 user.save()
                 message = _('Registration completed. You can now login.')
             else:
+                _send_notification(user, admin_email_template_name)
                 message = _('Registration completed. You will receive an email upon your account\'s activation.')
             status = messages.SUCCESS
         except Invitation.DoesNotExist, e:
@@ -169,7 +172,7 @@ class InvitationsBackend(object):
         except socket.error, e:
             status = messages.ERROR
             message = _(e.strerror)
-        
+
         # rollback in case of error
         if status == messages.ERROR:
             transaction.rollback()
@@ -185,7 +188,7 @@ class SimpleBackend(object):
     """
     def __init__(self, request):
         self.request = request
-    
+
     def get_signup_form(self, provider):
         """
         Returns the form class name
@@ -198,35 +201,43 @@ class SimpleBackend(object):
         if request.method == 'POST':
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
-        return globals()[formclass](initial_data)
-    
+        ip = self.request.META.get('REMOTE_ADDR',
+                self.request.META.get('HTTP_X_REAL_IP', None))
+        return globals()[formclass](initial_data, ip=ip)
+
     @transaction.commit_manually
-    def signup(self, form, email_template_name='im/activation_email.txt'):
+    def signup(self, form, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Creates an inactive user account and sends a verification email.
-        
+
         The method uses commit_manually decorator in order to ensure the user
         will be created only if the procedure has been completed successfully.
-        
+
         ** Arguments **
-        
+
         ``email_template_name``
             A custom template for the verification email body to use. This is
             optional; if not specified, this will default to
             ``im/activation_email.txt``.
-        
+
         ** Templates **
             im/activation_email.txt or ``email_template_name`` keyword argument
-        
+
         ** Settings **
-        
+
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """
         user = form.save()
         status = messages.SUCCESS
         if MODERATION_ENABLED:
-            message = _('Registration completed. You will receive an email upon your account\'s activation.')
+            try:
+                _send_notification(user, admin_email_template_name)
+                message = _('Registration completed. You will receive an email upon your account\'s activation.')
+            except (SMTPException, socket.error) as e:
+                status = messages.ERROR
+                name = 'strerror'
+                message = getattr(e, name) if hasattr(e, name) else e
         else:
             try:
                 _send_verification(self.request, user, email_template_name)
@@ -235,7 +246,7 @@ class SimpleBackend(object):
                 status = messages.ERROR
                 name = 'strerror'
                 message = getattr(e, name) if hasattr(e, name) else e
-        
+
         # rollback in case of error
         if status == messages.ERROR:
             transaction.rollback()
@@ -256,3 +267,15 @@ def _send_verification(request, user, template_name):
     sender = DEFAULT_FROM_EMAIL
     send_mail('%s account activation' % SITENAME, message, sender, [user.email])
     logger.info('Sent activation %s', user)
+
+def _send_notification(user, template_name):
+    if not DEFAULT_ADMIN_EMAIL:
+        return
+    message = render_to_string(template_name, {
+            'user': user,
+            'baseurl': BASEURL,
+            'site_name': SITENAME,
+            'support': DEFAULT_CONTACT_EMAIL})
+    sender = DEFAULT_FROM_EMAIL
+    send_mail('%s account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+    logger.info('Sent admin notification for user %s', user)

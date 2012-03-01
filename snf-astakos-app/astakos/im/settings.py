@@ -21,6 +21,7 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_FROM_EMAIL', 'GRNET Cloud <no-reply@grnet.gr>')
 DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
+DEFAULT_ADMIN_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_ADMIN_EMAIL', 'support@cloud.grnet.gr')
 
 # Identity Management enabled modules
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'twitter', 'shibboleth'])
@@ -45,3 +46,15 @@ BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
+
+# Set cloud services appear in the horizontal bar
+CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
+        { 'url':'/', 'name':'grnet cloud', 'id':'cloud', 'icon':'home-icon.png' },
+        { 'url':'/okeanos.html', 'name':'~okeanos', 'id':'okeanos' },
+        { 'url':'/ui/', 'name':'pithos+', 'id':'pithos' }))
+
+# Set recaptcha keys
+RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
+RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
+RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', {'theme': 'white'})
+

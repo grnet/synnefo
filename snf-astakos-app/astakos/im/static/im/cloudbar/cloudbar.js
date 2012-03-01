@@ -5,21 +5,6 @@ $(document).ready(function(){
     */
 
     var PROFILE_URL = "https://accounts.cloud.grnet.gr";
-    var SERVICES_LINKS = window.CLOUDBAR_SERVICES_LINKS || {
-        'cloud':   { url:'/', name:'grnet cloud', id:'cloud', icon:'home-icon.png' },
-        'okeanos': { url:'/okeanos.html', name:'~okeanos', id:'okeanos' },
-        'pithos':  { url:'/ui/', name:'pithos+', id:'pithos' }
-    };
-    
-    var PROFILE_LINKS = window.CLOUDBAR_PROFILE_LINKS || {
-        'login': { url: '/im/login?next=' + window.location.toString(), auth:false, name: "login...", visible:false },
-        'profile': { url: '/im/profile', auth:true, name: "view your profile..." },
-        'password': { url: '/im/password', auth:true, name: "change your password..." },
-        'invitations': { url: '/im/invite', auth:true, name: "invite some friends..." },
-        'feedback': { url: '/im/feedback', auth:true, name: "feedback..." },
-        'logout': { url: '/im/logout', auth:true, name: "logout..." }
-    };
-
 
     // cookie plugin https://raw.github.com/carhartl/jquery-cookie/master/jquery.cookie.js 
     //  * Copyright (c) 2010 Klaus Hartl, @carhartl
@@ -51,65 +36,50 @@ $(document).ready(function(){
     var services = $('<div class="services"></div>');
     var profile = $('<div class="profile"></div>');
     
+    var get_services_url = window.GET_SERVICES_URL || window.CLOUDBAR_SERVICES;
     
     // create services links and set the active class to the current service
-    $.each(SERVICES_LINKS, function(i, el){
-        var slink = $("<a>");
-        if (el.icon) {
-            slink.append($('<img src="'+cssloc+el.icon+'"/>'));
-        } else {
-            slink.text(el.name);
-        }
-        slink.attr('href', el.url);
-        slink.attr('title', el.name);
-        services.append(slink);
-        if (el.id == ACTIVE_MENU) {
-            slink.addClass("active");
-        }
-    });
-
-    var USERNAME, LOGGED_IN;
-    var authcookie = cookie(COOKIE_NAME);
-    var anonymous = {'user': 'Login...', 'logged_in': false};
-
-    if (authcookie && authcookie.indexOf("|") > -1) {
-        USER_DATA.logged_in = true;
-        USER_DATA.user = authcookie.split("|")[0];
-    } else {
-        USER_DATA = anonymous;
-    }
-
-    USERNAME = USER_DATA.user;
-    LOGGED_IN = USER_DATA.logged_in;
-
-    // clear username
-    USERNAME = USERNAME.replace(/\\'/g,'');
-    USERNAME = USERNAME.replace(/\"/g,'');
-
-    var user = $('<div class="user"></div>');
-    var username = $('<a href="#"></a>');
-    username.text(USERNAME);
+    $.getJSON(get_services_url + "?callback=?", function(data) {
+            $.each(data, function(i, el){
+            var slink = $("<a>");
+            if (el.icon) {
+                slink.append($('<img src="'+cssloc+el.icon+'"/>'));
+            } else {
+                slink.text(el.name);
+            }
+            slink.attr('href', el.url);
+            slink.attr('title', el.name);
+            services.append(slink);
+            if (el.id == ACTIVE_MENU) {
+                slink.addClass("active");
+            }
+        });
+      });
     
     // create profile links
+    var user = $('<div class="user"></div>');    
+    var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
-    $.each(PROFILE_LINKS, function(i,el) {
-        if (!LOGGED_IN && el.auth) { return }
-        if (LOGGED_IN && !el.auth) { return }
-        var li = $("<li />");
-        var link = $("<a />");
-        link.text(el.name);
-        link.attr({href:el.url});
-        li.append(link);
-        if (el.visible == false) {
-            li.hide();
-        }
-        usermenu.append(li);
-    });
+    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString();
 
+    $.getJSON(get_menu_url, function(data) {
+        $.each(data, function(i,el) {
+            if (i == 0){
+                username.text(el.name);
+                username.attr('href', el.url);
+            }else{
+                var link = $("<a />");
+                link.text(el.name);
+                link.attr({href:el.url});
+                var li = $("<li />");
+                li.append(link);
+                usermenu.append(li);
+            }
+        });
+    });
+    
     //profile.filter(".user a").attr("href", 
                                    //profile.find("li a").get(0).attr("href"))
-    
-
     
     user.append(username);
     user.append(usermenu);
@@ -120,4 +90,7 @@ $(document).ready(function(){
     root.prepend(bar);
     var firstlink = profile.find("ul li:first-child a").attr("href");
     profile.find(".user > a").attr("href", firstlink);
+
+    // ie fix
+    user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
 });

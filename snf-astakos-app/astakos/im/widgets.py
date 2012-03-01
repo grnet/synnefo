@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,38 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME
-from django.conf import settings
-from django.core.urlresolvers import reverse
+import recaptcha.client.captcha as captcha
 
-def im_modules(request):
-    return {'im_modules': IM_MODULES}
+from django import forms
+from django.utils.safestring import mark_safe
+from django.utils import simplejson as json
 
-def next(request):
-    return {'next' : request.GET.get('next', '')}
+from astakos.im.settings import RECAPTCHA_PUBLIC_KEY, RECAPTCHA_OPTIONS
 
-def code(request):
-    return {'code' : request.GET.get('code', '')}
+class RecaptchaWidget(forms.Widget):
+    """ A Widget which "renders" the output of captcha.displayhtml """
+    def render(self, *args, **kwargs):
+        conf = RECAPTCHA_OPTIONS
+        recaptcha_conf = ('<script type="text/javascript">'
+                         'var RecaptchaOptions = %s'
+                         '</script>') % json.dumps(conf)
+        return mark_safe(recaptcha_conf + \
+                    captcha.displayhtml(RECAPTCHA_PUBLIC_KEY))
 
-def invitations(request):
-    return {'invitations_enabled' :INVITATIONS_ENABLED}
-
-def media(request):
-    return {'IM_STATIC_URL' : IM_STATIC_URL}
-
-def cloudbar(request):
+class DummyWidget(forms.Widget):
     """
-    Cloudbar configuration
+    A dummy Widget class for a placeholder input field which will
+    be created by captcha.displayhtml
+
     """
-    CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION', IM_STATIC_URL + 'cloudbar/')
-    CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME', COOKIE_NAME)
-    CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE', 'cloud')
-    
-    absolute = lambda (url): request.build_absolute_uri(url)
-    
-    return {'CLOUDBAR_LOC': CB_LOCATION,
-            'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
-            'ACTIVE_SERVICE': CB_ACTIVE_SERVICE,
-            'GET_SERVICES_URL': absolute(reverse('astakos.im.api.get_services')),
-            'GET_MENU_URL': absolute(reverse('astakos.im.api.get_menu'))}
+    # make sure that labels are not displayed either
+    is_hidden=True
+    def render(self, *args, **kwargs):
+        return ''

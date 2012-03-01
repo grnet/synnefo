@@ -1,1 +1,10 @@
+v0.3.1
+======
 
+- bug fixes
+- administrator email notification on sign up 
+  (configurable from ASTAKOS_DEFAULT_ADMIN_EMAIL setting)
+- recaptcha integration on sign up form
+  (requires ASTAKOS_RECAPTCHA_PUBLIC_KEY, ASTAKOS_RECAPTCHA_PRIVATE_KEY
+   settings)
+- cloudbar jsonp responses

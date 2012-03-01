@@ -90,7 +90,7 @@ a img {
 
 div.header {
     position: relative;
-    margin-top: 4*@gridGutterWidth;
+    margin-top: 42px;
     margin-bottom: @gridGutterWidth;
     h1 {
         color: @shadowColor;
@@ -173,7 +173,7 @@ ul.inline {
 
 .page {
     .makeRow();
-    margin-top: 6*@gridGutterWidth;
+    margin-top: 42px;
     font-size: 1.1em;
     .page-inner {
         position: relative;    
@@ -213,6 +213,18 @@ ul.inline {
     }
 }
 
+
+/* recaptcha */
+#recaptcha_widget_div {
+    margin-top: 10px;
+    margin-left: -4px;
+
+    #recaptcha_instructions_image {
+        font-size: 0.8em;
+        margin-bottom: 10px;
+        display: block !important;
+    }
+}
 /* generic form styles */
 input, textarea, .form-widget {
     background-color: @white;

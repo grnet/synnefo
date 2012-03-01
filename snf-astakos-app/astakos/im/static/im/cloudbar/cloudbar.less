@@ -1,4 +1,5 @@
-@import "less/bootstrap.less";
+@import "less/variables.less";
+@import "less/mixins.less";
 
 @toolbarBg: #222;
 @toolbarColor: darken(@white, 10%);
@@ -36,6 +37,12 @@
             font-weight: bold;
             background-color: #333;
         }
+
+        img {
+            border: none;
+            margin: 1px;
+            margin-bottom: 2px;
+        }
     }
 
     .services {
@@ -49,6 +56,7 @@
         .clearfix();
         text-align: right;
         min-width: 200px;
+        width: 200px;
         a {
                     float: none;
         }
@@ -64,7 +72,7 @@
                 }
             }
         }
-        &:hover {
+        &:hover, &.hover {
             background-color: #222;
             ul {
                 display: block;    

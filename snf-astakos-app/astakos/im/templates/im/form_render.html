@@ -10,7 +10,7 @@
         {{ field.errors }}
      <p class="{% if field.blank %}required{% endif %}">
         {{ field.label_tag }}
-        {{ field }}
+        {{ field|safe }}
         </p>
     </div>
 {% endfor %}

@@ -62,7 +62,7 @@ if 'local' in IM_MODULES:
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
          'password_reset_confirm'),
         url(r'^local/password/reset/complete/$', 'password_reset_complete'),
-        url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'})
+        url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'}, name='password_change')
     )
 
 if INVITATIONS_ENABLED:
@@ -82,5 +82,7 @@ if 'twitter' in IM_MODULES:
     )
 
 urlpatterns += patterns('astakos.im.api',
-    url(r'^authenticate/?$', 'authenticate')
+    url(r'^authenticate/?$', 'authenticate'),
+    url(r'^get_services/?$', 'get_services'),
+    url(r'^get_menu/?$', 'get_menu'),
 )

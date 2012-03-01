@@ -42,9 +42,11 @@ from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY
+from astakos.im.widgets import DummyWidget, RecaptchaWidget
 
 import logging
+import recaptcha.client.captcha as captcha
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,8 @@ class LocalUserCreationForm(UserCreationForm):
     * The username field isn't visible and it is assigned a generated id.
     * User created is not active. 
     """
+    recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
+    recaptcha_response_field = forms.CharField(widget=RecaptchaWidget, label='')
     
     class Meta:
         model = AstakosUser
@@ -65,9 +69,14 @@ class LocalUserCreationForm(UserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
+        if 'ip' in kwargs:
+            self.ip = kwargs['ip']
+            kwargs.pop('ip')
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
-                                'password1', 'password2']
+                                'password1', 'password2',
+                                'recaptcha_challenge_field',
+                                'recaptcha_response_field']
     
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -78,6 +87,23 @@ class LocalUserCreationForm(UserCreationForm):
             raise forms.ValidationError(_("Email is reserved"))
         except AstakosUser.DoesNotExist:
             return email
+    
+    def clean_recaptcha_response_field(self):
+        if 'recaptcha_challenge_field' in self.cleaned_data:
+            self.validate_captcha()
+        return self.cleaned_data['recaptcha_response_field']
+
+    def clean_recaptcha_challenge_field(self):
+        if 'recaptcha_response_field' in self.cleaned_data:
+            self.validate_captcha()
+        return self.cleaned_data['recaptcha_challenge_field']
+
+    def validate_captcha(self):
+        rcf = self.cleaned_data['recaptcha_challenge_field']
+        rrf = self.cleaned_data['recaptcha_response_field']
+        check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
+        if not check.is_valid:
+            raise forms.ValidationError(_('You have not entered the correct words'))
     
     def save(self, commit=True):
         """
@@ -163,6 +189,9 @@ class ThirdPartyUserCreationForm(ProfileForm):
         fields = ('email', 'last_name', 'first_name', 'affiliation', 'provider', 'third_party_identifier')
     
     def __init__(self, *args, **kwargs):
+        if 'ip' in kwargs:
+            self.ip = kwargs['ip']
+            kwargs.pop('ip')
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email']
     

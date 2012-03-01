@@ -56,3 +56,5 @@ CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
 RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
+RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', {'theme': 'white'})
+

@@ -76,7 +76,9 @@ IMAGE_ICONS = settings.IMAGE_ICONS
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
-LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
+LOGOUT_URL = getattr(settings, "UI_LOGOUT_URL", '/im/authenticate')
+LOGIN_URL = getattr(settings, "UI_LOGIN_URL", '/im/login')
+AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
 
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
@@ -108,7 +110,6 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
-INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
@@ -144,11 +145,12 @@ def home(request):
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
+               'login_redirect': LOGIN_URL,
+               'auth_cookie_name': AUTH_COOKIE_NAME,
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
                'synnefo_version': SYNNEFO_JS_LIB_VERSION,
-               'invitations_per_page': INVITATIONS_PER_PAGE,
                'delay_on_blur': json.dumps(DELAY_ON_BLUR),
                'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),

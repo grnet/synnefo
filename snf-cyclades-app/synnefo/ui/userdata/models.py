@@ -43,8 +43,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.db.models.signals import pre_save
 
-from synnefo.db import models as synnefo_models
-
 try:
     from paramiko import rsakey, dsskey, SSHException
 except:

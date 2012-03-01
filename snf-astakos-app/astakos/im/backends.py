@@ -48,7 +48,7 @@ from urlparse import urljoin
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL
 
 import socket
 import logging
@@ -143,7 +143,7 @@ class InvitationsBackend(object):
         return False
     
     @transaction.commit_manually
-    def signup(self, form):
+    def signup(self, form, admin_email_template_name='im/admin_notification.txt'):
         """
         Initially creates an inactive user account. If the user is preaccepted
         (has a valid invitation code) the user is activated and if the request
@@ -161,6 +161,7 @@ class InvitationsBackend(object):
                 user.save()
                 message = _('Registration completed. You can now login.')
             else:
+                _send_notification(user, admin_email_template_name)
                 message = _('Registration completed. You will receive an email upon your account\'s activation.')
             status = messages.SUCCESS
         except Invitation.DoesNotExist, e:
@@ -201,7 +202,7 @@ class SimpleBackend(object):
         return globals()[formclass](initial_data, ip=self.request.META['REMOTE_ADDR'])
     
     @transaction.commit_manually
-    def signup(self, form, email_template_name='im/activation_email.txt'):
+    def signup(self, form, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Creates an inactive user account and sends a verification email.
         
@@ -226,7 +227,13 @@ class SimpleBackend(object):
         user = form.save()
         status = messages.SUCCESS
         if MODERATION_ENABLED:
-            message = _('Registration completed. You will receive an email upon your account\'s activation.')
+            try:
+                _send_notification(user, admin_email_template_name)
+                message = _('Registration completed. You will receive an email upon your account\'s activation.')
+            except (SMTPException, socket.error) as e:
+                status = messages.ERROR
+                name = 'strerror'
+                message = getattr(e, name) if hasattr(e, name) else e
         else:
             try:
                 _send_verification(self.request, user, email_template_name)
@@ -256,3 +263,13 @@ def _send_verification(request, user, template_name):
     sender = DEFAULT_FROM_EMAIL
     send_mail('%s account activation' % SITENAME, message, sender, [user.email])
     logger.info('Sent activation %s', user)
+
+def _send_notification(user, template_name):
+    message = render_to_string(template_name, {
+            'user': user,
+            'baseurl': BASEURL,
+            'site_name': SITENAME,
+            'support': DEFAULT_CONTACT_EMAIL})
+    sender = DEFAULT_FROM_EMAIL
+    send_mail('%s account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+    logger.info('Sent admin notification for user %s', user)

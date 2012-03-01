@@ -269,6 +269,8 @@ def _send_verification(request, user, template_name):
     logger.info('Sent activation %s', user)
 
 def _send_notification(user, template_name):
+    if not DEFAULT_ADMIN_EMAIL:
+        return
     message = render_to_string(template_name, {
             'user': user,
             'baseurl': BASEURL,

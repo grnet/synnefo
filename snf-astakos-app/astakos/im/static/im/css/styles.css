@@ -646,6 +646,16 @@ ul.inline li {
 .rightcol input[type=text], .rightcol input[type=password] {
   width: 273px;
 }
+/* recaptcha */
+#recaptcha_widget_div {
+  margin-top: 10px;
+  margin-left: -4px;
+}
+#recaptcha_widget_div #recaptcha_instructions_image {
+  font-size: 0.8em;
+  margin-bottom: 10px;
+  display: block !important;
+}
 /* generic form styles */
 input, textarea, .form-widget {
   background-color: #ffffff;

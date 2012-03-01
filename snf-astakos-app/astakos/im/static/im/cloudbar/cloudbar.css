@@ -45,7 +45,7 @@
   height: 13px;
 }
 .servicesbar a:hover {
-  background-color: #333;
+  background-color: #444;
 }
 .servicesbar a.active {
   font-weight: bold;
@@ -76,6 +76,9 @@
 .servicesbar .services a.active {
   font-size: 13px !important;
   color: #ffffff !important;
+}
+.servicesbar .services a:hover {
+  background-color: #444;
 }
 .servicesbar .profile {
   margin-top: -35px;

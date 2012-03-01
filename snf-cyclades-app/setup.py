@@ -75,7 +75,7 @@ INSTALL_REQUIRES = [
     'pycrypto>=2.1.0',
     'amqplib>=0.6.1',
     'python-daemon>=1.5.5',
-    'snf-common>=0.7.3',
+    'snf-common>=0.9.0rc',
     'vncauthproxy>=1.0',
     'south>=0.7, <=0.7.3',
     'snf-pithos-backend>=0.9.1',
@@ -220,6 +220,7 @@ setup(
          'default_settings = synnefo.app_settings.default',
          'web_apps = synnefo.app_settings:synnefo_web_apps',
          'web_middleware = synnefo.app_settings:synnefo_web_middleware',
+         'web_context_processors = synnefo.app_settings:synnefo_web_context_processors',
          'urls = synnefo.app_settings.urls:urlpatterns',
          'web_static = synnefo.app_settings:synnefo_static_files',
          ]

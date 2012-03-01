@@ -45,6 +45,7 @@ from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
+from django.template import RequestContext
 
 from synnefo.util.version import get_component_version
 
@@ -113,7 +114,7 @@ GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
-def template(name, context):
+def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
     t = loader.get_template(current_template)
@@ -128,7 +129,7 @@ def template(name, context):
        'DEBUG': settings.DEBUG
     }
     context.update(media_context)
-    return HttpResponse(t.render(Context(context)))
+    return HttpResponse(t.render(RequestContext(request, context)))
 
 def home(request):
     context = {'timeout': TIMEOUT,
@@ -164,7 +165,7 @@ def home(request):
                'glance_api_url': json.dumps(GLANCE_API_URL),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS)
                }
-    return template('home', context)
+    return template('home', request, context)
 
 def machines_console(request):
     host, port, password = ('','','')
@@ -176,10 +177,10 @@ def machines_console(request):
     host_ip_v6 = request.GET.get('host_ip_v6','')
     context = {'host': host, 'port': port, 'password': password,
                'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
-    return template('machines_console', context)
+    return template('machines_console', request, context)
 
 def js_tests(request):
-    return template('tests', {})
+    return template('tests', request, {})
 
 CONNECT_LINUX_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.

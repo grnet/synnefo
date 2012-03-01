@@ -37,9 +37,13 @@ Login
             </div>
             {% endfor %}
         </div>
-            <div class="section">
-                <a href="{% url astakos.im.views.signup %}" class="action">SIGN UP</a>
+        {% block body.signup %}
+        <div class="section signup">
+            <br /><br />
+                <h2>NEW TO OKEANOS ?</h2>
+                <a class="button" href="{% url astakos.im.views.signup %}">CREATE ACCOUNT</a>
             </div>
         </div>
+        {% endblock %}
 
 {% endblock %}

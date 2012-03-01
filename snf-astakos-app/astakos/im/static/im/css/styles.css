@@ -194,7 +194,16 @@ textarea {
   font-weight: normal;
   line-height: 22px;
   letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
   background-color: #3582ac;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
   color: #ffffff;
   border: none;
   padding: 0.8em 22px;
@@ -202,6 +211,62 @@ textarea {
 }
 .button:hover {
   background-color: #f89a1c;
+}
+.button a {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+a.button {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+.makeRow {
+  zoom: 1;
+  margin-left: -22px;
+}
+.makeRow:before, .makeRow:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.makeRow:after {
+  clear: both;
+}
+.button {
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
+  background-color: #3582ac;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
+  color: #ffffff;
+  border: none;
+  padding: 0.8em 22px;
+  font-size: 1em;
+}
+.button:hover {
+  background-color: #f89a1c;
+}
+.button a {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+a.button {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: none !important;
 }
 /*addon to style django forms rendered with as_p filter*/
 /*
@@ -411,6 +476,11 @@ body {
   font-weight: normal;
   line-height: 22px;
   letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
 }
 .topbar {
   background-color: #cfcdc7;
@@ -588,8 +658,18 @@ ul.inline li {
 .page {
   zoom: 1;
   margin-left: -22px;
+  zoom: 1;
+  margin-left: -22px;
   margin-top: 42px;
   font-size: 1.1em;
+}
+.page:before, .page:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.page:after {
+  clear: both;
 }
 .page:before, .page:after {
   display: table;
@@ -617,11 +697,21 @@ ul.inline li {
 .maincol.full {
   zoom: 1;
   margin-left: -22px;
+  zoom: 1;
+  margin-left: -22px;
   margin-left: 0;
   display: inline;
   float: left;
   margin-left: 22px;
   width: 798px;
+}
+.maincol.full:before, .maincol.full:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.maincol.full:after {
+  clear: both;
 }
 .maincol.full:before, .maincol.full:after {
   display: table;
@@ -677,6 +767,11 @@ input, textarea, .form-widget {
   margin-top: 9px;
 }
 #forms .input, #forms input {
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
   font-family: 'Antic', sans-serif;
   font-size: 14px;
   font-weight: normal;
@@ -804,6 +899,11 @@ form input[type="password"] {
   font-weight: normal;
   line-height: 22px;
   letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
   border: 1px solid #808080;
   margin-bottom: -1px;
   padding: 0.8em;
@@ -824,7 +924,35 @@ form input.submit, form input[type="submit"] {
   font-weight: normal;
   line-height: 22px;
   letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
   background-color: #3582ac;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
+  color: #ffffff;
+  border: none;
+  padding: 0.8em 22px;
+  font-size: 1em;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
+  background-color: #3582ac;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
+  -webkit-transition: background-color 0.15s linear;
+  transition: background-color 0.15s linear;
   color: #ffffff;
   border: none;
   padding: 0.8em 22px;
@@ -832,6 +960,19 @@ form input.submit, form input[type="submit"] {
 }
 form input.submit:hover, form input[type="submit"]:hover {
   background-color: #f89a1c;
+}
+form input.submit a, form input[type="submit"] a {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+form input.submit:hover, form input[type="submit"]:hover {
+  background-color: #f89a1c;
+}
+form input.submit a, form input[type="submit"] a {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: none !important;
 }
 form .with-errors input, form .with-errors textarea, form .with-errors select {
   color: #9d261d;
@@ -900,6 +1041,16 @@ table tr.consumed td.consumed {
 .row {
   zoom: 1;
   margin-left: -22px;
+  zoom: 1;
+  margin-left: -22px;
+}
+.row:before, .row:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.row:after {
+  clear: both;
 }
 .row:before, .row:after {
   display: table;
@@ -913,9 +1064,13 @@ table tr.consumed td.consumed {
   color: #808080 !important;
   -webkit-transition: color 0.15s linear;
   transition: color 0.15s linear;
+  -webkit-transition: color 0.15s linear;
+  transition: color 0.15s linear;
 }
 .footer a {
   color: #b3b3b3;
+  -webkit-transition: color 0.15s linear;
+  transition: color 0.15s linear;
   -webkit-transition: color 0.15s linear;
   transition: color 0.15s linear;
   text-decoration: none;

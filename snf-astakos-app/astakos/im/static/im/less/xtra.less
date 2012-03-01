@@ -16,6 +16,7 @@
 .button {
     #font.main();
     background-color: @buttonBg;
+    .transit(background-color);
     color: @buttonColor;
     border: none;
     padding: 0.8em @gridGutterWidth;
@@ -24,6 +25,18 @@
     &:hover {
         background-color: @linkColor;    
     }
+
+    a {
+        color: @white !important;
+        text-decoration: none !important;
+        border: none !important;
+    }
+}
+
+a.button {
+    color: @white !important;
+    text-decoration: none !important;
+    border: none !important;
 }
 
 

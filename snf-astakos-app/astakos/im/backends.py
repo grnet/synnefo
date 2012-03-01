@@ -104,7 +104,7 @@ class InvitationsBackend(object):
         main = provider.capitalize() if provider == 'local' else 'ThirdParty'
         suffix  = 'UserCreationForm'
         formclass = '%s%s%s' % (prefix, main, suffix)
-        return globals()[formclass](initial_data)
+        return globals()[formclass](initial_data, ip=self.request.META['REMOTE_ADDR'])
     
     def get_signup_initial_data(self, provider):
         """
@@ -198,7 +198,7 @@ class SimpleBackend(object):
         if request.method == 'POST':
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
-        return globals()[formclass](initial_data)
+        return globals()[formclass](initial_data, ip=self.request.META['REMOTE_ADDR'])
     
     @transaction.commit_manually
     def signup(self, form, email_template_name='im/activation_email.txt'):

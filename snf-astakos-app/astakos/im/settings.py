@@ -51,3 +51,7 @@ CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
         { 'url':'/', 'name':'grnet cloud', 'id':'cloud', 'icon':'home-icon.png' },
         { 'url':'/okeanos.html', 'name':'~okeanos', 'id':'okeanos' },
         { 'url':'/ui/', 'name':'pithos+', 'id':'pithos' }))
+
+# Set recaptcha keys
+RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
+RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')

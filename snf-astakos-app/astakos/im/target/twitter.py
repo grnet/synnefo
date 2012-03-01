@@ -167,7 +167,7 @@ def authenticated(request, backend=None, login_template='im/login.html', on_sign
         elif user and not user.is_active:
             messages.add_message(request, messages.ERROR, 'Inactive account: %s' % user.email)
     return render_response(login_template,
-                   form = LocalUserCreationForm(),
+                   form = LocalUserCreationForm(ip=request.META['REMOTE_ADDR']),
                    context_instance=get_context(request, extra_context))
 
 def reserved_screen_name(screen_name):
@@ -231,5 +231,5 @@ def create_user(request, form, backend=None, post_data={}, next = None, on_failu
     for provider in IM_MODULES:
         extra_context['%s_form' % provider] = backend.get_signup_form(provider)
     return render_response(on_failure,
-                           form = LocalUserCreationForm(),
+                           form = LocalUserCreationForm(ip=request.META['REMOTE_ADDR']),
                            context_instance=get_context(request, extra_context))

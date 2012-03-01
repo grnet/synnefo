@@ -5,7 +5,7 @@
  * Snippets of reusable CSS to develop faster and keep code readable
  * ----------------------------------------------------------------- */
 .servicesbar {
-  font-family: arial, sans-serif;
+  font-family: arial, sans-serif !important;
   font-size: 13px !important;
   line-height: 13px;
   letter-spacing: 0px;
@@ -35,7 +35,8 @@
 }
 .servicesbar a {
   border: none !important;
-  font-size: inherit !important;
+  font-family: arial, sans-serif !important;
+  font-size: 13px !important;
   color: #e6e6e6;
   text-decoration: none;
   display: block;
@@ -44,10 +45,11 @@
   height: 13px;
 }
 .servicesbar a:hover {
-  background-color: #444;
+  background-color: #333;
 }
 .servicesbar a.active {
   font-weight: bold;
+  font-size: 13px !important;
   background-color: #333;
 }
 .servicesbar a img {
@@ -65,6 +67,15 @@
 }
 .servicesbar .services:after {
   clear: both;
+}
+.servicesbar .services a {
+  font-size: 13px !important;
+  font-weight: bold;
+  color: #ccc;
+}
+.servicesbar .services a.active {
+  font-size: 13px !important;
+  color: #ffffff !important;
 }
 .servicesbar .profile {
   margin-top: -35px;
@@ -85,6 +96,10 @@
 }
 .servicesbar .profile:after {
   clear: both;
+}
+.servicesbar .profile .user > a {
+  font-weight: bold !important;
+  font-size: 12px !important;
 }
 .servicesbar .profile a {
   float: none;

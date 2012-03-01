@@ -1,3 +1,12 @@
+v0.3.2
+======
+
+- improved styles of sign up button
+- do not send admin notification email if ASTAKOS_DEFAULT_ADMIN_EMAIL is not 
+  set 
+- updated cloudbar styles
+
+
 v0.3.1
 ======
 

@@ -51,6 +51,9 @@ UI_LOGIN_URL = "/im/login"
 # URL to redirect user to when he logs out from the ui
 UI_LOGOUT_URL = "/im/logout"
 
+# Cookie name to retrieve authentication data from
+UI_AUTH_COOKIE_NAME = '_pithos2_a'
+
 # Flavor options that we provide to the user as predefined
 # cpu/ram/disk combinations on vm create wizard
 VM_CREATE_SUGGESTED_FLAVORS = {

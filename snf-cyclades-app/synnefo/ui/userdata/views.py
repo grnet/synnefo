@@ -40,6 +40,7 @@ from django.conf import settings
 from synnefo.ui.userdata import rest
 from synnefo.ui.userdata.models import PublicKeyPair
 from synnefo.ui.userdata.util import exportKey
+from synnefo.lib.astakos import get_user
 
 SUPPORT_GENERATE_KEYS = True
 try:
@@ -63,6 +64,8 @@ def generate_key_pair(request):
     """
     Response to generate private/public RSA key pair
     """
+
+    get_user(request, settings.ASTAKOS_URL)
 
     if request.method != "POST":
         return http.HttpResponseNotAllowed(["POST"])

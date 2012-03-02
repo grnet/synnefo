@@ -41,7 +41,10 @@ from base64 import b64encode
 from django.db import models
 from django.contrib.auth.models import User, UserManager
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
+from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
+
+QUEUE_CLIENT_ID = 3 # Astakos.
 
 class AstakosUser(User):
     """
@@ -92,18 +95,20 @@ class AstakosUser(User):
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
-                # set username
-                while not self.username:
-                    username =  uuid.uuid4().hex[:30]
-                    try:
-                        AstakosUser.objects.get(username = username)
-                    except AstakosUser.DoesNotExist, e:
-                        self.username = username
-                self.is_active = False
-                if not self.provider:
-                    self.provider = 'local'
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
+        if not self.id:
+            # set username
+            while not self.username:
+                username =  uuid.uuid4().hex[:30]
+                try:
+                    AstakosUser.objects.get(username = username)
+                except AstakosUser.DoesNotExist, e:
+                    self.username = username
+            self.is_active = False
+            if not self.provider:
+                self.provider = 'local'
+        report_user_event(self)
         super(AstakosUser, self).save(**kwargs)
     
     def renew_token(self):
@@ -144,3 +149,26 @@ class Invitation(models.Model):
         
     def __unicode__(self):
         return '%s -> %s [%d]' % (self.inviter, self.username, self.code)
+
+def report_user_event(user):
+    def should_send(user):
+        # report event incase of new user instance
+        # or if specific fields are modified
+        if not user.id:
+            return True
+        db_instance = AstakosUser.objects.get(id = user.id)
+        for f in BILLING_FIELDS:
+            if (db_instance.__getattribute__(f) != user.__getattribute__(f)):
+                return True
+        return False
+    
+    if QUEUE_CONNECTION and should_send(user):
+        l = [[elem, str(user.__getattribute__(elem))] for elem in BILLING_FIELDS]
+        details = dict(l)
+        body = Receipt(QUEUE_CLIENT_ID, user.email, '', 0, details).format()
+        msgsubtype = 'create' if not user.id else 'modify'
+        exchange = '%s.%s.#' %(QUEUE_CONNECTION, msgsubtype)
+        conn = exchange_connect(exchange)
+        routing_key = exchange.replace('#', body['id'])
+        exchange_send(conn, routing_key, body)
+        exchange_close(conn)

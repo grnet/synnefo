@@ -124,23 +124,23 @@ def get_menu(request):
     index_url = absolute(reverse('astakos.im.views.index'))
     if urlparse(location).query.rfind('next=') == -1:
         index_url = '%s?next=%s' % (index_url, quote(location))
-    l = [{ 'url': index_url, 'name': "login..."}]
+    l = [{ 'url': index_url, 'name': "Signin"}]
     if request.user.is_authenticated():
         l = []
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': request.user.email})
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
-                  'name': "view your profile..." })
+                  'name': "view your profile" })
         if request.user.password:
             l.append({ 'url': absolute(reverse('password_change')),
-                      'name': "change your password..." })
+                      'name': "change your password" })
         if INVITATIONS_ENABLED:
             l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
-                      'name': "invite some friends..." })
+                      'name': "invite some friends" })
         l.append({ 'url': absolute(reverse('astakos.im.views.send_feedback')),
-                  'name': "feedback..." })
+                  'name': "feedback" })
         l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
-                  'name': "logout..."})
+                  'name': "logout"})
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))

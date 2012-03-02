@@ -55,7 +55,7 @@ from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
 from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL, LOGOUT_NEXT
 from astakos.im.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
@@ -246,7 +246,6 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                            context_instance = get_context(request,
                                                           extra_context))
 
-@requires_anonymous
 def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
@@ -283,6 +282,8 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     im/signup.html or ``on_failure`` keyword argument.
     im/signup_complete.html or ``on_success`` keyword argument. 
     """
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('astakos.im.views.index'))
     try:
         if not backend:
             backend = get_backend(request)
@@ -305,7 +306,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
                         return prepare_response(request, user, next=next)
                     messages.add_message(request, status, message)
                     return render_response(on_success,
-                           context_instance=get_context(request, extra_context))
+                                           context_instance=get_context(request, extra_context))
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
         for provider in IM_MODULES:
@@ -383,6 +384,11 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response['Location'] = next
         response.status_code = 302
         return response
+    elif LOGOUT_NEXT:
+        response['Location'] = LOGOUT_NEXT
+        response.status_code = 301
+        return response
+    messages.add_message(request, messages.SUCCESS, _('You have successfully logged out.'))
     context = get_context(request, extra_context)
     response.write(render_to_string(template, context_instance=context))
     return response

@@ -33,7 +33,7 @@
 
 from django.conf.urls.defaults import patterns, include, url
 
-from astakos.im.forms import ExtendedPasswordResetForm
+from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED
 
 urlpatterns = patterns('astakos.im.views',
@@ -41,8 +41,8 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^login/?$', 'index'),
     url(r'^profile/?$', 'edit_profile'),
     url(r'^feedback/?$', 'send_feedback'),
-    url(r'^signup/?$', 'signup'),
-    url(r'^logout/?$', 'logout'),
+    url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'form':LoginForm()}}),
+    url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'form':LoginForm()}}),
     url(r'^activate/?$', 'activate')
 )
 

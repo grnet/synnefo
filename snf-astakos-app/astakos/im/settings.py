@@ -50,11 +50,14 @@ SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
 # Set cloud services appear in the horizontal bar
 CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
         { 'url':'/', 'name':'grnet cloud', 'id':'cloud', 'icon':'home-icon.png' },
-        { 'url':'/okeanos.html', 'name':'~okeanos', 'id':'okeanos' },
+        { 'url':'/okeanos.html', 'name':'cyclades', 'id':'okeanos' },
         { 'url':'/ui/', 'name':'pithos+', 'id':'pithos' }))
 
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
 RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
 RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', {'theme': 'white'})
+
+# Set where the user should be redirected after logout
+LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 

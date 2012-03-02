@@ -42,8 +42,8 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
-env.packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject',
-                'snf-okeanos-site']
+env.packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools',
+                'snf-webproject']
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'
@@ -169,7 +169,7 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.8'
-env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject', 'snf-okeanos-site']
+env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject']
 env.signdebs = False
 env.debrelease = False  # Increase release number in Debian changelogs
 

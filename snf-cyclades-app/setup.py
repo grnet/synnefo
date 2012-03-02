@@ -75,7 +75,7 @@ INSTALL_REQUIRES = [
     'pycrypto>=2.1.0',
     'amqplib>=0.6.1',
     'python-daemon>=1.5.5',
-    'snf-common>=0.9.0rc',
+    'snf-common>=0.9.0',
     'vncauthproxy>=1.0',
     'south>=0.7, <=0.7.3',
     'snf-pithos-backend>=0.9.1',

@@ -23,7 +23,7 @@ override_dh_auto_install:
 	touch debian/$(package)/var/log/synnefo/dispatcher.log
 
 	mkdir -p debian/$(package)/etc/synnefo
-	for f in api aai backend queues helpdesk invitations plankton ui userdata; do \
+	for f in api aai backend queues helpdesk invitations plankton ui userdata cloudbar; do \
 		cp $(default_settings_dir)$$f.py \
 			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
 	done;

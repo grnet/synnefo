@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+
 from traceback import format_exc
 from time import time, mktime
 from urllib import quote
@@ -44,6 +46,8 @@ from django.core.urlresolvers import reverse
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
 from astakos.im.models import AstakosUser
 from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED
+
+logger = logging.getLogger(__name__)
 
 def render_fault(request, fault):
     if isinstance(fault, InternalServerError) and settings.DEBUG:
@@ -94,6 +98,7 @@ def authenticate(request):
         response['Content-Length'] = len(response.content)
         return response
     except BaseException, e:
+        logger.exception(e)
         fault = InternalServerError('Unexpected error')
         return render_fault(request, fault)
 

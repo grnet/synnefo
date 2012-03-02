@@ -55,11 +55,9 @@ def plankton_method(method):
             try:
                 get_user(request, settings.ASTAKOS_URL)
                 if not request.user_uniq:
-                    raise Unauthorized('No user found.')
+                    return HttpResponse(status=401)
                 if request.method != method:
                     return HttpResponse(status=405)
-                if not request.user_uniq:
-                    return HttpResponse(status=401)
                 request.backend = ImageBackend(request.user_uniq)
                 return func(request, *args, **kwargs)
             except (AssertionError, BackendException) as e:

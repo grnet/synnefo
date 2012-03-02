@@ -6,7 +6,7 @@ User accepted data send:
 
 User info:
 ID: {{ request.user.id }}
-Email: {{ request.user.uniq }}
+Email: {{ request.user_uniq }}
 
 User application data:
 {{ data|safe }}

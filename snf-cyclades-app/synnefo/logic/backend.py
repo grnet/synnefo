@@ -33,6 +33,8 @@
 
 import json
 
+from logging import getLogger
+
 from django.conf import settings
 from django.db import transaction
 
@@ -40,7 +42,6 @@ from synnefo.db.models import (VirtualMachine, Network, NetworkInterface,
                                 NetworkLink)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.logic')
@@ -349,7 +350,7 @@ def create_network_link():
 
 
 @transaction.commit_on_success
-def create_network(name, owner):
+def create_network(name, user_id):
     try:
         link = NetworkLink.objects.filter(available=True)[0]
     except IndexError:
@@ -359,7 +360,7 @@ def create_network(name, owner):
 
     network = Network.objects.create(
         name=name,
-        owner=owner,
+        userid=user_id,
         state='ACTIVE',
         link=link)
 

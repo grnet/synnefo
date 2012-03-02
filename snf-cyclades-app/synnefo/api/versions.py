@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
+from logging import getLogger
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -39,7 +40,6 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.util import api_method, isoformat
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')

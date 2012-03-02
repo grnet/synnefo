@@ -38,7 +38,7 @@
 set -e
 
 echo "Running snf-cyclades-app tests..." >&2
-python snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+snf-manage test admin api db logic userdata --settings=synnefo.settings.test
 
 echo "Running snf-cyclades-gtools tests..." >&2
 ./snf-cyclades-gtools/test/synnefo.ganeti_unittest.py

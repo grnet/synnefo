@@ -30,7 +30,6 @@
 # Utility functions
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import credits
 
 from django.conf import settings
 
@@ -84,7 +83,4 @@ def get_rsapi_state(vm):
 def update_state(vm, new_operstate):
     """Wrapper around updates of the VirtualMachine.operstate field"""
 
-    # Call charge() unconditionally before any change of
-    # internal state.
-    credits.charge(vm)
     vm.operstate = new_operstate

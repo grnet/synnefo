@@ -40,15 +40,13 @@ from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from synnefo.ui.userdata.models import User
 from synnefo.ui.userdata.models import *
-from synnefo.db.models import SynnefoUser
+
 
 class AaiClient(Client):
 
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = \
-            settings.BYPASS_AUTHENTICATION_SECRET_TOKEN
+        request['HTTP_X_AUTH_TOKEN'] = '0000'
         return super(AaiClient, self).request(**request)
 
 class TestRestViews(TransactionTestCase):
@@ -58,7 +56,7 @@ class TestRestViews(TransactionTestCase):
     def setUp(self):
         settings.SKIP_SSH_VALIDATION = True
         self.client = AaiClient()
-        self.user = User.objects.get(pk=1)
+        self.user = 'test'
         self.keys_url = reverse('keys_collection')
 
     def test_keys_collection_get(self):
@@ -155,7 +153,7 @@ class TestRestViews(TransactionTestCase):
         new_key = PublicKeyPair()
         new_key.content = data['public']
         new_key.name = "new key"
-        new_key.user = SynnefoUser.objects.all()[0]
+        new_key.user = 'test'
         new_key.full_clean()
         new_key.save()
 

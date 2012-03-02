@@ -49,8 +49,7 @@ from synnefo.logic.utils import get_rsapi_state
 
 class AaiClient(Client):
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = \
-            settings.BYPASS_AUTHENTICATION_SECRET_TOKEN
+        request['HTTP_X_AUTH_TOKEN'] = '0000'
         return super(AaiClient, self).request(**request)
 
 
@@ -160,7 +159,7 @@ class APITestCase(TestCase):
         request = {
                     "server": {
                         "name": "new-server-test",
-                        "owner": 1,
+                        "userid": "test",
                         "imageRef": 1,
                         "flavorRef": 1,
                         "metadata": {
@@ -342,13 +341,6 @@ class APITestCase(TestCase):
         self.assertEqual(response.status_code, 201)
 
 
-def create_users(n=1):
-    for i in range(n):
-        SynnefoUser.objects.create(
-            name='User %d' % i,
-            credit=0)
-
-
 def create_flavors(n=1):
     for i in range(n):
         Flavor.objects.create(
@@ -358,12 +350,11 @@ def create_flavors(n=1):
 
 
 def create_images(n=1):
-    owner = SynnefoUser.objects.all()[0]
     for i in range(n):
         Image.objects.create(
             name='Image %d' % (i + 1),
             state='ACTIVE',
-            owner=owner)
+            owner='test')
 
 
 def create_image_metadata(n=1):
@@ -376,13 +367,12 @@ def create_image_metadata(n=1):
 
 
 def create_servers(n=1):
-    owner = SynnefoUser.objects.all()[0]
     flavors = Flavor.objects.all()
     images = Image.objects.all()
     for i in range(n):
         VirtualMachine.objects.create(
             name='Server %d' % (i + 1),
-            owner=owner,
+            owner='test',
             imageid=choice(images).id,
             hostid=str(i),
             flavor=choice(flavors))
@@ -412,7 +402,6 @@ class AssertInvariant(object):
 
 
 class BaseTestCase(TestCase):
-    USERS = 0
     FLAVORS = 1
     IMAGES = 1
     SERVERS = 1
@@ -422,7 +411,6 @@ class BaseTestCase(TestCase):
 
     def setUp(self):
         self.client = AaiClient()
-        create_users(self.USERS)
         create_flavors(self.FLAVORS)
         create_images(self.IMAGES)
         create_image_metadata(self.IMAGE_METADATA)

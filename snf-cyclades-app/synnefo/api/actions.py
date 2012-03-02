@@ -296,7 +296,7 @@ def add(request, net, args):
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
-    vm = get_vm(server_id, request.user)
+    vm = get_vm(server_id, request.user_uniq)
     backend.connect_to_network(vm, net)
     vm.save()
     net.save()
@@ -316,7 +316,7 @@ def remove(request, net, args):
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
-    vm = get_vm(server_id, request.user)
+    vm = get_vm(server_id, request.user_uniq)
     backend.disconnect_from_network(vm, net)
     vm.save()
     net.save()

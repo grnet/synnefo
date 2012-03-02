@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from base64 import b64decode
+from logging import getLogger
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns
@@ -46,7 +47,6 @@ from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.util.rapi import GanetiApiError
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')
@@ -161,7 +161,7 @@ def list_servers(request, detail=False):
     #                       overLimit (413)
     
     log.debug('list_servers detail=%s', detail)
-    user_vms = VirtualMachine.objects.filter(owner=request.user)
+    user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
     since = util.isoparse(request.GET.get('changes-since'))
     
     if since:
@@ -197,7 +197,6 @@ def create_server(request):
 
     req = util.get_request_dict(request)
     log.debug('create_server %s', req)
-    owner = request.user
     
     try:
         server = req['server']
@@ -231,31 +230,25 @@ def create_server(request):
             raise faults.BadRequest("Malformed personality in request")
     
     image = {}
-    try:
-        img = util.get_image(image_id, owner)
-        image['backend_id'] = img.backend_id
-        image['format'] = img.format
-        image['metadata'] = dict((m.meta_key.upper(), m.meta_value)
-                for m in img.metadata.all())
-    except faults.ItemNotFound:
-        img = util.get_backend_image(image_id, owner)
-        properties = img.get('properties', {})
-        image['backend_id'] = img['location']
-        image['format'] = img['disk_format']
-        image['metadata'] = dict((key.upper(), val)
-                for key, val in properties.items())
+    img = util.get_image(image_id, request.user_uniq)
+    properties = img.get('properties', {})
+    image['backend_id'] = img['location']
+    image['format'] = img['disk_format']
+    image['metadata'] = dict((key.upper(), val) \
+                             for key, val in properties.items())
     
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()
     
-    count = VirtualMachine.objects.filter(owner=owner, deleted=False).count()
+    count = VirtualMachine.objects.filter(userid=request.user_uniq,
+                                          deleted=False).count()
     if count >= settings.MAX_VMS_PER_USER:
         raise faults.OverLimit("Server count limit exceeded for your account.")
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
-        owner=owner,
+        userid=request.user_uniq,
         imageid=image_id,
         flavor=flavor)
     
@@ -271,8 +264,8 @@ def create_server(request):
             meta_value=val,
             vm=vm)
     
-    log.info('User %d created vm with %s cpus, %s ram and %s storage',
-                    owner.id, flavor.cpu, flavor.ram, flavor.disk)
+    log.info('User %s created vm with %s cpus, %s ram and %s storage',
+             request.user_uniq, flavor.cpu, flavor.ram, flavor.disk)
     
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -291,7 +284,7 @@ def get_server_details(request, server_id):
     #                       overLimit (413)
     
     log.debug('get_server_details %s', server_id)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 
@@ -316,7 +309,7 @@ def update_server_name(request, server_id):
     except (TypeError, KeyError):
         raise faults.BadRequest("Malformed request")
 
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     vm.name = name
     vm.save()
 
@@ -335,7 +328,7 @@ def delete_server(request, server_id):
     #                       overLimit (413)
     
     log.debug('delete_server %s', server_id)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     delete_instance(vm)
     return HttpResponse(status=204)
 
@@ -344,7 +337,7 @@ def delete_server(request, server_id):
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")
 
@@ -370,7 +363,7 @@ def list_addresses(request, server_id):
     #                       overLimit (413)
     
     log.debug('list_addresses %s', server_id)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
     
     if request.serialization == 'xml':
@@ -392,9 +385,8 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       overLimit (413)
     
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
-    owner = request.user
-    machine = util.get_vm(server_id, owner)
-    network = util.get_network(network_id, owner)
+    machine = util.get_vm(server_id, request.user_uniq)
+    network = util.get_network(network_id, request.user_uniq)
     nic = util.get_nic(machine, network)
     address = nic_to_dict(nic)
     
@@ -416,7 +408,7 @@ def list_metadata(request, server_id):
     #                       overLimit (413)
     
     log.debug('list_server_metadata %s', server_id)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
@@ -434,7 +426,7 @@ def update_metadata(request, server_id):
     
     req = util.get_request_dict(request)
     log.debug('update_server_metadata %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     try:
         metadata = req['metadata']
         assert isinstance(metadata, dict)
@@ -462,9 +454,10 @@ def get_metadata_item(request, server_id, key):
     #                       overLimit (413)
     
     log.debug('get_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     meta = util.get_vm_meta(vm, key)
-    return util.render_meta(request, meta, status=200)
+    d = {meta.meta_key: meta.meta_value}
+    return util.render_meta(request, d, status=200)
 
 
 @util.api_method('PUT')
@@ -481,7 +474,7 @@ def create_metadata_item(request, server_id, key):
     
     req = util.get_request_dict(request)
     log.debug('create_server_metadata_item %s %s %s', server_id, key, req)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -497,7 +490,8 @@ def create_metadata_item(request, server_id, key):
     meta.meta_value = metadict[key]
     meta.save()
     vm.save()
-    return util.render_meta(request, meta, status=201)
+    d = {meta.meta_key: meta.meta_value}
+    return util.render_meta(request, d, status=201)
 
 
 @util.api_method('DELETE')
@@ -513,7 +507,7 @@ def delete_metadata_item(request, server_id, key):
     #                       overLimit (413),
     
     log.debug('delete_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()
@@ -531,7 +525,7 @@ def server_stats(request, server_id):
     #                       overLimit (413)
     
     log.debug('server_stats %s', server_id)
-    vm = util.get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user_uniq)
     #secret = util.encrypt(vm.backend_id)
     secret = vm.backend_id      # XXX disable backend id encryption
     

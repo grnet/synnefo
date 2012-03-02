@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,139 +27,8 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
-import datetime
-
 from django.conf import settings
 from django.db import models
-
-
-class SynnefoUser(models.Model):
-    #TODO: Amend this when we have groups
-    ACCOUNT_TYPE = (
-        ('STUDENT', 'Student'),
-        ('PROFESSOR', 'Professor'),
-        ('USER', 'Generic User'),
-        ('HELPDESK', 'Helpdesk User'),
-        ('ADMIN', 'Admin User')
-    )
-    
-    ACCOUNT_STATE = (
-        ('ACTIVE', 'Active'),
-        ('DELETED', 'Deleted'),
-        ('SUSPENDED', 'Suspended')
-    )
-    
-    name = models.CharField('Synnefo Username', max_length=255, default='')
-    realname = models.CharField('Real Name', max_length=255, default='')
-    uniq = models.CharField('External Unique ID', max_length=255,null=True)
-    credit = models.IntegerField('Credit Balance')
-    auth_token = models.CharField('Authentication Token', max_length=32,
-            null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation',
-            auto_now_add=True, null=True)
-    auth_token_expires = models.DateTimeField('Time of auth token expiration',
-            auto_now_add=True, null=True)
-    tmp_auth_token = models.CharField('Temporary authentication token',
-            max_length=32, null=True)
-    tmp_auth_token_expires = models.DateTimeField('Time of temporary auth '
-            'token expiration', auto_now_add=True, null=True)
-    type = models.CharField('Account type', choices=ACCOUNT_TYPE,
-            max_length=30)
-    state = models.CharField('Account state', choices=ACCOUNT_STATE,
-            max_length=30, default='ACTIVE')
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    max_invitations = models.IntegerField('Max number of invitations',
-            null=True)
-    
-    def __unicode__(self):
-        return self.name
-
-    def get_limit(self, limit_name):
-        """Returns the limit value for the specified limit"""
-        limit_objs = Limit.objects.filter(name=limit_name, user=self)
-        if len(limit_objs) == 1:
-            return limit_objs[0].value
-        return 0
-    
-    @property
-    def credit_quota(self):
-        """Internal getter function for credit quota"""
-        return self.get_limit('QUOTA_CREDIT')
-    
-    @property
-    def monthly_rate(self):
-        """Internal getter function for monthly credit issue rate"""
-        return self.get_limit('MONTHLY_RATE')
-    
-    @property
-    def min_credits(self):
-        """Internal getter function for maximum number of violations"""
-        return self.get_limit('MIN_CREDITS')
-
-
-class Image(models.Model):
-    IMAGE_STATES = (
-        ('ACTIVE', 'Active'),
-        ('SAVING', 'Saving'),
-        ('DELETED', 'Deleted')
-    )
-
-    # The list of supported Image formats
-    FORMATS = (
-        ('dump', 'ext3 dump'),
-        ('extdump', 'Raw ext2/3/4 dump'),
-        ('lvm', 'lvm snapshot'),
-        ('ntfsclone', 'Windows Image produced by ntfsclone'),
-        ('ntfsdump', 'Raw NTFS dump'),
-        ('diskdump', 'Raw dump of a hard disk')
-    )
-
-    name = models.CharField('Image name', max_length=255)
-    state = models.CharField('Current Image State', choices=IMAGE_STATES,
-            max_length=30)
-    owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    sourcevm = models.ForeignKey('VirtualMachine', null=True)
-    backend_id = models.CharField(max_length=50, default='debian_base')
-    format = models.CharField(choices=FORMATS, max_length=30, default='dump')
-    public = models.BooleanField(default=False)
-    
-    def __unicode__(self):
-        return self.name
-
-
-class ImageMetadata(models.Model):
-    meta_key = models.CharField('Image metadata key name', max_length=50)
-    meta_value = models.CharField('Image metadata value', max_length=500)
-    image = models.ForeignKey(Image, related_name='metadata')
-    
-    class Meta:
-        unique_together = (('meta_key', 'image'),)
-        verbose_name = u'Key-value pair of Image metadata.'
-    
-    def __unicode__(self):
-        return u'%s: %s' % (self.meta_key, self.meta_value)
-
-
-class Limit(models.Model):
-    LIMITS = (
-        ('QUOTA_CREDIT', 'Maximum amount of credits per user'),
-        ('MIN_CREDITS', 'Minimum amount of credits per user'),
-        ('MONTHLY_RATE', 'Monthly credit issue rate')
-    )
-    user = models.ForeignKey(SynnefoUser)
-    name = models.CharField('Limit key name', choices=LIMITS, max_length=30,
-            null=False)
-    value = models.IntegerField('Limit current value')
-    
-    class Meta:
-        verbose_name = u'Enforced limit for user'
-    
-    def __unicode__(self):
-        return u'Limit %s for user %s: %d' % (self.value, self.user,
-                self.value)
 
 
 class Flavor(models.Model):
@@ -178,50 +47,9 @@ class Flavor(models.Model):
     def name(self):
         """Returns flavor name (generated)"""
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
-
-    def _current_cost(self, active):
-        """Returns active/inactive cost value
-
-        set active = True to get active cost and False for the inactive.
-        """
-        
-        costs = FlavorCost.objects.filter(flavor=self)
-        fch_list = costs.order_by('-effective_from')
-        if len(fch_list) > 0:
-            if active:
-                return fch_list[0].cost_active
-            else:
-                return fch_list[0].cost_inactive
-
-        return 0
-    
-    @property
-    def current_cost_active(self):
-        """Returns current active cost (property method)"""
-        return self._current_cost(True)
-    
-    @property
-    def current_cost_inactive(self):
-        """Returns current inactive cost (property method)"""
-        return self._current_cost(False)
     
     def __unicode__(self):
         return self.name
-
-
-class FlavorCost(models.Model):
-    cost_active = models.PositiveIntegerField('Active Cost')
-    cost_inactive = models.PositiveIntegerField('Inactive Cost')
-    effective_from = models.DateTimeField()
-    flavor = models.ForeignKey(Flavor)
-    
-    class Meta:
-        verbose_name = u'Pricing history for flavors'
-    
-    def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (
-                int(self.cost_active), int(self.cost_inactive),
-                self.flavor.name, self.effective_from)
 
 
 class VirtualMachine(models.Model):
@@ -311,16 +139,15 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
-    owner = models.ForeignKey(SynnefoUser)
+    userid = models.CharField('User ID of the owner', max_length=100)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    charged = models.DateTimeField(default=datetime.datetime.now())
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
     deleted = models.BooleanField('Deleted', default=False)
     suspended = models.BooleanField('Administratively Suspended',
-            default=False)
+                                    default=False)
 
     # VM State 
     # The following fields are volatile data, in the sense
@@ -396,23 +223,6 @@ class VirtualMachine(models.Model):
         return self.name
 
 
-class VirtualMachineGroup(models.Model):
-    """Groups of VMs for SynnefoUsers"""
-    name = models.CharField(max_length=255)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    owner = models.ForeignKey(SynnefoUser)
-    machines = models.ManyToManyField(VirtualMachine)
-
-    class Meta:
-        verbose_name = u'Virtual Machine Group'
-        verbose_name_plural = 'Virtual Machine Groups'
-        ordering = ['name']
-    
-    def __unicode__(self):
-        return self.name
-
-
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
@@ -426,35 +236,6 @@ class VirtualMachineMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
-class Debit(models.Model):
-    when = models.DateTimeField()
-    user = models.ForeignKey(SynnefoUser)
-    vm = models.ForeignKey(VirtualMachine)
-    description = models.TextField()
-    
-    class Meta:
-        verbose_name = u'Accounting log'
-
-    def __unicode__(self):
-        return u'%s - %s - %s - %s' % (self.user.id, self.vm.name,
-                self.when, self.description)
-
-
-class Disk(models.Model):
-    name = models.CharField(max_length=255)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    size = models.PositiveIntegerField('Disk size in GBs')
-    vm = models.ForeignKey(VirtualMachine, blank=True, null=True)
-    owner = models.ForeignKey(SynnefoUser, blank=True, null=True)  
-
-    class Meta:
-        verbose_name = u'Disk instance'
-
-    def __unicode__(self):
-        return self.name
-
-
 class Network(models.Model):
     NETWORK_STATES = (
         ('ACTIVE', 'Active'),
@@ -464,28 +245,16 @@ class Network(models.Model):
     name = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(SynnefoUser, null=True)
+    userid = models.CharField('User ID of the owner', max_length=100,
+                              null=True)
     state = models.CharField(choices=NETWORK_STATES, max_length=30)
     public = models.BooleanField(default=False)
     link = models.ForeignKey('NetworkLink', related_name='+')
     machines = models.ManyToManyField(VirtualMachine,
-            through='NetworkInterface')
+                                      through='NetworkInterface')
     
     def __unicode__(self):
         return self.name
-
-
-class Invitations(models.Model):
-    source = models.ForeignKey(SynnefoUser, related_name="source")
-    target = models.ForeignKey(SynnefoUser, related_name="target")
-    accepted = models.BooleanField('Is the invitation accepted?',
-            default=False)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    level = models.IntegerField('Invitation depth level', null=True)
-    
-    def __unicode__(self):
-        return "From: %s, To: %s" % (self.source, self.target)
 
 
 class NetworkInterface(models.Model):
@@ -504,7 +273,7 @@ class NetworkInterface(models.Model):
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
-            max_length=30, null=True)
+                                        max_length=30, null=True)
     
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)

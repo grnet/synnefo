@@ -45,6 +45,7 @@ from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
+from django.template import RequestContext
 
 from synnefo.util.version import get_component_version
 
@@ -76,7 +77,9 @@ IMAGE_ICONS = settings.IMAGE_ICONS
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
-LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
+LOGOUT_URL = getattr(settings, "UI_LOGOUT_URL", '/im/authenticate')
+LOGIN_URL = getattr(settings, "UI_LOGIN_URL", '/im/login')
+AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
 
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
@@ -108,11 +111,10 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
-INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
-def template(name, context):
+def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
     t = loader.get_template(current_template)
@@ -127,7 +129,7 @@ def template(name, context):
        'DEBUG': settings.DEBUG
     }
     context.update(media_context)
-    return HttpResponse(t.render(Context(context)))
+    return HttpResponse(t.render(RequestContext(request, context)))
 
 def home(request):
     context = {'timeout': TIMEOUT,
@@ -144,11 +146,12 @@ def home(request):
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
+               'login_redirect': LOGIN_URL,
+               'auth_cookie_name': AUTH_COOKIE_NAME,
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
                'synnefo_version': SYNNEFO_JS_LIB_VERSION,
-               'invitations_per_page': INVITATIONS_PER_PAGE,
                'delay_on_blur': json.dumps(DELAY_ON_BLUR),
                'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
@@ -162,7 +165,7 @@ def home(request):
                'glance_api_url': json.dumps(GLANCE_API_URL),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS)
                }
-    return template('home', context)
+    return template('home', request, context)
 
 def machines_console(request):
     host, port, password = ('','','')
@@ -174,10 +177,10 @@ def machines_console(request):
     host_ip_v6 = request.GET.get('host_ip_v6','')
     context = {'host': host, 'port': port, 'password': password,
                'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
-    return template('machines_console', context)
+    return template('machines_console', request, context)
 
 def js_tests(request):
-    return template('tests', {})
+    return template('tests', request, {})
 
 CONNECT_LINUX_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.

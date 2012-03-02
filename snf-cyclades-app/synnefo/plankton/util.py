@@ -34,38 +34,18 @@
 import datetime
 
 from functools import wraps
+from logging import getLogger
 from traceback import format_exc
 
 from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
-        HttpResponseServerError)
+                         HttpResponseServerError)
 
-from synnefo.db.models import SynnefoUser
+from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend, BackendException
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.plankton')
-
-
-def get_user_from_token(token):
-    try:
-        user = SynnefoUser.objects.get(auth_token=token)
-    except SynnefoUser.DoesNotExist:
-        return None
-    
-    expires = user.auth_token_expires
-    if not expires or expires < datetime.datetime.now():
-        return None
-    
-    return user
-
-
-def get_request_user(request):
-    user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
-    if not user:
-        user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
-    return user
 
 
 def plankton_method(method):
@@ -73,15 +53,14 @@ def plankton_method(method):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
+                get_user(request, settings.ASTAKOS_URL)
+                if not request.user_uniq:
+                    raise Unauthorized('No user found.')
                 if request.method != method:
                     return HttpResponse(status=405)
-
-                user = get_request_user(request)
-                if not user:
+                if not request.user_uniq:
                     return HttpResponse(status=401)
-                request.user = user
-                request.backend = ImageBackend(user.uniq)
-                
+                request.backend = ImageBackend(request.user_uniq)
                 return func(request, *args, **kwargs)
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''

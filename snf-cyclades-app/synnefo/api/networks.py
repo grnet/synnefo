@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from logging import getLogger
+
 from django.conf.urls.defaults import patterns
 from django.db.models import Q
 from django.http import HttpResponse
@@ -43,7 +45,6 @@ from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
 from synnefo.db.models import Network
 from synnefo.logic import backend
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.api')
@@ -65,6 +66,7 @@ def demux(request):
     else:
         return method_not_allowed(request)
 
+
 def network_demux(request, network_id):
     if request.method == 'GET':
         return get_network_details(request, network_id)
@@ -76,16 +78,17 @@ def network_demux(request, network_id):
         return method_not_allowed(request)
 
 
-def network_to_dict(network, user, detail=True):
+def network_to_dict(network, user_id, detail=True):
     network_id = str(network.id) if not network.public else 'public'
     d = {'id': network_id, 'name': network.name}
     if detail:
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
-        servers = [vm.id for vm in network.machines.filter(owner=user)]
+        servers = [vm.id for vm in network.machines.filter(userid=user_id)]
         d['servers'] = {'values': servers}
     return d
+
 
 def render_network(request, networkdict, status=200):
     if request.serialization == 'xml':
@@ -105,9 +108,9 @@ def list_networks(request, detail=False):
     #                       overLimit (413)
     
     log.debug('list_networks detail=%s', detail)
-    owner = request.user
     since = util.isoparse(request.GET.get('changes-since'))
-    user_networks = Network.objects.filter(Q(owner=owner) | Q(public=True))
+    user_networks = Network.objects.filter(
+                                Q(userid=request.user_uniq) | Q(public=True))
     
     if since:
         user_networks = user_networks.filter(updated__gte=since)
@@ -116,7 +119,7 @@ def list_networks(request, detail=False):
     else:
         user_networks = user_networks.filter(state='ACTIVE')
     
-    networks = [network_to_dict(network, owner, detail)
+    networks = [network_to_dict(network, request.user_uniq, detail)
                 for network in user_networks]
     
     if request.serialization == 'xml':
@@ -127,6 +130,7 @@ def list_networks(request, detail=False):
         data = json.dumps({'networks': {'values': networks}})
 
     return HttpResponse(data, status=200)
+
 
 @util.api_method('POST')
 def create_network(request):
@@ -147,12 +151,13 @@ def create_network(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
     
-    network = backend.create_network(name, request.user)
+    network = backend.create_network(name, request.user_uniq)
     if not network:
         raise OverLimit('Network count limit exceeded for your account.')
     
-    networkdict = network_to_dict(network, request.user)
+    networkdict = network_to_dict(network, request.user_uniq)
     return render_network(request, networkdict, status=202)
+
 
 @util.api_method('GET')
 def get_network_details(request, network_id):
@@ -165,9 +170,10 @@ def get_network_details(request, network_id):
     #                       overLimit (413)
     
     log.debug('get_network_details %s', network_id)
-    net = util.get_network(network_id, request.user)
-    netdict = network_to_dict(net, request.user)
+    net = util.get_network(network_id, request.user_uniq)
+    netdict = network_to_dict(net, request.user_uniq)
     return render_network(request, netdict)
+
 
 @util.api_method('PUT')
 def update_network_name(request, network_id):
@@ -188,12 +194,13 @@ def update_network_name(request, network_id):
     except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
 
-    net = util.get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not rename the public network.')
     net.name = name
     net.save()
     return HttpResponse(status=204)
+
 
 @util.api_method('DELETE')
 def delete_network(request, network_id):
@@ -206,11 +213,12 @@ def delete_network(request, network_id):
     #                       overLimit (413)
     
     log.debug('delete_network %s', network_id)
-    net = util.get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
     backend.delete_network(net)
     return HttpResponse(status=204)
+
 
 @util.api_method('POST')
 def network_action(request, network_id):
@@ -219,7 +227,7 @@ def network_action(request, network_id):
     if len(req) != 1:
         raise BadRequest('Malformed request.')
     
-    net = util.get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not modify the public network.')
     

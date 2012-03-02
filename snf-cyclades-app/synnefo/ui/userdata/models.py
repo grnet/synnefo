@@ -43,10 +43,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.db.models.signals import pre_save
 
-from synnefo.db import models as synnefo_models
-
-User = synnefo_models.SynnefoUser
-
 try:
     from paramiko import rsakey, dsskey, SSHException
 except:
@@ -59,7 +55,7 @@ class ProfileModel(models.Model):
     user specific information
     """
 
-    user = models.ForeignKey(User)
+    user = models.CharField(max_length=100)
 
     class Meta:
         abstract = True

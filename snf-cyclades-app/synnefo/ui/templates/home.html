@@ -51,6 +51,7 @@
     <![endif]-->
     
     <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}auth.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}sync.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}models.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}glance_models.js"></script>
@@ -65,7 +66,6 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_invitations_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js"></script>
@@ -75,8 +75,9 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_main_view.js"></script>
 
     <!-- the following views require refactor -->
-    <script src="{{ SYNNEFO_JS_URL }}invitations.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
+
+    {{ CLOUDBAR_CODE }}
     
     <script>
         // empty object for console to avoid errors in browsers that don't support it
@@ -91,9 +92,6 @@
         var TIMEOUTS_OCCURED = 0;
         var SKIP_TIMEOUTS = 1;
         var UPDATE_INTERVAL = {{ update_interval }};
-        var LOGOUT_REDIRECT = '{{ logout_redirect }}';
-        var INVITATIONS_URL = "{% url invitations %}";
-        var INVITATIONS_TITLE = "{% trans "Invite people" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
@@ -190,9 +188,8 @@
         <div id="header">
             <div id="user">
                 <div class="usermenu">
-                    <div class="username">{{ request.user.uniq }}</div>
+                    <div class="username"></div>
                     <ul class="useractions">
-                        <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
                         <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
                         <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
                         <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
@@ -312,7 +309,7 @@
 
             // bind menu actions
             $(".usermenu .logout").click(function() {
-                synnefo.ui.logout();
+                synnefo.auth_client.logout();
             });
 
             $(".usermenu .api").click(function(){
@@ -422,7 +419,6 @@
             <span class="reload-app">{% trans "Reload" %}</span>
         </div>
     </div>
-    {% include "partials/invitations.html" %}
     <div id="feedback-overlay-content" class="hidden overlay-content feedback-form">
         <div class="description">
             <p>
@@ -559,7 +555,6 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
             synnefo.config.ajax_timeout = {{ timeout }};
             synnefo.config.skip_timeouts = {{ skip_timeouts }};
-            synnefo.config.invitations_url = "{% url invitations %}";
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.vm_name_template = {{ vm_name_template|safe }};
             synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
@@ -568,11 +563,12 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
                 'compute':  {{ compute_api_url|safe }}, 
                 'glance': {{ glance_api_url|safe }}
             };
+            
             // TODO: configurable userdata urls in models.js
             synnefo.config.userdata_url = '/ui/userdata';
-            synnefo.config.logout_url = '{{ logout_redirect }}';
             synnefo.config.userdata_keys_url = '{% url keys_collection %}';
             synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
+            
             // media config
             synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
@@ -582,14 +578,31 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};
+            
+            synnefo.config.logout_redirect = '{{ logout_redirect }}';
+            synnefo.config.login_redirect = '{{ login_redirect }}';
+            synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
+            
+            synnefo.auth_client = new synnefo.auth.AstakosClient({
+                login_url: synnefo.config.login_redirect,
+                logout_url: synnefo.config.logout_redirect,
+                cookie_name: synnefo.config.auth_cookie_name,
+                logout_callback: function(client) {
+                    Backbone.history.navigate(client.config.logout_url);
+                    window.location = client.config.logout_url; 
+                }
+            });
+
             // user config
-            synnefo.user = {};
-            synnefo.user.username = '{{ request.user.uniq }}';
-            synnefo.user.token = $.cookie("X-Auth-Token");
+            synnefo.user = synnefo.auth_client.get_user();
+            if (!synnefo.user) { synnefo.auth_client.redirect_to_login(); }
+
+            $(".usermenu .username").text(synnefo.user.username);
+
             // images config
             synnefo.config.system_images_owners = {{ system_images_owners|safe }};
             synnefo.ui.init();
-            synnefo.ui.main.bind("initial", function(){
+            synnefo.ui.main.bind("ready", function(){
             });
 
         })

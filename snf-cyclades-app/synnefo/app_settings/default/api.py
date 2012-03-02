@@ -80,3 +80,6 @@ MAX_PERSONALITY_SIZE = 10240
 GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
                          'rbd',  'sharedfile')
 DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
+
+# The URL of an astakos instance that will be used for user authentication
+ASTAKOS_URL = 'https://astakos.okeanos.grnet.gr/im/authenticate'

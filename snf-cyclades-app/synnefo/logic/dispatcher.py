@@ -159,14 +159,11 @@ def _init_queues():
     QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
     QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
     QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
-    QUEUE_CRON_CREDITS = "%s-credits" % prefix
-    QUEUE_EMAIL = "%s-email" % prefix
     QUEUE_RECONC = "%s-reconciliation" % prefix
     if settings.DEBUG is True:
         QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
 
-    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET,
-              QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC,
+    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
               QUEUE_GANETI_BUILD_PROGR)
 
     # notifications of type "ganeti-op-status"
@@ -175,8 +172,6 @@ def _init_queues():
     DB_HANDLER_KEY_NET = 'ganeti.%s.event.net' % prefix
     # notifications of type "ganeti-create-progress"
     BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' % prefix
-    # email
-    EMAIL_HANDLER = 'logic.%s.email.*' % prefix
     # reconciliation
     RECONC_HANDLER = 'reconciliation.%s.*' % prefix
 
@@ -185,9 +180,6 @@ def _init_queues():
     (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
     (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
     (QUEUE_GANETI_BUILD_PROGR,settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
-    (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',          'update_credits'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_API,    EMAIL_HANDLER,          'send_email'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   EMAIL_HANDLER,          'send_email'),
     (QUEUE_RECONC,            settings.EXCHANGE_CRON,   RECONC_HANDLER,         'trigger_status_update'),
     ]
 

@@ -37,7 +37,7 @@ import json
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend, email_send
+from synnefo.logic import utils, backend
 
 
 log = logging.getLogger()
@@ -107,34 +107,6 @@ def update_net(message):
                       msg["instance"], vmid)
     except Exception as e:
         log.exception("Unexpected error, msg: %s", msg)
-
-
-def send_email(message):
-    """Process an email submission request"""
-    msg = None
-    try:
-        msg = json.loads(message.body)
-
-        sent = email_send.send(sender=msg['frm'], recipient = msg['to'],
-                        body=msg['body'], subject=msg['subject'])
-
-        if not sent:
-            log.warn("Failed to send email to %s", msg['to'])
-        else:
-            message.channel.basic_ack(message.delivery_tag)
-    except KeyError:
-        log.error("Malformed incoming JSON, missing attributes: %s",
-                      message.body)
-    except socket.error as e:
-        log.error("Cannot connect to SMTP server:%s\n", e)
-    except Exception as e:
-        log.exception("Unexpected error, msg: %s", msg)
-        raise
-
-
-def update_credits(message):
-    log.debug("Request to update credits")
-    message.channel.basic_ack(message.delivery_tag)
 
 
 def update_build_progress(message):

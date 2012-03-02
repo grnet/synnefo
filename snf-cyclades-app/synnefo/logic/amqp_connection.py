@@ -29,10 +29,11 @@
 
 import time
 import socket
+
+from logging import getLogger
+
 from amqplib import client_0_8 as amqp
 from django.conf import settings
-
-from synnefo.util.log import getLogger
 
 
 log = getLogger('synnefo.logic')

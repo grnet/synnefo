@@ -19,7 +19,7 @@
     <tr>
       <td>{{ server.id }}</td>
       <td>{{ server.name }}</td>
-      <td><a href="{% url synnefo.admin.views.users_info server.owner.id %}">{{ server.owner.name }}</a></td>
+      <td>{{ server.userid }}</td>
       <td>{{ server.operstate }}</td>
       <td><a href="{% url synnefo.admin.views.flavors_info server.flavor.id %}">{{ server.flavor.name }}</a></td>
       <td><a href="{% url synnefo.admin.views.images_info server.imageid %}">{{ server.imageid }}</a></td>

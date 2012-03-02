@@ -1,5 +1,0 @@
-snf-okeanos-site (0.8.0-1) stable; urgency=low
-
-  * Initial Debian packaging for Synnefo v0.8.0.
-
- -- Vangelis Koukis <vkoukis@grnet.gr>  Tue, 07 Feb 2012 15:18:45 +0200

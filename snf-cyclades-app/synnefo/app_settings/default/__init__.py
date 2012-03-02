@@ -40,4 +40,5 @@ from synnefo.app_settings.default.ui import *
 from synnefo.app_settings.default.userdata import *
 from synnefo.app_settings.default.reconciliation import *
 from synnefo.app_settings.default.tests import *
+from synnefo.app_settings.default.cloudbar import *
 

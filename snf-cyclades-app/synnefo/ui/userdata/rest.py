@@ -37,6 +37,7 @@ from django.template import RequestContext, loader
 from django.utils import simplejson as json
 from django.core import serializers
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
@@ -81,7 +82,9 @@ class View(object):
         Main entry point for a request-response process.
         """
         def view(request, *args, **kwargs):
-            get_user(request, settings.ASTAKOS_URL)
+            user = get_user(request, settings.ASTAKOS_URL)
+            if not request.user_uniq:
+                return HttpResponse(status=401)
             self = cls(*initargs, **initkwargs)
             return self.dispatch(request, *args, **kwargs)
         return view
@@ -101,9 +104,9 @@ class View(object):
                     try:
                         data = json.loads(data)
                     except ValueError:
-                        raise http.HttpResponseServerError('Invalid JSON data.')
+                        return http.HttpResponseServerError('Invalid JSON data.')
                 else:
-                    raise http.HttpResponseServerError('Unsupported Content-Type.')
+                    return http.HttpResponseServerError('Unsupported Content-Type.')
             try:
                 return getattr(self, request.method.upper())(request, data, *args, **kwargs)
             except ValidationError, e:
@@ -224,7 +227,7 @@ class UserResourceView(ResourceView):
     """
     def queryset(self):
         return super(UserResourceView,
-                self).queryset().filter(user=self.request.user)
+                self).queryset().filter(user=self.request.user_uniq)
 
 
 class UserCollectionView(CollectionView):
@@ -237,7 +240,7 @@ class UserCollectionView(CollectionView):
     def POST(self, request, data, *args, **kwargs):
         instance = self.model()
         self.update_instance(instance, data, self.exclude_fields)
-        instance.user = request.user
+        instance.user = request.user_uniq
         instance.full_clean()
         instance.save()
         return self.json_response(self.instance_to_dict(instance,

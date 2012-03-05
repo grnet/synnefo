@@ -39,7 +39,7 @@ from ._common import get_user
 
 
 class Command(BaseCommand):
-    args = "<user_id or email>"
+    args = "<user ID or email>"
     help = "Modify a user's attributes"
     
     option_list = BaseCommand.option_list + (
@@ -80,7 +80,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a user_id or email")
+            raise CommandError("Please provide a user ID or email")
         
         user = get_user(args[0])
         if not user:

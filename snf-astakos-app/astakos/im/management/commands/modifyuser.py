@@ -66,7 +66,12 @@ class Command(BaseCommand):
             dest='noadmin',
             default=False,
             help="Revoke user's admin rights"),
-        make_option('--inactive',
+        make_option('--set-active',
+            action='store_true',
+            dest='active',
+            default=False,
+            help="Change user's state to inactive"),
+        make_option('--set-inactive',
             action='store_true',
             dest='inactive',
             default=False,
@@ -86,6 +91,11 @@ class Command(BaseCommand):
         elif options.get('noadmin'):
             user.is_superuser = False
         
+        if options.get('active'):
+            user.is_active = True
+        elif options.get('inactive'):
+            user.is_active = False
+        
         invitations = options.get('invitations')
         if invitations is not None:
             user.invitations = int(invitations)
@@ -97,6 +107,4 @@ class Command(BaseCommand):
         if options['renew_token']:
             user.renew_token()
         
-        if options.get('inactive'):
-            user.is_active = False
         user.save()

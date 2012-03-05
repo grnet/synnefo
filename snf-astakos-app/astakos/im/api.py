@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+
 from traceback import format_exc
 from time import time, mktime
 from urllib import quote
@@ -44,6 +46,8 @@ from django.core.urlresolvers import reverse
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
 from astakos.im.models import AstakosUser
 from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED
+
+logger = logging.getLogger(__name__)
 
 def render_fault(request, fault):
     if isinstance(fault, InternalServerError) and settings.DEBUG:
@@ -94,6 +98,7 @@ def authenticate(request):
         response['Content-Length'] = len(response.content)
         return response
     except BaseException, e:
+        logger.exception(e)
         fault = InternalServerError('Unexpected error')
         return render_fault(request, fault)
 
@@ -119,23 +124,23 @@ def get_menu(request):
     index_url = absolute(reverse('astakos.im.views.index'))
     if urlparse(location).query.rfind('next=') == -1:
         index_url = '%s?next=%s' % (index_url, quote(location))
-    l = [{ 'url': index_url, 'name': "login..."}]
+    l = [{ 'url': index_url, 'name': "Sign in"}]
     if request.user.is_authenticated():
         l = []
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': request.user.email})
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
-                  'name': "view your profile..." })
+                  'name': "View your profile" })
         if request.user.password:
             l.append({ 'url': absolute(reverse('password_change')),
-                      'name': "change your password..." })
+                      'name': "Change your password" })
         if INVITATIONS_ENABLED:
             l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
-                      'name': "invite some friends..." })
+                      'name': "Invite some friends" })
         l.append({ 'url': absolute(reverse('astakos.im.views.send_feedback')),
-                  'name': "feedback..." })
+                  'name': "Send feedback" })
         l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
-                  'name': "logout..."})
+                  'name': "Sign out"})
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))

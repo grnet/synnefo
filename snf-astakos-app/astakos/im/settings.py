@@ -50,7 +50,7 @@ SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
 # Set cloud services appear in the horizontal bar
 CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
         { 'url':'/', 'name':'grnet cloud', 'id':'cloud', 'icon':'home-icon.png' },
-        { 'url':'/okeanos.html', 'name':'~okeanos', 'id':'okeanos' },
+        { 'url':'/okeanos.html', 'name':'cyclades', 'id':'okeanos' },
         { 'url':'/ui/', 'name':'pithos+', 'id':'pithos' }))
 
 # Set recaptcha keys
@@ -62,4 +62,7 @@ RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', {'theme': 'wh
 BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['id', 'is_active', 'provider', 'third_party_identifier'])
 
 # Queue for billing.
-QUEUE_EXCHANGE = getattr(settings, 'ASTAKOS_QUEUE_EXCHANGE', None) # Example: 'rabbitmq://guest:guest@localhost:5672/astakos.userEvent.#'
+QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None) # Example: 'rabbitmq://guest:guest@localhost:5672/astakos.userEvent.#'
+
+# Set where the user should be redirected after logout
+LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')

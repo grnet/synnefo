@@ -164,7 +164,10 @@ class InvitationsBackend(object):
                 message = _('Registration completed. You can now login.')
             else:
                 _send_notification(user, admin_email_template_name)
-                message = _('Registration completed. You will receive an email upon your account\'s activation.')
+                message = _('Your request for an account was successfully sent \
+                            and pending approval from our administrators. You \
+                            will be notified by email the next days. \
+                            Thanks for being patient, the GRNET team')
             status = messages.SUCCESS
         except Invitation.DoesNotExist, e:
             status = messages.ERROR
@@ -233,7 +236,10 @@ class SimpleBackend(object):
         if MODERATION_ENABLED:
             try:
                 _send_notification(user, admin_email_template_name)
-                message = _('Registration completed. You will receive an email upon your account\'s activation.')
+                message = _('Your request for an account was successfully sent \
+                            and pending approval from our administrators. You \
+                            will be notified by email the next days. \
+                            Thanks for being patient, the GRNET team')
             except (SMTPException, socket.error) as e:
                 status = messages.ERROR
                 name = 'strerror'

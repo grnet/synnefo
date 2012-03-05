@@ -62,10 +62,17 @@ ASTAKOS_MODERATION_ENABLED          True                                        
 ASTAKOS_BASEURL                     \http://pithos.dev.grnet.gr                                                     Astakos baseurl
 ASTAKOS_SITENAME                    GRNET Cloud                                                                     Service name that appears in emails
 ASTAKOS_CLOUD_SERVICES              ({'icon': 'home-icon.png', 'id': 'cloud', 'name': 'grnet cloud', 'url': '/'},   Cloud services appear in the horizontal bar
-                                    {'id': 'okeanos', 'name': '~okeanos', 'url': '/okeanos.html'},                  
+                                    {'id': 'okeanos', 'name': 'cyclades', 'url': '/okeanos.html'},                  
                                     {'id': 'pithos', 'name': 'pithos+', 'url': '/ui/'})                             
 ASTAKOS_RECAPTCHA_PUBLIC_KEY                                                                                        Recaptcha public key obtained after registration here: http://recaptcha.net
 ASTAKOS_RECAPTCHA_PRIVATE_KEY                                                                                       Recaptcha private key obtained after registration here: http://recaptcha.net
+ASTAKOS_RECAPTCHA_OPTIONS           {'theme': 'white'}                                                              Options for customizing reCAPTCHA look and feel
+                                                                                                                    (see: http://code.google.com/intl/el-GR/apis/recaptcha/docs/customization.html)
+ASTAKOS_LOGOUT_NEXT                                                                                                 Where the user should be redirected after logout
+                                                                                                                    (if not set and no next parameter is defined it renders login page with message)
+ASTAKOS_BILLING_FIELDS              ['id', 'is_active', 'provider', 'third_party_identifier']                       AstakosUser fields to propagate in the billing system
+ASTAKOS_QUEUE_CONNECTION                                                                                            The queue connection ex. 'rabbitmq://guest:guest@localhost:5672/astakos.userEvent.#'
+                                                                                                                    (if it is not set, it does not send messages)
 ==============================      =============================================================================   ===========================================================================================
 
 Administrator functions

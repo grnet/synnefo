@@ -41,7 +41,7 @@ from base64 import b64encode
 from django.db import models
 from django.contrib.auth.models import User, UserManager
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_EXCHANGE
 from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
 
 QUEUE_CLIENT_ID = 3 # Astakos.
@@ -162,13 +162,12 @@ def report_user_event(user):
                 return True
         return False
     
-    if QUEUE_CONNECTION and should_send(user):
+    if QUEUE_EXCHANGE and should_send(user):
         l = [[elem, str(user.__getattribute__(elem))] for elem in BILLING_FIELDS]
         details = dict(l)
+        details['eventType'] = 'create' if not user.id else 'modify'
         body = Receipt(QUEUE_CLIENT_ID, user.email, '', 0, details).format()
-        msgsubtype = 'create' if not user.id else 'modify'
-        exchange = '%s.%s.#' %(QUEUE_CONNECTION, msgsubtype)
-        conn = exchange_connect(exchange)
-        routing_key = exchange.replace('#', body['id'])
+        conn = exchange_connect(QUEUE_EXCHANGE)
+        routing_key = QUEUE_EXCHANGE.replace('#', body['id'])
         exchange_send(conn, routing_key, body)
         exchange_close(conn)

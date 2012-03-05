@@ -62,4 +62,4 @@ RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', {'theme': 'wh
 BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['id', 'is_active', 'provider', 'third_party_identifier'])
 
 # Queue for billing.
-QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None) # Example: 'rabbitmq://guest:guest@localhost:5672/astakos.userEvent'
+QUEUE_EXCHANGE = getattr(settings, 'ASTAKOS_QUEUE_EXCHANGE', None) # Example: 'rabbitmq://guest:guest@localhost:5672/astakos.userEvent.#'

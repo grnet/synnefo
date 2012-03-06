@@ -97,6 +97,7 @@ Request Parameter Name  Value
 ======================  =========================
 next                    The URI to redirect to when the process is finished
 renew                   Force token renewal (no value parameter)
+force                   Force logout current user (no value parameter)
 ======================  =========================
 
 When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding ``user`` and ``token`` parameters, which contain the account and token fields respectively.

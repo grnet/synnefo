@@ -117,6 +117,7 @@ Request Parameter Name  Value
 ======================  =========================
 next                    The URI to redirect to when the process is finished
 renew                   Force token renewal (no value parameter)
+force                   Force logout current user (no value parameter)
 ======================  =========================
 
 External systems outside the domain scope can acquire the user information by a cookie set identified by ASTAKOS_COOKIE_NAME setting.

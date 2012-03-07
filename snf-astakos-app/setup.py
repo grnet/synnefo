@@ -78,7 +78,7 @@ INSTALL_REQUIRES = [
     'Django>=1.2, <1.3',
     'South>=0.7, <=0.7.3',
     'httplib2==0.6.0',
-    'snf-common>=0.9.0rc',
+    'snf-common>=0.9.0',
     'recaptcha-client>=1.0.5'
 ]
 

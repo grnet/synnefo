@@ -6,8 +6,12 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("db", "0025_auto__del_field_virtualmachine_sourceimage"),
+    )
+
     def forwards(self, orm):
-        
+
         # Adding model 'PublicKeyPair'
         db.create_table('userdata_publickeypair', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -19,7 +23,7 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
-        
+
         # Deleting model 'PublicKeyPair'
         db.delete_table('userdata_publickeypair')
 

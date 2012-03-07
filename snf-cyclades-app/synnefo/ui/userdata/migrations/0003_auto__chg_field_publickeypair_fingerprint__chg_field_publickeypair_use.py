@@ -5,9 +5,9 @@ from south.v2 import SchemaMigration
 from django.db import models
 
 class Migration(SchemaMigration):
-    
+
     def forwards(self, orm):
-        
+
         # Changing field 'PublicKeyPair.fingerprint'
         db.alter_column('userdata_publickeypair', 'fingerprint', self.gf('django.db.models.fields.CharField')(max_length=100, blank=True))
 
@@ -17,11 +17,14 @@ class Migration(SchemaMigration):
         db.alter_column('userdata_publickeypair', 'user', self.gf('django.db.models.fields.CharField')(max_length=100))
 
         # Removing index on 'PublicKeyPair', fields ['user']
-        db.delete_index('userdata_publickeypair', ['user_id'])
-    
-    
+        try:
+            db.delete_index('userdata_publickeypair', ['user_id'])
+        except:
+            pass
+
+
     def backwards(self, orm):
-        
+
         # Changing field 'PublicKeyPair.fingerprint'
         db.alter_column('userdata_publickeypair', 'fingerprint', self.gf('django.db.models.fields.CharField')(max_length=100))
 
@@ -32,8 +35,8 @@ class Migration(SchemaMigration):
 
         # Adding index on 'PublicKeyPair', fields ['user']
         db.create_index('userdata_publickeypair', ['user_id'])
-    
-    
+
+
     models = {
         'userdata.publickeypair': {
             'Meta': {'object_name': 'PublicKeyPair'},
@@ -44,5 +47,5 @@ class Migration(SchemaMigration):
             'user': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         }
     }
-    
+
     complete_apps = ['userdata']

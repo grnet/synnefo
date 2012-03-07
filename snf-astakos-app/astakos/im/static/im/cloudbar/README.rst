@@ -36,8 +36,9 @@ Each page that wants to display the navigation bar should:
       and the authentication status of the current visitor of the page.
     - Set the ``CLOUDBAR_ACTIVE_SERVICE`` to the id of the service the current
       page refers to so that script cat set the appropriate active styles to
-      the services menu for services ids see ``SERVICES_LINK``
-      object in cloudbar.js.
+      the services menu for services ids see ``SERVICES_LINK`` object in 
+      cloudbar.js. Use special **accounts** value to set account menu as the
+      active link.
     - Set the ``CLOUDBAR_LOCATION`` to the url where bar files are served from.
     - Include the servicesbar.js script.
 

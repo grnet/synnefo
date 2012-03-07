@@ -13,6 +13,7 @@ Login
 {% endblock body %}
     
 {% block body.right %}
+<div class="section">
      {% if "local" in im_modules %}
         <form action="{% url astakos.im.target.local.login %}" method="post"
             class="login innerlabels">{% csrf_token %}
@@ -26,7 +27,7 @@ Login
         </form>
       {% endif %}
 
-          <div class="section">
+          <div class="extralogin">
               {% for o in im_modules %}
               <div>
             {% if o != 'local' %}
@@ -38,12 +39,15 @@ Login
             {% endfor %}
         </div>
         {% block body.signup %}
-        <div class="section signup">
-            <br /><br />
-                <h2>NEW TO OKEANOS ?</h2>
-                <a class="button" href="{% url astakos.im.views.signup %}">CREATE ACCOUNT</a>
+        {% for o in im_modules %}
+            {% if o != 'local' %}
+            <br />
+            {% endif %}
+        {% endfor %}
+        <div class="bottom">
+                new to okeanos ? <a href="{% url astakos.im.views.signup %}">SIGN UP</a>
             </div>
         </div>
         {% endblock %}
-
+    </div>
 {% endblock %}

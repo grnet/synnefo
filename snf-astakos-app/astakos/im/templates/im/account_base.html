@@ -3,13 +3,13 @@
 {% block page.title %}Profile{% endblock %}
 {% block page.nav.classes %}{% endblock %}
 
-{% comment %}{% block page.quicknav.items %}
+{% block page.quicknav.items %}
         <li class="{% block signup_class %}{% endblock %}">
             <a href="{% url astakos.im.views.logout %}">LOGOUT</a>
         </li>
-{% endblock %}{% endcomment %}
+{% endblock %}
 
-{% comment %}{% block page.nav.items %}
+{% block page.nav.items %}
     <li class="{% if tab == "im/profile" %}active{% endif %}">
         <a href="{% url astakos.im.views.edit_profile %}">Profile</a>
     </li>
@@ -24,7 +24,7 @@
     <li class="{% if tab == "im/feedback" %}active{% endif %}">
         <a href="{% url astakos.im.views.send_feedback %}">Send feedback</a>
     </li>
-{% endblock %}{% endcomment %}
+{% endblock %}
     
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}full{% endblock %}">

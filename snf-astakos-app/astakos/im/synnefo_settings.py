@@ -53,7 +53,8 @@ context_processors = [
     'astakos.im.context_processors.im_modules',
     'astakos.im.context_processors.next',
     'astakos.im.context_processors.code',
-    'astakos.im.context_processors.invitations'
+    'astakos.im.context_processors.invitations',
+    'synnefo.lib.context_processors.cloudbar'
 ]
 
 middlware_classes = [

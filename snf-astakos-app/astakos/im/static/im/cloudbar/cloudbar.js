@@ -58,6 +58,7 @@ $(document).ready(function(){
     
     // create profile links
     var user = $('<div class="user"></div>');    
+    if (ACTIVE_MENU == "accounts") { user.addClass("hover active")}
     var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
     var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString();

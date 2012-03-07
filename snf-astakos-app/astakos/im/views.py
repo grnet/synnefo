@@ -50,6 +50,7 @@ from django.db import transaction
 from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
 from django.http import HttpResponseRedirect
+from django.db.utils import IntegrityError
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
@@ -177,6 +178,10 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
                 status = messages.ERROR
                 message = getattr(e, 'strerror', '')
                 transaction.rollback()
+            except IntegrityError, e:
+                status = messages.ERROR
+                message = _('There is already invitation for %s' % username)
+                transaction.rollback()
         else:
             status = messages.ERROR
             message = _('No invitations left')
@@ -261,7 +266,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
     
-    On unsuccessful creation, renders the same page with an error message.
+    On unsuccessful creation, renders ``on_failure`` with an error message.
     
     **Arguments**
     
@@ -405,5 +410,6 @@ def activate(request):
         return HttpResponseBadRequest('No such user')
     
     user.is_active = True
+    user.email_verified = True
     user.save()
     return prepare_response(request, user, next, renew=True)

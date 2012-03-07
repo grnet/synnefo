@@ -70,6 +70,7 @@ ASTAKOS_RECAPTCHA_OPTIONS           {'theme': 'white'}                          
                                                                                                                     (see: http://code.google.com/intl/el-GR/apis/recaptcha/docs/customization.html)
 ASTAKOS_LOGOUT_NEXT                                                                                                 Where the user should be redirected after logout
                                                                                                                     (if not set and no next parameter is defined it renders login page with message)
+ASTAKOS_RE_USER_EMAIL_PATTERNS      []                                                                              Email patterns that are automatically activated ex. ['^[a-zA-Z0-9\._-]+@grnet\.gr$']
 ==============================      =============================================================================   ===========================================================================================
 
 Administrator functions

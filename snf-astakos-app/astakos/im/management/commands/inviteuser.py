@@ -36,6 +36,7 @@ import socket
 from smtplib import SMTPException
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
 
 from astakos.im.functions import invite
 
@@ -63,5 +64,7 @@ class Command(BaseCommand):
                 self.stdout.write("Invitation sent to '%s'\n" % (email,))
             except (SMTPException, socket.error) as e:
                 raise CommandError("Error sending the invitation")
+            except IntegrityError, e:
+                raise CommandError("There is already an invitation for %s" % (email,))
         else:
             raise CommandError("No invitations left")

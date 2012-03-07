@@ -47,6 +47,10 @@ class Command(BaseCommand):
             dest='invitations',
             metavar='NUM',
             help="Update user's invitations"),
+        make_option('--level',
+            dest='level',
+            metavar='NUM',
+            help="Update user's level"),
         make_option('--password',
             dest='password',
             metavar='PASSWORD',
@@ -99,6 +103,10 @@ class Command(BaseCommand):
         invitations = options.get('invitations')
         if invitations is not None:
             user.invitations = int(invitations)
+        
+        level = options.get('level')
+        if level is not None:
+            user.level = int(level)
         
         password = options.get('password')
         if password is not None:

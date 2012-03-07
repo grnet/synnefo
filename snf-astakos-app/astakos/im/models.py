@@ -56,7 +56,7 @@ class AstakosUser(User):
     #for invitations
     user_level = DEFAULT_USER_LEVEL
     level = models.IntegerField('Inviter level', default=user_level)
-    invitations = models.IntegerField('Invitations left', default=INVITATIONS_PER_LEVEL[user_level])
+    invitations = models.IntegerField('Invitations left', default=INVITATIONS_PER_LEVEL.get(user_level, 0))
     
     auth_token = models.CharField('Authentication Token', max_length=32,
                                   null=True, blank=True)
@@ -68,6 +68,8 @@ class AstakosUser(User):
     
     # ex. screen_name for twitter, eppn for shibboleth
     third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
+    
+    email_verified = models.BooleanField('Email verified?', default=False)
     
     @property
     def realname(self):
@@ -127,7 +129,7 @@ class Invitation(models.Model):
     inviter = models.ForeignKey(AstakosUser, related_name='invitations_sent',
                                 null=True)
     realname = models.CharField('Real name', max_length=255)
-    username = models.CharField('Unique ID', max_length=255)
+    username = models.CharField('Unique ID', max_length=255, unique=True)
     code = models.BigIntegerField('Invitation code', db_index=True)
     #obsolete: we keep it just for transfering the data
     is_accepted = models.BooleanField('Accepted?', default=False)

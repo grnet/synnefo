@@ -7,6 +7,9 @@ v0.3.3
 - Minor improvements in cloudbar js and styles
 - Use synnefo.lib.context_processors.cloudbar to display the cloudbar
 - Updated snf-common dependency to >=0.9.0
+- New ASTAKOS_RE_USER_EMAIL_PATTERNS setting
+- Support for multiple accounts authentication 
+- New --set-active and --set-inactive in modifyuser command
 
 v0.3.2
 ======

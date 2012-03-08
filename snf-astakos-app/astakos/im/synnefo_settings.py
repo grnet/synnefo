@@ -49,7 +49,6 @@ context_processors = [
     'django.core.context_processors.media',
     'django.core.context_processors.request',
     'astakos.im.context_processors.media',
-    'astakos.im.context_processors.cloudbar',
     'astakos.im.context_processors.im_modules',
     'astakos.im.context_processors.next',
     'astakos.im.context_processors.code',

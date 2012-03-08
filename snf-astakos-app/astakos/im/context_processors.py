@@ -54,22 +54,6 @@ def invitations(request):
 def media(request):
     return {'IM_STATIC_URL' : IM_STATIC_URL}
 
-def cloudbar(request):
-    """
-    Cloudbar configuration
-    """
-    CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION', IM_STATIC_URL + 'cloudbar/')
-    CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME', COOKIE_NAME)
-    CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE', 'cloud')
-    
-    absolute = lambda (url): request.build_absolute_uri(url)
-    
-    return {'CLOUDBAR_LOC': CB_LOCATION,
-            'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
-            'ACTIVE_SERVICE': CB_ACTIVE_SERVICE,
-            'GET_SERVICES_URL': absolute(reverse('astakos.im.api.get_services')),
-            'GET_MENU_URL': absolute(reverse('astakos.im.api.get_menu'))}
-
 def menu(request):
     absolute = lambda (url): request.build_absolute_uri(url)
     resp = get_menu(request)

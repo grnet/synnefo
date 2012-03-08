@@ -41,7 +41,6 @@ from synnefo.lib.queue import (exchange_connect, exchange_close,
 
 from optparse import OptionParser
 
-
 BROKER_HOST = 'localhost'
 BROKER_PORT = 5672
 BROKER_USER = 'guest'
@@ -51,9 +50,6 @@ BROKER_VHOST = '/'
 CONSUMER_QUEUE = 'feed'
 CONSUMER_EXCHANGE = 'sample'
 CONSUMER_KEY = '#'
-
-DEBUG = False
-
 
 def main():
     parser = OptionParser()
@@ -81,6 +77,7 @@ def main():
                       dest='test', help='Produce a dummy message for testing')
     opts, args = parser.parse_args()
     
+    DEBUG = False
     if opts.verbose:
         DEBUG = True
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',

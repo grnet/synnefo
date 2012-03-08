@@ -37,8 +37,8 @@ from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED
 
 urlpatterns = patterns('astakos.im.views',
-    url(r'^$', 'index'),
-    url(r'^login/?$', 'index'),
+    url(r'^$', 'index', {}, name='index'),
+    url(r'^login/?$', 'index', {}, name='login'),
     url(r'^profile/?$', 'edit_profile'),
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'form':LoginForm()}}),

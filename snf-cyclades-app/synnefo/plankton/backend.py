@@ -369,8 +369,6 @@ class ImageBackend(object):
         
         size = int(params.pop('size', meta['bytes']))
         if size != meta['bytes']:
-            print repr(size)
-            print repr(meta['bytes'])
             raise BackendException("Invalid size")
         
         checksum = params.pop('checksum', meta['hash'])

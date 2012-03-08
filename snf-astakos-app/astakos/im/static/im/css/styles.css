@@ -200,10 +200,6 @@ textarea {
   line-height: 22px;
   letter-spacing: 1px;
   background-color: #3582ac;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
   color: #ffffff;
   border: none;
   padding: 0.8em 22px;
@@ -212,61 +208,14 @@ textarea {
 .button:hover {
   background-color: #f89a1c;
 }
-.button a {
-  color: #ffffff !important;
-  text-decoration: none !important;
-  border: none !important;
-}
 a.button {
-  color: #ffffff !important;
-  text-decoration: none !important;
+  text-align: center !important;
+  color: #fff !important;
   border: none !important;
+  display: block !important;
 }
-.makeRow {
-  zoom: 1;
-  margin-left: -22px;
-}
-.makeRow:before, .makeRow:after {
-  display: table;
-  content: "";
-  zoom: 1;
-}
-.makeRow:after {
-  clear: both;
-}
-.button {
-  font-family: 'Antic', sans-serif;
-  font-size: 14px;
-  font-weight: normal;
-  line-height: 22px;
-  letter-spacing: 1px;
-  font-family: 'Antic', sans-serif;
-  font-size: 14px;
-  font-weight: normal;
-  line-height: 22px;
-  letter-spacing: 1px;
-  background-color: #3582ac;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
-  color: #ffffff;
-  border: none;
-  padding: 0.8em 22px;
-  font-size: 1em;
-}
-.button:hover {
-  background-color: #f89a1c;
-}
-.button a {
-  color: #ffffff !important;
-  text-decoration: none !important;
-  border: none !important;
-}
-a.button {
-  color: #ffffff !important;
-  text-decoration: none !important;
-  border: none !important;
+a.button:hover {
+  color: #fff !important;
 }
 /*addon to style django forms rendered with as_p filter*/
 /*
@@ -470,6 +419,53 @@ table .purple {
 table .headerSortUp.purple, table .headerSortDown.purple {
   background-color: #e2d5f0;
 }
+.makeRow {
+  zoom: 1;
+  margin-left: -22px;
+}
+.makeRow:before, .makeRow:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.makeRow:after {
+  clear: both;
+}
+.button {
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
+  font-family: 'Antic', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 1px;
+  background-color: #3582ac;
+  color: #ffffff;
+  border: none;
+  padding: 0.8em 22px;
+  font-size: 1em;
+}
+.button:hover {
+  background-color: #f89a1c;
+}
+a.button {
+  text-align: center !important;
+  color: #fff !important;
+  border: none !important;
+  display: block !important;
+}
+a.button:hover {
+  color: #fff !important;
+}
+.border-box {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  *behavior: url(boxsizing.htc);
+}
 body {
   font-family: 'Antic', sans-serif;
   font-size: 14px;
@@ -516,7 +512,8 @@ body {
 section a,
 p a,
 form a,
-.section a {
+.section a,
+.styledlinks a {
   color: #000000;
   text-decoration: none;
   border-bottom: 1px solid #f89a1c;
@@ -524,20 +521,26 @@ form a,
 section a:hover,
 p a:hover,
 form a:hover,
-.section a:hover {
+.section a:hover,
+.styledlinks a:hover {
   color: #f89a1c;
 }
 section a.noborder,
 p a.noborder,
 form a.noborder,
-.section a.noborder {
+.section a.noborder,
+.styledlinks a.noborder {
   border: none;
 }
 section a em,
 p a em,
 form a em,
-.section a em {
+.section a em,
+.styledlinks a em {
   color: #3582ac;
+}
+a.simple {
+  border: none;
 }
 a.action {
   color: #f89a1c;
@@ -581,7 +584,7 @@ a img {
 }
 div.header {
   position: relative;
-  margin-top: 42px;
+  margin-top: 88px;
   margin-bottom: 22px;
 }
 div.header h1 {
@@ -590,6 +593,12 @@ div.header h1 {
   font-size: 2.3em;
   border-bottom: 1px solid #cfcdc7;
   padding-bottom: 3px;
+}
+.mainlogo {
+  height: 36px;
+}
+.mainlogo h1 {
+  height: 36px;
 }
 .mainlogo img {
   margin-left: -10px;
@@ -626,14 +635,17 @@ ul.inline li {
   margin-right: 0;
   margin-left: 1em;
 }
+.navigation {
+  height: 83px;
+}
 .mainnav {
-  font-size: 1.1em;
+  font-size: 1.2em;
 }
 .mainnav.subnav {
   margin-bottom: -22px;
 }
 .mainnav.subnav li {
-  margin-top: 11px;
+  margin-top: 1.2em;
 }
 .mainnav li {
   margin-top: 66px;
@@ -655,31 +667,56 @@ ul.inline li {
   border-bottom: 1px solid #f89a1c;
   color: #f89a1c;
 }
-.page {
+.bottom-section {
+  zoom: 1;
+}
+.bottom-section:before, .bottom-section:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.bottom-section:after {
+  clear: both;
+}
+.bottom-section .section img {
+  width: 200px;
+}
+.top-section {
+  zoom: 1;
+}
+.top-section:before, .top-section:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.top-section:after {
+  clear: both;
+}
+div.page {
   zoom: 1;
   margin-left: -22px;
   zoom: 1;
   margin-left: -22px;
-  margin-top: 42px;
+  margin-top: 132px;
   font-size: 1.1em;
 }
-.page:before, .page:after {
+div.page:before, div.page:after {
   display: table;
   content: "";
   zoom: 1;
 }
-.page:after {
+div.page:after {
   clear: both;
 }
-.page:before, .page:after {
+div.page:before, div.page:after {
   display: table;
   content: "";
   zoom: 1;
 }
-.page:after {
+div.page:after {
   clear: both;
 }
-.page .page-inner {
+div.page .page-inner {
   position: relative;
 }
 .maincol {
@@ -736,35 +773,11 @@ ul.inline li {
 .rightcol input[type=text], .rightcol input[type=password] {
   width: 273px;
 }
-/* recaptcha */
-#recaptcha_widget_div {
-  margin-top: 10px;
-  margin-left: -4px;
-}
-#recaptcha_widget_div #recaptcha_instructions_image {
-  font-size: 0.8em;
-  margin-bottom: 10px;
-  display: block !important;
-}
 /* generic form styles */
 input, textarea, .form-widget {
   background-color: #ffffff;
-  color: #000000;
+  color: #808080;
   border-color: #000000;
-}
-.checkbox-widget.checked {
-  background-color: #f00;
-  background-image: url("../images/checkbox.png");
-  background-position: 50% 50%;
-}
-.checkbox-widget {
-  border: 1px solid #808080;
-  width: 25px;
-  height: 25px;
-  display: block;
-  float: left;
-  cursor: pointer;
-  margin-top: 9px;
 }
 #forms .input, #forms input {
   font-family: 'Antic', sans-serif;
@@ -778,6 +791,8 @@ input, textarea, .form-widget {
   line-height: 22px;
   letter-spacing: 1px;
   border: 1px solid #808080;
+  height: 21px;
+  display: inline-block;
   margin-bottom: -1px;
   padding: 0.8em;
   padding-left: 1.5em;
@@ -788,6 +803,9 @@ input, textarea, .form-widget {
   border: 1px solid #000;
   z-index: 100;
 }
+#forms .input:focus label, #forms input:focus label {
+  z-index: 300;
+}
 .altcol {
   background-color: #c3c3b9 !important;
 }
@@ -795,7 +813,13 @@ input, textarea, .form-widget {
   background-color: #f89a1c !important;
 }
 .section {
-  margin-bottom: 2em;
+  margin-bottom: 66px;
+}
+.section em {
+  color: #3582ac;
+}
+.section.positioned {
+  margin-bottom: 0;
 }
 .section.positioned .content {
   display: inline;
@@ -813,6 +837,7 @@ input, textarea, .form-widget {
   float: left;
 }
 .section.positioned h3 {
+  font-size: 1.2em;
   margin-bottom: 22px;
 }
 .section.positioned .text {
@@ -841,7 +866,7 @@ input, textarea, .form-widget {
 }
 input[readonly=true] {
   background-color: #ddd;
-  color: #2b2b2b;
+  color: #5e5e5e;
 }
 form.withlabels label {
   width: 224px;
@@ -855,8 +880,23 @@ form.withlabels input[type=text], form.withlabels input[type=password], form.wit
 form.withlabels input[type=text].long, form.withlabels input[type=password].long, form.withlabels textarea.long {
   width: 224px;
 }
+.login-section a.button {
+  margin-bottom: 12px;
+}
+.login-section a.button:last-child {
+  margin-bottom: none;
+}
+.login-section a.button.withicon {
+  background-repeat: no-repeat;
+  background-position: 15px 50%;
+  padding-left: 40px;
+}
+.login-section.loggedin {
+  padding-bottom: 0 !important;
+  background-image: none !important;
+}
 form.login {
-  margin-bottom: 3em;
+  margin-bottom: 33px;
 }
 form h2 {
   color: #000000;
@@ -871,7 +911,7 @@ form .form-row {
   position: relative;
 }
 form .form-row.submit {
-  margin-top: 22px;
+  margin-top: 33px;
 }
 form .form-row .extra-link {
   color: #808080;
@@ -905,6 +945,8 @@ form input[type="password"] {
   line-height: 22px;
   letter-spacing: 1px;
   border: 1px solid #808080;
+  height: 21px;
+  display: inline-block;
   margin-bottom: -1px;
   padding: 0.8em;
   padding-left: 1.5em;
@@ -918,6 +960,12 @@ form input[type="password"]:focus {
   border: 1px solid #000;
   z-index: 100;
 }
+form textarea:focus label,
+form input.text:focus label,
+form input[type="text"]:focus label,
+form input[type="password"]:focus label {
+  z-index: 300;
+}
 form input.submit, form input[type="submit"] {
   font-family: 'Antic', sans-serif;
   font-size: 14px;
@@ -930,10 +978,6 @@ form input.submit, form input[type="submit"] {
   line-height: 22px;
   letter-spacing: 1px;
   background-color: #3582ac;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
   color: #ffffff;
   border: none;
   padding: 0.8em 22px;
@@ -949,10 +993,6 @@ form input.submit, form input[type="submit"] {
   line-height: 22px;
   letter-spacing: 1px;
   background-color: #3582ac;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
-  -webkit-transition: background-color 0.15s linear;
-  transition: background-color 0.15s linear;
   color: #ffffff;
   border: none;
   padding: 0.8em 22px;
@@ -961,18 +1001,8 @@ form input.submit, form input[type="submit"] {
 form input.submit:hover, form input[type="submit"]:hover {
   background-color: #f89a1c;
 }
-form input.submit a, form input[type="submit"] a {
-  color: #ffffff !important;
-  text-decoration: none !important;
-  border: none !important;
-}
 form input.submit:hover, form input[type="submit"]:hover {
   background-color: #f89a1c;
-}
-form input.submit a, form input[type="submit"] a {
-  color: #ffffff !important;
-  text-decoration: none !important;
-  border: none !important;
 }
 form .with-errors input, form .with-errors textarea, form .with-errors select {
   color: #9d261d;
@@ -995,24 +1025,42 @@ form .with-errors label {
 div.form-stacked {
   margin-bottom: 4em;
 }
+.rightcol .section {
+  background-image: url("../images/dashed_border.png");
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  padding-bottom: 44px;
+  margin-bottom: 44px;
+}
 .section h2 {
   font-size: 1.1em;
+  line-height: 1.3em;
   margin-bottom: 33px;
 }
 .section h2 a {
   color: #4085A6;
   border: none;
+  line-height: 1.3em;
+}
+.section h3 {
+  font-size: 1.1em;
+  line-height: 1.3em;
+  margin-bottom: 33px;
 }
 .section p {
   line-height: 1.7em;
+}
+.section .section-img {
+  margin-bottom: 22px;
 }
 .messages {
   display: inline;
   float: left;
   margin-left: 22px;
   width: 798px;
-  margin-bottom: 2em;
+  margin: 2em 0;
   background-color: #ddd;
+  margin-left: 0;
 }
 .messages li {
   padding: 1em;
@@ -1105,11 +1153,20 @@ table tr.consumed td.consumed {
   margin-right: 0;
 }
 /*pagination*/
+.pagination a.page {
+  display: inline !important;
+}
 /*blog styles*/
 .blog-entry {
-  margin-bottom: 2em;
+  margin-bottom: 66px;
   zoom: 1;
   margin-bottom: 44px;
+}
+.blog-entry em {
+  color: #3582ac;
+}
+.blog-entry.positioned {
+  margin-bottom: 0;
 }
 .blog-entry.positioned .content {
   display: inline;
@@ -1127,6 +1184,7 @@ table tr.consumed td.consumed {
   float: left;
 }
 .blog-entry.positioned h3 {
+  font-size: 1.2em;
   margin-bottom: 22px;
 }
 .blog-entry.positioned .text {
@@ -1155,14 +1213,24 @@ table tr.consumed td.consumed {
 }
 .blog-entry h2 {
   font-size: 1.1em;
+  line-height: 1.3em;
   margin-bottom: 33px;
 }
 .blog-entry h2 a {
   color: #4085A6;
   border: none;
+  line-height: 1.3em;
+}
+.blog-entry h3 {
+  font-size: 1.1em;
+  line-height: 1.3em;
+  margin-bottom: 33px;
 }
 .blog-entry p {
   line-height: 1.7em;
+}
+.blog-entry .section-img {
+  margin-bottom: 22px;
 }
 .blog-entry:before, .blog-entry:after {
   display: table;
@@ -1175,6 +1243,7 @@ table tr.consumed td.consumed {
 .blog-entry .title {
   margin-bottom: 1em;
   font-size: 1.1em;
+  line-height: 1.4em;
 }
 .blog-entry .media img {
   border: 1px solid #808080;
@@ -1199,6 +1268,11 @@ table tr.consumed td.consumed {
   margin-bottom: 22px;
   color: #808080;
 }
+.section.twitter-feed .tweet:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
 .section.twitter-feed .tweet .date {
   display: block;
   font-size: 0.7em;
@@ -1206,4 +1280,84 @@ table tr.consumed td.consumed {
 .section.twitter-feed .tweet .date a {
   text-decoration: none !important;
   border: none;
+}
+.pagination .page {
+  margin-left: 0;
+}
+.entry-list .since {
+  font-size: 0.8em;
+}
+.entry-list .title {
+  margin-bottom: 1em;
+}
+.entry-list .content, .entry-list .text {
+  margin-bottom: 2em;
+  font-size: 0.8em;
+}
+.initial_hidden {
+  display: none;
+}
+/*resources styles*/
+.resources .categories ul {
+  zoom: 1;
+}
+.resources .categories ul:before, .resources .categories ul:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.resources .categories ul:after {
+  clear: both;
+}
+.resources .categories ul li {
+  float: left;
+}
+.resources .categories .title {
+  margin-bottom: 11px;
+}
+.resources .categories ul li a {
+  text-decoration: none;
+  color: #faaf40;
+  margin-right: 22px;
+}
+.resources .list {
+  margin-top: 88px;
+}
+.resources .list .resource {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  *behavior: url(boxsizing.htc);
+  width: 33%;
+  padding: 44px;
+  float: left;
+  border: 1px solid #faaf40;
+  height: 264px;
+}
+.resources .list .resource .description {
+  display: none;
+}
+/* recaptcha */
+#recaptcha_widget_div {
+  margin-top: 10px;
+  margin-left: -4px;
+}
+#recaptcha_widget_div #recaptcha_instructions_image {
+  font-size: 0.8em;
+  margin-bottom: 10px;
+  display: block !important;
+}
+.checkbox-widget.checked {
+  background-color: #f00;
+  background-image: url("../images/checkbox.png");
+  background-position: 50% 50%;
+}
+.checkbox-widget {
+  border: 1px solid #808080;
+  width: 25px;
+  height: 25px;
+  display: block;
+  float: left;
+  cursor: pointer;
+  margin-top: 9px;
 }

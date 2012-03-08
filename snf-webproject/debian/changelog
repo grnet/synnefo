@@ -1,3 +1,9 @@
+snf-webproject (0.9.3-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Thu, 08 Mar 2012 14:09:24 +0200
+
 snf-webproject (0.9.1-1) stable; urgency=low
 
   * New upstream version 

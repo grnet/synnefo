@@ -1004,6 +1004,10 @@ form input.submit:hover, form input[type="submit"]:hover {
 form input.submit:hover, form input[type="submit"]:hover {
   background-color: #f89a1c;
 }
+form textarea {
+  height: 200px;
+  width: 350px !important;
+}
 form .with-errors input, form .with-errors textarea, form .with-errors select {
   color: #9d261d;
 }

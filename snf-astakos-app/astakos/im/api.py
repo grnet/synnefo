@@ -117,8 +117,6 @@ def get_services(request):
     return HttpResponse(content=data, mimetype=mimetype)
 
 def get_menu(request):
-    if request.method != 'GET':
-        raise BadRequest('Method not allowed.')
     location = request.GET.get('location', '')
     exclude = []
     index_url = reverse('index')
@@ -135,7 +133,7 @@ def get_menu(request):
     l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
     if request.user.is_authenticated():
         l = []
-        l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
+        l.append({ 'url': absolute(reverse('astakos.im.views.index')),
                   'name': request.user.email})
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': "View your profile" })

@@ -117,9 +117,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     formclass = 'LoginForm'
     kwargs = {}
     if request.user.is_authenticated():
-        template_name = profile_template_name
-        formclass = 'ProfileForm'
-        kwargs.update({'instance':request.user})
+        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     return render_response(template_name,
                            form = globals()[formclass](**kwargs),
                            context_instance = get_context(request, extra_context))

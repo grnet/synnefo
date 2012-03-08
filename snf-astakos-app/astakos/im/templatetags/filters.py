@@ -30,56 +30,11 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-"""
-Django settings metadata. To be used in setup.py snf-webproject entry points.
-"""
+from django import template
 
-installed_apps = [
-        {'before': 'django.contrib.admin',
-         'insert': 'astakos.im',},
-        'django.contrib.auth',
-        'django.contrib.contenttypes',
-        'django.contrib.sessions',
-        'django.contrib.messages'
-]
+register = template.Library()
 
-context_processors = [
-    'django.core.context_processors.media',
-    'django.core.context_processors.request',
-    'astakos.im.context_processors.media',
-    'astakos.im.context_processors.cloudbar',
-    'astakos.im.context_processors.im_modules',
-    'astakos.im.context_processors.next',
-    'astakos.im.context_processors.code',
-    'astakos.im.context_processors.invitations',
-    'astakos.im.context_processors.menu',
-    'synnefo.lib.context_processors.cloudbar'
-]
-
-middlware_classes = [
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'synnefo.lib.middleware.LoggingConfigMiddleware',
-    'synnefo.lib.middleware.SecureMiddleware'
-]
-
-loggers = {
-        'astakos': {
-            'handlers': ['console'],
-            'level': 'INFO'
-        }
-}
-
-static_files = {'astakos.im': ''}
-
-# The following settings will replace the default django settings
-AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',
-                            'astakos.im.auth_backends.TokenBackend')
-LOGIN_URL = '/im'
-
-# The server is behind a proxy (apache and gunicorn setup).
-USE_X_FORWARDED_HOST = False
-
-CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
-
+@register.filter
+def lookup(d, key):
+    return d[key]

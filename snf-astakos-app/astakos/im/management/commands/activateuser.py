@@ -40,7 +40,7 @@ from ._common import get_user
     
 
 class Command(BaseCommand):
-    args = "<user id or email> [user id or email] ..."
+    args = "<user ID or email> [user ID or email] ..."
     help = "Activates one or more users"
     
     @transaction.commit_manually

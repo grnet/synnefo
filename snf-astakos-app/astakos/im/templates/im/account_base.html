@@ -1,30 +1,23 @@
 {% extends "im/base_two_cols.html" %}
 
+{% load filters %}
+
 {% block page.title %}Profile{% endblock %}
 {% block page.nav.classes %}{% endblock %}
 
-{% comment %}{% block page.quicknav.items %}
+{% block page.quicknav.items %}
         <li class="{% block signup_class %}{% endblock %}">
             <a href="{% url astakos.im.views.logout %}">LOGOUT</a>
         </li>
-{% endblock %}{% endcomment %}
+{% endblock %}
 
-{% comment %}{% block page.nav.items %}
-    <li class="{% if tab == "im/profile" %}active{% endif %}">
-        <a href="{% url astakos.im.views.edit_profile %}">Profile</a>
-    </li>
-    <li class="{% if not tab %}active{% endif %}">
-        <a href="{% url django.contrib.auth.views.password_change %}">Change password</a>
-    </li>
-    {% if invitations_enabled %}
-    <li class="{% if tab == "im/invitations" %}active{% endif %}">
-        <a href="{% url astakos.im.views.invite %}">Invitations</a>
-    </li>
-    {% endif %}
-    <li class="{% if tab == "im/feedback" %}active{% endif %}">
-        <a href="{% url astakos.im.views.send_feedback %}">Send feedback</a>
-    </li>
-{% endblock %}{% endcomment %}
+{% block page.nav.items %}
+    {% for item in menu%}
+        <li class="{% if item|lookup:"is_active" %}active{% endif %}">
+            <a href="{{ item|lookup:"url" }}">{{ item|lookup:"name" }}</a>
+        </li>
+    {% endfor %}
+{% endblock %}
     
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}full{% endblock %}">

@@ -2,7 +2,17 @@
 @import "../less/xtra.less";
 @import "../less/django_forms.less";
 @import "../less/tables.less";
+@import "../less/xtra.less";
 
+
+// mixins
+
+.border-box {
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    *behavior: url(boxsizing.htc);
+}
 
 @gradCol: #ddd;
 body {
@@ -36,7 +46,7 @@ body {
 }
 
 // default link styles
-section a, p a, form a, .section a {
+section a, p a, form a, .section a, .styledlinks a {
     color: @black;
     text-decoration: none;
     border-bottom: 1px solid @linkColor;
@@ -54,6 +64,10 @@ section a, p a, form a, .section a {
     }
 }
 
+a.simple {
+    border: none;
+
+}
 a.action {
     color: @linkColor;
     border-bottom: none;
@@ -91,7 +105,7 @@ a img {
 
 div.header {
     position: relative;
-    margin-top: 42px;
+    margin-top: 4*@gridGutterWidth;
     margin-bottom: @gridGutterWidth;
     h1 {
         color: @shadowColor;
@@ -102,6 +116,9 @@ div.header {
     }
 }
 .mainlogo {
+    height: 36px;
+
+    h1 { height: 36px }
     img {
         margin-left: -10px;
     }
@@ -135,14 +152,17 @@ ul.inline {
     }
 }
 
+.navigation {
+    height: 83px;    
+}
 
 .mainnav {
-    font-size: 1.1em;
+    font-size: 1.2em;
     
     &.subnav {
         margin-bottom: -@gridGutterWidth;
         li {
-            margin-top: @gridGutterWidth/2;
+            margin-top: 1.2em;
         }
     }
 
@@ -172,9 +192,23 @@ ul.inline {
     }
 }
 
-.page {
+.bottom-section {
+    .clearfix();
+
+    .section {
+        img {
+            width: 200px;    
+        }
+    }
+}
+
+.top-section {
+    .clearfix();
+}
+
+div.page {
     .makeRow();
-    margin-top: 42px;
+    margin-top: 6*@gridGutterWidth;
     font-size: 1.1em;
     .page-inner {
         position: relative;    
@@ -214,54 +248,31 @@ ul.inline {
     }
 }
 
-
-/* recaptcha */
-#recaptcha_widget_div {
-    margin-top: 10px;
-    margin-left: -4px;
-
-    #recaptcha_instructions_image {
-        font-size: 0.8em;
-        margin-bottom: 10px;
-        display: block !important;
-    }
-}
 /* generic form styles */
 input, textarea, .form-widget {
     background-color: @white;
-    color: @black;
+    color: @gray;
     border-color: @black;
-}
-
-.checkbox-widget.checked {
-    background-color: #f00;
-    background-image: url("../images/checkbox.png");
-    background-position: 50% 50%;
-}
-
-.checkbox-widget {
-    border: 1px solid @gray;
-    width: 25px;
-    height: 25px;
-    display: block;
-    float: left;
-    cursor: pointer;
-    margin-top: @gridGutterWidth/2 - 2;
 }
 
 #forms {
     .input, input {
         #font.main();
         border: 1px solid @gray;
+        height:21px;
+        display: inline-block;
         margin-bottom: -1px;
         padding: 0.8em;
         padding-left: 1.5em;
         z-index: 2;
-
         &:focus {
             position: relative;
             border: 1px solid #000;
             z-index: 100;
+
+            label {
+                z-index: 300;    
+            }
         }
     }
 }
@@ -275,9 +286,13 @@ input, textarea, .form-widget {
 }
 
 .section {
+    
+    em {
+        color: @blue;
+    }
 
     &.positioned {
-        
+        margin-bottom: 0;
         .content {
             .makeColumn(4);
         }
@@ -296,6 +311,7 @@ input, textarea, .form-widget {
         }
         
         h3 {
+            font-size: 1.2em;
             margin-bottom: @gridGutterWidth;    
         }
 
@@ -304,7 +320,7 @@ input, textarea, .form-widget {
         }
     }
 
-    margin-bottom: 2em; 
+    margin-bottom: 3*@gridGutterWidth; 
 
     .left, .right {
         width: 50%;
@@ -324,7 +340,7 @@ input, textarea, .form-widget {
 
 input[readonly=true] {
     background-color: #ddd;
-    color: darken(#ddd, 70%);
+    color: darken(#ddd, 50%);
 }
 
 form.withlabels {
@@ -345,12 +361,34 @@ form.withlabels {
 }
 
 
+.login-section {
+    a.button {
+        margin-bottom: 0.2*@gridColumnWidth;    
+        
+        &:last-child {
+            margin-bottom: none;    
+        }
+
+        &.withicon {
+            background-repeat: no-repeat;
+            background-position: 15px 50%;
+            padding-left: 40px;
+        }
+    }    
+
+    &.loggedin {
+        padding-bottom: 0 !important;
+        background-image: none !important;
+    }
+}
+
+
 @errorColor: lighten(@red, 30%);
 // forms
 form {
     
     &.login {
-        margin-bottom: 3em; 
+        margin-bottom: 1.5*@gridGutterWidth; 
     }
 
     h2 {
@@ -367,7 +405,7 @@ form {
         min-height: 2*@gridGutterWidth;
         position: relative;
         &.submit {
-            margin-top: @gridGutterWidth;
+            margin-top: 1.5*@gridGutterWidth;
         }
 
         .extra-link {
@@ -400,6 +438,10 @@ form {
     }
 
     
+    textarea {
+        height: 200px;
+        width: 350px !important;
+    }
     .with-errors {
         input, textarea, select {
             color: @red;
@@ -430,19 +472,41 @@ div.form-stacked {
     margin-bottom: 4em;
 }
 // content types
+
+.rightcol .section {
+    background-image: url("../images/dashed_border.png");
+    background-repeat: repeat-x;
+    background-position: left bottom;
+    padding-bottom: 2*@gridGutterWidth;
+    margin-bottom: 2*@gridGutterWidth;
+
+}
+
 .section {
     h2 {
         font-size: 1.1em;
+        line-height: 1.3em;
         margin-bottom: 1.5*@gridGutterWidth;    
 
         a {
             color: #4085A6;
             border: none;
+            line-height: 1.3em;
         }
+    }
+
+    h3 {
+        font-size: 1.1em;    
+        line-height: 1.3em;
+        margin-bottom: 1.5*@gridGutterWidth;    
     }
 
     p {
         line-height: 1.7em;    
+    }
+
+    .section-img {
+        margin-bottom: 1*@gridGutterWidth;    
     }
 }
 
@@ -451,8 +515,9 @@ div.form-stacked {
 .messages {
     .makeColumn(10);
 
-    margin-bottom: 2em;
+    margin: 2em 0;
     background-color: #ddd;
+    margin-left: 0;
 
     li {
         padding: 1em;    
@@ -538,7 +603,12 @@ table {
 
 
 /*pagination*/
+.pagination {
+    a.page {
+        display: inline !important;
 
+    }    
+}
 
 /*blog styles*/
 .blog-entries {
@@ -554,6 +624,7 @@ table {
     .title {
         margin-bottom: 1em;    
         font-size: 1.1em;
+        line-height: 1.4em;
     }    
 
     .media {
@@ -586,6 +657,7 @@ table {
 .section.twitter-feed {
     
     .tweet {
+        &:last-child { margin-bottom:0; padding-bottom:0; border-bottom: none }
         line-height: 1.3em;
         font-size: 0.9em;
         margin-bottom: @gridGutterWidth;
@@ -601,3 +673,100 @@ table {
         }
     }
 }
+
+.pagination .page {
+    margin-left: 0;    
+}
+
+
+.entry-list {
+    
+    .since {
+        font-size: 0.8em;    
+    }
+
+    .title {
+        margin-bottom: 1em;    
+    }
+
+    .content, .text {
+        margin-bottom: 2em;
+        font-size: 0.8em;
+    }
+}
+
+
+.initial_hidden {
+    display: none;    
+}
+
+/*resources styles*/
+
+@resCol: #FAAF40;
+.resources {
+    
+    .categories {
+        ul { .clearfix() }
+        ul li { float: left; }
+        .title {
+            margin-bottom: @gridGutterWidth/2;    
+        }
+
+        ul li a {
+            text-decoration: none;
+            color: @resCol;
+            margin-right: @gridGutterWidth;
+        }
+    }
+
+    .list {
+        
+        margin-top: 4*@gridGutterWidth;
+
+        .resource {
+            .border-box();
+            width: 33%;
+            padding: 2*@gridGutterWidth;
+            float: left;
+            border: 1px solid @resCol;
+            height: 12*@gridGutterWidth;
+
+            .description {
+                display: none;    
+            }
+        }    
+    }
+    
+}
+
+ 
+/* recaptcha */
+#recaptcha_widget_div {
+    margin-top: 10px;
+    margin-left: -4px;
+
+    #recaptcha_instructions_image {
+        font-size: 0.8em;
+        margin-bottom: 10px;
+        display: block !important;
+    }
+}
+
+.checkbox-widget.checked {
+    background-color: #f00;
+    background-image: url("../images/checkbox.png");
+    background-position: 50% 50%;
+}
+
+.checkbox-widget {
+    border: 1px solid @gray;
+    width: 25px;
+    height: 25px;
+    display: block;
+    float: left;
+    cursor: pointer;
+    margin-top: @gridGutterWidth/2 - 2;
+}
+
+
+

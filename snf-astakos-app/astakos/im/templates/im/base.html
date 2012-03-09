@@ -64,18 +64,10 @@
           $("label[for=id_recaptcha_challenge_field]").closest('.form-row').hide();
     })
   </script>
-  <script>
-    var CLOUDBAR_LOCATION = "{{ CLOUDBAR_LOC }}";
-    var CLOUDBAR_COOKIE_NAME = "{{ CLOUDBAR_COOKIE_NAME }}";
-    var CLOUDBAR_ACTIVE_SERVICE = '{{ CLOUDBAR_ACTIVE_SERVICE }}';
-    
-    var GET_SERVICES_URL = "{{ GET_SERVICES_URL }}";
-    var GET_MENU_URL = "{{ GET_MENU_URL }}";
 
-    $(document).ready(function(){
-      $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
-    })
-  </script>
+    {% if CLOUDBAR_ACTIVE %}
+        {{ CLOUDBAR_CODE }}
+    {% endif %}
 </head>
 
 <body>
@@ -85,34 +77,28 @@
                 <h1>accounts</h1>
             </div>
             
-            <ul class="mainnav inline quicknav">
-                {% comment %}{% block page.quicknav.items %}
-                    <li class="{% block signup_class %}{% endblock %}">
-                        <a href="{% url astakos.im.views.index %}">Login</a>
-                    </li>
-                    <li class="{% block signin_class %}{% endblock %}">
-                        <a href="{% url astakos.im.views.signup %}">Sign up</a>
-                    </li>
-                {% endblock %}{% endcomment %}
-            </ul>
-
-            {% comment %}{% block page.nav %}
+            {% block page.nav %}
+            <div class="navigation">
             <ul class="mainnav inline">
                 {% block page.nav.items %}
                 {% endblock %}
             </ul>
-            {% endblock %}{% endcomment %}
-        </div>
-        <div class="page">
-            {% if messages %}
-            <ul class="messages">
-                {% for message in messages %}
-                <li{% if message.tags %} 
-                    class="{{ message.tags }}"{% endif %}>
-                    {{ message }}</li>
-                {% endfor %}
+            <ul class="mainnav inline subnav">
+                {% block page.subnav %}{%endblock %}
             </ul>
-            {% endif %}
+            </div>
+            {% endblock %}
+        </div>
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} 
+                class="{{ message.tags }}"{% endif %}>
+                {{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <div class="page">
             {% block page.body %}
                 <div class="maincol">
                     {% block body %}

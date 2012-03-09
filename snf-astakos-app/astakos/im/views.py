@@ -50,6 +50,7 @@ from django.db import transaction
 from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
 from django.http import HttpResponseRedirect
+from django.db.utils import IntegrityError
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
@@ -116,9 +117,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     formclass = 'LoginForm'
     kwargs = {}
     if request.user.is_authenticated():
-        template_name = profile_template_name
-        formclass = 'ProfileForm'
-        kwargs.update({'instance':request.user})
+        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     return render_response(template_name,
                            form = globals()[formclass](**kwargs),
                            context_instance = get_context(request, extra_context))
@@ -176,6 +175,10 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
             except (SMTPException, socket.error) as e:
                 status = messages.ERROR
                 message = getattr(e, 'strerror', '')
+                transaction.rollback()
+            except IntegrityError, e:
+                status = messages.ERROR
+                message = _('There is already invitation for %s' % username)
                 transaction.rollback()
         else:
             status = messages.ERROR
@@ -261,7 +264,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
     
-    On unsuccessful creation, renders the same page with an error message.
+    On unsuccessful creation, renders ``on_failure`` with an error message.
     
     **Arguments**
     
@@ -405,5 +408,6 @@ def activate(request):
         return HttpResponseBadRequest('No such user')
     
     user.is_active = True
+    user.email_verified = True
     user.save()
     return prepare_response(request, user, next, renew=True)

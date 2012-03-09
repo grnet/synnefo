@@ -104,6 +104,10 @@
   font-weight: bold !important;
   font-size: 12px !important;
 }
+.servicesbar .profile .user.active {
+  background-color: #333;
+}
+
 .servicesbar .profile a {
   float: none;
 }

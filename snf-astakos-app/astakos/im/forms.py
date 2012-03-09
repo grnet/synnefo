@@ -54,7 +54,7 @@ class LocalUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
     
-    * Adds email, first_name and last_name field.
+    * Adds email, first_name, last_name, recaptcha_challenge_field, recaptcha_response_field field.
     * The username field isn't visible and it is assigned a generated id.
     * User created is not active. 
     """
@@ -134,7 +134,9 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         """
         super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'inviter', 'first_name',
-                                'last_name', 'password1', 'password2']
+                                'last_name', 'password1', 'password2',
+                                'recaptcha_challenge_field',
+                                'recaptcha_response_field']
         #set readonly form fields
         self.fields['inviter'].widget.attrs['readonly'] = True
         self.fields['email'].widget.attrs['readonly'] = True
@@ -144,7 +146,8 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
         level = user.invitation.inviter.level + 1
         user.level = level
-        user.invitations = INVITATIONS_PER_LEVEL[level]
+        user.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        user.email_verified = True
         if commit:
             user.save()
         return user

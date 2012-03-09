@@ -117,17 +117,23 @@ def get_services(request):
     return HttpResponse(content=data, mimetype=mimetype)
 
 def get_menu(request):
-    if request.method != 'GET':
-        raise BadRequest('Method not allowed.')
     location = request.GET.get('location', '')
+    exclude = []
+    index_url = reverse('index')
+    login_url = reverse('login')
+    logout_url = reverse('astakos.im.views.logout')
     absolute = lambda (url): request.build_absolute_uri(url)
-    index_url = absolute(reverse('astakos.im.views.index'))
-    if urlparse(location).query.rfind('next=') == -1:
+    l = index_url, login_url, logout_url
+    forbidden = []
+    for url in l:
+        url = url.rstrip('/')
+        forbidden.extend([url, url + '/', absolute(url), absolute(url + '/')])
+    if location not in forbidden:
         index_url = '%s?next=%s' % (index_url, quote(location))
-    l = [{ 'url': index_url, 'name': "Sign in"}]
+    l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
     if request.user.is_authenticated():
         l = []
-        l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
+        l.append({ 'url': absolute(reverse('astakos.im.views.index')),
                   'name': request.user.email})
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': "View your profile" })

@@ -39,11 +39,12 @@ from ._common import format_bool, format_date
 
 
 class Command(BaseCommand):
+    args = "<user ID or email>"
     help = "Show user info"
     
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a user_id or email")
+            raise CommandError("Please provide a user ID or email")
         
         email_or_id = args[0]
         try:

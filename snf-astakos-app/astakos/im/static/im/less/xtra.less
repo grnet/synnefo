@@ -39,6 +39,18 @@ a.button {
     border: none !important;
 }
 
+// specific styles for A buttons
+a.button {
+    text-align: center !important;
+    color: #fff !important;
+    border: none !important;
+    display: block !important;
+
+    &:hover {
+        color: #fff !important;    
+    }
+}
+
 
 .transit(@type:color, @time:.15s, @easing:linear) {
     -webkit-transition: @type @time @easing;

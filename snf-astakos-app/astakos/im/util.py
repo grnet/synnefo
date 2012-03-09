@@ -75,7 +75,7 @@ def get_or_create_user(email, realname='', first_name='', last_name='', affiliat
             'password':password,
             'affiliation':affiliation,
             'level':level,
-            'invitations':INVITATIONS_PER_LEVEL[level],
+            'invitations':INVITATIONS_PER_LEVEL.get(level, 0),
             'provider':provider,
             'realname':realname,
             'first_name':first_name,

@@ -36,11 +36,11 @@ from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.utils.http import urlencode
-from django.contrib.auth import login as auth_login, authenticate
-from django.http import HttpResponse
+from django.contrib.auth import login as auth_login, authenticate, logout
+from django.http import HttpResponse, HttpResponseBadRequest
 
 from urllib import quote
-from urlparse import urlunsplit, urlsplit
+from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
 from astakos.im.util import set_cookie
@@ -51,39 +51,53 @@ logger = logging.getLogger(__name__)
 
 def login(request):
     """
-    If the request user is authenticated, redirects to `next` request parameter
-    if exists, otherwise redirects to astakos index page displaying an error
+    If there is no `next` request parameter redirects to astakos index page displaying an error
     message.
-    If the request user is not authenticated, redirects to login in order to
-    return back here after successful login.
+    If the request user is authenticated, redirects to `next` request parameter.
+    Otherwise, redirects to login in order to return back here after successful login.
     """
+    next = request.GET.get('next')
+    if not next:
+        return HttpResponseBadRequest(_('No next parameter'))
+    force = request.GET.get('force', None)
+    response = HttpResponse()
+    if force == '':
+        logout(request)
+        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
     if request.user.is_authenticated():
-        next = request.GET.get('next')
         renew = request.GET.get('renew', None)
-        if next:
-            response = HttpResponse()
-            if renew == '':
-                request.user.renew_token()
-                request.user.save()
-                
-                # authenticate before login
-                user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
-                auth_login(request, user)
-                set_cookie(response, user)
-                logger.info('Token reset for %s' % request.user.email)
-            parts = list(urlsplit(next))
-            parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
-            url = urlunsplit(parts)
-            response['Location'] = url
-            response.status_code = 302
-            return response
-        else:
-            msg = _('No next parameter')
-            messages.add_message(request, messages.ERROR, msg)
-            url = reverse('astakos.im.views.index')
-            return redirect(url)
+        if renew == '':
+            request.user.renew_token()
+            request.user.save()
+            
+            # authenticate before login
+            user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
+            auth_login(request, user)
+            set_cookie(response, user)
+            logger.info('Token reset for %s' % request.user.email)
+        parts = list(urlsplit(next))
+        parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
+        url = urlunsplit(parts)
+        response['Location'] = url
+        response.status_code = 302
+        return response
     else:
         # redirect to login with self as next
-        url = reverse('astakos.im.views.index')
-        url = '%s?next=%s' % (url, quote(request.build_absolute_uri()))
-        return redirect(url)
+        
+        # first build next parameter
+        parts = list(urlsplit(request.build_absolute_uri()))
+        params = dict(parse_qsl(parts[3], keep_blank_values=True))
+        # delete force parameter
+        if 'force' in params:
+            del params['force']
+        parts[3] = urlencode(params)
+        next = urlunsplit(parts)
+        
+        # build url location
+        parts[2] = reverse('astakos.im.views.index')
+        params = {'next':next}
+        parts[3] = urlencode(params)
+        url = urlunsplit(parts)
+        response['Location'] = url
+        response.status_code = 302
+        return response

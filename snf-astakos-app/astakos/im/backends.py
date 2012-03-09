@@ -48,10 +48,11 @@ from urlparse import urljoin
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
 
 import socket
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,15 @@ def get_backend(request):
         raise ImproperlyConfigured('Module "%s" does not define a registration backend named "%s"' % (module, attr))
     return backend_class(request)
 
-class InvitationsBackend(object):
+class SignupBackend(object):
+    def _is_preaccepted(self, user):
+        # return True if user email matches specific patterns
+        for pattern in RE_USER_EMAIL_PATTERNS:
+            if re.match(pattern, user.email):
+                return True
+        return False
+
+class InvitationsBackend(SignupBackend):
     """
     A registration backend which implements the following workflow: a user
     supplies the necessary registation information, if the request contains a valid
@@ -93,6 +102,7 @@ class InvitationsBackend(object):
         """
         self.request = request
         self.invitation = get_invitation(request)
+        super(InvitationsBackend, self).__init__()
 
     def get_signup_form(self, provider):
         """
@@ -136,6 +146,8 @@ class InvitationsBackend(object):
         If there is a valid, not-consumed invitation code for the specific user
         returns True else returns False.
         """
+        if super(InvitationsBackend, self)._is_preaccepted(user):
+            return True
         invitation = self.invitation
         if not invitation:
             return False
@@ -145,7 +157,7 @@ class InvitationsBackend(object):
         return False
 
     @transaction.commit_manually
-    def signup(self, form, admin_email_template_name='im/admin_notification.txt'):
+    def signup(self, form, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Initially creates an inactive user account. If the user is preaccepted
         (has a valid invitation code) the user is activated and if the request
@@ -159,9 +171,18 @@ class InvitationsBackend(object):
         try:
             user = form.save()
             if self._is_preaccepted(user):
-                user.is_active = True
-                user.save()
-                message = _('Registration completed. You can now login.')
+                if user.email_verified:
+                    user.is_active = True
+                    user.save()
+                    message = _('Registration completed. You can now login.')
+                else:
+                    try:
+                        _send_verification(self.request, user, email_template_name)
+                        message = _('Verification sent to %s' % user.email)
+                    except (SMTPException, socket.error) as e:
+                        status = messages.ERROR
+                        name = 'strerror'
+                        message = getattr(e, name) if hasattr(e, name) else e
             else:
                 _send_notification(user, admin_email_template_name)
                 message = _('Your request for an account was successfully sent \
@@ -183,7 +204,7 @@ class InvitationsBackend(object):
             transaction.commit()
         return status, message, user
 
-class SimpleBackend(object):
+class SimpleBackend(SignupBackend):
     """
     A registration backend which implements the following workflow: a user
     supplies the necessary registation information, an incative user account is
@@ -191,6 +212,7 @@ class SimpleBackend(object):
     """
     def __init__(self, request):
         self.request = request
+        super(SimpleBackend, self).__init__()
 
     def get_signup_form(self, provider):
         """
@@ -207,7 +229,14 @@ class SimpleBackend(object):
         ip = self.request.META.get('REMOTE_ADDR',
                 self.request.META.get('HTTP_X_REAL_IP', None))
         return globals()[formclass](initial_data, ip=ip)
-
+    
+    def _is_preaccepted(self, user):
+        if super(SimpleBackend, self)._is_preaccepted(user):
+            return True
+        if MODERATION_ENABLED:
+            return False
+        return True
+    
     @transaction.commit_manually
     def signup(self, form, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
@@ -233,7 +262,7 @@ class SimpleBackend(object):
         """
         user = form.save()
         status = messages.SUCCESS
-        if MODERATION_ENABLED:
+        if not self._is_preaccepted(user):
             try:
                 _send_notification(user, admin_email_template_name)
                 message = _('Your request for an account was successfully sent \

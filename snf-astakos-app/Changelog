@@ -1,3 +1,21 @@
+=======
+v0.3.3
+======
+
+- Updated grnet styles
+- Several styling fixes
+- Display page menu
+- Minor improvements in cloudbar js and styles
+- Use synnefo.lib.context_processors.cloudbar to display the cloudbar
+  You should set the CLOUDBAR_* settings to point to your astakos urls
+  (see sample conf file in snf-astakos-app/conf/20-snf-astakos-app-cloudbar.conf)
+- Updated snf-common dependency to >=0.9.0
+- New ASTAKOS_RE_USER_EMAIL_PATTERNS setting
+- Support for multiple accounts authentication 
+- New --set-active and --set-inactive in modifyuser command
+- Fixed circular redirects when visiting login page from the logout one
+- Removed im.context_processors.cloudbar (now using snf-common processor)
+
 v0.3.2
 ======
 

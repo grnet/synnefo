@@ -72,7 +72,8 @@ class Command(BaseCommand):
             'invitations': user.invitations,
             'invitation level': user.level,
             'provider': user.provider,
-            'verified': format_bool(user.is_verified)
+            'verified': format_bool(user.is_verified),
+            'has_credits': format_bool(user.has_credits)
         }
         
         for key, val in sorted(kv.items()):

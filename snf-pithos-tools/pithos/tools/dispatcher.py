@@ -41,6 +41,13 @@ from synnefo.lib.queue import (exchange_connect, exchange_close,
 
 from optparse import OptionParser
 
+from django.core.management import setup_environ
+try:
+    from synnefo import settings
+except ImportError:
+   raise Exception("Cannot import settings")
+setup_environ(settings)
+
 BROKER_HOST = 'localhost'
 BROKER_PORT = 5672
 BROKER_USER = 'guest'

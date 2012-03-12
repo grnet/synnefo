@@ -71,7 +71,7 @@ ASTAKOS_RECAPTCHA_OPTIONS           {'theme': 'white'}                          
 ASTAKOS_LOGOUT_NEXT                                                                                                 Where the user should be redirected after logout
                                                                                                                     (if not set and no next parameter is defined it renders login page with message)
 ASTAKOS_BILLING_FIELDS              ['id', 'is_active', 'provider', 'third_party_identifier']                       AstakosUser fields to propagate in the billing system
-ASTAKOS_QUEUE_CONNECTION                                                                                            The queue connection ex. 'rabbitmq://guest:guest@localhost:5672/astakos.userEvent.#'
+ASTAKOS_QUEUE_CONNECTION                                                                                            The queue connection ex. 'rabbitmq://guest:guest@localhost:5672/astakos'
                                                                                                                     (if it is not set, it does not send messages)
 ASTAKOS_RE_USER_EMAIL_PATTERNS      []                                                                              Email patterns that are automatically activated ex. ['^[a-zA-Z0-9\._-]+@grnet\.gr$']
 ==============================      =============================================================================   ===========================================================================================

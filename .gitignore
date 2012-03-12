@@ -1,5 +1,6 @@
 docs/build
 *.db
 *.pyc
+*.egg-info
 .DS_Store
 snf-astakos-app/astakos/version.py

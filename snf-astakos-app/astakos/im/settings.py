@@ -59,7 +59,7 @@ RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
 RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', {'theme': 'white'})
 
 # set AstakosUser fields to propagate in the billing system
-BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['id', 'is_active', 'provider', 'third_party_identifier'])
+BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['is_active'])
 
 # Queue for billing.
 QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None) # Example: 'rabbitmq://guest:guest@localhost:5672/astakos.*'

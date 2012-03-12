@@ -41,7 +41,7 @@ from urlparse import urljoin
 from random import randint
 
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITENAME, BASEURL
-from astakos.im.models import Invitation
+from astakos.im.models import Invitation, AstakosUser
 
 logger = logging.getLogger(__name__)
 
@@ -98,3 +98,11 @@ def invite(inviter, username, realname):
     logger.info('Sent invitation %s', invitation)
     inviter.invitations = max(0, inviter.invitations - 1)
     inviter.save()
+
+def set_user_credibility(email, has_credits):
+    try:
+        user = AstakosUser.objects.get(email=email)
+        user.has_credits = has_credits
+        user.save()
+    except AstakosUser.DoesNotExist, e:
+        logger.exception(e)

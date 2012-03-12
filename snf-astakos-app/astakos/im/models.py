@@ -42,6 +42,7 @@ from django.db import models
 from django.contrib.auth.models import User, UserManager
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
+from astakos.im.queue.userevent import UserEvent
 from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
 
 QUEUE_CLIENT_ID = 3 # Astakos.
@@ -73,6 +74,8 @@ class AstakosUser(User):
     third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
     
     email_verified = models.BooleanField('Email verified?', default=False)
+    
+    has_credits = models.BooleanField('Has credits?', default=False)
     
     @property
     def realname(self):
@@ -165,11 +168,9 @@ def report_user_event(user):
         return False
     
     if QUEUE_CONNECTION and should_send(user):
-        l = [[elem, str(user.__getattribute__(elem))] for elem in BILLING_FIELDS]
-        details = dict(l)
-        details['eventType'] = 'create' if not user.id else 'modify'
-        body = Receipt(QUEUE_CLIENT_ID, user.email, '', 0, details).format()
+        eventType = 'create' if not user.id else 'modify'
+        body = UserEvent(QUEUE_CLIENT_ID, user, eventType, {}).format()
         conn = exchange_connect(QUEUE_CONNECTION)
-        routing_key = QUEUE_CONNECTION.replace('#', body['id'])
+        routing_key = QUEUE_CONNECTION.replace('*', 'user')
         exchange_send(conn, routing_key, body)
         exchange_close(conn)

@@ -73,6 +73,12 @@
   font-weight: bold;
   color: #ccc;
 }
+.servicesbar .services a.with-icon {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 35px;
+  height: 35px;
+}
 .servicesbar .services a.active {
   font-size: 13px !important;
   color: #ffffff !important;

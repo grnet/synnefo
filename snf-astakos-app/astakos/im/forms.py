@@ -267,5 +267,5 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'baseurl': BASEURL
             }
             from_email = DEFAULT_FROM_EMAIL
-            send_mail(_("Password reset on %s") % SITENAME,
+            send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])

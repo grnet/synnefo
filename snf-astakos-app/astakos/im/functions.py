@@ -53,7 +53,7 @@ def activate(user, email_template_name='im/welcome_email.txt'):
     """
     user.is_active = True
     user.save()
-    subject = _('Welcome to %s' % SITENAME)
+    subject = _('Welcome to %s alpha2 testing' % SITENAME)
     message = render_to_string(email_template_name, {
                 'user': user,
                 'url': urljoin(BASEURL, reverse('astakos.im.views.index')),
@@ -85,7 +85,7 @@ def invite(inviter, username, realname):
                             code=code,
                             realname=realname)
     invitation.save()
-    subject = _('Invitation to %s' % SITENAME)
+    subject = _('Invitation to %s alpha2 testing' % SITENAME)
     url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.signup')), code)
     message = render_to_string('im/invitation.txt', {
                 'invitation': invitation,

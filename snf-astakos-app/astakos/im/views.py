@@ -355,7 +355,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
         
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            subject = _("Feedback from %s" % SITENAME)
+            subject = _("Feedback from %s alpha2 testing" % SITENAME)
             from_email = request.user.email
             recipient_list = [DEFAULT_CONTACT_EMAIL]
             content = render_to_string(email_template_name, {

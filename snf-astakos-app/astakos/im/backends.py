@@ -300,7 +300,7 @@ def _send_verification(request, user, template_name):
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s account activation' % SITENAME, message, sender, [user.email])
+    send_mail('%s  alpha2 testing account activation' % SITENAME, message, sender, [user.email])
     logger.info('Sent activation %s', user)
 
 def _send_notification(user, template_name):
@@ -312,5 +312,5 @@ def _send_notification(user, template_name):
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+    send_mail('%s  alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
     logger.info('Sent admin notification for user %s', user)

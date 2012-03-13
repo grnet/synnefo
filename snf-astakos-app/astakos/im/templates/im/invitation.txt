@@ -28,8 +28,7 @@ O  {{ site_name }} θα είναι για τις επόμενες λίγες ε�
 
 Dear {{ invitation.realname }},
 
-{{ invitation.inviter.realname }} has invited you to use GRNET's {{ service }} service
-during its alpha2 testing phase.
+{{ invitation.inviter.realname }} has invited you to use GRNET's {{ service }} service during its alpha2 testing phase.
 
 To access the service, please use the link: {{ url }}
 

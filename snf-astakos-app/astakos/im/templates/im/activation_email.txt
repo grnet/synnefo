@@ -28,8 +28,7 @@ O  {{ site_name }} θα είναι για τις επόμενες λίγες ε�
 
 Dear {{ user.realname }},
 
-After your request a new account for GRNET's {{ site_name }} service has been created
-for its alpha2 testing phase.
+After your request a new account for GRNET's {{ site_name }} service has been created for its alpha2 testing phase.
 
 To activate the account, please use the link: {{ url }}
 

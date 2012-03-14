@@ -42,12 +42,12 @@ from django.db import transaction
 from django.core.urlresolvers import reverse
 
 from smtplib import SMTPException
-from urllib import quote
 from urlparse import urljoin
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
+from astakos.im.functions import send_verification, send_notification, activate
 from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
 
 import socket
@@ -157,7 +157,7 @@ class InvitationsBackend(SignupBackend):
         return False
 
     @transaction.commit_manually
-    def signup(self, form, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
+    def signup(self, form, verification_template_name='im/activation_email.txt', greeting_template_name='im/welcome_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Initially creates an inactive user account. If the user is preaccepted
         (has a valid invitation code) the user is activated and if the request
@@ -172,23 +172,26 @@ class InvitationsBackend(SignupBackend):
             user = form.save()
             if self._is_preaccepted(user):
                 if user.email_verified:
-                    user.is_active = True
-                    user.save()
-                    message = _('Registration completed. You can now login.')
+                    try:
+                        activate(user, greeting_template_name)
+                        message = _('Registration completed. You can now login.')
+                    except (SMTPException, socket.error) as e:
+                        status = messages.ERROR
+                        name = 'strerror'
+                        message = getattr(e, 'name') if hasattr(e, 'name') else e
                 else:
                     try:
-                        _send_verification(self.request, user, email_template_name)
+                        send_verification(user, verification_template_name)
                         message = _('Verification sent to %s' % user.email)
                     except (SMTPException, socket.error) as e:
                         status = messages.ERROR
                         name = 'strerror'
-                        message = getattr(e, name) if hasattr(e, name) else e
+                        message = getattr(e, 'name') if hasattr(e, 'name') else e
             else:
-                _send_notification(user, admin_email_template_name)
-                message = _('Your request for an account was successfully sent \
-                            and pending approval from our administrators. You \
-                            will be notified by email the next days. \
-                            Thanks for being patient, the GRNET team')
+                send_notification(user, admin_email_template_name)
+                message = _('Your request for an account was successfully received and is now pending \
+                            approval. You will be notified by email in the next few days. Thanks for \
+                            your interest in ~okeanos! The GRNET team.')
             status = messages.SUCCESS
         except Invitation.DoesNotExist, e:
             status = messages.ERROR
@@ -264,23 +267,22 @@ class SimpleBackend(SignupBackend):
         status = messages.SUCCESS
         if not self._is_preaccepted(user):
             try:
-                _send_notification(user, admin_email_template_name)
-                message = _('Your request for an account was successfully sent \
-                            and pending approval from our administrators. You \
-                            will be notified by email the next days. \
-                            Thanks for being patient, the GRNET team')
+                send_notification(user, admin_email_template_name)
+                message = _('Your request for an account was successfully received and is now pending \
+                            approval. You will be notified by email in the next few days. Thanks for \
+                            your interest in ~okeanos! The GRNET team.')
             except (SMTPException, socket.error) as e:
                 status = messages.ERROR
                 name = 'strerror'
-                message = getattr(e, name) if hasattr(e, name) else e
+                message = getattr(e, 'name') if hasattr(e, 'name') else e
         else:
             try:
-                _send_verification(self.request, user, email_template_name)
+                send_verification(user, email_template_name)
                 message = _('Verification sent to %s' % user.email)
             except (SMTPException, socket.error) as e:
                 status = messages.ERROR
                 name = 'strerror'
-                message = getattr(e, name) if hasattr(e, name) else e
+                message = getattr(e, 'name') if hasattr(e, 'name') else e
 
         # rollback in case of error
         if status == messages.ERROR:
@@ -288,29 +290,3 @@ class SimpleBackend(SignupBackend):
         else:
             transaction.commit()
         return status, message, user
-
-def _send_verification(request, user, template_name):
-    url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('astakos.im.views.activate')),
-                                    quote(user.auth_token),
-                                    quote(BASEURL))
-    message = render_to_string(template_name, {
-            'user': user,
-            'url': url,
-            'baseurl': BASEURL,
-            'site_name': SITENAME,
-            'support': DEFAULT_CONTACT_EMAIL})
-    sender = DEFAULT_FROM_EMAIL
-    send_mail('%s  alpha2 testing account activation' % SITENAME, message, sender, [user.email])
-    logger.info('Sent activation %s', user)
-
-def _send_notification(user, template_name):
-    if not DEFAULT_ADMIN_EMAIL:
-        return
-    message = render_to_string(template_name, {
-            'user': user,
-            'baseurl': BASEURL,
-            'site_name': SITENAME,
-            'support': DEFAULT_CONTACT_EMAIL})
-    sender = DEFAULT_FROM_EMAIL
-    send_mail('%s  alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
-    logger.info('Sent admin notification for user %s', user)

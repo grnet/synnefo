@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v0.9.4
+------
+
+* Improved web_static hook syntax
+  To be able to change application media files directory (e.g. 
+  django.contrib.admin uses ``media`` as opposed to ``static`` which is used 
+  by synnefo components)
+
+
 v0.9.3
 ------
 

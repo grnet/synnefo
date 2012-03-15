@@ -190,11 +190,11 @@
                 <div class="usermenu">
                     <div class="username"></div>
                     <ul class="useractions">
-                        <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
+                        <!--<li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>-->
                         <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
                         <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
                         <!--<li class="custom_images"><a class="action" href="#">{% trans "custom images..." %}</a></li>-->
-                        <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
+                        <!--<li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>-->
                     </ul>
                 </div>
                 <div class="langmenu">
@@ -597,7 +597,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.user = synnefo.auth_client.get_user();
             if (!synnefo.user) { synnefo.auth_client.redirect_to_login(); }
 
-            $(".usermenu .username").text(synnefo.user.username);
+            $(".usermenu .username").text("options");
 
             // images config
             synnefo.config.system_images_owners = {{ system_images_owners|safe }};

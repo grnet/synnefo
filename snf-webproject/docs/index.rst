@@ -3,8 +3,8 @@
 Component snf-webproject
 ========================
 
-synnefo component :ref:`snf-webproject <snf-webproject>` defines
-a Django project in which the various other synnefo components
+synnefo component :ref:`snf-webproject <snf-webproject>` defines a Django 
+project in which the various other synnefo components
 (:ref:`snf-cyclades-app <snf-cyclades-app>`,
 :ref:`snf-pithos-app <snf-pithos-app>`, etc.) may run.
 
@@ -229,6 +229,8 @@ Web server
 You need to configure your webserver to serve static files and relay
 requests to :ref:`snf-webproject <snf-webproject>`.
 
+
+.. static_files::
 Static files
 ````````````
 
@@ -288,20 +290,13 @@ Collecting static files
 
     $ snf-manage link_static
 
-.. todo:: perhaps include an ``snf-manage copy_static`` command?
-* Configure your webserver to serve ``/static`` from the directory
-  set in the ``MEDIA_ROOT`` setting.
-
-.. todo:: Make the location of static files configurable. This has already
-   been done for the UI, see ``UI_MEDIA_URL``.
-
 
 Serving static files
 ^^^^^^^^^^^^^^^^^^^^
 
 By default will serve the static files if ``DEBUG`` setting is set to True.
-You can override this behaviour by using the ``WEBPROJECT_SERVE_STATIC`` 
-setting.
+You can override this behaviour by explicitly setting the 
+``WEBPROJECT_SERVE_STATIC`` to True or False in your settings files.
 
 
 Apache
@@ -338,9 +333,56 @@ from nginx. This requires installation of package ``flup``:
     # apt-get install flup
     $ snf-manage runfcgi host=127.0.0.1 port=8015
 
+
 For developers
 --------------
 
-.. todo:: kpap: describe the functions exported to Synnefo components for
-   extending ``INSTALLED_APPS``, ``MIDDLEWARE_CLASSES`` and URL patterns.
+Available entry points
+^^^^^^^^^^^^^^^^^^^^^^
+
+web_apps
+````````
+Extends INSTALLED_APPS django project setting.
+
+Example::
+    
+    # myapp/synnefo_settings.py
+    # synnefo_settings and variable name is arbitary
+    my_app_web_apps = ['myapp', 'south', 'django.contrib.sessions']
+    
+    # another more complex configuration where we need our app to be placed
+    # before django.contrib.admin app because it overrides some of the admin
+    # templates used by admin app views
+    my_app_web_apps = [{'before':'django.contrib.admin', 'insert':'myapp'}, 'south']
+
+    # setup.py
+    entry_points = {
+        'synnefo': ['web_apps = myapp.synnefo_settings:my_app_web_apps']
+    }
+
+
+web_middleware
+``````````````
+Extends MIDDLEWARE_CLASSES django setting.
+
+
+web_static
+``````````
+Extends STATIC_FILES setting (see `static_files`_).
+
+
+web_context_processors
+``````````````````````
+Extends TEMPLATE_CONTEXT_PROCESSORS django setting.
+
+
+loggers
+```````
+Extends `snf-common`_ LOGGING_SETUP['loggers'] setting.
+
+
+urls
+````
+Extends django project urls. Accepts a urlpatterns variable. The urls defined
+in this variable will be used to extend the django project urls.
 

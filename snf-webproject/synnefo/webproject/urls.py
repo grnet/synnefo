@@ -43,14 +43,25 @@ urlpatterns = patterns('',
 )
 
 if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
-    for module, ns in settings.STATIC_FILES.iteritems():
-        module = import_module(module)
-        static_root = os.path.join(os.path.dirname(module.__file__), 'static')
+
+    for module_name, ns in settings.STATIC_FILES.iteritems():
+        module = import_module(module_name)
+        app_dir = 'static'
+
+        # hook defined that application contains media files in other than
+        # ``static`` directory
+        # (e.g. django.contrib.admin which contains media files in media dir)
+        if type(ns) == tuple:
+            app_dir = ns[0]
+            ns = ns[1]
+
+        static_root = os.path.join(os.path.dirname(module.__file__), app_dir)
         if ns:
             # app contains static files in <appname>/static/
             urlns = ns
-            urlpatterns += patterns('', url(r'^%s%s/(?P<path>.*)$' % \
-                 (settings.MEDIA_URL.lstrip("/"), urlns),
+            url_r = r'^%s%s/(?P<path>.*)$' % (settings.MEDIA_URL.lstrip("/"),
+                                              urlns)
+            urlpatterns += patterns('', url(url_r,
                  'django.views.static.serve',
                  {'document_root': static_root,
                   'show_indexes': getattr(settings,

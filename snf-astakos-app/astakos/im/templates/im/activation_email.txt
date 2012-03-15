@@ -8,6 +8,9 @@
 Για να τον ενεργοποιήσετε, χρησιμοποιήστε το σύνδεσμο: {{ url }}
 {% endblock %}
 
+{% block gr_note %} {% endblock%}
+
+
 {% block en_content %}
 Dear {{ user.realname }},
 
@@ -15,3 +18,5 @@ After your request a new account for GRNET's {{ site_name }} service has been cr
 
 To activate the account, please use the link: {{ url }}
 {% endblock %}
+
+{% block en_note %} {% endblock%}

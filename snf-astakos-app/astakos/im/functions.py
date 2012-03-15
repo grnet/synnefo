@@ -62,7 +62,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s  alpha2 testing account activation' % SITENAME, message, sender, [user.email])
+    send_mail('%s alpha2 testing account activation is needed' % SITENAME, message, sender, [user.email])
     logger.info('Sent activation %s', user)
 
 def send_notification(user, template_name='im/admin_notification.txt'):
@@ -79,7 +79,7 @@ def send_notification(user, template_name='im/admin_notification.txt'):
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s  alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+    send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
     logger.info('Sent admin notification for user %s', user)
 
 def send_invitation(invitation, template_name='im/invitation.txt'):

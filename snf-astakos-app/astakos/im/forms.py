@@ -84,7 +84,7 @@ class LocalUserCreationForm(UserCreationForm):
             raise forms.ValidationError(_("This field is required"))
         try:
             AstakosUser.objects.get(email = email)
-            raise forms.ValidationError(_("Email is reserved"))
+            raise forms.ValidationError(_("This email is already used"))
         except AstakosUser.DoesNotExist:
             return email
     
@@ -204,7 +204,7 @@ class ThirdPartyUserCreationForm(ProfileForm):
             raise forms.ValidationError(_("This field is required"))
         try:
             user = AstakosUser.objects.get(email = email)
-            raise forms.ValidationError(_("Email is reserved"))
+            raise forms.ValidationError(_("This email is already used"))
         except AstakosUser.DoesNotExist:
             return email
     

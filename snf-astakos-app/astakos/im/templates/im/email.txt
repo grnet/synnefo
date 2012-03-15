@@ -2,6 +2,7 @@
 
 {% block gr_content %} {% endblock %}
 
+{% block gr_note %}
 Σημείωση:
 
 Ο {{ site_name }} είναι η υπηρεσία cloud του ΕΔΕΤ. Περιλαμβάνει τον pithos+, μέσω του οποίου έχετε 50GB αποθηκευτικό χώρο για τα αρχεία σας στο cloud, και τις cyclades, που παρέχουν εικονικές μηχανές (VMs) με διάφορα λειτουργικά συστήματα (OS images).
@@ -11,11 +12,10 @@ O {{ site_name }} θα είναι για τις επόμενες λίγες εβ
 Αν και έχουμε κάνει ό,τι είναι δυνατό για να εξασφαλίσουμε την ποιότητα της υπηρεσίας, δεν αποκλείεται να εμφανιστούν προβλήματα στο λογισμικό διαχείρισης ή η υπηρεσία να μην είναι διαθέσιμη κατά διαστήματα. Για αυτό το λόγο, σας παρακαλούμε να μη μεταφέρετε ακόμη σημαντικά αρχεία στον pithos+ ή στις εικονικές μηχανές των cyclades. 
 
 Αναμένουμε τα σχόλια και τις παρατηρήσεις σας, για να βελτιώσουμε τη λειτουργικότητα και την αξιοπιστία της καινοτομικής αυτής υπηρεσίας.
-
+{% endblock gr_note%}
 Για όποιες παρατηρήσεις ή προβλήματα στη λειτουργία της υπηρεσίας μπορείτε να απευθύνεστε στο {{ support }}.
 
 Σας ευχαριστούμε πολύ για τη συμμετοχή στην alpha2 λειτουργία του {{ site_name }}.
-
 
 Εθνικό Δίκτυο Έρευνας και Τεχνολογίας (ΕΔΕΤ/GRNET)
 
@@ -23,6 +23,7 @@ O {{ site_name }} θα είναι για τις επόμενες λίγες εβ
 
 {% block en_content %} {% endblock %}
 
+{% block en_note %}
 Please note:
 
 {{ site_name }} is GRNET's cloud service. It includes pithos+, which offers 50GB of storage space for your files in the cloud and, cyclades, that offer virtual machines (VMs) with various operating systems (OS images).
@@ -32,7 +33,7 @@ Please note:
 This service will remain, for a few weeks, in alpha2. Although every care has been taken to ensure high quality, it is possible there may still be software bugs, or periods of limited service availability. For this reason we kindly request you not to transfer important files to pithos+ or to the virtual machines of cyclades.
 
 We look forward to your feedback, to improve the functionality and reliability of this innovative service.
-
+{% endblock en_note %}
 For any remarks or problems you may contact {{ support }}.
 
 Thank you for participating in the alpha2 test of {{ site_name }}.

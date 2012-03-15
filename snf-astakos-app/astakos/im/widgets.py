@@ -37,7 +37,8 @@ from django import forms
 from django.utils.safestring import mark_safe
 from django.utils import simplejson as json
 
-from astakos.im.settings import RECAPTCHA_PUBLIC_KEY, RECAPTCHA_OPTIONS
+from astakos.im.settings import RECAPTCHA_PUBLIC_KEY, RECAPTCHA_OPTIONS, \
+        RECAPTCHA_USE_SSL
 
 class RecaptchaWidget(forms.Widget):
     """ A Widget which "renders" the output of captcha.displayhtml """
@@ -47,7 +48,8 @@ class RecaptchaWidget(forms.Widget):
                          'var RecaptchaOptions = %s'
                          '</script>') % json.dumps(conf)
         return mark_safe(recaptcha_conf + \
-                    captcha.displayhtml(RECAPTCHA_PUBLIC_KEY))
+                    captcha.displayhtml(RECAPTCHA_PUBLIC_KEY,
+                        use_ssl=RECAPTCHA_USE_SSL))
 
 class DummyWidget(forms.Widget):
     """

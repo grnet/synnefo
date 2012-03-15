@@ -64,3 +64,7 @@ LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 
 # Set user email patterns that are automatically activated
 RE_USER_EMAIL_PATTERNS = getattr(settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
+
+# messages to display on login page header
+LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', {})
+

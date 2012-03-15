@@ -89,8 +89,9 @@
             </div>
             {% endblock %}
         </div>
-        {% if messages %}
+        {% if messages or LOGIN_MESSAGES %}
         <ul class="messages">
+            {% block extra_messages %}{% endblock %}
             {% for message in messages %}
             <li{% if message.tags %} 
                 class="{{ message.tags }}"{% endif %}>

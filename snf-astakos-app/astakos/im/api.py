@@ -116,7 +116,7 @@ def get_services(request):
 
     return HttpResponse(content=data, mimetype=mimetype)
 
-def get_menu(request):
+def get_menu(request, with_extra_links=False, with_signout=True):
     location = request.GET.get('location', '')
     exclude = []
     index_url = reverse('index')
@@ -136,17 +136,19 @@ def get_menu(request):
         l.append({ 'url': absolute(reverse('astakos.im.views.index')),
                   'name': request.user.email})
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
-                  'name': "View your profile" })
-        if request.user.password:
-            l.append({ 'url': absolute(reverse('password_change')),
-                      'name': "Change your password" })
-        if INVITATIONS_ENABLED:
-            l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
-                      'name': "Invite some friends" })
-        l.append({ 'url': absolute(reverse('astakos.im.views.send_feedback')),
-                  'name': "Send feedback" })
-        l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
-                  'name': "Sign out"})
+                  'name': "My account" })
+        if with_extra_links:
+            if request.user.password:
+                l.append({ 'url': absolute(reverse('password_change')),
+                          'name': "Change password" })
+            if INVITATIONS_ENABLED:
+                l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
+                          'name': "Invitations" })
+            l.append({ 'url': absolute(reverse('astakos.im.views.send_feedback')),
+                      'name': "Feedback" })
+        if with_signout:
+            l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
+                      'name': "Sign out"})
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))

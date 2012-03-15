@@ -13,16 +13,20 @@
     *behavior: url(boxsizing.htc);
 }
 
+.clearme { .clearfix() }
+
+@verticalSpacing: @gridGutterWidth/1.5;
 @gradCol: #ddd;
 body {
     #font.main();
+    font-size: 12px;
 }
 
 .topbar {
     background-color: @shadowColor;
     .head {
         float: left;    
-            padding: @gridGutterWidth/2-5;
+            padding: @verticalSpacing/2-5;
     }
     .links {
         .clearfix();
@@ -32,7 +36,7 @@ body {
             display: block;
             float: left;
             margin-left: 10px;
-            padding: @gridGutterWidth/2+1;
+            padding: @verticalSpacing/2+1;
 
             &:hover {
                 background-color: lighten(@black, 10%);
@@ -45,7 +49,7 @@ body {
 }
 
 // default link styles
-section a, p a, form a, .section a, .styledlinks a {
+section a, p a, form a, .section a, .styledlinks a, a.styled {
     color: @black;
     text-decoration: none;
     border-bottom: 1px solid @linkColor;
@@ -104,8 +108,8 @@ a img {
 
 div.header {
     position: relative;
-    margin-top: 4*@gridGutterWidth;
-    margin-bottom: @gridGutterWidth;
+    margin-top: 2.5*@verticalSpacing;
+    margin-bottom: @verticalSpacing;
     h1 {
         color: @shadowColor;
         display: inline;
@@ -126,8 +130,8 @@ div.header {
 .footer {
     border-bottom: 1px solid @mainBorderColor;
     border-top: 1px solid lighten(@mainBorderColor, 15%);
-    padding-top: @gridGutterWidth;
-    padding-bottom: @gridGutterWidth;
+    padding-top: @verticalSpacing;
+    padding-bottom: @verticalSpacing;
 }
 
 ul.inline {
@@ -142,7 +146,7 @@ ul.inline {
 .mainnav.quicknav {
     position: absolute;
     right: 0;
-    top: -2.6*@gridGutterWidth;
+    top: -2.6*@verticalSpacing;
     margin:0;
 
     li {
@@ -153,20 +157,24 @@ ul.inline {
 
 .navigation {
     height: 83px;    
+    position: absolute;
+    right: -15px;
+    top: -23px;
 }
 
 .mainnav {
-    font-size: 1.2em;
+    font-size: 1.3em;
     
     &.subnav {
-        margin-bottom: -@gridGutterWidth;
+        margin-bottom: -@verticalSpacing;
         li {
-            margin-top: 1.2em;
+            margin-top: 0.4*@verticalSpacing;
+            float: right;
         }
     }
 
     li {
-        margin-top: 3*@gridGutterWidth;
+        margin-top: 2*@verticalSpacing;
     }
 
     li.active {
@@ -207,7 +215,7 @@ ul.inline {
 
 div.page {
     .makeRow();
-    margin-top: 6*@gridGutterWidth;
+    margin-top: 5*@verticalSpacing;
     font-size: 1.1em;
     .page-inner {
         position: relative;    
@@ -216,6 +224,7 @@ div.page {
 
 // columnlayout
 .maincol {
+    position: relative;
     .makeColumn(5);
     
     &.wide {
@@ -227,6 +236,20 @@ div.page {
         margin-left: 0;
         .makeColumn(10);
     }
+
+    .nextlink {
+         margin-top: 60px;
+         text-align: right;
+         float: right;
+         margin-right: 50px;
+         font-size: 1.1em;
+    }   
+
+    .content-bottom { position: relative; .clearfix(); }
+}
+
+.backlink {
+    margin: 30px 0;    
 }
 
 .appbar {
@@ -311,7 +334,7 @@ input, textarea, .form-widget {
         
         h3 {
             font-size: 1.2em;
-            margin-bottom: @gridGutterWidth;    
+            margin-bottom: @verticalSpacing;    
         }
 
         .text {
@@ -319,7 +342,7 @@ input, textarea, .form-widget {
         }
     }
 
-    margin-bottom: 3*@gridGutterWidth; 
+    margin-bottom: 3*@verticalSpacing; 
 
     .left, .right {
         width: 50%;
@@ -387,12 +410,12 @@ form.withlabels {
 form {
     
     &.login {
-        margin-bottom: 1.5*@gridGutterWidth; 
+        margin-bottom: 1.5*@verticalSpacing; 
     }
 
     h2 {
         color: @black;
-        margin-bottom: @gridGutterWidth;
+        margin-bottom: @verticalSpacing;
         font-size: 1.1em;
 
         span {
@@ -401,10 +424,10 @@ form {
     }
 
     .form-row {
-        min-height: 2*@gridGutterWidth;
+        min-height: 2*@verticalSpacing;
         position: relative;
         &.submit {
-            margin-top: 1.5*@gridGutterWidth;
+            margin-top: 1.5*@verticalSpacing;
         }
 
         .extra-link {
@@ -415,12 +438,16 @@ form {
             margin-top: 1.3em;
             float: right;
         }
+
+        label {
+            font-size: 1.1em;    
+        }
     }
     
     &.innerlabels label { 
         position: absolute;
-        top:1em;
-        left:1.5em;
+        top: 1.1em;
+        left: 1.5em;
         color: #aaa;
     }
 
@@ -476,8 +503,8 @@ div.form-stacked {
     background-image: url("../images/dashed_border.png");
     background-repeat: repeat-x;
     background-position: left bottom;
-    padding-bottom: 2*@gridGutterWidth;
-    margin-bottom: 2*@gridGutterWidth;
+    padding-bottom: 2*@verticalSpacing;
+    margin-bottom: 2*@verticalSpacing;
 
 }
 
@@ -485,7 +512,7 @@ div.form-stacked {
     h2 {
         font-size: 1.1em;
         line-height: 1.3em;
-        margin-bottom: 1.5*@gridGutterWidth;    
+        margin-bottom: 1.5*@verticalSpacing;    
 
         a {
             color: #4085A6;
@@ -497,7 +524,7 @@ div.form-stacked {
     h3 {
         font-size: 1.1em;    
         line-height: 1.3em;
-        margin-bottom: 1.5*@gridGutterWidth;    
+        margin-bottom: 1.5*@verticalSpacing;    
     }
 
     p {
@@ -505,7 +532,7 @@ div.form-stacked {
     }
 
     .section-img {
-        margin-bottom: 1*@gridGutterWidth;    
+        margin-bottom: 1*@verticalSpacing;    
     }
 }
 
@@ -517,7 +544,7 @@ div.form-stacked {
     margin: 2em 0;
     background-color: #ddd;
     margin-left: 0;
-
+    font-size: 1.1em;
     li {
         padding: 1em;    
 
@@ -554,30 +581,33 @@ table {
 
 // footer
 .footer {
-    .makeRow()
-    
+    .clearfix();
+    color: lighten(@gray, 20%);
+    .transit();
+
+    a { .transit() }
+
     &:hover {
+        color: @gray !important;
         a {
             color: @gray !important;
-            .transit();
         }
     }
 
     a {
         color: lighten(@gray, 20%);    
-        .transit();
         text-decoration: none;
 
         &:hover {
-            color: darken(@gray, 50%);    
+            color: #000 !important;
         }
     }
 
     li {
-        margin-bottom: @gridGutterWidth/2;
+        margin-bottom: @verticalSpacing/2;
 
         &.header {
-            margin-bottom: @gridGutterWidth;    
+            margin-bottom: @verticalSpacing;    
         }
     }
 
@@ -587,6 +617,31 @@ table {
             width: 140px;
             margin-right:0;
         }
+    }
+    
+    .top.row, .last.row {
+        .makeRow();
+        margin: 20px 0;
+
+        .col {
+            .makeColumn(4);    
+
+            &.first {
+                margin-left: 0 !important;    
+            }
+            &.last {
+                .makeColumn(2);    
+            }
+        }
+    }
+    .top.row {
+        margin-top: 0;
+    }
+    
+    .last.row { 
+        text-align: left; 
+        font-size: 0.8em;
+        margin-bottom: 0;
     }
 
     .bottom.row {
@@ -618,7 +673,7 @@ table {
 
     .section();
     .clearfix();
-    margin-bottom: 2*@gridGutterWidth;    
+    margin-bottom: 2*@verticalSpacing;    
 
     .title {
         margin-bottom: 1em;    
@@ -633,33 +688,34 @@ table {
     }
     
     .intro-content, .content {
-        margin-top: @gridGutterWidth;
+        margin-top: @verticalSpacing;
 
         object {
-            margin: @gridGutterWidth 0;    
+            margin: @verticalSpacing 0;    
         }
     }
 
     .entry-info {
         font-size: 0.7em;
-        margin-top: @gridGutterWidth;    
+        margin-top: @verticalSpacing;    
     }
 
     &.single {
         .entry-info {
             margin-top: 0;
-            margin-bottom: @gridGutterWidth;
+            margin-bottom: @verticalSpacing;
         }    
     }
 }
 
 .section.twitter-feed {
     
+    font-size: 1.1em;
     .tweet {
         &:last-child { margin-bottom:0; padding-bottom:0; border-bottom: none }
         line-height: 1.3em;
         font-size: 0.9em;
-        margin-bottom: @gridGutterWidth;
+        margin-bottom: @verticalSpacing;
         color: @gray;
 
         .date {
@@ -708,7 +764,7 @@ table {
         ul { .clearfix() }
         ul li { float: left; }
         .title {
-            margin-bottom: @gridGutterWidth/2;    
+            margin-bottom: @verticalSpacing/2;    
         }
 
         ul li a {
@@ -720,15 +776,15 @@ table {
 
     .list {
         
-        margin-top: 4*@gridGutterWidth;
+        margin-top: 4*@verticalSpacing;
 
         .resource {
             .border-box();
             width: 33%;
-            padding: 2*@gridGutterWidth;
+            padding: 2*@verticalSpacing;
             float: left;
             border: 1px solid @resCol;
-            height: 12*@gridGutterWidth;
+            height: 12*@verticalSpacing;
 
             .description {
                 display: none;    
@@ -749,6 +805,10 @@ table {
         margin-bottom: 10px;
         display: block !important;
     }
+
+    th, td {
+        line-height: 1;    
+    }
 }
 
 .checkbox-widget.checked {
@@ -764,7 +824,7 @@ table {
     display: block;
     float: left;
     cursor: pointer;
-    margin-top: @gridGutterWidth/2 - 2;
+    margin-top: @verticalSpacing/2 - 2;
 }
 
 

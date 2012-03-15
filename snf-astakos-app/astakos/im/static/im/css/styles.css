@@ -466,6 +466,17 @@ a.button:hover {
   box-sizing: border-box;
   *behavior: url(boxsizing.htc);
 }
+.clearme {
+  zoom: 1;
+}
+.clearme:before, .clearme:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.clearme:after {
+  clear: both;
+}
 body {
   font-family: 'Antic', sans-serif;
   font-size: 14px;
@@ -477,13 +488,14 @@ body {
   font-weight: normal;
   line-height: 22px;
   letter-spacing: 1px;
+  font-size: 12px;
 }
 .topbar {
   background-color: #cfcdc7;
 }
 .topbar .head {
   float: left;
-  padding: 6px;
+  padding: 2.333333333333333px;
 }
 .topbar .links {
   zoom: 1;
@@ -503,7 +515,7 @@ body {
   display: block;
   float: left;
   margin-left: 10px;
-  padding: 12px;
+  padding: 8.333333333333332px;
 }
 .topbar .links a:hover {
   background-color: #1a1a1a;
@@ -513,7 +525,8 @@ section a,
 p a,
 form a,
 .section a,
-.styledlinks a {
+.styledlinks a,
+a.styled {
   color: #000000;
   text-decoration: none;
   border-bottom: 1px solid #f89a1c;
@@ -522,21 +535,24 @@ section a:hover,
 p a:hover,
 form a:hover,
 .section a:hover,
-.styledlinks a:hover {
+.styledlinks a:hover,
+a.styled:hover {
   color: #f89a1c;
 }
 section a.noborder,
 p a.noborder,
 form a.noborder,
 .section a.noborder,
-.styledlinks a.noborder {
+.styledlinks a.noborder,
+a.styled.noborder {
   border: none;
 }
 section a em,
 p a em,
 form a em,
 .section a em,
-.styledlinks a em {
+.styledlinks a em,
+a.styled em {
   color: #3582ac;
 }
 a.simple {
@@ -584,8 +600,8 @@ a img {
 }
 div.header {
   position: relative;
-  margin-top: 88px;
-  margin-bottom: 22px;
+  margin-top: 36.666666666666664px;
+  margin-bottom: 14.666666666666666px;
 }
 div.header h1 {
   color: #cfcdc7;
@@ -606,8 +622,8 @@ div.header h1 {
 .footer {
   border-bottom: 1px solid #808080;
   border-top: 1px solid #a6a6a6;
-  padding-top: 22px;
-  padding-bottom: 22px;
+  padding-top: 14.666666666666666px;
+  padding-bottom: 14.666666666666666px;
 }
 ul.inline {
   zoom: 1;
@@ -628,7 +644,7 @@ ul.inline li {
 .mainnav.quicknav {
   position: absolute;
   right: 0;
-  top: -57.2px;
+  top: -38.13333333333333px;
   margin: 0;
 }
 .mainnav.quicknav li {
@@ -637,18 +653,22 @@ ul.inline li {
 }
 .navigation {
   height: 83px;
+  position: absolute;
+  right: -15px;
+  top: -23px;
 }
 .mainnav {
-  font-size: 1.2em;
+  font-size: 1.3em;
 }
 .mainnav.subnav {
-  margin-bottom: -22px;
+  margin-bottom: -14.666666666666666px;
 }
 .mainnav.subnav li {
-  margin-top: 1.2em;
+  margin-top: 5.866666666666667px;
+  float: right;
 }
 .mainnav li {
-  margin-top: 66px;
+  margin-top: 29.333333333333332px;
 }
 .mainnav li.active a {
   /*border-bottom: 1px solid @linkColor;*/
@@ -697,7 +717,7 @@ div.page {
   margin-left: -22px;
   zoom: 1;
   margin-left: -22px;
-  margin-top: 132px;
+  margin-top: 73.33333333333333px;
   font-size: 1.1em;
 }
 div.page:before, div.page:after {
@@ -720,6 +740,7 @@ div.page .page-inner {
   position: relative;
 }
 .maincol {
+  position: relative;
   display: inline;
   float: left;
   margin-left: 22px;
@@ -757,6 +778,28 @@ div.page .page-inner {
 }
 .maincol.full:after {
   clear: both;
+}
+.maincol .nextlink {
+  margin-top: 60px;
+  text-align: right;
+  float: right;
+  margin-right: 50px;
+  font-size: 1.1em;
+}
+.maincol .content-bottom {
+  position: relative;
+  zoom: 1;
+}
+.maincol .content-bottom:before, .maincol .content-bottom:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.maincol .content-bottom:after {
+  clear: both;
+}
+.backlink {
+  margin: 30px 0;
 }
 .appbar {
   height: 30px;
@@ -813,7 +856,7 @@ input, textarea, .form-widget {
   background-color: #f89a1c !important;
 }
 .section {
-  margin-bottom: 66px;
+  margin-bottom: 44px;
 }
 .section em {
   color: #3582ac;
@@ -838,7 +881,7 @@ input, textarea, .form-widget {
 }
 .section.positioned h3 {
   font-size: 1.2em;
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
 }
 .section.positioned .text {
   color: #000000;
@@ -896,22 +939,22 @@ form.withlabels input[type=text].long, form.withlabels input[type=password].long
   background-image: none !important;
 }
 form.login {
-  margin-bottom: 33px;
+  margin-bottom: 22px;
 }
 form h2 {
   color: #000000;
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
   font-size: 1.1em;
 }
 form h2 span {
   padding-bottom: 3px;
 }
 form .form-row {
-  min-height: 44px;
+  min-height: 29.333333333333332px;
   position: relative;
 }
 form .form-row.submit {
-  margin-top: 33px;
+  margin-top: 22px;
 }
 form .form-row .extra-link {
   color: #808080;
@@ -921,9 +964,12 @@ form .form-row .extra-link {
   margin-top: 1.3em;
   float: right;
 }
+form .form-row label {
+  font-size: 1.1em;
+}
 form.innerlabels label {
   position: absolute;
-  top: 1em;
+  top: 1.1em;
   left: 1.5em;
   color: #aaa;
 }
@@ -1033,13 +1079,13 @@ div.form-stacked {
   background-image: url("../images/dashed_border.png");
   background-repeat: repeat-x;
   background-position: left bottom;
-  padding-bottom: 44px;
-  margin-bottom: 44px;
+  padding-bottom: 29.333333333333332px;
+  margin-bottom: 29.333333333333332px;
 }
 .section h2 {
   font-size: 1.1em;
   line-height: 1.3em;
-  margin-bottom: 33px;
+  margin-bottom: 22px;
 }
 .section h2 a {
   color: #4085A6;
@@ -1049,13 +1095,13 @@ div.form-stacked {
 .section h3 {
   font-size: 1.1em;
   line-height: 1.3em;
-  margin-bottom: 33px;
+  margin-bottom: 22px;
 }
 .section p {
   line-height: 1.7em;
 }
 .section .section-img {
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
 }
 .messages {
   display: inline;
@@ -1065,6 +1111,7 @@ div.form-stacked {
   margin: 2em 0;
   background-color: #ddd;
   margin-left: 0;
+  font-size: 1.1em;
 }
 .messages li {
   padding: 1em;
@@ -1112,29 +1159,46 @@ table tr.consumed td.consumed {
 .row:after {
   clear: both;
 }
-.footer:hover a {
-  color: #808080 !important;
-  -webkit-transition: color 0.15s linear;
-  transition: color 0.15s linear;
-  -webkit-transition: color 0.15s linear;
-  transition: color 0.15s linear;
-}
-.footer a {
+.footer {
+  zoom: 1;
   color: #b3b3b3;
   -webkit-transition: color 0.15s linear;
   transition: color 0.15s linear;
   -webkit-transition: color 0.15s linear;
   transition: color 0.15s linear;
+}
+.footer:before, .footer:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.footer:after {
+  clear: both;
+}
+.footer a {
+  -webkit-transition: color 0.15s linear;
+  transition: color 0.15s linear;
+  -webkit-transition: color 0.15s linear;
+  transition: color 0.15s linear;
+}
+.footer:hover {
+  color: #808080 !important;
+}
+.footer:hover a {
+  color: #808080 !important;
+}
+.footer a {
+  color: #b3b3b3;
   text-decoration: none;
 }
 .footer a:hover {
-  color: #000000;
+  color: #000 !important;
 }
 .footer li {
-  margin-bottom: 11px;
+  margin-bottom: 7.333333333333333px;
 }
 .footer li.header {
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
 }
 .footer .col {
   display: inline;
@@ -1145,6 +1209,58 @@ table tr.consumed td.consumed {
 .footer .col:last-child, .footer .col.last {
   width: 140px;
   margin-right: 0;
+}
+.footer .top.row, .footer .last.row {
+  zoom: 1;
+  margin-left: -22px;
+  zoom: 1;
+  margin-left: -22px;
+  margin: 20px 0;
+}
+.footer .top.row:before,
+.footer .last.row:before,
+.footer .top.row:after,
+.footer .last.row:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.footer .top.row:after, .footer .last.row:after {
+  clear: both;
+}
+.footer .top.row:before,
+.footer .last.row:before,
+.footer .top.row:after,
+.footer .last.row:after {
+  display: table;
+  content: "";
+  zoom: 1;
+}
+.footer .top.row:after, .footer .last.row:after {
+  clear: both;
+}
+.footer .top.row .col, .footer .last.row .col {
+  display: inline;
+  float: left;
+  margin-left: 22px;
+  width: 306px;
+}
+.footer .top.row .col.first, .footer .last.row .col.first {
+  margin-left: 0 !important;
+}
+.footer .top.row .col.last, .footer .last.row .col.last {
+  display: inline;
+  float: left;
+  margin-left: 22px;
+  width: 142px;
+}
+.footer .top.row {
+  margin-top: 0;
+}
+.footer .last.row {
+  text-align: left;
+  font-size: 0.8em;
+  margin-bottom: 0;
 }
 .footer .bottom.row .col {
   display: inline;
@@ -1162,9 +1278,9 @@ table tr.consumed td.consumed {
 }
 /*blog styles*/
 .blog-entry {
-  margin-bottom: 66px;
-  zoom: 1;
   margin-bottom: 44px;
+  zoom: 1;
+  margin-bottom: 29.333333333333332px;
 }
 .blog-entry em {
   color: #3582ac;
@@ -1189,7 +1305,7 @@ table tr.consumed td.consumed {
 }
 .blog-entry.positioned h3 {
   font-size: 1.2em;
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
 }
 .blog-entry.positioned .text {
   color: #000000;
@@ -1218,7 +1334,7 @@ table tr.consumed td.consumed {
 .blog-entry h2 {
   font-size: 1.1em;
   line-height: 1.3em;
-  margin-bottom: 33px;
+  margin-bottom: 22px;
 }
 .blog-entry h2 a {
   color: #4085A6;
@@ -1228,13 +1344,13 @@ table tr.consumed td.consumed {
 .blog-entry h3 {
   font-size: 1.1em;
   line-height: 1.3em;
-  margin-bottom: 33px;
+  margin-bottom: 22px;
 }
 .blog-entry p {
   line-height: 1.7em;
 }
 .blog-entry .section-img {
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
 }
 .blog-entry:before, .blog-entry:after {
   display: table;
@@ -1253,23 +1369,26 @@ table tr.consumed td.consumed {
   border: 1px solid #808080;
 }
 .blog-entry .intro-content, .blog-entry .content {
-  margin-top: 22px;
+  margin-top: 14.666666666666666px;
 }
 .blog-entry .intro-content object, .blog-entry .content object {
-  margin: 22px 0;
+  margin: 14.666666666666666px 0;
 }
 .blog-entry .entry-info {
   font-size: 0.7em;
-  margin-top: 22px;
+  margin-top: 14.666666666666666px;
 }
 .blog-entry.single .entry-info {
   margin-top: 0;
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
+}
+.section.twitter-feed {
+  font-size: 1.1em;
 }
 .section.twitter-feed .tweet {
   line-height: 1.3em;
   font-size: 0.9em;
-  margin-bottom: 22px;
+  margin-bottom: 14.666666666666666px;
   color: #808080;
 }
 .section.twitter-feed .tweet:last-child {
@@ -1317,7 +1436,7 @@ table tr.consumed td.consumed {
   float: left;
 }
 .resources .categories .title {
-  margin-bottom: 11px;
+  margin-bottom: 7.333333333333333px;
 }
 .resources .categories ul li a {
   text-decoration: none;
@@ -1325,7 +1444,7 @@ table tr.consumed td.consumed {
   margin-right: 22px;
 }
 .resources .list {
-  margin-top: 88px;
+  margin-top: 58.666666666666664px;
 }
 .resources .list .resource {
   -moz-box-sizing: border-box;
@@ -1333,10 +1452,10 @@ table tr.consumed td.consumed {
   box-sizing: border-box;
   *behavior: url(boxsizing.htc);
   width: 33%;
-  padding: 44px;
+  padding: 29.333333333333332px;
   float: left;
   border: 1px solid #faaf40;
-  height: 264px;
+  height: 176px;
 }
 .resources .list .resource .description {
   display: none;
@@ -1363,5 +1482,5 @@ table tr.consumed td.consumed {
   display: block;
   float: left;
   cursor: pointer;
-  margin-top: 9px;
+  margin-top: 5.333333333333333px;
 }

@@ -550,7 +550,15 @@ div.form-stacked {
 
         &.success { background-color: @green; color: @white }
         &.error { background-color: @red; color: @white }
-        &.warning { background-color: @yellow; color: @black }
+        &.warning { background-color: #AF6906; color: @black }
+    }
+    
+    .warning {
+        color: @white !important;   
+        a {
+            color: inherit;
+            font-weight: bold;
+        }
     }
 
 }

@@ -1125,8 +1125,15 @@ div.form-stacked {
   color: #ffffff;
 }
 .messages li.warning {
-  background-color: #ffc40d;
+  background-color: #AF6906;
   color: #000000;
+}
+.messages .warning {
+  color: #ffffff !important;
+}
+.messages .warning a {
+  color: inherit;
+  font-weight: bold;
 }
 .service-desc {
   margin-top: 4em;
@@ -1469,6 +1476,9 @@ table tr.consumed td.consumed {
   font-size: 0.8em;
   margin-bottom: 10px;
   display: block !important;
+}
+#recaptcha_widget_div th, #recaptcha_widget_div td {
+  line-height: 1;
 }
 .checkbox-widget.checked {
   background-color: #f00;

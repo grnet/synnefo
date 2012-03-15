@@ -3,6 +3,7 @@ v0.3.6
 
 - New ASTAKOS_LOGIN_MESSAGES setting to display messages on the login page
   header
+- login_base.html to make it easy override the login.html template
 
 
 v0.3.5

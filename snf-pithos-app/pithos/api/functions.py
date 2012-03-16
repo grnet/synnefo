@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from xml.dom import minidom
+from urllib import unquote
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -106,7 +107,7 @@ def object_demux(request, v_account, v_container, v_object):
     # Helper to avoid placing the token in the URL when loading objects from a browser.
     token = None
     if request.method in ('HEAD', 'GET') and COOKIE_NAME in request.COOKIES:
-        cookie_value = unquote(request.COOKIES.get('COOKIE_NAME', ''))
+        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
         if cookie_value and '|' in cookie_value:
             token = cookie_value.split('|', 1)[1]
     get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)

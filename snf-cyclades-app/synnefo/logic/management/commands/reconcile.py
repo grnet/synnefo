@@ -36,11 +36,9 @@ logic/reconciliation.py for a description of reconciliation rules.
 """
 import sys
 
-from datetime import datetime, timedelta
 from optparse import make_option
 
 from django.conf import settings
-from django.db.models import Q
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import VirtualMachine, Network

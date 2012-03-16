@@ -34,16 +34,14 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from astakos.im.functions import activate
+from astakos.im.functions import send_verification
 
 from ._common import get_user
-    
 
 class Command(BaseCommand):
     args = "<user ID or email> [user ID or email] ..."
-    help = "Activates one or more users"
+    help = "Sends an activation email to one or more users"
     
-    @transaction.commit_manually
     def handle(self, *args, **options):
         if not args:
             raise CommandError("No user was given")
@@ -59,11 +57,6 @@ class Command(BaseCommand):
                 self.stderr.write(msg)
                 continue
             
-            try:
-                activate(user)
-                transaction.commit()
-            except Exception, e:
-                transaction.rollback()
-                raise e
+            send_verification(user)
             
             self.stdout.write("Activated '%s'\n" % (user.email,))

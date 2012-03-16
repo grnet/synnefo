@@ -45,7 +45,9 @@ Login
             {% endif %}
         {% endfor %}
         <div class="bottom">
-                new to okeanos ? <a href="{% url astakos.im.views.signup %}">SIGN UP</a>
+            {% block body.login.signup %}
+                new to okeanos ? <a href="{% url astakos.im.views.signup %}">CREATE ACCOUNT</a>
+            {% endblock %}
             </div>
         </div>
         {% endblock %}

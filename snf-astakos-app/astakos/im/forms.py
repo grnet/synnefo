@@ -42,7 +42,7 @@ from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 
 import logging
@@ -84,7 +84,7 @@ class LocalUserCreationForm(UserCreationForm):
             raise forms.ValidationError(_("This field is required"))
         try:
             AstakosUser.objects.get(email = email)
-            raise forms.ValidationError(_("Email is reserved"))
+            raise forms.ValidationError(_("This email is already used"))
         except AstakosUser.DoesNotExist:
             return email
     
@@ -204,7 +204,7 @@ class ThirdPartyUserCreationForm(ProfileForm):
             raise forms.ValidationError(_("This field is required"))
         try:
             user = AstakosUser.objects.get(email = email)
-            raise forms.ValidationError(_("Email is reserved"))
+            raise forms.ValidationError(_("This email is already used"))
         except AstakosUser.DoesNotExist:
             return email
     
@@ -264,8 +264,9 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'url': url,
                 'site_name': SITENAME,
                 'user': user,
-                'baseurl': BASEURL
+                'baseurl': BASEURL,
+                'support': DEFAULT_CONTACT_EMAIL
             }
             from_email = DEFAULT_FROM_EMAIL
-            send_mail(_("Password reset on %s") % SITENAME,
+            send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])

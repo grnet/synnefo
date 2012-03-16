@@ -1,69 +1,22 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
+{% block gr_content %}
 Αγαπητέ/η {{ user.realname }},
 
-Έπειτα από αίτημα σας έχει δημιουργηθεί ο λογαρισμός σας  
-για την υπηρεσία {{ site_name }} της ΕΔΕΤ κατά την Alpha (πιλοτική) φάση λειτουργίας της.
+Έπειτα από αίτημα σας έχει δημιουργηθεί ο λογαρισμός σας για την υπηρεσία {{ site_name }} της ΕΔΕΤ κατά την alpha2 (δεύτερη δοκιμαστική) φάση λειτουργίας της.
 
-Για να τον ενεργοποιήσετε, χρησιμοποιήστε τον παρακάτω σύνδεσμο:
+Για να τον ενεργοποιήσετε, χρησιμοποιήστε το σύνδεσμο: {{ url }}
+{% endblock %}
 
-{{ url }}
+{% block gr_note %} {% endblock%}
 
-Σημείωση:
 
-Η υπηρεσία θα είναι για μερικές εβδομάδες σε φάση λειτουργίας Alpha. Αν
-και έχουμε κάνει ό,τι είναι δυνατό για να εξασφαλίσουμε την ποιότητα της
-υπηρεσίας, δεν αποκλείεται να εμφανιστούν προβλήματα στο λογισμικό
-διαχείρισης ή η υπηρεσία να μην είναι διαθέσιμη κατά διαστήματα. Για
-αυτό το λόγο, σας παρακαλούμε να μη μεταφέρετε ακόμη σημαντικά αρχεία
-στην υπηρεσία {{ site_name }}. Επίσης, παρακαλούμε να έχετε
-υπόψη σας ότι όλα τα δεδομένα, θα διαγραφούν κατά τη μετάβαση από την
-έκδοση Alpha στην έκδοση Beta. Θα υπάρξει έγκαιρη ειδοποίησή σας πριν
-από τη μετάβαση αυτή.
-
-Περισσότερα για την υπηρεσία θα βρείτε στο {{ baseurl }}, αφού
-ενεργοποιήσετε την πρόσκλησή σας.
-
-Αναμένουμε τα σχόλια και τις παρατηρήσεις σας, για να βελτιώσουμε τη
-λειτουργικότητα και την αξιοπιστία της καινοτομικής αυτής υπηρεσίας.
-
-Για όποιες παρατηρήσεις ή προβλήματα στη λειτουργεία της υπηρεσίας μπορείτε να
-απευθυνθείτε στο {{ support }}.
-
-Σας ευχαριστούμε πολύ για τη συμμετοχή στην Alpha λειτουργία του {{ site_name }}.
-
-Με εκτίμηση,
-
-Εθνικό Δίκτυο Έρευνας και Τεχνολογίας (ΕΔΕΤ/GRNET)
-
---
-
+{% block en_content %}
 Dear {{ user.realname }},
 
-After your request a new account for GRNET's {{ site_name }} service has been created
-for its Alpha test phase.
+After your request a new account for GRNET's {{ site_name }} service has been created for its alpha2 testing phase.
 
-To activate the account, please use the following link:
+To activate the account, please use the link: {{ url }}
+{% endblock %}
 
-{{ url }}
-
-Please note:
-
-This service is, for a few weeks, in Alpha. Although every care has been
-taken to ensure high quality, it is possible there may still be software
-bugs, or periods of limited service availability. For this reason we kindly
-request you not to transfer important files to {{ site_name}} yet.
-Also, please bear in mind that all data will be deleted when the service moves to Beta.
-We will notify you before the transition.
-
-For more information, please visit {{ baseurl }}, after
-activating your invitation.
-
-We look forward to your feedback, to improve the functionality and
-reliability of this innovative service.
-
-For any remarks or problems you can contact {{ support }}.
-
-Thank you for participating in the Alpha test of {{ site_name }}.
-
-Greek Research and Technonogy Network - GRNET
+{% block en_note %} {% endblock%}

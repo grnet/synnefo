@@ -82,3 +82,5 @@ USE_X_FORWARDED_HOST = False
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
+SESSION_COOKIE_SECURE = True
+

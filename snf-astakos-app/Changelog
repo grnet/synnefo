@@ -1,3 +1,19 @@
+v0.3.5
+======
+
+- New grnet styles
+- New setting for recaptcha to use SSL
+- New menu texts
+- Improvements in get_menu view
+
+
+v0.3.4
+======
+
+- Updated mail contents
+- Cloudbar improvements
+
+
 v0.3.3
 ======
 
@@ -14,6 +30,7 @@ v0.3.3
 - New --set-active and --set-inactive in modifyuser command
 - Fixed circular redirects when visiting login page from the logout one
 - Removed im.context_processors.cloudbar (now using snf-common processor)
+
 
 v0.3.2
 ======

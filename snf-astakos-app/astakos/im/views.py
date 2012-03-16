@@ -49,13 +49,14 @@ from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
 from astakos.im.util import get_context, prepare_response, set_cookie
 from astakos.im.forms import *
+from astakos.im.functions import send_greeting
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL, LOGOUT_NEXT
 from astakos.im.functions import invite as invite_func
 
@@ -355,7 +356,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
         
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            subject = _("Feedback from %s" % SITENAME)
+            subject = _("Feedback from %s alpha2 testing" % SITENAME)
             from_email = request.user.email
             recipient_list = [DEFAULT_CONTACT_EMAIL]
             content = render_to_string(email_template_name, {
@@ -396,18 +397,32 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     response.write(render_to_string(template, context_instance=context))
     return response
 
-def activate(request):
+@transaction.commit_manually
+def activate(request, email_template_name='im/welcome_email.txt', on_failure=''):
     """
-    Activates the user identified by the ``auth`` request parameter
+    Activates the user identified by the ``auth`` request parameter, sends a welcome email
+    and renews the user token.
+    
+    The view uses commit_manually decorator in order to ensure the user state will be updated
+    only if the email will be send successfully.
     """
     token = request.GET.get('auth')
     next = request.GET.get('next')
     try:
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
-        return HttpResponseBadRequest('No such user')
+        return HttpResponseBadRequest(_('No such user'))
     
     user.is_active = True
     user.email_verified = True
     user.save()
-    return prepare_response(request, user, next, renew=True)
+    try:
+        send_greeting(user, email_template_name)
+        response = prepare_response(request, user, next, renew=True)
+        transaction.commit()
+        return response
+    except (SMTPException, socket.error) as e:
+        message = getattr(e, 'name') if hasattr(e, 'name') else e
+        messages.add_message(request, messages.ERROR, message)
+        transaction.rollback()
+        return signup(request, on_failure='im/signup.html')

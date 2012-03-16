@@ -1,0 +1,41 @@
+--- A translation in English follows ---
+
+{% block gr_content %} {% endblock %}
+
+{% block gr_note %}
+Σημείωση:
+
+Ο {{ site_name }} είναι η υπηρεσία cloud του ΕΔΕΤ. Περιλαμβάνει τον pithos+, μέσω του οποίου έχετε 50GB αποθηκευτικό χώρο για τα αρχεία σας στο cloud, και τις cyclades, που παρέχουν εικονικές μηχανές (VMs) με διάφορα λειτουργικά συστήματα (OS images).
+
+O {{ site_name }} θα είναι για τις επόμενες λίγες εβδομάδες στη φάση λειτουργίας alpha2. Για τους νέους χρήστες, αρχικά, μέσα από το ενοποιημένο web περιβάλλον θα προσφέρεται ο pithos+ και σε λίγες μέρες (10 περίπου), μόλις ολοκληρωθεί η διαδικασία μετάβασης των χρηστών, και οι cyclades (εικονικές μηχανές). Όσοι χρήστες συμμετείχατε ήδη στην alpha1, θα εξακολουθείτε να βλέπετε, για τις επόμενες 10 ημέρες, τις εικονικές σας μηχανές μέσα απο το https://okeanos.grnet.gr και κατόπιν, με τον ίδιο σύνδεσμο, μέσα απο το ενοποιημένο περιβάλλον. Δε χρειάζεται να κάνετε τίποτε, εφόσον έχετε δηλώσει την ίδια διεύθυνση e-mail που είχατε και στην alpha1. H μετάβαση θα γίνει αυτόματα, μετά απο 10 ημέρες.
+
+Αν και έχουμε κάνει ό,τι είναι δυνατό για να εξασφαλίσουμε την ποιότητα της υπηρεσίας, δεν αποκλείεται να εμφανιστούν προβλήματα στο λογισμικό διαχείρισης ή η υπηρεσία να μην είναι διαθέσιμη κατά διαστήματα. Για αυτό το λόγο, σας παρακαλούμε να μη μεταφέρετε ακόμη σημαντικά αρχεία στον pithos+ ή στις εικονικές μηχανές των cyclades. 
+
+Αναμένουμε τα σχόλια και τις παρατηρήσεις σας, για να βελτιώσουμε τη λειτουργικότητα και την αξιοπιστία της καινοτομικής αυτής υπηρεσίας.
+{% endblock gr_note%}
+Για όποιες παρατηρήσεις ή προβλήματα στη λειτουργία της υπηρεσίας μπορείτε να απευθύνεστε στο {{ support }}.
+
+Σας ευχαριστούμε πολύ για τη συμμετοχή στην alpha2 λειτουργία του {{ site_name }}.
+
+Εθνικό Δίκτυο Έρευνας και Τεχνολογίας (ΕΔΕΤ/GRNET)
+
+--
+
+{% block en_content %} {% endblock %}
+
+{% block en_note %}
+Please note:
+
+{{ site_name }} is GRNET's cloud service. It includes pithos+, which offers 50GB of storage space for your files in the cloud and, cyclades, that offer virtual machines (VMs) with various operating systems (OS images).
+
+{{ site_name }} will be, for the next few weeks, in its alpha2 testing phase. New users, will initially have access only to pithos+, and later, after the migration phase from alpha1 to alpha2 is completed (10 days), will have access to cyclades (VMs) as well. Old users, that participated during the alpha1 phase, will continue to have access to their existing VMs, through the https://okeanos.grnet.gr, for the next 10 days, and then, through the same link, using the new web interface. There is no need to do anything, as long as your e-mail address is the same as in alpha1 phase. Migration will take place automatically, after 10 days.
+
+This service will remain, for a few weeks, in alpha2. Although every care has been taken to ensure high quality, it is possible there may still be software bugs, or periods of limited service availability. For this reason we kindly request you not to transfer important files to pithos+ or to the virtual machines of cyclades.
+
+We look forward to your feedback, to improve the functionality and reliability of this innovative service.
+{% endblock en_note %}
+For any remarks or problems you may contact {{ support }}.
+
+Thank you for participating in the alpha2 test of {{ site_name }}.
+
+Greek Research and Technology Network - GRNET

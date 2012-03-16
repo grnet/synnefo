@@ -44,6 +44,7 @@ $(document).ready(function(){
             var slink = $("<a>");
             if (el.icon) {
                 slink.append($('<img src="'+cssloc+el.icon+'"/>'));
+                slink.addClass("with-icon");
             } else {
                 slink.text(el.name);
             }

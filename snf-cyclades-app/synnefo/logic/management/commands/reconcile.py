@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -41,11 +41,33 @@ from optparse import make_option
 
 from django.conf import settings
 from django.db.models import Q
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import VirtualMachine, Network
 from synnefo.logic import reconciliation, backend
 from synnefo.util.rapi import GanetiRapiClient
+
+
+_valid_users = set()
+_invalid_users = set()
+
+
+def user_exists(user):
+    from astakos.im.models import AstakosUser
+
+    if user in _valid_users:
+        return True
+    elif user in _invalid_users:
+        return False
+
+    try:
+        AstakosUser.objects.get(email=user)
+    except AstakosUser.DoesNotExist:
+        _invalid_users.add(user)
+        return False
+    else:
+        _valid_users.add(user)
+        return True
 
 
 class Command(BaseCommand):
@@ -64,6 +86,14 @@ class Command(BaseCommand):
                     dest='detect_unsynced',
                     default=False, help='Detect unsynced operstate between ' +
                                         'DB and Ganeti'),
+        make_option('--detect-orphan-servers',
+                    action='store_true',
+                    dest='detect_orphan_servers',
+                    help='Detect VMs with an invalid owner'),
+        make_option('--detect-orphan-networks',
+                    action='store_true',
+                    dest='detect_orphan_networks',
+                    help='Detect networks with an invalid owner'),
         make_option('--detect-all', action='store_true',
                     dest='detect_all',
                     default=False, help='Enable all --detect-* arguments'),
@@ -90,13 +120,13 @@ class Command(BaseCommand):
 
         if not reduce(lambda x, y: x or y,
                       map(lambda x: options[x], keys_detect)):
-            raise Exception("At least one of --detect-* must be specified")
+            raise CommandError("At least one of --detect-* must be specified")
 
         for kf in keys_fix:
             kd = kf.replace('fix_', 'detect_', 1)
             if (options[kf] and not options[kd]):
-                raise Exception("Cannot use --%s without corresponding "
-                                "--%s argument" % (kf, kd))
+                raise CommandError("Cannot use --%s without corresponding "
+                                   "--%s argument" % (kf, kd))
 
     def handle(self, **options):
         verbosity = int(options['verbosity'])
@@ -137,6 +167,22 @@ class Command(BaseCommand):
                      for x in unsynced])
             elif verbosity == 2:
                 print >> sys.stderr, "The operstate of all servers is in sync."
+
+        if options['detect_orphan_servers']:
+            for server in VirtualMachine.objects.filter(deleted=False):
+                owner = server.userid
+                if not user_exists(owner):
+                    msg = "Server %d (%s) has unknown owner %s\n" % (
+                            server.id, server.name, owner)
+                    self.stdout.write(msg)
+
+        if options['detect_orphan_networks']:
+            for network in Network.objects.exclude(state='DELETED'):
+                owner = network.userid
+                if owner and not user_exists(owner):
+                    msg = "Network %d (%s) has unknown owner %s\n" % (
+                            network.id, network.name, owner)
+                    self.stdout.write(msg)
 
         #
         # Then fix them

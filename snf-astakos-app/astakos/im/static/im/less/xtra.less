@@ -24,6 +24,26 @@
     &:hover {
         background-color: @linkColor;    
     }
+
+    &.back {
+        text-decoration: none;
+        bottom: 0;
+        float: right;
+        &.right { right: 0}
+        z-index: 500;
+    }
+}
+
+.buttons-list {
+    z-index: 300;
+    position: relative;
+    .button {
+        margin-left: 10px;    
+    }    
+
+    &.fixpos {
+        margin-top: -42px;    
+    }
 }
 
 // specific styles for A buttons

@@ -54,7 +54,7 @@ context_processors = [
     'astakos.im.context_processors.code',
     'astakos.im.context_processors.invitations',
     'astakos.im.context_processors.menu',
-    'astakos.im.context_processors.login_messages',
+    'astakos.im.context_processors.custom_messages',
     'synnefo.lib.context_processors.cloudbar'
 ]
 

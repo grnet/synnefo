@@ -1,3 +1,10 @@
+v0.3.7
+======
+
+- New ASTAKOS_PROFILE_EXTRA_LINKS setting to display additional buttons on
+  account pages.
+
+
 v0.3.6
 ======
 

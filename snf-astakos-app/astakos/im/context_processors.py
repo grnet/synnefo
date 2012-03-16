@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME, LOGIN_MESSAGES
+        COOKIE_NAME, LOGIN_MESSAGES, PROFILE_EXTRA_LINKS
 from astakos.im.api import get_menu
 
 from django.conf import settings
@@ -54,8 +54,11 @@ def invitations(request):
 def media(request):
     return {'IM_STATIC_URL' : IM_STATIC_URL}
 
-def login_messages(request):
-    return {'LOGIN_MESSAGES' : LOGIN_MESSAGES }
+def custom_messages(request):
+    return {
+            'LOGIN_MESSAGES' : LOGIN_MESSAGES,
+            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS
+           }
 
 def menu(request):
     absolute = lambda (url): request.build_absolute_uri(url)

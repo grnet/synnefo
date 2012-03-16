@@ -7,3 +7,5 @@ pithos/data
 */dist/
 */build/
 */pithos/*/version.py
+distribute*.tar.gz
+distribute*.egg

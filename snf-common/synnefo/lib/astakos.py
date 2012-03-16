@@ -83,7 +83,7 @@ def user_for_token(token, authentication_url, override_users):
     except:
         return None
 
-def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate', override_users={}):
+def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate', override_users={}, fallback_token=None):
     request.user = None
     request.user_uniq = None
     
@@ -91,6 +91,8 @@ def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate'
     user = user_for_token(request.GET.get('X-Auth-Token'), authentication_url, override_users)
     if not user:
         user = user_for_token(request.META.get('HTTP_X_AUTH_TOKEN'), authentication_url, override_users)
+    if not user:
+        user = user_for_token(fallback_token, authentication_url, override_users)
     if not user:
         return
     

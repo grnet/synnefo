@@ -51,7 +51,7 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
+from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, COOKIE_NAME
 
 from pithos.backends.base import NotAllowedError, QuotaError
 from pithos.backends.filter import parse_filters
@@ -103,7 +103,13 @@ def container_demux(request, v_account, v_container):
 
 @csrf_exempt
 def object_demux(request, v_account, v_container, v_object):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
+    # Helper to avoid placing the token in the URL when loading objects from a browser.
+    token = None
+    if request.method in ('HEAD', 'GET') and COOKIE_NAME in request.COOKIES:
+        cookie_value = unquote(request.COOKIES.get('COOKIE_NAME', ''))
+        if cookie_value and '|' in cookie_value:
+            token = cookie_value.split('|', 1)[1]
+    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)
     elif request.method == 'GET':

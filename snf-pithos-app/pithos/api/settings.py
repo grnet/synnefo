@@ -18,6 +18,8 @@ sample_users = {
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL', 'http://127.0.0.1:8000/im/authenticate')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', sample_users)
 
+COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
+
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
 BACKEND_DB_MODULE = getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
 BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:////tmp/pithos-backend.db')

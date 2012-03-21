@@ -46,6 +46,7 @@ from django.core.urlresolvers import reverse
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
 from astakos.im.models import AstakosUser
 from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED
+from astakos.im.util import has_signed_terms
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,10 @@ def authenticate(request):
         # Check if the token has expired.
         if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
             return render_fault(request, Unauthorized('Authentication expired'))
-
+        
+        if not has_signed_terms(user):
+            return render_fault(request, Unauthorized('Pending approval terms'))
+        
         response = HttpResponse()
         response.status=204
         user_info = {'username':user.username,
@@ -93,7 +97,8 @@ def authenticate(request):
                      'auth_token':user.auth_token,
                      'auth_token_created':user.auth_token_created.isoformat(),
                      'auth_token_expires':user.auth_token_expires.isoformat(),
-                     'has_credits':user.has_credits}
+                     'has_credits':user.has_credits,
+                     'has_signed_terms':has_signed_terms(user)}
         response.content = json.dumps(user_info)
         response['Content-Type'] = 'application/json; charset=UTF-8'
         response['Content-Length'] = len(response.content)

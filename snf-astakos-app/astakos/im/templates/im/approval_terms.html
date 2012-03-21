@@ -1,0 +1,14 @@
+{% block body %}
+{{ terms }}
+
+{% if form %}
+<div class="section">
+    <form action="{% url latest_terms %}" method="post" class="login innerlabels">{% csrf_token %}
+                {% include "im/form_render.html" %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <div class="form-row submit">
+                    <input type="submit" class="submit altcol" value="SUBMIT" />
+                </div>
+        </form>
+{% endif %}
+{% endblock body %}

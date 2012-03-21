@@ -51,10 +51,11 @@ from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
+from django.contrib.auth.views import password_change
 
-from astakos.im.models import AstakosUser, Invitation
+from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.backends import get_backend
-from astakos.im.util import get_context, prepare_response, set_cookie
+from astakos.im.util import get_context, prepare_response, set_cookie, has_signed_terms
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL, LOGOUT_NEXT
@@ -80,18 +81,34 @@ def render_response(template, tab=None, status=200, reset_cookie=False, context_
 
 def requires_anonymous(func):
     """
-    Decorator checkes whether the request.user is Anonymous and in that case
+    Decorator checkes whether the request.user is not Anonymous and in that case
     redirects to `logout`.
     """
     @wraps(func)
     def wrapper(request, *args):
         if not request.user.is_anonymous():
             next = urlencode({'next': request.build_absolute_uri()})
-            login_uri = reverse(logout) + '?' + next
-            return HttpResponseRedirect(login_uri)
+            logout_uri = reverse(logout) + '?' + next
+            return HttpResponseRedirect(logout_uri)
         return func(request, *args)
     return wrapper
 
+def signed_terms_required(func):
+    """
+    Decorator checkes whether the request.user is Anonymous and in that case
+    redirects to `logout`.
+    """
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        if request.user.is_authenticated() and not has_signed_terms(request.user):
+            params = urlencode({'next': request.build_absolute_uri(),
+                              'show_form':''})
+            terms_uri = reverse('latest_terms') + '?' + params
+            return HttpResponseRedirect(terms_uri)
+        return func(request, *args, **kwargs)
+    return wrapper
+
+@signed_terms_required
 def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context={}):
     """
     If there is logged on user renders the profile page otherwise renders login page.
@@ -124,6 +141,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
                            context_instance = get_context(request, extra_context))
 
 @login_required
+@signed_terms_required
 @transaction.commit_manually
 def invite(request, template_name='im/invitations.html', extra_context={}):
     """
@@ -197,6 +215,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
                            context_instance = context)
 
 @login_required
+@signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context={}):
     """
     Allows a user to edit his/her profile.
@@ -321,6 +340,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
                            context_instance=get_context(request, extra_context))
 
 @login_required
+@signed_terms_required
 def send_feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
     """
     Allows a user to send feedback.
@@ -426,3 +446,45 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()
         return signup(request, on_failure='im/signup.html')
+
+def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):
+    term = None
+    terms = None
+    if not term_id:
+        try:
+            term = ApprovalTerms.objects.order_by('-id')[0]
+        except IndexError:
+            pass
+    else:
+        try:
+             term = ApprovalTerms.objects.get(id=term_id)
+        except ApprovalTermDoesNotExist, e:
+            pass
+    
+    if not term:
+        return HttpResponseBadRequest(_('No approval terms found.'))
+    f = open(term.location, 'r')
+    terms = f.read()
+    
+    if request.method == 'POST':
+        next = request.POST.get('next')
+        if not next:
+            return HttpResponseBadRequest(_('No next param.'))
+        form = SignApprovalTermsForm(request.POST, instance=request.user)
+        if not form.is_valid():
+            return render_response(template_name,
+                           terms = terms,
+                           form = form,
+                           context_instance = get_context(request, extra_context))
+        user = form.save()
+        return HttpResponseRedirect(next)
+    else:
+        form = SignApprovalTermsForm(instance=request.user) if request.user.is_authenticated() else None
+        return render_response(template_name,
+                               terms = terms,
+                               form = form,
+                               context_instance = get_context(request, extra_context))
+
+@signed_terms_required
+def change_password(request):
+    return password_change(request, post_change_redirect=reverse('astakos.im.views.edit_profile'))

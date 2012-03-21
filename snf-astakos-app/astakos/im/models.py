@@ -76,6 +76,8 @@ class AstakosUser(User):
     email_verified = models.BooleanField('Email verified?', default=False)
     
     has_credits = models.BooleanField('Has credits?', default=False)
+    has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
+    date_signed_terms = models.DateTimeField('Signed terms date', null=True)
     
     @property
     def realname(self):
@@ -130,6 +132,14 @@ class AstakosUser(User):
     def __unicode__(self):
         return self.username
 
+class ApprovalTerms(models.Model):
+    """
+    Model for approval terms
+    """
+    
+    date = models.DateTimeField('Issue date', db_index=True, default=datetime.now())
+    location = models.CharField('Terms location', max_length=255)
+
 class Invitation(models.Model):
     """
     Model for registring invitations
@@ -171,6 +181,8 @@ def report_user_event(user):
         eventType = 'create' if not user.id else 'modify'
         body = UserEvent(QUEUE_CLIENT_ID, user, eventType, {}).format()
         conn = exchange_connect(QUEUE_CONNECTION)
-        routing_key = '%s.user' % QUEUE_CONNECTION
+        parts = urlparse(exchange)
+        exchange = parts.path[1:]
+        routing_key = '%s.user' % exchange
         exchange_send(conn, routing_key, body)
         exchange_close(conn)

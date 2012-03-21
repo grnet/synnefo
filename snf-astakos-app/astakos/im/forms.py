@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 from urlparse import urljoin
+from datetime import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
@@ -40,10 +41,14 @@ from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
 from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
+from django.utils.functional import lazy
 
 from astakos.im.models import AstakosUser
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL
-from astakos.im.widgets import DummyWidget, RecaptchaWidget
+from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
+
+# since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
+from astakos.im.util import reverse_lazy
 
 import logging
 import recaptcha.client.captcha as captcha
@@ -63,7 +68,8 @@ class LocalUserCreationForm(UserCreationForm):
     
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name")
+        fields = ("email", "first_name", "last_name", "has_signed_terms")
+        widgets = {"has_signed_terms":ApprovalTermsWidget(terms_uri=reverse_lazy('latest_terms'))}
     
     def __init__(self, *args, **kwargs):
         """
@@ -75,8 +81,9 @@ class LocalUserCreationForm(UserCreationForm):
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2',
+                                'has_signed_terms',
                                 'recaptcha_challenge_field',
-                                'recaptcha_response_field']
+                                'recaptcha_response_field',]
     
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -87,6 +94,12 @@ class LocalUserCreationForm(UserCreationForm):
             raise forms.ValidationError(_("This email is already used"))
         except AstakosUser.DoesNotExist:
             return email
+    
+    def clean_has_signed_terms(self):
+        has_signed_terms = self.cleaned_data['has_signed_terms']
+        if not has_signed_terms:
+            raise forms.ValidationError(_('You have to agree with the terms'))
+        return has_signed_terms
     
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
@@ -112,6 +125,7 @@ class LocalUserCreationForm(UserCreationForm):
         """
         user = super(LocalUserCreationForm, self).save(commit=False)
         user.renew_token()
+        user.date_signed_terms = datetime.now()
         if commit:
             user.save()
         logger.info('Created user %s', user)
@@ -126,7 +140,8 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
     
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name")
+        fields = ("email", "first_name", "last_name", "has_signed_terms")
+        widgets = {"has_signed_terms":ApprovalTermsWidget(terms_uri=reverse_lazy('latest_terms'))}
     
     def __init__(self, *args, **kwargs):
         """
@@ -135,6 +150,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'inviter', 'first_name',
                                 'last_name', 'password1', 'password2',
+                                'has_signed_terms',
                                 'recaptcha_challenge_field',
                                 'recaptcha_response_field']
         #set readonly form fields
@@ -270,3 +286,28 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             from_email = DEFAULT_FROM_EMAIL
             send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])
+
+class SignApprovalTermsForm(forms.ModelForm):
+    class Meta:
+        model = AstakosUser
+        fields = ("has_signed_terms",)
+    
+    def __init__(self, *args, **kwargs):
+        super(SignApprovalTermsForm, self).__init__(*args, **kwargs)
+    
+    def clean_has_signed_terms(self):
+        has_signed_terms = self.cleaned_data['has_signed_terms']
+        if not has_signed_terms:
+            raise forms.ValidationError(_('You have to agree with the terms'))
+        return has_signed_terms
+    
+    def save(self, commit=True):
+        """
+        Saves the , after the normal
+        save behavior is complete.
+        """
+        user = super(SignApprovalTermsForm, self).save(commit=False)
+        user.date_signed_terms = datetime.now()
+        if commit:
+            user.save()
+        return user

@@ -158,6 +158,8 @@ uniq                         User email (uniq identifier used by Astakos)
 auth_token                   Authentication token
 auth_token_expires           Token expiration date
 auth_token_created           Token creation date
+has_credits                  Whether user has credits
+has_signed_terms             Whether user has aggred on terms
 ===========================  ============================
 
 Example reply:
@@ -168,7 +170,9 @@ Example reply:
   "uniq": "papagian@example.com"
   "auth_token": "0000",
   "auth_token_expires": "Tue, 11-Sep-2012 09:17:14 ",
-  "auth_token_created": "Sun, 11-Sep-2011 09:17:14 "}
+  "auth_token_created": "Sun, 11-Sep-2011 09:17:14 ",
+  "has_credits": false,
+  "has_signed_terms": true}
 
 |
 
@@ -177,7 +181,7 @@ Return Code                 Description
 =========================== =====================
 204 (No Content)            The request succeeded
 400 (Bad Request)           The request is invalid
-401 (Unauthorized)          Missing token or inactive user
+401 (Unauthorized)          Missing token or inactive user or penging approval terms
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 

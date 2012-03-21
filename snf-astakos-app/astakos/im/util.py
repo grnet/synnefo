@@ -46,7 +46,7 @@ from django.utils.translation import ugettext as _
 from django.contrib.auth import login, authenticate
 from django.core.urlresolvers import reverse
 
-from astakos.im.models import AstakosUser, Invitation
+from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE
 
 logger = logging.getLogger(__name__)
@@ -128,7 +128,6 @@ def prepare_response(request, user, next='', renew=False):
        expired, if the 'renew' parameter is present
        or user has not a valid token.
     """
-    
     renew = renew or (not user.auth_token)
     renew = renew or (user.auth_token_expires and user.auth_token_expires < datetime.datetime.now())
     if renew:
@@ -161,3 +160,28 @@ def set_cookie(response, user):
     response.set_cookie(COOKIE_NAME, value=cookie_value,
                         expires=expire_fmt, path='/',
                         domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
+
+class lazy_string(object):
+    def __init__(self, function, *args, **kwargs):
+        self.function=function
+        self.args=args
+        self.kwargs=kwargs
+        
+    def __str__(self):
+        if not hasattr(self, 'str'):
+            self.str=self.function(*self.args, **self.kwargs)
+        return self.str
+
+def reverse_lazy(*args, **kwargs):
+    return lazy_string(reverse, *args, **kwargs)
+
+def has_signed_terms(user):
+    if not user.has_signed_terms:
+        return False
+    try:
+        term = ApprovalTerms.objects.order_by('-id')[0]
+        if user.date_signed_terms < term.date:
+            return False
+    except IndexError:
+        pass
+    return True

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,34 +31,32 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME
-from astakos.im.api import get_menu
+from optparse import make_option
+from random import choice
+from string import digits, lowercase, uppercase
+from uuid import uuid4
+from time import time
 
-from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.utils import simplejson as json
+from django.core.management.base import BaseCommand, CommandError
 
-def im_modules(request):
-    return {'im_modules': IM_MODULES}
+from astakos.im.models import ApprovalTerms
 
-def next(request):
-    query_dict = request.__getattribute__(request.method)
-    return {'next' : query_dict.get('next', '')}
-
-def code(request):
-    return {'code' : request.GET.get('code', '')}
-
-def invitations(request):
-    return {'invitations_enabled' :INVITATIONS_ENABLED}
-
-def media(request):
-    return {'IM_STATIC_URL' : IM_STATIC_URL}
-
-def menu(request):
-    absolute = lambda (url): request.build_absolute_uri(url)
-    resp = get_menu(request, True, False)
-    menu_items = json.loads(resp.content)[1:]
-    for item in menu_items:
-        item['is_active'] = absolute(request.path) == item['url']
-    return {'menu':menu_items}
+class Command(BaseCommand):
+    args = "<location>"
+    help = "Insert approval terms"
+    
+    def handle(self, *args, **options):
+        if len(args) != 1:
+            raise CommandError("Invalid number of arguments")
+        
+        location = args[0].decode('utf8')
+        try:
+            f = open(location, 'r')
+        except IOError:
+            raise CommandError("Invalid location")
+        
+        terms = ApprovalTerms(location=location)
+        terms.save()
+        
+        msg = "Created term id %d" % (terms.id,)
+        self.stdout.write(msg + '\n')

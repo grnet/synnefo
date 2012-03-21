@@ -92,4 +92,5 @@ listusers        List users
 modifyuser       Modify a user's attributes
 showinvitation   Show invitation info
 showuser         Show user info
+addterms         Add new approval terms
 ===============  ===========================

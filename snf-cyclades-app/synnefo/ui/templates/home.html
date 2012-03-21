@@ -76,7 +76,13 @@
 
     <!-- the following views require refactor -->
     <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
-
+    <script>
+        tmp_auth_client = new synnefo.auth.AstakosClient({
+            cookie_name: '{{ auth_cookie_name }}',
+            login_url: '{{ login_redirect }}'
+        });
+        if (!tmp_auth_client.get_user()) { tmp_auth_client.redirect_to_login(); }
+    </script>
     {{ CLOUDBAR_CODE }}
     
     <script>

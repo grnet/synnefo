@@ -148,7 +148,7 @@ class State(object):
             meta = client.retrieve_object_metadata(self.container, path)
         except Fault:
             return 'DEL'
-        if meta.get('content-type', None) == 'application/directory':
+        if meta.get('content-type', '').split(';', 1)[0].strip() == 'application/directory':
             return 'DIR'
         else:
             return meta['x-object-hash']
@@ -292,7 +292,7 @@ def walk(dir, container):
             if 'subdir' in object:
                 continue
             name = object['name']
-            if object['content_type'] == 'application/directory':
+            if object['content_type'].split(';', 1)[0].strip() == 'application/directory':
                 dirs.add(name)
             else:
                 files.add(name)

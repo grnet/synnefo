@@ -1061,7 +1061,7 @@ class ModularBackend(BaseBackend):
             if node is not None:
                 props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is not None:
-                if props[self.TYPE] in ('application/directory', 'application/folder'):
+                if props[self.TYPE].split(';', 1)[0].strip() in ('application/directory', 'application/folder'):
                     formatted.append((p.rstrip('/') + '/', self.MATCH_PREFIX))
                 formatted.append((p, self.MATCH_EXACT))
         return formatted
@@ -1081,7 +1081,7 @@ class ModularBackend(BaseBackend):
                 if node is not None:
                     props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
                 if props is not None:
-                    if props[self.TYPE] in ('application/directory', 'application/folder'):
+                    if props[self.TYPE].split(';', 1)[0].strip() in ('application/directory', 'application/folder'):
                         return p
         return None
     

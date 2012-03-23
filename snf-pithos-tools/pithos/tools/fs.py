@@ -248,7 +248,7 @@ class StoreFS(Operations):
         gid = int(meta.get('x-account-meta-gid', 0))
         size = int(meta.get('content-length', 0))
         
-        if meta['content-type'] == 'application/directory':
+        if meta['content-type'].split(';', 1)[0].strip() == 'application/directory':
             mode = int(meta.get('x-object-meta-mode', 0755))
             flags = S_IFDIR
             nlink = 2

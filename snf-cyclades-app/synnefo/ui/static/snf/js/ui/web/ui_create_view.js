@@ -485,7 +485,7 @@
             this.predefined_flavors_keys = _.keys(SUGGESTED_FLAVORS);
             this.predefined_flavors_keys = _.sortBy(this.predefined_flavors_keys, _.bind(function(k){
                 var flv = this.predefined_flavors[k];
-                return (flv.ram * flv.cpu * flv.disk) + flv.disk_template;
+                return (flv.ram * flv.cpu * flv.disk);
             }, this));
 
             this.predefined = this.$(".predefined-list");

@@ -946,7 +946,8 @@
                 error: _.bind(this.handle_stats_error, this),
                 complete: _.bind(function(){this.updating_stats = false;}, this),
                 critical: false,
-                log_error: false
+                log_error: false,
+                skips_timeouts: true
             });
         },
 

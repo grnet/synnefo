@@ -96,7 +96,7 @@
         // timeout value from settings.py
         var TIMEOUT = {{ timeout }};
         var TIMEOUTS_OCCURED = 0;
-        var SKIP_TIMEOUTS = 1;
+        var SKIP_TIMEOUTS = {{ skip_timeouts }};
         var UPDATE_INTERVAL = {{ update_interval }};
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";

@@ -16,7 +16,6 @@
 .button {
     #font.main();
     background-color: @buttonBg;
-    .transit(background-color);
     color: @buttonColor;
     border: none;
     padding: 0.8em @gridGutterWidth;
@@ -26,40 +25,24 @@
         background-color: @linkColor;    
     }
 
-    a {
-        color: @white !important;
-        text-decoration: none !important;
-        border: none !important;
+    &.back {
+        text-decoration: none;
+        bottom: 0;
+        float: right;
+        &.right { right: 0}
+        z-index: 500;
     }
 }
 
-a.button {
-    color: @white !important;
-    text-decoration: none !important;
-    border: none !important;
-}
+.buttons-list {
+    z-index: 300;
+    position: relative;
+    .button {
+        margin-left: 10px;    
+    }    
 
-// specific styles for A buttons
-a.button {
-    text-align: center !important;
-    color: #fff !important;
-    border: none !important;
-    display: block !important;
-
-    &:hover {
-        color: #fff !important;    
-    }
-}
-
-// specific styles for A buttons
-a.button {
-    text-align: center !important;
-    color: #fff !important;
-    border: none !important;
-    display: block !important;
-
-    &:hover {
-        color: #fff !important;    
+    &.fixpos {
+        margin-top: -42px;    
     }
 }
 

@@ -428,6 +428,7 @@ form {
         position: relative;
         &.submit {
             margin-top: 1.5*@verticalSpacing;
+            z-index: 10;
         }
 
         .extra-link {
@@ -761,45 +762,6 @@ table {
 
 .initial_hidden {
     display: none;    
-}
-
-/*resources styles*/
-
-@resCol: #FAAF40;
-.resources {
-    
-    .categories {
-        ul { .clearfix() }
-        ul li { float: left; }
-        .title {
-            margin-bottom: @verticalSpacing/2;    
-        }
-
-        ul li a {
-            text-decoration: none;
-            color: @resCol;
-            margin-right: @gridGutterWidth;
-        }
-    }
-
-    .list {
-        
-        margin-top: 4*@verticalSpacing;
-
-        .resource {
-            .border-box();
-            width: 33%;
-            padding: 2*@verticalSpacing;
-            float: left;
-            border: 1px solid @resCol;
-            height: 12*@verticalSpacing;
-
-            .description {
-                display: none;    
-            }
-        }    
-    }
-    
 }
 
  

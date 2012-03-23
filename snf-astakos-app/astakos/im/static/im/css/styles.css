@@ -208,6 +208,25 @@ textarea {
 .button:hover {
   background-color: #f89a1c;
 }
+.button.back {
+  text-decoration: none;
+  bottom: 0;
+  float: right;
+  z-index: 500;
+}
+.button.back.right {
+  right: 0;
+}
+.buttons-list {
+  z-index: 300;
+  position: relative;
+}
+.buttons-list .button {
+  margin-left: 10px;
+}
+.buttons-list.fixpos {
+  margin-top: -42px;
+}
 a.button {
   text-align: center !important;
   color: #fff !important;
@@ -450,6 +469,25 @@ table .headerSortUp.purple, table .headerSortDown.purple {
 }
 .button:hover {
   background-color: #f89a1c;
+}
+.button.back {
+  text-decoration: none;
+  bottom: 0;
+  float: right;
+  z-index: 500;
+}
+.button.back.right {
+  right: 0;
+}
+.buttons-list {
+  z-index: 300;
+  position: relative;
+}
+.buttons-list .button {
+  margin-left: 10px;
+}
+.buttons-list.fixpos {
+  margin-top: -42px;
 }
 a.button {
   text-align: center !important;
@@ -955,6 +993,7 @@ form .form-row {
 }
 form .form-row.submit {
   margin-top: 22px;
+  z-index: 10;
 }
 form .form-row .extra-link {
   color: #808080;
@@ -1047,8 +1086,26 @@ form input.submit, form input[type="submit"] {
 form input.submit:hover, form input[type="submit"]:hover {
   background-color: #f89a1c;
 }
+form input.submit.back, form input[type="submit"].back {
+  text-decoration: none;
+  bottom: 0;
+  float: right;
+  z-index: 500;
+}
+form input.submit.back.right, form input[type="submit"].back.right {
+  right: 0;
+}
 form input.submit:hover, form input[type="submit"]:hover {
   background-color: #f89a1c;
+}
+form input.submit.back, form input[type="submit"].back {
+  text-decoration: none;
+  bottom: 0;
+  float: right;
+  z-index: 500;
+}
+form input.submit.back.right, form input[type="submit"].back.right {
+  right: 0;
 }
 form textarea {
   height: 200px;
@@ -1425,46 +1482,6 @@ table tr.consumed td.consumed {
   font-size: 0.8em;
 }
 .initial_hidden {
-  display: none;
-}
-/*resources styles*/
-.resources .categories ul {
-  zoom: 1;
-}
-.resources .categories ul:before, .resources .categories ul:after {
-  display: table;
-  content: "";
-  zoom: 1;
-}
-.resources .categories ul:after {
-  clear: both;
-}
-.resources .categories ul li {
-  float: left;
-}
-.resources .categories .title {
-  margin-bottom: 7.333333333333333px;
-}
-.resources .categories ul li a {
-  text-decoration: none;
-  color: #faaf40;
-  margin-right: 22px;
-}
-.resources .list {
-  margin-top: 58.666666666666664px;
-}
-.resources .list .resource {
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  *behavior: url(boxsizing.htc);
-  width: 33%;
-  padding: 29.333333333333332px;
-  float: left;
-  border: 1px solid #faaf40;
-  height: 176px;
-}
-.resources .list .resource .description {
   display: none;
 }
 /* recaptcha */

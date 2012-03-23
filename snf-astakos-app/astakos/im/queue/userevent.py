@@ -39,7 +39,7 @@ from random import random
 
 class UserEvent(object):
     def __init__(self, client, user, eventType, details={}):
-        self.eventVersion = '1.0'
+        self.eventVersion = '1'
         self.occurredMillis = int(time() * 1000)
         self.receivedMillis = self.occurredMillis
         self.clientID = client
@@ -50,7 +50,7 @@ class UserEvent(object):
         self.details = details
         hash = sha1()
         hash.update(json.dumps([client, self.userID, self.is_active, self.role,
-                                self.eventType, self.details, random()]))
+                                self.eventType, self.details, self.occurredMillis]))
         self.id = hash.hexdigest()
     
     def format(self):

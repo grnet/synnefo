@@ -50,7 +50,7 @@ from optparse import OptionParser
 from os.path import basename
 
 from synnefo.db import models
-from synnefo.logic import backend, users
+from synnefo.logic import backend
 from synnefo.plankton.backend import ImageBackend
 from synnefo.util.dictconfig import dictConfig
 

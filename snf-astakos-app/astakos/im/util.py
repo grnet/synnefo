@@ -181,6 +181,8 @@ def has_signed_terms(user):
     try:
         term = ApprovalTerms.objects.order_by('-id')[0]
         if user.date_signed_terms < term.date:
+            user.has_signed_terms = False
+            user.save()
             return False
     except IndexError:
         pass

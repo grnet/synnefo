@@ -3,7 +3,7 @@ Welcome to synnefo's documentation
 
 .. image:: /images/synnefo-logo.png
 
-synnefo is opensource software used to create massively scalable IaaS clouds.
+synnefo is opensource software, used to create massively scalable IaaS clouds.
 
 | You can see synnefo in action, powering GRNET's
   `~okeanos cloud service <https://okeanos.grnet.gr>`_.
@@ -45,13 +45,14 @@ above links. You can also browse all synnefo component in this list.
 Quick Installation Guide
 ------------------------
 
-A quick installation guide is provided, that describes how to install synnefo in
-just one physical node for testing and development purposes. This guide is also
+The quick installation guide describes how to install the whole synnefo stack in
+just two physical nodes, for testing and development purposes. This guide is
 useful to those interested in deploying synnefo in large scale, as a starting
 point that will help them get familiar with the synnefo components and overall
 architecture, as well as the interconnection between different services. Such an
 installation, also provides a quick preview of the basic synnefo features,
-although we would like to think that its real power will unveil while scaling.
+although we would like to think that synnefo unveils its real power while
+scaling.
 
 The quick installation guide comes in two versions:
 
@@ -66,8 +67,9 @@ Standard Installation
 
 Also a complete standard installation guide will soon be available, that will
 describe thoroughly how to deploy all services, interconnected with each other,
-on multiple physical nodes. For now, please refer to each services own
-documentation.
+on multiple physical nodes. For now, if you installed successfully using the quick
+installation guide and need more details, please refer to each service's own
+documentation, following the links on top.
 
 Contact
 -------

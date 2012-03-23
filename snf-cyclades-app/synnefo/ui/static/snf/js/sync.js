@@ -310,7 +310,7 @@
     }
 
     api.errorHandler = function(event, xhr, settings, error) {
-        // dont trigger api error untill timeouts occured
+        // dont trigger api error until timeouts occured
         // exceed the skips_timeouts limit
         //
         // check only requests with skips_timeouts option set

@@ -284,8 +284,7 @@
             this.selected_type = type;
             this.types.removeClass("selected");
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
-            
-            var images = this.images_storage.update_images_for_type(
+            this.images_storage.update_images_for_type(
                 this.selected_type, 
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
@@ -311,6 +310,10 @@
         },
 
         select_image: function(image) {
+            console.log(image ? image.get('id'): null);
+            if (image && image.get('id') && !_.include(this.images_ids, image.get('id'))) {
+                image = undefined;
+            }
             if (!image && this.images_ids.length) {
                 if (this.selected_image && this.images_ids.indexOf(this.selected_image.id) > -1) {
                     image = this.selected_image;
@@ -318,8 +321,9 @@
                     image = this.images_storage.get(this.images_ids[0]);
                 }
             }
-                
-            if (!this.images_ids.length) { image = this.selected_image || undefined };
+             
+            // no images select null image so that next button gets hidden
+            if (!this.images_ids.length) { image = undefined };
             
             if ((!this.selected_image && image) || (this.selected_image != image))
                 this.trigger("change", image);
@@ -397,8 +401,6 @@
                 this.images_list.hide();
             }
 
-            this.select_image();
-            
             var self = this;
             this.images_list.find(".image-details").click(function(){
                 self.select_image($(this).data("image"));

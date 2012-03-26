@@ -240,9 +240,12 @@
                 return owner;
             }
         },
-
+    
         get_readable_size: function() {
-            return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : "unknown";
+            if (this.is_deleted()) {
+                return synnefo.config.image_deleted_size_title || '(none)';
+            }
+            return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : '(none)';
         },
 
         get_os: function() {
@@ -266,6 +269,10 @@
 
         is_public: function() {
             return this.get('is_public') || true;
+        },
+
+        is_deleted: function() {
+            return this.get('status') == "DELETED"
         },
         
         ssh_keys_path: function() {
@@ -1584,8 +1591,9 @@
                             callback(this.get(id));
                         }, this));
                     } else {
+                        var title = synnefo.config.image_deleted_title || 'Deleted';
                         // else add a dummy DELETED state image entry
-                        this.add({id:id, name:"Unknown image", size:-1, 
+                        this.add({id:id, name:title, size:-1, 
                                   progress:100, status:"DELETED"});
                         callback(this.get(id));
                     }   
@@ -1594,7 +1602,8 @@
                 }
             }, this), _.bind(function(image, msg, xhr) {
                 if (!image) {
-                    this.add({id:id, name:"Unknown image", size:-1, 
+                    var title = synnefo.config.image_deleted_title || 'Deleted';
+                    this.add({id:id, name:title, size:-1, 
                               progress:100, status:"DELETED"});
                     callback(this.get(id));
                     return;

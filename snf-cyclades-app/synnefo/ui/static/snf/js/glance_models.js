@@ -22,7 +22,9 @@
         },
 
         get_readable_size: function() {
-            return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : "unknown";
+            var unknown_title = snf.config.image_deleted_size_title || "(none)";
+            if (this.is_deleted()) { return unknown_title }
+            return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : unknown_title;
         },
 
         display_size: function() {

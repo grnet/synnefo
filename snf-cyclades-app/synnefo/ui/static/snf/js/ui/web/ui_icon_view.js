@@ -583,7 +583,7 @@
             if (!this.visible() && this.parent.details_hidden) { return };
 
             var image = this.vm.get_image(_.bind(function(image){
-                this.sel('image_name').text(util.truncate(image.escape('name'), 13)).attr("title", image.escape('name'));
+                this.sel('image_name').text(util.truncate(image.escape('name'), 17)).attr("title", image.escape('name'));
                 this.sel('image_size').text(image.get_readable_size()).attr('title', image.get_readable_size());
             }, this));
 

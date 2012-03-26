@@ -240,13 +240,20 @@
                 return owner;
             }
         },
-
+    
         get_readable_size: function() {
-            return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : "unknown";
+            if (this.is_deleted()) {
+                return synnefo.config.image_deleted_size_title || '(none)';
+            }
+            return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : '(none)';
         },
 
         get_os: function() {
             return this.get("OS");
+        },
+
+        get_gui: function() {
+            return this.get_meta('GUI');
         },
 
         get_created_user: function() {
@@ -266,6 +273,10 @@
 
         is_public: function() {
             return this.get('is_public') || true;
+        },
+
+        is_deleted: function() {
+            return this.get('status') == "DELETED"
         },
         
         ssh_keys_path: function() {
@@ -946,7 +957,8 @@
                 error: _.bind(this.handle_stats_error, this),
                 complete: _.bind(function(){this.updating_stats = false;}, this),
                 critical: false,
-                log_error: false
+                log_error: false,
+                skips_timeouts: true
             });
         },
 
@@ -1224,6 +1236,10 @@
         get_os: function() {
             return this.get_meta('OS') || (this.get_image(function(){}) ? 
                                           this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
+        },
+
+        get_gui: function() {
+            return this.get_meta('GUI');
         },
 
         // get public ip addresses
@@ -1583,8 +1599,9 @@
                             callback(this.get(id));
                         }, this));
                     } else {
+                        var title = synnefo.config.image_deleted_title || 'Deleted';
                         // else add a dummy DELETED state image entry
-                        this.add({id:id, name:"Unknown image", size:-1, 
+                        this.add({id:id, name:title, size:-1, 
                                   progress:100, status:"DELETED"});
                         callback(this.get(id));
                     }   
@@ -1592,6 +1609,13 @@
                     callback(this.get(id));
                 }
             }, this), _.bind(function(image, msg, xhr) {
+                if (!image) {
+                    var title = synnefo.config.image_deleted_title || 'Deleted';
+                    this.add({id:id, name:title, size:-1, 
+                              progress:100, status:"DELETED"});
+                    callback(this.get(id));
+                    return;
+                }
                 var img_data = this._read_image_from_request(image, msg, xhr);
                 this.add(img_data);
                 callback(this.get(id));

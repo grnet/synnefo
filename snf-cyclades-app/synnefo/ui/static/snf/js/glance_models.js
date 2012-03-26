@@ -22,11 +22,21 @@
         },
 
         get_readable_size: function() {
-            return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : "unknown";
+            var unknown_title = snf.config.image_deleted_size_title || "(none)";
+            if (this.is_deleted()) { return unknown_title }
+            return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : unknown_title;
         },
 
         display_size: function() {
             return this.get_readable_size();
+        },
+
+        get_os: function() {
+            return this.get_meta('os');
+        },
+
+        get_gui: function() {
+            return this.get_meta('gui');
         }
         
     })
@@ -34,7 +44,6 @@
     models.GlanceImages = snf.models.Images.extend({
         model: models.GlanceImage,
         api_type: 'glance',
-        fallback_service: snf.models.Images,
 
         type_selections: {'personal':'My images', 
                           'shared': 'Shared with me', 

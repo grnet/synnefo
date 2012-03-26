@@ -9,6 +9,8 @@ div.list table thead tr th {
 }
 
 
+span.vm-detail { font-size: 0.9em !important }
+
 /*vm views fixes*/
 div.vm-details {
     width: 135px;

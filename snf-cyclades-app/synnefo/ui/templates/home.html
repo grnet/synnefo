@@ -22,6 +22,9 @@
     <!--[if IE]>
         <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie.css);</style>
     <![endif]-->
+    <!--[if (lte IE 8)]>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie8.css);</style>
+    <![endif]-->
     <!--[if (lte IE 7)]>
         <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie7.css);</style>
     <![endif]-->
@@ -76,7 +79,13 @@
 
     <!-- the following views require refactor -->
     <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
-
+    <script>
+        tmp_auth_client = new synnefo.auth.AstakosClient({
+            cookie_name: '{{ auth_cookie_name }}',
+            login_url: '{{ login_redirect }}'
+        });
+        if (!tmp_auth_client.get_user()) { tmp_auth_client.redirect_to_login(); }
+    </script>
     {{ CLOUDBAR_CODE }}
     
     <script>
@@ -90,7 +99,7 @@
         // timeout value from settings.py
         var TIMEOUT = {{ timeout }};
         var TIMEOUTS_OCCURED = 0;
-        var SKIP_TIMEOUTS = 1;
+        var SKIP_TIMEOUTS = {{ skip_timeouts }};
         var UPDATE_INTERVAL = {{ update_interval }};
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
@@ -573,6 +582,8 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
             synnefo.config.images_url = '{{ SYNNEFO_IMAGES_URL }}';
+            synnefo.config.image_deleted_title = {{ image_deleted_title|safe }};
+            synnefo.config.image_deleted_size_title = {{ image_deleted_size_title|safe }};
             synnefo.config.use_glance = {{ use_glance }};
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';

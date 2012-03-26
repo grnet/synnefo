@@ -74,6 +74,10 @@ SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server",
 SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES",
                           SUGGESTED_ROLES_DEFAULT)
 IMAGE_ICONS = settings.IMAGE_ICONS
+IMAGE_DELETED_TITLE = getattr(settings, 'UI_IMAGE_DELETED_TITLE',
+                            '(deleted image)')
+IMAGE_DELETED_SIZE_TITLE = getattr(settings, 'UI_IMAGE_DELETED_SIZE_TITLE',
+                            '(none)')
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
@@ -163,7 +167,9 @@ def home(request):
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                'use_glance': json.dumps(ENABLE_GLANCE),
                'glance_api_url': json.dumps(GLANCE_API_URL),
-               'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS)
+               'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
+               'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
+               'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
                }
     return template('home', request, context)
 

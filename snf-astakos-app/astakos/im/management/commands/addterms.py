@@ -36,6 +36,7 @@ from random import choice
 from string import digits, lowercase, uppercase
 from uuid import uuid4
 from time import time
+from os.path import abspath
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -49,7 +50,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
         
-        location = args[0].decode('utf8')
+        location = abspath(args[0].decode('utf8'))
         try:
             f = open(location, 'r')
         except IOError:

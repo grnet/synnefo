@@ -178,6 +178,10 @@ def reverse_lazy(*args, **kwargs):
 def has_signed_terms(user):
     try:
         term = ApprovalTerms.objects.order_by('-id')[0]
+        if not user.has_signed_terms:
+            return False
+        if not user.date_signed_terms:
+            return False
         if user.date_signed_terms < term.date:
             user.has_signed_terms = False
             user.save()

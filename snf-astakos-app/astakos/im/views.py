@@ -479,7 +479,9 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
         user = form.save()
         return HttpResponseRedirect(next)
     else:
-        form = SignApprovalTermsForm(instance=request.user) if request.user.is_authenticated() else None
+        form = None
+        if request.user.is_authenticated() and not has_signed_terms(request.user):
+            form = SignApprovalTermsForm(instance=request.user)
         return render_response(template_name,
                                terms = terms,
                                form = form,

@@ -310,7 +310,6 @@
         },
 
         select_image: function(image) {
-            console.log(image ? image.get('id'): null);
             if (image && image.get('id') && !_.include(this.images_ids, image.get('id'))) {
                 image = undefined;
             }

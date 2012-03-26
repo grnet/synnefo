@@ -182,7 +182,7 @@ def report_user_event(user):
         eventType = 'create' if not user.id else 'modify'
         body = UserEvent(QUEUE_CLIENT_ID, user, eventType, {}).format()
         conn = exchange_connect(QUEUE_CONNECTION)
-        parts = urlparse(exchange)
+        parts = urlparse(QUEUE_CONNECTION)
         exchange = parts.path[1:]
         routing_key = '%s.user' % exchange
         exchange_send(conn, routing_key, body)

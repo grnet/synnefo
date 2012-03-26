@@ -252,6 +252,10 @@
             return this.get("OS");
         },
 
+        get_gui: function() {
+            return this.get_meta('GUI');
+        },
+
         get_created_user: function() {
             return synnefo.config.os_created_users[this.get_os()] || "root";
         },

@@ -1234,6 +1234,10 @@
                                           this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
         },
 
+        get_gui: function() {
+            return this.get_meta('GUI');
+        },
+
         // get public ip addresses
         // TODO: public network is always the 0 index ???
         get_addresses: function(net_id) {

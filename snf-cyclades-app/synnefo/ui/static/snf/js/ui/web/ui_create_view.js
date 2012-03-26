@@ -1086,8 +1086,8 @@
             
             set_detail("description");
             set_detail("name");
-            set_detail("os", _(image.escape("OS")).capitalize());
-            set_detail("gui", image.get("GUI"));
+            set_detail("os", _(image.get_os()).capitalize());
+            set_detail("gui", image.get_gui());
             set_detail("size", _.escape(image.get_readable_size()));
             set_detail("kernel");
         },

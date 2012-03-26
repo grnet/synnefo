@@ -29,6 +29,14 @@
 
         display_size: function() {
             return this.get_readable_size();
+        },
+
+        get_os: function() {
+            return this.get_meta('os');
+        },
+
+        get_gui: function() {
+            return this.get_meta('gui');
         }
         
     })

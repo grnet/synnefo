@@ -48,6 +48,8 @@ $(document).ready(function(){
         'glance':'/images/v1.1'
     };
 
+    snf.user = {'token': 'TESTTOKEN'}
+
     module("VM Model")
 
     test("model change events", function(){
@@ -57,28 +59,28 @@ $(document).ready(function(){
         var v1 = new models.VM({'imageRef':1});
         v1.bind("change", function(){
             ok(1, "change event triggered")
-            equals(v1.get("status"), "BUILD")
-            equals(v1.get("state"), "BUILD_COPY")
+            equal(v1.get("status"), "BUILD")
+            equal(v1.get("state"), "BUILD_COPY")
         })
         v1.set({'status':'BUILD', 'progress':80, 'imageRef': 1});
         v1.unbind();
 
         v1.bind("change", function(){
             ok(1, "change event triggered")
-            equals(v1.get("status"), "BUILD")
-            equals(v1.get("state"), "DESTROY")
+            equal(v1.get("status"), "BUILD")
+            equal(v1.get("state"), "DESTROY")
         })
         v1.set({'state':'DESTROY'});
         v1.unbind();
 
         v1.bind("change", function() {
             ok(1, "change event triggered")
-            equals(v1.get("status"), "BUILD")
-            equals(v1.get("state"), "BUILD_COPY")
+            equal(v1.get("status"), "BUILD")
+            equal(v1.get("state"), "BUILD_COPY")
         })
         v1.set({'status':'BUILD', 'progress':80, 'imageRef': 1});
-        equals(v1.get("status"), "BUILD")
-        equals(v1.get("state"), "DESTROY")
+        equal(v1.get("status"), "BUILD")
+        equal(v1.get("state"), "DESTROY")
         v1.unbind();
     })
 
@@ -87,45 +89,45 @@ $(document).ready(function(){
         
         var v1 = new vm();
         v1.set({status: 'BUILD_COPY'})
-        equals(v1.get("state"), 'BUILD_COPY', "State is set");
+        equal(v1.get("state"), 'BUILD_COPY', "State is set");
         v1.set({status: 'DESTROY'})
-        equals(v1.get("state"), 'DESTROY', "From buld to destroy");
+        equal(v1.get("state"), 'DESTROY', "From buld to destroy");
         v1.set({status: 'BUILD'})
-        equals(v1.get("state"), 'DESTROY', "Keep destroy state");
+        equal(v1.get("state"), 'DESTROY', "Keep destroy state");
 
         v1 = new vm();
         v1.set({status: 'ACTIVE'})
-        equals(v1.get("state"), 'ACTIVE', "State is set");
+        equal(v1.get("state"), 'ACTIVE', "State is set");
 
         v1.set({status: 'SHUTDOWN'})
-        equals(v1.get("state"), 'SHUTDOWN', "From active to shutdown (should change)");
+        equal(v1.get("state"), 'SHUTDOWN', "From active to shutdown (should change)");
 
         v1.set({status: 'ACTIVE'})
-        equals(v1.get("state"), 'SHUTDOWN', "From shutdown to active (should not change)");
+        equal(v1.get("state"), 'SHUTDOWN', "From shutdown to active (should not change)");
         
         v1.set({status: 'STOPPED'})
-        equals(v1.get("state"), 'STOPPED', "From shutdown to stopped (should change)");
+        equal(v1.get("state"), 'STOPPED', "From shutdown to stopped (should change)");
 
         v1.set({status: 'ACTIVE'})
-        equals(v1.get("state"), 'ACTIVE', "From stopped to active (should change)");
+        equal(v1.get("state"), 'ACTIVE', "From stopped to active (should change)");
         v1.set({'status': 'STOPPED'})
-        equals(v1.get('state'), 'STOPPED', "From shutdown to stopped should change");
+        equal(v1.get('state'), 'STOPPED', "From shutdown to stopped should change");
 
         v1.set({'status': 'DESTROY'})
-        equals(v1.get('state'), 'DESTROY', "From stopped to destory should set state to DESTROY");
+        equal(v1.get('state'), 'DESTROY', "From stopped to destory should set state to DESTROY");
         v1.set({'status': 'ACTIVE'})
-        equals(v1.get('state'), 'DESTROY', "From destroy to active should keep state to DESTROY");
+        equal(v1.get('state'), 'DESTROY', "From destroy to active should keep state to DESTROY");
         v1.set({'status': 'REBOOT'})
-        equals(v1.get('state'), 'DESTROY', "From destroy to active should keep state to DESTROY");
+        equal(v1.get('state'), 'DESTROY', "From destroy to active should keep state to DESTROY");
         v1.set({'status': 'DELETED'})
-        equals(v1.get('state'), 'DELETED', "Destroy should be kept until DELETE or ERROR");
+        equal(v1.get('state'), 'DELETED', "Destroy should be kept until DELETE or ERROR");
 
         v1 = new vm({status:'BUILD'});
-        equals(v1.get('state'), 'BUILD', "new vm with build as initial status")
-        equals(v1.get('status'), 'BUILD', "new vm with build as initial status")
+        equal(v1.get('state'), 'BUILD', "new vm with build as initial status")
+        equal(v1.get('status'), 'BUILD', "new vm with build as initial status")
         v1.set({status:'ACTIVE'})
-        equals(v1.get('state'), 'ACTIVE', "active state has been set")
-        equals(v1.get('status'), 'ACTIVE', "active status has been set")
+        equal(v1.get('state'), 'ACTIVE', "active state has been set")
+        equal(v1.get('status'), 'ACTIVE', "active status has been set")
     })
 
 
@@ -133,20 +135,20 @@ $(document).ready(function(){
         synnefo.storage.images.add({id:1,metadata:{values:{size:100}}});
         var vm = models.VM;
         var v1 = new vm({'status':'BUILD','progress':0, 'imageRef':1});
-        equals(v1.get('state'), 'BUILD_INIT', "progress 0 sets state to BUILD_INIT");
-        equals(v1.get('status'), 'BUILD', "progress 0 sets status to BUILD");
-        equals(v1.get('progress_message'), 'init', "message 'init'");
+        equal(v1.get('state'), 'BUILD_INIT', "progress 0 sets state to BUILD_INIT");
+        equal(v1.get('status'), 'BUILD', "progress 0 sets status to BUILD");
+        equal(v1.get('progress_message'), 'init', "message 'init'");
         v1.set({status:'BUILD', progress:50});
-        equals(v1.get('state'), 'BUILD_COPY', "progress 50 sets state to BUILD_COPY");
-        equals(v1.get('status'), 'BUILD', "progress 50 sets status to BUILD");
-        equals(v1.get('progress_message'), '50.00 MB, 100.00 MB, 50', "message: 'final'");
+        equal(v1.get('state'), 'BUILD_COPY', "progress 50 sets state to BUILD_COPY");
+        equal(v1.get('status'), 'BUILD', "progress 50 sets status to BUILD");
+        equal(v1.get('progress_message'), '50.00 MB, 100.00 MB, 50', "message: 'final'");
         v1.set({status:'BUILD', progress:100});
-        equals(v1.get('state'), 'BUILD_FINAL', "progress 100 sets state to BUILD_FINAL");
-        equals(v1.get('status'), 'BUILD', "progress 100 sets status to BUILD");
+        equal(v1.get('state'), 'BUILD_FINAL', "progress 100 sets state to BUILD_FINAL");
+        equal(v1.get('status'), 'BUILD', "progress 100 sets status to BUILD");
         v1.set({status:'ACTIVE', progress:100});
-        equals(v1.get('state'), 'ACTIVE', "ACTIVE set transition to ACTIVE");
-        equals(v1.get('status'), 'ACTIVE', "ACTIVE set transition to ACTIVE");
-        equals(v1.get('progress_message'), 'final', "message: 'final'");
+        equal(v1.get('state'), 'ACTIVE', "ACTIVE set transition to ACTIVE");
+        equal(v1.get('status'), 'ACTIVE', "ACTIVE set transition to ACTIVE");
+        equal(v1.get('progress_message'), 'final', "message: 'final'");
     })
 
     test("active inactive states", function(){
@@ -158,7 +160,7 @@ $(document).ready(function(){
         for (v in active) {
             v = active[v];
             v1.set({status: v})
-            equals(v1.is_active(), true, v + " status is active")
+            equal(v1.is_active(), true, v + " status is active")
         }
         
         var v1 = new vm();
@@ -166,7 +168,7 @@ $(document).ready(function(){
         for (v in inactive) {
             v = inactive[v];
             v1.set({status: v})
-            equals(v1.is_active(), false, v1.state() + " status is not active")
+            equal(v1.is_active(), false, v1.state() + " status is not active")
         }
     
     })
@@ -177,8 +179,8 @@ $(document).ready(function(){
         var vm = new models.VM({status:'BUILD'});
         vm.bind("transition", function(data) {
             ok(true, "Transition triggered");
-            equals(data.from, "BUILD")
-            equals(data.to, "ACTIVE");
+            equal(data.from, "BUILD")
+            equal(data.to, "ACTIVE");
         })
         // trigger 1 time
         vm.set({status:'BUILD'});
@@ -189,8 +191,8 @@ $(document).ready(function(){
         vm = new models.VM({status:'BUILD'});
         vm.bind("transition", function(data) {
             ok(true, "Transition triggered");
-            equals(data.from, "BUILD")
-            equals(data.to, "ACTIVE");
+            equal(data.from, "BUILD")
+            equal(data.to, "ACTIVE");
         })
         // trigger 1 time
         vm.set({status:'ACTIVE'});
@@ -200,8 +202,8 @@ $(document).ready(function(){
         vm = new models.VM({status:'SHUTDOWN'});
         vm.bind("transition", function(data) {
             ok(true, "Transition triggered");
-            equals(data.from, "SHUTDOWN")
-            equals(data.to, "STOPPED");
+            equal(data.from, "SHUTDOWN")
+            equal(data.to, "STOPPED");
         })
         // trigger 1 time
         vm.set({status:'STOPPED'});
@@ -257,7 +259,7 @@ $(document).ready(function(){
             ok(1, "NOT EXPECTED: change triggered on new entry while collection was empty");
         });
         collection.fetch({'async': false});
-        equals(collection.length, 1, "2: collection contains 1 model");
+        equal(collection.length, 1, "2: collection contains 1 model");
         collection.unbind();
         $.mockjaxClear();
         
@@ -280,7 +282,7 @@ $(document).ready(function(){
             ok(1, "3: change triggered on new entry while collection was empty");
         });
         collection.fetch({'async': false, refresh:true});
-        equals(collection.length, 1, "4 collection contains 1 model");
+        equal(collection.length, 1, "4 collection contains 1 model");
         collection.unbind();
         $.mockjaxClear();
 
@@ -303,7 +305,7 @@ $(document).ready(function(){
             ok(1, "NOT EXPECTED: change triggered when new model arrived");
         }) 
         collection.fetch({async:false, refresh:true});
-        equals(collection.length, 2, "6 new model added");
+        equal(collection.length, 2, "6 new model added");
         collection.unbind();
         $.mockjaxClear();
         
@@ -326,7 +328,7 @@ $(document).ready(function(){
         })
 
         collection.fetch({async:false, refresh:true});
-        equals(collection.length, 1, "8 one model removed");
+        equal(collection.length, 1, "8 one model removed");
         collection.unbind();
         $.mockjaxClear();
 
@@ -348,7 +350,7 @@ $(document).ready(function(){
             ok(1, "WRONG: remove triggered on 304");
         });
         collection.fetch({async:false, refresh:true});
-        equals(collection.length, 1, "9 one model removed");
+        equal(collection.length, 1, "9 one model removed");
         collection.unbind();
         $.mockjaxClear();
     })
@@ -383,7 +385,9 @@ $(document).ready(function(){
         var vm1 = vms.add({imageRef:1, name:"vm1"}).last();
         var vm2 = vms.add({imageRef:2, name:"vm2"}).last();
             
-        equals(img, vm1.get_image());
+        vm1.get_image(function(i){
+            equal(i, img);
+        });
         
         // reset is not called on 304
         $.mockjax({
@@ -394,10 +398,11 @@ $(document).ready(function(){
         }); 
         
         
-        equals(images.length, 1, "1 image exists");
-        vm2.get_image();
-        equals(images.get(2).get("name"), "image 2", "image data parsed");
-        equals(images.length, 2);
+        equal(images.length, 1, "1 image exists");
+        vm2.get_image(function(i){
+            equal(images.get(2).get("name"), "image 2", "image data parsed");
+            equal(images.length, 2);
+        });
     })
 
     test("Test DELETE state flavor retrieval", function() {
@@ -411,7 +416,7 @@ $(document).ready(function(){
         var vm1 = vms.add({flavorRef:1, name:"vm1"}).last();
         var vm2 = vms.add({flavorRef:2, name:"vm2"}).last();
             
-        equals(flv, vm1.get_flavor());
+        equal(flv, vm1.get_flavor());
         
         // reset is not called on 304
         $.mockjax({
@@ -422,10 +427,10 @@ $(document).ready(function(){
         }); 
         
         
-        equals(flavors.length, 1, "1 flavor exists");
+        equal(flavors.length, 1, "1 flavor exists");
         vm2.get_flavor();
-        equals(flavors.get(2).get("ram"), 2048, "flavor data parsed");
-        equals(flavors.length, 2);
+        equal(flavors.get(2).get("ram"), 2048, "flavor data parsed");
+        equal(flavors.length, 2);
     })
 
     test("actions list object", function(){
@@ -434,22 +439,22 @@ $(document).ready(function(){
         var count = 0;
 
         l.add("destroy");
-        equals(l.has_action("destroy"), true);
-        equals(l.contains("destroy"), true);
+        equal(l.has_action("destroy"), true);
+        equal(l.contains("destroy"), true);
 
         l.add("destroy", 1, {});
-        equals(l.has_action("destroy"), true);
-        equals(l.contains("destroy", 1, {}), true);
+        equal(l.has_action("destroy"), true);
+        equal(l.contains("destroy", 1, {}), true);
 
         l.remove("destroy", 1, {});
-        equals(l.contains("destroy", 1, {}), false);
+        equal(l.contains("destroy", 1, {}), false);
 
         m.bind("change:actions", function() { count ++});
         l.add("destroy");
         
-        equals(count, 0);
+        equal(count, 0);
         l.add("destroy", 1, {});
-        equals(count, 1);
+        equal(count, 1);
     });
 
     module("update handlers")
@@ -483,8 +488,8 @@ $(document).ready(function(){
             h.stop();
             start();
             // 4 calls, limit reached
-            equals(counter, 4, "normal calls");
-            equals(h.interval, opts.max, "limit reached");
+            equal(counter, 4, "normal calls");
+            equal(h.interval, opts.max, "limit reached");
 
             stop();
             h.start(false);
@@ -492,14 +497,14 @@ $(document).ready(function(){
             window.setTimeout(function(){
                 // 11 calls, limit reached
                 start();
-                equals(counter, 11, "faster calls");
-                equals(h.interval, opts.max, "limit reached");
+                equal(counter, 11, "faster calls");
+                equal(h.interval, opts.max, "limit reached");
                 h.stop();
                 stop();
                 window.setTimeout(function(){
                     // no additional calls because we stopped it
                     start();
-                    equals(counter, 11, "no additional calls")
+                    equal(counter, 11, "no additional calls")
                 }, 50 + add)
             }, 50 + add)
         }, 43 + add)

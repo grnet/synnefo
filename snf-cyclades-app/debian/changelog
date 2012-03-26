@@ -1,3 +1,9 @@
+snf-cyclades-app (0.9.7-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Mon, 26 Mar 2012 20:51:19 +0300
+
 snf-cyclades-app (0.9.6-1) stable; urgency=low
 
   * New upstream version

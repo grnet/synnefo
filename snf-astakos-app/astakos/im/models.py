@@ -37,6 +37,7 @@ import uuid
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
+from urlparse import urlparse
 
 from django.db import models
 from django.contrib.auth.models import User, UserManager

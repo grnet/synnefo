@@ -10,11 +10,10 @@ BACKEND_BLOCK_PATH = '/usr/share/synnefo/pithos/data/'
 # The Pithos container where images will be stored by default
 DEFAULT_PLANKTON_CONTAINER = 'images'
 
-ALLOWED_DISK_FORMATS = ('diskdump', 'dump', 'extdump', 'lvm', 'ntfsclone',
-                        'ntfsdump')
-ALLOWED_CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
+ALLOWED_DISK_FORMATS = ('diskdump', 'extdump', 'ntfsdump')
+DEFAULT_DISK_FORMAT = 'diskdump'
 
-DEFAULT_DISK_FORMAT = 'dump'
+ALLOWED_CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
 DEFAULT_CONTAINER_FORMAT = 'bare'
 
 # The owner of the images that will be marked as "system images" by the UI

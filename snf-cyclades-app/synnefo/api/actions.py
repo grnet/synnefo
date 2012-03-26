@@ -248,6 +248,11 @@ def get_console(request, vm, args):
     if fwd['status'] != "OK":
         raise ServiceUnavailable('vncauthproxy returned error status')
 
+    # Verify that the VNC server settings haven't changed
+    if not settings.TEST:
+        if console_data != backend.get_instance_console(vm):
+            raise ServiceUnavailable('VNC Server settings changed.')
+
     console = {
         'type': 'vnc',
         'host': getfqdn(),

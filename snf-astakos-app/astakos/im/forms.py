@@ -44,7 +44,7 @@ from django.core.urlresolvers import reverse
 from django.utils.functional import lazy
 
 from astakos.im.models import AstakosUser
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
 from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
@@ -81,9 +81,10 @@ class LocalUserCreationForm(UserCreationForm):
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2',
-                                'has_signed_terms',
-                                'recaptcha_challenge_field',
-                                'recaptcha_response_field',]
+                                'has_signed_terms']
+        if RECAPTCHA_ENABLED:
+            self.fields.keyOrder.extend(['recaptcha_challenge_field',
+                                         'recaptcha_response_field',])
     
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -150,9 +151,11 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'inviter', 'first_name',
                                 'last_name', 'password1', 'password2',
-                                'has_signed_terms',
-                                'recaptcha_challenge_field',
-                                'recaptcha_response_field']
+                                'has_signed_terms']
+        if RECAPTCHA_ENABLED:
+            self.fields.keyOrder.extend(['recaptcha_challenge_field',
+                                         'recaptcha_response_field',])
+        
         #set readonly form fields
         self.fields['inviter'].widget.attrs['readonly'] = True
         self.fields['email'].widget.attrs['readonly'] = True

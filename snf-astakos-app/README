@@ -64,6 +64,7 @@ ASTAKOS_SITENAME                    GRNET Cloud                                 
 ASTAKOS_CLOUD_SERVICES              ({'icon': 'home-icon.png', 'id': 'cloud', 'name': 'grnet cloud', 'url': '/'},   Cloud services appear in the horizontal bar
                                     {'id': 'okeanos', 'name': 'cyclades', 'url': '/okeanos.html'},                  
                                     {'id': 'pithos', 'name': 'pithos+', 'url': '/ui/'})                             
+ASTAKOS_RECAPTCHA_ENABLED           True                                                                            Enable recaptcha
 ASTAKOS_RECAPTCHA_PUBLIC_KEY                                                                                        Recaptcha public key obtained after registration here: http://recaptcha.net
 ASTAKOS_RECAPTCHA_PRIVATE_KEY                                                                                       Recaptcha private key obtained after registration here: http://recaptcha.net
 ASTAKOS_RECAPTCHA_OPTIONS           {'theme': 'white'}                                                              Options for customizing reCAPTCHA look and feel

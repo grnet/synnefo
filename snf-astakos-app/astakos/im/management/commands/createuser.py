@@ -37,6 +37,8 @@ from string import digits, lowercase, uppercase
 from uuid import uuid4
 
 from django.core.management.base import BaseCommand, CommandError
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
 
@@ -73,6 +75,11 @@ class Command(BaseCommand):
         
         args = [a.decode('utf8') for a in args]
         email, first, last, affiliation = args
+        
+        try:
+            validate_email( email )
+        except ValidationError:
+            raise CommandError("Invalid email")
         
         username =  uuid4().hex[:30]
         password = options.get('password')

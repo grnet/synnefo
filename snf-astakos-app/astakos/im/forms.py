@@ -48,7 +48,7 @@ from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEU
 from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
-from astakos.im.util import reverse_lazy
+from astakos.im.util import reverse_lazy, get_latest_terms
 
 import logging
 import recaptcha.client.captcha as captcha
@@ -80,8 +80,9 @@ class LocalUserCreationForm(UserCreationForm):
             kwargs.pop('ip')
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
-                                'password1', 'password2',
-                                'has_signed_terms']
+                                'password1', 'password2']
+        if get_latest_terms():
+            self.fields.keyOrder.append('has_signed_terms')
         if RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field',])
@@ -149,12 +150,6 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         Changes the order of fields, and removes the username field.
         """
         super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email', 'inviter', 'first_name',
-                                'last_name', 'password1', 'password2',
-                                'has_signed_terms']
-        if RECAPTCHA_ENABLED:
-            self.fields.keyOrder.extend(['recaptcha_challenge_field',
-                                         'recaptcha_response_field',])
         
         #set readonly form fields
         self.fields['inviter'].widget.attrs['readonly'] = True

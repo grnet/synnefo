@@ -175,17 +175,23 @@ class lazy_string(object):
 def reverse_lazy(*args, **kwargs):
     return lazy_string(reverse, *args, **kwargs)
 
-def has_signed_terms(user):
+def get_latest_terms():
     try:
         term = ApprovalTerms.objects.order_by('-id')[0]
-        if not user.has_signed_terms:
-            return False
-        if not user.date_signed_terms:
-            return False
-        if user.date_signed_terms < term.date:
-            user.has_signed_terms = False
-            user.save()
-            return False
+        return term
     except IndexError:
         pass
-    return True
+    return None
+
+def has_signed_terms(user):
+    term = get_latest_terms()
+    if not term:
+        return True
+    if not user.has_signed_terms:
+        return False
+    if not user.date_signed_terms:
+        return False
+    if user.date_signed_terms < term.date:
+        user.has_signed_terms = False
+        user.save()
+        return False

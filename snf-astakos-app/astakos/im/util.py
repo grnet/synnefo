@@ -195,3 +195,4 @@ def has_signed_terms(user):
         user.has_signed_terms = False
         user.save()
         return False
+    return True

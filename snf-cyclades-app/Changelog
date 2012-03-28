@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v0.9.8
+------
+
+* Fix empty user information in feedback mails
+
+
 v0.9.7
 ------
 * Verify VNC server settings in get_console

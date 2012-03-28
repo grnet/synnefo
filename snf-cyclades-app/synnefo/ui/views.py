@@ -49,6 +49,8 @@ from django.template import RequestContext
 
 from synnefo.util.version import get_component_version
 
+from synnefo.lib.astakos import get_user
+
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
 
 # api configuration
@@ -315,6 +317,9 @@ def machines_connect(request):
 def feedback_submit(request):
     if not request.method == "POST":
         raise Http404
+
+    # fill request object with astakos user information
+    get_user(request, settings.ASTAKOS_URL)
 
     message = request.POST.get("feedback-msg")
     data = request.POST.get("feedback-data")

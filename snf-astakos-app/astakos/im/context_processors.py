@@ -43,7 +43,8 @@ def im_modules(request):
     return {'im_modules': IM_MODULES}
 
 def next(request):
-    return {'next' : request.GET.get('next', '')}
+    query_dict = request.__getattribute__(request.method)
+    return {'next' : query_dict.get('next', '')}
 
 def code(request):
     return {'code' : request.GET.get('code', '')}

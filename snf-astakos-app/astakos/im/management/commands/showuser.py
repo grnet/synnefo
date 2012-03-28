@@ -72,9 +72,12 @@ class Command(BaseCommand):
             'invitations': user.invitations,
             'invitation level': user.level,
             'provider': user.provider,
-            'verified': format_bool(user.is_verified)
+            'verified': format_bool(user.is_verified),
+            'has_credits': format_bool(user.has_credits),
+            'has_signed_terms': format_bool(user.has_signed_terms),
+            'date_signed_terms': format_date(user.date_signed_terms)
         }
         
         for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(16), val)
+            line = '%s: %s\n' % (key.rjust(17), val)
             self.stdout.write(line.encode('utf8'))

@@ -36,6 +36,7 @@ import recaptcha.client.captcha as captcha
 from django import forms
 from django.utils.safestring import mark_safe
 from django.utils import simplejson as json
+from django.utils.translation import ugettext as _
 
 from astakos.im.settings import RECAPTCHA_PUBLIC_KEY, RECAPTCHA_OPTIONS, \
         RECAPTCHA_USE_SSL
@@ -61,3 +62,16 @@ class DummyWidget(forms.Widget):
     is_hidden=True
     def render(self, *args, **kwargs):
         return ''
+
+class ApprovalTermsWidget(forms.CheckboxInput):
+    """
+    A CheckboxInput class with a link to the approval terms.
+    """
+    def __init__(self, attrs=None, check_test=bool, terms_uri='', terms_label=_('Read the terms')):
+        super(ApprovalTermsWidget, self).__init__(attrs, check_test)
+        self.uri = terms_uri
+        self.label = terms_label
+    
+    def render(self, name, value, attrs=None):
+        html = super(ApprovalTermsWidget, self).render(name, value, attrs)
+        return html + mark_safe('<a href=%s target="_blank">%s</a>' % (self.uri, self.label))

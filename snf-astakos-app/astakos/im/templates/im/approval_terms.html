@@ -1,0 +1,23 @@
+{% extends 'im/base.html' %}
+
+{% block page.title %}Approval Terms{% endblock %}
+
+{% block body %}
+    <div class='header'>
+        <div class="mainlogo">
+            <h1>approval terms</h1>
+        </div>
+    </div>
+{{ terms }}
+
+{% if form %}
+<div class="section">
+    <form action="{% url latest_terms %}" method="post" class="login innerlabels">{% csrf_token %}
+                {% include "im/form_render.html" %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <div class="form-row submit">
+                    <input type="submit" class="submit altcol" value="SUBMIT" />
+                </div>
+        </form>
+{% endif %}
+{% endblock body %}

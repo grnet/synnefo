@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,32 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+import json
 
-from astakos.im.functions import send_verification
+from time import time
+from hashlib import sha1
+from random import random
 
-from ._common import get_user
-
-class Command(BaseCommand):
-    args = "<user ID or email> [user ID or email] ..."
-    help = "Sends an activation email to one or more users"
+class UserEvent(object):
+    def __init__(self, client, user, eventType, details={}):
+        self.eventVersion = '1'
+        self.occurredMillis = int(time() * 1000)
+        self.receivedMillis = self.occurredMillis
+        self.clientID = client
+        self.userID = user.email
+        self.is_active = user.is_active
+        self.role = 'default'
+        self.eventType = eventType
+        self.details = details
+        hash = sha1()
+        hash.update(json.dumps([client, self.userID, self.is_active, self.role,
+                                self.eventType, self.details, self.occurredMillis]))
+        self.id = hash.hexdigest()
     
-    def handle(self, *args, **options):
-        if not args:
-            raise CommandError("No user was given")
-        
-        for email_or_id in args:
-            user = get_user(email_or_id)
-            if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
-            
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
-                continue
-            
-            send_verification(user)
-            
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+    def format(self):
+        return self.__dict__

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,32 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+import logging
+import json
 
-from astakos.im.functions import send_verification
+from astakos.im.functions import set_user_credibility
 
-from ._common import get_user
+logger = logging.getLogger(__name__)
 
-class Command(BaseCommand):
-    args = "<user ID or email> [user ID or email] ..."
-    help = "Sends an activation email to one or more users"
-    
-    def handle(self, *args, **options):
-        if not args:
-            raise CommandError("No user was given")
-        
-        for email_or_id in args:
-            user = get_user(email_or_id)
-            if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
-            
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
-                continue
-            
-            send_verification(user)
-            
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+def on_creditevent(msg):
+    try:
+        email = msg.get('userid')
+        has_credits = True if msg.get('status') == 'on' else False
+        set_user_credibility(email, has_credits)
+    except Exception, e:
+        logger.exception(e)

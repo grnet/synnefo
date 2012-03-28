@@ -32,9 +32,11 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns, include, url
+from django.contrib.auth.views import password_change
 
 from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED
+from astakos.im.views import signed_terms_required
 
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
@@ -43,7 +45,10 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'form':LoginForm()}}),
     url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'form':LoginForm()}}),
-    url(r'^activate/?$', 'activate')
+    url(r'^activate/?$', 'activate'),
+    url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
+    url(r'^approval_terms/(?P<term_id>\d+)?$', 'approval_terms'),
+    url(r'^password/?$', 'change_password', {}, name='password_change')
 )
 
 urlpatterns += patterns('astakos.im.target',
@@ -62,7 +67,7 @@ if 'local' in IM_MODULES:
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
          'password_reset_confirm'),
         url(r'^local/password/reset/complete/$', 'password_reset_complete'),
-        url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'}, name='password_change')
+        url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile'})
     )
 
 if INVITATIONS_ENABLED:

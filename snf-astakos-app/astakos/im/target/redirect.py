@@ -43,7 +43,7 @@ from urllib import quote
 from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
-from astakos.im.util import set_cookie
+from astakos.im.util import set_cookie, has_signed_terms
 
 import logging
 
@@ -53,7 +53,7 @@ def login(request):
     """
     If there is no `next` request parameter redirects to astakos index page displaying an error
     message.
-    If the request user is authenticated, redirects to `next` request parameter.
+    If the request user is authenticated and has signed the approval terms, redirects to `next` request parameter. If not, redirects to approval terms in order to return back here after agreeing with the terms.
     Otherwise, redirects to login in order to return back here after successful login.
     """
     next = request.GET.get('next')
@@ -65,6 +65,24 @@ def login(request):
         logout(request)
         response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
     if request.user.is_authenticated():
+        # if user has not signed the approval terms
+        # redirect to approval terms with next the request path
+        if not has_signed_terms(request.user):
+            # first build next parameter
+            parts = list(urlsplit(request.build_absolute_uri()))
+            params = dict(parse_qsl(parts[3], keep_blank_values=True))
+            # delete force parameter
+            parts[3] = urlencode(params)
+            next = urlunsplit(parts)
+            
+            # build url location
+            parts[2] = reverse('latest_terms')
+            params = {'next':next}
+            parts[3] = urlencode(params)
+            url = urlunsplit(parts)
+            response['Location'] = url
+            response.status_code = 302
+            return response
         renew = request.GET.get('renew', None)
         if renew == '':
             request.user.renew_token()
@@ -82,7 +100,7 @@ def login(request):
         response.status_code = 302
         return response
     else:
-        # redirect to login with self as next
+        # redirect to login with next the request path
         
         # first build next parameter
         parts = list(urlsplit(request.build_absolute_uri()))

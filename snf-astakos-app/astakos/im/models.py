@@ -37,11 +37,16 @@ import uuid
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
+from urlparse import urlparse
 
 from django.db import models
 from django.contrib.auth.models import User, UserManager
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
+from astakos.im.queue.userevent import UserEvent
+from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
+
+QUEUE_CLIENT_ID = 3 # Astakos.
 
 class AstakosUser(User):
     """
@@ -71,6 +76,10 @@ class AstakosUser(User):
     
     email_verified = models.BooleanField('Email verified?', default=False)
     
+    has_credits = models.BooleanField('Has credits?', default=False)
+    has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
+    date_signed_terms = models.DateTimeField('Signed terms date', null=True)
+    
     @property
     def realname(self):
         return '%s %s' %(self.first_name, self.last_name)
@@ -94,18 +103,20 @@ class AstakosUser(User):
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
-                # set username
-                while not self.username:
-                    username =  uuid.uuid4().hex[:30]
-                    try:
-                        AstakosUser.objects.get(username = username)
-                    except AstakosUser.DoesNotExist, e:
-                        self.username = username
-                self.is_active = False
-                if not self.provider:
-                    self.provider = 'local'
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
+        if not self.id:
+            # set username
+            while not self.username:
+                username =  uuid.uuid4().hex[:30]
+                try:
+                    AstakosUser.objects.get(username = username)
+                except AstakosUser.DoesNotExist, e:
+                    self.username = username
+            self.is_active = False
+            if not self.provider:
+                self.provider = 'local'
+        report_user_event(self)
         super(AstakosUser, self).save(**kwargs)
     
     def renew_token(self):
@@ -121,6 +132,14 @@ class AstakosUser(User):
     
     def __unicode__(self):
         return self.username
+
+class ApprovalTerms(models.Model):
+    """
+    Model for approval terms
+    """
+    
+    date = models.DateTimeField('Issue date', db_index=True, default=datetime.now())
+    location = models.CharField('Terms location', max_length=255)
 
 class Invitation(models.Model):
     """
@@ -146,3 +165,25 @@ class Invitation(models.Model):
         
     def __unicode__(self):
         return '%s -> %s [%d]' % (self.inviter, self.username, self.code)
+
+def report_user_event(user):
+    def should_send(user):
+        # report event incase of new user instance
+        # or if specific fields are modified
+        if not user.id:
+            return True
+        db_instance = AstakosUser.objects.get(id = user.id)
+        for f in BILLING_FIELDS:
+            if (db_instance.__getattribute__(f) != user.__getattribute__(f)):
+                return True
+        return False
+    
+    if QUEUE_CONNECTION and should_send(user):
+        eventType = 'create' if not user.id else 'modify'
+        body = UserEvent(QUEUE_CLIENT_ID, user, eventType, {}).format()
+        conn = exchange_connect(QUEUE_CONNECTION)
+        parts = urlparse(QUEUE_CONNECTION)
+        exchange = parts.path[1:]
+        routing_key = '%s.user' % exchange
+        exchange_send(conn, routing_key, body)
+        exchange_close(conn)

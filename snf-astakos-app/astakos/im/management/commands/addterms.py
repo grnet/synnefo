@@ -31,32 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
+from random import choice
+from string import digits, lowercase, uppercase
+from uuid import uuid4
+from time import time
+from os.path import abspath
+
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
-from astakos.im.functions import send_verification
-
-from ._common import get_user
+from astakos.im.models import ApprovalTerms
 
 class Command(BaseCommand):
-    args = "<user ID or email> [user ID or email] ..."
-    help = "Sends an activation email to one or more users"
+    args = "<location>"
+    help = "Insert approval terms"
     
     def handle(self, *args, **options):
-        if not args:
-            raise CommandError("No user was given")
+        if len(args) != 1:
+            raise CommandError("Invalid number of arguments")
         
-        for email_or_id in args:
-            user = get_user(email_or_id)
-            if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
-            
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
-                continue
-            
-            send_verification(user)
-            
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+        location = abspath(args[0].decode('utf8'))
+        try:
+            f = open(location, 'r')
+        except IOError:
+            raise CommandError("Invalid location")
+        
+        terms = ApprovalTerms(location=location)
+        terms.save()
+        
+        msg = "Created term id %d" % (terms.id,)
+        self.stdout.write(msg + '\n')

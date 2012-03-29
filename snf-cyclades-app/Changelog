@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v0.9.9
+------
+
+* Update footer links
+* Fix create view default flavor
+* Updated setup.py required packages versions
+
+
 v0.9.8
 ------
 

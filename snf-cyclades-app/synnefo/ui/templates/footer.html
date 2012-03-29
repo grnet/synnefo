@@ -2,20 +2,23 @@
 <div id="footer-container">
 <div id='footer'>
     <div id='footer-text'>
-        <a href="#">{% trans "About" %}</a>
+        <a href="https://www.okeanos.grnet.gr/about">{% trans "About" %}</a>
             &nbsp;|&nbsp;
-        <a href="#">{% trans "Help" %}</a>
+        <a href="https://accounts.okeanos.grnet.gr/im/feedback">{% trans "Feedback" %}</a>
             &nbsp;|&nbsp;
-        <a href="#">{% trans "Contact" %}</a>
+        <a href="https://www.okeanos.grnet.gr/support">{% trans "Help" %}</a>
+        {% comment %}
             &nbsp;|&nbsp;
         <a href="#">{% trans "Terms" %}</a>
             &nbsp;|&nbsp;
         <a href="#">{% trans "Privacy" %}</a>
+        {% endcomment %}
         <br/>
         <div class='grnet-sign'><a href="http://www.grnet.gr/" target="_blank">{% trans "Copyright (c) 2011 Greek Research and Technology Network" %}</a></div>
     </div>
     <div id="footer-bg">
     </div>
-    <div class="software">powered by <a href="http://code.grnet.gr/">synnefo</a> <span class="version">v{{ synnefo_version }}</span></div>
+    <div class="software">powered by <a
+            href="https://www.okeanos.grnet.gr/opensource">synnefo</a> <span class="version">v{{ synnefo_version }}</span></div>
 </div>
 </div>

@@ -494,6 +494,7 @@
         handle_image_change: function(data) {
             this.current_image = data;
             this.update_valid_predefined();
+            this.current_flavor = undefined;
             this.update_flavors_data();
             this.reset_flavors();
             this.update_layout();

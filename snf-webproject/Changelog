@@ -1,6 +1,16 @@
 Changelog
 =========
 
+
+dev
+---
+
+* Remove INSTALLED_APPS, TEMPLATE_CONTEXT_PROCESSORS, MIDDLEWARE_CLASSES
+  settings from default settings files (they get updated using package entry
+  points hooks)
+* Set django setting SESSION_COOKIE_SECURE to True
+
+
 v0.9.4
 ------
 

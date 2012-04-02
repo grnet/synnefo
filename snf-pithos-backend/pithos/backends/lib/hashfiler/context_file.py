@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from os import SEEK_CUR, SEEK_SET, fsync
-from errno import ENOENT
+from errno import ENOENT, EROFS
 
 
 _zeros = ''
@@ -144,9 +144,12 @@ class ContextFile(object):
         try:
             fdesc = open(name, 'rb+')
         except IOError, e:
-            if not self.create or e.errno != ENOENT:
+            if self.create and e.errno == ENOENT:
+                fdesc = open(name, 'w+')
+            elif not self.create and e.errno == EROFS:
+                fdesc = open(name, 'rb')
+            else:
                 raise
-            fdesc = open(name, 'w+')
 
         self.fdesc = fdesc
         return self

@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.9.10
+-------
+
+* Fallback to displaying the image id if it can not resolve it.
+* Remove --detect-orphan-{servers,networks}.
+
+
 v0.9.9
 ------
 

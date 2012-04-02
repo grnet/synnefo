@@ -36,14 +36,46 @@ from synnefo.webproject.settings.default import *
 from synnefo.util.entry_points import extend_list_from_entry_point, \
         extend_dict_from_entry_point
 
+
+# Provide common django settings and extend them from entry_point hooks
+INSTALLED_APPS = (
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.messages',
+    'django.contrib.admin',
+    'south',
+    'synnefo.webproject'
+)
 INSTALLED_APPS = extend_list_from_entry_point(INSTALLED_APPS, 'synnefo', \
         'web_apps')
-MIDDLEWARE_CLASSES = extend_list_from_entry_point(MIDDLEWARE_CLASSES, \
-        'synnefo', 'web_middleware')
-STATIC_FILES = extend_dict_from_entry_point(STATIC_FILES, 'synnefo', \
-        'web_static')
+
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.request',
+    'django.core.context_processors.i18n',
+    'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.media'
+)
 TEMPLATE_CONTEXT_PROCESSORS = extend_list_from_entry_point(
         TEMPLATE_CONTEXT_PROCESSORS, 'synnefo', 'web_context_processors')
+
+
+MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'synnefo.lib.middleware.LoggingConfigMiddleware'
+)
+MIDDLEWARE_CLASSES = extend_list_from_entry_point(MIDDLEWARE_CLASSES, \
+        'synnefo', 'web_middleware')
+
+
+STATIC_FILES = extend_dict_from_entry_point(STATIC_FILES, 'synnefo', \
+        'web_static')
+
+
 LOGGING_SETUP['loggers'] = \
         extend_dict_from_entry_point(LOGGING_SETUP['loggers'], 'synnefo', \
                 'loggers')

@@ -52,7 +52,7 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, COOKIE_NAME
+from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, COOKIE_NAME, UPDATE_MD5
 
 from pithos.backends.base import NotAllowedError, QuotaError
 from pithos.backends.filter import parse_filters
@@ -884,7 +884,7 @@ def object_write(request, v_account, v_container, v_object):
         raise BadRequest('Invalid sharing header')
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
-    if not checksum:
+    if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request, hashmap, size)
         try:
@@ -1187,7 +1187,7 @@ def object_update(request, v_account, v_container, v_object):
     if dest_bytes is not None and dest_bytes < size:
         size = dest_bytes
         hashmap = hashmap[:(int((size - 1) / request.backend.block_size) + 1)]
-    checksum = hashmap_md5(request, hashmap, size)
+    checksum = hashmap_md5(request, hashmap, size) if UPDATE_MD5 else ''
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, prev_meta['type'],

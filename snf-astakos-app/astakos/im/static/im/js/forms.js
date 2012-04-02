@@ -3,16 +3,24 @@
   $.fn.formCheckBoxes = function(options) {
     
     return this.each(function() {
+      // process checkboxes
       var $this = $(this);
       var el = $('<span class="checkbox-widget" />');
+      var form = $this.closest(".form-row");
+
+      // add class to identify form rows which contain a checkbox
+      form.addClass("with-checkbox");
       
       if ($this.prev().length > 0) {
         var lbl = $this.prev()[0];
         if (lbl.nodeName == "LABEL" || lbl.nodeName == "label") {
             $(lbl).addClass("checkbox-label");
 
-            $(lbl).click(function(){
-                el.toggleClass("checked");
+            $(lbl).click(function(e){
+                var src = e.srcElement.nodeName;
+                if (src == "LABEL" || src == "label") {
+                    el.toggleClass("checked");
+                };
             })
         }
       }

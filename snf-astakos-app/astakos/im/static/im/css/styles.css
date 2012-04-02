@@ -844,12 +844,18 @@ div.page .page-inner {
   background-color: #3582ac;
 }
 .rightcol {
-  margin-left: 511px;
+  display: inline;
+  float: left;
+  margin-left: 22px;
   width: 306px;
+  margin-left: 102px;
 }
 .rightcol.narrow {
-  margin-left: 593px;
+  display: inline;
+  float: left;
+  margin-left: 22px;
   width: 224px;
+  margin-left: 102px;
 }
 .rightcol input[type=text], .rightcol input[type=password] {
   width: 273px;
@@ -994,6 +1000,9 @@ form .form-row {
 form .form-row.submit {
   margin-top: 22px;
 }
+form .form-row.with-checkbox {
+  margin-top: 7px;
+}
 form .form-row .extra-link {
   color: #808080;
   text-decoration: none;
@@ -1012,8 +1021,8 @@ form.innerlabels label {
   color: #aaa;
 }
 form.innerlabels p {
-  position: relative;
   display: table;
+  position: relative;
 }
 form textarea,
 form input.text,
@@ -1191,6 +1200,14 @@ div.form-stacked {
 .messages .warning a {
   color: inherit;
   font-weight: bold;
+}
+form.innerlabels label.checkbox-label {
+  position: relative !important;
+  margin-left: 10px !important;
+  padding-top: 1em !important;
+  top: 11px !important;
+  left: 10px;
+  cursor: pointer;
 }
 .service-desc {
   margin-top: 4em;
@@ -1481,7 +1498,7 @@ table tr.consumed td.consumed {
   margin-bottom: 2em;
   font-size: 0.8em;
 }
-.initial_hidden {
+.initially-hidden {
   display: none;
 }
 /* recaptcha */
@@ -1496,14 +1513,6 @@ table tr.consumed td.consumed {
 }
 #recaptcha_widget_div th, #recaptcha_widget_div td {
   line-height: 1;
-}
-form.innerlabels label.checkbox-label {
-  position: relative !important;
-  margin-left: 10px !important;
-  padding-top: 1em !important;
-  top: 7px !important;
-  left: 10px;
-  cursor: pointer;
 }
 .checkbox-widget.checked {
   background-color: #f00;

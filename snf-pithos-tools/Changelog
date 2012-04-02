@@ -1,1 +1,9 @@
+Changelog
+=========
+
+
+v0.9.3
+------
+* Setup dispatcher environment with synnefo settings.
+* Check Content-Type up to semicolon.
 

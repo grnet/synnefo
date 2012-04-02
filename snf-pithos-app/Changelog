@@ -1,1 +1,9 @@
+Changelog
+=========
+
+
+v0.9.3
+------
+* Use cookie to get token when retrieving objects.
+* Typo fixes.
 

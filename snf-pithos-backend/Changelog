@@ -1,1 +1,10 @@
+Changelog
+=========
+
+
+v0.9.3
+------
+* Fixes for non-automatic container versioning policy.
+* Open files in backend as read-only if such is the filesystem.
+* Check Content-Type up to semicolon.
 

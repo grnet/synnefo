@@ -469,7 +469,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
     if request.method == 'POST':
         next = request.POST.get('next')
         if not next:
-            return HttpResponseBadRequest(_('No next param.'))
+            next = reverse('astakos.im.views.index')
         form = SignApprovalTermsForm(request.POST, instance=request.user)
         if not form.is_valid():
             return render_response(template_name,

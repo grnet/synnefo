@@ -381,7 +381,11 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_container(account, container)
-        self._put_metadata(user, node, domain, meta, replace)
+        src_version_id, dest_version_id = self._put_metadata(user, node, domain, meta, replace)
+        if src_version_id is not None:
+            versioning = self._get_policy(node)['versioning']
+            if versioning != 'auto':
+                self.node.version_remove(src_version_id)
     
     @backend_method
     def get_container_policy(self, user, account, container):
@@ -632,7 +636,7 @@ class ModularBackend(BaseBackend):
         hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
-    def _update_object_hash(self, user, account, container, name, size, type, hash, checksum, permissions, src_node=None, is_copy=False):
+    def _update_object_hash(self, user, account, container, name, size, type, hash, checksum, domain, meta, replace_meta, permissions, src_node=None, src_version_id=None, is_copy=False):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
@@ -644,6 +648,11 @@ class ModularBackend(BaseBackend):
         container_path, container_node = self._lookup_container(account, container)
         path, node = self._put_object_node(container_path, container_node, name)
         pre_version_id, dest_version_id = self._put_version_duplicate(user, node, src_node=src_node, size=size, type=type, hash=hash, checksum=checksum, is_copy=is_copy)
+        
+        # Handle meta.
+        if src_version_id is None:
+            src_version_id = pre_version_id
+        self._put_metadata_duplicate(src_version_id, dest_version_id, domain, meta, replace_meta)
         
         # Check quota.
         del_size = self._apply_versioning(account, container, pre_version_id)
@@ -659,7 +668,7 @@ class ModularBackend(BaseBackend):
         
         if permissions is not None:
             self.permissions.access_set(path, permissions)
-        return pre_version_id, dest_version_id
+        return dest_version_id
     
     @backend_method
     def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta={}, replace_meta=False, permissions=None):
@@ -677,8 +686,7 @@ class ModularBackend(BaseBackend):
             raise ie
         
         hash = map.hash()
-        pre_version_id, dest_version_id = self._update_object_hash(user, account, container, name, size, type, binascii.hexlify(hash), checksum, permissions)
-        self._put_metadata_duplicate(pre_version_id, dest_version_id, domain, meta, replace_meta)
+        dest_version_id = self._update_object_hash(user, account, container, name, size, type, binascii.hexlify(hash), checksum, domain, meta, replace_meta, permissions)
         self.store.map_put(hash, map)
         return dest_version_id
     
@@ -706,8 +714,7 @@ class ModularBackend(BaseBackend):
         size = props[self.SIZE]
         
         is_copy = not is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name) # New uuid.
-        pre_version_id, dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, type, hash, None, permissions, src_node=node, is_copy=is_copy)
-        self._put_metadata_duplicate(src_version_id, dest_version_id, dest_domain, dest_meta, replace_meta)
+        dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, type, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy)
         return dest_version_id
     
     @backend_method

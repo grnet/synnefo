@@ -5,7 +5,17 @@
     return this.each(function() {
       var $this = $(this);
       var el = $('<span class="checkbox-widget" />');
-    
+      
+      if ($this.prev().length > 0) {
+        var lbl = $this.prev()[0];
+        if (lbl.nodeName == "LABEL" || lbl.nodeName == "label") {
+            $(lbl).addClass("checkbox-label");
+
+            $(lbl).click(function(){
+                el.toggleClass("checked");
+            })
+        }
+      }
       $this.hide();
       
       if ($this.is("checked")) {
@@ -68,7 +78,12 @@
             marginLeft: marginleft,
             marginBottom: 5
         }
-        el.css(styles);
+        
+        if (formel.attr("type") != "checkbox") {
+            el.css(styles);
+        } else {
+            el.css("margin-top", "5px");
+        }
     });
 
   };

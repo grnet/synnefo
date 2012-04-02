@@ -993,7 +993,6 @@ form .form-row {
 }
 form .form-row.submit {
   margin-top: 22px;
-  z-index: 10;
 }
 form .form-row .extra-link {
   color: #808080;
@@ -1014,6 +1013,7 @@ form.innerlabels label {
 }
 form.innerlabels p {
   position: relative;
+  display: table;
 }
 form textarea,
 form input.text,
@@ -1497,6 +1497,14 @@ table tr.consumed td.consumed {
 #recaptcha_widget_div th, #recaptcha_widget_div td {
   line-height: 1;
 }
+form.innerlabels label.checkbox-label {
+  position: relative !important;
+  margin-left: 10px !important;
+  padding-top: 1em !important;
+  top: 7px !important;
+  left: 10px;
+  cursor: pointer;
+}
 .checkbox-widget.checked {
   background-color: #f00;
   background-image: url("../images/checkbox.png");
@@ -1510,4 +1518,41 @@ table tr.consumed td.consumed {
   float: left;
   cursor: pointer;
   margin-top: 5.333333333333333px;
+}
+.textcontent h1, .terms-content h1 {
+  font-size: 1.9em;
+  margin-bottom: 0.2em;
+  margin-top: 1.2em;
+  color: #3582ac;
+}
+.textcontent h1:first-child, .terms-content h1:first-child {
+  margin-top: 0;
+}
+.textcontent h2, .terms-content h2 {
+  font-size: 1.6em;
+  margin-bottom: 1.1em;
+  margin-top: 1.1em;
+  color: #3b91bf;
+}
+.textcontent h2:first-child, .terms-content h2:first-child {
+  margin-top: 0;
+}
+.textcontent h3, .terms-content h3 {
+  font-size: 1.3em;
+  margin-bottom: 1em;
+  margin-top: 1em;
+  color: #3b91bf;
+}
+.textcontent h3:first-child, .terms-content h3:first-child {
+  margin-top: 0;
+}
+.textcontent p, .terms-content p {
+  margin-bottom: 1em;
+  line-height: 1.5em;
+}
+.textcontent .date, .terms-content .date {
+  margin: 1em 0;
+  font-size: 0.9em;
+  margin-bottom: 2em;
+  color: #808080;
 }

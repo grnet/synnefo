@@ -258,13 +258,14 @@ div.page {
 }
 
 .rightcol {
-    .offset(6.5);
-    .columns(4);
+    .makeColumn(4);
+    margin-left: 4*@gridGutterWidth + 14;
 
     &.narrow {
-        .offset(7.5);
-        .columns(3);    
+        .makeColumn(3);
+        margin-left: 4*@gridGutterWidth + 14;
     }
+
     input[type=text], input[type=password] {
         width: 3*@gridColumnWidth + 4*@gridGutterWidth + 5;    
     }
@@ -428,7 +429,6 @@ form {
         position: relative;
         &.submit {
             margin-top: 1.5*@verticalSpacing;
-            z-index: 10;
         }
 
         .extra-link {
@@ -453,6 +453,7 @@ form {
     }
 
     &.innerlabels p {
+        display: table;
         position: relative;    
     }
 
@@ -553,7 +554,7 @@ div.form-stacked {
         &.error { background-color: @red; color: @white }
         &.warning { background-color: #AF6906; color: @black }
     }
-    
+
     .warning {
         color: @white !important;   
         a {
@@ -563,6 +564,17 @@ div.form-stacked {
     }
 
 }
+
+form.innerlabels label.checkbox-label {
+    position: relative !important; 
+    margin-left: 10px !important;
+    padding-top: 1em !important;
+    top:7px !important; 
+    left:10px;
+    cursor: pointer;
+}
+
+
 
 // accounts specific styles
 .service-desc {
@@ -760,7 +772,7 @@ table {
 }
 
 
-.initial_hidden {
+.initially-hidden {
     display: none;    
 }
 
@@ -798,4 +810,52 @@ table {
 }
 
 
+// generic headings
+@hColor: @blue;
+.textcontent, .terms-content {
+    h1 {
+        font-size: 1.9em;    
+        margin-bottom: 0.2em;
+        margin-top: 1.2em;
+        color: @hColor;
+
+        &:first-child {
+            margin-top: 0;    
+        }
+    }
+
+    h2 {
+        font-size: 1.6em;
+        margin-bottom: 1.1em;
+        margin-top: 1.1em;
+
+        &:first-child {
+            margin-top: 0;    
+        }
+        color: lighten(@hColor, 5%);
+    }
+
+    h3 {
+        font-size: 1.3em;
+        margin-bottom: 1em;
+        margin-top: 1em;
+
+        &:first-child {
+            margin-top: 0;    
+        }
+        color: lighten(@hColor, 5%);
+    }
+
+    p {
+        margin-bottom: 1em;    
+        line-height: 1.5em;
+    }
+
+    .date {
+        margin: 1em 0;
+        font-size: 0.9em;
+        margin-bottom: 2em;
+        color: @gray;
+    }
+}
 

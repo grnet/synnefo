@@ -1,0 +1,13 @@
+.navigation {
+    min-width: 660px;
+}
+
+.mainnav.inline {
+    position: absolute;
+    right: -10px;
+}
+
+.mainnav.inline.subnav {
+    position: relative;
+    top: 50px;
+}

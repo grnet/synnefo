@@ -75,7 +75,10 @@ class Command(BaseCommand):
         for server in servers:
             id = str(server.id)
             flavor = server.flavor.name
-            image = get_image(server.imageid, server.userid)['name']
+            try:
+                image = get_image(server.imageid, server.userid)['name']
+            except:
+                image = server.imageid
             fields = (id, server.name, server.userid, flavor, image,
                       server.operstate)
             

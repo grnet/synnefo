@@ -35,7 +35,11 @@
       <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/styles.css" 
         type='text/css'>
       <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/custom.css" 
-        type='text/css'>
+      type='text/css'>
+      <!--[if lte IE 7]>
+            <link rel="stylesheet" type="text/css" 
+            href="{{ IM_STATIC_URL }}im/css/ie7.css">
+      <![endif]-->
   {% endblock page.css %}
 
   {% block headjs %}
@@ -101,19 +105,13 @@
         {% endif %}
         <div class="page">
             {% block page.body %}
-                <div class="maincol">
+                <div class="maincol full">
                     {% block body %}
                     {% endblock %}
                 </div>
             {% endblock %}
         </div>
     </div>
-    <div class="footer">
-        {% block footer_content %}
-        <div class="last row">
-            Copyright 2011-2012 <a href="http://www.grnet.gr" alt="GRNET S.A.">GRNET S.A.</a> All rights reserved.
-        </div>
-        {% endblock %}
-    </div>
+    {% include "im/footer.html" %}
 </body>
 </html>

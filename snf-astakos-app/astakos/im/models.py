@@ -38,6 +38,7 @@ from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
 from urlparse import urlparse
+from random import randint
 
 from django.db import models
 from django.contrib.auth.models import User, UserManager
@@ -158,6 +159,11 @@ class Invitation(models.Model):
     accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
     consumed = models.DateTimeField('Consumption date', null=True, blank=True)
     
+    def save(self, **kwargs):
+        if not self.id:
+            self.code = _generate_invitation_code()
+        super(Invitation, self).save(**kwargs)
+    
     def consume(self):
         self.is_consumed = True
         self.consumed = datetime.now()
@@ -187,3 +193,12 @@ def report_user_event(user):
         routing_key = '%s.user' % exchange
         exchange_send(conn, routing_key, body)
         exchange_close(conn)
+
+def _generate_invitation_code():
+    while True:
+        code = randint(1, 2L**63 - 1)
+        try:
+            Invitation.objects.get(code=code)
+            # An invitation with this code already exists, try again
+        except Invitation.DoesNotExist:
+            return code

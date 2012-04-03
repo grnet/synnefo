@@ -54,10 +54,10 @@ from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
-from astakos.im.backends import get_backend
+from astakos.im.activation_backends import get_backend
 from astakos.im.util import get_context, prepare_response, set_cookie, has_signed_terms
 from astakos.im.forms import *
-from astakos.im.functions import send_greeting
+from astakos.im.functions import send_greeting, send_feedback, SendMailError
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL, LOGOUT_NEXT
 from astakos.im.functions import invite as invite_func
 
@@ -132,12 +132,10 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     
     """
     template_name = login_template_name
-    formclass = 'LoginForm'
-    kwargs = {}
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     return render_response(template_name,
-                           form = globals()[formclass](**kwargs),
+                           login_form = LoginForm(),
                            context_instance = get_context(request, extra_context))
 
 @login_required
@@ -180,25 +178,23 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     status = None
     message = None
     inviter = AstakosUser.objects.get(username = request.user.username)
+    form = InvitationForm()
     
     if request.method == 'POST':
-        username = request.POST.get('uniq')
-        realname = request.POST.get('realname')
+        form = InvitationForm(request.POST)
         
         if inviter.invitations > 0:
-            try:
-                invite_func(inviter, username, realname)
-                status = messages.SUCCESS
-                message = _('Invitation sent to %s' % username)
-                transaction.commit()
-            except (SMTPException, socket.error) as e:
-                status = messages.ERROR
-                message = getattr(e, 'strerror', '')
-                transaction.rollback()
-            except IntegrityError, e:
-                status = messages.ERROR
-                message = _('There is already invitation for %s' % username)
-                transaction.rollback()
+            if form.is_valid():
+                try:
+                    invitation = form.save()
+                    invitation.inviter = inviter
+                    invite_func(invitation, inviter)
+                    status = messages.SUCCESS
+                    message = _('Invitation sent to %s' % invitation.username)
+                    transaction.commit()
+                except SendMailError, e:
+                    message = e.message
+                    transaction.rollback()
         else:
             status = messages.ERROR
             message = _('No invitations left')
@@ -212,6 +208,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
               'sent':sent}
     context = get_context(request, extra_context, **kwargs)
     return render_response(template_name,
+                           invitation_form = form,
                            context_instance = context)
 
 @login_required
@@ -265,11 +262,12 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                 messages.add_message(request, messages.ERROR, ve)
     return render_response(template_name,
                            reset_cookie = reset_cookie,
-                           form = form,
+                           profile_form = form,
                            context_instance = get_context(request,
                                                           extra_context))
 
-def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
+@transaction.commit_manually
+def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
     
@@ -277,19 +275,19 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     In case of POST handles the signup.
     
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
-    if present, otherwise to the ``astakos.im.backends.InvitationBackend``
-    if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
-    (see backends);
+    if present, otherwise to the ``astakos.im.activation_backends.InvitationBackend``
+    if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.activation_backends.SimpleBackend`` if not
+    (see activation_backends);
     
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
     
-    On unsuccessful creation, renders ``on_failure`` with an error message.
+    On unsuccessful creation, renders ``template_name`` with an error message.
     
     **Arguments**
     
-    ``on_failure``
-        A custom template to render in case of failure. This is optional;
+    ``template_name``
+        A custom template to render. This is optional;
         if not specified, this will default to ``im/signup.html``.
     
     
@@ -302,46 +300,45 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     
     **Template:**
     
-    im/signup.html or ``on_failure`` keyword argument.
+    im/signup.html or ``template_name`` keyword argument.
     im/signup_complete.html or ``on_success`` keyword argument. 
     """
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.index'))
+    if not backend:
+        backend = get_backend(request)
     try:
-        if not backend:
-            backend = get_backend(request)
-        for provider in IM_MODULES:
-            extra_context['%s_form' % provider] = backend.get_signup_form(provider)
-        if request.method == 'POST':
-            provider = request.POST.get('provider')
-            next = request.POST.get('next', '')
-            form = extra_context['%s_form' % provider]
-            if form.is_valid():
-                if provider != 'local':
-                    url = reverse('astakos.im.target.%s.login' % provider)
-                    url = '%s?email=%s&next=%s' % (url, form.data['email'], next)
-                    if backend.invitation:
-                        url = '%s&code=%s' % (url, backend.invitation.code)
-                    return redirect(url)
-                else:
-                    status, message, user = backend.signup(form)
-                    if user and user.is_active:
-                        return prepare_response(request, user, next=next)
-                    messages.add_message(request, status, message)
-                    return render_response(on_success,
-                                           context_instance=get_context(request, extra_context))
+        query_dict = request.__getattribute__(request.method)
+        provider = query_dict.get('provider', 'local')
+        form = backend.get_signup_form(provider)
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
-        for provider in IM_MODULES:
-            main = provider.capitalize() if provider == 'local' else 'ThirdParty'
-            formclass = '%sUserCreationForm' % main
-            extra_context['%s_form' % provider] = globals()[formclass]()
-    return render_response(on_failure,
+    if request.method == 'POST':
+        if form.is_valid():
+            user = form.save()
+            try:
+                result = backend.handle_activation(user)
+            except SendMailError, e:
+                message = e.message
+                status = messages.ERROR
+                transaction.rollback()
+            else:
+                message = result.message
+                status = messages.SUCCESS
+                transaction.commit()
+                if user and user.is_active:
+                    next = request.POST.get('next', '')
+                    return prepare_response(request, user, next=next)
+                messages.add_message(request, status, message)
+                return render_response(on_success,
+                                       context_instance=get_context(request, extra_context))
+    return render_response(template_name,
+                           local_signup_form = form,
                            context_instance=get_context(request, extra_context))
 
 @login_required
 @signed_terms_required
-def send_feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
+def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
     """
     Allows a user to send feedback.
     
@@ -376,24 +373,19 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
         
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            subject = _("Feedback from %s alpha2 testing" % SITENAME)
-            from_email = request.user.email
-            recipient_list = [DEFAULT_CONTACT_EMAIL]
-            content = render_to_string(email_template_name, {
-                        'message': form.cleaned_data['feedback_msg'],
-                        'data': form.cleaned_data['feedback_data'],
-                        'request': request})
-            
+            msg = form.cleaned_data['feedback_msg'],
+            data = form.cleaned_data['feedback_data']
             try:
-                send_mail(subject, content, from_email, recipient_list)
+                send_feedback(msg, data, request.user, email_template_name)
+            except SendMailError, e:
+                message = e.message
+                status = messages.ERROR
+            else:
                 message = _('Feedback successfully sent')
                 status = messages.SUCCESS
-            except (SMTPException, socket.error) as e:
-                status = messages.ERROR
-                message = getattr(e, 'strerror', '')
             messages.add_message(request, status, message)
     return render_response(template_name,
-                           form = form,
+                           feedback_form = form,
                            context_instance = get_context(request, extra_context))
 
 def logout(request, template='registration/logged_out.html', extra_context={}):
@@ -441,8 +433,8 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
         return response
-    except (SMTPException, socket.error) as e:
-        message = getattr(e, 'name') if hasattr(e, 'name') else e
+    except SendEmailError, e:
+        message = e.message
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()
         return signup(request, on_failure='im/signup.html')
@@ -469,12 +461,12 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
     if request.method == 'POST':
         next = request.POST.get('next')
         if not next:
-            return HttpResponseBadRequest(_('No next param.'))
+            next = reverse('astakos.im.views.index')
         form = SignApprovalTermsForm(request.POST, instance=request.user)
         if not form.is_valid():
             return render_response(template_name,
                            terms = terms,
-                           form = form,
+                           approval_terms_form = form,
                            context_instance = get_context(request, extra_context))
         user = form.save()
         return HttpResponseRedirect(next)
@@ -484,7 +476,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
             form = SignApprovalTermsForm(instance=request.user)
         return render_response(template_name,
                                terms = terms,
-                               form = form,
+                               approval_terms_form = form,
                                context_instance = get_context(request, extra_context))
 
 @signed_terms_required

@@ -41,13 +41,12 @@ from django.contrib import messages
 from django.db import transaction
 from django.core.urlresolvers import reverse
 
-from smtplib import SMTPException
 from urlparse import urljoin
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.functions import send_verification, send_notification, activate
+from astakos.im.functions import send_verification, send_admin_notification, activate
 from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
 
 import socket
@@ -60,13 +59,13 @@ def get_backend(request):
     """
     Returns an instance of a registration backend,
     according to the INVITATIONS_ENABLED setting
-    (if True returns ``astakos.im.backends.InvitationsBackend`` and if False
-    returns ``astakos.im.backends.SimpleBackend``).
+    (if True returns ``astakos.im.activation_backends.InvitationsBackend`` and if False
+    returns ``astakos.im.activation_backends.SimpleBackend``).
 
     If the backend cannot be located ``django.core.exceptions.ImproperlyConfigured``
     is raised.
     """
-    module = 'astakos.im.backends'
+    module = 'astakos.im.activation_backends'
     prefix = 'Invitations' if INVITATIONS_ENABLED else 'Simple'
     backend_class_name = '%sBackend' %prefix
     try:
@@ -104,7 +103,7 @@ class InvitationsBackend(SignupBackend):
         self.invitation = get_invitation(request)
         super(InvitationsBackend, self).__init__()
 
-    def get_signup_form(self, provider):
+    def get_signup_form(self, provider='local'):
         """
         Returns the form class name
         """
@@ -157,7 +156,7 @@ class InvitationsBackend(SignupBackend):
         return False
 
     @transaction.commit_manually
-    def signup(self, form, verification_template_name='im/activation_email.txt', greeting_template_name='im/welcome_email.txt', admin_email_template_name='im/admin_notification.txt'):
+    def handle_activation(self, user, verification_template_name='im/activation_email.txt', greeting_template_name='im/welcome_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Initially creates an inactive user account. If the user is preaccepted
         (has a valid invitation code) the user is activated and if the request
@@ -167,45 +166,22 @@ class InvitationsBackend(SignupBackend):
         The method uses commit_manually decorator in order to ensure the user
         will be created only if the procedure has been completed successfully.
         """
-        user = None
+        result = None
         try:
-            user = form.save()
             if self._is_preaccepted(user):
                 if user.email_verified:
-                    try:
-                        activate(user, greeting_template_name)
-                        message = _('Registration completed. You can now login.')
-                    except (SMTPException, socket.error) as e:
-                        status = messages.ERROR
-                        name = 'strerror'
-                        message = getattr(e, 'name') if hasattr(e, 'name') else e
+                    activate(user, greeting_template_name)
+                    result = RegistationCompleted()
                 else:
-                    try:
-                        send_verification(user, verification_template_name)
-                        message = _('Verification sent to %s' % user.email)
-                    except (SMTPException, socket.error) as e:
-                        status = messages.ERROR
-                        name = 'strerror'
-                        message = getattr(e, 'name') if hasattr(e, 'name') else e
+                    send_verification(user, verification_template_name)
+                    result = VerificationSent()
             else:
-                send_notification(user, admin_email_template_name)
-                message = _('Your request for an account was successfully received and is now pending \
-                            approval. You will be notified by email in the next few days. Thanks for \
-                            your interest in ~okeanos! The GRNET team.')
-            status = messages.SUCCESS
+                send_admin_notification(user, admin_email_template_name)
+                result = NotificationSent()
         except Invitation.DoesNotExist, e:
-            status = messages.ERROR
-            message = _('Invalid invitation code')
-        except socket.error, e:
-            status = messages.ERROR
-            message = _(e.strerror)
-
-        # rollback in case of error
-        if status == messages.ERROR:
-            transaction.rollback()
+            raise InvitationCodeError()
         else:
-            transaction.commit()
-        return status, message, user
+            return result
 
 class SimpleBackend(SignupBackend):
     """
@@ -217,7 +193,7 @@ class SimpleBackend(SignupBackend):
         self.request = request
         super(SimpleBackend, self).__init__()
 
-    def get_signup_form(self, provider):
+    def get_signup_form(self, provider='local'):
         """
         Returns the form class name
         """
@@ -240,8 +216,7 @@ class SimpleBackend(SignupBackend):
             return False
         return True
     
-    @transaction.commit_manually
-    def signup(self, form, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
+    def handle_activation(self, user, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Creates an inactive user account and sends a verification email.
 
@@ -263,30 +238,34 @@ class SimpleBackend(SignupBackend):
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """
-        user = form.save()
-        status = messages.SUCCESS
+        result = None
         if not self._is_preaccepted(user):
-            try:
-                send_notification(user, admin_email_template_name)
-                message = _('Your request for an account was successfully received and is now pending \
-                            approval. You will be notified by email in the next few days. Thanks for \
-                            your interest in ~okeanos! The GRNET team.')
-            except (SMTPException, socket.error) as e:
-                status = messages.ERROR
-                name = 'strerror'
-                message = getattr(e, 'name') if hasattr(e, 'name') else e
+            send_admin_notification(user, admin_email_template_name)
+            result = NotificationSent()
         else:
-            try:
-                send_verification(user, email_template_name)
-                message = _('Verification sent to %s' % user.email)
-            except (SMTPException, socket.error) as e:
-                status = messages.ERROR
-                name = 'strerror'
-                message = getattr(e, 'name') if hasattr(e, 'name') else e
+            send_verification(user, email_template_name)
+            result = VerificationSend()
+        return result
 
-        # rollback in case of error
-        if status == messages.ERROR:
-            transaction.rollback()
-        else:
-            transaction.commit()
-        return status, message, user
+class ActivationResult(object):
+    def __init__(self, message):
+        self.message = message
+
+class VerificationSent(ActivationResult):
+    def __init__(self):
+        message = _('Verification sent.')
+        super(VerificationSent, self).__init__(message)
+
+class NotificationSent(ActivationResult):
+    def __init__(self):
+        message = _('Your request for an account was successfully received and is now pending \
+                    approval. You will be notified by email in the next few days. Thanks for \
+                    your interest in ~okeanos! The GRNET team.')
+        super(NotificationSent, self).__init__(message)
+
+class RegistationCompleted(ActivationResult):
+    def __init__(self):
+        message = _('Registration completed. You can now login.')
+        super(RegistationCompleted, self).__init__(message)
+
+

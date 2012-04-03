@@ -150,7 +150,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             if INVITATIONS_ENABLED:
                 l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
                           'name': "Invitations" })
-            l.append({ 'url': absolute(reverse('astakos.im.views.send_feedback')),
+            l.append({ 'url': absolute(reverse('astakos.im.views.feedback')),
                       'name': "Feedback" })
         if with_signout:
             l.append({ 'url': absolute(reverse('astakos.im.views.logout')),

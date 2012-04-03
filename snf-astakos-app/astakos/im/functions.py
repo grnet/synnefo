@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import logging
+import socket
 
 from django.utils.translation import ugettext as _
 from django.template.loader import render_to_string
@@ -39,7 +40,7 @@ from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from urllib import quote
 from urlparse import urljoin
-from random import randint
+from smtplib import SMTPException
 
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL
 from astakos.im.models import Invitation, AstakosUser
@@ -50,7 +51,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
     """
     Send email to user to verify his/her email and activate his/her account.
     
-    Raises SMTPException, socket.error
+    Raises SendVerificationError
     """
     url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('astakos.im.views.activate')),
                                     quote(user.auth_token),
@@ -62,14 +63,19 @@ def send_verification(user, template_name='im/activation_email.txt'):
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s alpha2 testing account activation is needed' % SITENAME, message, sender, [user.email])
-    logger.info('Sent activation %s', user)
+    try:
+        send_mail('%s alpha2 testing account activation is needed' % SITENAME, message, sender, [user.email])
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise SendVerificationError()
+    else:
+        logger.info('Sent activation %s', user)
 
-def send_notification(user, template_name='im/admin_notification.txt'):
+def send_admin_notification(user, template_name='im/admin_notification.txt'):
     """
     Send email to DEFAULT_ADMIN_EMAIL to notify for a new user registration.
     
-    Raises SMTPException, socket.error
+    Raises SendNotificationError
     """
     if not DEFAULT_ADMIN_EMAIL:
         return
@@ -79,14 +85,19 @@ def send_notification(user, template_name='im/admin_notification.txt'):
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
-    logger.info('Sent admin notification for user %s', user)
+    try:
+        send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise SendNotificationError()
+    else:
+        logger.info('Sent admin notification for user %s', user)
 
 def send_invitation(invitation, template_name='im/invitation.txt'):
     """
     Send invitation email.
     
-    Raises SMTPException, socket.error
+    Raises SendInvitationError
     """
     subject = _('Invitation to %s alpha2 testing' % SITENAME)
     url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.signup')), invitation.code)
@@ -97,8 +108,13 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                 'site_name': SITENAME,
                 'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail(subject, message, sender, [invitation.username])
-    logger.info('Sent invitation %s', invitation)
+    try:
+        send_mail(subject, message, sender, [invitation.username])
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise SendInvitationError()
+    else:
+        logger.info('Sent invitation %s', invitation)
 
 def send_greeting(user, email_template_name='im/welcome_email.txt'):
     """
@@ -114,40 +130,46 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                 'site_name': SITENAME,
                 'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
-    send_mail(subject, message, sender, [user.email])
-    logger.info('Sent greeting %s', user)
+    try:
+        send_mail(subject, message, sender, [user.email])
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise SendGreetingError()
+    else:
+        logger.info('Sent greeting %s', user)
+
+def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
+    subject = _("Feedback from %s alpha2 testing" % SITENAME)
+    from_email = user.email
+    recipient_list = [DEFAULT_CONTACT_EMAIL]
+    content = render_to_string(email_template_name, {
+        'message': msg,
+        'data': data,
+        'user': user})
+    try:
+        send_mail(subject, content, from_email, recipient_list)
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise SendFeedbackError()
+    else:
+        logger.info('Sent feedback from %s', user.email)
 
 def activate(user, email_template_name='im/welcome_email.txt'):
     """
     Activates the specific user and sends email.
     
-    Raises SMTPException, socket.error
+    Raises SendGreetingError
     """
     user.is_active = True
     user.save()
     send_greeting(user, email_template_name)
 
-def _generate_invitation_code():
-    while True:
-        code = randint(1, 2L**63 - 1)
-        try:
-            Invitation.objects.get(code=code)
-            # An invitation with this code already exists, try again
-        except Invitation.DoesNotExist:
-            return code
-
-def invite(inviter, username, realname, email_template_name='im/welcome_email.txt'):
+def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):
     """
     Send an invitation email and upon success reduces inviter's invitation by one.
     
-    Raises SMTPException, socket.error
+    Raises SendInvitationError
     """
-    code = _generate_invitation_code()
-    invitation = Invitation(inviter=inviter,
-                            username=username,
-                            code=code,
-                            realname=realname)
-    invitation.save()
     send_invitation(invitation, email_template_name)
     inviter.invitations = max(0, inviter.invitations - 1)
     inviter.save()
@@ -159,3 +181,32 @@ def set_user_credibility(email, has_credits):
         user.save()
     except AstakosUser.DoesNotExist, e:
         logger.exception(e)
+
+class SendMailError(Exception):
+    def __init__(self, message):
+        Exception.__init__(self)
+
+class SendAdminNotificationError(SendMailError):
+    def __init__(self):
+        self.message = _('Failed to send notification')
+        SendMailError.__init__(self)
+
+class SendVerificationError(Exception):
+    def __init__(self):
+        self.message = _('Failed to send verification')
+        SendMailError.__init__(self)
+
+class SendInvitationError(Exception):
+    def __init__(self):
+        self.message = _('Failed to send invitation')
+        SendMailError.__init__(self)
+
+class SendGreetingError(Exception):
+    def __init__(self):
+        self.message = _('Failed to send greeting')
+        SendMailError.__init__(self)
+
+class SendFeedbackError(Exception):
+    def __init__(self):
+        self.message = _('Failed to send feedback')
+        SendMailError.__init__(self)

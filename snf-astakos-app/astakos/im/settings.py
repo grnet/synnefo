@@ -24,7 +24,7 @@ DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'supp
 DEFAULT_ADMIN_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_ADMIN_EMAIL', 'support@cloud.grnet.gr')
 
 # Identity Management enabled modules
-IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'twitter', 'shibboleth'])
+IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'shibboleth'])
 
 # Force user profile verification
 FORCE_PROFILE_UPDATE = getattr(settings, 'ASTAKOS_FORCE_PROFILE_UPDATE', True)

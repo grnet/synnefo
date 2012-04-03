@@ -52,7 +52,7 @@ def login(request, on_failure='im/login.html'):
     next = request.POST.get('next')
     if not form.is_valid():
         return render_to_response(on_failure,
-                                  {'form':form,
+                                  {'login_form':form,
                                    'next':next},
                                   context_instance=RequestContext(request))
     # get the user from the cash

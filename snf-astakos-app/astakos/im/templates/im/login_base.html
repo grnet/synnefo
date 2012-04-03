@@ -26,7 +26,9 @@ Login
         <form action="{% url astakos.im.target.local.login %}" method="post"
             class="login innerlabels">{% csrf_token %}
             <h2 class="formheader"><span>LOGIN</span></h2>
+            {% with login_form as form %}
             {% include "im/form_render.html" %}
+            {% endwith %}
             <input type="hidden" name="next" value="{{ next }}">
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SUBMIT" />

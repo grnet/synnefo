@@ -42,12 +42,12 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
     url(r'^login/?$', 'index', {}, name='login'),
     url(r'^profile/?$', 'edit_profile'),
-    url(r'^feedback/?$', 'send_feedback'),
-    url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'form':LoginForm()}}),
-    url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'form':LoginForm()}}),
+    url(r'^feedback/?$', 'feedback'),
+    url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
+    url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
     url(r'^activate/?$', 'activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
-    url(r'^approval_terms/(?P<term_id>\d+)?$', 'approval_terms'),
+    url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^password/?$', 'change_password', {}, name='password_change')
 )
 
@@ -64,9 +64,9 @@ if 'local' in IM_MODULES:
          {'email_template_name':'registration/password_email.txt',
           'password_reset_form':ExtendedPasswordResetForm}),
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
-        url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
+        url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
          'password_reset_confirm'),
-        url(r'^local/password/reset/complete/$', 'password_reset_complete'),
+        url(r'^local/password/reset/complete/?$', 'password_reset_complete'),
         url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile'})
     )
 

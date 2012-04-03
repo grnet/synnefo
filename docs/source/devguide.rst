@@ -9,7 +9,6 @@ Astakos serves as the point of authentication for GRNET (http://www.grnet.gr) se
 Users in astakos can be authenticated via several identity providers:
 
 * Local
-* Twitter
 * Shibboleth
 
 It provides also a command line tool for managing user accounts.
@@ -51,14 +50,14 @@ The following subsections describe two basic registration use cases. All the reg
 Invited user
 ^^^^^^^^^^^^
 
-A registered ~okeanos user, invites student Alice to subscribe to ~okeanos services. Alice receives an email and through a link is navigated to Astakos's signup page. The system prompts her to select one of the available authentication mechanisms (Shibboleth, Twitter or local authentication) in order to register to the system. Alice already has a Shibboleth account so chooses that and then she is redirected to her institution's login page. Upon successful login, her account is created.
+A registered ~okeanos user, invites student Alice to subscribe to ~okeanos services. Alice receives an email and through a link is navigated to Astakos's signup page. The system prompts her to select one of the available authentication mechanisms (Shibboleth or local authentication) in order to register to the system. Alice already has a Shibboleth account so chooses that and then she is redirected to her institution's login page. Upon successful login, her account is created.
 
 Since she is invited his account is automaticaly activated and she is redirected to Astakos's login page. As this is the first time Alice has accessed the system she is redirected to her profile page where she can edit or provide more information.
 
 Not invited user
 ^^^^^^^^^^^^^^^^
 
-Tony while browsing in the internet finds out about ~okeanos services. He visits the signup page and since his has already a twitter account selects the twitter authentication mechanism and he is redirected to twitter login page where he is promted to provide his credentials. Upon successful login, twitter redirects him back to the Astakos and the account is created.
+Tony while browsing in the internet finds out about ~okeanos services. He visits the signup page and since his has not a shibboleth account selects the local authentication mechanism. Upon successful signup the account is created.
 
 Since his not an invited user his account has to be activated from an administrator first, in order to be able to login. Upon the account's activation he receives an email and through a link he is redirected to the login page.
 
@@ -99,7 +98,7 @@ Logged on users can perform a number of actions:
 * access and edit their profile via: ``/im/profile``.
 * change their password via: ``/im/password``
 * invite somebody else via: ``/im/invite``
-* send feedback for grnet services via: ``/im/send_feedback``
+* send feedback for grnet services via: ``/im/feedback``
 * logout (and delete cookie) via: ``/im/logout``
 
 User entries can also be modified/added via the ``snf-manage activateuser`` command.

@@ -43,7 +43,7 @@ from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 from django.utils.functional import lazy
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Invitation
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
 from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
 
@@ -166,6 +166,38 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
             user.save()
         return user
 
+class ThirdPartyUserCreationForm(UserCreationForm):
+    class Meta:
+        model = AstakosUser
+        fields = ("email", "has_signed_terms")
+        widgets = {"has_signed_terms":ApprovalTermsWidget(terms_uri=reverse_lazy('latest_terms'))}
+    
+    def __init__(self, *args, **kwargs):
+        """
+        Changes the order of fields, and removes the username field.
+        """
+        if 'ip' in kwargs:
+            self.ip = kwargs['ip']
+            kwargs.pop('ip')
+        super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email']
+        if get_latest_terms():
+            self.fields.keyOrder.append('has_signed_terms')
+    
+    def save(self, commit=True):
+        user = super(ThirdPartyUserCreationForm, self).save(commit=False)
+        user.set_unusable_password()
+        if commit:
+            user.save()
+        logger.info('Created user %s', user)
+        return user
+
+class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
+    def __init__(self, *args, **kwargs):
+        super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+        #set readonly form fields
+        self.fields['email'].widget.attrs['readonly'] = True
+
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label=_("Email"))
 
@@ -200,51 +232,13 @@ class ProfileForm(forms.ModelForm):
             user.save()
         return user
 
-class ThirdPartyUserCreationForm(ProfileForm):
-    class Meta:
-        model = AstakosUser
-        fields = ('email', 'last_name', 'first_name', 'affiliation', 'provider', 'third_party_identifier')
-    
-    def __init__(self, *args, **kwargs):
-        if 'ip' in kwargs:
-            self.ip = kwargs['ip']
-            kwargs.pop('ip')
-        super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email']
-    
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        if not email:
-            raise forms.ValidationError(_("This field is required"))
-        try:
-            user = AstakosUser.objects.get(email = email)
-            raise forms.ValidationError(_("This email is already used"))
-        except AstakosUser.DoesNotExist:
-            return email
-    
-    def save(self, commit=True):
-        user = super(ThirdPartyUserCreationForm, self).save(commit=False)
-        user.verified = False
-        user.renew_token()
-        if commit:
-            user.save()
-        logger.info('Created user %s', user)
-        return user
-
-class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
-    def __init__(self, *args, **kwargs):
-        super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-        #set readonly form fields
-        self.fields['email'].widget.attrs['readonly'] = True
-
 class FeedbackForm(forms.Form):
     """
     Form for writing feedback.
     """
-    feedback_msg = forms.CharField(widget=forms.Textarea(),
-                                label=u'Message', required=False)
-    feedback_data = forms.CharField(widget=forms.HiddenInput(),
-                                label='', required=False)
+    feedback_msg = forms.CharField(widget=forms.TextInput(), label=u'Message')
+    feedback_data = forms.CharField(widget=forms.HiddenInput(), label='',
+                                    required=False)
 
 class SendInvitationForm(forms.Form):
     """
@@ -301,11 +295,26 @@ class SignApprovalTermsForm(forms.ModelForm):
     
     def save(self, commit=True):
         """
-        Saves the , after the normal
-        save behavior is complete.
+        Updates date_signed_terms & has_signed_terms fields.
         """
         user = super(SignApprovalTermsForm, self).save(commit=False)
         user.date_signed_terms = datetime.now()
         if commit:
             user.save()
         return user
+
+class InvitationForm(forms.ModelForm):
+    username = forms.EmailField(label=_("Email"))
+    
+    class Meta:
+        model = Invitation
+        fields = ('username', 'realname')
+    
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        try:
+            Invitation.objects.get(username = username)
+            raise forms.ValidationError(_('There is already invitation for this email.'))
+        except Invitation.DoesNotExist:
+            pass
+        return username

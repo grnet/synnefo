@@ -1,13 +1,13 @@
 {% extends "im/account_base.html" %}
 
-{% load formatters %}
-
 {% block body %}
 
 <form action={%url astakos.im.views.edit_profile %} method="post"
     class="withlabels">{% csrf_token %}
-
+    
+    {% with profile_form as form %}
     {% include "im/form_render.html" %}
+    {% endwith %}
 
     <div class="form-row submit">
         <input type="hidden" name="next" value="{{ next }}">

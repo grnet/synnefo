@@ -1,7 +1,5 @@
 {% extends "im/account_base.html" %}
 
-{% load formatters %}
-
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="section">
@@ -36,19 +34,9 @@
   <form action="{% url astakos.im.views.invite %}" method="post"
     class="innerlabels">{% csrf_token %}
     <h2>INVITE SOMEONE ELSE</h2>
-    <div class="form-row">
-      <label for="user-realname">Name</label>
-      <div class="input">
-        <input type="text" class="text" id="user-realname" name="realname" />
-      </div>
-    </div>
-
-    <div class="form-row">
-      <label for="user-uniq">Email</label>
-      <div class="input">
-        <input type="text" class="text" id="user-uniq" name="uniq" />
-      </div>
-    </div>
+    {% with invitation_form as form %}
+    {% include "im/form_render.html" %}
+    {% endwith %}
 
     <div class="form-row submit">
         <input type="submit" class="submit altcol" value="SEND" />

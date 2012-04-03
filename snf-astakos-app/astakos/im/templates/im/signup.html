@@ -22,7 +22,7 @@
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value="local">
-            {% with local_form as form %}
+            {% with local_signup_form as form %}
             {% include "im/form_render.html" %}
             {% endwith %}
             <div class="form-row submit">
@@ -31,36 +31,15 @@
         </form>
       </div>
     {% endif %}
-    {% if "twitter" in im_modules %}
-      <div class="form-stacked">
-        <form action="{% url astakos.im.views.signup %}" method="post"
-            class="innerlabels signup">{% csrf_token %}
-            <h2><span>SIGN UP USING TWITTER</span></h2>
-            <input type="hidden" name="next" value="{{ next }}">
-            <input type="hidden" name="code" value="{{ code }}">
-            <input type="hidden" name="provider" value="twitter">
-            {% with twitter_form as form %}
-            {% include "im/form_render.html" %}
-            {% endwith %}
-            <div class="form-row submit">
-                <input type="submit" class="submit altcol" value="SUBMIT" />
-            </div>
-        </form>
+    <div class="extralogin">
+        {% for o in im_modules %}
+        <div>
+      {% if o != 'local' %}
+      SIGNUP using 
+      <a href="/im/login/{{ o }}?{% ifnotequal next "" %}next={{ next|urlencode }}&{% endifnotequal %}&code={{ code|urlencode }}" 
+          alt="{{ o|title }}">{{ o }}</a>
+      {% endif %}
       </div>
-    {% endif %}
-        {% if 'shibboleth' in im_modules %}
-          <div class="form">
-            <form action="{% url astakos.im.target.shibboleth.login %}" method="post"
-                class="innerlabels signup">{% csrf_token %}
-              <h2><span>SIGN UP USING SHIBBOLETH</span></h2>
-                  <input type="hidden" name="next" value="{{ next }}">
-                  <input type="hidden" name="code" value="{{ code }}">
-                  <input type="hidden" name="provider" value="shibboleth">
-                <div class="form-row submit">
-                    <input type="submit" class="submit altcol" value="SUBMIT" />
-                </div>
-            </form>
-          </div>
-        {% endif %}
-      </div>
+      {% endfor %}
+  </div>
 {% endblock %}

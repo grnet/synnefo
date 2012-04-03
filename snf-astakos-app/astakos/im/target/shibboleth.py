@@ -33,8 +33,11 @@
 
 from django.http import HttpResponseBadRequest
 
-from astakos.im.util import get_or_create_user, prepare_response
-from astakos.im.views import requires_anonymous
+from astakos.im.util import get_or_create_user, prepare_response, get_context, get_invitation
+from astakos.im.views import requires_anonymous, render_response
+from astakos.im.settings import DEFAULT_USER_LEVEL
+from astakos.im.models import AstakosUser
+from astakos.im.forms import ThirdPartyUserCreationForm
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -47,27 +50,42 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 @requires_anonymous
-def login(request):
-    tokens = request.META
+def login(request,  backend=None, on_creation_template='im/signup_complete.html', extra_context={}):
+    #tokens = request.META
+    #
+    #try:
+    #    eppn = tokens[Tokens.SHIB_EPPN]
+    #except KeyError:
+    #    return HttpResponseBadRequest("Missing unique token in request")
+    #
+    #if Tokens.SHIB_DISPLAYNAME in tokens:
+    #    realname = tokens[Tokens.SHIB_DISPLAYNAME]
+    #elif Tokens.SHIB_CN in tokens:
+    #    realname = tokens[Tokens.SHIB_CN]
+    #elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+    #    realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+    #else:
+    #    return HttpResponseBadRequest("Missing user name in request")
+    #
+    #affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
+    eppn, realname, affiliation = 'papagian', 'Sofia Papagiannaki', 'grnet'
     try:
-        eppn = tokens[Tokens.SHIB_EPPN]
-    except KeyError:
-        return HttpResponseBadRequest("Missing unique token in request")
-    
-    if Tokens.SHIB_DISPLAYNAME in tokens:
-        realname = tokens[Tokens.SHIB_DISPLAYNAME]
-    elif Tokens.SHIB_CN in tokens:
-        realname = tokens[Tokens.SHIB_CN]
-    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-    else:
-        return HttpResponseBadRequest("Missing user name in request")
-    
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    
-    user = get_or_create_user(eppn, realname=realname, affiliation=affiliation, provider='shibboleth', level=0)
-    return prepare_response(request,
-                            user,
-                            request.GET.get('next'),
-                            'renew' in request.GET)
+        user = AstakosUser.objects.get(provider='shibboleth', third_party_identifier=eppn)
+        return prepare_response(request,
+                                user,
+                                request.GET.get('next'),
+                                'renew' in request.GET)
+    except AstakosUser.DoesNotExist, e:
+        invitation = get_invitation(request)
+        user = AstakosUser(third_party_identifier=eppn, realname=realname,
+                           affiliation=affiliation,
+                           provider='shibboleth')
+        if not invitation:
+            return render_response(on_creation_template,
+                                   thirdparty_signup_form = ThirdPartyUserCreationForm(instance=user),
+                                   provider = 'shibboleth',
+                                   context_instance=get_context(request, extra_context))
+        else:
+            user.email = invitation.username
+            return

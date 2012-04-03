@@ -42,12 +42,6 @@ from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
 
-
-def generate_password():
-    pool = lowercase + uppercase + digits
-    return ''.join(choice(pool) for i in range(10))
-
-
 class Command(BaseCommand):
     args = "<email> <first name> <last name> <affiliation>"
     help = "Create a user"
@@ -84,7 +78,7 @@ class Command(BaseCommand):
         username =  uuid4().hex[:30]
         password = options.get('password')
         if password is None:
-            password = generate_password()
+            password = AstakosUser.objects.make_random_password()
         
         try:
             AstakosUser.objects.get(email=email)

@@ -886,10 +886,10 @@ def object_write(request, v_account, v_container, v_object):
         raise RequestEntityTooLarge('Quota exceeded')
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
-        checksum = hashmap_md5(request, hashmap, size)
+        checksum = hashmap_md5(request.backend, hashmap, size)
         try:
-            version_id = request.backend.update_object_checksum(request.user_uniq,
-                            v_account, v_container, v_object, version_id, checksum)
+            request.backend.update_object_checksum(request.user_uniq,
+              v_account, v_container, v_object, version_id, checksum)
         except NotAllowedError:
             raise Forbidden('Not allowed')
     if public is not None:
@@ -1187,7 +1187,7 @@ def object_update(request, v_account, v_container, v_object):
     if dest_bytes is not None and dest_bytes < size:
         size = dest_bytes
         hashmap = hashmap[:(int((size - 1) / request.backend.block_size) + 1)]
-    checksum = hashmap_md5(request, hashmap, size) if UPDATE_MD5 else ''
+    checksum = hashmap_md5(request.backend, hashmap, size) if UPDATE_MD5 else ''
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, prev_meta['type'],

@@ -761,14 +761,14 @@ def put_object_block(request, hashmap, data, offset):
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl # Return ammount of data written.
 
-def hashmap_md5(request, hashmap, size):
+def hashmap_md5(backend, hashmap, size):
     """Produce the MD5 sum from the data in the hashmap."""
     
     # TODO: Search backend for the MD5 of another object with the same hashmap and size...
     md5 = hashlib.md5()
-    bs = request.backend.block_size
+    bs = backend.block_size
     for bi, hash in enumerate(hashmap):
-        data = request.backend.get_block(hash) # Blocks come in padded.
+        data = backend.get_block(hash) # Blocks come in padded.
         if bi == len(hashmap) - 1:
             data = data[:size % bs]
         md5.update(data)

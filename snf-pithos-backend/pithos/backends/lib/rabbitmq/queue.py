@@ -36,18 +36,17 @@ from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, R
 
 class Queue(object):
     """Queue.
-       Required constructor parameters: exchange, message_key, client_id.
+       Required constructor parameters: exchange, client_id.
     """
     
     def __init__(self, **params):
         exchange = params['exchange']
         self.conn = exchange_connect(exchange)
-        self.message_key = params['message_key']
         self.client_id = params['client_id']
     
-    def send(self, user, resource, value, details):
+    def send(self, message_key, user, resource, value, details):
         body = Receipt(self.client_id, user, resource, value, details).format()
-        exchange_send(self.conn, self.message_key, body)
+        exchange_send(self.conn, message_key, body)
     
     def close(self):
         exchange_close(self.conn)

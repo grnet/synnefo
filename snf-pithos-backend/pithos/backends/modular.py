@@ -77,7 +77,7 @@ DEFAULT_BLOCK_PATH = 'data/'
 #DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
 #DEFAULT_QUEUE_CONNECTION = 'rabbitmq://guest:guest@localhost:5672/pithos'
 
-QUEUE_MESSAGE_KEY = 'pithos'
+QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
 
 ( CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED ) = range(3)
@@ -157,7 +157,6 @@ class ModularBackend(BaseBackend):
         if queue_module and queue_connection:
             self.queue_module = load_module(queue_module)
             params = {'exchange': queue_connection,
-                      'message_key': QUEUE_MESSAGE_KEY,
                       'client_id': QUEUE_CLIENT_ID}
             self.queue = self.queue_module.Queue(**params)
         else:
@@ -1011,12 +1010,12 @@ class ModularBackend(BaseBackend):
         account_node = self._lookup_account(account, True)[1]
         total = self._get_statistics(account_node)[1]
         details.update({'user': user, 'total': total})
-        self.messages.append((account, 'diskspace', size, details))
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',), account, 'diskspace', size, details))
     
     def _report_object_change(self, user, account, path, details={}):
         logger.debug("_report_object_change: %s %s %s %s", user, account, path, details)
         details.update({'user': user})
-        self.messages.append((account, 'object', path, details))
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',), account, 'object', path, details))
     
     # Policy functions.
     

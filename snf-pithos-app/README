@@ -45,7 +45,7 @@ PITHOS_UPDATE_MD5                True                                           
 
 To update checksums asynchronously, enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
 
-    pithos-dispatcher --exchange=pithos --callback=pithos.api.dispatch.update_md5
+    pithos-dispatcher --exchange=pithos --key=pithos.object --callback=pithos.api.dispatch.update_md5
 
 Administrator functions
 -----------------------

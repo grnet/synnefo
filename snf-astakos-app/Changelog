@@ -2,10 +2,15 @@ Changelog
 *********
 
 v0.4.0
-======
+=======
 - User terms.
 - Styling fixes/improvements.
 - Configurable recpatcha form field.
+
+
+v0.3.9
+======
+- Show user email in feedback email content
 
 
 v0.3.8

@@ -1,13 +1,21 @@
+Changelog
+*********
+
+v0.4.0
+======
+- User terms.
+- Styling fixes/improvements.
+- Configurable recpatcha form field.
+
+
 v0.3.8
 ======
-
 - New ASTAKOS_PROFILE_EXTRA_LINKS setting to display additional buttons on
   account pages.
 
 
 v0.3.7
 ======
-
 - New ASTAKOS_LOGIN_MESSAGES setting to display messages on the login page
   header
 - login_base.html to make it easy override the login.html template
@@ -15,7 +23,6 @@ v0.3.7
 
 v0.3.5
 ======
-
 - New grnet styles
 - New setting for recaptcha to use SSL
 - New menu texts
@@ -24,14 +31,12 @@ v0.3.5
 
 v0.3.4
 ======
-
 - Updated mail contents
 - Cloudbar improvements
 
 
 v0.3.3
 ======
-
 - Updated grnet styles
 - Several styling fixes
 - Display page menu
@@ -49,7 +54,6 @@ v0.3.3
 
 v0.3.2
 ======
-
 - improved styles of sign up button
 - do not send admin notification email if ASTAKOS_DEFAULT_ADMIN_EMAIL is not 
   set 
@@ -58,7 +62,6 @@ v0.3.2
 
 v0.3.1
 ======
-
 - bug fixes
 - administrator email notification on sign up 
   (configurable from ASTAKOS_DEFAULT_ADMIN_EMAIL setting)
@@ -66,3 +69,4 @@ v0.3.1
   (requires ASTAKOS_RECAPTCHA_PUBLIC_KEY, ASTAKOS_RECAPTCHA_PRIVATE_KEY
    settings)
 - cloudbar jsonp responses
+

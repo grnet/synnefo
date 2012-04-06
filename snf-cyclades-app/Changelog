@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v0.9.11
+-------
+
+* listservers management command unicode workaround
+
+
 v0.9.10
 -------
 

@@ -74,13 +74,16 @@ class Command(BaseCommand):
         
         for server in servers:
             id = str(server.id)
+            try:
+                name = server.name.decode('utf8')
+            except UnicodeEncodeError:
+                name = server.name
             flavor = server.flavor.name
             try:
                 image = get_image(server.imageid, server.userid)['name']
             except:
                 image = server.imageid
-            fields = (id, server.name, server.userid, flavor, image,
-                      server.operstate)
+            fields = (id, name, server.userid, flavor, image, server.operstate)
             
             if options['csv']:
                 line = '|'.join(fields)

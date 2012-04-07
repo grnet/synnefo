@@ -32,12 +32,15 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponseBadRequest
+from django.utils.translation import ugettext as _
+from django.contrib import messages
+from django.template import RequestContext
 
 from astakos.im.util import get_or_create_user, prepare_response, get_context, get_invitation
 from astakos.im.views import requires_anonymous, render_response
 from astakos.im.settings import DEFAULT_USER_LEVEL
 from astakos.im.models import AstakosUser
-from astakos.im.forms import ThirdPartyUserCreationForm
+from astakos.im.forms import ShibbolethUserCreationForm, LoginForm
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -50,7 +53,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 @requires_anonymous
-def login(request,  backend=None, on_creation_template='im/signup_complete.html', extra_context={}):
+def login(request,  backend=None, on_login_template='im/login.html', on_creation_template='im/signup.html', extra_context={}):
     #tokens = request.META
     #
     #try:
@@ -69,23 +72,25 @@ def login(request,  backend=None, on_creation_template='im/signup_complete.html'
     #
     #affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    eppn, realname, affiliation = 'papagian', 'Sofia Papagiannaki', 'grnet'
+    eppn, realname, affiliation = 'spapagian', 'Sofia Papagiannaki', 'grnet'
     try:
         user = AstakosUser.objects.get(provider='shibboleth', third_party_identifier=eppn)
-        return prepare_response(request,
-                                user,
-                                request.GET.get('next'),
-                                'renew' in request.GET)
+        if user.is_active:
+            return prepare_response(request,
+                                    user,
+                                    request.GET.get('next'),
+                                    'renew' in request.GET)
+        else:
+            message = _('Inactive account')
+            messages.add_message(request, messages.ERROR, message)
+            return render_response(on_login_template,
+                                   login_form = LoginForm(),
+                                   context_instance=RequestContext(request))
     except AstakosUser.DoesNotExist, e:
-        invitation = get_invitation(request)
         user = AstakosUser(third_party_identifier=eppn, realname=realname,
                            affiliation=affiliation,
                            provider='shibboleth')
-        if not invitation:
-            return render_response(on_creation_template,
-                                   thirdparty_signup_form = ThirdPartyUserCreationForm(instance=user),
-                                   provider = 'shibboleth',
-                                   context_instance=get_context(request, extra_context))
-        else:
-            user.email = invitation.username
-            return
+        return render_response(on_creation_template,
+                               signup_form = ShibbolethUserCreationForm(instance=user),
+                               provider = 'shibboleth',
+                               context_instance=get_context(request, extra_context))

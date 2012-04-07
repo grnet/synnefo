@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import socket
+
 from optparse import make_option
 from random import choice
 from string import digits, lowercase, uppercase
@@ -97,9 +99,12 @@ class Command(BaseCommand):
         if options['admin']:
             user.is_admin = True
         
-        user.save()
-        
-        msg = "Created user id %d" % (user.id,)
-        if options['password'] is None:
-            msg += " with password '%s'" % (password,)
-        self.stdout.write(msg + '\n')
+        try:
+            user.save()
+        except socket.error, e:
+            raise CommandError(e)
+        else:
+            msg = "Created user id %d" % (user.id,)
+            if options['password'] is None:
+                msg += " with password '%s'" % (password,)
+            self.stdout.write(msg + '\n')

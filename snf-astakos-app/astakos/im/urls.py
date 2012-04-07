@@ -87,7 +87,10 @@ if 'twitter' in IM_MODULES:
     )
 
 urlpatterns += patterns('astakos.im.api',
-    url(r'^authenticate/?$', 'authenticate'),
+    url(r'^authenticate/?$', 'authenticate_old'),
+    url(r'^authenticate/v2/?$', 'authenticate'),
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'),
+    url(r'^find_userid/?$', 'find_userid'),
+    url(r'^find_email/?$', 'find_email'),
 )

@@ -2,8 +2,8 @@ Feedback message:
 {{ message }}
 
 User info:
-ID: {{ user.id }}
-Email: {{ user.email }}
+ID: {{ request.user.id }}
+Email: {{ request.user.email }}
 
 User application data:
 {{ data|safe }}

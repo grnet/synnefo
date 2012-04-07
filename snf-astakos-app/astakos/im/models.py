@@ -33,6 +33,7 @@
 
 import hashlib
 import uuid
+import logging
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -41,13 +42,15 @@ from urlparse import urlparse
 from random import randint
 
 from django.db import models
-from django.contrib.auth.models import User, UserManager
+from django.contrib.auth.models import User, UserManager, Group
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
 from astakos.im.queue.userevent import UserEvent
 from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
 
 QUEUE_CLIENT_ID = 3 # Astakos.
+
+logger = logging.getLogger(__name__)
 
 class AstakosUser(User):
     """
@@ -81,6 +84,17 @@ class AstakosUser(User):
     has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
     date_signed_terms = models.DateTimeField('Signed terms date', null=True)
     
+    __has_signed_terms = False
+    __groupnames = []
+    
+    def __init__(self, *args, **kwargs):
+        super(AstakosUser, self).__init__(*args, **kwargs)
+        self.__has_signed_terms = self.has_signed_terms
+        if self.id:
+            self.__groupnames = [g.name for g in self.groups.all()]
+        else:
+            self.is_active = False
+    
     @property
     def realname(self):
         return '%s %s' %(self.first_name, self.last_name)
@@ -106,6 +120,11 @@ class AstakosUser(User):
             if not self.id:
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
+        
+        # update date_signed_terms if necessary
+        if self.__has_signed_terms != self.has_signed_terms:
+            self.date_signed_terms = datetime.now()
+        
         if not self.id:
             # set username
             while not self.username:
@@ -114,11 +133,19 @@ class AstakosUser(User):
                     AstakosUser.objects.get(username = username)
                 except AstakosUser.DoesNotExist, e:
                     self.username = username
-            self.is_active = False
             if not self.provider:
                 self.provider = 'local'
         report_user_event(self)
         super(AstakosUser, self).save(**kwargs)
+        
+        # set group if does not exist
+        groupname = 'shibboleth' if self.provider == 'shibboleth' else 'default'
+        if groupname not in self.__groupnames:
+            try:
+                group = Group.objects.get(name = groupname)
+                self.groups.add(group)
+            except Group.DoesNotExist, e:
+                logger.exception(e)
     
     def renew_token(self):
         md5 = hashlib.md5()
@@ -159,10 +186,10 @@ class Invitation(models.Model):
     accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
     consumed = models.DateTimeField('Consumption date', null=True, blank=True)
     
-    def save(self, **kwargs):
+    def __init__(self, *args, **kwargs):
+        super(Invitation, self).__init__(*args, **kwargs)
         if not self.id:
             self.code = _generate_invitation_code()
-        super(Invitation, self).save(**kwargs)
     
     def consume(self):
         self.is_consumed = True

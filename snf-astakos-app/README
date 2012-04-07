@@ -83,13 +83,26 @@ Available as extensions to Django's command-line management utility:
 ===============  ===========================
 Name             Description
 ===============  ===========================
-activateuser     Activates one or more users
+addgroup         Add new group
+addterms         Add new approval terms
 createuser       Create a user
 inviteuser       Invite a user
+listgroups       List groups
 listinvitations  List invitations
 listusers        List users
 modifyuser       Modify a user's attributes
+sendactivation   Send activation email
 showinvitation   Show invitation info
 showuser         Show user info
-addterms         Add new approval terms
 ===============  ===========================
+
+To update user credibility from the billing system (Aquarium), enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
+
+    pithos-dispatcher --exchange=aquarium --callback=astakos.im.queue.listener.on_creditevent
+
+Load groups:
+------------
+
+To set the initial user groups load the followind fixture:
+
+    snf-manage loaddata groups

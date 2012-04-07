@@ -35,12 +35,14 @@ import socket
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
+from django.db import transaction
 
 from astakos.im.functions import invite, SendMailError
+from astakos.im.models import Invitation
 
 from ._common import get_user
 
-
+@transaction.commit_manually
 class Command(BaseCommand):
     args = "<inviter id or email> <email> <real name>"
     help = "Invite a user"
@@ -62,8 +64,12 @@ class Command(BaseCommand):
                 invite(invitation, inviter)
                 self.stdout.write("Invitation sent to '%s'\n" % (email,))
             except SendMailError, e:
+                transaction.rollback()
                 raise CommandError(e.message)
             except IntegrityError, e:
+                transaction.rollback()
                 raise CommandError("There is already an invitation for %s" % (email,))
+            else:
+                transaction.commit()
         else:
             raise CommandError("No invitations left")

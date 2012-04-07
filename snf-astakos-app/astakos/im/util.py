@@ -33,6 +33,7 @@
 
 import logging
 import datetime
+import time
 
 from urllib import quote
 from urlparse import urlsplit, urlunsplit
@@ -65,6 +66,9 @@ def isoformat(d):
    """Return an ISO8601 date string that includes a timezone."""
 
    return d.replace(tzinfo=UTC()).isoformat()
+
+def epoch(datetime):
+    return int(time.mktime(datetime.timetuple())*1000)
 
 def get_or_create_user(email, realname='', first_name='', last_name='', affiliation='', level=0, provider='local', password=''):
     """Find or register a user into the internal database
@@ -103,12 +107,13 @@ def get_invitation(request):
     code = request.GET.get('code')
     if request.method == 'POST':
         code = request.POST.get('code')
-    if not code:
-        if 'invitation_code' in request.session:
-            code = request.session.pop('invitation_code')
+    #if not code:
+    #    if 'invitation_code' in request.session:
+    #        code = request.session.pop('invitation_code')
     if not code:
         return
     invitation = Invitation.objects.get(code = code)
+    print '>>>', invitation
     if invitation.is_consumed:
         raise ValueError(_('Invitation is used'))
     try:

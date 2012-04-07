@@ -64,8 +64,8 @@ class Command(BaseCommand):
         if options['pending']:
             users = users.filter(is_active=False)
         
-        labels = ('id', 'email', 'real name', 'affiliation', 'active', 'admin')
-        columns = (3, 24, 24, 12, 6, 5)
+        labels = ('id', 'email', 'real name', 'affiliation', 'active', 'admin', 'provider')
+        columns = (3, 24, 24, 12, 6, 5, 12)
         
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -78,7 +78,7 @@ class Command(BaseCommand):
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
             fields = (id, user.email, user.realname, user.affiliation, active,
-                      admin)
+                      admin, user.provider)
             
             if options['csv']:
                 line = '|'.join(fields)

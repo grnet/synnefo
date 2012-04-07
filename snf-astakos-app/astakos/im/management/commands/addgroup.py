@@ -31,34 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
+from random import choice
+from string import digits, lowercase, uppercase
+from uuid import uuid4
+from time import time
+from os.path import abspath
+
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.functions import send_verification
-
-from ._common import get_user
+from django.contrib.auth.models import Group
 
 class Command(BaseCommand):
-    args = "<user ID or email> [user ID or email] ..."
-    help = "Sends an activation email to one or more users"
+    args = "<name>"
+    help = "Insert group"
     
     def handle(self, *args, **options):
-        if not args:
-            raise CommandError("No user was given")
+        if len(args) != 1:
+            raise CommandError("Invalid number of arguments")
         
-        for email_or_id in args:
-            user = get_user(email_or_id)
-            if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
-            
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
-                continue
-            
-            try:
-                send_verification(user)
-            except SendMailError, e:
-                raise CommandError(e.message)
-            
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+        name = args[0].decode('utf8')
+        
+        try:
+            Group.objects.get(name=name)
+            raise CommandError("A group with this name already exists")
+        except Group.DoesNotExist, e:
+            group = Group(name=name)
+            group.save()
+        
+        msg = "Created group id %d" % (group.id,)
+        self.stdout.write(msg + '\n')

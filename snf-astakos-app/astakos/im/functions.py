@@ -170,6 +170,8 @@ def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):
     
     Raises SendInvitationError
     """
+    invitation.inviter = inviter
+    invitation.save()
     send_invitation(invitation, email_template_name)
     inviter.invitations = max(0, inviter.invitations - 1)
     inviter.save()
@@ -183,30 +185,29 @@ def set_user_credibility(email, has_credits):
         logger.exception(e)
 
 class SendMailError(Exception):
-    def __init__(self, message):
-        Exception.__init__(self)
+    pass
 
 class SendAdminNotificationError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send notification')
-        SendMailError.__init__(self)
+        super(SendAdminNotificationError, self).__init__()
 
-class SendVerificationError(Exception):
+class SendVerificationError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send verification')
-        SendMailError.__init__(self)
+        super(SendVerificationError, self).__init__()
 
-class SendInvitationError(Exception):
+class SendInvitationError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send invitation')
-        SendMailError.__init__(self)
+        super(SendInvitationError, self).__init__()
 
-class SendGreetingError(Exception):
+class SendGreetingError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send greeting')
-        SendMailError.__init__(self)
+        super(SendGreetingError, self).__init__()
 
-class SendFeedbackError(Exception):
+class SendFeedbackError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send feedback')
-        SendMailError.__init__(self)
+        super(SendFeedbackError, self).__init__()

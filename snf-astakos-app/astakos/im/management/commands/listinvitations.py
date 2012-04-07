@@ -57,8 +57,8 @@ class Command(BaseCommand):
         
         invitations = Invitation.objects.all()
         
-        labels = ('id', 'email', 'real name', 'code', 'used', 'consumed')
-        columns = (3, 24, 24, 20, 4, 8)
+        labels = ('id', 'inviter', 'email', 'real name', 'code', 'used', 'consumed')
+        columns = (3, 24, 24, 24, 20, 4, 8)
         
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -71,7 +71,7 @@ class Command(BaseCommand):
             code = str(invitation.code)
             used = format_bool(invitation.is_accepted)
             consumed = format_bool(invitation.is_consumed)
-            fields = (id, invitation.username, invitation.realname,
+            fields = (id, invitation.inviter.email, invitation.username, invitation.realname,
                       code, used, consumed)
             
             if options['csv']:

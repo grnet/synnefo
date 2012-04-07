@@ -35,11 +35,11 @@ from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.utils.translation import ugettext as _
 from django.contrib.sites.models import Site
 from django.contrib import messages
-from django.db import transaction
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext as _
+from django.db import transaction
 
 from urlparse import urljoin
 
@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 def get_backend(request):
     """
-    Returns an instance of a registration backend,
+    Returns an instance of an activation backend,
     according to the INVITATIONS_ENABLED setting
     (if True returns ``astakos.im.activation_backends.InvitationsBackend`` and if False
     returns ``astakos.im.activation_backends.SimpleBackend``).
@@ -71,11 +71,11 @@ def get_backend(request):
     try:
         mod = import_module(module)
     except ImportError, e:
-        raise ImproperlyConfigured('Error loading registration backend %s: "%s"' % (module, e))
+        raise ImproperlyConfigured('Error loading activation backend %s: "%s"' % (module, e))
     try:
         backend_class = getattr(mod, backend_class_name)
     except AttributeError:
-        raise ImproperlyConfigured('Module "%s" does not define a registration backend named "%s"' % (module, attr))
+        raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, attr))
     return backend_class(request)
 
 class SignupBackend(object):
@@ -88,7 +88,7 @@ class SignupBackend(object):
 
 class InvitationsBackend(SignupBackend):
     """
-    A registration backend which implements the following workflow: a user
+    A activation backend which implements the following workflow: a user
     supplies the necessary registation information, if the request contains a valid
     inivation code the user is automatically activated otherwise an inactive user
     account is created and the user is going to receive an email as soon as an
@@ -110,7 +110,7 @@ class InvitationsBackend(SignupBackend):
         invitation = self.invitation
         initial_data = self.get_signup_initial_data(provider)
         prefix = 'Invited' if invitation else ''
-        main = provider.capitalize() if provider == 'local' else 'ThirdParty'
+        main = provider.capitalize()
         suffix  = 'UserCreationForm'
         formclass = '%s%s%s' % (prefix, main, suffix)
         ip = self.request.META.get('REMOTE_ADDR',
@@ -119,7 +119,7 @@ class InvitationsBackend(SignupBackend):
 
     def get_signup_initial_data(self, provider):
         """
-        Returns the necassary registration form depending the user is invited or not
+        Returns the necassary activation form depending the user is invited or not
 
         Throws Invitation.DoesNotExist in case ``code`` is not valid.
         """
@@ -131,6 +131,7 @@ class InvitationsBackend(SignupBackend):
                 # create a tmp user with the invitation realname
                 # to extract first and last name
                 u = AstakosUser(realname = invitation.realname)
+                print '>>>', invitation, invitation.inviter
                 initial_data = {'email':invitation.username,
                                 'inviter':invitation.inviter.realname,
                                 'first_name':u.first_name,
@@ -155,7 +156,6 @@ class InvitationsBackend(SignupBackend):
             return True
         return False
 
-    @transaction.commit_manually
     def handle_activation(self, user, verification_template_name='im/activation_email.txt', greeting_template_name='im/welcome_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Initially creates an inactive user account. If the user is preaccepted
@@ -166,26 +166,28 @@ class InvitationsBackend(SignupBackend):
         The method uses commit_manually decorator in order to ensure the user
         will be created only if the procedure has been completed successfully.
         """
-        result = None
         try:
+            if user.is_active:
+                return RegistationCompleted()
             if self._is_preaccepted(user):
                 if user.email_verified:
                     activate(user, greeting_template_name)
-                    result = RegistationCompleted()
+                    return RegistationCompleted()
                 else:
                     send_verification(user, verification_template_name)
-                    result = VerificationSent()
+                    return VerificationSent()
             else:
                 send_admin_notification(user, admin_email_template_name)
-                result = NotificationSent()
+                return NotificationSent()
         except Invitation.DoesNotExist, e:
             raise InvitationCodeError()
-        else:
-            return result
+        except BaseException, e:
+            logger.exception(e)
+            raise e
 
 class SimpleBackend(SignupBackend):
     """
-    A registration backend which implements the following workflow: a user
+    A activation backend which implements the following workflow: a user
     supplies the necessary registation information, an incative user account is
     created and receives an email in order to activate his/her account.
     """
@@ -238,14 +240,23 @@ class SimpleBackend(SignupBackend):
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """
-        result = None
-        if not self._is_preaccepted(user):
-            send_admin_notification(user, admin_email_template_name)
-            result = NotificationSent()
+        try:
+            if user.is_active:
+                return RegistrationCompeted()
+            if not self._is_preaccepted(user):
+                send_admin_notification(user, admin_email_template_name)
+                return NotificationSent()
+            else:
+                send_verification(user, email_template_name)
+                return VerificationSend()
+        except SendEmailError, e:
+            transaction.rollback()
+            raise e
+        except BaseException, e:
+            logger.exception(e)
+            raise e
         else:
-            send_verification(user, email_template_name)
-            result = VerificationSend()
-        return result
+            transaction.commit()
 
 class ActivationResult(object):
     def __init__(self, message):
@@ -267,5 +278,3 @@ class RegistationCompleted(ActivationResult):
     def __init__(self):
         message = _('Registration completed. You can now login.')
         super(RegistationCompleted, self).__init__(message)
-
-

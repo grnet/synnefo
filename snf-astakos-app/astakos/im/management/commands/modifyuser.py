@@ -34,6 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group
 
 from ._common import get_user
 
@@ -80,6 +81,9 @@ class Command(BaseCommand):
             dest='inactive',
             default=False,
             help="Change user's state to inactive"),
+        make_option('--group',
+            dest='group',
+            help="Extend user groups"),
         )
     
     def handle(self, *args, **options):
@@ -103,6 +107,14 @@ class Command(BaseCommand):
         invitations = options.get('invitations')
         if invitations is not None:
             user.invitations = int(invitations)
+        
+        groupname = options.get('group')
+        if groupname is not None:
+            try:
+                group = Group.objects.get(name=groupname)
+                user.groups.add(group)
+            except Group.DoesNotExist, e:
+                raise CommandError("Group named %s does not exist." % groupname)
         
         level = options.get('level')
         if level is not None:

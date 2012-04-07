@@ -165,13 +165,13 @@ Example reply:
 
 ::
 
-  {"username": "4ad9f34d6e7a4992b34502d40f40cb",
-  "uniq": "papagian@example.com"
-  "auth_token": "0000",
-  "auth_token_expires": "Tue, 11-Sep-2012 09:17:14 ",
-  "auth_token_created": "Sun, 11-Sep-2011 09:17:14 ",
-  "has_credits": false,
-  "has_signed_terms": true}
+  {"userid": "270d191e09834408b7af65885f46a3",
+  "email": ["user111@example.com"],
+  "name": "user1 User1",
+  "auth_token_created": 1333372365000,
+  "auth_token_expires": 1335964365000,
+  "auth_token": "uiWDLAgtJOGW4mI4q9R/8w==",
+  "has_credits": true}
 
 |
 

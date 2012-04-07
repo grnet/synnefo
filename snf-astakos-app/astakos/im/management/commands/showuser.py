@@ -75,9 +75,11 @@ class Command(BaseCommand):
             'verified': format_bool(user.is_verified),
             'has_credits': format_bool(user.has_credits),
             'has_signed_terms': format_bool(user.has_signed_terms),
-            'date_signed_terms': format_date(user.date_signed_terms)
+            'date_signed_terms': format_date(user.date_signed_terms),
+            'groups': [elem.name for elem in user.groups.all()],
+            'third_party_identifier': user.third_party_identifier
         }
         
         for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(17), val)
+            line = '%s: %s\n' % (key.rjust(22), val)
             self.stdout.write(line.encode('utf8'))

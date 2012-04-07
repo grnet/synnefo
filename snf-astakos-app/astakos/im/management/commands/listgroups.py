@@ -31,34 +31,48 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
+
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group
 
-from astakos.im.functions import send_verification
+from astakos.im.models import AstakosUser
 
-from ._common import get_user
+from ._common import format_bool
+
 
 class Command(BaseCommand):
-    args = "<user ID or email> [user ID or email] ..."
-    help = "Sends an activation email to one or more users"
+    help = "List g"
+    
+    option_list = BaseCommand.option_list + (
+        make_option('-c',
+            action='store_true',
+            dest='csv',
+            default=False,
+            help="Use pipes to separate values"),
+    )
     
     def handle(self, *args, **options):
-        if not args:
-            raise CommandError("No user was given")
+        if args:
+            raise CommandError("Command doesn't accept any arguments")
         
-        for email_or_id in args:
-            user = get_user(email_or_id)
-            if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
+        groups = Group.objects.all()
+        
+        labels = ('id', 'name')
+        columns = (1, 2)
+        
+        if not options['csv']:
+            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
+            self.stdout.write(line + '\n')
+            sep = '-' * len(line)
+            self.stdout.write(sep + '\n')
+        
+        for group in groups:
+            fields = (str(group.id), group.name)
             
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
-                continue
+            if options['csv']:
+                line = '|'.join(fields)
+            else:
+                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
             
-            try:
-                send_verification(user)
-            except SendMailError, e:
-                raise CommandError(e.message)
-            
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+            self.stdout.write(line.encode('utf8') + '\n')

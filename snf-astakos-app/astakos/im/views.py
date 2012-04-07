@@ -177,9 +177,9 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     """
     status = None
     message = None
-    inviter = AstakosUser.objects.get(username = request.user.username)
     form = InvitationForm()
     
+    inviter = request.user
     if request.method == 'POST':
         form = InvitationForm(request.POST)
         
@@ -187,14 +187,20 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
             if form.is_valid():
                 try:
                     invitation = form.save()
-                    invitation.inviter = inviter
                     invite_func(invitation, inviter)
                     status = messages.SUCCESS
                     message = _('Invitation sent to %s' % invitation.username)
-                    transaction.commit()
                 except SendMailError, e:
+                    status = messages.ERROR
                     message = e.message
                     transaction.rollback()
+                except BaseException, e:
+                    status = messages.ERROR
+                    message = _('Something went wrong.')
+                    logger.exception(e)
+                    transaction.rollback()
+                else:
+                    transaction.commit()
         else:
             status = messages.ERROR
             message = _('No invitations left')
@@ -203,7 +209,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     sent = [{'email': inv.username,
              'realname': inv.realname,
              'is_consumed': inv.is_consumed}
-             for inv in inviter.invitations_sent.all()]
+             for inv in request.user.invitations_sent.all()]
     kwargs = {'inviter': inviter,
               'sent':sent}
     context = get_context(request, extra_context, **kwargs)
@@ -266,7 +272,6 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                            context_instance = get_context(request,
                                                           extra_context))
 
-@transaction.commit_manually
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
@@ -305,35 +310,41 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     """
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.index'))
-    if not backend:
-        backend = get_backend(request)
     try:
+        form = LocalUserCreationForm()
+        if not backend:
+            backend = get_backend(request)
         query_dict = request.__getattribute__(request.method)
         provider = query_dict.get('provider', 'local')
         form = backend.get_signup_form(provider)
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
+    except ValueError, e:
+        messages.add_message(request, messages.ERROR, e)
     if request.method == 'POST':
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
             try:
                 result = backend.handle_activation(user)
-            except SendMailError, e:
-                message = e.message
-                status = messages.ERROR
-                transaction.rollback()
-            else:
-                message = result.message
                 status = messages.SUCCESS
-                transaction.commit()
+                message = result.message
+                user.save()
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)
                 messages.add_message(request, status, message)
                 return render_response(on_success,
                                        context_instance=get_context(request, extra_context))
+            except SendMailError, e:
+                status = messages.ERROR
+                message = e.message
+                messages.add_message(request, status, message)
+            except BaseException, e:
+                status = messages.ERROR
+                message = _('Something went wrong.')
+                messages.add_message(request, status, message)
     return render_response(template_name,
-                           local_signup_form = form,
+                           signup_form = form,
                            context_instance=get_context(request, extra_context))
 
 @login_required
@@ -436,6 +447,12 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
     except SendEmailError, e:
         message = e.message
         messages.add_message(request, messages.ERROR, message)
+        transaction.rollback()
+        return signup(request, on_failure='im/signup.html')
+    except BaseException, e:
+        status = messages.ERROR
+        message = _('Something went wrong.')
+        logger.exception(e)
         transaction.rollback()
         return signup(request, on_failure='im/signup.html')
 

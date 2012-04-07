@@ -1,6 +1,5 @@
 {% extends 'im/base_two_cols.html' %}
 
-{% block signin_class %}hidden{% endblock %}
 
 {% block page.title %}
     Signup
@@ -21,8 +20,8 @@
           <h2><span>SIGN UP</span></h2>
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
-            <input type="hidden" name="provider" value="local">
-            {% with local_signup_form as form %}
+            <input type="hidden" name="provider" value={{ provider|default:"local" }}>
+            {% with signup_form as form %}
             {% include "im/form_render.html" %}
             {% endwith %}
             <div class="form-row submit">
@@ -31,15 +30,4 @@
         </form>
       </div>
     {% endif %}
-    <div class="extralogin">
-        {% for o in im_modules %}
-        <div>
-      {% if o != 'local' %}
-      SIGNUP using 
-      <a href="/im/login/{{ o }}?{% ifnotequal next "" %}next={{ next|urlencode }}&{% endifnotequal %}&code={{ code|urlencode }}" 
-          alt="{{ o|title }}">{{ o }}</a>
-      {% endif %}
-      </div>
-      {% endfor %}
-  </div>
 {% endblock %}

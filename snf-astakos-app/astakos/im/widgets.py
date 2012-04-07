@@ -71,7 +71,7 @@ class ApprovalTermsWidget(forms.CheckboxInput):
         super(ApprovalTermsWidget, self).__init__(attrs, check_test)
         self.uri = terms_uri
         self.label = terms_label
-    
+
     def render(self, name, value, attrs=None):
         html = super(ApprovalTermsWidget, self).render(name, value, attrs)
-        return html + mark_safe('<a href=%s target="_blank">%s</a>' % (self.uri, self.label))
+        return html

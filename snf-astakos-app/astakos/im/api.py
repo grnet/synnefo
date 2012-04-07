@@ -33,6 +33,7 @@
 
 import logging
 
+from functools import wraps
 from traceback import format_exc
 from time import time, mktime
 from urllib import quote
@@ -43,10 +44,10 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
 
-from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
+from astakos.im.faults import BadRequest, Unauthorized, InternalServerError, Fault
 from astakos.im.models import AstakosUser
 from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED
-from astakos.im.util import has_signed_terms
+from astakos.im.util import has_signed_terms, epoch
 
 logger = logging.getLogger(__name__)
 
@@ -62,56 +63,109 @@ def render_fault(request, fault):
     response['Content-Length'] = len(response.content)
     return response
 
-def authenticate(request):
+def api_method(http_method=None, token_required=False, perms=[]):
+    """Decorator function for views that implement an API method."""
+    
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            try:
+                if http_method and request.method != http_method:
+                    raise BadRequest('Method not allowed.')
+                x_auth_token = request.META.get('HTTP_X_AUTH_TOKEN')
+                if token_required:
+                    if not x_auth_token:
+                        raise Unauthorized('Access denied')
+                    try:
+                        user = AstakosUser.objects.get(auth_token=x_auth_token)
+                        if not user.has_perms(perms):
+                            raise Unauthorized('Unauthorized request')
+                    except AstakosUser.DoesNotExist, e:
+                        raise Unauthorized('Invalid X-Auth-Token')
+                    kwargs['user'] = user
+                response = func(request, *args, **kwargs)
+                return response
+            except Fault, fault:
+                return render_fault(request, fault)
+            except BaseException, e:
+                logger.exception('Unexpected error: %s' % e)
+                fault = InternalServerError('Unexpected error')
+                return render_fault(request, fault)
+        return wrapper
+    return decorator
+
+@api_method(http_method='GET', token_required=True)
+def authenticate_old(request, user=None):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    try:
-        if request.method != 'GET':
-            raise BadRequest('Method not allowed.')
-        x_auth_token = request.META.get('HTTP_X_AUTH_TOKEN')
-        if not x_auth_token:
-            return render_fault(request, BadRequest('Missing X-Auth-Token'))
+    if not user:
+        raise BadRequest('No user')
+    
+    # Check if the is active.
+    if not user.is_active:
+        raise Unauthorized('User inactive')
 
-        try:
-            user = AstakosUser.objects.get(auth_token=x_auth_token)
-        except AstakosUser.DoesNotExist, e:
-            return render_fault(request, Unauthorized('Invalid X-Auth-Token'))
+    # Check if the token has expired.
+    if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
+        raise Unauthorized('Authentication expired')
+    
+    if not has_signed_terms(user):
+        raise Unauthorized('Pending approval terms')
+    
+    response = HttpResponse()
+    response.status=204
+    user_info = {'username':user.username,
+                 'uniq':user.email,
+                 'auth_token':user.auth_token,
+                 'auth_token_created':user.auth_token_created.isoformat(),
+                 'auth_token_expires':user.auth_token_expires.isoformat(),
+                 'has_credits':user.has_credits,
+                 'has_signed_terms':has_signed_terms(user)}
+    response.content = json.dumps(user_info)
+    response['Content-Type'] = 'application/json; charset=UTF-8'
+    response['Content-Length'] = len(response.content)
+    return response
 
-        # Check if the is active.
-        if not user.is_active:
-            return render_fault(request, Unauthorized('User inactive'))
+@api_method(http_method='GET', token_required=True)
+def authenticate(request, user=None):
+    # Normal Response Codes: 204
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+    if not user:
+        raise BadRequest('No user')
+    
+    # Check if the is active.
+    if not user.is_active:
+        raise Unauthorized('User inactive')
 
-        # Check if the token has expired.
-        if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-            return render_fault(request, Unauthorized('Authentication expired'))
-        
-        if not has_signed_terms(user):
-            return render_fault(request, Unauthorized('Pending approval terms'))
-        
-        response = HttpResponse()
-        response.status=204
-        user_info = {'username':user.username,
-                     'uniq':user.email,
-                     'auth_token':user.auth_token,
-                     'auth_token_created':user.auth_token_created.isoformat(),
-                     'auth_token_expires':user.auth_token_expires.isoformat(),
-                     'has_credits':user.has_credits,
-                     'has_signed_terms':has_signed_terms(user)}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
-    except BaseException, e:
-        logger.exception(e)
-        fault = InternalServerError('Unexpected error')
-        return render_fault(request, fault)
+    # Check if the token has expired.
+    if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
+        raise Unauthorized('Authentication expired')
+    
+    if not has_signed_terms(user):
+        raise Unauthorized('Pending approval terms')
+    
+    response = HttpResponse()
+    response.status=204
+    user_info = {'userid':user.username,
+                 'email':[user.email],
+                 'name':user.realname,
+                 'auth_token':user.auth_token,
+                 'auth_token_created':epoch(user.auth_token_created),
+                 'auth_token_expires':epoch(user.auth_token_expires),
+                 'has_credits':user.has_credits,
+                 'is_active':user.is_active,
+                 'groups':[g.name for g in user.groups.all()]}
+    response.content = json.dumps(user_info)
+    response['Content-Type'] = 'application/json; charset=UTF-8'
+    response['Content-Length'] = len(response.content)
+    return response
 
+@api_method(http_method='GET')
 def get_services(request):
-    if request.method != 'GET':
-        raise BadRequest('Method not allowed.')
-
     callback = request.GET.get('callback', None)
     data = json.dumps(CLOUD_SERVICES)
     mimetype = 'application/json'
@@ -122,6 +176,7 @@ def get_services(request):
 
     return HttpResponse(content=data, mimetype=mimetype)
 
+@api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
     location = request.GET.get('location', '')
     exclude = []
@@ -144,7 +199,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': "My account" })
         if with_extra_links:
-            if request.user.password:
+            if request.user.has_usable_password():
                 l.append({ 'url': absolute(reverse('password_change')),
                           'name': "Change password" })
             if INVITATIONS_ENABLED:
@@ -165,3 +220,47 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         data = '%s(%s)' % (callback, data)
 
     return HttpResponse(content=data, mimetype=mimetype)
+
+@api_method(http_method='GET', token_required=True, perms=['astakos.im.can_find_userid'])
+def find_userid(request):
+    # Normal Response Codes: 204
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+    email = request.GET.get('email')
+    if not email:
+        raise BadRequest('Email missing')
+    try:
+        user = AstakosUser.objects.get(email = email)
+    except AstakosUser.DoesNotExist, e:
+        raise BadRequest('Invalid email')
+    else:
+        response = HttpResponse()
+        response.status=204
+        user_info = {'userid':user.username}
+        response.content = json.dumps(user_info)
+        response['Content-Type'] = 'application/json; charset=UTF-8'
+        response['Content-Length'] = len(response.content)
+        return response
+
+@api_method(http_method='GET', token_required=True, perms=['astakos.im.can_find_email'])
+def find_email(request):
+    # Normal Response Codes: 204
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+    userid = request.GET.get('userid')
+    if not userid:
+        raise BadRequest('Userid missing')
+    try:
+        user = AstakosUser.objects.get(username = userid)
+    except AstakosUser.DoesNotExist, e:
+        raise BadRequest('Invalid userid')
+    else:
+        response = HttpResponse()
+        response.status=204
+        user_info = {'userid':user.email}
+        response.content = json.dumps(user_info)
+        response['Content-Type'] = 'application/json; charset=UTF-8'
+        response['Content-Length'] = len(response.content)
+        return response

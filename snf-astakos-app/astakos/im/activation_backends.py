@@ -131,7 +131,6 @@ class InvitationsBackend(SignupBackend):
                 # create a tmp user with the invitation realname
                 # to extract first and last name
                 u = AstakosUser(realname = invitation.realname)
-                print '>>>', invitation, invitation.inviter
                 initial_data = {'email':invitation.username,
                                 'inviter':invitation.inviter.realname,
                                 'first_name':u.first_name,
@@ -162,9 +161,6 @@ class InvitationsBackend(SignupBackend):
         (has a valid invitation code) the user is activated and if the request
         param ``next`` is present redirects to it.
         In any other case the method returns the action status and a message.
-
-        The method uses commit_manually decorator in order to ensure the user
-        will be created only if the procedure has been completed successfully.
         """
         try:
             if user.is_active:
@@ -221,9 +217,6 @@ class SimpleBackend(SignupBackend):
     def handle_activation(self, user, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
         """
         Creates an inactive user account and sends a verification email.
-
-        The method uses commit_manually decorator in order to ensure the user
-        will be created only if the procedure has been completed successfully.
 
         ** Arguments **
 

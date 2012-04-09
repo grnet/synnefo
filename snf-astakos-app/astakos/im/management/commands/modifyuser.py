@@ -81,9 +81,12 @@ class Command(BaseCommand):
             dest='inactive',
             default=False,
             help="Change user's state to inactive"),
-        make_option('--group',
-            dest='group',
-            help="Extend user groups"),
+        make_option('--add-group',
+            dest='add-group',
+            help="Add user group"),
+        make_option('--delete-group',
+            dest='delete-group',
+            help="Delete user group"),
         )
     
     def handle(self, *args, **options):
@@ -108,11 +111,19 @@ class Command(BaseCommand):
         if invitations is not None:
             user.invitations = int(invitations)
         
-        groupname = options.get('group')
+        groupname = options.get('add-group')
         if groupname is not None:
             try:
                 group = Group.objects.get(name=groupname)
                 user.groups.add(group)
+            except Group.DoesNotExist, e:
+                raise CommandError("Group named %s does not exist." % groupname)
+        
+        groupname = options.get('delete-group')
+        if groupname is not None:
+            try:
+                group = Group.objects.get(name=groupname)
+                user.groups.remove(group)
             except Group.DoesNotExist, e:
                 raise CommandError("Group named %s does not exist." % groupname)
         

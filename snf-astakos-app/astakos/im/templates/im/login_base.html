@@ -41,8 +41,8 @@ Login
               {% for o in im_modules %}
               <div>
             {% if o != 'local' %}
-            LOGIN using 
-            <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" 
+            LOGIN using
+            <a href="/im/login/{{ o }}{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
                 alt="{{ o|title }}">{{ o }}</a>
             {% endif %}
             </div>
@@ -56,7 +56,7 @@ Login
         {% endfor %}
         <div class="bottom">
             {% block body.login.signup %}
-                new to okeanos ? <a href="{% url astakos.im.views.signup %}">CREATE ACCOUNT</a>
+                new to okeanos ? <a href="{% url astakos.im.views.signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">CREATE ACCOUNT</a>
             {% endblock %}
             </div>
         </div>

@@ -45,7 +45,7 @@ from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
 from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
@@ -160,9 +160,10 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
 
         #set readonly form fields
-        self.fields['inviter'].widget.attrs['readonly'] = True
-        self.fields['email'].widget.attrs['readonly'] = True
-        self.fields['username'].widget.attrs['readonly'] = True
+        ro = ('inviter', 'email', 'username',)
+        for f in ro:
+            self.fields[f].widget.attrs['readonly'] = True
+        
 
     def save(self, commit=True):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
@@ -230,11 +231,38 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         logger.info('Created user %s', user)
         return user
 
+#class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
+#    def __init__(self, *args, **kwargs):
+#        super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+#        #set readonly form fields
+#        self.fields['email'].widget.attrs['readonly'] = True
+
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
+    """
+    Extends the LocalUserCreationForm: adds an inviter readonly field.
+    """
+    inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
+    
     def __init__(self, *args, **kwargs):
+        """
+        Changes the order of fields, and removes the username field.
+        """
         super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+
         #set readonly form fields
-        self.fields['email'].widget.attrs['readonly'] = True
+        ro = ('inviter', 'email',)
+        for f in ro:
+            self.fields[f].widget.attrs['readonly'] = True
+    
+    def save(self, commit=True):
+        user = super(InvitedThirdPartyUserCreationForm, self).save(commit=False)
+        level = user.invitation.inviter.level + 1
+        user.level = level
+        user.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        user.email_verified = True
+        if commit:
+            user.save()
+        return user
 
 class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
     def clean_email(self):
@@ -250,6 +278,9 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
                 raise forms.ValidationError(_("This email is already associated with another shibboleth account."))
         except AstakosUser.DoesNotExist:
             return email
+
+class InvitedShibbolethUserCreationForm(InvitedThirdPartyUserCreationForm):
+    pass
     
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label=_("Email"))
@@ -326,7 +357,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'url': url,
                 'site_name': SITENAME,
                 'user': user,
-                'baseurl': BASEURL,
+                'baseurl': request.build_absolute_uri(),
                 'support': DEFAULT_CONTACT_EMAIL
             }
             from_email = DEFAULT_FROM_EMAIL

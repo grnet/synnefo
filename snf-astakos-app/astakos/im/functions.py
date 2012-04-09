@@ -100,7 +100,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     Raises SendInvitationError
     """
     subject = _('Invitation to %s alpha2 testing' % SITENAME)
-    url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.signup')), invitation.code)
+    url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.index')), invitation.code)
     message = render_to_string('im/invitation.txt', {
                 'invitation': invitation,
                 'url': url,

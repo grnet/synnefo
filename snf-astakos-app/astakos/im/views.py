@@ -54,11 +54,11 @@ from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
-from astakos.im.activation_backends import get_backend
+from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, has_signed_terms
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, BASEURL, LOGOUT_NEXT
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
 from astakos.im.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
@@ -310,16 +310,15 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     """
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.index'))
+    
+    query_dict = request.__getattribute__(request.method)
+    provider = query_dict.get('provider', 'local')
     try:
-        form = LocalUserCreationForm()
         if not backend:
             backend = get_backend(request)
-        query_dict = request.__getattribute__(request.method)
-        provider = query_dict.get('provider', 'local')
         form = backend.get_signup_form(provider)
     except (Invitation.DoesNotExist, ValueError), e:
-        messages.add_message(request, messages.ERROR, e)
-    except ValueError, e:
+        form = SimpleBackend(request).get_signup_form(provider)
         messages.add_message(request, messages.ERROR, e)
     if request.method == 'POST':
         if form.is_valid():

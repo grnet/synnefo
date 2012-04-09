@@ -47,7 +47,7 @@ from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
 from astakos.im.functions import send_verification, send_admin_notification, activate
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
 
 import socket
 import logging
@@ -100,22 +100,26 @@ class InvitationsBackend(SignupBackend):
         or invitation username is reserved.
         """
         self.request = request
-        self.invitation = get_invitation(request)
         super(InvitationsBackend, self).__init__()
 
-    def get_signup_form(self, provider='local'):
+    def get_signup_form(self, provider='local', instance=None):
         """
         Returns the form class name
         """
-        invitation = self.invitation
-        initial_data = self.get_signup_initial_data(provider)
-        prefix = 'Invited' if invitation else ''
-        main = provider.capitalize()
-        suffix  = 'UserCreationForm'
-        formclass = '%s%s%s' % (prefix, main, suffix)
-        ip = self.request.META.get('REMOTE_ADDR',
-                self.request.META.get('HTTP_X_REAL_IP', None))
-        return globals()[formclass](initial_data, ip=ip)
+        try:
+            self.invitation = get_invitation(self.request)
+        except (Invitation, ValueError), e:
+            self.invitation = None
+        else:
+            invitation = self.invitation
+            initial_data = self.get_signup_initial_data(provider)
+            prefix = 'Invited' if invitation else ''
+            main = provider.capitalize()
+            suffix  = 'UserCreationForm'
+            formclass = '%s%s%s' % (prefix, main, suffix)
+            ip = self.request.META.get('REMOTE_ADDR',
+                    self.request.META.get('HTTP_X_REAL_IP', None))
+            return globals()[formclass](initial_data, instance=instance, ip=ip)
 
     def get_signup_initial_data(self, provider):
         """
@@ -134,7 +138,8 @@ class InvitationsBackend(SignupBackend):
                 initial_data = {'email':invitation.username,
                                 'inviter':invitation.inviter.realname,
                                 'first_name':u.first_name,
-                                'last_name':u.last_name}
+                                'last_name':u.last_name,
+                                'provider':provider}
         else:
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
@@ -191,7 +196,7 @@ class SimpleBackend(SignupBackend):
         self.request = request
         super(SimpleBackend, self).__init__()
 
-    def get_signup_form(self, provider='local'):
+    def get_signup_form(self, provider='local', instance=None):
         """
         Returns the form class name
         """
@@ -205,7 +210,7 @@ class SimpleBackend(SignupBackend):
                 initial_data = request.POST
         ip = self.request.META.get('REMOTE_ADDR',
                 self.request.META.get('HTTP_X_REAL_IP', None))
-        return globals()[formclass](initial_data, ip=ip)
+        return globals()[formclass](initial_data, instance=instance, ip=ip)
     
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):

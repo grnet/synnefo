@@ -113,7 +113,6 @@ def get_invitation(request):
     if not code:
         return
     invitation = Invitation.objects.get(code = code)
-    print '>>>', invitation
     if invitation.is_consumed:
         raise ValueError(_('Invitation is used'))
     try:

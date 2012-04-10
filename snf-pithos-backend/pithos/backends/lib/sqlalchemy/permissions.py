@@ -92,6 +92,23 @@ class Permissions(XFeatures, Groups, Public):
             del(permissions[WRITE])
         return permissions
     
+    def access_members(self, path):
+        feature = self.xfeature_get(path)
+        if not feature:
+            return []
+        permissions = self.feature_dict(feature)
+        members = set()
+        members.update(permissions.get(READ, []))
+        members.update(permissions.get(WRITE, []))
+        for m in set(members):
+            parts = m.split(':', 1)
+            if len(parts) != 2:
+                continue
+            user, group = parts
+            members.remove(m)
+            members.update(self.group_members(user, group))
+        return list(members)
+    
     def access_clear(self, path):
         """Revoke access to path (both permissions and public)."""
         

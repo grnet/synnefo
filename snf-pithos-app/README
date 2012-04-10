@@ -47,6 +47,10 @@ To update checksums asynchronously, enable the queue, install snf-pithos-tools a
 
     pithos-dispatcher --exchange=pithos --key=pithos.object --callback=pithos.api.dispatch.update_md5
 
+To send sharing notifications::
+
+    pithos-dispatcher --exchange=pithos --key=pithos.sharing --callback=pithos.api.dispatch.send_sharing_notification
+
 Administrator functions
 -----------------------
 

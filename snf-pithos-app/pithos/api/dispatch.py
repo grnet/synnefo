@@ -5,6 +5,11 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
 from pithos.backends import connect_backend
 from pithos.api.util import hashmap_md5
 
+from django.core.mail import send_mail
+from django.utils.translation import ugettext as _
+
+from astakos.im.settings import DEFAULT_FROM_EMAIL
+
 def update_md5(m):
     if m['resource'] != 'object' or m['details']['action'] != 'object update':
         return
@@ -33,3 +38,22 @@ def update_md5(m):
         print 'WARNING: Can not update checksum for path "%s" (%s)' % (path, e)
     
     backend.close()
+
+def send_sharing_notification(m):
+    if m['resource'] != 'sharing':
+        return
+    
+    members = m['details']['members']
+    user = m['details']['user']
+    path = m['value']
+    account, container, name = path.split('/', 2)
+    
+    subject = 'Invitation to a Pithos+ shared object'
+    from_email = DEFAULT_FROM_EMAIL
+    recipient_list = members
+    message = 'User %s has invited you to a Pithos+ shared object. You can view it under "Shared to me" at "%s".' %(user, path)
+    try:
+        send_mail(subject, message, from_email, recipient_list)
+        print 'INFO: Sharing notification sent for path "%s" to %s' % (path, ','.join(recipient_list))
+    except (SMTPException, socket.error) as e:
+        print 'WARNING: Can not update send email for sharing "%s" (%s)' % (path, e)

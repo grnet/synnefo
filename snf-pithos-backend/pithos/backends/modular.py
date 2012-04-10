@@ -104,9 +104,9 @@ def backend_method(func=None, autocommit=1):
         try:
             self.messages = []
             ret = func(self, *args, **kw)
-            self.wrapper.commit()
             for m in self.messages:
                 self.queue.send(*m)
+            self.wrapper.commit()
             return ret
         except:
             self.wrapper.rollback()
@@ -603,6 +603,7 @@ class ModularBackend(BaseBackend):
         path = self._lookup_object(account, container, name)[0]
         self._check_permissions(path, permissions)
         self.permissions.access_set(path, permissions)
+        self._report_sharing_change(user, account, path, {'members':self.permissions.access_members(path)})
     
     @backend_method
     def get_object_public(self, user, account, container, name):
@@ -671,6 +672,7 @@ class ModularBackend(BaseBackend):
         
         if permissions is not None:
             self.permissions.access_set(path, permissions)
+            self._report_sharing_change(user, account, path, {'members':self.permissions.access_members(path)})
         
         self._report_object_change(user, account, path, details={'version': dest_version_id, 'action': 'object update'})
         return dest_version_id
@@ -1017,6 +1019,11 @@ class ModularBackend(BaseBackend):
         logger.debug("_report_object_change: %s %s %s %s", user, account, path, details)
         details.update({'user': user})
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',), account, QUEUE_INSTANCE_ID, 'object', path, details))
+    
+    def _report_sharing_change(self, user, account, path, details={}):
+        logger.debug("_report_permissions_change: %s %s %s %s", user, account, path, details)
+        details.update({'user': user})
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',), account, QUEUE_INSTANCE_ID, 'sharing', path, details))
     
     # Policy functions.
     

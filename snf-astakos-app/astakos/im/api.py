@@ -178,19 +178,9 @@ def get_services(request):
 
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
-    location = request.GET.get('location', '')
     exclude = []
     index_url = reverse('index')
-    login_url = reverse('login')
-    logout_url = reverse('astakos.im.views.logout')
     absolute = lambda (url): request.build_absolute_uri(url)
-    l = index_url, login_url, logout_url
-    forbidden = []
-    for url in l:
-        url = url.rstrip('/')
-        forbidden.extend([url, url + '/', absolute(url), absolute(url + '/')])
-    if location not in forbidden:
-        index_url = '%s?next=%s' % (index_url, quote(location))
     l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
     if request.user.is_authenticated():
         l = []

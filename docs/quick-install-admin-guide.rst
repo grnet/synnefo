@@ -588,7 +588,7 @@ Let's continue to install Pithos+ now.
 Installation of Pithos+ on node2
 ================================
 
-To install pithos+, grab the package from our repository (make sure  you made
+To install pithos+, grab the packages from our repository (make sure  you made
 the additions needed in your ``/etc/apt/sources.list`` file, as described
 previously), by running:
 
@@ -599,8 +599,15 @@ previously), by running:
 After successful installation of snf-pithos-app, make sure that also
 snf-webproject has been installed (marked as "Recommended" package). Refer to
 the "Installation of Astakos on node1" section, if you don't remember why this
-should happen. 
+should happen. Now, install the pithos web interface:
 
+.. code-block:: console
+
+   # apt-get install snf-pithos-webclient
+
+This package provides the standalone pithos web client. The web client is the
+web UI for pithos+ and will be accessible by clicking "pithos+" on the Astakos
+interface's cloudbar, at the top of the Astakos homepage.
 
 Configuration of Pithos+
 ========================
@@ -612,7 +619,7 @@ After pithos+ is successfully installed, you will find the directory
 ``/etc/synnefo`` and some configuration files inside it, as you did in node1
 after installation of astakos. Here, you will not have to change anything that
 has to do with snf-common or snf-webproject. Everything is set at node1. You
-only need to change settings that have to do with pithos. Specifically:
+only need to change settings that have to do with pithos+. Specifically:
 
 Edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``. There you need to set
 only the two options:
@@ -633,6 +640,45 @@ store its data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
 
+Then we need to setup the web UI and connect it to astakos. To do so, edit
+``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:
+
+.. code-block:: console
+
+   PITHOS_UI_LOGIN_URL = "https://node1.example.com/im/login?next="
+   PITHOS_UI_FEEDBACK_URL = "https://node1.example.com/im/feedback"
+
+The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
+you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
+pithos+ feedback form. Astakos already provides a generic feedback form for all
+services, so we use this one.
+
+Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
+pithos+ web UI with the astakos web UI (through the top cloudbar):
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
+   CLOUDBAR_ACTIVE_SERVICE = 'pithos'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+
+The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
+cloudbar.
+
+The ``CLOUDBAR_ACTIVE_SERVICE`` registers the client as a new service served by
+astakos. It's name should be identical with the ``id`` name given at the
+astakos' ``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos "Conf
+Files" section, we actually set the third item of the ``ASTAKOS_CLOUD_SERVICES``
+list, to the dictionary:
+``{ 'url':'https://nod...', 'name':'pithos+', 'id':'pithos }``. This item
+represents the pithos+ service. The ``id`` we set there, is the ``id`` we want
+here.
+
+The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
+pithos+ web client to get from astakos all the information needed to fill its
+own cloudbar.  So we put our astakos deployment urls there.
+
 Servers Initialization
 ----------------------
 
@@ -642,7 +688,6 @@ After configuration is done, we initialize the servers on node2:
 
    root@node2:~ # /etc/init.d/gunicorn restart
    root@node2:~ # /etc/init.d/apache2 restart
-
 
 You have now finished the Pithos+ setup. Let's test it now.
 

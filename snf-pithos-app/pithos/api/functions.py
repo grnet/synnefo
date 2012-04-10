@@ -493,7 +493,7 @@ def object_list(request, v_account, v_container):
         virtual = False
     
     # Naming policy.
-    if prefix and delimiter:
+    if prefix and delimiter and not prefix.endswith(delimiter):
         prefix = prefix + delimiter
     if not prefix:
         prefix = ''
@@ -536,7 +536,7 @@ def object_list(request, v_account, v_container):
         response.status_code = 200
         response.content = '\n'.join([x[0] for x in objects]) + '\n'
         return response
-    
+
     try:
         objects = request.backend.list_object_meta(request.user_uniq, v_account,
                                     v_container, prefix, delimiter, marker,
@@ -818,7 +818,7 @@ def object_write(request, v_account, v_container, v_object):
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
         content_length = get_content_length(request)
     # Should be BadRequest, but API says otherwise.
-    if not content_type:
+    if content_type is None:
         raise LengthRequired('Missing Content-Type header')
     
     if 'hashmap' in request.GET:

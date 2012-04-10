@@ -44,8 +44,8 @@ class Queue(object):
         self.conn = exchange_connect(exchange)
         self.client_id = params['client_id']
     
-    def send(self, message_key, user, resource, value, details):
-        body = Receipt(self.client_id, user, resource, value, details).format()
+    def send(self, message_key, user, instance, resource, value, details):
+        body = Receipt(self.client_id, user, instance, resource, value, details).format()
         exchange_send(self.conn, message_key, body)
     
     def close(self):

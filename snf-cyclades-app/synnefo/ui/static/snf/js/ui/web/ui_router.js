@@ -70,14 +70,13 @@
         show_welcome: function() {
             if (snf.storage.vms.length == 0) {
                 ui.main.show_empty();
-                this.navigate("welcome/");
             } else {
                 this.index();
             }
         },
 
         index: function() {
-            this.vms_index();
+            ui.main.show_view("icon");
         },
 
         vms_index: function() {

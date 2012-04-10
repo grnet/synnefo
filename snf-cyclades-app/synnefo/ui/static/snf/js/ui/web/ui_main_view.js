@@ -624,9 +624,9 @@
             this.loaded = true;
             
             // application start point
-            this.show_initial_view();
 
             this.check_empty();
+            this.show_initial_view();
         },
 
         load: function() {

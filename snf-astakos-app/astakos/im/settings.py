@@ -72,8 +72,11 @@ LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 # Set user email patterns that are automatically activated
 RE_USER_EMAIL_PATTERNS = getattr(settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
 
-# messages to display on login page header
+# Messages to display on login page header
+# e.g. {'warning': 'This warning message will be displayed on the top of login page'}
 LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', {})
 
-# messages to display on login page header
+# messages to display as extra actions in account forms
+# e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
+

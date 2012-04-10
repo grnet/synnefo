@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -112,24 +112,24 @@ def signed_terms_required(func):
 def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context={}):
     """
     If there is logged on user renders the profile page otherwise renders login page.
-    
+
     **Arguments**
-    
+
     ``login_template_name``
         A custom login template to use. This is optional; if not specified,
         this will default to ``im/login.html``.
-    
+
     ``profile_template_name``
         A custom profile template to use. This is optional; if not specified,
         this will default to ``im/profile.html``.
-    
+
     ``extra_context``
         An dictionary of variables to add to the template context.
-    
+
     **Template:**
-    
+
     im/profile.html or im/login.html or ``template_name`` keyword argument.
-    
+
     """
     template_name = login_template_name
     if request.user.is_authenticated():
@@ -144,33 +144,33 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
 def invite(request, template_name='im/invitations.html', extra_context={}):
     """
     Allows a user to invite somebody else.
-    
+
     In case of GET request renders a form for providing the invitee information.
     In case of POST checks whether the user has not run out of invitations and then
     sends an invitation email to singup to the service.
-    
+
     The view uses commit_manually decorator in order to ensure the number of the
     user invitations is going to be updated only if the email has been successfully sent.
-    
+
     If the user isn't logged in, redirects to settings.LOGIN_URL.
-    
+
     **Arguments**
-    
+
     ``template_name``
         A custom template to use. This is optional; if not specified,
         this will default to ``im/invitations.html``.
-    
+
     ``extra_context``
         An dictionary of variables to add to the template context.
-    
+
     **Template:**
-    
+
     im/invitations.html or ``template_name`` keyword argument.
-    
+
     **Settings:**
-    
+
     The view expectes the following settings are defined:
-    
+
     * LOGIN_URL: login uri
     * ASTAKOS_DEFAULT_CONTACT_EMAIL: service support email
     * ASTAKOS_DEFAULT_FROM_EMAIL: from email
@@ -182,7 +182,6 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     inviter = request.user
     if request.method == 'POST':
         form = InvitationForm(request.POST)
-        
         if inviter.invitations > 0:
             if form.is_valid():
                 try:
@@ -205,7 +204,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
             status = messages.ERROR
             message = _('No invitations left')
     messages.add_message(request, status, message)
-    
+
     sent = [{'email': inv.username,
              'realname': inv.realname,
              'is_consumed': inv.is_consumed}
@@ -222,30 +221,30 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
 def edit_profile(request, template_name='im/profile.html', extra_context={}):
     """
     Allows a user to edit his/her profile.
-    
+
     In case of GET request renders a form for displaying the user information.
     In case of POST updates the user informantion and redirects to ``next``
     url parameter if exists.
-    
+
     If the user isn't logged in, redirects to settings.LOGIN_URL.
-    
+
     **Arguments**
-    
+
     ``template_name``
         A custom template to use. This is optional; if not specified,
         this will default to ``im/profile.html``.
-    
+
     ``extra_context``
         An dictionary of variables to add to the template context.
-    
+
     **Template:**
-    
+
     im/profile.html or ``template_name`` keyword argument.
-    
+
     **Settings:**
-    
+
     The view expectes the following settings are defined:
-    
+
     * LOGIN_URL: login uri
     """
     form = ProfileForm(instance=request.user)
@@ -275,10 +274,10 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
-    
+
     In case of GET request renders a form for providing the user information.
     In case of POST handles the signup.
-    
+
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
     if present, otherwise to the ``astakos.im.activation_backends.InvitationBackend``
     if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.activation_backends.SimpleBackend`` if not
@@ -294,15 +293,15 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     ``template_name``
         A custom template to render. This is optional;
         if not specified, this will default to ``im/signup.html``.
-    
-    
+
+
     ``on_success``
         A custom template to render in case of success. This is optional;
         if not specified, this will default to ``im/signup_complete.html``.
-    
+
     ``extra_context``
         An dictionary of variables to add to the template context.
-    
+
     **Template:**
     
     im/signup.html or ``template_name`` keyword argument.
@@ -351,27 +350,27 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
     """
     Allows a user to send feedback.
-    
+
     In case of GET request renders a form for providing the feedback information.
     In case of POST sends an email to support team.
-    
+
     If the user isn't logged in, redirects to settings.LOGIN_URL.
-    
+
     **Arguments**
-    
+
     ``template_name``
         A custom template to use. This is optional; if not specified,
         this will default to ``im/feedback.html``.
-    
+
     ``extra_context``
         An dictionary of variables to add to the template context.
-    
+
     **Template:**
-    
+
     im/signup.html or ``template_name`` keyword argument.
-    
+
     **Settings:**
-    
+
     * LOGIN_URL: login uri
     * ASTAKOS_DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
@@ -380,7 +379,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
     if request.method == 'POST':
         if not request.user:
             return HttpResponse('Unauthorized', status=401)
-        
+
         form = FeedbackForm(request.POST)
         if form.is_valid():
             msg = form.cleaned_data['feedback_msg'],
@@ -424,7 +423,7 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
     """
     Activates the user identified by the ``auth`` request parameter, sends a welcome email
     and renews the user token.
-    
+
     The view uses commit_manually decorator in order to ensure the user state will be updated
     only if the email will be send successfully.
     """
@@ -434,7 +433,7 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest(_('No such user'))
-    
+
     user.is_active = True
     user.email_verified = True
     user.save()
@@ -468,12 +467,12 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
              term = ApprovalTerms.objects.get(id=term_id)
         except ApprovalTermDoesNotExist, e:
             pass
-    
+
     if not term:
-        return HttpResponseBadRequest(_('No approval terms found.'))
+        return HttpResponseRedirect(reverse('astakos.im.views.index'))
     f = open(term.location, 'r')
     terms = f.read()
-    
+
     if request.method == 'POST':
         next = request.POST.get('next')
         if not next:

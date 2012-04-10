@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -45,8 +45,6 @@ from django.db import models
 from django.contrib.auth.models import User, UserManager, Group
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
-from astakos.im.queue.userevent import UserEvent
-from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
 
 QUEUE_CLIENT_ID = 3 # Astakos.
 
@@ -58,28 +56,28 @@ class AstakosUser(User):
     """
     # Use UserManager to get the create_user method, etc.
     objects = UserManager()
-    
+
     affiliation = models.CharField('Affiliation', max_length=255, blank=True)
     provider = models.CharField('Provider', max_length=255, blank=True)
-    
+
     #for invitations
     user_level = DEFAULT_USER_LEVEL
     level = models.IntegerField('Inviter level', default=user_level)
     invitations = models.IntegerField('Invitations left', default=INVITATIONS_PER_LEVEL.get(user_level, 0))
-    
+
     auth_token = models.CharField('Authentication Token', max_length=32,
                                   null=True, blank=True)
     auth_token_created = models.DateTimeField('Token creation date', null=True)
     auth_token_expires = models.DateTimeField('Token expiration date', null=True)
-    
+
     updated = models.DateTimeField('Update date')
     is_verified = models.BooleanField('Is verified?', default=False)
-    
+
     # ex. screen_name for twitter, eppn for shibboleth
     third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
-    
+
     email_verified = models.BooleanField('Email verified?', default=False)
-    
+
     has_credits = models.BooleanField('Has credits?', default=False)
     has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
     date_signed_terms = models.DateTimeField('Signed terms date', null=True)
@@ -98,7 +96,7 @@ class AstakosUser(User):
     @property
     def realname(self):
         return '%s %s' %(self.first_name, self.last_name)
-    
+
     @realname.setter
     def realname(self, value):
         parts = value.split(' ')
@@ -107,14 +105,14 @@ class AstakosUser(User):
             self.last_name = parts[1]
         else:
             self.last_name = parts[0]
-    
+
     @property
     def invitation(self):
         try:
             return Invitation.objects.get(username=self.email)
         except Invitation.DoesNotExist:
             return None
-    
+
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
@@ -152,12 +150,12 @@ class AstakosUser(User):
         md5.update(self.username)
         md5.update(self.realname.encode('ascii', 'ignore'))
         md5.update(asctime())
-        
+
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
-    
+
     def __unicode__(self):
         return self.username
 
@@ -165,7 +163,7 @@ class ApprovalTerms(models.Model):
     """
     Model for approval terms
     """
-    
+
     date = models.DateTimeField('Issue date', db_index=True, default=datetime.now())
     location = models.CharField('Terms location', max_length=255)
 
@@ -195,7 +193,7 @@ class Invitation(models.Model):
         self.is_consumed = True
         self.consumed = datetime.now()
         self.save()
-        
+
     def __unicode__(self):
         return '%s -> %s [%d]' % (self.inviter, self.username, self.code)
 
@@ -210,8 +208,13 @@ def report_user_event(user):
             if (db_instance.__getattribute__(f) != user.__getattribute__(f)):
                 return True
         return False
-    
+
     if QUEUE_CONNECTION and should_send(user):
+
+        from astakos.im.queue.userevent import UserEvent
+        from synnefo.lib.queue import exchange_connect, exchange_send, \
+                exchange_close
+
         eventType = 'create' if not user.id else 'modify'
         body = UserEvent(QUEUE_CLIENT_ID, user, eventType, {}).format()
         conn = exchange_connect(QUEUE_CONNECTION)

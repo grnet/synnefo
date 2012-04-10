@@ -341,6 +341,16 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     Since Django 1.3 this is useless since ``django.contrib.auth.views.reset_password``
     accepts a from_email argument.
     """
+    def clean_email(self):
+        email = super(ExtendedPasswordResetForm, self).clean_email()
+        try:
+            user = AstakosUser.objects.get(email=email)
+            if not user.has_usable_password():
+                raise forms.ValidationError(_("This account has not a usable password."))
+        except AstakosUser.DoesNotExist, e:
+            raise forms.ValidationError(_('That e-mail address doesn\'t have an associated user account. Are you sure you\'ve registered?'))
+        return email
+    
     def save(self, domain_override=None, email_template_name='registration/password_reset_email.html',
              use_https=False, token_generator=default_token_generator, request=None):
         """

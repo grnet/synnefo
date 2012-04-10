@@ -10,6 +10,9 @@ from django.utils.translation import ugettext as _
 
 from astakos.im.settings import DEFAULT_FROM_EMAIL
 
+import socket
+from smtplib import SMTPException
+
 def update_md5(m):
     if m['resource'] != 'object' or m['details']['action'] != 'object update':
         return

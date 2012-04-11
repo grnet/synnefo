@@ -1,16 +1,20 @@
 .. _snf-image:
 
-=========
 snf-image
-=========
+^^^^^^^^^
 
-:ref:`snf-image <snf-image>` is the secure image deployment tool used
-by the synnefo's Compute Service, :ref:`cyclades <cyclades>`.
+:ref:`snf-image <snf-image>` is the secure image deployment tool used by the
+synnefo's Compute Service, :ref:`cyclades <cyclades>`.
 
-Currently, it is implemented as an OS definition inside Ganeti.
+Currently, it is implemented as an OS definition for
+`Ganeti <http://code.google.com/p/ganeti>`_.
 
-.. warning::
+Furthermore :ref:`snf-image <snf-image>` acts as a standalone add-on for Ganeti
+and can be used with it independently. Someone who uses Ganeti, (and has
+nothing to do with Synnefo) can use snf-image to serurely deploy many kind of
+images with Ganeti.
 
-   this is just a placeholder in the documentation.
-   Please see the `main snf-image site <https://code.grnet.gr/projects/snf-image>`_
-   for more information on installing and configuring snf-image.
+Please refer to the
+`snf-image documentation <https://code.grnet.gr/projects/snf-image/wiki>`_ for
+all details concerning installation and configuration.
+

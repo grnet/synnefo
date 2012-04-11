@@ -1,5 +1,5 @@
 Welcome to synnefo's documentation
-==================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: /images/synnefo-logo.png
 
@@ -13,12 +13,12 @@ synnefo is opensource software, used to create massively scalable IaaS clouds.
 .. toctree::
    :maxdepth: 1
 
-   Compute Service (codename: cyclades) <cyclades>
-   File Storage Service (codename: pithos+) <http://docs.dev.grnet.gr/pithos>
-   Image Registry (codename: plankton) <http://docs.dev.grnet.gr/cyclades/plankton>
-   Volume Storage Service (codename: archipelagos) <http://docs.dev.grnet.gr/archipelagos>
-   Identity Management (codename: astakos) <http://docs.dev.grnet.gr/astakos>
-   Billing Service (codename: aquarium) <http://docs.dev.grnet.gr/aquarium>
+   Identity Management (codename: astakos) <astakos>
+   File Storage Service (codename: pithos+) <pithos>
+   Compute/Network Service (codename: cyclades) <cyclades>
+   Image Registry (codename: plankton) <plankton>
+   Billing Service (codename: aquarium) <http://docs.dev.grnet.gr/aquarium/latest/index.html>
+   Volume Storage Service (codename: archipelago) <archipelago>
 
 There are also components for:
 
@@ -26,7 +26,7 @@ There are also components for:
    :maxdepth: 1
 
    Secure image deployment (image tool) <snf-image>
-   Command-line cloud management (kamaki tool) <http://docs.dev.grnet.gr/cyclades/kamaki>
+   Command-line cloud management (kamaki tool) <http://docs.dev.grnet.gr/kamaki/v0.2/index.html>
 
 synnefo is designed to be as simple, scalable and production ready as possible.
 Furthermore, although it can be deployed in small configurations, its prime
@@ -38,46 +38,34 @@ All synnefo components use an intuitive settings mechanism, that gives you the
 ability to either deploy the above services independently and standalone, or
 interconnected with each other, in large configurations.
 
-For complete documentation on each service's architecture, installation,
-configuration, components needed, interfaces, APIs, and deployment follow the
-above links. You can also browse all synnefo component in this list.
 
-Quick Installation Guide
-------------------------
+Synnefo Guides
+==============
 
-The quick installation guide describes how to install the whole synnefo stack in
-just two physical nodes, for testing and development purposes. This guide is
-useful to those interested in deploying synnefo in large scale, as a starting
-point that will help them get familiar with the synnefo components and overall
-architecture, as well as the interconnection between different services. Such an
-installation, also provides a quick preview of the basic synnefo features,
-although we would like to think that synnefo unveils its real power while
-scaling.
+There are 3 guides for Synnefo. The Administrator's Guide targets system
+administrators, who want to deploy synnefo on small or large installations. The
+Developer's Guide targets developers, who want to build on top of synnefo and so
+describes all the different types of interfaces synnefo provides to the external
+world. The Integrator's Guide targets developers, who want to actually
+extend/modify/change synnefo itself, so describes synnefo's indepth architecture
+and the internals of synnefo components.
 
-The quick installation guide comes in two versions:
+.. toctree::
+   :maxdepth: 2
 
-| :ref:`Administrator's quick installation guide <quick-install-admin-guide>`
-| This guide will walk you through a complete installation using debian packages.
+   Administrator's Guide <admin-guide>
+   Developer's Guide <dev-guide>
+   Integrator's Guide <intgrt-guide>
 
-| :ref:`Developer's quick installation guide <quick-install-dev-guide>`
-| This guide will setup a development environment using pip install.
-
-Standard Installation
----------------------
-
-Also a complete standard installation guide will soon be available, that will
-describe thoroughly how to deploy all services, interconnected with each other,
-on multiple physical nodes. For now, if you installed successfully using the quick
-installation guide and need more details, please refer to each service's own
-documentation, following the links on top.
 
 Contact
--------
+=======
 
 You can contact the synnefo team at: synnefo@lists.grnet.gr
 
+
 Indices and tables
-------------------
+==================
 
 
 * :ref:`genindex`

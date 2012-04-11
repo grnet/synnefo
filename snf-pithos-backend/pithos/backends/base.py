@@ -413,10 +413,10 @@ class BaseBackend(object):
         return {}
     
     def update_object_permissions(self, user, account, container, name, permissions):
-        """Update the permissions associated with the object.
+        """Update (set) the permissions associated with the object.
         
         Parameters:
-            'permissions': Dictionary with permissions to update
+            'permissions': Dictionary with permissions to set
         
         Raises:
             NotAllowedError: Operation not permitted

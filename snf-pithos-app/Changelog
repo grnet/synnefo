@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v0.9.4
+------
+* Solve OOS API compatibility problems.
+* add missing imports
+* Send sharing notifications.
+* Different queue message types use different keys.
+* Add dispatcher function for updating object checksums asynchronously.
+* Make checksum updates optional.
 
 v0.9.3
 ------

@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.9.4
+------
+* Overwrite permissions every time.
+* Send sharing notifications.
+* Include instance in queue messages.
+* Different queue message types use different keys.
+* Report object changes to the queue.
 
 v0.9.3
 ------

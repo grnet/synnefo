@@ -76,9 +76,12 @@ class LocalUserCreationForm(UserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        if 'ip' in kwargs:
-            self.ip = kwargs['ip']
-            kwargs.pop('ip')
+        request = kwargs.get('request', None)
+        if request:
+            kwargs.pop('request')
+            self.ip = request.META.get('REMOTE_ADDR',
+                                       request.META.get('HTTP_X_REAL_IP', None))
+        
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
@@ -186,8 +189,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        if 'ip' in kwargs:
-            kwargs.pop('ip')
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'provider', 'third_party_identifier']
@@ -284,6 +285,43 @@ class InvitedShibbolethUserCreationForm(InvitedThirdPartyUserCreationForm):
     
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label=_("Email"))
+    recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
+    recaptcha_response_field = forms.CharField(widget=RecaptchaWidget, label='')
+    
+    def __init__(self, *args, **kwargs):
+        was_limited = kwargs.get('was_limited', False)
+        request = kwargs.get('request', None)
+        if request:
+            self.ip = request.META.get('REMOTE_ADDR',
+                                       request.META.get('HTTP_X_REAL_IP', None))
+        
+        t = ('request', 'was_limited')
+        for elem in t:
+            if elem in kwargs.keys():
+                kwargs.pop(elem)
+        super(LoginForm, self).__init__(*args, **kwargs)
+        
+        self.fields.keyOrder = ['username', 'password']
+        if was_limited and RECAPTCHA_ENABLED:
+            self.fields.keyOrder.extend(['recaptcha_challenge_field',
+                                         'recaptcha_response_field',])
+    
+    def clean_recaptcha_response_field(self):
+        if 'recaptcha_challenge_field' in self.cleaned_data:
+            self.validate_captcha()
+        return self.cleaned_data['recaptcha_response_field']
+
+    def clean_recaptcha_challenge_field(self):
+        if 'recaptcha_response_field' in self.cleaned_data:
+            self.validate_captcha()
+        return self.cleaned_data['recaptcha_challenge_field']
+
+    def validate_captcha(self):
+        rcf = self.cleaned_data['recaptcha_challenge_field']
+        rrf = self.cleaned_data['recaptcha_response_field']
+        check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
+        if not check.is_valid:
+            raise forms.ValidationError(_('You have not entered the correct words'))
 
 class ProfileForm(forms.ModelForm):
     """

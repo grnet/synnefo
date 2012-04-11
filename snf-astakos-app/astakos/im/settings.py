@@ -80,3 +80,6 @@ LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', {})
 # e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
 
+# The number of unsuccessful login requests per minute allowed for a specific email
+RATELIMIT_RETRIES_ALLOWED = getattr(settings, 'ASTAKOS_RATELIMIT_RETRIES_ALLOWED', 3)
+

@@ -40,9 +40,9 @@ Settings
 
 Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using snf-webproject.
 
-==============================      =============================================================================   ===========================================================================================
+=================================   =============================================================================   ===========================================================================================
 Name                                Default value                                                                   Description
-==============================      =============================================================================   ===========================================================================================
+=================================   =============================================================================   ===========================================================================================
 ASTAKOS_AUTH_TOKEN_DURATION         one month                                                                       Expiration time of newly created auth tokens
 ASTAKOS_DEFAULT_USER_LEVEL          4                                                                               Default (not-invited) user level
 ASTAKOS_INVITATIONS_PER_LEVEL       {0:100, 1:2, 2:0, 3:0, 4:0}                                                     Number of user invitations per user level
@@ -78,7 +78,10 @@ ASTAKOS_LOGIN_MESSAGES              {}                                          
                                                                                                                     e.g. {'warning': 'Warning message (can contain html)'}
 ASTAKOS_PROFILE_EXTRA_LINKS         {}                                                                               messages to display as extra actions in account forms
                                                                                                                     e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
-==============================      =============================================================================   ===========================================================================================
+ASTAKOS_RATELIMIT_RETRIES_ALLOWED   3                                                                               Number of unsuccessful login requests allowed for a specific account.
+                                                                                                                    When this number exceeds and ASTAKOS_RECAPTCHA_ENABLED is set the user has to solve a
+                                                                                                                    captcha challenge.
+=================================   =============================================================================   ===========================================================================================
 
 Administrator functions
 -----------------------

@@ -208,9 +208,7 @@ class SimpleBackend(SignupBackend):
         if request.method == 'POST':
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
-        ip = self.request.META.get('REMOTE_ADDR',
-                self.request.META.get('HTTP_X_REAL_IP', None))
-        return globals()[formclass](initial_data, instance=instance, ip=ip)
+        return globals()[formclass](initial_data, instance=instance, request=request)
     
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):

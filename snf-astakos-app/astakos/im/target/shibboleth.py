@@ -84,7 +84,7 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
             message = _('Inactive account')
             messages.add_message(request, messages.ERROR, message)
             return render_response(on_login_template,
-                                   login_form = LoginForm(),
+                                   login_form = LoginForm(request=request),
                                    context_instance=RequestContext(request))
     except AstakosUser.DoesNotExist, e:
         user = AstakosUser(third_party_identifier=eppn, realname=realname,

@@ -135,7 +135,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     return render_response(template_name,
-                           login_form = LoginForm(),
+                           login_form = LoginForm(request=request),
                            context_instance = get_context(request, extra_context))
 
 @login_required

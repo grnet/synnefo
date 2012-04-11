@@ -27,6 +27,8 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
+import datetime
+
 from django.conf import settings
 from django.db import models
 
@@ -167,6 +169,7 @@ class VirtualMachine(models.Model):
             max_length=30, null=True)
     backendlogmsg = models.TextField(null=True)
     buildpercentage = models.IntegerField(default=0)
+    backendtime = models.DateTimeField(default=datetime.datetime.min)
 
     # Error classes
     class InvalidBackendIdError(Exception):

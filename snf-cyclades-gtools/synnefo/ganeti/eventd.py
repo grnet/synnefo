@@ -46,7 +46,6 @@ import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 
-import time
 import json
 import logging
 import pyinotify
@@ -55,44 +54,62 @@ import daemon.pidlockfile
 import socket
 from signal import signal, SIGINT, SIGTERM
 
-from amqplib import client_0_8 as amqp
-
 from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
 
 from synnefo import settings
+from synnefo.lib.amqp import AMQPClient
+
+def get_time_from_status(op, job):
+    """Generate a unique message identifier for a ganeti job.
+
+    The identifier is based on the timestamp of the job. Since a ganeti
+    job passes from multiple states, we need to pick the timestamp that
+    corresponds to each state.
+
+    """
+    status = op.status
+    if status == constants.JOB_STATUS_QUEUED:
+        return job.received_timestamp
+    if status == constants.JOB_STATUS_WAITLOCK:
+    #if status == constants.JOB_STATUS_WAITING:
+        return op.start_timestamp
+    if status == constants.JOB_STATUS_CANCELING:
+        return op.start_timestamp
+    if status == constants.JOB_STATUS_RUNNING:
+        return op.exec_timestamp
+    if status in constants.JOBS_FINALIZED:
+        # success, canceled, error
+        return op.end_timestamp
+
+    raise InvalidBackendState(status, job)
+
+
+class InvalidBackendStatus(Exception):
+    def __init__(self, status, job):
+        self.status = status
+        self.job = job
+
+    def __str__(self):
+        return repr("Invalid backend status: %s in job %s"
+                    % (self.status, self.job))
+
 
 class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger):
         pyinotify.ProcessEvent.__init__(self)
         self.logger = logger
-        self.chan = None
-
-    def open_channel(self):
-        conn = None
-        while conn == None:
-            handler_logger.info("Attempting to connect to %s",
-                settings.RABBIT_HOST)
-            try:
-                conn = amqp.Connection(host=settings.RABBIT_HOST,
-                     userid=settings.RABBIT_USERNAME,
-                     password=settings.RABBIT_PASSWORD,
-                     virtual_host=settings.RABBIT_VHOST)
-            except socket.error:
-                time.sleep(1)
-
-        handler_logger.info("Connection succesful, opening channel")
-        return conn.channel()
+        self.client = AMQPClient()
+        handler_logger.info("Attempting to connect to RabbitMQ hosts")
+        self.client.connect()
+        handler_logger.info("Connected succesfully")
 
     def process_IN_CLOSE_WRITE(self, event):
         self.process_IN_MOVED_TO(event)
 
     def process_IN_MOVED_TO(self, event):
-        if self.chan == None:
-            self.chan = self.open_channel()
-
         jobfile = os.path.join(event.path, event.name)
         if not event.name.startswith("job-"):
             self.logger.debug("Not a job file: %s" % event.path)
@@ -128,11 +145,15 @@ class JobFileHandler(pyinotify.ProcessEvent):
             except IndexError:
                 logmsg = None
 
+            # Generate a unique message identifier
+            event_time = get_time_from_status(op, job)
+
             self.logger.debug("Job: %d: %s(%s) %s %s",
                     int(job.id), op.input.OP_ID, instances, op.status, logmsg)
 
             # Construct message
             msg = {
+                    "event_time" : event_time,
                     "type": "ganeti-op-status",
                     "instance": instances,
                     "operation": op.input.OP_ID,
@@ -140,31 +161,18 @@ class JobFileHandler(pyinotify.ProcessEvent):
                     "status": op.status,
                     "logmsg": logmsg
                     }
-            if logmsg:
-                msg["message"] = logmsg
 
-            instance = instances.split('-')[0]
-            routekey = "ganeti.%s.event.op" % instance
+            instance_prefix = instances.split('-')[0]
+            routekey = "ganeti.%s.event.op" % instance_prefix
 
-            self.logger.debug("Delivering msg: %s (key=%s)",
-                json.dumps(msg), routekey)
-            msg = amqp.Message(json.dumps(msg))
-            msg.properties["delivery_mode"] = 2  # Persistent
+            self.logger.debug("Delivering msg: %s (key=%s)", json.dumps(msg),
+                              routekey)
+            msg = json.dumps(msg)
 
-            while True:
-                try:
-                    self.chan.basic_publish(msg,
-                            exchange=settings.EXCHANGE_GANETI,
-                            routing_key=routekey)
-                    self.logger.debug("Message published to AMQP successfully")
-                    return
-                except socket.error:
-                    self.logger.exception("Server went away, reconnecting...")
-                    self.chan = self.open_channel()
-                except Exception:
-                    self.logger.exception("Caught unexpected exception, msg: ",
-                                          msg)
-                    raise
+            # Send the message to RabbitMQ
+            self.client.basic_publish(exchange=settings.EXCHANGE_GANETI,
+                                      routing_key=routekey,
+                                      body=msg)
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):

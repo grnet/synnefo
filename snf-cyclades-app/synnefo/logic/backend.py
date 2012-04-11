@@ -56,7 +56,7 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
 @transaction.commit_on_success
-def process_op_status(vm, jobid, opcode, status, logmsg):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -96,13 +96,14 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
         vm.deleted = True
         vm.nics.all().delete()
 
+    vm.backendtime = etime
     # Any other notification of failure leaves the operating state unchanged
 
     vm.save()
 
 
 @transaction.commit_on_success
-def process_net_status(vm, nics):
+def process_net_status(vm, etime, nics):
     """Process a net status notification from the backend
 
     Process an incoming message from the Ganeti backend,
@@ -145,11 +146,12 @@ def process_net_status(vm, nics):
         # network nics modified, update network object
         net.save()
 
+    vm.backendtime = etime
     vm.save()
 
 
 @transaction.commit_on_success
-def process_create_progress(vm, rprogress, wprogress):
+def process_create_progress(vm, etime, rprogress, wprogress):
 
     # XXX: This only uses the read progress for now.
     #      Explore whether it would make sense to use the value of wprogress
@@ -180,6 +182,7 @@ def process_create_progress(vm, rprogress, wprogress):
     #    raise VirtualMachine.IllegalState("VM is not in building state")
 
     vm.buildpercentage = percentage
+    vm.backendtime = etime
     vm.save()
 
 

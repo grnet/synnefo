@@ -51,53 +51,9 @@ import prctl
 import signal
 import socket
 
-from amqplib import client_0_8 as amqp
-
 from synnefo import settings
-
-
-class AMQPClient(object):
-    def __init__(self, routekey):
-        self.conn = None
-        self.chan = None
-        self.routekey = routekey
-
-    def open_channel(self):
-        if not self.conn:
-            try:
-                sys.stderr.write("Attempting to connect to %s\n" %
-                                 settings.RABBIT_HOST)
-                self.conn = amqp.Connection(host=settings.RABBIT_HOST,
-                                            userid=settings.RABBIT_USERNAME,
-                                            password=settings.RABBIT_PASSWORD,
-                                            virtual_host=settings.RABBIT_VHOST)
-            except socket.error:
-                sys.stderr.write("Connection failed, will retry in 1s\n")
-                time.sleep(1)
-
-        if self.conn:
-            sys.stderr.write("Connection succesful, opening channel\n")
-            self.chan = self.conn.channel()
-
-    def send_message(self, msg):
-        sys.stderr.write("Delivering msg with key=%s:\n%s\n" %
-                         (self.routekey, json.dumps(msg)))
-        msg = amqp.Message(json.dumps(msg))
-        msg.properties["delivery_mode"] = 2  # Persistent
-
-        if not self.chan:
-            self.open_channel()
-        if not self.chan:
-            return
-
-        try:
-            self.chan.basic_publish(msg,
-                                    exchange=settings.EXCHANGE_GANETI,
-                                    routing_key=self.routekey)
-        except socket.error:
-            sys.stderr.write("Server went away, reconnecting...\n")
-            self.conn = None
-            self.chan = None
+from synnefo.lib.amqp import AMQPClient
+from synnefo.lib.utils import split_time
 
 
 def parse_arguments(args):
@@ -174,7 +130,8 @@ def main():
     # determine the routekey for AMPQ
     prefix = opts.instance_name.split('-')[0]
     routekey = "ganeti.%s.event.progress" % prefix
-    amqp = AMQPClient(routekey)
+    amqp_client = AMQPClient()
+    amqp_client.connect()
 
     pid = os.fork()
     if pid == 0:
@@ -208,11 +165,14 @@ def main():
                     # send a final notification
                     final_msg = dict(type="ganeti-create-progress",
                                      instance=opts.instance_name)
+                    final_msg['event_time'] = split_time(time.time())
                     if opts.read_bytes:
                         final_msg['rprogress'] = float(100)
                     if opts.write_bytes:
                         final_msg['wprogress'] = float(100)
-                    amqp.send_message(final_msg)
+                    amqp_client.basic_publish(exchange=settings.EXCHANGE_GANETI,
+                                              routing_key=routekey,
+                                              body=json.dumps(final_msg))
                     return 0
 
         # retrieve the current values of the read/write byte counters
@@ -226,6 +186,7 @@ def main():
         # Construct notification of type 'ganeti-create-progress'
         msg = dict(type="ganeti-create-progress",
                    instance=opts.instance_name)
+        msg['event_time'] = split_time(time.time())
         if opts.read_bytes:
             msg['rprogress'] = float("%2.2f" %
                                      (rchar * 100.0 / opts.read_bytes))
@@ -234,7 +195,9 @@ def main():
                                      (wchar * 100.0 / opts.write_bytes))
 
         # and send it over AMQP
-        amqp.send_message(msg)
+        amqp_client.basic_publish(exchange=settings.EXCHANGE_GANETI,
+                                  routing_key=routekey,
+                                  body=json.dumps(msg))
 
         # Sleep for a while
         time.sleep(3)

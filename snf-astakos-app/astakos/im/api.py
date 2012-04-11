@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import logging
+import urllib
 
 from functools import wraps
 from traceback import format_exc
@@ -46,7 +47,7 @@ from django.core.urlresolvers import reverse
 
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError, Fault
 from astakos.im.models import AstakosUser
-from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED
+from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED, COOKIE_NAME
 from astakos.im.util import has_signed_terms, epoch
 
 logger = logging.getLogger(__name__)
@@ -182,14 +183,20 @@ def get_menu(request, with_extra_links=False, with_signout=True):
     index_url = reverse('index')
     absolute = lambda (url): request.build_absolute_uri(url)
     l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
-    if request.user.is_authenticated():
+    cookie = urllib.unquote(request.COOKIES.get(COOKIE_NAME, ''))
+    email = cookie.partition('|')[0]
+    try:
+        user = AstakosUser.objects.get(email=email)
+    except AstakosUser.DoesNotExist:
+        pass
+    else:
         l = []
         l.append({ 'url': absolute(reverse('astakos.im.views.index')),
-                  'name': request.user.email})
+                  'name': user.email})
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': "My account" })
         if with_extra_links:
-            if request.user.has_usable_password():
+            if user.has_usable_password():
                 l.append({ 'url': absolute(reverse('password_change')),
                           'name': "Change password" })
             if INVITATIONS_ENABLED:

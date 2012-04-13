@@ -3,8 +3,8 @@ import sys, os
 
 project = u'synnefo'
 copyright = u'2012, GRNET'
-version = '0.8'
-release = '0.8'
+version = '0.9'
+release = '0.9'
 html_title = 'synnefo ' + version
 
 templates_path = ['_templates']

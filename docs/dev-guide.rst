@@ -44,12 +44,12 @@ Images API body
 Storage API (Pithos+)
 =====================
 
-This is the Pithos+ File Storage API:
+This is the Pithos+ Object Storage API:
 
 .. toctree::
    :maxdepth: 2
 
-   File Storage API <pithos-api-guide>
+   Object Storage API <pithos-api-guide>
 
 Implementing new clients
 ========================
@@ -217,154 +217,4 @@ Notes:
    non-existing files are assumed to have a magic hash (e.g. empty string).
  * Updating a state (either local or remote) implies downloading, uploading or
    deleting the appropriate file.
-
-Recommended Practices and Examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Assuming an authentication token is obtained, the following high-level
-operations are available - shown with ``curl``:
-
-* Get account information ::
-
-    curl -X HEAD -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user
-
-* List available containers ::
-
-    curl -X GET -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user
-
-* Get container information ::
-
-    curl -X HEAD -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos
-
-* Add a new container ::
-
-    curl -X PUT -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/test
-
-* Delete a container ::
-
-    curl -X DELETE -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/test
-
-* List objects in a container ::
-
-    curl -X GET -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos
-
-* List objects in a container (extended reply) ::
-
-    curl -X GET -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos?format=json
-
-  It is recommended that extended replies are cached and subsequent requests
-  utilize the ``If-Modified-Since`` header.
-
-* List metadata keys used by objects in a container
-
-  Will be in the ``X-Container-Object-Meta`` reply header, included in
-  container information or object list (``HEAD`` or ``GET``). (**TBD**)
-
-* List objects in a container having a specific meta defined ::
-
-    curl -X GET -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos?meta=favorites
-
-* Retrieve an object ::
-
-    curl -X GET -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
-
-* Retrieve an object (specific ranges of data) ::
-
-    curl -X GET -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "Range: bytes=0-9" \
-         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
-
-  This will return the first 10 bytes. To get the first 10, bytes 30-39 and the
-  last 100 use ``Range: bytes=0-9,30-39,-100``.
-
-* Add a new object (folder type) (**TBD**) ::
-
-    curl -X PUT -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "Content-Type: application/directory" \
-         https://pithos.dev.grnet.gr/v1/user/pithos/folder
-
-* Add a new object ::
-
-    curl -X PUT -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "Content-Type: text/plain" \
-         -T EXAMPLE.txt
-         https://pithos.dev.grnet.gr/v1/user/pithos/folder/EXAMPLE.txt
-
-* Update an object ::
-
-    curl -X POST -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "Content-Length: 10" \
-         -H "Content-Type: application/octet-stream" \
-         -H "Content-Range: bytes 10-19/*" \
-         -d "0123456789" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
-
-  This will update bytes 10-19 with the data specified.
-
-* Update an object (append) ::
-
-    curl -X POST -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "Content-Length: 10" \
-         -H "Content-Type: application/octet-stream" \
-         -H "Content-Range: bytes */*" \
-         -d "0123456789" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
-
-* Update an object (truncate) ::
-
-    curl -X POST -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "X-Source-Object: /folder/EXAMPLE.txt" \
-         -H "Content-Range: bytes 0-0/*" \
-         -H "X-Object-Bytes: 0" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
-
-  This will truncate the object to 0 bytes.
-
-* Add object metadata ::
-
-    curl -X POST -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "X-Object-Meta-First: first_meta_value" \
-         -H "X-Object-Meta-Second: second_meta_value" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
-
-* Delete object metadata ::
-
-    curl -X POST -D - \
-         -H "X-Auth-Token: 0000" \
-         -H "X-Object-Meta-First: first_meta_value" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
-
-  Metadata can only be "set". To delete ``X-Object-Meta-Second``, reset all
-  metadata.
-
-* Delete an object ::
-
-    curl -X DELETE -D - \
-         -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
 

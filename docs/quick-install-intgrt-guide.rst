@@ -15,7 +15,7 @@ install``, and assumes the nodes run Debian Squeeze. After successful
 installation, you will have the following services running:
 
  * Identity Management (Astakos)
- * File Storage Service (Pithos+)
+ * Object Storage Service (Pithos+)
  * Compute Service (Cyclades)
  * Image Registry Service (Plankton)
 
@@ -24,7 +24,7 @@ and a single unified Web UI to manage them all.
 The Volume Storage Service (Archipelago) and the Billing Service (Aquarium) are
 not released yet.
 
-If you just want to install the File Storage Service (Pithos+), follow the guide
+If you just want to install the Object Storage Service (Pithos+), follow the guide
 and just stop after the "Testing of Pithos+" section.
 
 Building a dev environment

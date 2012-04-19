@@ -1,37 +1,25 @@
 Pithos+ API
 ===========
 
-This is the Pithos+ API guide.
+Introduction
+------------
 
+Pithos is a storage service implemented by GRNET (http://www.grnet.gr). Data is stored as objects, organized in containers, belonging to an account. This hierarchy of storage layers has been inspired by the OpenStack Object Storage (OOS) API and similar CloudFiles API by Rackspace. The Pithos API follows the OOS API as closely as possible. One of the design requirements has been to be able to use Pithos with clients built for the OOS, without changes.
 
-Overview
---------
+However, to be able to take full advantage of the Pithos infrastructure, client software should be aware of the extensions that differentiate Pithos from OOS. Pithos objects can be updated, or appended to. Pithos will store sharing permissions per object and enforce corresponding authorization policies. Automatic version management, allows taking account and container listings back in time, as well as reading previous instances of objects.
 
-Pithos+ data is stored as objects, organized in containers, belonging to an
-account. This hierarchy of storage layers has been inspired by the OpenStack
-Object Storage (OOS) API and similar CloudFiles API by Rackspace. The Pithos
-API follows the OOS API as closely as possible. One of the design requirements
-has been to be able to use Pithos with clients built for the OOS, without
-changes.
-
-However, to be able to take full advantage of the Pithos infrastructure, client
-software should be aware of the extensions that differentiate Pithos from OOS.
+The storage backend of Pithos is block oriented, permitting efficient, deduplicated data placement. The block structure of objects is exposed at the API layer, in order to encourage external software to implement advanced data management operations.
 
 This document's goals are:
 
- * Define the Pithos ReST API that allows the storage and retrieval of data and
-   metadata via HTTP calls
- * Specify metadata semantics and user interface guidelines for a common
-   experience across client software implementations
+* Define the Pithos ReST API that allows the storage and retrieval of data and metadata via HTTP calls
+* Specify metadata semantics and user interface guidelines for a common experience across client software implementations
 
-The present document is meant to be read alongside the OOS API documentation.
-Thus, it is suggested that the reader is familiar with associated technologies,
-the OOS API as well as the first version of the Pithos API. This document
-refers to the version of Pithos+. Information on the first version of the
-storage API can be found at http://code.google.com/p/gss.
+The present document is meant to be read alongside the OOS API documentation. Thus, it is suggested that the reader is familiar with associated technologies, the OOS API as well as the first version of the Pithos API. This document refers to the second version of Pithos. Information on the first version of the storage API can be found at http://code.google.com/p/gss.
 
-Whatever marked as to be determined (**TBD**), should not be considered by
-implementors.
+Whatever marked as to be determined (**TBD**), should not be considered by implementors.
+
+More info about Pithos can be found here: https://code.grnet.gr/projects/pithos
 
 Document Revisions
 ^^^^^^^^^^^^^^^^^^
@@ -93,24 +81,14 @@ Revision                   Description
 0.1 (May 17, 2011)         Initial release. Based on OpenStack Object Storage Developer Guide API v1 (Apr. 15, 2011).
 =========================  ================================
 
-Users and Authentication
-------------------------
+Pithos Users and Authentication
+-------------------------------
 
-In Pithos+, each user is uniquely identified by a token. All API requests
-require a token and each token is internally resolved to an account string. The
-API uses the account string to identify the user's own files, thus whether a
-request is local or cross-account.
+In Pithos, each user is uniquely identified by a token. All API requests require a token and each token is internally resolved to an account string. The API uses the account string to identify the user's own files, thus whether a request is local or cross-account.
 
-Pithos+ does not keep a user database. For development and testing purposes,
-user identifiers and their corresponding tokens can be defined in the settings
-file. However, Pithos is designed with an external authentication service in
-mind. This service must handle the details of validating user credentials and
-communicate with Pithos via a middleware software component that, given a
-token, fills in the internal request account variable.
+Pithos does not keep a user database. For development and testing purposes, user identifiers and their corresponding tokens can be defined in the settings file. However, Pithos is designed with an external authentication service in mind. This service must handle the details of validating user credentials and communicate with Pithos via a middleware software component that, given a token, fills in the internal request account variable.
 
-Client software using Pithos+, if not already knowing a user's identifier and
-token, should forward to the ``/login`` URI. The Pithos server, depending on
-its configuration will redirect to the appropriate login page.
+Client software using Pithos, if not already knowing a user's identifier and token, should forward to the ``/login`` URI. The Pithos server, depending on its configuration will redirect to the appropriate login page.
 
 The login URI accepts the following parameters:
 
@@ -126,10 +104,10 @@ When done with logging in, the service's login URI should redirect to the URI pr
 
 A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
 
-API Operations
+The Pithos API
 --------------
 
-The URI requests supported by the Pithos+ API follow one of the following forms:
+The URI requests supported by the Pithos API follow one of the following forms:
 
 * Top level: ``https://hostname/v1/``
 * Account level: ``https://hostname/v1/<account>``
@@ -1120,3 +1098,148 @@ Clarifications/suggestions:
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
 * A copy/move using ``PUT``/``COPY``/``MOVE`` will always update metadata, keeping all old values except the ones redefined in the request headers.
 * A ``HEAD`` or ``GET`` for an ``X-Object-Manifest`` object, will include modified ``Content-Length`` and ``ETag`` headers, according to the characteristics of the objects under the specified prefix. The ``Etag`` will be the MD5 hash of the corresponding ETags concatenated. In extended container listings there is no metadata processing.
+
+Recommended Practices and Examples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Assuming an authentication token is obtained, the following high-level operations are available - shown with ``curl``:
+
+* Get account information ::
+
+    curl -X HEAD -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user
+
+* List available containers ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user
+
+* Get container information ::
+
+    curl -X HEAD -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos
+
+* Add a new container ::
+
+    curl -X PUT -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/test
+
+* Delete a container ::
+
+    curl -X DELETE -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/test
+
+* List objects in a container ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos
+
+* List objects in a container (extended reply) ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos?format=json
+
+  It is recommended that extended replies are cached and subsequent requests utilize the ``If-Modified-Since`` header.
+
+* List metadata keys used by objects in a container
+
+  Will be in the ``X-Container-Object-Meta`` reply header, included in container information or object list (``HEAD`` or ``GET``). (**TBD**)
+
+* List objects in a container having a specific meta defined ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos?meta=favorites
+
+* Retrieve an object ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
+
+* Retrieve an object (specific ranges of data) ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Range: bytes=0-9" \
+         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
+
+  This will return the first 10 bytes. To get the first 10, bytes 30-39 and the last 100 use ``Range: bytes=0-9,30-39,-100``.
+
+* Add a new object (folder type) (**TBD**) ::
+
+    curl -X PUT -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Type: application/directory" \
+         https://pithos.dev.grnet.gr/v1/user/pithos/folder
+
+* Add a new object ::
+
+    curl -X PUT -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Type: text/plain" \
+         -T EXAMPLE.txt
+         https://pithos.dev.grnet.gr/v1/user/pithos/folder/EXAMPLE.txt
+
+* Update an object ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Length: 10" \
+         -H "Content-Type: application/octet-stream" \
+         -H "Content-Range: bytes 10-19/*" \
+         -d "0123456789" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+  This will update bytes 10-19 with the data specified.
+
+* Update an object (append) ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Length: 10" \
+         -H "Content-Type: application/octet-stream" \
+         -H "Content-Range: bytes */*" \
+         -d "0123456789" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+* Update an object (truncate) ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "X-Source-Object: /folder/EXAMPLE.txt" \
+         -H "Content-Range: bytes 0-0/*" \
+         -H "X-Object-Bytes: 0" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+  This will truncate the object to 0 bytes.
+
+* Add object metadata ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "X-Object-Meta-First: first_meta_value" \
+         -H "X-Object-Meta-Second: second_meta_value" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+* Delete object metadata ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "X-Object-Meta-First: first_meta_value" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+  Metadata can only be "set". To delete ``X-Object-Meta-Second``, reset all metadata.
+
+* Delete an object ::
+
+    curl -X DELETE -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt

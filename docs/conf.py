@@ -37,6 +37,7 @@ for name, ver in SYNNEFO_PROJECTS.iteritems():
                                                  '%s/%s/' % (name, ver),
                                  None)
 
-extensions = ['sphinx.ext.intersphinx',
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.intersphinx',
               'sphinx.ext.todo',
               'sphinx.ext.viewcode']

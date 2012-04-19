@@ -141,13 +141,13 @@ Example reply if request user is not authenticated:
 
 [{"url": "/im/login?next=", "name": "login..."}]
 
-Example reply if request user is authenticated:
+Example reply if request user is authenticated::
 
-[{"url": "/im/profile", "name": "spapagian@grnet.gr"},
- {"url": "/im/profile", "name": "view your profile..."},
- {"url": "/im/password", "name": "change your password..."},
- {"url": "/im/feedback", "name": "feedback..."},
- {"url": "/im/logout", "name": "logout..."}]
+    [{"url": "/im/profile", "name": "user@grnet.gr"},
+     {"url": "/im/profile", "name": "view your profile..."},
+     {"url": "/im/password", "name": "change your password..."},
+     {"url": "/im/feedback", "name": "feedback..."},
+     {"url": "/im/logout", "name": "logout..."}]
 
 
 

@@ -1,5 +1,10 @@
 import sys, os
 
+sys.path.insert(0, os.path.abspath('../'))
+from synnefo import settings
+from django.core.management import setup_environ
+setup_environ(settings)
+
 
 project = u'snf-cyclades-app'
 copyright = u'2012, GRNET'
@@ -39,4 +44,5 @@ for name, ver in SYNNEFO_PROJECTS.iteritems():
 
 extensions = ['sphinx.ext.intersphinx',
               'sphinx.ext.todo',
-              'sphinx.ext.viewcode']
+              'sphinx.ext.viewcode',
+              'sphinx.ext.autodoc']

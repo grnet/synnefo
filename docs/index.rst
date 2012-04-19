@@ -20,6 +20,8 @@ synnefo is opensource software, used to create massively scalable IaaS clouds.
    Billing Service (codename: aquarium) <http://docs.dev.grnet.gr/aquarium/latest/index.html>
    Volume Storage Service (codename: archipelago) <archipelago>
 
+.. image:: images/synnefo-overview.png
+
 There are also components for:
 
 .. toctree::

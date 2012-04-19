@@ -32,9 +32,11 @@
 # or implied, of GRNET S.A.
 
 import hashlib
+import os
 
 from binascii import hexlify
 
+from progress.bar import IncrementalBar
 
 def file_read_iterator(fp, size=1024):
     while True:
@@ -75,7 +77,11 @@ class HashMap(list):
     
     def load(self, fp):
         self.size = 0
-        for block in file_read_iterator(fp, self.blocksize):
+        file_size = os.fstat(fp.fileno()).st_size
+        nblocks = 1 + (file_size - 1) // self.blocksize
+        bar = IncrementalBar('Computing', max=nblocks)
+        bar.suffix = '%(percent).1f%% - %(eta)ds'
+        for block in bar.iter(file_read_iterator(fp, self.blocksize)):
             self.append(self._hash_block(block))
             self.size += len(block)
 

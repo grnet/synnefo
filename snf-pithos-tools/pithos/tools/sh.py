@@ -420,12 +420,9 @@ class PutObject(Command):
                                                     meta=meta, **args)
         elif self.use_hashes:
             data = f.read()
-            if data is object:
-                hashmap = json.loads()
-                self.client.create_object_by_hashmap(container, object, hashmap,
-                                                 meta=meta, **args)
-            else:
-                print "Expected object"
+            hashmap = json.loads(data)
+            self.client.create_object_by_hashmap(container, object, hashmap,
+                                             meta=meta, **args)
         elif self.x_object_manifest:
             self.client.create_manifestation(container, object, self.x_object_manifest)
         elif not f:

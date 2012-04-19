@@ -34,12 +34,20 @@ This is the Cyclades Compute API:
 Network API (Cyclades)
 ======================
 
-Network API body
+The Network API is currently implemented inside Cyclades. Please consult the
+:ref:`Compute API <cyclades-api-guide>` for more details.
+
 
 Images API (Plankton)
 =====================
 
-Images API body
+This is the Plankton Image API:
+
+.. toctree::
+   :maxdepth: 2
+
+   Image API <plankton-api-guide>
+
 
 Storage API (Pithos+)
 =====================

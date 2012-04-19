@@ -1,3 +1,5 @@
+.. _cyclades-api-guide:
+
 API Guide
 *********
 

@@ -67,7 +67,8 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-common>=0.9.0rc'
+    'snf-common>=0.9.0rc',
+    'progress>=1.0'
 ]
 
 EXTRAS_REQUIRES = {

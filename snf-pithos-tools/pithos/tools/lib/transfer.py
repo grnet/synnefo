@@ -40,6 +40,7 @@ from binascii import hexlify, unhexlify
 from cStringIO import StringIO
 from client import Fault
 
+from progress.bar import IncrementalBar
 
 def upload(client, path, container, prefix, name=None, mimetype=None):
     
@@ -72,12 +73,16 @@ def upload(client, path, container, prefix, name=None, mimetype=None):
     if '' in missing:
         del missing[missing.index(''):]
     
+    bar = IncrementalBar('Uploading', max=len(missing))
+    bar.suffix = '%(percent).1f%% - %(eta)ds'
     with open(path) as fp:
         for hash in missing:
             offset = hashes.index(unhexlify(hash)) * blocksize
             fp.seek(offset)
             block = fp.read(blocksize)
             client.update_container_data(container, StringIO(block))
+            bar.next()
+    bar.finish()
     
     return client.create_object_by_hashmap(container, object, map, **kwargs)
 

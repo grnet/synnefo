@@ -44,7 +44,7 @@ GRNET cloud offering, comprising of Cyclades and Pithos+ subsystems.
 
 It also propagates the user state to the Aquarium pricing subsystem.
 
-.. image:: images/~okeanos.jpg
+.. image:: images/astakos-okeanos.jpg
 
 Registration Use Cases
 ----------------------
@@ -102,12 +102,12 @@ the dictionary as the account string to identify the user accessible resources.
 Registration Flow
 -----------------
 
-.. image:: images/signup.jpg
+.. image:: images/astakos-signup.jpg
     :scale: 100%
 
 Login Flow
 ----------
-.. image:: images/login.jpg
+.. image:: images/astakos-login.jpg
     :scale: 100%
 
 .. _authentication-label:

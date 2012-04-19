@@ -203,6 +203,8 @@ containing the following:
    #  SetEnv no-gzip
    #  SetEnv dont-vary
 
+     AllowEncodedSlashes On
+
      RequestHeader set X-Forwarded-Protocol "https"
 
      <Proxy * >
@@ -355,6 +357,7 @@ containing the following:
 
      SetEnv no-gzip
      SetEnv dont-vary
+     AllowEncodedSlashes On
 
      RequestHeader set X-Forwarded-Protocol "https"
 

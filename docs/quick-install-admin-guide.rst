@@ -49,14 +49,11 @@ and are related to all the services (Astakos, Pithos+, Cyclades, Plankton).
 To be able to download all synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
 
-| ``deb http://apt.dev.grnet.gr squeeze main``
-| ``deb-src http://apt.dev.grnet.gr squeeze main``
+| ``deb http://apt.okeanos.grnet.gr squeeze main``
+| ``deb-src http://apt.okeanos.grnet.gr squeeze main``
 
-| ``deb http://apt.noc.grnet.gr experimental main``
-| ``deb-src http://apt.noc.grnet.gr experimental main``
-
-| ``deb http://apt.noc.grnet.gr squeeze backports``
-| ``deb-src http://apt.noc.grnet.gr squeeze backports``
+| ``deb http://apt.okeanos.grnet.gr squeeze backports``
+| ``deb-src http://apt.okeanos.grnet.gr squeeze backports``
 
 You also need a shared directory visible by both nodes. Pithos+ will save all
 data inside this directory. By 'all data', we mean files, images, and pithos
@@ -166,7 +163,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
     ),
    }
 
-!!! Warning: Do NOT start the server yet, because it won't find the
+.. warning:: Do NOT start the server yet, because it won't find the
 ``synnefo.settings`` module. We will start the server after successful
 installation of astakos. If the server is running:
 
@@ -241,7 +238,7 @@ Now enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
-!!! Warning: Do NOT start/restart the server yet. If the server is running:
+.. warning:: Do NOT start/restart the server yet. If the server is running:
 
 .. code-block:: console
 
@@ -321,7 +318,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
     ),
    }
 
-!!! Warning: Do NOT start the server yet, because it won't find the
+.. warning:: Do NOT start the server yet, because it won't find the
 ``synnefo.settings`` module. We will start the server after successful
 installation of astakos. If the server is running:
 
@@ -392,7 +389,7 @@ As in node1, enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
-!!! Warning: Do NOT start/restart the server yet. If the server is running:
+.. warning:: Do NOT start/restart the server yet. If the server is running:
 
 .. code-block:: console
 

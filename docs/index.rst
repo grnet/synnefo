@@ -60,6 +60,34 @@ and the internals of synnefo components.
    Integrator's Guide <intgrt-guide>
 
 
+List of all Synnefo components
+==============================
+
+Here are all synnefo components. Combined in different ways, they provide all
+synnefo services. All components are released as:
+
+.. toctree::
+
+   debian packages <http://docs.dev.grnet.gr/debs/>
+   python packages <http://docs.dev.grnet.gr/pypi/>
+
+They are also available from our apt repository: ``apt.okeanos.grnet.gr``
+
+ * snf-common
+ * snf-webproject
+ * snf-astakos-app
+ * snf-pithos-backend
+ * snf-pithos-app
+ * snf-pithos-tools
+ * snf-pithos-webclient
+ * snf-cyclades-app
+ * snf-cyclades-gtools
+ * snf-vncauthproxy
+ * snf-image
+ * snf-cloudcms
+ * nfdhcpd
+
+
 Contact
 =======
 

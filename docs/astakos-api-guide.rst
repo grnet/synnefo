@@ -6,26 +6,13 @@ This is Astakos API guide.
 Overview
 --------
 
-Astakos serves as the point of authentication for GRNET (http://www.grnet.gr)
-services. It is a platform-wide service, allowing users to register, login, and
-keep track of permissions.
 
-Users in astakos can be authenticated via several identity providers:
-
- * Local
- * Twitter
- * Shibboleth
-
-It provides also a command line tool for managing user accounts.
-
-It is build over django and extends its authentication mechanism.
+Astakos service co-ordinates the access to resources (and the subsequent
+permission model) and acts as the single point of registry and entry to the
+GRNET cloud services.
 
 This document's goals is to describe the APIs to the outer world.
 Make sure you have read the :ref:`astakos` general architecture first.
-
-The present document is meant to be read alongside the Django documentation
-(https://www.djangoproject.com/). Thus, it is suggested that the reader is
-familiar with associated technologies.
 
 Document Revisions
 ^^^^^^^^^^^^^^^^^^

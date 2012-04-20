@@ -28,7 +28,7 @@ There are also components for:
    :maxdepth: 1
 
    Secure image deployment (image tool) <snf-image>
-   Command-line cloud management (kamaki tool) <http://docs.dev.grnet.gr/kamaki/v0.2/index.html>
+   Command-line cloud management (kamaki tool) <http://docs.dev.grnet.gr/kamaki/latest/index.html>
 
 synnefo is designed to be as simple, scalable and production ready as possible.
 Furthermore, although it can be deployed in small configurations, its prime

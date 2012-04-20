@@ -1,5 +1,6 @@
 import sys, os
 
+sys.path.append("../snf-cyclades-app")
 
 project = u'synnefo'
 copyright = u'2012, GRNET'

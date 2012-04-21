@@ -211,8 +211,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_("This field is required"))
-        if reserved_email(email):
-            raise forms.ValidationError(_("This email is already used"))
         return email
     
     def clean_has_signed_terms(self):
@@ -261,11 +259,10 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
 class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
     def clean_email(self):
         email = self.cleaned_data['email']
-        if not email:
-            raise forms.ValidationError(_("This field is required"))
         for user in AstakosUser.objects.filter(email = email):
             if user.provider == 'shibboleth':
                 raise forms.ValidationError(_("This email is already associated with another shibboleth account."))
+        super(ShibbolethUserCreationForm, self).clean_email()
         return email
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm, InvitedThirdPartyUserCreationForm):

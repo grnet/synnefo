@@ -186,7 +186,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
     cookie = urllib.unquote(request.COOKIES.get(COOKIE_NAME, ''))
     email = cookie.partition('|')[0]
     try:
-        user = AstakosUser.objects.get(email=email)
+        user = AstakosUser.objects.get(email=email, is_active=True)
     except AstakosUser.DoesNotExist:
         pass
     else:
@@ -228,7 +228,7 @@ def find_userid(request):
     if not email:
         raise BadRequest('Email missing')
     try:
-        user = AstakosUser.objects.get(email = email)
+        user = AstakosUser.objects.get(email = email, is_active=True)
     except AstakosUser.DoesNotExist, e:
         raise BadRequest('Invalid email')
     else:

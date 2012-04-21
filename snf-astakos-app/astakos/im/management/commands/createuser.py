@@ -43,6 +43,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
+from astakos.im.util import reserved_email
 
 class Command(BaseCommand):
     args = "<email> <first name> <last name> <affiliation>"
@@ -82,11 +83,8 @@ class Command(BaseCommand):
         if password is None:
             password = AstakosUser.objects.make_random_password()
         
-        try:
-            AstakosUser.objects.get(email=email)
+        if reserved_email(email):
             raise CommandError("A user with this email already exists")
-        except AstakosUser.DoesNotExist:
-            pass
         
         user = AstakosUser(username=username, first_name=first, last_name=last,
                            email=email, affiliation=affiliation,

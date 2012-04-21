@@ -46,7 +46,7 @@ from urlparse import urljoin
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.functions import send_verification, send_admin_notification, activate
+from astakos.im.functions import send_verification, send_admin_notification, activate, SendMailError
 from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
 
 import socket
@@ -78,15 +78,66 @@ def get_backend(request):
         raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, attr))
     return backend_class(request)
 
-class SignupBackend(object):
+class ActivationBackend(object):
     def _is_preaccepted(self, user):
         # return True if user email matches specific patterns
         for pattern in RE_USER_EMAIL_PATTERNS:
             if re.match(pattern, user.email):
                 return True
         return False
+    
+    def get_signup_form(self, provider='local', instance=None):
+        """
+        Returns the form class name
+        """
+        main = provider.capitalize() if provider == 'local' else 'ThirdParty'
+        suffix  = 'UserCreationForm'
+        formclass = '%s%s' % (main, suffix)
+        request = self.request
+        initial_data = None
+        if request.method == 'POST':
+            if provider == request.POST.get('provider', ''):
+                initial_data = request.POST
+        return globals()[formclass](initial_data, instance=instance, request=request)
+    
+    def handle_activation(self, user, \
+                          verification_template_name='im/activation_email.txt', \
+                          greeting_template_name='im/welcome_email.txt', \
+                          admin_email_template_name='im/admin_notification.txt', \
+                          switch_accounts_email_template_name='im/switch_accounts_email.txt'):
+        """
+        If the user is already active returns immediately.
+        If the user is not active and there is another account associated with
+        the specific email, it sends an informative email to the user whether
+        wants to switch to this account.
+        If the user is preaccepted and the email is verified, the account is
+        activated automatically. Otherwise, if the email is not verified,
+        it sends a verification email to the user.
+        If the user is not preaccepted, it sends an email to the administrators
+        and informs the user that the account is pending activation.
+        """
+        try:
+            if user.is_active:
+                return RegistationCompleted()
+            if user.conflicting_email():
+                send_verification(user, switch_accounts_email_template_name)
+                return SwitchAccountsVerificationSent(user.email)
+            
+            if self._is_preaccepted(user):
+                if user.email_verified:
+                    activate(user, greeting_template_name)
+                    return RegistationCompleted()
+                else:
+                    send_verification(user, verification_template_name)
+                    return VerificationSent()
+            else:
+                send_admin_notification(user, admin_email_template_name)
+                return NotificationSent()
+        except BaseException, e:
+            logger.exception(e)
+            raise e
 
-class InvitationsBackend(SignupBackend):
+class InvitationsBackend(ActivationBackend):
     """
     A activation backend which implements the following workflow: a user
     supplies the necessary registation information, if the request contains a valid
@@ -95,31 +146,24 @@ class InvitationsBackend(SignupBackend):
     administrator activates his/her account.
     """
     def __init__(self, request):
-        """
-        raises Invitation.DoesNotExist and ValueError if invitation is consumed
-        or invitation username is reserved.
-        """
         self.request = request
         super(InvitationsBackend, self).__init__()
 
     def get_signup_form(self, provider='local', instance=None):
         """
-        Returns the form class name
+        Returns the form class
+        
+        raises Invitation.DoesNotExist and ValueError if invitation is consumed
+        or invitation username is reserved.
         """
-        try:
-            self.invitation = get_invitation(self.request)
-        except (Invitation, ValueError), e:
-            self.invitation = None
-        else:
-            invitation = self.invitation
-            initial_data = self.get_signup_initial_data(provider)
-            prefix = 'Invited' if invitation else ''
-            main = provider.capitalize()
-            suffix  = 'UserCreationForm'
-            formclass = '%s%s%s' % (prefix, main, suffix)
-            ip = self.request.META.get('REMOTE_ADDR',
-                    self.request.META.get('HTTP_X_REAL_IP', None))
-            return globals()[formclass](initial_data, instance=instance, ip=ip)
+        self.invitation = get_invitation(self.request)
+        invitation = self.invitation
+        initial_data = self.get_signup_initial_data(provider)
+        prefix = 'Invited' if invitation else ''
+        main = provider.capitalize()
+        suffix  = 'UserCreationForm'
+        formclass = '%s%s%s' % (prefix, main, suffix)
+        return globals()[formclass](initial_data, instance=instance, request=self.request)
 
     def get_signup_initial_data(self, provider):
         """
@@ -160,33 +204,7 @@ class InvitationsBackend(SignupBackend):
             return True
         return False
 
-    def handle_activation(self, user, verification_template_name='im/activation_email.txt', greeting_template_name='im/welcome_email.txt', admin_email_template_name='im/admin_notification.txt'):
-        """
-        Initially creates an inactive user account. If the user is preaccepted
-        (has a valid invitation code) the user is activated and if the request
-        param ``next`` is present redirects to it.
-        In any other case the method returns the action status and a message.
-        """
-        try:
-            if user.is_active:
-                return RegistationCompleted()
-            if self._is_preaccepted(user):
-                if user.email_verified:
-                    activate(user, greeting_template_name)
-                    return RegistationCompleted()
-                else:
-                    send_verification(user, verification_template_name)
-                    return VerificationSent()
-            else:
-                send_admin_notification(user, admin_email_template_name)
-                return NotificationSent()
-        except Invitation.DoesNotExist, e:
-            raise InvitationCodeError()
-        except BaseException, e:
-            logger.exception(e)
-            raise e
-
-class SimpleBackend(SignupBackend):
+class SimpleBackend(ActivationBackend):
     """
     A activation backend which implements the following workflow: a user
     supplies the necessary registation information, an incative user account is
@@ -195,20 +213,6 @@ class SimpleBackend(SignupBackend):
     def __init__(self, request):
         self.request = request
         super(SimpleBackend, self).__init__()
-
-    def get_signup_form(self, provider='local', instance=None):
-        """
-        Returns the form class name
-        """
-        main = provider.capitalize() if provider == 'local' else 'ThirdParty'
-        suffix  = 'UserCreationForm'
-        formclass = '%s%s' % (main, suffix)
-        request = self.request
-        initial_data = None
-        if request.method == 'POST':
-            if provider == request.POST.get('provider', ''):
-                initial_data = request.POST
-        return globals()[formclass](initial_data, instance=instance, request=request)
     
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):
@@ -216,43 +220,6 @@ class SimpleBackend(SignupBackend):
         if MODERATION_ENABLED:
             return False
         return True
-    
-    def handle_activation(self, user, email_template_name='im/activation_email.txt', admin_email_template_name='im/admin_notification.txt'):
-        """
-        Creates an inactive user account and sends a verification email.
-
-        ** Arguments **
-
-        ``email_template_name``
-            A custom template for the verification email body to use. This is
-            optional; if not specified, this will default to
-            ``im/activation_email.txt``.
-
-        ** Templates **
-            im/activation_email.txt or ``email_template_name`` keyword argument
-
-        ** Settings **
-
-        * DEFAULT_CONTACT_EMAIL: service support email
-        * DEFAULT_FROM_EMAIL: from email
-        """
-        try:
-            if user.is_active:
-                return RegistrationCompeted()
-            if not self._is_preaccepted(user):
-                send_admin_notification(user, admin_email_template_name)
-                return NotificationSent()
-            else:
-                send_verification(user, email_template_name)
-                return VerificationSend()
-        except SendEmailError, e:
-            transaction.rollback()
-            raise e
-        except BaseException, e:
-            logger.exception(e)
-            raise e
-        else:
-            transaction.commit()
 
 class ActivationResult(object):
     def __init__(self, message):
@@ -262,6 +229,14 @@ class VerificationSent(ActivationResult):
     def __init__(self):
         message = _('Verification sent.')
         super(VerificationSent, self).__init__(message)
+
+class SwitchAccountsVerificationSent(ActivationResult):
+    def __init__(self, email):
+        message = _('This email is already associated with another \
+                    local account. To change this account to a shibboleth \
+                    one follow the link in the verification email sent \
+                    to %s. Otherwise just ignore it.' % email)
+        super(SwitchAccountsVerificationSent, self).__init__(message)
 
 class NotificationSent(ActivationResult):
     def __init__(self):

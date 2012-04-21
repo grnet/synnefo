@@ -102,24 +102,19 @@ def get_invitation(request):
     """
     Returns the invitation identified by the ``code``.
     
-    Raises Invitation.DoesNotExist and Exception if the invitation is consumed
+    Raises ValueError if the invitation is consumed or there is another account
+    associated with this email.
     """
     code = request.GET.get('code')
     if request.method == 'POST':
         code = request.POST.get('code')
-    #if not code:
-    #    if 'invitation_code' in request.session:
-    #        code = request.session.pop('invitation_code')
     if not code:
         return
     invitation = Invitation.objects.get(code = code)
     if invitation.is_consumed:
         raise ValueError(_('Invitation is used'))
-    try:
-        AstakosUser.objects.get(email = invitation.username)
+    if reserved_email(invitation.username):
         raise ValueError(_('Email: %s is reserved' % invitation.username))
-    except AstakosUser.DoesNotExist:
-        pass
     return invitation
 
 def prepare_response(request, user, next='', renew=False):
@@ -200,3 +195,9 @@ def has_signed_terms(user):
         user.save()
         return False
     return True
+
+def reserved_email(email):
+    return AstakosUser.objects.filter(email = email).count() != 0
+
+def get_query(request):
+    return request.__getattribute__(request.method)

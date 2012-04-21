@@ -38,15 +38,14 @@ from django.utils.timesince import timesince, timeuntil
 from astakos.im.models import AstakosUser
 
 
-def get_user(email_or_id):
+def get_user(email_or_id, **kwargs):
     try:
         if email_or_id.isdigit():
             return AstakosUser.objects.get(id=int(email_or_id))
         else:
-            return AstakosUser.objects.get(email=email_or_id)
-    except AstakosUser.DoesNotExist:
+            return AstakosUser.objects.get(email=email_or_id, **kwargs)
+    except AstakosUser.DoesNotExist, AstakosUser.MultipleObjectsReturned:
         return None
-
 
 def format_bool(b):
     return 'YES' if b else 'NO'

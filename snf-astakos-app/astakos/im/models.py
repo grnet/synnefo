@@ -34,15 +34,18 @@
 import hashlib
 import uuid
 import logging
+import json
 
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
-from urlparse import urlparse
+from urlparse import urlparse, urlunparse
 from random import randint
 
 from django.db import models
 from django.contrib.auth.models import User, UserManager, Group
+from django.utils.translation import ugettext as _
+from django.core.exceptions import ValidationError
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
 
@@ -80,7 +83,7 @@ class AstakosUser(User):
 
     has_credits = models.BooleanField('Has credits?', default=False)
     has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
-    date_signed_terms = models.DateTimeField('Signed terms date', null=True)
+    date_signed_terms = models.DateTimeField('Signed terms date', null=True, blank=True)
     
     __has_signed_terms = False
     __groupnames = []
@@ -134,6 +137,7 @@ class AstakosUser(User):
             if not self.provider:
                 self.provider = 'local'
         report_user_event(self)
+        self.full_clean()
         super(AstakosUser, self).save(**kwargs)
         
         # set group if does not exist
@@ -158,7 +162,26 @@ class AstakosUser(User):
 
     def __unicode__(self):
         return self.username
-
+    
+    def conflicting_email(self):
+        q = AstakosUser.objects.exclude(username = self.username)
+        q = q.filter(email = self.email)
+        if q.count() != 0:
+            return True
+        return False
+    
+    def validate_unique(self, exclude=None):
+        """
+        Implements a unique_together constraint for email and is_active fields.
+        """
+        super(AstakosUser, self).validate_unique(exclude)
+        
+        q = AstakosUser.objects.exclude(username = self.username)
+        q = q.filter(email = self.email)
+        q = q.filter(is_active = self.is_active)
+        if q.count() != 0:
+            raise ValidationError({'__all__':[_('Another account with the same email & is_active combination found.')]})
+        
 class ApprovalTerms(models.Model):
     """
     Model for approval terms

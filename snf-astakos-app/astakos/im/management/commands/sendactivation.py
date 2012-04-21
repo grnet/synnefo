@@ -33,7 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.functions import send_verification
+from astakos.im.functions import send_verification, SendMailError
 
 from ._common import get_user
 
@@ -46,14 +46,9 @@ class Command(BaseCommand):
             raise CommandError("No user was given")
         
         for email_or_id in args:
-            user = get_user(email_or_id)
+            user = get_user(email_or_id, is_active=False)
             if not user:
-                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
-                continue
-            
-            if user.is_active:
-                msg = "User '%s' already active\n" % (user.email,)
-                self.stderr.write(msg)
+                self.stderr.write("Unknown or already active user '%s'\n" % (email_or_id,))
                 continue
             
             try:
@@ -61,4 +56,4 @@ class Command(BaseCommand):
             except SendMailError, e:
                 raise CommandError(e.message)
             
-            self.stdout.write("Activated '%s'\n" % (user.email,))
+            self.stdout.write("Activation sent to '%s'\n" % (user.email,))

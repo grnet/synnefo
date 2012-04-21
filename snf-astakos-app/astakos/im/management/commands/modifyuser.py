@@ -35,12 +35,14 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 
 from ._common import get_user
 
+from astakos.im.models import AstakosUser
 
 class Command(BaseCommand):
-    args = "<user ID or email>"
+    args = "<user ID>"
     help = "Modify a user's attributes"
     
     option_list = BaseCommand.option_list + (
@@ -91,9 +93,13 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a user ID or email")
+            raise CommandError("Please provide a user ID")
         
-        user = get_user(args[0])
+        if args[0].isdigit():
+            user = AstakosUser.objects.get(id=int( args[0]))
+        else:
+            raise CommandError("Invalid ID")
+        
         if not user:
             raise CommandError("Unknown user")
         
@@ -138,4 +144,7 @@ class Command(BaseCommand):
         if options['renew_token']:
             user.renew_token()
         
-        user.save()
+        try:
+            user.save()
+        except ValidationError, e:
+            raise CommandError(e.message_dict)

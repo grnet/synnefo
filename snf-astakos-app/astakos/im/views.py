@@ -55,7 +55,7 @@ from django.contrib.auth.views import password_change
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im.util import get_context, prepare_response, set_cookie, has_signed_terms
+from astakos.im.util import get_context, prepare_response, set_cookie, has_signed_terms, get_query
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
@@ -310,13 +310,12 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.index'))
     
-    query_dict = request.__getattribute__(request.method)
-    provider = query_dict.get('provider', 'local')
+    provider = get_query(request).get('provider', 'local')
     try:
         if not backend:
             backend = get_backend(request)
         form = backend.get_signup_form(provider)
-    except (Invitation.DoesNotExist, ValueError), e:
+    except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.add_message(request, messages.ERROR, e)
     if request.method == 'POST':
@@ -341,8 +340,10 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 status = messages.ERROR
                 message = _('Something went wrong.')
                 messages.add_message(request, status, message)
+                logger.exception(e)
     return render_response(template_name,
                            signup_form = form,
+                           provider = provider,
                            context_instance=get_context(request, extra_context))
 
 @login_required
@@ -433,16 +434,28 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest(_('No such user'))
-
-    user.is_active = True
-    user.email_verified = True
-    user.save()
+    
+    try:
+        local_user = AstakosUser.objects.get(email=user.email, is_active=True, provider='local')
+    except AstakosUser.DoesNotExist:
+        user.is_active = True
+        user.email_verified = True
+        user.save()
+    else:
+        # switch the local account to shibboleth one
+        local_user.provider = 'shibboleth'
+        local_user.set_unusable_password()
+        local_user.third_party_identifier = user.third_party_identifier
+        local_user.save()
+        user.delete()
+        user = local_user
+    
     try:
         send_greeting(user, email_template_name)
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
         return response
-    except SendEmailError, e:
+    except SendMailError, e:
         message = e.message
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()

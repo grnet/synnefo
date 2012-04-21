@@ -54,7 +54,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 @requires_anonymous
-def login(request,  backend=None, on_login_template='im/login.html', on_creation_template='im/signup.html', extra_context={}):
+def login(request,  backend=None, on_login_template='im/login.html', on_creation_template='im/third_party_registration.html', extra_context={}):
     tokens = request.META
     
     try:
@@ -93,11 +93,12 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
             if not backend:
                 backend = get_backend(request)
             form = backend.get_signup_form(provider='shibboleth', instance=user)
-        except (Invitation.DoesNotExist, ValueError), e:
+        except Exception, e:
             form = SimpleBackend(request).get_signup_form(provider='shibboleth', instance=user)
             messages.add_message(request, messages.ERROR, e)
         form.data.update({'third_party_identifier':eppn, 'realname':realname,
                           'affiliation':affiliation})
         return render_response(on_creation_template,
                                signup_form = form,
+                               provider = 'shibboleth',
                                context_instance=get_context(request, extra_context))

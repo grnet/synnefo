@@ -34,6 +34,7 @@
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
         COOKIE_NAME, LOGIN_MESSAGES, PROFILE_EXTRA_LINKS
 from astakos.im.api import get_menu
+from astakos.im.util import get_query
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -43,8 +44,7 @@ def im_modules(request):
     return {'im_modules': IM_MODULES}
 
 def next(request):
-    query_dict = request.__getattribute__(request.method)
-    return {'next' : query_dict.get('next', '')}
+    return {'next' : get_query(request).get('next', '')}
 
 def code(request):
     return {'code' : request.GET.get('code', '')}

@@ -575,7 +575,9 @@ This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
 types of moderation, that Astakos supports. You can see the moderation methods
 (by invitation, whitelists, matching regexp, etc.) at the Astakos specific
-documentation.
+documentation. In production, you can also manually activate a user, by sending
+him/her an activation email. See how to do this at the :ref:`User
+activation <user_activation>` section.
 
 Now let's go back to the homepage. Open ``http://node1.example.com/im`` with
 your browser again. Try to sign in using your new credentials. If the astakos

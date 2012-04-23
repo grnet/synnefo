@@ -25,6 +25,42 @@ Common administrative tasks
 If you installed Synnefo successfully and have a working deployment, here are
 some common administrative tasks that you may find useful.
 
+
+.. _user_activation:
+
+User activation
+---------------
+
+When a new user signs up, he/she is not marked as active. You can see his/her
+state by running (on the machine that runs the Astakos app):
+
+.. code-block:: console
+
+   $ snf-manage listusers
+
+There are two different ways to activate a new user. Both need access to a
+running mail server. Your mail server should be defined in the
+``/etc/synnefo/00-snf-common-admins.conf`` related constants:
+
+Manual activation
+~~~~~~~~~~~~~~~~~
+
+You can manually activate a new user that has already signed up, by sending
+him/her an activation email. The email will contain an approriate activation
+link, which will complete the activation process if followed. You can send the
+email by running:
+
+.. code-block:: console
+
+   $ snf-manage sendactivation <user ID or email>
+
+Be sure to have already setup your mail server and defined it in your synnefo
+settings, before running the command.
+
+Automatic activation
+~~~~~~~~~~~~~~~~~~~~
+
+
 The "kamaki" API client
 -----------------------
 

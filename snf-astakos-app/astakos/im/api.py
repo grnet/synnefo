@@ -48,7 +48,7 @@ from django.core.urlresolvers import reverse
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError, Fault
 from astakos.im.models import AstakosUser
 from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED, COOKIE_NAME
-from astakos.im.util import has_signed_terms, epoch
+from astakos.im.util import epoch
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ def authenticate_old(request, user=None):
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
         raise Unauthorized('Authentication expired')
     
-    if not has_signed_terms(user):
+    if not user.signed_terms():
         raise Unauthorized('Pending approval terms')
     
     response = HttpResponse()
@@ -123,7 +123,7 @@ def authenticate_old(request, user=None):
                  'auth_token_created':user.auth_token_created.isoformat(),
                  'auth_token_expires':user.auth_token_expires.isoformat(),
                  'has_credits':user.has_credits,
-                 'has_signed_terms':has_signed_terms(user)}
+                 'has_signed_terms':user.signed_terms()}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
@@ -146,7 +146,7 @@ def authenticate(request, user=None):
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
         raise Unauthorized('Authentication expired')
     
-    if not has_signed_terms(user):
+    if not user.signed_terms():
         raise Unauthorized('Pending approval terms')
     
     response = HttpResponse()

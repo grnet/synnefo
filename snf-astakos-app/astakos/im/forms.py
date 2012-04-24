@@ -45,12 +45,12 @@ from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
 from django.contrib import messages
 
-from astakos.im.models import AstakosUser, Invitation
+from astakos.im.models import AstakosUser, Invitation, get_latest_terms
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
 from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
-from astakos.im.util import reverse_lazy, get_latest_terms, reserved_email, get_query
+from astakos.im.util import reverse_lazy, reserved_email, get_query
 
 import logging
 import recaptcha.client.captcha as captcha

@@ -181,7 +181,21 @@ class AstakosUser(User):
         q = q.filter(is_active = self.is_active)
         if q.count() != 0:
             raise ValidationError({'__all__':[_('Another account with the same email & is_active combination found.')]})
-        
+    
+    def signed_terms(self):
+        term = get_latest_terms()
+        if not term:
+            return True
+        if not self.has_signed_terms:
+            return False
+        if not self.date_signed_terms:
+            return False
+        if self.date_signed_terms < term.date:
+            self.has_signed_terms = False
+            self.save()
+            return False
+        return True
+
 class ApprovalTerms(models.Model):
     """
     Model for approval terms
@@ -255,3 +269,11 @@ def _generate_invitation_code():
             # An invitation with this code already exists, try again
         except Invitation.DoesNotExist:
             return code
+
+def get_latest_terms():
+    try:
+        term = ApprovalTerms.objects.order_by('-id')[0]
+        return term
+    except IndexError:
+        pass
+    return None

@@ -47,7 +47,7 @@ from django.contrib import messages
 
 from astakos.im.models import AstakosUser, Invitation, get_latest_terms
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
-from astakos.im.widgets import DummyWidget, RecaptchaWidget, ApprovalTermsWidget
+from astakos.im.widgets import DummyWidget, RecaptchaWidget
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
 from astakos.im.util import reverse_lazy, reserved_email, get_query
@@ -70,8 +70,7 @@ class LocalUserCreationForm(UserCreationForm):
 
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name", "has_signed_terms")
-        widgets = {"has_signed_terms":ApprovalTermsWidget(terms_uri=reverse_lazy('latest_terms'))}
+        fields = ("email", "first_name", "last_name", "has_signed_terms", "has_signed_terms")
 
     def __init__(self, *args, **kwargs):
         """
@@ -150,7 +149,6 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
     class Meta:
         model = AstakosUser
         fields = ("email", "first_name", "last_name", "has_signed_terms")
-        widgets = {"has_signed_terms":ApprovalTermsWidget(terms_uri=reverse_lazy('latest_terms'))}
 
     def __init__(self, *args, **kwargs):
         """
@@ -177,8 +175,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
 class ThirdPartyUserCreationForm(forms.ModelForm):
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name", "third_party_identifier")
-        widgets = {"has_signed_terms":ApprovalTermsWidget(terms_uri=reverse_lazy('latest_terms'))}
+        fields = ("email", "first_name", "last_name", "third_party_identifier", "has_signed_terms")
     
     def __init__(self, *args, **kwargs):
         """

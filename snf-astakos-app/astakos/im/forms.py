@@ -46,7 +46,7 @@ from django.utils.safestring import mark_safe
 from django.contrib import messages
 
 from astakos.im.models import AstakosUser, Invitation, get_latest_terms
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
@@ -375,14 +375,14 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             url = reverse('django.contrib.auth.views.password_reset_confirm',
                           kwargs={'uidb36':int_to_base36(user.id),
                                   'token':token_generator.make_token(user)})
-            url = request.build_absolute_uri(url)
+            url = urljoin(BASEURL, url)
             t = loader.get_template(email_template_name)
             c = {
                 'email': user.email,
                 'url': url,
                 'site_name': SITENAME,
                 'user': user,
-                'baseurl': request.build_absolute_uri(),
+                'baseurl': BASEURL,
                 'support': DEFAULT_CONTACT_EMAIL
             }
             from_email = DEFAULT_FROM_EMAIL

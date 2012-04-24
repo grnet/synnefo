@@ -3967,8 +3967,10 @@ h3.overlay-inner-title {
 }
 
 #creation-password-overlay .password {
-    font-size: 1.3em;
+    font-size: 1.5em;
     font-weight: bold;
+    letter-spacing: 2px;
+    font-family: Georgia, Times, serif;
     margin-right: 5em;
     float: right;
     margin-top: -4px;

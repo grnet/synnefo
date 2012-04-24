@@ -145,6 +145,7 @@ def prepare_response(request, user, next='', renew=False):
     user = authenticate(email=user.email, auth_token=user.auth_token)
     login(request, user)
     set_cookie(response, user)
+    request.session.set_expiry(user.auth_token_expires)
     
     if not next:
         next = reverse('astakos.im.views.index')

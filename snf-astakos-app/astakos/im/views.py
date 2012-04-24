@@ -436,7 +436,7 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
         return HttpResponseBadRequest(_('No such user'))
     
     try:
-        local_user = AstakosUser.objects.get(email=user.email, is_active=True, provider='local')
+        local_user = AstakosUser.objects.get(email=user.email, is_active=True)
     except AstakosUser.DoesNotExist:
         user.is_active = True
         user.email_verified = True

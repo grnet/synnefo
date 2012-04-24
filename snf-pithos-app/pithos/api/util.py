@@ -661,7 +661,8 @@ class ObjectWrapper(object):
             # Get the data from the block.
             bo = self.offset % self.backend.block_size
             bs = self.backend.block_size
-            if self.block_index == len(self.hashmaps[self.file_index]) - 1:
+            if (self.block_index == len(self.hashmaps[self.file_index]) - 1 and
+                self.sizes[self.file_index] % self.backend.block_size):
                 bs = self.sizes[self.file_index] % self.backend.block_size
             bl = min(self.length, bs - bo)
             data = self.block[bo:bo + bl]

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.5
+------
+* fix pithos-sh put using hashmaps.
+* progress bars in pithos-sh.
+
 v0.9.4
 ------
 * Change default server.

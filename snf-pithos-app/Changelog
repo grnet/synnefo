@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.9.5
+------
+* Calculate the length of the last block properly. 
+
 v0.9.4
 ------
 * Solve OOS API compatibility problems.

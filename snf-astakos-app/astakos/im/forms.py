@@ -145,11 +145,8 @@ class LocalUserCreationForm(UserCreationForm):
 
 class InvitedLocalUserCreationForm(LocalUserCreationForm):
     """
-    Extends the LocalUserCreationForm: adds an inviter readonly field.
+    Extends the LocalUserCreationForm: email is readonly.
     """
-
-    inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
-
     class Meta:
         model = AstakosUser
         fields = ("email", "first_name", "last_name", "has_signed_terms")
@@ -162,7 +159,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
 
         #set readonly form fields
-        ro = ('inviter', 'email', 'username',)
+        ro = ('email', 'username',)
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
         
@@ -231,10 +228,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
 
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
     """
-    Extends the LocalUserCreationForm: adds an inviter readonly field.
+    Extends the ThirdPartyUserCreationForm: email is readonly.
     """
-    inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
-    
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
@@ -242,7 +237,7 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
         super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
 
         #set readonly form fields
-        ro = ('inviter', 'email',)
+        ro = ('email',)
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
     

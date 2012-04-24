@@ -55,7 +55,7 @@ from django.contrib.auth.views import password_change
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im.util import get_context, prepare_response, set_cookie, has_signed_terms, get_query
+from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
@@ -100,7 +100,7 @@ def signed_terms_required(func):
     """
     @wraps(func)
     def wrapper(request, *args, **kwargs):
-        if request.user.is_authenticated() and not has_signed_terms(request.user):
+        if request.user.is_authenticated() and not request.user.signed_terms():
             params = urlencode({'next': request.build_absolute_uri(),
                               'show_form':''})
             terms_uri = reverse('latest_terms') + '?' + params
@@ -500,7 +500,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
         return HttpResponseRedirect(next)
     else:
         form = None
-        if request.user.is_authenticated() and not has_signed_terms(request.user):
+        if request.user.is_authenticated() and not request.user.signed_terms():
             form = SignApprovalTermsForm(instance=request.user)
         return render_response(template_name,
                                terms = terms,

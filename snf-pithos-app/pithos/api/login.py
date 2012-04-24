@@ -55,10 +55,6 @@ def redirect_to_login_service(request):
         proto = 'https://'
     else:
         proto = 'http://'
-    next = request.GET.get('next', '')
-    params = {'next': next}
-    renew = 'renew' in request.GET
-    if renew:
-        params['renew'] = True
+    params = dict([(k, v) for k, v in request.GET.items()])
     uri = proto + p.netloc + '/login?' + urlencode(params)
     return HttpResponseRedirect(uri)

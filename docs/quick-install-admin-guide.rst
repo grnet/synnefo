@@ -49,11 +49,8 @@ and are related to all the services (Astakos, Pithos+, Cyclades, Plankton).
 To be able to download all synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
 
-| ``deb http://apt.okeanos.grnet.gr squeeze main``
-| ``deb-src http://apt.okeanos.grnet.gr squeeze main``
-
-| ``deb http://apt.okeanos.grnet.gr squeeze backports``
-| ``deb-src http://apt.okeanos.grnet.gr squeeze backports``
+| ``deb http://apt.dev.grnet.gr squeeze main``
+| ``deb-src http://apt.dev.grnet.gr squeeze main``
 
 You also need a shared directory visible by both nodes. Pithos+ will save all
 data inside this directory. By 'all data', we mean files, images, and pithos

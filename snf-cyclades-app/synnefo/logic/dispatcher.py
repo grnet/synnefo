@@ -146,7 +146,7 @@ def _init_queues():
     QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
     QUEUE_RECONC = "%s-reconciliation" % prefix
     if settings.DEBUG is True:
-        QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
+        QUEUE_DEBUG = "%s-debug" % prefix  # Debug queue, retrieves all messages
 
     QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
               QUEUE_GANETI_BUILD_PROGR)

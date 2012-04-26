@@ -36,7 +36,7 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
 
-from astakos.im.util import get_or_create_user, prepare_response, get_context, get_invitation
+from astakos.im.util import prepare_response, get_context, get_invitation
 from astakos.im.views import requires_anonymous, render_response
 from astakos.im.settings import DEFAULT_USER_LEVEL
 from astakos.im.models import AstakosUser, Invitation

@@ -147,4 +147,4 @@ class Command(BaseCommand):
         try:
             user.save()
         except ValidationError, e:
-            raise CommandError(e.message_dict)
+            raise CommandError(e)

@@ -101,6 +101,8 @@ class Command(BaseCommand):
             user.save()
         except socket.error, e:
             raise CommandError(e)
+        except ValidationError, e:
+            raise CommandError(e)
         else:
             msg = "Created user id %d" % (user.id,)
             if options['password'] is None:

@@ -38,6 +38,8 @@ from django.utils.translation import ugettext as _
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
+
 from urllib import quote
 from urlparse import urljoin
 from smtplib import SMTPException
@@ -158,7 +160,7 @@ def activate(user, email_template_name='im/welcome_email.txt'):
     """
     Activates the specific user and sends email.
     
-    Raises SendGreetingError
+    Raises SendGreetingError, ValidationError
     """
     user.is_active = True
     user.save()
@@ -182,6 +184,8 @@ def set_user_credibility(email, has_credits):
         user.has_credits = has_credits
         user.save()
     except AstakosUser.DoesNotExist, e:
+        logger.exception(e)
+    except ValidationError, e:
         logger.exception(e)
 
 class SendMailError(Exception):

@@ -38,6 +38,7 @@ from django.contrib import messages
 from django.utils.http import urlencode
 from django.contrib.auth import login as auth_login, authenticate, logout
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.core.exceptions import ValidationError
 
 from urllib import quote
 from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
@@ -88,8 +89,10 @@ def login(request):
         renew = request.GET.get('renew', None)
         if renew == '':
             request.user.renew_token()
-            request.user.save()
-            
+            try:
+                request.user.save()
+            except ValidationError, e:
+                return HttpResponseBadRequest(e)
             # authenticate before login
             user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
             auth_login(request, user)

@@ -39,7 +39,7 @@ from urllib import quote
 from functools import wraps
 
 from django.core.mail import send_mail
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
@@ -52,6 +52,7 @@ from django.utils.http import urlencode
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
+from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
@@ -440,13 +441,20 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
     except AstakosUser.DoesNotExist:
         user.is_active = True
         user.email_verified = True
-        user.save()
+        try:
+            user.save()
+        except ValidationError, e:
+            return HttpResponseBadRequest(e)
+        
     else:
         # switch the local account to shibboleth one
         local_user.provider = 'shibboleth'
         local_user.set_unusable_password()
         local_user.third_party_identifier = user.third_party_identifier
-        local_user.save()
+        try:
+            local_user.save()
+        except ValidationError, e:
+            return HttpResponseBadRequest(e)
         user.delete()
         user = local_user
     

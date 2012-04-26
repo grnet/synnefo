@@ -40,12 +40,13 @@ from urlparse import urlsplit, urlunsplit
 from functools import wraps
 
 from datetime import tzinfo, timedelta
-from django.http import HttpResponse, urlencode
+from django.http import HttpResponse, HttpResponseBadRequest, urlencode
 from django.template import RequestContext
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
 from django.contrib.auth import login, authenticate
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE
@@ -69,28 +70,6 @@ def isoformat(d):
 
 def epoch(datetime):
     return int(time.mktime(datetime.timetuple())*1000)
-
-def get_or_create_user(email, realname='', first_name='', last_name='', affiliation='', level=0, provider='local', password=''):
-    """Find or register a user into the internal database
-       and issue a token for subsequent requests.
-    """
-    user, created = AstakosUser.objects.get_or_create(email=email,
-        defaults={
-            'password':password,
-            'affiliation':affiliation,
-            'level':level,
-            'invitations':INVITATIONS_PER_LEVEL.get(level, 0),
-            'provider':provider,
-            'realname':realname,
-            'first_name':first_name,
-            'last_name':last_name
-        })
-    if created:
-        user.renew_token()
-        user.save()
-        logger.info('Created user %s', user)
-    
-    return user
 
 def get_context(request, extra_context={}, **kwargs):
     if not extra_context:
@@ -131,7 +110,10 @@ def prepare_response(request, user, next='', renew=False):
     renew = renew or (user.auth_token_expires and user.auth_token_expires < datetime.datetime.now())
     if renew:
         user.renew_token()
-        user.save()
+        try:
+            user.save()
+        except ValidationError, e:
+            return HttpResponseBadRequest(e) 
     
     if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''

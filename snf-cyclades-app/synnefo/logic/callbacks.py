@@ -80,7 +80,7 @@ def is_update_required(func):
                 return
 
             # New message. Update the database!
-            func(client, message)
+            func(vm, msg)
 
         except ValueError:
             log.error("Incoming message not in JSON format: %s", message)
@@ -106,18 +106,13 @@ def is_update_required(func):
 
 
 @is_update_required
-def update_db(client, message):
+def update_db(vm, msg):
     """Process a notification of type 'ganeti-op-status'"""
-    log.debug("Processing ganeti-op-status msg: %s", message['body'])
-
-    msg = json.loads(message['body'])
+    log.debug("Processing ganeti-op-status msg: %s", msg)
 
     if msg['type'] != "ganeti-op-status":
         log.error("Message is of unknown type %s.", msg['type'])
         return
-
-    vm_id = utils.id_from_instance_name(msg['instance'])
-    vm = VirtualMachine.objects.get(id=vm_id)
 
     event_time = merge_time(msg['event_time'])
     backend.process_op_status(vm, event_time, msg['jobId'], msg['operation'],
@@ -128,18 +123,13 @@ def update_db(client, message):
 
 
 @is_update_required
-def update_net(client, message):
+def update_net(vm, msg):
     """Process a notification of type 'ganeti-net-status'"""
-    log.debug("Processing ganeti-net-status msg: %s", message['body'])
-
-    msg = json.loads(message['body'])
+    log.debug("Processing ganeti-net-status msg: %s", msg)
 
     if msg['type'] != "ganeti-net-status":
         log.error("Message is of unknown type %s", msg['type'])
         return
-
-    vm_id = utils.id_from_instance_name(msg['instance'])
-    vm = VirtualMachine.objects.get(id=vm_id)
 
     event_time = merge_time(msg['event_time'])
     backend.process_net_status(vm, event_time, msg['nics'])
@@ -149,18 +139,13 @@ def update_net(client, message):
 
 
 @is_update_required
-def update_build_progress(client, message):
+def update_build_progress(vm, msg):
     """Process a create progress message"""
-    log.debug("Processing ganeti-create-progress msg: %s", message['body'])
-
-    msg = json.loads(message['body'])
+    log.debug("Processing ganeti-create-progress msg: %s", msg)
 
     if msg['type'] != "ganeti-create-progress":
         log.error("Message is of unknown type %s", msg['type'])
         return
-
-    vm_id = utils.id_from_instance_name(msg['instance'])
-    vm = VirtualMachine.objects.get(id=vm_id)
 
     event_time = merge_time(msg['event_time'])
     backend.process_create_progress(vm, event_time, msg['rprogress'], None)
@@ -169,9 +154,9 @@ def update_build_progress(client, message):
               msg['instance'])
 
 
-@is_update_required
 def dummy_proc(client, message):
     try:
         log.debug("Msg: %s", message['body'])
+        client.basic_ack(message)
     except Exception as e:
         log.exception("Could not receive message")

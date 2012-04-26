@@ -49,7 +49,7 @@ class UserEvent(object):
         self.eventType = eventType
         self.details = details
         hash = sha1()
-        hash.update(json.dumps([client, self.userID, self.is_active, self.role,
+        hash.update(json.dumps([client, self.userID, self.isActive, self.role,
                                 self.eventType, self.details, self.occurredMillis]))
         self.id = hash.hexdigest()
     

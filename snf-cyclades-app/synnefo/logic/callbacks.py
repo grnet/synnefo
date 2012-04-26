@@ -61,8 +61,6 @@ def is_update_required(func):
     """
     @wraps(func)
     def wrapper(client, message, *args, **kwargs):
-        log.debug("Checking if action is required for msg %s",  message)
-
         try:
             msg = json.loads(message['body'])
 
@@ -74,7 +72,8 @@ def is_update_required(func):
             db_time = vm.backendtime
             if event_time <= db_time:
                 format_ = "%d/%m/%y %H:%M:%S:%f"
-                log.debug("Ignoring message. event_timestamp: %s db_timestamp: %s",
+                log.debug("Ignoring message %s.\nevent_timestamp: %s db_timestamp: %s",
+                          message,
                           event_time.strftime(format_),
                           db_time.strftime(format_))
                 client.basic_ack(message)
@@ -174,6 +173,5 @@ def update_build_progress(client, message):
 def dummy_proc(client, message):
     try:
         log.debug("Msg: %s", message['body'])
-        pass
     except Exception as e:
         log.exception("Could not receive message")

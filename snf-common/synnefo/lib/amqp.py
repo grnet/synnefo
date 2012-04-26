@@ -236,7 +236,7 @@ class AMQPClient():
                 callback(self, result)
             else:
                 log.debug("Message without body %s" % result)
-                return
+                raise socket.error
 
         consume_promise = \
                 self.client.basic_consume_multi(queues=queue,
@@ -261,6 +261,10 @@ class AMQPClient():
         except (socket.error, puka.spec_exceptions.ConnectionForced):
             log.debug('Connection closed while receiving messages.')
             self.consume_promises = []
+            try:
+                self.client.close()
+            except:
+                pass
             self.connect()
             for queues, callback in self.consume_info.items():
                 self.basic_consume(queues, callback)
@@ -546,6 +550,10 @@ class AMQPConsumer(AMQPClient):
         except (socket.error, puka.spec_exceptions.ConnectionForced):
             log.debug('Connection closed while receiving messages.')
             self.consume_promises = []
+            try:
+                self.client.close()
+            except:
+                pass
             self.connect()
             for queues in self.consume_queues:
                 self.basic_consume(queues)

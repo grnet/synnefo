@@ -44,7 +44,7 @@ class UserEvent(object):
         self.receivedMillis = self.occurredMillis
         self.clientID = client
         self.userID = user.email
-        self.is_active = user.is_active
+        self.isActive = user.is_active
         self.role = 'default'
         self.eventType = eventType
         self.details = details

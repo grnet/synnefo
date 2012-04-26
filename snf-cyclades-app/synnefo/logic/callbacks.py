@@ -117,9 +117,6 @@ def update_db(client, message):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    if msg['operation'] == "OP_INSTANCE_QUERY_DATA":
-        return status_job_finished(client, message)
-
     vm_id = utils.id_from_instance_name(msg['instance'])
     vm = VirtualMachine.objects.get(id=vm_id)
 
@@ -172,47 +169,6 @@ def update_build_progress(client, message):
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])
 
-
-def status_job_finished(client, message):
-    """Updates VM status based on a previously sent status update request"""
-
-    msg = json.loads(message['body'])
-
-    if msg['operation'] != 'OP_INSTANCE_QUERY_DATA':
-        log.error("Message is of unknown type %s", msg['operation'])
-        return
-
-    if msg['status'] != 'success':
-        log.warn("Ignoring non-success status update from job %d on VM %s",
-                 msg['jobId'], msg['instance'])
-        client.basic_ack(message.delivery_tag)
-        return
-
-    status = backend.get_job_status(msg['jobId'])
-
-    log.debug("Node status job result: %s", status)
-
-    if status['summary'][0] != u'INSTANCE_QUERY_DATA':
-         log.error("Status update is of unknown type %s",
-                    status['summary'])
-         return
-
-    conf_state = status['opresult'][0][msg['instance']]['config_state']
-    run_state = status['opresult'][0][msg['instance']]['run_state']
-
-    vm_id = utils.id_from_instance_name(msg['instance'])
-    vm = VirtualMachine.objects.get(id = vm_id)
-
-    if run_state == "up":
-        opcode = "OP_INSTANCE_REBOOT"
-    else:
-        opcode = "OP_INSTANCE_SHUTDOWN"
-
-    event_time = merge_time(msg['event_time'])
-    backend.process_op_status(vm=vm, etime=event_time,
-                              jobid=msg['jobId'], opcode=opcode,
-                              status='success',
-                              logmsg="Reconciliation: simulated event")
 
 @is_update_required
 def dummy_proc(client, message):

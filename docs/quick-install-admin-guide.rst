@@ -168,8 +168,8 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
    }
 
 .. warning:: Do NOT start the server yet, because it won't find the
-``synnefo.settings`` module. We will start the server after successful
-installation of astakos. If the server is running:
+    ``synnefo.settings`` module. We will start the server after successful
+    installation of astakos. If the server is running:
 
 .. code-block:: console
 
@@ -329,8 +329,8 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
    }
 
 .. warning:: Do NOT start the server yet, because it won't find the
-``synnefo.settings`` module. We will start the server after successful
-installation of astakos. If the server is running:
+    ``synnefo.settings`` module. We will start the server after successful
+    installation of astakos. If the server is running:
 
 .. code-block:: console
 

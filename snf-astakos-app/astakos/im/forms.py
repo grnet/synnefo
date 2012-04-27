@@ -254,6 +254,9 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         for user in AstakosUser.objects.filter(email = email):
             if user.provider == 'shibboleth':
                 raise forms.ValidationError(_("This email is already associated with another shibboleth account."))
+            elif not user.is_active:
+                raise forms.ValidationError(_("This email is already associated with an inactive account. \
+                                              You need to wait to be activated before being able to switch to a shibboleth account."))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
 

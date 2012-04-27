@@ -137,7 +137,7 @@ class AstakosUser(User):
             if not self.provider:
                 self.provider = 'local'
         report_user_event(self)
-        self.full_clean()
+        self.validate_unique_email_isactive()
         super(AstakosUser, self).save(**kwargs)
         
         # set group if does not exist
@@ -170,12 +170,10 @@ class AstakosUser(User):
             return True
         return False
     
-    def validate_unique(self, exclude=None):
+    def validate_unique_email_isactive(self):
         """
         Implements a unique_together constraint for email and is_active fields.
         """
-        super(AstakosUser, self).validate_unique(exclude)
-        
         q = AstakosUser.objects.exclude(username = self.username)
         q = q.filter(email = self.email)
         q = q.filter(is_active = self.is_active)

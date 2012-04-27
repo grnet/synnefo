@@ -169,11 +169,9 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. We will start the server after successful
-    installation of astakos. If the server is running:
+    installation of astakos. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/gunicorn stop
+       # /etc/init.d/gunicorn stop
 
 Apache2 setup
 ~~~~~~~~~~~~~
@@ -242,11 +240,9 @@ Now enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
-.. warning:: Do NOT start/restart the server yet. If the server is running:
+.. warning:: Do NOT start/restart the server yet. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/apache2 stop
+       # /etc/init.d/apache2 stop
 
 Pithos+ data directory setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -330,11 +326,9 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. We will start the server after successful
-    installation of astakos. If the server is running:
+    installation of astakos. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/gunicorn stop
+       # /etc/init.d/gunicorn stop
 
 Apache2 setup
 ~~~~~~~~~~~~~
@@ -399,11 +393,9 @@ As in node1, enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
-.. warning:: Do NOT start/restart the server yet. If the server is running:
+.. warning:: Do NOT start/restart the server yet. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/apache2 stop
+       # /etc/init.d/apache2 stop
 
 We are now ready with all general prerequisites for node2. Now that we have
 finished with all general prerequisites for both nodes, we can start installing

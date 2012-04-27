@@ -80,10 +80,17 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 gunicorn postgresql
+   # apt-get install apache2 postgresql
 
-Make sure you have installed gunicorn >= v0.12.2. On node1, we will create our
-databases, so you will also need the python-psycopg2 package:
+Make sure to install gunicorn >= v0.12.2. You can do this by installing from
+the official debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install gunicorn
+
+On node1, we will create our databases, so you will also need the
+python-psycopg2 package:
 
 .. code-block:: console
 
@@ -111,7 +118,7 @@ create all needed databases on node1 and then node2 will connect to them.
 
 .. code-block:: console
 
-   postgres=# CREATE DATABASE snf_pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C'
+   postgres=# CREATE DATABASE snf_pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
    postgres=# GRANT ALL PRIVILEGES ON DATABASE snf_pithos TO synnefo;
 
 Configure the database to listen to all network interfaces. You can do this by
@@ -273,11 +280,17 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 gunicorn postgresql
+   # apt-get install apache2 postgresql
 
-Make sure you have installed the same package versions as in node1. Node2 will
-connect to the databases on node1, so you will also need the python-psycopg2
-package:
+Make sure to install gunicorn >= v0.12.2. You can do this by installing from
+the official debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install gunicorn
+
+Node2 will connect to the databases on node1, so you will also need the
+python-psycopg2 package:
 
 .. code-block:: console
 
@@ -475,7 +488,7 @@ choise and keep it private:
    SECRET_KEY = 'sy6)mw6a7x%n)-example_secret_key#zzk4jo6f2=uqu!1o%)'
 
 For astakos specific configuration, edit the following options in
-``/etc/synnefo/20-snf-astakos-setting.conf`` :
+``/etc/synnefo/20-snf-astakos-app-settings.conf`` :
 
 .. code-block:: console
 

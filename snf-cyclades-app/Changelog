@@ -1,11 +1,15 @@
 Changelog
 =========
 
+v0.9.12
+-------
 
-Development
------------
-
+* Update copyright notice on ui footer 
+* Improve readability of vm password in ui 
+* Fix nonexistent image metadata handling 
+* Fix multiple connect actions sent to the server (#2358)
 * Fix history handling (#2299)
+* Fix python-daemon required version 
 
 
 v0.9.11

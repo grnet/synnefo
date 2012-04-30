@@ -38,10 +38,14 @@ from mapper import Mapper
 
 class Store(object):
     """Store.
-       Required constructor parameters: path, block_size, hash_algorithm.
+       Required constructor parameters: path, block_size, hash_algorithm, umask.
     """
     
     def __init__(self, **params):
+        umask = params['umask']
+        if umask is not None:
+            os.umask(umask)
+        
         path = params['path']
         if path and not os.path.exists(path):
             os.makedirs(path)

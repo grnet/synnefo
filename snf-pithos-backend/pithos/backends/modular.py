@@ -74,6 +74,7 @@ DEFAULT_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
 DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
 DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_PATH = 'data/'
+DEFAULT_BLOCK_UMASK = 0o022
 #DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
 #DEFAULT_QUEUE_CONNECTION = 'rabbitmq://guest:guest@localhost:5672/pithos'
 
@@ -121,12 +122,13 @@ class ModularBackend(BaseBackend):
     """
     
     def __init__(self, db_module=None, db_connection=None,
-                 block_module=None, block_path=None,
+                 block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_connection=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
         block_path = block_path or DEFAULT_BLOCK_PATH
+        block_umask = block_umask or DEFAULT_BLOCK_UMASK
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
         #queue_connection = queue_connection or DEFAULT_QUEUE_CONNECTION
         
@@ -152,7 +154,8 @@ class ModularBackend(BaseBackend):
         self.block_module = load_module(block_module)
         params = {'path': block_path,
                   'block_size': self.block_size,
-                  'hash_algorithm': self.hash_algorithm}
+                  'hash_algorithm': self.hash_algorithm,
+                  'umask': block_umask}
         self.store = self.block_module.Store(**params)
 
         if queue_module and queue_connection:

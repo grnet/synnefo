@@ -87,6 +87,10 @@
             if (img.properties) {
                 img.metadata = {};
                 img.metadata.values = img.properties;
+            } else {
+                if (!img.metadata) {
+                    img.metadata = {values:{}};
+                }
             }
 
             // fixes plankton regression (returns lowercase meta keys)

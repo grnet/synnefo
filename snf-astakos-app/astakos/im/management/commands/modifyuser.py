@@ -37,8 +37,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
-from ._common import get_user
-
 from astakos.im.models import AstakosUser
 
 class Command(BaseCommand):

@@ -48,7 +48,10 @@ class Command(BaseCommand):
         for email_or_id in args:
             user = get_user(email_or_id, is_active=False)
             if not user:
-                self.stderr.write("Unknown or already active user '%s'\n" % (email_or_id,))
+                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
+                continue
+            if user.is_active:
+                self.stderr.write("Already active user '%s'\n" % (email_or_id,))
                 continue
             
             try:

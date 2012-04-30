@@ -421,7 +421,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     return response
 
 @transaction.commit_manually
-def activate(request, email_template_name='im/welcome_email.txt', on_failure=''):
+def activate(request, email_template_name='im/welcome_email.txt', on_failure='im/signup.html'):
     """
     Activates the user identified by the ``auth`` request parameter, sends a welcome email
     and renews the user token.
@@ -445,9 +445,8 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
             user.save()
         except ValidationError, e:
             return HttpResponseBadRequest(e)
-        
     else:
-        # switch the local account to shibboleth one
+        # switch the existing account to shibboleth one
         local_user.provider = 'shibboleth'
         local_user.set_unusable_password()
         local_user.third_party_identifier = user.third_party_identifier
@@ -467,13 +466,14 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='')
         message = e.message
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()
-        return signup(request, on_failure='im/signup.html')
+        return render_response(on_failure)
     except BaseException, e:
         status = messages.ERROR
         message = _('Something went wrong.')
+        messages.add_message(request, messages.ERROR, message)
         logger.exception(e)
         transaction.rollback()
-        return signup(request, on_failure='im/signup.html')
+        return signup(request, on_failure)
 
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):
     term = None

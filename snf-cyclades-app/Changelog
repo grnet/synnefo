@@ -1,8 +1,8 @@
 Changelog
-=========
+---------
 
 v0.9.12
--------
+*******
 
 * Update copyright notice on ui footer 
 * Improve readability of vm password in ui 
@@ -13,20 +13,20 @@ v0.9.12
 
 
 v0.9.11
--------
+*******
 
 * listservers management command unicode workaround
 
 
 v0.9.10
--------
+*******
 
 * Fallback to displaying the image id if it can not resolve it.
-* Remove --detect-orphan-{servers,networks}.
+* Remove **detect-orphan-{servers,networks}.
 
 
 v0.9.9
-------
+******
 
 * Update footer links
 * Fix create view default flavor
@@ -34,13 +34,13 @@ v0.9.9
 
 
 v0.9.8
-------
+******
 
 * Fix empty user information in feedback mails
 
 
 v0.9.7
-------
+******
 * Verify VNC server settings in get_console
 * Management commands additions / improvements / fixes
 * UI application fixes/improvements
@@ -48,18 +48,18 @@ v0.9.7
 
 
 v0.9.2
-------
+******
 * ui.userdata migration fixes
 * new synnefo.db migrations (fixes constrain issues)
 
 
 v0.9.1
-------
+******
 * Bumped version for debian package to upgrade from 0.9.0rc1
 
 
 v0.9.0
-------
+******
 
 * Removed link_static management command from synnefo.ui app
 * Astakos integration in ui and api
@@ -134,7 +134,7 @@ NEW FEATURES:
         * Support deletion of Flavors, support servers referring to
           inexistent (deleted) Flavors (#1157)
     Admin:
-        * Addition of --meta option to snf-admin image for easy setting
+        * Addition of **meta option to snf-admin image for easy setting
           of image metadata values on image creation (#1107)
     Deployment:
         * Initial iteration of a system test suite, snf-burnin,
@@ -304,7 +304,7 @@ FEATURES:
 
 
 2011-07-19, v0.5.3.1
-******************--
+********************
 
 FIXES:
     API:

@@ -386,3 +386,5 @@ urls
 Extends django project urls. Accepts a urlpatterns variable. The urls defined
 in this variable will be used to extend the django project urls.
 
+
+.. include:: ../Changelog

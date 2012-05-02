@@ -56,6 +56,7 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, For
 from pithos.api.short_url import encode_url
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                     BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
+                                    BACKEND_BLOCK_UMASK,
                                     BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
                                     BACKEND_QUOTA, BACKEND_VERSIONING)
 from pithos.backends import connect_backend
@@ -788,6 +789,7 @@ def get_backend():
                               db_connection=BACKEND_DB_CONNECTION,
                               block_module=BACKEND_BLOCK_MODULE,
                               block_path=BACKEND_BLOCK_PATH,
+                              block_umask=BACKEND_BLOCK_UMASK,
                               queue_module=BACKEND_QUEUE_MODULE,
                               queue_connection=BACKEND_QUEUE_CONNECTION)
     backend.default_policy['quota'] = BACKEND_QUOTA

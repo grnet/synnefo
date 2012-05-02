@@ -27,6 +27,7 @@ BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlit
 # Block storage.
 BACKEND_BLOCK_MODULE = getattr(settings, 'PITHOS_BACKEND_BLOCK_MODULE', 'pithos.backends.lib.hashfiler')
 BACKEND_BLOCK_PATH = getattr(settings, 'PITHOS_BACKEND_BLOCK_PATH', '/tmp/pithos-data/')
+BACKEND_BLOCK_UMASK = getattr(settings, 'PITHOS_BACKEND_BLOCK_UMASK', 0o022)
 
 # Queue for billing.
 BACKEND_QUEUE_MODULE = getattr(settings, 'PITHOS_BACKEND_QUEUE_MODULE', None) # Example: 'pithos.backends.lib.rabbitmq'

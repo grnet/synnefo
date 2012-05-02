@@ -117,9 +117,10 @@ class Client(object):
         
         full_path = _prepare_path(p.path + path, params=params)
         
+        headers.setdefault('content-type', 'application/octet-stream')
+        
         conn.putrequest(method, full_path)
         conn.putheader('x-auth-token', self.token)
-        conn.putheader('content-type', 'application/octet-stream')
         conn.putheader('transfer-encoding', 'chunked')
         for k,v in _prepare_headers(headers).items():
             conn.putheader(k, v)

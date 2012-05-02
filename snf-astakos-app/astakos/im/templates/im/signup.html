@@ -5,12 +5,10 @@
     Signup
 {% endblock %}
 
-{% block body %}
-<div class="section">
+{% block body.left %}
     <img class="pic" src="{{ IM_STATIC_URL }}images/pictures/signup_pic.png" />
-</div>
 {% comment %}{% include "im/services_description.html" %}{% endcomment %}
-{% endblock body %}
+{% endblock body.left %}
 
 {% block body.right %}
     {% if "local" in im_modules %}

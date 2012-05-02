@@ -32,8 +32,8 @@ $(document).ready(function(){
     }
 
     var root = $('body');
-    var bar = $('<div class="servicesbar"></div>');
-    var services = $('<div class="services"></div>');
+    var bar = $('<div class="header"></div>');
+    var services = $('<ul class="services"></ul>');
     var profile = $('<div class="profile"></div>');
     
     var get_services_url = window.GET_SERVICES_URL || window.CLOUDBAR_SERVICES;
@@ -41,6 +41,7 @@ $(document).ready(function(){
     // create services links and set the active class to the current service
     $.getJSON(get_services_url + "?callback=?", function(data) {
             $.each(data, function(i, el){
+            var sli = $("<li>");
             var slink = $("<a>");
             if (el.icon) {
                 slink.append($('<img src="'+cssloc+el.icon+'"/>'));
@@ -50,9 +51,10 @@ $(document).ready(function(){
             }
             slink.attr('href', el.url);
             slink.attr('title', el.name);
-            services.append(slink);
+            sli.append(slink);
+            services.append(sli);
             if (el.id == ACTIVE_MENU) {
-                slink.addClass("active");
+                sli.addClass("active");
             }
         });
       });
@@ -86,7 +88,7 @@ $(document).ready(function(){
     user.append(username);
     user.append(usermenu);
     profile.append(user);
-    bar.append(services).append(profile);
+    bar.append(profile).append(services);
     
 
     root.prepend(bar);

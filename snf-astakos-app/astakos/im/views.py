@@ -262,7 +262,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                 next = request.POST.get('next')
                 if next:
                     return redirect(next)
-                msg = _('Profile has been updated successfully')
+                msg = _('<p>Profile has been updated successfully</p>')
                 messages.add_message(request, messages.SUCCESS, msg)
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
@@ -415,7 +415,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
         return response
-    messages.add_message(request, messages.SUCCESS, _('You have successfully logged out.'))
+    messages.add_message(request, messages.SUCCESS, _('<p>You have successfully logged out.</p>'))
     context = get_context(request, extra_context)
     response.write(render_to_string(template, context_instance=context))
     return response

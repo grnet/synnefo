@@ -1,8 +1,4 @@
 <!doctype html>
-<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
-<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
-<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
-<!--[if (gte IE 9)|!(IE)]><!--> <html lang="en" class="no-js"> <!--<![endif]-->
 <head>
   {% block starthead %}{% endblock starthead %}
   <meta charset="UTF-8">
@@ -30,27 +26,23 @@
   {% endblock page.favicons %}
 
   {% block page.css %}
-      <link href='https://fonts.googleapis.com/css?family=Antic' 
-        rel='stylesheet' type='text/css'>
-      <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/styles.css" 
-        type='text/css'>
-      <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/custom.css" 
-      type='text/css'>
+       
+      <link href="https://fonts.googleapis.com/css?family=Antic" rel="stylesheet" type="text/css">
+      <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/global.css">
       <!--[if lte IE 7]>
-            <link rel="stylesheet" type="text/css" 
-            href="{{ IM_STATIC_URL }}im/css/ie7.css">
+            <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}im/css/ie7.css">
       <![endif]-->
   {% endblock page.css %}
 
   {% block headjs %}
-      <script src="{{ IM_STATIC_URL }}js/modernizr-2.0.6.js"
-          type="text/javascript"></script>
-      <script src="{{ IM_STATIC_URL }}js/jquery.js" 
-          type="text/javascript"></script>
-      <script src="{{ IM_STATIC_URL }}js/jquery.infieldlabel.js" 
-          type="text/javascript"></script>
-      <script src="{{ IM_STATIC_URL }}js/forms.js" 
-          type="text/javascript"></script>
+  	  <script src="{{ IM_STATIC_URL }}js/jquery-1.7.1.min.js"></script>	
+  	  <script src="{{ IM_STATIC_URL }}js/jquery.dropkick-1.0.0.js"></script>
+  	  <script src="{{ IM_STATIC_URL }}js/os.js"></script>	
+      <script src="{{ IM_STATIC_URL }}js/modernizr-2.0.6.js"></script>	
+      <script src="{{ IM_STATIC_URL }}js/jquery.js"></script>	
+      <script src="{{ IM_STATIC_URL }}js/jquery.infieldlabel.js"></script>	
+      <script src="{{ IM_STATIC_URL }}js/forms.js"></script>	
+      <script src="{{ IM_STATIC_URL }}js/common.js"></script>
   {% endblock headjs %}
   {% block endhead %}{% endblock endhead %}
 
@@ -75,43 +67,48 @@
 </head>
 
 <body>
-    <div class='container'>
-        <div class='header'>
-            <div class="mainlogo">
-                <h1>accounts</h1>
-            </div>
-            
+    <div class="container">
+	    <div class="wrapper">       
+	        {% if messages or LOGIN_MESSAGES %}
+	        <div class="top-msg active">
+	            {% block extra_messages %}{% endblock %}
+	            {% for message in messages %}
+	            <div{% if message.tags %} 
+	                class="{{ message.tags }}"{% endif %}>
+	                {{ message|safe }}</div>
+	            {% endfor %}
+	            <a href="#" title="close" class="close">X</a>
+	        </div>
+	        {% endif %}
+	        <h1><img src="../static/im/images/accounts-logo.png" alt="accounts" /></h1>
             {% block page.nav %}
             <div class="navigation">
-            <ul class="mainnav inline">
-                {% block page.nav.items %}
-                {% endblock %}
-            </ul>
-            <ul class="mainnav inline subnav">
-                {% block page.subnav %}{%endblock %}
-            </ul>
+	            <ul>
+	                {% block page.nav.items %}
+	                {% endblock %}
+	            </ul>
+	            <ul>
+	                {% block page.subnav %}{%endblock %}
+	            </ul>
             </div>
             {% endblock %}
-        </div>
-        {% if messages or LOGIN_MESSAGES %}
-        <ul class="messages">
-            {% block extra_messages %}{% endblock %}
-            {% for message in messages %}
-            <li{% if message.tags %} 
-                class="{{ message.tags }}"{% endif %}>
-                {{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        <div class="page">
-            {% block page.body %}
-                <div class="maincol full">
-                    {% block body %}
-                    {% endblock %}
-                </div>
-            {% endblock %}
+	         
+	        
+	        <div class="content">
+	            {% block page.body %}
+	                <div class="full">
+	                    {% block body %}
+	                    {% endblock %}
+	                </div>
+	            {% endblock %}
+	        </div>
+	   </div>
+    </div>
+    <div class="footer">
+        <div class="wrapper">
+        	{% include "im/footer.html" %}
         </div>
     </div>
-    {% include "im/footer.html" %}
+    
 </body>
 </html>

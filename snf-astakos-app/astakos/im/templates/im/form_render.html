@@ -11,6 +11,12 @@
      <p class="{% if field.blank %}required{% endif %}">
         {{ field.label_tag }}
         {{ field|safe }}
-        </p>
-    </div>
+        {%  if field.help_text %}
+        	<span class="info"> 
+			    <em>more info</em>
+			    <span>{{ field.help_text|safe }}</span>
+		    </span>
+        {% endif %}
+     </p>
+</div>
 {% endfor %}

@@ -41,7 +41,7 @@ from xml.dom import minidom
 from StringIO import StringIO
 from hashlib import new as newhasher
 from binascii import hexlify
-from httplib import HTTPConnection
+from httplib import HTTPConnection, HTTPSConnection
 from urlparse import urlparse
 
 import json

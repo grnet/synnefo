@@ -63,6 +63,9 @@
             views.NetworkConnectVMsOverlay.__super__.initialize.apply(this);
             this.list = this.$(".vms-list ul");
             this.empty_message = this.$(".empty-message");
+
+            // flag for submit handler to avoid duplicate bindings
+            this.submit_handler_set = false;
         },
         
         init_handlers: function() {
@@ -70,10 +73,14 @@
             this.list.find("li").click(function(){
                 $(this).toggleClass("selected");
             });
-
-            this.el.find(".create").click(_.bind(function() {
-                this.submit();
-            }, this));
+            
+            if (!this.submit_handler_set) {
+                // avoid duplicate submits
+                this.el.find(".create").click(_.bind(function() {
+                    this.submit();
+                }, this));
+                this.submit_handler_set = true;
+            }
         },
 
         reset: function() {
@@ -119,7 +126,7 @@
                 vm.bind("remove", function(){ el.remove()})
                 vm.bind("change:name", function(i,v){el.find(".title").text(v)})
             }, this));
-
+            
             this.init_handlers();
             this.set_selected();
         },

@@ -11,7 +11,7 @@ assumes the nodes run Debian Squeeze. After successful installation, you will
 have the following services running:
 
  * Identity Management (Astakos)
- * File Storage Service (Pithos+)
+ * Object Storage Service (Pithos+)
  * Compute Service (Cyclades)
  * Image Registry Service (Plankton)
 
@@ -20,7 +20,7 @@ and a single unified Web UI to manage them all.
 The Volume Storage Service (Archipelago) and the Billing Service (Aquarium) are
 not released yet.
 
-If you just want to install the File Storage Service (Pithos+), follow the guide
+If you just want to install the Object Storage Service (Pithos+), follow the guide
 and just stop after the "Testing of Pithos+" section.
 
 
@@ -52,12 +52,6 @@ lines in your ``/etc/apt/sources.list`` file:
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
 
-| ``deb http://apt.noc.grnet.gr experimental main``
-| ``deb-src http://apt.noc.grnet.gr experimental main``
-
-| ``deb http://apt.noc.grnet.gr squeeze backports``
-| ``deb-src http://apt.noc.grnet.gr squeeze backports``
-
 You also need a shared directory visible by both nodes. Pithos+ will save all
 data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this
@@ -86,10 +80,17 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 gunicorn postgresql
+   # apt-get install apache2 postgresql
 
-Make sure you have installed gunicorn >= v0.12.2. On node1, we will create our
-databases, so you will also need the python-psycopg2 package:
+Make sure to install gunicorn >= v0.12.2. You can do this by installing from
+the official debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install gunicorn
+
+On node1, we will create our databases, so you will also need the
+python-psycopg2 package:
 
 .. code-block:: console
 
@@ -117,7 +118,7 @@ create all needed databases on node1 and then node2 will connect to them.
 
 .. code-block:: console
 
-   postgres=# CREATE DATABASE snf_pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C'
+   postgres=# CREATE DATABASE snf_pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
    postgres=# GRANT ALL PRIVILEGES ON DATABASE snf_pithos TO synnefo;
 
 Configure the database to listen to all network interfaces. You can do this by
@@ -166,13 +167,11 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
     ),
    }
 
-!!! Warning: Do NOT start the server yet, because it won't find the
-``synnefo.settings`` module. We will start the server after successful
-installation of astakos. If the server is running:
+.. warning:: Do NOT start the server yet, because it won't find the
+    ``synnefo.settings`` module. We will start the server after successful
+    installation of astakos. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/gunicorn stop
+       # /etc/init.d/gunicorn stop
 
 Apache2 setup
 ~~~~~~~~~~~~~
@@ -202,6 +201,8 @@ containing the following:
 
    #  SetEnv no-gzip
    #  SetEnv dont-vary
+
+     AllowEncodedSlashes On
 
      RequestHeader set X-Forwarded-Protocol "https"
 
@@ -239,11 +240,9 @@ Now enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
-!!! Warning: Do NOT start/restart the server yet. If the server is running:
+.. warning:: Do NOT start/restart the server yet. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/apache2 stop
+       # /etc/init.d/apache2 stop
 
 Pithos+ data directory setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -277,11 +276,17 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 gunicorn postgresql
+   # apt-get install apache2 postgresql
 
-Make sure you have installed the same package versions as in node1. Node2 will
-connect to the databases on node1, so you will also need the python-psycopg2
-package:
+Make sure to install gunicorn >= v0.12.2. You can do this by installing from
+the official debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install gunicorn
+
+Node2 will connect to the databases on node1, so you will also need the
+python-psycopg2 package:
 
 .. code-block:: console
 
@@ -319,13 +324,11 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
     ),
    }
 
-!!! Warning: Do NOT start the server yet, because it won't find the
-``synnefo.settings`` module. We will start the server after successful
-installation of astakos. If the server is running:
+.. warning:: Do NOT start the server yet, because it won't find the
+    ``synnefo.settings`` module. We will start the server after successful
+    installation of astakos. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/gunicorn stop
+       # /etc/init.d/gunicorn stop
 
 Apache2 setup
 ~~~~~~~~~~~~~
@@ -355,6 +358,7 @@ containing the following:
 
      SetEnv no-gzip
      SetEnv dont-vary
+     AllowEncodedSlashes On
 
      RequestHeader set X-Forwarded-Protocol "https"
 
@@ -389,11 +393,9 @@ As in node1, enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
-!!! Warning: Do NOT start/restart the server yet. If the server is running:
+.. warning:: Do NOT start/restart the server yet. If the server is running::
 
-.. code-block:: console
-
-   # /etc/init.d/apache2 stop
+       # /etc/init.d/apache2 stop
 
 We are now ready with all general prerequisites for node2. Now that we have
 finished with all general prerequisites for both nodes, we can start installing
@@ -478,7 +480,7 @@ choise and keep it private:
    SECRET_KEY = 'sy6)mw6a7x%n)-example_secret_key#zzk4jo6f2=uqu!1o%)'
 
 For astakos specific configuration, edit the following options in
-``/etc/synnefo/20-snf-astakos-setting.conf`` :
+``/etc/synnefo/20-snf-astakos-app-settings.conf`` :
 
 .. code-block:: console
 
@@ -575,7 +577,9 @@ This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
 types of moderation, that Astakos supports. You can see the moderation methods
 (by invitation, whitelists, matching regexp, etc.) at the Astakos specific
-documentation.
+documentation. In production, you can also manually activate a user, by sending
+him/her an activation email. See how to do this at the :ref:`User
+activation <user_activation>` section.
 
 Now let's go back to the homepage. Open ``http://node1.example.com/im`` with
 your browser again. Try to sign in using your new credentials. If the astakos
@@ -588,7 +592,7 @@ Let's continue to install Pithos+ now.
 Installation of Pithos+ on node2
 ================================
 
-To install pithos+, grab the package from our repository (make sure  you made
+To install pithos+, grab the packages from our repository (make sure  you made
 the additions needed in your ``/etc/apt/sources.list`` file, as described
 previously), by running:
 
@@ -599,8 +603,15 @@ previously), by running:
 After successful installation of snf-pithos-app, make sure that also
 snf-webproject has been installed (marked as "Recommended" package). Refer to
 the "Installation of Astakos on node1" section, if you don't remember why this
-should happen. 
+should happen. Now, install the pithos web interface:
 
+.. code-block:: console
+
+   # apt-get install snf-pithos-webclient
+
+This package provides the standalone pithos web client. The web client is the
+web UI for pithos+ and will be accessible by clicking "pithos+" on the Astakos
+interface's cloudbar, at the top of the Astakos homepage.
 
 Configuration of Pithos+
 ========================
@@ -612,7 +623,7 @@ After pithos+ is successfully installed, you will find the directory
 ``/etc/synnefo`` and some configuration files inside it, as you did in node1
 after installation of astakos. Here, you will not have to change anything that
 has to do with snf-common or snf-webproject. Everything is set at node1. You
-only need to change settings that have to do with pithos. Specifically:
+only need to change settings that have to do with pithos+. Specifically:
 
 Edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``. There you need to set
 only the two options:
@@ -633,6 +644,45 @@ store its data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
 
+Then we need to setup the web UI and connect it to astakos. To do so, edit
+``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:
+
+.. code-block:: console
+
+   PITHOS_UI_LOGIN_URL = "https://node1.example.com/im/login?next="
+   PITHOS_UI_FEEDBACK_URL = "https://node1.example.com/im/feedback"
+
+The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
+you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
+pithos+ feedback form. Astakos already provides a generic feedback form for all
+services, so we use this one.
+
+Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
+pithos+ web UI with the astakos web UI (through the top cloudbar):
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
+   CLOUDBAR_ACTIVE_SERVICE = 'pithos'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+
+The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
+cloudbar.
+
+The ``CLOUDBAR_ACTIVE_SERVICE`` registers the client as a new service served by
+astakos. It's name should be identical with the ``id`` name given at the
+astakos' ``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos "Conf
+Files" section, we actually set the third item of the ``ASTAKOS_CLOUD_SERVICES``
+list, to the dictionary:
+``{ 'url':'https://nod...', 'name':'pithos+', 'id':'pithos }``. This item
+represents the pithos+ service. The ``id`` we set there, is the ``id`` we want
+here.
+
+The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
+pithos+ web client to get from astakos all the information needed to fill its
+own cloudbar.  So we put our astakos deployment urls there.
+
 Servers Initialization
 ----------------------
 
@@ -642,7 +692,6 @@ After configuration is done, we initialize the servers on node2:
 
    root@node2:~ # /etc/init.d/gunicorn restart
    root@node2:~ # /etc/init.d/apache2 restart
-
 
 You have now finished the Pithos+ setup. Let's test it now.
 
@@ -654,9 +703,245 @@ Testing of Pithos+
 Installation of Cyclades (and Plankton) on node1
 ================================================
 
+Installation of cyclades is a two step process:
+
+1. install the external services (prerequisites) on which cyclades depends
+2. install the synnefo software components associated with cyclades
+
+Prerequisites
+-------------
+.. _cyclades-install-ganeti:
+
+Ganeti installation
+~~~~~~~~~~~~~~~~~~~
+
+Synnefo requires a working Ganeti installation at the backend. Installation
+of Ganeti is not covered by this document, please refer to
+`ganeti documentation <http://docs.ganeti.org/ganeti/current/html>`_ for all the
+gory details. A successful Ganeti installation concludes with a working
+:ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs <GANETI_NODES>`.
+
+.. _cyclades-install-db:
+
+Database
+~~~~~~~~
+
+Database installation is done as part of the
+:ref:`snf-webproject <snf-webproject>` component.
+
+.. _cyclades-install-rabbitmq:
+
+RabbitMQ
+~~~~~~~~
+
+RabbitMQ is used as a generic message broker for cyclades. It should be
+installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high availability
+configuration as described here:
+
+    http://www.rabbitmq.com/pacemaker.html
+
+After installation, create a user and set its permissions:
+
+.. code-block:: console
+
+    $ rabbitmqctl add_user <username> <password>
+    $ rabbitmqctl set_permissions -p / <username>  "^.*" ".*" ".*"
+
+The values set for the user and password must be mirrored in the
+``RABBIT_*`` variables in your settings, as managed by
+:ref:`snf-common <snf-common>`.
+
+.. todo:: Document an active-active configuration based on the latest version
+   of RabbitMQ.
+
+.. _cyclades-install-vncauthproxy:
+
+vncauthproxy
+~~~~~~~~~~~~
+
+To support OOB console access to the VMs over VNC, the vncauthproxy
+daemon must be running on every :ref:`APISERVER <APISERVER_NODE>` node.
+
+.. note:: The Debian package for vncauthproxy undertakes all configuration
+   automatically.
+
+Download and install the latest vncauthproxy from its own repository,
+at `https://code.grnet.gr/git/vncauthproxy`, or a specific commit:
+
+.. code-block:: console
+
+    $ bin/pip install -e git+https://code.grnet.gr/git/vncauthproxy@INSERT_COMMIT_HERE#egg=vncauthproxy
+
+Create ``/var/log/vncauthproxy`` and set its permissions appropriately.
+
+Alternatively, build and install Debian packages.
+
+.. code-block:: console
+
+    $ git checkout debian
+    $ dpkg-buildpackage -b -uc -us
+    # dpkg -i ../vncauthproxy_1.0-1_all.deb
+
+.. warning::
+    **Failure to build the package on the Mac.**
+
+    ``libevent``, a requirement for gevent which in turn is a requirement for
+    vncauthproxy is not included in `MacOSX` by default and installing it with
+    MacPorts does not lead to a version that can be found by the gevent
+    build process. A quick workaround is to execute the following commands::
+
+        $ cd $SYNNEFO
+        $ sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
+        <the above fails>
+        $ cd build/gevent
+        $ sudo python setup.py -I/opt/local/include -L/opt/local/lib build
+        $ cd $SYNNEFO
+        $ sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
+
+.. todo:: Mention vncauthproxy bug, snf-vncauthproxy, inability to install using pip
+.. todo:: kpap: fix installation commands
+
+.. _cyclades-install-nfdhcpd:
+
+NFDHCPD
+~~~~~~~
+
+Setup Synnefo-specific networking on the Ganeti backend.
+This part is deployment-specific and must be customized based on the
+specific needs of the system administrators.
+
+A reference installation will use a Synnefo-specific KVM ifup script,
+NFDHCPD and pre-provisioned Linux bridges to support public and private
+network functionality. For this:
+
+Grab NFDHCPD from its own repository (https://code.grnet.gr/git/nfdhcpd),
+install it, modify ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network
+configuration.
+
+Install a custom KVM ifup script for use by Ganeti, as
+``/etc/ganeti/kvm-vif-bridge``, on GANETI-NODEs. A sample implementation is
+provided under ``/contrib/ganeti-hooks``. Set ``NFDHCPD_STATE_DIR`` to point
+to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
+
+.. todo:: soc: document NFDHCPD installation, settle on KVM ifup script
+
+.. _cyclades-install-snfimage:
+
+snf-image
+~~~~~~~~~
+
+Install the :ref:`snf-image <snf-image>` Ganeti OS provider for image
+deployment.
+
+For :ref:`cyclades <cyclades>` to be able to launch VMs from specified
+Images, you need the snf-image OS Provider installed on *all* Ganeti nodes.
+
+Please see `https://code.grnet.gr/projects/snf-image/wiki`_
+for installation instructions and documentation on the design
+and implementation of snf-image.
+
+Please see `https://code.grnet.gr/projects/snf-image/files`
+for the latest packages.
+
+Images should be stored in ``extdump``, or ``diskdump`` format in a directory
+of your choice, configurable as ``IMAGE_DIR`` in
+:file:`/etc/default/snf-image`.
+
+synnefo components
+------------------
+
+You need to install the appropriate synnefo software components on each node,
+depending on its type, see :ref:`Architecture <cyclades-architecture>`.
+
+Most synnefo components have dependencies on additional Python packages.
+The dependencies are described inside each package, and are setup
+automatically when installing using :command:`pip`, or when installing
+using your system's package manager.
+
+Please see the page of each synnefo software component for specific
+installation instructions, where applicable.
+
+Install the following synnefo components:
+
+Nodes of type :ref:`APISERVER <APISERVER_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-cyclades-app <snf-cyclades-app>`
+Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
+Nodes of type :ref:`LOGIC <LOGIC_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-cyclades-app <snf-cyclades-app>`.
+
 
 Configuration of Cyclades (and Plankton)
 ========================================
+
+This section targets the configuration of the prerequisites for cyclades,
+and the configuration of the associated synnefo software components.
+
+synnefo components
+------------------
+
+cyclades uses :ref:`snf-common <snf-common>` for settings.
+Please refer to the configuration sections of
+:ref:`snf-webproject <snf-webproject>`,
+:ref:`snf-cyclades-app <snf-cyclades-app>`,
+:ref:`snf-cyclades-gtools <snf-cyclades-gtools>` for more
+information on their configuration.
+
+Ganeti
+~~~~~~
+
+Set ``GANETI_NODES``, ``GANETI_MASTER_IP``, ``GANETI_CLUSTER_INFO`` based on
+your :ref:`Ganeti installation <cyclades-install-ganeti>` and change the
+`BACKEND_PREFIX_ID`` setting, using an custom ``PREFIX_ID``.
+
+Database
+~~~~~~~~
+
+Once all components are installed and configured,
+initialize the Django DB:
+
+.. code-block:: console
+
+   $ snf-manage syncdb
+   $ snf-manage migrate
+
+and load fixtures ``{users, flavors, images}``,
+which make the API usable by end users by defining a sample set of users,
+hardware configurations (flavors) and OS images:
+
+.. code-block:: console
+
+   $ snf-manage loaddata /path/to/users.json
+   $ snf-manage loaddata flavors
+   $ snf-manage loaddata images
+
+.. warning::
+    Be sure to load a custom users.json and select a unique token
+    for each of the initial and any other users defined in this file.
+    **DO NOT LEAVE THE SAMPLE AUTHENTICATION TOKENS** enabled in deployed
+    configurations.
+
+sample users.json file:
+
+.. literalinclude:: ../../synnefo/db/fixtures/users.json
+
+`download <../_static/users.json>`_
+
+RabbitMQ
+~~~~~~~~
+
+Change ``RABBIT_*`` settings to match your :ref:`RabbitMQ setup
+<cyclades-install-rabbitmq>`.
+
+.. include:: ../../Changelog
 
 
 Testing of Cyclades (and Plankton)

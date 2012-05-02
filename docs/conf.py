@@ -1,10 +1,11 @@
 import sys, os
 
+sys.path.append("../snf-cyclades-app")
 
 project = u'synnefo'
 copyright = u'2012, GRNET'
-version = '0.8'
-release = '0.8'
+version = '0.9'
+release = '0.9'
 html_title = 'synnefo ' + version
 
 templates_path = ['_templates']
@@ -37,6 +38,7 @@ for name, ver in SYNNEFO_PROJECTS.iteritems():
                                                  '%s/%s/' % (name, ver),
                                  None)
 
-extensions = ['sphinx.ext.intersphinx',
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.intersphinx',
               'sphinx.ext.todo',
               'sphinx.ext.viewcode']

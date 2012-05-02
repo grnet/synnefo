@@ -61,8 +61,9 @@ Django project.
 snf-dispatcher
 **************
 
-.. note:: The Debian package configures the init script for
-   :command:`snf-dispatcher` automatically, see ``/etc/default/snf-dispatcher``.
+.. note:: 
+    The Debian package configures the init script for
+    ``snf-dispatcher`` automatically, see ``/etc/default/snf-dispatcher``.
 
 .. todo:: package an initscript for :command:`snf-dispatcher`
 
@@ -94,8 +95,6 @@ settings, as managed by :ref:`snf-common <snf-common>`:
 .. literalinclude:: ../synnefo/app_settings/default/plankton.py
     :lines: 4-
 .. literalinclude:: ../synnefo/app_settings/default/queues.py
-    :lines: 4-
-.. literalinclude:: ../synnefo/app_settings/default/reconsiliation.py
     :lines: 4-
 .. literalinclude:: ../synnefo/app_settings/default/ui.py
     :lines: 4-

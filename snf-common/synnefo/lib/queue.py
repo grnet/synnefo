@@ -95,12 +95,13 @@ def queue_start(conn):
     channel.start_consuming()
 
 class Receipt(object):
-    def __init__(self, client, user, resource, value, details={}):
+    def __init__(self, client, user, instance, resource, value, details={}):
         self.eventVersion = '1.0'
         self.occurredMillis = int(time() * 1000)
         self.receivedMillis = self.occurredMillis
         self.clientID = client
         self.userID = user
+        self.instanceID = instance
         self.resource = resource
         self.value = value
         self.details = details

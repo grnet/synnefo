@@ -211,12 +211,8 @@ class Invitation(models.Model):
     realname = models.CharField('Real name', max_length=255)
     username = models.CharField('Unique ID', max_length=255, unique=True)
     code = models.BigIntegerField('Invitation code', db_index=True)
-    #obsolete: we keep it just for transfering the data
-    is_accepted = models.BooleanField('Accepted?', default=False)
     is_consumed = models.BooleanField('Consumed?', default=False)
     created = models.DateTimeField('Creation date', auto_now_add=True)
-    #obsolete: we keep it just for transfering the data
-    accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
     consumed = models.DateTimeField('Consumption date', null=True, blank=True)
     
     def __init__(self, *args, **kwargs):

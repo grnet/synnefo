@@ -2,13 +2,14 @@ Changelog
 =========
 
 
-dev
----
+v0.9.12
+-------
 
+* Set USE_X_FORWARDED_HOST setting to True by default
 * Remove INSTALLED_APPS, TEMPLATE_CONTEXT_PROCESSORS, MIDDLEWARE_CLASSES
   settings from default settings files (they get updated using package entry
   points hooks)
-* Set django setting SESSION_COOKIE_SECURE to True
+* Set django setting SESSION_COOKIE_SECURE to True by default
 
 
 v0.9.4

@@ -146,12 +146,36 @@ to be able to access the django database, so the following should be able to
 import the Django settings.
 
 Additionally, administrative tasks can be performed via the admin web interface
-located in /admin. Only users of type ADMIN can access the admin pages. To change
-the type of a user to ADMIN, snf-admin can be used:
+located in /admin. Only users of type ADMIN can access the admin pages. To
+change the type of a user to ADMIN, snf-admin can be used:
 
 .. code-block:: console
 
    $ snf-manage user modify 42 --type ADMIN
+
+
+Adding Astakos "Terms of Use"
+-----------------------------
+
+Astakos supports versioned terms-of-use. First of all you need to create an
+html file that will contain your terms. For example, create the file
+``/usr/share/synnefo/sample-terms.html``, which contains the following:
+
+.. code-block:: console
+
+   <h1>~okeanos terms</h1>
+
+   These are the example terms for ~okeanos
+
+Then, add those terms-of-use with the snf-manage command:
+
+.. code-block:: console
+
+   $ snf-manage addterms /usr/share/synnefo/sample-terms.html
+
+Your terms have been successfully added and you will see the corresponding link
+appearing in the Astakos web pages' footer.
+
 
 Reconciliation mechanism
 ------------------------

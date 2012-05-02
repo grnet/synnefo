@@ -633,6 +633,8 @@ only the two options:
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
 
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
+   
+   PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/im/authenticate'
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ backend where
 to find its database. Above we tell pithos+ that its database is ``snf_pithos``
@@ -643,6 +645,10 @@ The ``PITHOS_BACKEND_BLOCK_PATH`` option tells to the pithos+ backend where to
 store its data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
+
+The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
+is avalaible the astakos authentication api. If not set pithos+ tries to
+authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
 
 Then we need to setup the web UI and connect it to astakos. To do so, edit
 ``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:

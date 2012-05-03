@@ -634,7 +634,8 @@ only the two options:
 
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
    
-   PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/im/authenticate'
+   PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
+   PITHOS_AUTHENTICATION_USERS = None
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ backend where
 to find its database. Above we tell pithos+ that its database is ``snf_pithos``

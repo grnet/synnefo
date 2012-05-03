@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.9.6
+------
+* Use umask parameter in ModularBackend 
+
 v0.9.4
 ------
 * Overwrite permissions every time.

@@ -80,7 +80,11 @@
 	            <a href="#" title="close" class="close">X</a>
 	        </div>
 	        {% endif %}
-	        <h1><img src="../static/im/images/accounts-logo.png" alt="accounts" /></h1>
+	        <h1>
+	        	<a href="/im/">
+	        		<img src="{{ IM_STATIC_URL }}images/accounts-logo.png" alt="accounts" />
+	        	</a>
+	        </h1>
             {% block page.nav %}
             <div class="navigation">
 	            <ul>

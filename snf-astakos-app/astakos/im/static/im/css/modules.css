@@ -36,13 +36,12 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 
 
 /*top message*/
-.top-msg	                                    { margin:-36px -70px 40px; background:blue; padding:100px 200px; color:#fff; display:none; position:relative;}
-.top-msg  p	                                    { font-size:1.5em;}
-.top-msg  p.title	                            { font-size:2em;  }
+.top-msg	                                    { margin:-36px -70px 40px; background:blue; padding:100px 200px; color:#fff; display:none; position:relative; font-size:1.538em;}
+.top-msg  p.title	                            { font-size:1.3em;  }
 .top-msg  p.title span	                        { border-bottom:2px dotted #fff; padding:0 0 10px 0;}
 .top-msg.active                             	{ display:block;}
 .active+h1	                                    { display:none;}
-.top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:2em; font-weight:bold; border:0 none; color:#fff; text-decoration:none;}
+.top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em; font-weight:bold; border:0 none; color:#fff; text-decoration:none;}
 
 /* container */
 .container h1									{ margin:0; line-height:100%;}

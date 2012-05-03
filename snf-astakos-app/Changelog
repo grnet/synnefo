@@ -1,6 +1,16 @@
 Changelog
 *********
 
+v0.5.0
+======
+- Improvements and fixes in shibboleth integration.
+- Minor code refactoring (removed unsed classes/functions).
+- Rate limit integration (requires django-ratelimit).
+- New setting added, ASTAKOS_RATELIMIT_RETRIES_ALLOWED
+- get_menu api call checks the ASTAKOS_COOKIE_NAME instead of the sessionid cookie.
+- Management commands improvements/fixes
+
+
 v0.4.0
 =======
 - User terms.

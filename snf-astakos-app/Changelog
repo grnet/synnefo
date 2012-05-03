@@ -9,6 +9,7 @@ v0.5.0
 - New setting added, ASTAKOS_RATELIMIT_RETRIES_ALLOWED
 - get_menu api call checks the ASTAKOS_COOKIE_NAME instead of the sessionid cookie.
 - Management commands improvements/fixes
+- Altered blank/null parameters for some AstakosUser fields (db migration required)
 
 
 v0.4.0

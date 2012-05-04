@@ -33,7 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, get_latest_terms
 
 from ._common import format_bool, format_date
 
@@ -74,12 +74,15 @@ class Command(BaseCommand):
                 'provider': user.provider,
                 'verified': format_bool(user.is_verified),
                 'has_credits': format_bool(user.has_credits),
-                'has_signed_terms': format_bool(user.has_signed_terms),
-                'date_signed_terms': format_date(user.date_signed_terms),
                 'groups': [elem.name for elem in user.groups.all()],
                 'third_party_identifier': user.third_party_identifier,
                 'email_verified': format_bool(user.email_verified)
             }
+            if get_latest_terms():
+                has_signed_terms = user.signed_terms()
+                kv['has_signed_terms'] = format_bool(has_signed_terms)
+                if has_signed_terms:
+                    kv['date_signed_terms'] = format_date(user.date_signed_terms)
             
             for key, val in sorted(kv.items()):
                 line = '%s: %s\n' % (key.rjust(22), val)

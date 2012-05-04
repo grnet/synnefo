@@ -212,7 +212,7 @@ class VirtualMachine(models.Model):
             self.operstate = 'BUILD'
 
     @property
-    def backend_id(self):
+    def backend_vm_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
         if not self.id:
             raise VirtualMachine.InvalidBackendIdError("self.id is None")

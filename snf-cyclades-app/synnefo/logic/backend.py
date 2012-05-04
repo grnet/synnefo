@@ -55,6 +55,12 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
+def create_client(hostname, port=5080, username=None, password=None):
+    return GanetiRapiClient(hostname=hostname,
+                            port=port,
+                            username=username,
+                            password=password)
+
 @transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
@@ -164,8 +170,6 @@ def process_create_progress(vm, etime, rprogress, wprogress):
     if percentage < 0:
         raise ValueError("Percentage cannot be negative")
 
-    last_update = vm.buildpercentage
-
     # FIXME: log a warning here, see #1033
 #   if last_update > percentage:
 #       raise ValueError("Build percentage should increase monotonically " \
@@ -246,7 +250,7 @@ def create_instance(vm, flavor, image, password, personality):
     #
     kw = settings.GANETI_CREATEINSTANCE_KWARGS
     kw['mode'] = 'create'
-    kw['name'] = vm.backend_id
+    kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     kw['disk_template'] = flavor.disk_template
     kw['disks'] = [{"size": sz}]
@@ -283,23 +287,23 @@ def create_instance(vm, flavor, image, password, personality):
 
 def delete_instance(vm):
     start_action(vm, 'DESTROY')
-    rapi.DeleteInstance(vm.backend_id, dry_run=settings.TEST)
+    rapi.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
-    rapi.RebootInstance(vm.backend_id, reboot_type, dry_run=settings.TEST)
-    log.info('Rebooting instance %s', vm.backend_id)
+    rapi.RebootInstance(vm.backend_vm_id, reboot_type, dry_run=settings.TEST)
+    log.info('Rebooting instance %s', vm.backend_vm_id)
 
 
 def startup_instance(vm):
     start_action(vm, 'START')
-    rapi.StartupInstance(vm.backend_id, dry_run=settings.TEST)
+    rapi.StartupInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def shutdown_instance(vm):
     start_action(vm, 'STOP')
-    rapi.ShutdownInstance(vm.backend_id, dry_run=settings.TEST)
+    rapi.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def get_instance_console(vm):
@@ -316,18 +320,18 @@ def get_instance_console(vm):
     #
     console = {}
     console['kind'] = 'vnc'
-    i = rapi.GetInstance(vm.backend_id)
+    i = rapi.GetInstance(vm.backend_vm_id)
     if i['hvparams']['serial_console']:
         raise Exception("hv parameter serial_console cannot be true")
     console['host'] = i['pnode']
     console['port'] = i['network_port']
 
     return console
-    # return rapi.GetInstanceConsole(vm.backend_id)
+    # return rapi.GetInstanceConsole(vm.backend_vm_id)
 
 
 def request_status_update(vm):
-    return rapi.GetInstanceInfo(vm.backend_id)
+    return rapi.GetInstanceInfo(vm.backend_vm_id)
 
 
 def get_job_status(jobid):
@@ -391,16 +395,16 @@ def delete_network(net):
 
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
-    rapi.ModifyInstance(vm.backend_id, nics=[('add', -1, nic)],
+    rapi.ModifyInstance(vm.backend_vm_id, nics=[('add', -1, nic)],
                         hotplug=True, dry_run=settings.TEST)
 
 
 def disconnect_from_network(vm, net):
     nics = vm.nics.filter(network__public=False).order_by('index')
     ops = [('remove', nic.index, {}) for nic in nics if nic.network == net]
-    if not ops: # Vm not connected to network
+    if not ops:  # Vm not connected to network
         return
-    rapi.ModifyInstance(vm.backend_id, nics=ops[::-1],
+    rapi.ModifyInstance(vm.backend_vm_id, nics=ops[::-1],
                         hotplug=True, dry_run=settings.TEST)
 
 
@@ -412,13 +416,13 @@ def set_firewall_profile(vm, profile):
 
     # Delete all firewall tags
     for t in _firewall_tags.values():
-        rapi.DeleteInstanceTags(vm.backend_id, [t], dry_run=settings.TEST)
+        rapi.DeleteInstanceTags(vm.backend_vm_id, [t], dry_run=settings.TEST)
 
-    rapi.AddInstanceTags(vm.backend_id, [tag], dry_run=settings.TEST)
+    rapi.AddInstanceTags(vm.backend_vm_id, [tag], dry_run=settings.TEST)
 
     # XXX NOP ModifyInstance call to force process_net_status to run
     # on the dispatcher
-    rapi.ModifyInstance(vm.backend_id,
+    rapi.ModifyInstance(vm.backend_vm_id,
                         os_name=settings.GANETI_CREATEINSTANCE_KWARGS['os'])
 
 

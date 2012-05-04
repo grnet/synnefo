@@ -251,7 +251,8 @@ def create_server(request):
     if count >= vms_limit_for_user:
         raise faults.OverLimit("Server count limit exceeded for your account.")
 
-    # We must save the VM instance now, so that it gets a valid vm.backend_id.
+    # We must save the VM instance now, so that it gets a
+    # valid vm.backend_vm_id.
     vm = VirtualMachine.objects.create(
         name=name,
         userid=request.user_uniq,
@@ -532,8 +533,8 @@ def server_stats(request, server_id):
 
     log.debug('server_stats %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    #secret = util.encrypt(vm.backend_id)
-    secret = vm.backend_id      # XXX disable backend id encryption
+    #secret = util.encrypt(vm.backend_vm_id)
+    secret = vm.backend_vm_id      # XXX disable backend id encryption
 
     stats = {
         'serverRef': vm.id,

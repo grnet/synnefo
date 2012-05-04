@@ -139,7 +139,7 @@ class LocalUserCreationForm(UserCreationForm):
         user.renew_token()
         if commit:
             user.save()
-        logger.info('Created user %s', user)
+            logger.info('Created user %s', user)
         return user
 
 class InvitedLocalUserCreationForm(LocalUserCreationForm):
@@ -220,7 +220,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         user.provider = get_query(self.request).get('provider')
         if commit:
             user.save()
-        logger.info('Created user %s', user)
+            logger.info('Created user %s', user)
         return user
 
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):

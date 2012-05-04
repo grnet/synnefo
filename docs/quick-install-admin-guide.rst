@@ -80,7 +80,7 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql
+   # apt-get install apache2 postgresql rabbitmq-server
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -244,6 +244,21 @@ Now enable sites and modules by running:
 
        # /etc/init.d/apache2 stop
 
+Message Queue setup
+~~~~~~~~~~~~~~~~~~~
+
+The message queue will run on node1, so we need to create the appropriate
+rabbitmq user. The user is named ``synnefo`` and gets full privileges on all
+exchanges:
+
+.. code-block:: console
+
+   # rabbitmqctl add_user synnefo "examle_rabbitmq_passw0rd"
+   # rabbitmqctl set_permissions synnefo ".*" ".*" ".*"
+
+We do not need to initialize the exchanges. This will be done automatically,
+during the Cyclades setup.
+
 Pithos+ data directory setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -270,7 +285,6 @@ General Synnefo dependencies
  * apache (http server)
  * gunicorn (WSGI http server)
  * postgresql (database)
- * rabbitmq (message queue)
 
 You can install the above by running:
 
@@ -633,22 +647,23 @@ only the two options:
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
 
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
-   
+
    PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
    PITHOS_AUTHENTICATION_USERS = None
 
-The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ backend where
-to find its database. Above we tell pithos+ that its database is ``snf_pithos``
-at node1 and to connect as user ``synnefo`` with password ``example_passw0rd``.
-All those settings where setup during node1's "Database setup" section.
+The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ app where to
+find the pithos+ backend database. Above we tell pithos+ that its database is
+``snf_pithos`` at node1 and to connect as user ``synnefo`` with password
+``example_passw0rd``.  All those settings where setup during node1's "Database
+setup" section.
 
-The ``PITHOS_BACKEND_BLOCK_PATH`` option tells to the pithos+ backend where to
-store its data. Above we tell pithos+ to store its data under
+The ``PITHOS_BACKEND_BLOCK_PATH`` option tells to the pithos+ app where to find
+the pithos+ backend data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
 
 The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
-is avalaible the astakos authentication api. If not set pithos+ tries to
+is available the astakos authentication api. If not set, pithos+ tries to
 authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
 
 Then we need to setup the web UI and connect it to astakos. To do so, edit
@@ -670,25 +685,24 @@ pithos+ web UI with the astakos web UI (through the top cloudbar):
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   CLOUDBAR_ACTIVE_SERVICE = 'pithos'
+   PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'pithos'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
 
-The ``CLOUDBAR_ACTIVE_SERVICE`` registers the client as a new service served by
-astakos. It's name should be identical with the ``id`` name given at the
-astakos' ``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos "Conf
+The ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` registers the client as a new service
+served by astakos. It's name should be identical with the ``id`` name given at
+the astakos' ``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos "Conf
 Files" section, we actually set the third item of the ``ASTAKOS_CLOUD_SERVICES``
-list, to the dictionary:
-``{ 'url':'https://nod...', 'name':'pithos+', 'id':'pithos }``. This item
-represents the pithos+ service. The ``id`` we set there, is the ``id`` we want
-here.
+list, to the dictionary: ``{ 'url':'https://nod...', 'name':'pithos+',
+'id':'pithos }``. This item represents the pithos+ service. The ``id`` we set
+there, is the ``id`` we want here.
 
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 pithos+ web client to get from astakos all the information needed to fill its
-own cloudbar.  So we put our astakos deployment urls there.
+own cloudbar. So we put our astakos deployment urls there.
 
 Servers Initialization
 ----------------------
@@ -706,6 +720,36 @@ You have now finished the Pithos+ setup. Let's test it now.
 Testing of Pithos+
 ==================
 
+Open your browser and go to the Astakos homepage:
+
+``http://node1.example.com/im``
+
+Login, and you will see your profile page. Now, click the "pithos+" link on the
+top black cloudbar. If everything was setup correctly, this will redirect you
+to:
+
+``https://node2.example.com/ui``
+
+and you will see the blue interface of the Pithos+ application.  Click the
+orange "Upload" button and upload your first file. If the file gets uploaded
+successfully, then this is your first sign of a successful Pithos+ installation.
+Go ahead and experiment with the interface to make sure everything works
+correctly.
+
+You can also use the Pithos+ clients to sync data from your Windows PC or MAC.
+
+If you don't stumble on any problems, then you have successfully installed
+Pithos+, which you can use as a standalone File Storage Service.
+
+If you would like to do more, such as:
+
+ * Spawning VMs
+ * Spawning VMs from Images stored on Pithos+
+ * Uploading your custom Images to Pithos+
+ * Spawning VMs from those custom Images
+ * Registering existing Pithos+ files as Images
+
+please continue with the rest of the guide.
 
 Installation of Cyclades (and Plankton) on node1
 ================================================

@@ -1,45 +1,46 @@
 Changelog
-*********
+---------
 
 v0.5.0
-======
+^^^^^^
 - Improvements and fixes in shibboleth integration.
 - Minor code refactoring (removed unsed classes/functions).
 - Rate limit integration (requires django-ratelimit).
 - New setting added, ASTAKOS_RATELIMIT_RETRIES_ALLOWED
 - get_menu api call checks the ASTAKOS_COOKIE_NAME instead of the sessionid cookie.
 - Management commands improvements/fixes
-- Altered blank/null parameters for some AstakosUser fields (db migration required)
+- Altered blank/null parameters for some AstakosUser fields (db migration
+  required, ``snf-manage migrate``)
 - Added user group functionality (initial group data can be loaded using
   ``snf-manage loaddata groups``)
 
 v0.4.0
-=======
+^^^^^^
 - User terms.
 - Styling fixes/improvements.
 - Configurable recpatcha form field.
 
 
 v0.3.9
-======
+^^^^^^
 - Show user email in feedback email content
 
 
 v0.3.8
-======
+^^^^^^
 - New ASTAKOS_PROFILE_EXTRA_LINKS setting to display additional buttons on
   account pages.
 
 
 v0.3.7
-======
+^^^^^^
 - New ASTAKOS_LOGIN_MESSAGES setting to display messages on the login page
   header
 - login_base.html to make it easy override the login.html template
 
 
 v0.3.5
-======
+^^^^^^
 - New grnet styles
 - New setting for recaptcha to use SSL
 - New menu texts
@@ -47,13 +48,13 @@ v0.3.5
 
 
 v0.3.4
-======
+^^^^^^
 - Updated mail contents
 - Cloudbar improvements
 
 
 v0.3.3
-======
+^^^^^^
 - Updated grnet styles
 - Several styling fixes
 - Display page menu
@@ -64,13 +65,13 @@ v0.3.3
 - Updated snf-common dependency to >=0.9.0
 - New ASTAKOS_RE_USER_EMAIL_PATTERNS setting
 - Support for multiple accounts authentication 
-- New --set-active and --set-inactive in modifyuser command
+- New ^^set-active and ^^set-inactive in modifyuser command
 - Fixed circular redirects when visiting login page from the logout one
 - Removed im.context_processors.cloudbar (now using snf-common processor)
 
 
 v0.3.2
-======
+^^^^^^
 - improved styles of sign up button
 - do not send admin notification email if ASTAKOS_DEFAULT_ADMIN_EMAIL is not 
   set 
@@ -78,7 +79,7 @@ v0.3.2
 
 
 v0.3.1
-======
+^^^^^^
 - bug fixes
 - administrator email notification on sign up 
   (configurable from ASTAKOS_DEFAULT_ADMIN_EMAIL setting)

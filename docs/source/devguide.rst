@@ -237,5 +237,4 @@ Example reply if request user is authenticated:
  {"url": "/im/logout", "name": "logout..."}]
 
 
-
-
+.. include:: ../../snf-astakos-app/Changelog

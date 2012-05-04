@@ -1,7 +1,7 @@
 Backends
 ==============
 
-.. automodule:: astakos.im.backends
+.. automodule:: astakos.im.activation_backends
    :show-inheritance:
    :members:
    :undoc-members:

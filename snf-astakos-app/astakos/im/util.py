@@ -42,7 +42,6 @@ from functools import wraps
 from datetime import tzinfo, timedelta
 from django.http import HttpResponse, HttpResponseBadRequest, urlencode
 from django.template import RequestContext
-from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
 from django.contrib.auth import login, authenticate
 from django.core.urlresolvers import reverse

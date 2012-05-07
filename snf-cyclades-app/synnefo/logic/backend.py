@@ -36,6 +36,7 @@ import json
 from logging import getLogger
 from django.conf import settings
 from django.db import transaction
+from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network, NetworkLink)
 from synnefo.logic import utils
@@ -55,10 +56,7 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
 def create_client(hostname, port=5080, username=None, password=None):
-    return GanetiRapiClient(hostname=hostname,
-                            port=port,
-                            username=username,
-                            password=password)
+    return GanetiRapiClient(hostname, port, username, password)
 
 @transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg):
@@ -423,7 +421,8 @@ def set_firewall_profile(vm, profile):
 
 
 def get_ganeti_instances(backend=None, bulk=False):
-    Instances = [c.client.GetInstances(bulk=bulk) for c in get_backends(backend)]
+    Instances = [c.client.GetInstances(bulk=bulk)\
+                 for c in get_backends(backend)]
     return reduce(list.__add__, Instances, [])
 
 
@@ -439,12 +438,62 @@ def get_ganeti_jobs(backend=None, bulk=False):
 ##
 ##
 ##
+
+
 def get_backends(backend=None):
     if backend:
         return [backend]
     return Backend.objects.all()
 
 
+def get_physical_resources(backend):
+    """ Get the physical resources of a backend.
+
+    Get the resources of a backend as reported by the backend (not the db).
+
+    """
+    nodes = get_ganeti_nodes(backend, bulk=True)
+    attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
+    res = {}
+    for a in attr:
+        res[a] = 0
+    for n in nodes:
+        # Filter out drained, offline and not vm_capable nodes since they will
+        # not take part in the vm allocation process
+        if n['vm_capable'] and not n['drained'] and not n['offline']\
+           and n['cnodes']:
+            for a in attr:
+                res[a] += int(n[a])
+    return res
 
 
+def update_resources(backend, resources=None):
+    """ Update the state of the backend resources in db.
 
+    """
+
+    if not resources:
+        resources = get_physical_resources(backend)
+
+    backend.mfree = resources['mfree']
+    backend.mtotal = resources['mtotal']
+    backend.dfree = resources['dfree']
+    backend.dtotal = resources['dtotal']
+    backend.pinst_cnt = resources['pinst_cnt']
+    backend.ctotal = resources['ctotal']
+    backend.updated = datetime.now()
+    backend.save()
+
+
+def get_memory_from_instances(backend):
+    """ Get the memory that is used from instances.
+
+    Get the used memory of a backend. Note: This is different for
+    the real memory used, due to kvm's memory de-duplication.
+
+    """
+    instances = backend.client.GetInstances(bulk=True)
+    mem = 0
+    for i in instances:
+        mem += i['oper_ram']
+    return mem

@@ -195,6 +195,7 @@ class AstakosUser(User):
             return False
         if self.date_signed_terms < term.date:
             self.has_signed_terms = False
+            self.date_signed_terms = None
             self.save()
             return False
         return True

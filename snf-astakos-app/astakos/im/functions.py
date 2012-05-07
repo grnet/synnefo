@@ -39,6 +39,7 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
+from django.template import Context, loader
 
 from urllib import quote
 from urlparse import urljoin
@@ -156,6 +157,22 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     else:
         logger.info('Sent feedback from %s', user.email)
 
+def send_change_email(ec, request, email_template_name='registration/email_change_email.txt'):
+    try:
+        url = reverse('email_change_confirm',
+                      kwargs={'activation_key':ec.activation_key})
+        url = request.build_absolute_uri(url)
+        t = loader.get_template(email_template_name)
+        c = {'url': url, 'site_name': SITENAME}
+        from_email = DEFAULT_FROM_EMAIL
+        send_mail(_("Email change on %s alpha2 testing") % SITENAME,
+            t.render(Context(c)), from_email, [ec.new_email_address])
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise ChangeEmailError()
+    else:
+        logger.info('Sent change email for %s', ec.user.email)
+
 def activate(user, email_template_name='im/welcome_email.txt'):
     """
     Activates the specific user and sends email.
@@ -215,3 +232,8 @@ class SendFeedbackError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send feedback')
         super(SendFeedbackError, self).__init__()
+
+class ChangeEmailError(SendMailError):
+    def __init__(self):
+        self.message = _('Failed to send change email')
+        super(ChangeEmailError, self).__init__()

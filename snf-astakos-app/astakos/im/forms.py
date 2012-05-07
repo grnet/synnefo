@@ -44,16 +44,20 @@ from django.core.urlresolvers import reverse
 from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
 from django.contrib import messages
+from django.utils.encoding import smart_str
 
-from astakos.im.models import AstakosUser, Invitation, get_latest_terms
+from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
+from astakos.im.functions import send_change_email
 
 # since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
 from astakos.im.util import reverse_lazy, reserved_email, get_query
 
 import logging
+import hashlib
 import recaptcha.client.captcha as captcha
+from random import random
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +395,26 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             from_email = DEFAULT_FROM_EMAIL
             send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])
+
+class EmailChangeForm(forms.ModelForm):
+    class Meta:
+        model = EmailChange
+        fields = ('new_email_address',)
+            
+    def clean_new_email_address(self):
+        addr = self.cleaned_data['new_email_address']
+        if AstakosUser.objects.filter(email__iexact=addr):
+            raise forms.ValidationError(_(u'This email address is already in use. Please supply a different email address.'))
+        return addr
+    
+    def save(self, email_template_name, request, commit=True):
+        ec = super(EmailChangeForm, self).save(commit=False)
+        ec.user = request.user
+        activation_key = hashlib.sha1(str(random()) + smart_str(ec.new_email_address))
+        ec.activation_key=activation_key.hexdigest()
+        if commit:
+            ec.save()
+        send_change_email(ec, request, email_template_name=email_template_name)
 
 class SignApprovalTermsForm(forms.ModelForm):
     class Meta:

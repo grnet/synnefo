@@ -42,12 +42,17 @@ from base64 import b64encode
 from urlparse import urlparse, urlunparse
 from random import randint
 
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth.models import User, UserManager, Group
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.db import transaction
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
+AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
+EMAILCHANGE_ACTIVATION_DAYS
 
 QUEUE_CLIENT_ID = 3 # Astakos.
 
@@ -271,3 +276,55 @@ def get_latest_terms():
     except IndexError:
         pass
     return None
+
+class EmailChangeManager(models.Manager):
+    @transaction.commit_on_success
+    def change_email(self, activation_key):
+        """
+        Validate an activation key and change the corresponding
+        ``User`` if valid.
+
+        If the key is valid and has not expired, return the ``User``
+        after activating.
+
+        If the key is not valid or has expired, return ``None``.
+
+        If the key is valid but the ``User`` is already active,
+        return ``None``.
+
+        After successful email change the activation record is deleted.
+
+        Throws ValueError if there is already
+        """
+        try:
+            email_change = self.model.objects.get(activation_key=activation_key)
+            if email_change.activation_key_expired():
+                email_change.delete()
+                raise EmailChange.DoesNotExist
+            # is there an active user with this address?
+            try:
+                AstakosUser.objects.get(email=email_change.new_email_address)
+            except AstakosUser.DoesNotExist:
+                pass
+            else:
+                raise ValueError(_('The new email address is reserved.'))
+            # update user
+            user = AstakosUser.objects.get(pk=email_change.user_id)
+            user.email = email_change.new_email_address
+            user.save()
+            email_change.delete()
+            return user
+        except EmailChange.DoesNotExist:
+            raise ValueError(_('Invalid activation key'))
+
+class EmailChange(models.Model):
+    new_email_address = models.EmailField(_(u'new e-mail address'), help_text=_(u'Your old email address will be used until you verify your new one.'))
+    user = models.ForeignKey(AstakosUser, unique=True, related_name='emailchange_user')
+    requested_at = models.DateTimeField(default=datetime.now())
+    activation_key = models.CharField(max_length=40, unique=True, db_index=True)
+
+    objects = EmailChangeManager()
+
+    def activation_key_expired(self):
+        expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
+        return self.requested_at + expiration_date < datetime.now()

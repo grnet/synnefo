@@ -48,7 +48,10 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^activate/?$', 'activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
-    url(r'^password/?$', 'change_password', {}, name='password_change')
+    url(r'^password/?$', 'change_password', {}, name='password_change'),
+    url(r'^email_change/?$', 'change_email', {}, name='email_change'),
+    url(r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
+        name='email_change_confirm')
 )
 
 urlpatterns += patterns('astakos.im.target',

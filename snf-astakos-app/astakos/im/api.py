@@ -179,7 +179,6 @@ def get_services(request):
 
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
-    exclude = []
     index_url = reverse('index')
     absolute = lambda (url): request.build_absolute_uri(url)
     l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
@@ -199,6 +198,8 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             if user.has_usable_password():
                 l.append({ 'url': absolute(reverse('password_change')),
                           'name': "Change password" })
+            l.append({'url':absolute(reverse('email_change')),
+                      'name': "Change email"})
             if INVITATIONS_ENABLED:
                 l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
                           'name': "Invitations" })

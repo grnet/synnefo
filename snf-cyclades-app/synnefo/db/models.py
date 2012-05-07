@@ -309,7 +309,7 @@ class VirtualMachine(models.Model):
 
     @property
     def client(self):
-        if not self.backend.offline:
+        if self.backend and not self.backend.offline:
             return get_client(self.backend_hash, self.backend_id)
         else:
             raise ServiceUnavailable

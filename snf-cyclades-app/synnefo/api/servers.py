@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import random
+
 from base64 import b64decode
 from logging import getLogger
 
@@ -43,7 +45,7 @@ from django.utils import simplejson as json
 from synnefo.api import faults, util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
+from synnefo.db.models import Backend, VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.util.rapi import GanetiApiError
@@ -251,10 +253,12 @@ def create_server(request):
     if count >= vms_limit_for_user:
         raise faults.OverLimit("Server count limit exceeded for your account.")
 
+    backend = random.choice(Backend.objects.all())
     # We must save the VM instance now, so that it gets a
     # valid vm.backend_vm_id.
     vm = VirtualMachine.objects.create(
         name=name,
+        backend=backend,
         userid=request.user_uniq,
         imageid=image_id,
         flavor=flavor)

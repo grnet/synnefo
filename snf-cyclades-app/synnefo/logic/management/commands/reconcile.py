@@ -44,7 +44,6 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import VirtualMachine
 from synnefo.logic import reconciliation, backend
-from synnefo.util.rapi import GanetiRapiClient
 
 
 class Command(BaseCommand):
@@ -156,8 +155,8 @@ class Command(BaseCommand):
                 "Issuing OP_INSTANCE_REMOVE for %d Ganeti instances:" % \
                 len(orphans)
             for id in orphans:
-                rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
-                rapi.DeleteInstance('%s%s' %
+                vm = VirtualMachine.objects.get(pk=id)
+                vm.client.DeleteInstance('%s%s' %
                                     (settings.BACKEND_PREFIX_ID, str(id)))
             print >> sys.stderr, "    ...done"
 

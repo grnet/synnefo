@@ -34,18 +34,17 @@
 import json
 
 from logging import getLogger
-
 from django.conf import settings
 from django.db import transaction
 
-from synnefo.db.models import (VirtualMachine, Network, NetworkLink)
+from synnefo.db.models import (Backend, VirtualMachine, Network, NetworkLink)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
 
 
+
 log = getLogger('synnefo.logic')
 
-rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
 _firewall_tags = {
     'ENABLED': settings.GANETI_FIREWALL_ENABLED_TAG,
@@ -282,28 +281,28 @@ def create_instance(vm, flavor, image, password, personality):
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
 
-    return rapi.CreateInstance(**kw)
+    return vm.client.CreateInstance(**kw)
 
 
 def delete_instance(vm):
     start_action(vm, 'DESTROY')
-    rapi.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
+    vm.client.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
-    rapi.RebootInstance(vm.backend_vm_id, reboot_type, dry_run=settings.TEST)
+    vm.client.RebootInstance(vm.backend_vm_id, reboot_type, dry_run=settings.TEST)
     log.info('Rebooting instance %s', vm.backend_vm_id)
 
 
 def startup_instance(vm):
     start_action(vm, 'START')
-    rapi.StartupInstance(vm.backend_vm_id, dry_run=settings.TEST)
+    vm.client.StartupInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def shutdown_instance(vm):
     start_action(vm, 'STOP')
-    rapi.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
+    vm.client.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def get_instance_console(vm):
@@ -320,7 +319,7 @@ def get_instance_console(vm):
     #
     console = {}
     console['kind'] = 'vnc'
-    i = rapi.GetInstance(vm.backend_vm_id)
+    i = vm.client.GetInstance(vm.backend_vm_id)
     if i['hvparams']['serial_console']:
         raise Exception("hv parameter serial_console cannot be true")
     console['host'] = i['pnode']
@@ -331,11 +330,7 @@ def get_instance_console(vm):
 
 
 def request_status_update(vm):
-    return rapi.GetInstanceInfo(vm.backend_vm_id)
-
-
-def get_job_status(jobid):
-    return rapi.GetJobStatus(jobid)
+    return vm.client.GetInstanceInfo(vm.backend_vm_id)
 
 
 def update_status(vm, status):
@@ -395,7 +390,7 @@ def delete_network(net):
 
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
-    rapi.ModifyInstance(vm.backend_vm_id, nics=[('add', -1, nic)],
+    vm.client.ModifyInstance(vm.backend_vm_id, nics=[('add', -1, nic)],
                         hotplug=True, dry_run=settings.TEST)
 
 
@@ -404,7 +399,7 @@ def disconnect_from_network(vm, net):
     ops = [('remove', nic.index, {}) for nic in nics if nic.network == net]
     if not ops:  # Vm not connected to network
         return
-    rapi.ModifyInstance(vm.backend_vm_id, nics=ops[::-1],
+    vm.client.ModifyInstance(vm.backend_vm_id, nics=ops[::-1],
                         hotplug=True, dry_run=settings.TEST)
 
 
@@ -414,25 +409,42 @@ def set_firewall_profile(vm, profile):
     except KeyError:
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
 
+    client = vm.client
     # Delete all firewall tags
     for t in _firewall_tags.values():
-        rapi.DeleteInstanceTags(vm.backend_vm_id, [t], dry_run=settings.TEST)
+        client.DeleteInstanceTags(vm.backend_vm_id, [t], dry_run=settings.TEST)
 
-    rapi.AddInstanceTags(vm.backend_vm_id, [tag], dry_run=settings.TEST)
+    client.AddInstanceTags(vm.backend_vm_id, [tag], dry_run=settings.TEST)
 
     # XXX NOP ModifyInstance call to force process_net_status to run
     # on the dispatcher
-    rapi.ModifyInstance(vm.backend_vm_id,
+    vm.client.ModifyInstance(vm.backend_vm_id,
                         os_name=settings.GANETI_CREATEINSTANCE_KWARGS['os'])
 
 
-def get_ganeti_instances():
-    return rapi.GetInstances()
+def get_ganeti_instances(backend=None, bulk=False):
+    Instances = [c.client.GetInstances(bulk=bulk) for c in get_backends(backend)]
+    return reduce(list.__add__, Instances, [])
 
 
-def get_ganeti_nodes():
-    return rapi.GetNodes()
+def get_ganeti_nodes(backend=None, bulk=False):
+    Nodes = [c.client.GetNodes(bulk=bulk) for c in get_backends(backend)]
+    return reduce(list.__add__, Nodes, [])
 
 
-def get_ganeti_jobs():
-    return rapi.GetJobs()
+def get_ganeti_jobs(backend=None, bulk=False):
+    Jobs = [c.client.GetJobs(bulk=bulk) for c in get_backends(backend)]
+    return reduce(list.__add__, Jobs, [])
+
+##
+##
+##
+def get_backends(backend=None):
+    if backend:
+        return [backend]
+    return Backend.objects.all()
+
+
+
+
+

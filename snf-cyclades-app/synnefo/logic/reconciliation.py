@@ -69,7 +69,7 @@ setup_environ(settings)
 
 from synnefo.db.models import VirtualMachine
 from synnefo.util.dictconfig import dictConfig
-from synnefo.util.rapi import GanetiRapiClient
+from synnefo.logic.backend import get_ganeti_instances
 
 
 log = logging.getLogger()
@@ -108,8 +108,7 @@ def get_servers_from_db():
 
 
 def get_instances_from_ganeti():
-    rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
-    ganeti_instances = rapi.GetInstances(bulk=True)
+    ganeti_instances = get_ganeti_instances(bulk=True)
     snf_instances = {}
 
     prefix = settings.BACKEND_PREFIX_ID

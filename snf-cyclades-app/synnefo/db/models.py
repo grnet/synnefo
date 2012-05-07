@@ -31,6 +31,59 @@ import datetime
 
 from django.conf import settings
 from django.db import models
+from django.db import IntegrityError
+
+from hashlib import sha1
+from synnefo.api.faults import ServiceUnavailable
+from synnefo.util.rapi import GanetiRapiClient
+
+
+BACKEND_CLIENTS = {}    #{hash:Backend client}
+BACKEND_HASHES = {}     #{Backend.id:hash}
+
+def get_client(hash, backend):
+    """Get a cached backend client or create a new one.
+
+    @param hash: The hash of the backend
+    @param backend: Either a backend object or backend ID
+    """
+
+    if backend is None:
+        raise Exception("Backend is None. Cannot create a client.")
+
+    if hash in BACKEND_CLIENTS:
+        # Return cached client
+        return BACKEND_CLIENTS[hash]
+
+    # Always get a new instance to ensure latest credentials
+    if isinstance(backend, Backend):
+        backend = backend.id
+    (credentials,) = Backend.objects.filter(id=backend).values_list('hash',
+                                'clustername', 'port', 'username', 'password')
+
+    hash, clustername, port, user, password = credentials
+
+    # Check client for updated hash
+    if hash in BACKEND_CLIENTS:
+        return BACKEND_CLIENTS[hash]
+
+    # Delete old version of the client
+    if backend in BACKEND_HASHES:
+        del BACKEND_CLIENTS[BACKEND_HASHES[backend]]
+
+    # Create the new client
+    client = GanetiRapiClient(clustername, port, user, password)
+
+    # Store the client and the hash
+    BACKEND_CLIENTS[hash] = client
+    BACKEND_HASHES[backend] = hash
+
+    return client
+
+
+def clear_client_cache():
+    BACKEND_CLIENTS.clear()
+    BACKEND_HASHES.clear()
 
 
 class Flavor(models.Model):
@@ -52,6 +105,86 @@ class Flavor(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class BackendQuerySet(models.query.QuerySet):
+    def delete(self):
+        for backend in self._clone():
+            backend.delete()
+
+class ProtectDeleteManager(models.Manager):
+    def get_query_set(self):
+        return BackendQuerySet(self.model, using=self._db)
+
+
+class Backend(models.Model):
+    clustername = models.CharField('Cluster Name', max_length=128, unique=True)
+    port = models.PositiveIntegerField('Port', default=5080)
+    username = models.CharField('Username', max_length=64, blank=True,
+                                null=True)
+    password = models.CharField('Password', max_length=64, blank=True,
+                                null=True)
+    # Sha1 is up to 40 characters long
+    hash = models.CharField('Hash', max_length=40, editable=False, null=False)
+    drained = models.BooleanField('Drained', default=False, null=False)
+    offline = models.BooleanField('Offline', default=False, null=False)
+    # Last refresh of backend resources
+    updated = models.DateTimeField(auto_now_add=True)
+    # Backend resources
+    mfree = models.PositiveIntegerField('Free Memory', default=0, null=False)
+    mtotal = models.PositiveIntegerField('Total Memory', default=0, null=False)
+    dfree = models.PositiveIntegerField('Free Disk', default=0, null=False)
+    dtotal = models.PositiveIntegerField('Total Disk', default=0, null=False)
+    pinst_cnt = models.PositiveIntegerField('Primary Instances', default=0,
+                                            null=False)
+    ctotal = models.PositiveIntegerField('Total number of logical processors',
+                                         default=0, null=False)
+    # Custom object manager to protect from cascade delete
+    objects = ProtectDeleteManager()
+
+    class Meta:
+        verbose_name = u'Backend'
+        ordering = ["clustername"]
+
+    def __unicode__(self):
+        return self.clustername
+
+    @property
+    def backend_id(self):
+        return self.id
+
+    @property
+    def client(self):
+        """Get or create a client. """
+        if not self.offline:
+            return get_client(self.hash, self)
+        else:
+            raise ServiceUnavailable
+
+    def create_hash(self):
+        """Create a hash for this backend. """
+        return sha1('%s%s%s%s' % \
+                (self.clustername, self.port, self.username, self.password)) \
+                .hexdigest()
+
+    def save(self, *args, **kwargs):
+        # Create a new hash each time a Backend is saved
+        old_hash = self.hash
+        self.hash = self.create_hash()
+        super(Backend, self).save(*args, **kwargs)
+        if self.hash != old_hash:
+            # Populate the new hash to the new instances
+            self.virtual_machines.filter(deleted=False).update(backend_hash=self.hash)
+
+    def delete(self, *args, **kwargs):
+        # Integrity Error if non-deleted VMs are associated with Backend
+        if self.virtual_machines.filter(deleted=False).count():
+            raise IntegrityError("Non-deleted virtual machines are associated "
+                                 "with backend: %s" % self)
+        else:
+            # ON_DELETE = SET NULL
+            self.virtual_machines.all().backend=None
+            super(Backend, self).delete(*args, **kwargs)
 
 
 class VirtualMachine(models.Model):
@@ -142,6 +275,9 @@ class VirtualMachine(models.Model):
 
     name = models.CharField('Virtual Machine Name', max_length=255)
     userid = models.CharField('User ID of the owner', max_length=100)
+    backend = models.ForeignKey(Backend, null=True,
+                                related_name="virtual_machines",)
+    backend_hash = models.CharField(max_length=128, null=True, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
@@ -164,12 +300,19 @@ class VirtualMachine(models.Model):
     operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
     backendjobid = models.PositiveIntegerField(null=True)
     backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
-            null=True)
+                                     null=True)
     backendjobstatus = models.CharField(choices=BACKEND_STATUSES,
-            max_length=30, null=True)
+                                        max_length=30, null=True)
     backendlogmsg = models.TextField(null=True)
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
+
+    @property
+    def client(self):
+        if not self.backend.offline:
+            return get_client(self.backend_hash, self.backend_id)
+        else:
+            raise ServiceUnavailable
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -213,6 +356,12 @@ class VirtualMachine(models.Model):
             self.backendopcode = None
             self.backendlogmsg = None
             self.operstate = 'BUILD'
+
+    def save(self, *args, **kwargs):
+        # Store hash for first time saved vm
+        if (self.id is None or self.backend_hash == '') and self.backend:
+            self.backend_hash = self.backend.hash
+        super(VirtualMachine, self).save(*args, **kwargs)
 
     @property
     def backend_vm_id(self):

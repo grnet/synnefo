@@ -128,7 +128,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
 
         for op in job.ops:
-            instances = ""
+            instances = None
             try:
                 instances = " ".join(op.input.instances)
             except AttributeError:
@@ -138,6 +138,14 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 instances = op.input.instance_name
             except AttributeError:
                 pass
+
+            if not instances or len(instances.split(" ")) != 1:
+                # Do not publish messages for jobs with no or multiple
+                # instances.
+                # Currently snf-dispatcher can not normally handle these messages
+                self.logger.debug("Ignoring Job: %d: %s(%s)", int(job.id),
+                                  op.input.OP_ID, instances)
+                continue
 
             # Get the last line of the op log as message
             try:

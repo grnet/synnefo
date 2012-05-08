@@ -53,7 +53,9 @@ from IPy import IP
 from multiprocessing import Process, Queue
 from random import choice
 
-from kamaki.client import Client, ClientError
+from kamaki.clients import ClientError, ComputeClient, CycladesClient
+from kamaki.config import Config
+
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
 # Use backported unittest functionality if Python < 2.7
@@ -83,7 +85,10 @@ log.setLevel(logging.INFO)
 class UnauthorizedTestCase(unittest.TestCase):
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
-        c = Client(API, "123")
+        falseToken = '12345'
+        conf = Config()
+        conf.set('compute_token', falseToken)
+
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
         self.assertEqual(cm.exception.status, 401)
@@ -95,7 +100,10 @@ class ImagesTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
-        cls.client = Client(API, TOKEN)
+
+        conf = Config()
+        conf.set('compute_token', TOKEN)
+        cls.client = ComputeClient(conf)
         cls.images = cls.client.list_images()
         cls.dimages = cls.client.list_images(detail=True)
 
@@ -120,7 +128,7 @@ class ImagesTestCase(unittest.TestCase):
 
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
-        keys = frozenset(["OS", "description", "size"])
+        keys = frozenset(["os", "description", "size"])
         for i in self.dimages:
             self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
 
@@ -131,7 +139,10 @@ class FlavorsTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize kamaki, get (detailed) list of flavors"""
         log.info("Getting simple and detailed list of flavors")
-        cls.client = Client(API, TOKEN)
+
+        conf = Config()
+        conf.set('compute_token', TOKEN)
+        cls.client = ComputeClient(conf)
         cls.flavors = cls.client.list_flavors()
         cls.dflavors = cls.client.list_flavors(detail=True)
 
@@ -172,7 +183,10 @@ class ServersTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize kamaki, get (detailed) list of servers"""
         log.info("Getting simple and detailed list of servers")
-        cls.client = Client(API, TOKEN)
+
+        conf = Config()
+        conf.set('compute_token', TOKEN)
+        cls.client = ComputeClient(conf)
         cls.servers = cls.client.list_servers()
         cls.dservers = cls.client.list_servers(detail=True)
 
@@ -199,10 +213,15 @@ class SpawnServerTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize a kamaki instance"""
         log.info("Spawning server for image `%s'", cls.imagename)
-        cls.client = Client(API, TOKEN)
+
+        conf = Config()
+        conf.set('compute_token', TOKEN)
+        cls.client = ComputeClient(conf)
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
+
+        details = 
         public_addrs = filter(lambda x: x["id"] == "public",
                               server["addresses"]["values"])
         self.assertEqual(len(public_addrs), 1)
@@ -223,9 +242,9 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _connect_loginname(self, os):
         """Return the login name for connections based on the server OS"""
-        if os in ("ubuntu", "kubuntu", "fedora"):
+        if os in ("Ubuntu", "Kubuntu", "Fedora"):
             return "user"
-        elif os == "windows":
+        elif os in ("windows", "windows_alpha1"):
             return "Administrator"
         else:
             return "root"

@@ -335,6 +335,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
       '--bind=127.0.0.1:8080',
       '--workers=4',
       '--log-level=debug',
+      '--timeout=43200'
     ),
    }
 

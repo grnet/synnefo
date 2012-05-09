@@ -42,7 +42,7 @@ Login
               <div>
             {% if o != 'local' %}
             LOGIN using
-            <a href="/im/login/{{ o }}{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
+            <a href="/im/login/{{ o }}?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
                 alt="{{ o|title }}">{{ o }}</a>
             {% endif %}
             </div>

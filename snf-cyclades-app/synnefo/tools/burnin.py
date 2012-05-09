@@ -222,7 +222,6 @@ class SpawnServerTestCase(unittest.TestCase):
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
 
-        details = 
         public_addrs = filter(lambda x: x["id"] == "public",
                               server["addresses"]["values"])
         self.assertEqual(len(public_addrs), 1)
@@ -394,7 +393,7 @@ class SpawnServerTestCase(unittest.TestCase):
         image = self.client.get_image_details(self.imageid)
         os = image["metadata"]["values"]["os"]
         loginname = image["metadata"]["values"].get("users", None)
-        self.client.update_server_metadata(self.serverid, 'os'=os)
+        self.client.update_server_metadata(self.serverid, OS=os)
 
         # Determine the username to use for future connections
         # to this host
@@ -641,7 +640,7 @@ def _run_cases_in_parallel(cases, fanout=1, runner=None):
 def _spawn_server_test_case(**kwargs):
     """Construct a new unit test case class from SpawnServerTestCase"""
 
-    name = "SpawnServerTestCase_%d" % kwargs["imageid"]
+    name = "SpawnServerTestCase_%s" % kwargs["imageid"]
     cls = type(name, (SpawnServerTestCase,), kwargs)
 
     # Patch extra parameters into test names by manipulating method docstrings
@@ -843,7 +842,7 @@ def main():
         personality = None   # FIXME
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
-        case = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
+        case = _spawn_server_test_case(imageid=str(imageid), flavorid=flavorid,
                                        imagename=imagename,
                                        personality=personality,
                                        servername=servername,

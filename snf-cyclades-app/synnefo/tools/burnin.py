@@ -217,6 +217,7 @@ class SpawnServerTestCase(unittest.TestCase):
         conf = Config()
         conf.set('compute_token', TOKEN)
         cls.client = ComputeClient(conf)
+        cls.cyclades = CycladesClient(conf)
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
@@ -391,8 +392,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_002c_set_server_metadata(self):
         image = self.client.get_image_details(self.imageid)
-        os = image["metadata"]["values"]["OS"]
-        loginname = image["metadata"]["values"].get("loginname", None)
+        os = image["metadata"]["values"]["os"]
+        loginname = image["metadata"]["values"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os)
 
         # Determine the username to use for future connections
@@ -421,7 +422,8 @@ class SpawnServerTestCase(unittest.TestCase):
         http://www.realvnc.com/docs/rfbproto.pdf.
 
         """
-        console = self.client.get_server_console(self.serverid)
+        
+        console = self.cyclades.get_server_console(self.serverid)
         self.assertEquals(console['type'], "vnc")
         sock = self._insist_on_tcp_connection(socket.AF_UNSPEC,
                                         console["host"], console["port"])
@@ -486,7 +488,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_008_submit_shutdown_request(self):
         """Test submit request to shutdown server"""
-        self.client.shutdown_server(self.serverid)
+        self.cyclades.shutdown_server(self.serverid)
 
     def test_009_server_becomes_stopped(self):
         """Test server becomes STOPPED"""
@@ -496,7 +498,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_010_submit_start_request(self):
         """Test submit start server request"""
-        self.client.start_server(self.serverid)
+        self.cyclades.start_server(self.serverid)
 
     def test_011_server_becomes_active(self):
         """Test server becomes ACTIVE again"""
@@ -655,7 +657,11 @@ def _spawn_server_test_case(**kwargs):
 
 
 def cleanup_servers(delete_stale=False):
-    c = Client(API, TOKEN)
+
+    conf = Config()
+    conf.set('compute_token', TOKEN)
+    c = ComputeClient(conf)
+
     servers = c.list_servers()
     stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
 
@@ -801,7 +807,11 @@ def main():
         return 0
 
     # Initialize a kamaki instance, get flavors, images
-    c = Client(API, TOKEN)
+
+    conf = Config()
+    conf.set('compute_token', TOKEN)
+    c = ComputeClient(conf)
+
     DIMAGES = c.list_images(detail=True)
     DFLAVORS = c.list_flavors(detail=True)
 

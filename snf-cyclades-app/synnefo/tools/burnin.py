@@ -394,7 +394,7 @@ class SpawnServerTestCase(unittest.TestCase):
         image = self.client.get_image_details(self.imageid)
         os = image["metadata"]["values"]["os"]
         loginname = image["metadata"]["values"].get("users", None)
-        self.client.update_server_metadata(self.serverid, OS=os)
+        self.client.update_server_metadata(self.serverid, 'os'=os)
 
         # Determine the username to use for future connections
         # to this host
@@ -408,7 +408,7 @@ class SpawnServerTestCase(unittest.TestCase):
         """Test server metadata keys are set based on image metadata"""
         servermeta = self.client.get_server_metadata(self.serverid)
         imagemeta = self.client.get_image_metadata(self.imageid)
-        self.assertEqual(servermeta["OS"], imagemeta["OS"])
+        self.assertEqual(servermeta["os"], imagemeta["os"])
 
     def test_003_server_becomes_active(self):
         """Test server becomes ACTIVE"""

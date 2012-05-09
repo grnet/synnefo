@@ -57,7 +57,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
     """
     url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('astakos.im.views.activate')),
                                     quote(user.auth_token),
-                                    quote(BASEURL))
+                                    quote(urljoin(BASEURL, reverse('astakos.im.views.index'))))
     message = render_to_string(template_name, {
             'user': user,
             'url': url,

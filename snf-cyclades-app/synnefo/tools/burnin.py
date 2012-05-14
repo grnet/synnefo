@@ -567,6 +567,41 @@ class SpawnServerTestCase(unittest.TestCase):
         self.assertNotIn(self.serverid, [s["id"] for s in servers])
 
 
+class NetworksTestCase(unittest.TestCase):
+    """ Testing networking in cyclades """
+    def setUpClass(cls):
+        "Initialize kamaki, get list of current networks"
+        conf = Config()
+        conf.set('compute_token', TOKEN)
+        cls.client = CycladesClient(conf)
+
+        #TODO: Create servers, insist until ACTIVE
+        #cls.serverid = 
+
+    def test_001_create_network():
+        """Test submit create network request"""
+        name = SNF_TEST_PREFIX+TEST_RUN_ID
+        network =  self.client.create_network(name)
+        self.assertEqual(network['name'], name)
+        
+        # Update class attributes to reflect data on new network
+        cls = type(self)
+        cls.networkid = network['id']
+    
+    def test_002_connect_to_network():
+        """Test VM to network connection"""
+        self.client.connect_server(self.serverid, self.networkid)
+
+    def test_003_disconnect_from_network():
+        self.client.disconnect_server(self.serverid, self.networkid)
+    
+    def test_004_destroy_network():
+        """Test submit delete network request"""
+        self.client.delete_network(self.networkid)
+
+    
+    
+
 class TestRunnerProcess(Process):
     """A distinct process used to execute part of the tests in parallel"""
     def __init__(self, **kw):
@@ -779,7 +814,7 @@ def parse_arguments(args):
                 opts.force_imageid = str(opts.force_imageid)
             except ValueError:
                 print >>sys.stderr, "Invalid value specified for --image-id." \
-                                    "Use a numeric id, or `all'."
+                                    "Use a valid id, or `all'."
                 sys.exit(1)
 
     return (opts, args)
@@ -816,11 +851,14 @@ def main():
     DFLAVORS = c.list_flavors(detail=True)
 
     # FIXME: logging, log, LOG PID, TEST_RUN_ID, arguments
-    # FIXME: Network testing? Create, destroy, connect, ping, disconnect VMs?
     # Run them: FIXME: In parallel, FAILEARLY, catchbreak?
     #unittest.main(verbosity=2, catchbreak=True)
 
-    test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
+    if opts.force_imageid == 'all':
+        test_images = DIMAGES
+    else:
+        test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
+
     for image in test_images:
         imageid = str(image["id"])
         flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
@@ -828,9 +866,9 @@ def main():
         personality = None   # FIXME
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
-        case = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
+        ServerTestCase = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
                                        imagename=imagename,
-                                       personality=personality,
+                                       perssonality=personality,
                                        servername=servername,
                                        is_windows=is_windows,
                                        action_timeout=opts.action_timeout,
@@ -839,12 +877,12 @@ def main():
                                        query_interval=opts.query_interval)
 
 
-    seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, case]
-
+    #Running all the testcases sequentially
+    seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
     for case in seq_cases:
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
         unittest.TextTestRunner(verbosity=2).run(suite)
-
+        
     
 
     # # The Following cases run sequentially

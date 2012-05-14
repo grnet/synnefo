@@ -1,9 +1,9 @@
 Changelog
-=========
+---------
 
 
 v0.9.12
--------
+*******
 
 * Set USE_X_FORWARDED_HOST setting to True by default
 * Remove INSTALLED_APPS, TEMPLATE_CONTEXT_PROCESSORS, MIDDLEWARE_CLASSES
@@ -13,7 +13,7 @@ v0.9.12
 
 
 v0.9.4
-------
+******
 
 * Improved web_static hook syntax
   To be able to change application media files directory (e.g. 
@@ -22,13 +22,13 @@ v0.9.4
 
 
 v0.9.3
-------
+******
 
 * Changed default MEDIA_ROOT setting
 
 
 v0.8.0 -> v0.8.1
-----------------
+****************
 
 * Handle synnefo.loggers entry point to append synnefo components loggers
   in logging configuration

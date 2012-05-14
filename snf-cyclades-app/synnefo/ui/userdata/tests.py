@@ -54,6 +54,15 @@ class TestRestViews(TransactionTestCase):
     fixtures = ['users']
 
     def setUp(self):
+        def get_user_mock(request, *Args, **kwargs):
+            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
+                request.user_uniq = 'test'
+                request.user = {'uniq': 'test'}
+
+        # mock the astakos authentication function
+        from synnefo.lib import astakos
+        astakos.get_user = get_user_mock
+
         settings.SKIP_SSH_VALIDATION = True
         self.client = AaiClient()
         self.user = 'test'

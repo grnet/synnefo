@@ -81,13 +81,13 @@ logging.basicConfig(format="%(message)s")
 log = logging.getLogger("burnin")
 log.setLevel(logging.INFO)
 
-
 class UnauthorizedTestCase(unittest.TestCase):
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         falseToken = '12345'
         conf = Config()
         conf.set('compute_token', falseToken)
+        c=ComputeClient(conf)
 
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
@@ -407,7 +407,7 @@ class SpawnServerTestCase(unittest.TestCase):
         """Test server metadata keys are set based on image metadata"""
         servermeta = self.client.get_server_metadata(self.serverid)
         imagemeta = self.client.get_image_metadata(self.imageid)
-        self.assertEqual(servermeta["os"], imagemeta["os"])
+        self.assertEqual(servermeta["OS"], imagemeta["os"])
 
     def test_003_server_becomes_active(self):
         """Test server becomes ACTIVE"""
@@ -599,6 +599,7 @@ class TestRunnerProcess(Process):
                 raise Exception("Cannot handle msg: %s" % msg)
 
 
+
 def _run_cases_in_parallel(cases, fanout=1, runner=None):
     """Run instances of TestCase in parallel, in a number of distinct processes
 
@@ -708,7 +709,7 @@ def parse_arguments(args):
                       metavar="TIMEOUT",
                       help="Wait SECONDS seconds for a server action to " \
                            "complete, then the test is considered failed",
-                      default=20)
+                      default=50)
     parser.add_option("--build-warning",
                       action="store", type="int", dest="build_warning",
                       metavar="TIMEOUT",
@@ -775,7 +776,7 @@ def parse_arguments(args):
 
         if opts.force_imageid != 'all':
             try:
-                opts.force_imageid = int(opts.force_imageid)
+                opts.force_imageid = str(opts.force_imageid)
             except ValueError:
                 print >>sys.stderr, "Invalid value specified for --image-id." \
                                     "Use a numeric id, or `all'."
@@ -819,30 +820,15 @@ def main():
     # Run them: FIXME: In parallel, FAILEARLY, catchbreak?
     #unittest.main(verbosity=2, catchbreak=True)
 
-    runner = unittest.TextTestRunner(verbosity=2, failfast=not opts.nofailfast)
-    # The following cases run sequentially
-    seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase]
-    _run_cases_in_parallel(seq_cases, fanout=3, runner=runner)
-
-    # The following cases run in parallel
-    par_cases = []
-
-    if opts.force_imageid == 'all':
-        test_images = DIMAGES
-    else:
-        test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
-
+    test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
     for image in test_images:
-        imageid = image["id"]
+        imageid = str(image["id"])
+        flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
         imagename = image["name"]
-        if opts.force_flavorid:
-            flavorid = opts.force_flavorid
-        else:
-            flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
         personality = None   # FIXME
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
-        case = _spawn_server_test_case(imageid=str(imageid), flavorid=flavorid,
+        case = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
                                        imagename=imagename,
                                        personality=personality,
                                        servername=servername,
@@ -851,9 +837,50 @@ def main():
                                        build_warning=opts.build_warning,
                                        build_fail=opts.build_fail,
                                        query_interval=opts.query_interval)
-        par_cases.append(case)
 
-    _run_cases_in_parallel(par_cases, fanout=opts.fanout, runner=runner)
+
+    seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, case]
+
+    for case in seq_cases:
+        suite = unittest.TestLoader().loadTestsFromTestCase(case)
+        unittest.TextTestRunner(verbosity=2).run(suite)
+
+    
+
+    # # The Following cases run sequentially
+    # seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase]
+    # _run_cases_in_parallel(seq_cases, fanout=3, runner=runner)
+
+    # # The following cases run in parallel
+    # par_cases = []
+
+    # if opts.force_imageid == 'all':
+    #     test_images = DIMAGES
+    # else:
+    #     test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
+
+    # for image in test_images:
+    #     imageid = image["id"]
+    #     imagename = image["name"]
+    #     if opts.force_flavorid:
+    #         flavorid = opts.force_flavorid
+    #     else:
+    #         flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
+    #     personality = None   # FIXME
+    #     servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
+    #     is_windows = imagename.lower().find("windows") >= 0
+    #     case = _spawn_server_test_case(imageid=str(imageid), flavorid=flavorid,
+    #                                    imagename=imagename,
+    #                                    personality=personality,
+    #                                    servername=servername,
+    #                                    is_windows=is_windows,
+    #                                    action_timeout=opts.action_timeout,
+    #                                    build_warning=opts.build_warning,
+    #                                    build_fail=opts.build_fail,
+    #                                    query_interval=opts.query_interval)
+    #     par_cases.append(case)
+
+    # _run_cases_in_parallel(par_cases, fanout=opts.fanout, runner=runner)
 
 if __name__ == "__main__":
     sys.exit(main())

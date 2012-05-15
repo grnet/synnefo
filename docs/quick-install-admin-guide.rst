@@ -629,7 +629,8 @@ the "welcome" door of Astakos, then you have successfully setup Astakos.
 Let's create our first user. At the homepage click the "CREATE ACCOUNT" button
 and fill all your data at the sign up form. Then click "SUBMIT". You should now
 see a green box on the top, which informs you that you made a successful request
-and the request has been sent to the administrators. So far so good.
+and the request has been sent to the administrators. So far so good, let's assume
+that you created the user with username ``user@example.com``.
 
 Now we need to activate that user. Return to a command prompt at node1 and run:
 
@@ -684,6 +685,7 @@ should happen. Now, install the pithos web interface:
 This package provides the standalone pithos web client. The web client is the
 web UI for pithos+ and will be accessible by clicking "pithos+" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
+
 
 Configuration of Pithos+
 ========================
@@ -809,34 +811,479 @@ If you would like to do more, such as:
 
 please continue with the rest of the guide.
 
+
 Installation of Cyclades (and Plankton) on node1
 ================================================
 
-Installation of cyclades is a two step process:
+This section describes the installation of Cyclades. Cyclades is Synnefo's
+Compute service. Plankton (the Image Registry service) will get installed
+automatically along with Cyclades, because it is contained in the same Synnefo
+component right now.
 
-1. install the external services (prerequisites) on which cyclades depends
-2. install the synnefo software components associated with cyclades
+Before proceeding with the Cyclades (and Plankton) installation, make sure you
+have successfully set up Astakos and Pithos+ first, because Cyclades depends
+on them. If you don't have a working Astakos and Pithos+ installation yet,
+please return to the :ref:`top <quick-install-admin-guide>` of this guide.
 
-Prerequisites
--------------
-.. _cyclades-install-ganeti:
+Besides Astakos and Pithos+, you will also need a number of additional working
+prerequisites, before you start the Cyclades installation.
 
-Ganeti installation
-~~~~~~~~~~~~~~~~~~~
+Cyclades Prerequisites
+----------------------
 
-Synnefo requires a working Ganeti installation at the backend. Installation
-of Ganeti is not covered by this document, please refer to
-`ganeti documentation <http://docs.ganeti.org/ganeti/current/html>`_ for all the
+Ganeti
+~~~~~~
+
+`Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
+for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
+Please refer to the
+`ganeti documentation <http://docs.ganeti.org/ganeti/2.5/html>`_ for all the
 gory details. A successful Ganeti installation concludes with a working
-:ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs <GANETI_NODES>`.
+:ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
+<GANETI_NODES>`.
 
-.. _cyclades-install-db:
+The above Ganeti cluster can run on different physical machines than node1 and
+node2 and can scale independently, according to your needs.
 
-Database
-~~~~~~~~
+For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
+<GANETI_NODES>` runs on node1 and is VM-capable. Also, node2 is a
+:ref:`GANETI-NODE <GANETI_NODES>` and is Master-capable and VM-capable too.
 
-Database installation is done as part of the
-:ref:`snf-webproject <snf-webproject>` component.
+We highly recommend that you read the official Ganeti documentation, if you are
+not familiar with Ganeti. If you are extremely impatient, you can result with
+the above assumed setup by running:
+
+.. code-block:: console
+
+   root@node1:~ # apt-get install ganeti2
+   root@node1:~ # apt-get install ganeti-htools
+   root@node2:~ # apt-get install ganeti2
+   root@node2:~ # apt-get install ganeti-htools
+
+We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
+both nodes, choose a domain name that resolves to a valid floating IP (let's say
+it's ``ganeti.node1.example.com``). Make sure node1 and node2 have root access
+between each other using ssh keys and not passwords. Also, make sure there is an
+lvm volume group named ``ganeti`` that will host your VMs' disks. Finally, setup
+a bridge interface on the host machines (e.g:: br0). Then run on node1:
+
+.. code-block:: console
+
+   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init
+                                   --no-etc-hosts --vg-name=ganeti
+                                   --nic-parameters link=br0 --master-netdev eth0
+                                   ganeti.node1.example.com
+   root@node1:~ # gnt-cluster modify --default-iallocator hail
+   root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:kernel_path=
+   root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:vnc_bind_address=0.0.0.0
+
+   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes
+                               --vm-capable=yes node2.example.com
+
+For any problems you may stumble upon installing Ganeti, please refer to the
+`official documentation <http://docs.ganeti.org/ganeti/2.5/html>`_. Installation
+of Ganeti is out of the scope of this guide.
+
+.. _cyclades-install-snfimage:
+
+snf-image
+~~~~~~~~~
+
+Installation
+````````````
+For :ref:`Cyclades <cyclades>` to be able to launch VMs from specified Images,
+you need the :ref:`snf-image <snf-image>` OS Definition installed on *all*
+VM-capable Ganeti nodes. This means we need :ref:`snf-image <snf-image>` on
+node1 and node2. You can do this by running on *both* nodes:
+
+.. code-block:: console
+
+   # apt-get install snf-image-host
+
+Now, you need to download and save the corresponding helper package. Please see
+`here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
+assume that you installed snf-image-host version 0.3.5-1. Then, you need
+snf-image-helper v0.3.5-1 on *both* nodes:
+
+.. code-block:: console
+
+   # cd /var/lib/snf-image/helper/
+   # wget https://code.grnet.gr/attachments/download/1058/snf-image-helper_0.3.5-1_all.deb
+
+.. warning:: Be careful: Do NOT install the snf-image-helper debian package.
+             Just put it under /var/lib/snf-image/helper/
+
+Once, you have downloaded the snf-image-helper package, create the helper VM by
+running on *both* nodes:
+
+.. code-block:: console
+
+   # ln -s snf-image-helper_0.3.5-1_all.deb snf-image-helper.deb
+   # snf-image-update-helper
+
+This will create all the needed files under ``/var/lib/snf-image/helper/`` for
+snf-image-host to run successfully.
+
+Configuration
+`````````````
+snf-image supports native access to Images stored on Pithos+. This means that
+snf-image can talk directly to the Pithos+ backend, without the need of providing
+a public URL. More details, are described in the next section. For now, the only
+thing we need to do, is configure snf-image to access our Pithos+ backend.
+
+To do this, we need to set the corresponding variables in
+``/etc/default/snf-image``, to reflect our Pithos+ setup:
+
+.. code-block:: console
+
+   PITHOS_DB="postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos"
+
+   PITHOS_DATA="/srv/pithos/data"
+
+If you have installed your Ganeti cluster on different nodes than node1 and node2 make
+sure that ``/srv/pithos/data`` is visible by all of them.
+
+If you would like to use Images that are also/only stored locally, you need to
+save them under ``IMAGE_DIR``, however this guide targets Images stored only on
+Pithos+.
+
+Testing
+```````
+
+You can test that snf-image is successfully installed by running on the
+:ref:`GANETI-MASTER <GANETI_NODES>` (in our case node1):
+
+.. code-block:: console
+
+   # gnt-os diagnose
+
+This should return ``valid`` for snf-image.
+
+If you are interested to learn more about snf-image's internals (and even use
+it alongside Ganeti without Synnefo), please see
+`here <https://code.grnet.gr/projects/snf-image/wiki>`_ for information concerning
+installation instructions, documentation on the design and implementation, and
+supported Image formats.
+
+snf-image's actual Images
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now that snf-image is installed successfully we need to provide it with some
+Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
+``ntfsdump`` or ``diskdump`` format. We recommend the use of the ``diskdump``
+format. For more information about snf-image's Image formats see `here
+<https://code.grnet.gr/projects/snf-image/wiki/Image_Format>`_.
+
+:ref:`snf-image <snf-image>` also supports three (3) different locations for the
+above Images to be stored:
+
+ * Under a local folder (usually an NFS mount, configurable as ``IMAGE_DIR`` in
+   :file:`/etc/default/snf-image`)
+ * On a remote host (accessible via a public URL e.g: http://... or ftp://...)
+ * On Pithos+ (accessible natively, not only by its public URL)
+
+For the purpose of this guide, we will use the `Debian Squeeze Base Image
+<https://pithos.okeanos.grnet.gr/public/9epgb>`_ found on the official
+`snf-image page
+<https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_. The image is
+of type ``diskdump``. We will store it in our new Pithos+ installation.
+
+To do so, do the following:
+
+a) Download the Image from the official snf-image page (`image link
+   <https://pithos.okeanos.grnet.gr/public/9epgb>`_).
+
+b) Upload the Image to your Pithos+ installation, either using the Pithos+ Web UI
+   or the command line client `kamaki
+   <http://docs.dev.grnet.gr/kamaki/latest/index.html>`_.
+
+Once the Image is uploaded successfully, download the Image's metadata file
+from the official snf-image page (`image_metadata link
+<https://pithos.okeanos.grnet.gr/public/gwqcv>`_). You will need it, for
+spawning a VM from Ganeti, in the next section.
+
+Of course, you can repeat the procedure to upload more Images, available from the
+`official snf-image page
+<https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_.
+
+Spawning a VM from a Pithos+ Image, using Ganeti
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, it is time to test our installation so far. So, we have Astakos and
+Pithos+ installed, we have a working Ganeti installation, the snf-image
+definition installed on all VM-capable nodes and a Debian Squeeze Image on
+Pithos+. Make sure you also have the `metadata file
+<https://pithos.okeanos.grnet.gr/public/gwqcv>`_ for this image.
+
+Run on the :ref:`GANETI-MASTER's <GANETI_NODES>` (node1) command line:
+
+.. code-block:: console
+
+   # gnt-instance add -o snf-image+default --os-parameters
+                      img_passwd=my_vm_example_passw0rd,
+                      img_format=diskdump,
+                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
+                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+                      testvm1
+
+In the above command:
+
+ * ``img_passwd``: the arbitrary root password of your new instance
+ * ``img_format``: set to ``diskdump`` to reflect the type of the uploaded Image
+ * ``img_id``: If you want to deploy an Image stored on Pithos+ (our case), this
+               should have the format
+               ``pithos://<username>/<container>/<filename>``:
+                * ``username``: ``user@example.com`` (defined during Astakos sign up)
+                * ``container``: ``pithos`` (default, if the Web UI was used)
+                * ``filename``: the name of file (visible also from the Web UI)
+ * ``img_properties``: taken from the metadata file. Used only the two mandatory
+                       properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
+                       <https://code.grnet.gr/projects/snf-image/wiki/Image_Format#Image-Properties>`_
+
+If the ``gnt-instance add`` command returns successfully, then run:
+
+.. code-block:: console
+
+   # gnt-instance info testvm1 | grep "console connection"
+
+to find out where to connect using VNC. If you can connect successfully and can
+login to your new instance using the root password ``my_vm_example_passw0rd``,
+then everything works as expected and you have your new Debian Base VM up and
+running.
+
+If ``gnt-instance add`` fails, make sure that snf-image is correctly configured
+to access the Pithos+ database and the Pithos+ backend data. Also, make sure
+you gave the correct ``img_id`` and ``img_properties``. If ``gnt-instance add``
+succeeds but you cannot connect, again find out what went wrong. Do *NOT*
+proceed to the next steps unless you are sure everything works till this point.
+
+If everything works, you have successfully connected Ganeti with Pithos+. Let's
+move on to networking now.
+
+.. warning::
+    You can bypass the networking sections and go straight to `FIXME`, if you do
+    not want to setup the Cyclades Network Service, but only the Cyclades Compute
+    Service (recommended for now).
+
+Network setup overview
+~~~~~~~~~~~~~~~~~~~~~~
+
+This part is deployment-specific and must be customized based on the specific
+needs of the system administrator. However, to do so, the administrator needs
+to understand how each level handles Virtual Networks, to be able to setup the
+backend appropriately, before installing Cyclades.
+
+Network @ Cyclades level
+````````````````````````
+
+Cyclades understands two types of Virtual Networks:
+
+a) One common Public Network (Internet)
+b) One or more distinct Private Networks (L2)
+
+a) When a new VM is created, it instantly gets connected to the Public Network
+   (Internet). This means it gets a public IPv4 and IPv6 and has access to the
+   public Internet.
+
+b) Then each user, is able to create one or more Private Networks manually and
+   add VMs inside those Private Networks. Private Networks provide Layer 2
+   connectivity. All VMs inside a Private Network are completely isolated.
+
+From the VM perspective, every Network corresponds to a distinct NIC. So, the
+above are translated as follows:
+
+a) Every newly created VM, needs at least one NIC. This NIC, connects the VM
+   to the Public Network and thus should get a public IPv4 and IPv6.
+
+b) For every Private Network, the VM gets a new NIC, which is added during the
+   connection of the VM to the Private Network (without an IP). This NIC should
+   have L2 connectivity with all other NICs connected to this Private Network.
+
+To achieve the above, first of all, we need Network and IP Pool management support
+at Ganeti level, for Cyclades to be able to issue the corresponding commands.
+
+Network @ Ganeti level
+``````````````````````
+
+Currently, Ganeti does not support IP Pool management. However, we've been
+actively in touch with the official Ganeti team, who are reviewing a relatively
+big patchset that implements this functionality (you can find it at the
+ganeti-devel mailing list). We hope that the functionality will be merged to
+the Ganeti master branch soon and appear on Ganeti 2.7.
+
+Furthermore, currently the `~okeanos service <http://okeanos.grnet.gr>`_ uses
+the same patchset with slight differencies on top of Ganeti 2.4.5. Cyclades
+0.9 are compatible with this old patchset and we do not guarantee that will
+work with the updated patchset sent to ganeti-devel.
+
+We do *NOT* recommend you to apply the patchset yourself on the current Ganeti
+master, unless you are an experienced Cyclades and Ganeti integrator and you
+really know what you are doing.
+
+Instead, be a little patient and we hope that everything will work out of the
+box, once the patchset makes it into the Ganeti master. When so, Cyclades will
+get updated to become compatible with that Ganeti version.
+
+Network @ Physical host level
+`````````````````````````````
+
+We talked about the two types of Network from the Cyclades perspective, from the
+VMs perspective and from Ganeti's perspective. Finally, we need to talk about
+the Networks from the physical (VM container) host's perspective.
+
+If your version of Ganeti supports IP pool management, then you need to setup
+your physical hosts for the two types of Networks. For the second type
+(Private Networks), our reference installation uses a number of pre-provisioned
+bridges (one for each Network), which are connected to the corresponding number
+of pre-provisioned vlans on each physical host (node1 and node2). For the first
+type (Public Network), our reference installation uses routing over one
+preprovisioned vlan on each host (node1 and node2). It also uses the `NFDHCPD`
+package for dynamically serving specific public IPs managed by Ganeti.
+
+Public Network setup
+~~~~~~~~~~~~~~~~~~~~
+
+Physical hosts' public network setup
+````````````````````````````````````
+
+The physical hosts' setup is out of the scope of this guide.
+
+However, two common cases that you may want to consider (and choose from) are:
+
+a) One public bridge, where all VMs' public tap interfaces will connect.
+b) IP-less routing over the same vlan on every host.
+
+When you setup your physical hosts (node1 and node2) for the Public Network,
+then you need to inform Ganeti about the Network's IP range.
+
+Add the public network to Ganeti
+````````````````````````````````
+
+Once you have Ganeti with IP pool management up and running, you need to choose
+the public network for your VMs and add it to Ganeti. Let's assume, that you
+want to assign IPs from the ``5.6.7.0/27`` range to your new VMs, with
+``5.6.7.1`` as their gateway. You can add the network by running:
+
+.. code-block:: console
+
+   # gnt-network add --network=5.6.7.0/27 --gateway=5.6.7.1 public_network
+
+Then, connect the network to all your nodegroups. We assume that we only have
+one nodegroup (``default``) in our Ganeti cluster:
+
+.. code-block:: console
+
+   # gnt-network connect public_network default public_link
+
+Your new network is now ready from the Ganeti perspective. Now, we need to setup
+`NFDHCPD` to actually reply with the correct IPs (that Ganeti will choose for
+each NIC).
+
+NFDHCPD
+```````
+
+At this point, Ganeti knows about your preferred network, it can manage the IP
+pool and choose a specific IP for each new VM's NIC. However, the actual
+assignment of the IP to the NIC is not done by Ganeti. It is done after the VM
+boots and its dhcp client makes a request. When this is done, `NFDHCPD` will
+reply to the request with Ganeti's chosen IP. So, we need to install `NFDHCPD`
+on all VM-capable nodes of the Ganeti cluster (node1 and node2 in our case) and
+connect it to Ganeti:
+
+.. code-block:: console
+
+   # apt-get install nfdhcpd
+
+Edit ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network configuration. At
+least, set the ``dhcp_queue`` variable to ``42`` and the ``nameservers``
+variable to your DNS IP/s. Those IPs will be passed as the DNS IP/s of your new
+VMs. Once you are finished, restart the server on all nodes:
+
+.. code-block:: console
+
+   # /etc/init.d/nfdhcpd restart
+
+If you are using ``ferm``, then you need to run the following:
+
+.. code-block:: console
+
+   # echo "@include 'nfdhcpd.ferm';" >> /etc/ferm/ferm.conf
+   # /etc/init.d/ferm restart
+
+Now, you need to connect `NFDHCPD` with Ganeti. To do that, you need to install
+a custom KVM ifup script for use by Ganeti, as ``/etc/ganeti/kvm-vif-bridge``,
+on all VM-capable GANETI-NODEs (node1 and node2). A sample implementation is
+provided along with `snf-cyclades-gtools <snf-cyclades-gtools>`, that will
+be installed in the next sections, however you will probably need to write your
+own, according to your underlying network configuration.
+
+Testing the Public Network
+``````````````````````````
+
+So, we have setup the bridges/vlans on the physical hosts appropriately, we have
+added the desired network to Ganeti, we have installed nfdhcpd and installed the
+appropriate ``kvm-vif-bridge`` script under ``/etc/ganeti``.
+
+Now, it is time to test that the backend infrastracture is correctly setup for
+the Public Network. We assume to have used the (b) method on setting up the
+physical hosts. We will add a new VM, the same way we did it on the previous
+testing section. However, now will also add one NIC, configured to be managed
+from our previously defined network. Run on the GANETI-MASTER (node1):
+
+.. code-block:: console
+
+   # gnt-instance add -o snf-image+default --os-parameters
+                      img_passwd=my_vm_example_passw0rd,
+                      img_format=diskdump,
+                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
+                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+                      --net 0:ip=pool,mode=routed,link=public_link
+                      testvm2
+
+If the above returns successfully, connect to the new VM and run:
+
+.. code-block:: console
+
+   root@testvm2:~ # ifconfig -a
+
+If a network interface appears with an IP from you Public Network's range
+(``5.6.7.0/27``) and the corresponding gateway, then you have successfully
+connected Ganeti with `NFDHCPD` (and ``kvm-vif-bridge`` works correctly).
+
+Now ping the outside world. If this works too, then you have also configured
+correctly your physical hosts' networking.
+
+Make sure everything works as expected, before procceding with the Private
+Networks setup.
+
+Private Networks setup
+~~~~~~~~~~~~~~~~~~~~~~
+
+Physical hosts' private networks setup
+``````````````````````````````````````
+
+Testing the Private Networks
+````````````````````````````
+
+Synnefo RAPI user
+~~~~~~~~~~~~~~~~~
+
+Once you have a working Ganeti installation create a new RAPI user that will
+have ``write`` access. Cyclades will use this user to issue commands to Ganeti,
+so we will call the user ``cyclades``. You can do this, by editting the file
+``/var/lib/ganeti/rapi/users`` and adding the line:
+
+.. code-block:: console
+
+   cyclades {HA1}a62c-example_hash_here-6f0436ddb write
+
+More about Ganeti's RAPI users `here.
+<http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_
+
+
+
 
 .. _cyclades-install-rabbitmq:
 
@@ -848,13 +1295,6 @@ installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high availability
 configuration as described here:
 
     http://www.rabbitmq.com/pacemaker.html
-
-After installation, create a user and set its permissions:
-
-.. code-block:: console
-
-    $ rabbitmqctl add_user <username> <password>
-    $ rabbitmqctl set_permissions -p / <username>  "^.*" ".*" ".*"
 
 The values set for the user and password must be mirrored in the
 ``RABBIT_*`` variables in your settings, as managed by
@@ -909,83 +1349,6 @@ Alternatively, build and install Debian packages.
 
 .. todo:: Mention vncauthproxy bug, snf-vncauthproxy, inability to install using pip
 .. todo:: kpap: fix installation commands
-
-.. _cyclades-install-nfdhcpd:
-
-NFDHCPD
-~~~~~~~
-
-Setup Synnefo-specific networking on the Ganeti backend.
-This part is deployment-specific and must be customized based on the
-specific needs of the system administrators.
-
-A reference installation will use a Synnefo-specific KVM ifup script,
-NFDHCPD and pre-provisioned Linux bridges to support public and private
-network functionality. For this:
-
-Grab NFDHCPD from its own repository (https://code.grnet.gr/git/nfdhcpd),
-install it, modify ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network
-configuration.
-
-Install a custom KVM ifup script for use by Ganeti, as
-``/etc/ganeti/kvm-vif-bridge``, on GANETI-NODEs. A sample implementation is
-provided under ``/contrib/ganeti-hooks``. Set ``NFDHCPD_STATE_DIR`` to point
-to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
-
-.. todo:: soc: document NFDHCPD installation, settle on KVM ifup script
-
-.. _cyclades-install-snfimage:
-
-snf-image
-~~~~~~~~~
-
-Install the :ref:`snf-image <snf-image>` Ganeti OS provider for image
-deployment.
-
-For :ref:`cyclades <cyclades>` to be able to launch VMs from specified
-Images, you need the snf-image OS Provider installed on *all* Ganeti nodes.
-
-Please see `https://code.grnet.gr/projects/snf-image/wiki`_
-for installation instructions and documentation on the design
-and implementation of snf-image.
-
-Please see `https://code.grnet.gr/projects/snf-image/files`
-for the latest packages.
-
-Images should be stored in ``extdump``, or ``diskdump`` format in a directory
-of your choice, configurable as ``IMAGE_DIR`` in
-:file:`/etc/default/snf-image`.
-
-synnefo components
-------------------
-
-You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <cyclades-architecture>`.
-
-Most synnefo components have dependencies on additional Python packages.
-The dependencies are described inside each package, and are setup
-automatically when installing using :command:`pip`, or when installing
-using your system's package manager.
-
-Please see the page of each synnefo software component for specific
-installation instructions, where applicable.
-
-Install the following synnefo components:
-
-Nodes of type :ref:`APISERVER <APISERVER_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`
-Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
-Nodes of type :ref:`LOGIC <LOGIC_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`.
 
 
 Configuration of Cyclades (and Plankton)

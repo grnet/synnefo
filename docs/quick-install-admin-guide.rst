@@ -185,6 +185,8 @@ the following:
      ServerName node1.example.com
 
      RewriteEngine On
+     RewriteCond %{THE_REQUEST} ^.*(\\r|\\n|%0A|%0D).* [NC]
+     RewriteRule ^(.*)$ - [F,L]
      RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
    </VirtualHost>
 
@@ -220,6 +222,8 @@ containing the following:
      ProxyPassReverse / http://localhost:8080/
 
      RewriteEngine On
+     RewriteCond %{THE_REQUEST} ^.*(\\r|\\n|%0A|%0D).* [NC]
+     RewriteRule ^(.*)$ - [F,L]
      RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
 
      SSLEngine on
@@ -357,6 +361,8 @@ the following:
      ServerName node2.example.com
 
      RewriteEngine On
+     RewriteCond %{THE_REQUEST} ^.*(\\r|\\n|%0A|%0D).* [NC]
+     RewriteRule ^(.*)$ - [F,L]
      RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
    </VirtualHost>
 
@@ -443,7 +449,6 @@ the experienced administrator the ability to install synnefo in a custom made
 django project. This corner case concerns only very advanced users that know
 what they are doing and want to experiment with synnefo.
 
-
 Configuration of Astakos
 ========================
 
@@ -529,6 +534,52 @@ themselves (the apps) and should be set as above.
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
+Shibboleth Setup
+----------------
+Optionally, Astakos can delegate user authentication to a Shibboleth federation.
+
+To setup shibboleth, install package::
+
+  apt-get install libapache2-mod-shib2
+
+Change appropriately the configuration files in ``/etc/shibboleth``.
+
+Add in ``/etc/apache2/sites-available/synnefo-ssl``::
+
+  ShibConfig /etc/shibboleth/shibboleth2.xml
+  Alias      /shibboleth-sp /usr/share/shibboleth
+
+  <Location /im/login/shibboleth>
+    AuthType shibboleth
+    ShibRequireSession On
+    ShibUseHeaders On
+    require valid-user
+  </Location>
+
+and before the line containing::
+
+  ProxyPass        / http://localhost:8080/ retry=0
+
+add::
+
+  ProxyPass /Shibboleth.sso !
+
+Then, enable the shibboleth module::
+
+  a2enmod shib2
+
+After passing through the apache module, the following tokens should be available at the destination::
+
+  eppn # eduPersonPrincipalName
+  Shib-InetOrgPerson-givenName
+  Shib-Person-surname
+  Shib-Person-commonName
+  Shib-InetOrgPerson-displayName
+  Shib-EP-Affiliation
+  Shib-Session-ID
+
+Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES``.
+
 Servers Initialization
 ----------------------
 
@@ -555,6 +606,12 @@ for astakos:
 .. code-block:: console
 
    # snf-manage migrate im
+
+Finally we load the pre-defined user groups
+
+.. code-block:: console
+
+   # snf-manage loaddata groups
 
 You have now finished the Astakos setup. Let's test it now.
 

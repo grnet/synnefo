@@ -1,6 +1,13 @@
 Changelog
 ---------
 
+v0.5.1
+^^^^^^
+
+- Change next parameter to index page in activate url.
+- Fix shibboleth login link.
+
+
 v0.5.0
 ^^^^^^
 - Improvements and fixes in shibboleth integration.

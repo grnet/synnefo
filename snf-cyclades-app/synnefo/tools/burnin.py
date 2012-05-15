@@ -48,6 +48,7 @@ import socket
 import struct
 import sys
 import time
+import hashlib
 
 from IPy import IP
 from multiprocessing import Process, Queue
@@ -351,6 +352,41 @@ class SpawnServerTestCase(unittest.TestCase):
         # The hostname must be of the form 'prefix-id'
         self.assertTrue(hostname.endswith("-%d\n" % self.serverid))
 
+
+    def _file_md5(filename, block_size = 2**20):
+        f = open(filename)
+        md5 = hashlib.md5()
+        while True:
+            data = f.read(block_size)
+            if not data:
+                break
+            md5.update(data)
+            f.close()
+    
+        return md5.digest()
+
+    
+    def _check_file_through_ssh(self, hostip, username, pavssword, path):
+        msg = "SSH to %s, as %s/%s" % (hostip, username, password)
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(hostip, username=username, password=password)
+        except socket.error:
+            raise AssertionError
+        
+        transport.connect(username = username, password = password)
+        remotepath = path
+        localpath = '/tmp/'+SNF_TEST_PREFIX+'injection'
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        sftp.get(remotepath, localpath)
+        
+        sftp.close()
+        transport.close()
+
+        # Check if files are the same
+        return _file_md5(localpath) == _file_md5('test.txt')
+
     def _skipIf(self, condition, msg):
         if condition:
             self.skipTest(msg)
@@ -549,7 +585,36 @@ class SpawnServerTestCase(unittest.TestCase):
     def test_016_personality_is_enforced(self):
         """Test file injection for personality enforcement"""
         self._skipIf(self.is_windows, "only implemented for Linux servers")
-        self.assertTrue(False, "test not implemented, will fail")
+        
+
+        #Create new server
+        server = self.client.create_server(self.servername, self.flavorid,
+                                           self.imageid, self.personality) #/path/to/file
+        self.assertEqual(server["name"], self.servername)
+        self.assertEqual(server["flavorRef"], self.flavorid)
+        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["status"], "BUILD")
+        
+        #Test if is in active state
+        servers = self.client.list_servers(detail=True)
+        servers = filter(lambda x: x["name"] == self.servername, servers)
+        self.assertEqual(len(servers), 1)
+
+        #Test if server is building in details
+        server = self.client.get_server_details(self.serverid)
+        self.assertEqual(server["name"], self.servername)
+        self.assertEqual(server["flavorRef"], self.flavorid)
+        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["status"], "BUILD")
+
+        #Insist on transition
+        self._insist_on_status_transition("BUILD", "ACTIVE",
+                                          self.build_fail, self.build_warning)
+        
+        #Test if file injected exists
+        equal = self._check_file_through_ssh(self._get_ipv4(server), self.username, self.password)
+        
+        self.assertTrue(equal)
 
     def test_017_submit_delete_request(self):
         """Test submit request to delete server"""

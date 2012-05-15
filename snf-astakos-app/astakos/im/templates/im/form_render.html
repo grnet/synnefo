@@ -11,6 +11,7 @@
      <p class="{% if field.blank %}required{% endif %}">
         {{ field.label_tag }}
         {{ field|safe }}
+        <span class="extra-img">&nbsp;</span>
         {%  if field.help_text %}
         	<span class="info"> 
 			    <em>more info</em>

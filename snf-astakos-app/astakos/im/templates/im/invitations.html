@@ -1,14 +1,17 @@
 {% extends "im/account_base.html" %}
 
 {% block page.body %}
-<div class="two-cols clearfix">
-	<div class="rt">
+<div class="full bottom-bordered">
+	<div class="lt-div">
+		<p>Invite someone else</p>
+	</div>
+	 
 	 {% if inviter.invitations %}
 	  <form action="{% url astakos.im.views.invite %}" method="post"
-	    class="innerlabels">{% csrf_token %}
-	    <h2>INVITE SOMEONE ELSE</h2>
+	    class="innerlabels overflow-hidden">{% csrf_token %}
+	
 	    {% with invitation_form as form %}
-	    {% include "im/form_render.html" %}
+	    	{% include "im/form_render.html" %}
 	    {% endwith %}
 	
 	    <div class="form-row submit">
@@ -16,8 +19,10 @@
 	    </div>
 	  </form>
 	  {% endif %}
-	</div>
-	<div class="lt {% block innerpage.class %}{% endblock %}">
+	 
+</div>
+ 
+	<div class="full {% block innerpage.class %}{% endblock %}">
 	    
 	    <h2>You have <em>{{ inviter.invitations }}</em> invitation{{ inviter.invitations|pluralize }} left.</h2>
 	    {% if sent|length %}
@@ -43,7 +48,7 @@
 	        <p>No invitations sent</p>
 	    {% endif %}
 	</div>     
-</div>
+
 
 
 {% endblock %}

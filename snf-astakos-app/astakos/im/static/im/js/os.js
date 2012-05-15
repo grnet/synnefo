@@ -94,22 +94,27 @@ var BrowserDetect = {
 		{
 			string: navigator.platform,
 			subString: "Win",
-			identity: "Windows"
+			identity: "windows"
 		},
 		{
 			string: navigator.platform,
 			subString: "Mac",
-			identity: "Mac"
+			identity: "MacOS"
 		},
 		{
-			   string: navigator.userAgent,
-			   subString: "iPhone",
-			   identity: "iPhone/iPod"
+		   string: navigator.userAgent,
+		   subString: "iPhone",
+		   identity: "iPhone"
+	    },
+	    {
+		   string: navigator.userAgent,
+		   subString: "iPad",
+		   identity: "iPad"
 	    },
 		{
 			string: navigator.platform,
 			subString: "Linux",
-			identity: "Linux"
+			identity: "linux"
 		}
 	]
 

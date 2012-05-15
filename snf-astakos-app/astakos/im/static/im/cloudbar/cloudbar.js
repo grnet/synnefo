@@ -71,6 +71,7 @@ $(document).ready(function(){
             if (i == 0){
                 username.text(el.name);
                 username.attr('href', el.url);
+                user.removeClass('full');
             }else{
                 var link = $("<a />");
                 link.text(el.name);
@@ -78,6 +79,7 @@ $(document).ready(function(){
                 var li = $("<li />");
                 li.append(link);
                 usermenu.append(li);
+                user.addClass('full');
             }
         });
     });
@@ -97,4 +99,20 @@ $(document).ready(function(){
 
     // ie fix
     user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
+    
+    $('.header .profile ul').mouseover(function(){
+        $(this).parents('.profile').css('backgroundColor','#000');
+        
+    });
+     $('.header .profile ul').mouseout(function(){
+        $(this).parents('.profile').css('backgroundColor','#01A1AE');
+        
+    });
+    
+    var profileWidth = profile.outerWidth(); 
+    $('.header .profile ul').css('width',profileWidth );
+
+    
+    
+    
 });

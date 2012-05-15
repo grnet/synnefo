@@ -1,20 +1,23 @@
-function setContainerMinHeight(){
+function setContainerMinHeight( applicableDiv){
+	
+    if ( $(applicableDiv).length > 0 ) {
+        //var h = $('.header').height(); div.header is not found 
+        var f = $('.footer').height();
+        var w = $(window).height();
+        var pTop = parseInt (($(applicableDiv).css('padding-top').replace("px", "")) );
+        var pBottom = parseInt (($(applicableDiv).css('padding-bottom').replace("px", "")));
 
-    var h = $('.header').height();
-    var f = $('.footer').height();
-    var w = $(window).height();
-    var pTop = parseInt (($('.container .wrapper').css('padding-top').replace("px", "")) );
-    var pBottom = parseInt (($('.container .wrapper').css('padding-bottom').replace("px", "")));
-
-    var c = w - ( h+f+pTop+pBottom);
-    $('.container .wrapper').css('min-height', c);
-    
+        var c = w - ( f+pTop+pBottom+36);//36 is header's height.
+        $(applicableDiv).css('min-height', c);
+    }    
 
 }
 
 $(document).ready(function() {
-
-	setContainerMinHeight();
+	
+	 
+    setContainerMinHeight('.container .wrapper');
+    
 	
     $('.show-extra').click(function(e) {
         e.preventDefault();
@@ -33,23 +36,27 @@ $(document).ready(function() {
         $(this).parents('.box-more').toggleClass('border');
     });
 	
-		
+	var topMargin=parseInt($('.mainlogo').height())+parseInt($('.top-msg').css('marginBottom'));
+	$('.mainlogo').css('marginTop','-'+topMargin+'px')
+	
 	$('.top-msg a.close').click(function(e) {
-        e.preventDefault();
-        $(this).parents('.top-msg').slideUp('5000', function() {
+        $('.top-msg').animate({
+            paddingTop:'0',
+            paddingBottom:'0',
+            height:'0'
+        }, 1000, function (){
              $('.top-msg').removeClass('active')
         });
-    });
-    
+        $('.mainlogo').animate({
+            marginTop:'0'
+        }, 1000, function (){
+             //todo
+        });
+    });	
+	 
     //$('select').dropkick();
     
-  
-    if ( $('#os').length > 0 ) {
-       var os = BrowserDetect.OS;
-       if ( os!=="an unknown OS" ) {
-           $('#os').html('version '+os);
-        }
-    }
+ 
     
     $('.top-msg .success').parents('.top-msg').css(
     	{
@@ -73,4 +80,10 @@ $(document).ready(function() {
     	}
     )
     
+});
+
+$(window).resize(function() {
+    
+   setContainerMinHeight('.container .wrapper');
+
 });

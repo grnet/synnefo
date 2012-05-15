@@ -10,17 +10,20 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .header                                         { background:#000; color:#fff;	 height:35px; line-height:35px; }	
 .header .wrapper                                { width:auto; padding:0;}			
 .header a                                       { color:#fff; text-decoration:none;}
-.header .profile                                { float:right; background:#01A1AE; width:150px; padding:0 20px; text-align:right;  }
+.header .profile                                { float:right; background:#01A1AE; min-width:150px; padding:0 20px; text-align:right;  }
 .header .profile a                              { text-decoration:none; color:#fff; }
-.header .profile ul                             { position:absolute; right:0; top:35px; padding:0; margin:0; background:#01A1AE; width:190px; display:none;	}
-.header .profile ul li                          { list-style:none outside; line-height:35px; border-top:1px solid #000; padding:0 20px;}
-.header .profile ul li:hover					{ background:#000;}
+.header .profile ul                             { position:absolute;   right:0; top:35px; padding:0; margin:0;  width:190px; display:none;	z-index:9; background:#fff;}
+.header .profile ul li                          { list-style:none outside; line-height:35px; padding:0 20px;}
+.header .profile ul li:hover a					{ color:#01A1AE;}
 .header .profile:hover ul                       { display:block; }
+.header .profile .full a                        { padding-right:20px; background:url(../images/arrow-white.png) no-repeat right center;}
+.header .profile .full ul 						{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
+.header .profile ul li a                        { padding-right:0; background:none; color:#000;}
 .header ul.services                             { margin:0; padding:0; }
 .header ul.services li                          { float:left; height:35px; line-height:35px; text-align:center; padding: 0 30px; list-style:none outside;}
 .header ul.services li:first-child              { padding:0 5px;}
 .header ul.services li.active                   { background:#333;}
-.header ul.services li:hover                    { background:#444; }
+.header ul.services li:hover                    { background:#444; } 
 
 
 /* footer */
@@ -36,24 +39,25 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 
 
 /*top message*/
-.top-msg	                                    { margin:-36px -70px 40px; background:blue; padding:100px 200px; color:#fff; display:none; position:relative; font-size:1.538em;}
+.top-msg	                                    { margin:-36px -70px 36px; background:blue; padding:100px 200px; color:#fff; display:none; position:relative; font-size:1.538em;}
 .top-msg  p.title	                            { font-size:1.3em;  }
 .top-msg  p.title span	                        { border-bottom:2px dotted #fff; padding:0 0 10px 0;}
 .top-msg.active                             	{ display:block;}
-.active+h1	                                    { display:none;}
+.top-msg +.mainlogo                             { margin-top:-73px;}
 .top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em; font-weight:bold; border:0 none; color:#fff; text-decoration:none;}
+.top-msg .close:hover                           { color:#000;}
+
 
 /* container */
-.container h1									{ margin:0; line-height:100%;}
 .container .wrapper                             { padding-bottom:100px;}
 .container .navigation                          { margin:20px 0 40px; font-size:1.231em;}
 .container .navigation ul                       { margin:5px 0; padding:0;}
 .container .navigation ul li                    { list-style:none outside; padding:0; margin:0 0 0 1em; display:inline-block;}
 .container .navigation ul li:first-child        { margin-left:0;}
 .container .navigation ul li a                  { color:#000; text-decoration:none; }
-.container .navigation ul li a:hover            { border-bottom:1px solid #F89A1C;}	
+.container .navigation ul li a:hover            { color:#F89A1C; }	
 .container .navigation ul li.active a           { color:#F89A1C; }					
-.dotted                                         { background:url(../images/double-dots.jpg) no-repeat bottom center; padding:30px 0; margin-bottom:30px;}
+.dotted                                         { background:url(../images/double-dots.jpg) no-repeat bottom center; padding:0 0 30px; margin-bottom:30px;}
 .two-cols .rt                                   { float:right; width:390px;}
 .two-cols .lt                                   { float:left; width:390px;}
 .two-cols .lt p                                 { padding-right:40px;}
@@ -69,27 +73,28 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container ul.options li a:hover				{ text-decoration:underline;}
 .landing h2, .landing a:hover                   { color:#01A1AE;}
 .faq h2, .faq a:hover                           { color:#EF4F54; border:0 none;}
+.faq h3											{ color:#4085a6; margin:0;}
 .faq ul                                         { padding:0; margin:0; }
-.faq ul li                                      { list-style:none outside; padding:0 0 0 5px; margin:0;  }
+.faq ul li                                      { list-style:none outside; padding:0; margin:0;  }
 .faq ul li a                                    { color:#222222; border:0 none;} 
+.faq .faq-category								{ margin: 0 0 1.5em;}
 .follow h3 a                                    { color:#4085A6;}
 .follow a				                    	{ border:0 none;}
 .follow ul                                      { margin:0; padding:0;}
 .follow ul li                                   { list-style:none outside; padding:0; margin:0 0 20px 0; font-size:0.923em; color:#808080;}
 .follow ul li p.title                           { margin-bottom:0; color:#000;}
 .follow ul li p.title a                         { color:#000;}
-.follow ul li p a                               { color:#808080;}
+.follow ul li p a                               { color:#808080;}   
 .posts ul                                       { margin:0;padding:0; }
 .posts ul li                                    { padding:0; margin:0 0 50px; list-style:none outside; }
-.posts ul li .img-div                           { float:left; width:160px; margin-right:20px; }
-.posts ul li .img-div img                       { max-width:160px;}
-.posts ul li .img-div p                         { font-size:1.154em; color:#01A1AE;}
-.posts ul li .txt                               { overflow:hidden;} 
-.posts ul li .txt h3                            { color:#F89A1C;}
-.posts ul li .txt h3 a                          { color:#F89A1C; border:0 none; }
-.posts ul li p.info                             { background:url(../images/blog-dots.jpg) no-repeat top; padding-top:10px; margin-top:20px; font-size:0.923em; color:#808080;}
-.article p.info 								{ margin-top:20px; padding-top:10px; font-size:0.923em; color:#808080; border-top:1px dashed #ccc;}
-p.info a                                        { color:#808080; }
+.posts ul li img                                { max-width:580px; margin-bottom:1em;}
+.posts ul li p.info                             { padding-bottom:10px; margin-bottom:20px; font-size:0.923em; color:#808080; border-bottom:1px dashed #000;}
+.article p.info 								{ margin-top:20px; padding-top:10px; font-size:0.923em; color:#808080; }
+.article h2, .posts h2                          { color:#ef4f53; }
+.posts h2 a, .posts h2 a:hover                  { border:0 none;color:#ef4f53;}
+.posts p.date, .article p.date                  { margin:0; font-size:1.231em; color:#01a1ae; }
+p.info a                                        { color:#808080; border-bottom:0 none; }
+p.info a:hover                                  { color:#000; border-bottom:0 none;}
 .bg-wrap                                        { background-position:right top; background-repeat:no-repeat;}
 .bg-wrap .extra                                 { display:none;}
 .bg-wrap.open .extra                            { display:block;}
@@ -120,11 +125,13 @@ a.btn_01, .box-more                             { width:80%; margin:0 auto 20px;
 a.videolink					                    { border: 0 none; display:block; width:367px; height:207px; background:url(../images/video_image_hover.png) no-repeat; text-decoration:none;}
 a.videolink:hover				                { background:url(../images/video_image.png)no-repeat; text-decoration:none; border:0 none;}
 .container .full								{ position:relative;}
-
+.container .bottom-bordered                     { border-bottom:1px dashed #000000;margin-bottom:20px }
+.container .lt-div                              { width:234px; float:left; }
+.container .overflow-hidden                     { overflow:hidden;}
 
 
 /* resources*/
-.resources .categories .clear 	                { color: #000000; float: right; margin-right: 4px;}
+.resources .categories .clear 	                { color: #000000; position:relative; top:-1px;}
 .resources  a, .resources  a:hover              { border:0 none;}
 .resources .categories ul 	                    { margin:0;padding:0;}
 .resources .categories ul li                    { float: left; list-style:none outside;}
@@ -164,13 +171,14 @@ a.videolink:hover				                { background:url(../images/video_image.png)
 .resources .list .resource-cat-2.resource .description  { background-color: #FF6F00  }
 .resources  .resource-cat-2.filter-item a               { color: #FF6F00  }
 
-table											{ width:100%;}
-table th, table td								{ padding:10px;  }
-table td 										{ border-top: 1px solid #DDDDDD; }
+table											{ width:80%; color:#B3B3B3;}
+table th, table td								{ padding:5px 5px 5px 0;  }
+/*table td 										{ border-top: 1px solid #DDDDDD; }*/
+table th                                        { color:#222; font-weight:normal;}
 table td.consumed 								{ color: #9D261D; }
 
-.zebra-striped tbody tr:nth-child(2n+1) td, 
-.zebra-striped tbody tr:nth-child(2n+1) th 		{ background-color: #F9F9F9; }
+/*.zebra-striped tbody tr:nth-child(2n+1) td, 
+.zebra-striped tbody tr:nth-child(2n+1) th 		{ background-color: #F9F9F9; }*/
 .zebra-striped tbody tr:hover td, 
 .zebra-striped tbody tr:hover th 				{ background-color: #F5F5F5; }
 
@@ -187,4 +195,4 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 .pagination .nums                               { text-align:right;}
 .pagination .nums span                          { color:#F89A1C;}
                     
-
+.two-cols .lt .clients-wrapper p				{ padding:0; }

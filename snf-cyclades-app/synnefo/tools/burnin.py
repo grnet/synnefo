@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
@@ -567,40 +567,100 @@ class SpawnServerTestCase(unittest.TestCase):
         self.assertNotIn(self.serverid, [s["id"] for s in servers])
 
 
-class NetworksTestCase(unittest.TestCase):
+class NetworkTestCase(unittest.TestCase):
     """ Testing networking in cyclades """
+    @classmethod
     def setUpClass(cls):
         "Initialize kamaki, get list of current networks"
         conf = Config()
         conf.set('compute_token', TOKEN)
         cls.client = CycladesClient(conf)
+        cls.compute = ComputeClient(conf)
 
-        #TODO: Create servers, insist until ACTIVE
-        #cls.serverid = 
+        images = cls.compute.list_images(detail = True)
+        flavors = cls.compute.list_flavors(detail = True)
+        imageid = choice([im['id'] for im in images])
+        flavorid = choice([f["id"] for f in flavors if f["disk"] >= 20])
 
-    def test_001_create_network():
+        for image in images:
+            if image['id'] == imageid:
+                imagename = image['name']
+
+        servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
+        is_windows = imagename.lower().find("windows") >= 0
+        setupCase =  _spawn_server_test_case(imageid=str(imageid), flavorid=flavorid,
+                                             imagename=imagename,
+                                             personality=None,
+                                             servername=servername,
+                                             is_windows=is_windows,
+                                             action_timeout=200,
+                                             build_warning=1200,
+                                             build_fail=500,
+                                             query_interval=3)
+
+        #Using already implemented tests for serverlist population
+        suite = unittest.TestSuite()
+        suite.addTest(setupCase('test_001_submit_create_server'))
+        suite.addTest(setupCase('test_002a_server_is_building_in_list'))
+        suite.addTest(setupCase('test_002b_server_is_building_in_details'))        
+        suite.addTest(setupCase('test_003_server_becomes_active'))
+        unittest.TextTestRunner(verbosity=2).run(suite)
+
+    def test_001_create_network(self):
         """Test submit create network request"""
         name = SNF_TEST_PREFIX+TEST_RUN_ID
-        network =  self.client.create_network(name)
+        network =  self.client.create_network(name)        
+        previous_num = len(self.client.list_networks())
+
+        #Test if right name is assigned
         self.assertEqual(network['name'], name)
         
-        # Update class attributes to reflect data on new network
+        # Update class attributes
         cls = type(self)
         cls.networkid = network['id']
-    
-    def test_002_connect_to_network():
-        """Test VM to network connection"""
-        self.client.connect_server(self.serverid, self.networkid)
+        networks = self.client.list_networks()
 
-    def test_003_disconnect_from_network():
-        self.client.disconnect_server(self.serverid, self.networkid)
+        #Test if new network is created
+        self.assertTrue(len(networks) > previous_num)
+        
     
-    def test_004_destroy_network():
+    def test_002_connect_to_network(self):
+        """Test VM to network connection"""
+        servers = self.compute.list_servers()
+        server = choice(servers)
+        self.client.connect_server(server['id'], self.networkid)
+        
+        #Update class attributes
+        cls = type(self)
+        cls.serverid = server['id']
+
+        connected = (self.client.get_network_details(self.networkid))
+        connections = len(connected['servers']['values'])
+        
+        time.sleep(60)
+
+        #FIXME: Insist on new connection
+        self.assertTrue(connections>=1)
+        
+
+    def test_003_disconnect_from_network(self):
+        prev_state = (self.client.get_network_details(self.networkid))
+        prev_conn = len(prev_state['servers']['values'])
+
+        self.client.disconnect_server(self.serverid, self.networkid)
+        connected = (self.client.get_network_details(self.networkid))
+        curr_conn = len(connected['servers']['values'])
+
+        #FIXME: Insist on deleting
+        self.assertTrue(curr_conn < prev_conn)
+
+    def test_004_destroy_network(self):
         """Test submit delete network request"""
         self.client.delete_network(self.networkid)
+        
+        networks = self.client.list_networks()
+        self.assertEqual(len(networks),1)
 
-    
-    
 
 class TestRunnerProcess(Process):
     """A distinct process used to execute part of the tests in parallel"""
@@ -744,7 +804,7 @@ def parse_arguments(args):
                       metavar="TIMEOUT",
                       help="Wait SECONDS seconds for a server action to " \
                            "complete, then the test is considered failed",
-                      default=50)
+                      default=100)
     parser.add_option("--build-warning",
                       action="store", type="int", dest="build_warning",
                       metavar="TIMEOUT",
@@ -866,19 +926,22 @@ def main():
         personality = None   # FIXME
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
+        
         ServerTestCase = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
-                                       imagename=imagename,
-                                       perssonality=personality,
-                                       servername=servername,
-                                       is_windows=is_windows,
-                                       action_timeout=opts.action_timeout,
-                                       build_warning=opts.build_warning,
-                                       build_fail=opts.build_fail,
-                                       query_interval=opts.query_interval)
+                                                 imagename=imagename,
+                                                 personality=personality,
+                                                 servername=servername,
+                                                 is_windows=is_windows,
+                                                 action_timeout=opts.action_timeout,
+                                                 build_warning=opts.build_warning,
+                                                 build_fail=opts.build_fail,
+                                                 query_interval=opts.query_interval)
 
 
     #Running all the testcases sequentially
-    seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
+    #seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
+
+    seq_cases = [NetworkTestCase]
     for case in seq_cases:
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
         unittest.TextTestRunner(verbosity=2).run(suite)

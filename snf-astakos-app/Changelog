@@ -1,9 +1,12 @@
 Changelog
 ---------
 
+dev
+^^^
+- Fixed default values in cloudbar sample conf file
+
 v0.5.1
 ^^^^^^
-
 - Change next parameter to index page in activate url.
 - Fix shibboleth login link.
 

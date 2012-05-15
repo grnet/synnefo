@@ -1001,11 +1001,214 @@ you gave the correct ``img_id`` and ``img_properties``. If ``gnt-instance add``
 succeeds but you cannot connect, again find out what went wrong. Do *NOT*
 proceed to the next steps unless you are sure everything works till this point.
 
-If everything works, you have successfully connected Ganeti with Pithos+.
-Let's move on to networking now.
+If everything works, you have successfully connected Ganeti with Pithos+. Let's
+move on to networking now.
 
-Network setup
-~~~~~~~~~~~~~
+.. warning::
+    You can bypass the networking sections and go straight to `FIXME`, if you do
+    not want to setup the Cyclades Network Service, but only the Cyclades Compute
+    Service (recommended for now).
+
+Network setup overview
+~~~~~~~~~~~~~~~~~~~~~~
+
+This part is deployment-specific and must be customized based on the specific
+needs of the system administrator. However, to do so, the administrator needs
+to understand how each level handles Virtual Networks, to be able to setup the
+backend appropriately, before installing Cyclades.
+
+Network @ Cyclades level
+````````````````````````
+
+Cyclades understands two types of Virtual Networks:
+
+a) One common Public Network (Internet)
+b) One or more distinct Private Networks (L2)
+
+a) When a new VM is created, it instantly gets connected to the Public Network
+   (Internet). This means it gets a public IPv4 and IPv6 and has access to the
+   public Internet.
+
+b) Then each user, is able to create one or more Private Networks manually and
+   add VMs inside those Private Networks. Private Networks provide Layer 2
+   connectivity. All VMs inside a Private Network are completely isolated.
+
+From the VM perspective, every Network corresponds to a distinct NIC. So, the
+above are translated as follows:
+
+a) Every newly created VM, needs at least one NIC. This NIC, connects the VM
+   to the Public Network and thus should get a public IPv4 and IPv6.
+
+b) For every Private Network, the VM gets a new NIC, which is added during the
+   connection of the VM to the Private Network (without an IP). This NIC should
+   have L2 connectivity with all other NICs connected to this Private Network.
+
+To achieve the above, first of all, we need Network and IP Pool management support
+at Ganeti level, for Cyclades to be able to issue the corresponding commands.
+
+Network @ Ganeti level
+``````````````````````
+
+Currently, Ganeti does not support IP Pool management. However, we've been
+actively in touch with the official Ganeti team, who are reviewing a relatively
+big patchset that implements this functionality (you can find it at the
+ganeti-devel mailing list). We hope that the functionality will be merged to
+the Ganeti master branch soon and appear on Ganeti 2.7.
+
+Furthermore, currently the `~okeanos service <http://okeanos.grnet.gr>`_ uses
+the same patchset with slight differencies on top of Ganeti 2.4.5. Cyclades
+0.9 are compatible with this old patchset and we do not guarantee that will
+work with the updated patchset sent to ganeti-devel.
+
+We do *NOT* recommend you to apply the patchset yourself on the current Ganeti
+master, unless you are an experienced Cyclades and Ganeti integrator and you
+really know what you are doing.
+
+Instead, be a little patient and we hope that everything will work out of the
+box, once the patchset makes it into the Ganeti master. When so, Cyclades will
+get updated to become compatible with that Ganeti version.
+
+Network @ Physical host level
+`````````````````````````````
+
+We talked about the two types of Network from the Cyclades perspective, from the
+VMs perspective and from Ganeti's perspective. Finally, we need to talk about
+the Networks from the physical (VM container) host's perspective.
+
+If your version of Ganeti supports IP pool management, then you need to setup
+your physical hosts for the two types of Networks. For the second type
+(Private Networks), our reference installation uses a number of pre-provisioned
+bridges (one for each Network), which are connected to the corresponding number
+of pre-provisioned vlans on each physical host (node1 and node2). For the first
+type (Public Network), our reference installation uses routing over one
+preprovisioned vlan on each host (node1 and node2). It also uses the `NFDHCPD`
+package for dynamically serving specific public IPs managed by Ganeti.
+
+Public Network setup
+~~~~~~~~~~~~~~~~~~~~
+
+Physical hosts' public network setup
+````````````````````````````````````
+
+The physical hosts' setup is out of the scope of this guide.
+
+However, two common cases that you may want to consider (and choose from) are:
+
+a) One public bridge, where all VMs' public tap interfaces will connect.
+b) IP-less routing over the same vlan on every host.
+
+When you setup your physical hosts (node1 and node2) for the Public Network,
+then you need to inform Ganeti about the Network's IP range.
+
+Add the public network to Ganeti
+````````````````````````````````
+
+Once you have Ganeti with IP pool management up and running, you need to choose
+the public network for your VMs and add it to Ganeti. Let's assume, that you
+want to assign IPs from the ``5.6.7.0/27`` range to your new VMs, with
+``5.6.7.1`` as their gateway. You can add the network by running:
+
+.. code-block:: console
+
+   # gnt-network add --network=5.6.7.0/27 --gateway=5.6.7.1 public_network
+
+Then, connect the network to all your nodegroups. We assume that we only have
+one nodegroup (``default``) in our Ganeti cluster:
+
+.. code-block:: console
+
+   # gnt-network connect public_network default public_link
+
+Your new network is now ready from the Ganeti perspective. Now, we need to setup
+`NFDHCPD` to actually reply with the correct IPs (that Ganeti will choose for
+each NIC).
+
+NFDHCPD
+```````
+
+At this point, Ganeti knows about your preferred network, it can manage the IP
+pool and choose a specific IP for each new VM's NIC. However, the actual
+assignment of the IP to the NIC is not done by Ganeti. It is done after the VM
+boots and its dhcp client makes a request. When this is done, `NFDHCPD` will
+reply to the request with Ganeti's chosen IP. So, we need to install `NFDHCPD`
+on all VM-capable nodes of the Ganeti cluster (node1 and node2 in our case) and
+connect it to Ganeti:
+
+.. code-block:: console
+
+   # apt-get install nfdhcpd
+
+Edit ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network configuration. At
+least, set the ``dhcp_queue`` variable to ``42`` and the ``nameservers``
+variable to your DNS IP/s. Those IPs will be passed as the DNS IP/s of your new
+VMs. Once you are finished, restart the server on all nodes:
+
+.. code-block:: console
+
+   # /etc/init.d/nfdhcpd restart
+
+If you are using ``ferm``, then you need to run the following:
+
+.. code-block:: console
+
+   # echo "@include 'nfdhcpd.ferm';" >> /etc/ferm/ferm.conf
+   # /etc/init.d/ferm restart
+
+Now, you need to connect `NFDHCPD` with Ganeti. To do that, you need to install
+a custom KVM ifup script for use by Ganeti, as ``/etc/ganeti/kvm-vif-bridge``,
+on all VM-capable GANETI-NODEs (node1 and node2). A sample implementation is
+provided along with `snf-cyclades-gtools <snf-cyclades-gtools>`, that will
+be installed in the next sections, however you will probably need to write your
+own, according to your underlying network configuration.
+
+Testing the Public Network
+``````````````````````````
+
+So, we have setup the bridges/vlans on the physical hosts appropriately, we have
+added the desired network to Ganeti, we have installed nfdhcpd and installed the
+appropriate ``kvm-vif-bridge`` script under ``/etc/ganeti``.
+
+Now, it is time to test that the backend infrastracture is correctly setup for
+the Public Network. We assume to have used the (b) method on setting up the
+physical hosts. We will add a new VM, the same way we did it on the previous
+testing section. However, now will also add one NIC, configured to be managed
+from our previously defined network. Run on the GANETI-MASTER (node1):
+
+.. code-block:: console
+
+   # gnt-instance add -o snf-image+default --os-parameters
+                      img_passwd=my_vm_example_passw0rd,
+                      img_format=diskdump,
+                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
+                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+                      --net 0:ip=pool,mode=routed,link=public_link
+                      testvm2
+
+If the above returns successfully, connect to the new VM and run:
+
+.. code-block:: console
+
+   root@testvm2:~ # ifconfig -a
+
+If a network interface appears with an IP from you Public Network's range
+(``5.6.7.0/27``) and the corresponding gateway, then you have successfully
+connected Ganeti with `NFDHCPD` (and ``kvm-vif-bridge`` works correctly).
+
+Now ping the outside world. If this works too, then you have also configured
+correctly your physical hosts' networking.
+
+Make sure everything works as expected, before procceding with the Private
+Networks setup.
+
+Private Networks setup
+~~~~~~~~~~~~~~~~~~~~~~
+
+Physical hosts' private networks setup
+``````````````````````````````````````
+
+Testing the Private Networks
+````````````````````````````
 
 Synnefo RAPI user
 ~~~~~~~~~~~~~~~~~
@@ -1089,61 +1292,6 @@ Alternatively, build and install Debian packages.
 
 .. todo:: Mention vncauthproxy bug, snf-vncauthproxy, inability to install using pip
 .. todo:: kpap: fix installation commands
-
-.. _cyclades-install-nfdhcpd:
-
-NFDHCPD
-~~~~~~~
-
-Setup Synnefo-specific networking on the Ganeti backend.
-This part is deployment-specific and must be customized based on the
-specific needs of the system administrators.
-
-A reference installation will use a Synnefo-specific KVM ifup script,
-NFDHCPD and pre-provisioned Linux bridges to support public and private
-network functionality. For this:
-
-Grab NFDHCPD from its own repository (https://code.grnet.gr/git/nfdhcpd),
-install it, modify ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network
-configuration.
-
-Install a custom KVM ifup script for use by Ganeti, as
-``/etc/ganeti/kvm-vif-bridge``, on GANETI-NODEs. A sample implementation is
-provided under ``/contrib/ganeti-hooks``. Set ``NFDHCPD_STATE_DIR`` to point
-to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
-
-.. todo:: soc: document NFDHCPD installation, settle on KVM ifup script
-
-synnefo components
-------------------
-
-You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <cyclades-architecture>`.
-
-Most synnefo components have dependencies on additional Python packages.
-The dependencies are described inside each package, and are setup
-automatically when installing using :command:`pip`, or when installing
-using your system's package manager.
-
-Please see the page of each synnefo software component for specific
-installation instructions, where applicable.
-
-Install the following synnefo components:
-
-Nodes of type :ref:`APISERVER <APISERVER_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`
-Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
-Nodes of type :ref:`LOGIC <LOGIC_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`.
 
 
 Configuration of Cyclades (and Plankton)

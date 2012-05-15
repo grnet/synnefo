@@ -245,9 +245,34 @@ Scaling up to multiple nodes
 ============================
 
 Here we will describe how to deploy all services, interconnected with each
-other, on multiple physical nodes. For now, if you installed successfully using
-the quick installation guide and need more details, please refer to each
-component's own documentation.
+other, on multiple physical nodes.
+
+synnefo components
+------------------
+
+You need to install the appropriate synnefo software components on each node,
+depending on its type, see :ref:`Architecture <cyclades-architecture>`.
+
+Please see the page of each synnefo software component for specific
+installation instructions, where applicable.
+
+Install the following synnefo components:
+
+Nodes of type :ref:`APISERVER <APISERVER_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-cyclades-app <snf-cyclades-app>`
+Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
+Nodes of type :ref:`LOGIC <LOGIC_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-cyclades-app <snf-cyclades-app>`.
+
 
 Upgrade Notes
 =============

@@ -142,17 +142,20 @@ def _init_queues():
     prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
 
     QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
+    QUEUE_GANETI_EVENTS_NETWORK = "%s-events-network" % prefix
     QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
     QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
     QUEUE_RECONC = "%s-reconciliation" % prefix
     if settings.DEBUG is True:
         QUEUE_DEBUG = "%s-debug" % prefix  # Debug queue, retrieves all messages
 
-    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
+    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NETWORK, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
               QUEUE_GANETI_BUILD_PROGR)
 
     # notifications of type "ganeti-op-status"
     DB_HANDLER_KEY_OP = 'ganeti.%s.event.op' % prefix
+    # notifications of type "ganeti-network-status"
+    DB_HANDLER_KEY_NETWORK = 'ganeti.%s.event.network' % prefix
     # notifications of type "ganeti-net-status"
     DB_HANDLER_KEY_NET = 'ganeti.%s.event.net' % prefix
     # notifications of type "ganeti-create-progress"
@@ -163,6 +166,7 @@ def _init_queues():
     BINDINGS = [
     # Queue                   # Exchange                # RouteKey              # Handler
     (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
+    (QUEUE_GANETI_EVENTS_NETWORK, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NETWORK, 'update_network'),
     (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
     (QUEUE_GANETI_BUILD_PROGR, settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
     ]

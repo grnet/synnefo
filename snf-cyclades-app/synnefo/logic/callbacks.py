@@ -44,7 +44,68 @@ from synnefo.lib.utils import merge_time
 log = logging.getLogger()
 
 
-def is_update_required(func):
+def handle_message_delivery(func):
+    """ Generic decorator for handling messages.
+
+    This decorator is responsible for converting the message into json format,
+    handling of common exceptions and acknowledment of message if needed.
+
+    """
+    @wraps(func)
+    def wrapper(client, message, *args, **kwargs):
+        try:
+            msg = json.loads(message['body'])
+            func(msg)
+            client.basic_ack(message)
+        except ValueError:
+            log.error("Incoming message not in JSON format: %s", message)
+            client.basic_ack(message)
+        except KeyError:
+            log.error("Malformed incoming JSON, missing attributes: %s",
+                      message)
+            client.basic_ack(message)
+        except Exception as e:
+            log.exception("Unexpected error: %s, msg: %s", e, msg)
+
+    return wrapper
+
+def instance_from_msg(func):
+    """ Decorator for getting the VirtualMachine object of the msg.
+
+    """
+    @handle_message_delivery
+    @wraps(func)
+    def wrapper(msg):
+        try:
+            vm_id = utils.id_from_instance_name(msg["instance"])
+            vm = VirtualMachine.objects.get(id=vm_id)
+            func(vm, msg)
+        except VirtualMachine.InvalidBackendIdError:
+            log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
+        except VirtualMachine.DoesNotExist:
+            log.error("VM for instance %s with id %d not found in DB.",
+                      msg['instance'], vm_id)
+    return wrapper
+
+def network_from_msg(func):
+    """ Decorator for getting the Network object of the msg.
+
+    """
+    @handle_message_delivery
+    @wraps(func)
+    def wrapper(msg):
+        try:
+            network_id = utils.id_from_network_name(msg["network"])
+            network = Network.objects.get(id=network_id)
+            func(network, msg)
+        except Network.InvalidBackendIdError:
+            log.debug("Ignoring msg for unknown network %s.", msg['network'])
+        except Network.DoesNotExist:
+            log.error("Network %s with id %d not found in DB.",
+                      msg['network'], vm_id)
+    return wrapper
+
+def if_update_required(func):
     """
     Decorator for checking if an incoming message needs to update the db.
 
@@ -56,57 +117,28 @@ def is_update_required(func):
       described in the db. In this case the event_time will be smaller from the
       one in the database.
 
-    This decorator is also acknowledging the messages to the AMQP broker.
-
     """
     @wraps(func)
-    def wrapper(client, message, *args, **kwargs):
-        try:
-            msg = json.loads(message['body'])
+    def wrapper(target, msg):
+        event_time = merge_time(msg['event_time'])
+        db_time = target.backendtime
 
-            event_time = merge_time(msg['event_time'])
-
-            vm_id = utils.id_from_instance_name(msg["instance"])
-            vm = VirtualMachine.objects.get(id=vm_id)
-
-            db_time = vm.backendtime
-            if event_time <= db_time:
-                format_ = "%d/%m/%y %H:%M:%S:%f"
-                log.debug("Ignoring message %s.\nevent_timestamp: %s db_timestamp: %s",
-                          message,
-                          event_time.strftime(format_),
-                          db_time.strftime(format_))
-                client.basic_ack(message)
-                return
-
-            # New message. Update the database!
-            func(vm, msg)
-
-        except ValueError:
-            log.error("Incoming message not in JSON format: %s", message)
-            client.basic_ack(message)
-        except KeyError:
-            log.error("Malformed incoming JSON, missing attributes: %s",
-                      message)
-            client.basic_ack(message)
-        except VirtualMachine.InvalidBackendIdError:
-            log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
-            client.basic_ack(message)
-        except VirtualMachine.DoesNotExist:
-            log.error("VM for instance %s with id %d not found in DB.",
-                      msg['instance'], vm_id)
-            client.basic_ack(message)
-        except Exception as e:
-            log.exception("Unexpected error: %s, msg: %s", e, msg)
-        else:
-            # Acknowledge the message
-            client.basic_ack(message)
+        if event_time <= db_time:
+            format_ = "%d/%m/%y %H:%M:%S:%f"
+            log.debug("Ignoring message %s.\nevent_timestamp: %s db_timestamp: %s",
+                      msg,
+                      event_time.strftime(format_),
+                      db_time.strftime(format_))
+            return
+        # New message. Update the database!
+        func(target, msg, event_time)
 
     return wrapper
 
 
-@is_update_required
-def update_db(vm, msg):
+@instance_from_msg
+@if_update_required
+def update_db(vm, msg, event_time):
     """Process a notification of type 'ganeti-op-status'"""
     log.debug("Processing ganeti-op-status msg: %s", msg)
 
@@ -114,7 +146,6 @@ def update_db(vm, msg):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    event_time = merge_time(msg['event_time'])
     backend.process_op_status(vm, event_time, msg['jobId'], msg['operation'],
                               msg['status'], msg['logmsg'])
 
@@ -122,8 +153,9 @@ def update_db(vm, msg):
               msg['instance'])
 
 
-@is_update_required
-def update_net(vm, msg):
+@instance_from_msg
+@if_update_required
+def update_net(vm, msg, event_time):
     """Process a notification of type 'ganeti-net-status'"""
     log.debug("Processing ganeti-net-status msg: %s", msg)
 
@@ -131,15 +163,30 @@ def update_net(vm, msg):
         log.error("Message is of unknown type %s", msg['type'])
         return
 
-    event_time = merge_time(msg['event_time'])
     backend.process_net_status(vm, event_time, msg['nics'])
 
     log.debug("Done processing ganeti-net-status msg for vm %s.",
               msg["instance"])
 
 
-@is_update_required
-def update_build_progress(vm, msg):
+@network_from_msg
+@if_update_required
+def update_network(network, msg, event_time):
+    """Process a notification of type 'ganeti-network-status'"""
+    log.debug("Processing ganeti-network-status msg: %s", msg)
+
+    if msg['type'] != "ganeti-network-status":
+        log.error("Message is of unknown type %s.", msg['type'])
+        return
+
+
+    log.debug("Done processing ganeti-network-status msg for vm %s.",
+              msg['instance'])
+
+
+@instance_from_msg
+@if_update_required
+def update_build_progress(vm, msg, event_time):
     """Process a create progress message"""
     log.debug("Processing ganeti-create-progress msg: %s", msg)
 
@@ -147,14 +194,13 @@ def update_build_progress(vm, msg):
         log.error("Message is of unknown type %s", msg['type'])
         return
 
-    event_time = merge_time(msg['event_time'])
     backend.process_create_progress(vm, event_time, msg['rprogress'], None)
 
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])
 
 
-def dummy_proc(client, message):
+def dummy_proc(client, message, *args, **kwargs):
     try:
         log.debug("Msg: %s", message['body'])
         client.basic_ack(message)

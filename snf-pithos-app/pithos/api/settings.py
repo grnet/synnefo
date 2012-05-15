@@ -16,7 +16,7 @@ sample_users = {
 }
 
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL', 'http://127.0.0.1:8000/im/authenticate')
-AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', sample_users)
+AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
 

@@ -49,7 +49,9 @@ import struct
 import sys
 import time
 import hashlib
-
+from base64 import b64encode
+from pwd import getpwuid
+from grp import getgrgid
 from IPy import IP
 from multiprocessing import Process, Queue
 from random import choice
@@ -366,8 +368,8 @@ class SpawnServerTestCase(unittest.TestCase):
         return md5.digest()
 
     
-    def _check_file_through_ssh(self, hostip, username, pavssword, path):
-        msg = "SSH to %s, as %s/%s" % (hostip, username, password)
+    def _check_file_through_ssh(self, hostip, username, password, remotepath, content):
+        msg = "Trying file injection through SSH to %s, as %s/%s" % (hostip, username, password)
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -375,8 +377,9 @@ class SpawnServerTestCase(unittest.TestCase):
         except socket.error:
             raise AssertionError
         
+        transport = paramiko.Transport((hostip,22))
         transport.connect(username = username, password = password)
-        remotepath = path
+
         localpath = '/tmp/'+SNF_TEST_PREFIX+'injection'
         sftp = paramiko.SFTPClient.from_transport(transport)
         sftp.get(remotepath, localpath)
@@ -384,8 +387,11 @@ class SpawnServerTestCase(unittest.TestCase):
         sftp.close()
         transport.close()
 
+        f = open(localpath)
+        remote_content = b64encode(f.read())
+
         # Check if files are the same
-        return _file_md5(localpath) == _file_md5('test.txt')
+        return remote_content == content
 
     def _skipIf(self, condition, msg):
         if condition:
@@ -395,6 +401,7 @@ class SpawnServerTestCase(unittest.TestCase):
         """Test submit create server request"""
         server = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, self.personality)
+
         self.assertEqual(server["name"], self.servername)
         self.assertEqual(server["flavorRef"], self.flavorid)
         self.assertEqual(server["imageRef"], self.imageid)
@@ -450,56 +457,56 @@ class SpawnServerTestCase(unittest.TestCase):
         self._insist_on_status_transition("BUILD", "ACTIVE",
                                          self.build_fail, self.build_warning)
 
-    def test_003a_get_server_oob_console(self):
-        """Test getting OOB server console over VNC
+    # def test_003a_get_server_oob_console(self):
+    #     """Test getting OOB server console over VNC
 
-        Implementation of RFB protocol follows
-        http://www.realvnc.com/docs/rfbproto.pdf.
+    #     Implementation of RFB protocol follows
+    #     http://www.realvnc.com/docs/rfbproto.pdf.
 
-        """
+    #     """
         
-        console = self.cyclades.get_server_console(self.serverid)
-        self.assertEquals(console['type'], "vnc")
-        sock = self._insist_on_tcp_connection(socket.AF_UNSPEC,
-                                        console["host"], console["port"])
+    #     console = self.cyclades.get_server_console(self.serverid)
+    #     self.assertEquals(console['type'], "vnc")
+    #     sock = self._insist_on_tcp_connection(socket.AF_UNSPEC,
+    #                                     console["host"], console["port"])
 
-        # Step 1. ProtocolVersion message (par. 6.1.1)
-        version = sock.recv(1024)
-        self.assertEquals(version, 'RFB 003.008\n')
-        sock.send(version)
+    #     # Step 1. ProtocolVersion message (par. 6.1.1)
+    #     version = sock.recv(1024)
+    #     self.assertEquals(version, 'RFB 003.008\n')
+    #     sock.send(version)
 
-        # Step 2. Security (par 6.1.2): Only VNC Authentication supported
-        sec = sock.recv(1024)
-        self.assertEquals(list(sec), ['\x01', '\x02'])
+    #     # Step 2. Security (par 6.1.2): Only VNC Authentication supported
+    #     sec = sock.recv(1024)
+    #     self.assertEquals(list(sec), ['\x01', '\x02'])
 
-        # Step 3. Request VNC Authentication (par 6.1.2)
-        sock.send('\x02')
+    #     # Step 3. Request VNC Authentication (par 6.1.2)
+    #     sock.send('\x02')
 
-        # Step 4. Receive Challenge (par 6.2.2)
-        challenge = sock.recv(1024)
-        self.assertEquals(len(challenge), 16)
+    #     # Step 4. Receive Challenge (par 6.2.2)
+    #     challenge = sock.recv(1024)
+    #     self.assertEquals(len(challenge), 16)
 
-        # Step 5. DES-Encrypt challenge, use password as key (par 6.2.2)
-        response = d3des_generate_response(
-            (console["password"] + '\0' * 8)[:8], challenge)
-        sock.send(response)
+    #     # Step 5. DES-Encrypt challenge, use password as key (par 6.2.2)
+    #     response = d3des_generate_response(
+    #         (console["password"] + '\0' * 8)[:8], challenge)
+    #     sock.send(response)
 
-        # Step 6. SecurityResult (par 6.1.3)
-        result = sock.recv(4)
-        self.assertEquals(list(result), ['\x00', '\x00', '\x00', '\x00'])
-        sock.close()
-
+    #     # Step 6. SecurityResult (par 6.1.3)
+    #     result = sock.recv(4)
+    #     self.assertEquals(list(result), ['\x00', '\x00', '\x00', '\x00'])
+    #     sock.close()
+        
     def test_004_server_has_ipv4(self):
         """Test active server has a valid IPv4 address"""
         server = self.client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
         self.assertEquals(IP(ipv4).version(), 4)
 
-    def test_005_server_has_ipv6(self):
-        """Test active server has a valid IPv6 address"""
-        server = self.client.get_server_details(self.serverid)
-        ipv6 = self._get_ipv6(server)
-        self.assertEquals(IP(ipv6).version(), 6)
+    # def test_005_server_has_ipv6(self):
+    #     """Test active server has a valid IPv6 address"""
+    #     server = self.client.get_server_details(self.serverid)
+    #     ipv6 = self._get_ipv6(server)
+    #     self.assertEquals(IP(ipv6).version(), 6)
 
     def test_006_server_responds_to_ping_IPv4(self):
         """Test server responds to ping on IPv4 address"""
@@ -511,15 +518,15 @@ class SpawnServerTestCase(unittest.TestCase):
                                         self._ping_once,
                                         False, ip)
 
-    def test_007_server_responds_to_ping_IPv6(self):
-        """Test server responds to ping on IPv6 address"""
-        server = self.client.get_server_details(self.serverid)
-        ip = self._get_ipv6(server)
-        self._try_until_timeout_expires(self.action_timeout,
-                                        self.action_timeout,
-                                        "PING IPv6 to %s" % ip,
-                                        self._ping_once,
-                                        True, ip)
+    # def test_007_server_responds_to_ping_IPv6(self):
+    #     """Test server responds to ping on IPv6 address"""
+    #     server = self.client.get_server_details(self.serverid)
+    #     ip = self._get_ipv6(server)
+    #     self._try_until_timeout_expires(self.action_timeout,
+    #                                     self.action_timeout,
+    #                                     "PING IPv6 to %s" % ip,
+    #                                     self._ping_once,
+    #                                     True, ip)
 
     def test_008_submit_shutdown_request(self):
         """Test submit request to shutdown server"""
@@ -552,12 +559,12 @@ class SpawnServerTestCase(unittest.TestCase):
         self._insist_on_ssh_hostname(self._get_ipv4(server),
                                      self.username, self.passwd)
 
-    def test_013_ssh_to_server_IPv6(self):
-        """Test SSH to server public IPv6 works, verify hostname"""
-        self._skipIf(self.is_windows, "only valid for Linux servers")
-        server = self.client.get_server_details(self.serverid)
-        self._insist_on_ssh_hostname(self._get_ipv6(server),
-                                     self.username, self.passwd)
+    # def test_013_ssh_to_server_IPv6(self):
+    #     """Test SSH to server public IPv6 works, verify hostname"""
+    #     self._skipIf(self.is_windows, "only valid for Linux servers")
+    #     server = self.client.get_server_details(self.serverid)
+    #     self._insist_on_ssh_hostname(self._get_ipv6(server),
+    #                                  self.username, self.passwd)
 
     def test_014_rdp_to_server_IPv4(self):
         "Test RDP connection to server public IPv4 works"""
@@ -571,50 +578,29 @@ class SpawnServerTestCase(unittest.TestCase):
         # FIXME: Use rdesktop, analyze exit code? see manpage [costasd]
         sock.close()
 
-    def test_015_rdp_to_server_IPv6(self):
-        "Test RDP connection to server public IPv6 works"""
-        self._skipIf(not self.is_windows, "only valid for Windows servers")
-        server = self.client.get_server_details(self.serverid)
-        ipv6 = self._get_ipv6(server)
-        sock = _get_tcp_connection(socket.AF_INET6, ipv6, 3389)
+    # def test_015_rdp_to_server_IPv6(self):
+    #     "Test RDP connection to server public IPv6 works"""
+    #     self._skipIf(not self.is_windows, "only valid for Windows servers")
+    #     server = self.client.get_server_details(self.serverid)
+    #     ipv6 = self._get_ipv6(server)
+    #     sock = _get_tcp_connection(socket.AF_INET6, ipv6, 3389)
 
-        # No actual RDP processing done. We assume the RDP server is there
-        # if the connection to the RDP port is successful.
-        sock.close()
+    #     # No actual RDP processing done. We assume the RDP server is there
+    #     # if the connection to the RDP port is successful.
+    #     sock.close()
 
     def test_016_personality_is_enforced(self):
         """Test file injection for personality enforcement"""
         self._skipIf(self.is_windows, "only implemented for Linux servers")
-        
+        self._skipIf(self.personality == None, "No personality file selected")
 
-        #Create new server
-        server = self.client.create_server(self.servername, self.flavorid,
-                                           self.imageid, self.personality) #/path/to/file
-        self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
-        self.assertEqual(server["status"], "BUILD")
-        
-        #Test if is in active state
-        servers = self.client.list_servers(detail=True)
-        servers = filter(lambda x: x["name"] == self.servername, servers)
-        self.assertEqual(len(servers), 1)
-
-        #Test if server is building in details
         server = self.client.get_server_details(self.serverid)
-        self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
-        self.assertEqual(server["status"], "BUILD")
 
-        #Insist on transition
-        self._insist_on_status_transition("BUILD", "ACTIVE",
-                                          self.build_fail, self.build_warning)
+        for inj_file in self.personality:
+            equal_files = self._check_file_through_ssh(self._get_ipv4(server), inj_file['owner'], 
+                                                       self.passwd, inj_file['path'], inj_file['contents'])
+            self.assertTrue(equal_files)
         
-        #Test if file injected exists
-        equal = self._check_file_through_ssh(self._get_ipv4(server), self.username, self.password)
-        
-        self.assertTrue(equal)
 
     def test_017_submit_delete_request(self):
         """Test submit request to delete server"""
@@ -918,6 +904,11 @@ def parse_arguments(args):
                       help="Delete stale servers from previous runs, whose "\
                            "name starts with `%s'" % SNF_TEST_PREFIX,
                       default=False)
+    parser.add_option("--force-personality",
+                      action="store", dest="personality_path",
+                      help="Force a personality file injection. File path required. ",
+                      default=None)
+    
 
     # FIXME: Change the default for build-fanout to 10
     # FIXME: Allow the user to specify a specific set of Images to test
@@ -988,7 +979,23 @@ def main():
         imageid = str(image["id"])
         flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
         imagename = image["name"]
-        personality = None   # FIXME
+        
+        
+        if opts.personality_path != None:
+            f = open(opts.personality_path)
+            content = b64encode(f.read())
+            personality = []
+            st = os.stat(opts.personality_path)
+            personality.append({
+                    'path': '/root/test_inj_file',
+                    'owner': 'root',
+                    'group': 'root',
+                    'mode': 0x7777 & st.st_mode,
+                    'contents': content
+                    })
+        else:
+            personality = None
+
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
         
@@ -1000,13 +1007,14 @@ def main():
                                                  action_timeout=opts.action_timeout,
                                                  build_warning=opts.build_warning,
                                                  build_fail=opts.build_fail,
-                                                 query_interval=opts.query_interval)
+                                                 query_interval=opts.query_interval,
+                                                 )
 
 
     #Running all the testcases sequentially
     #seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
 
-    seq_cases = [NetworkTestCase]
+    seq_cases = [ServerTestCase]
     for case in seq_cases:
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
         unittest.TextTestRunner(verbosity=2).run(suite)

@@ -370,6 +370,7 @@ class SpawnServerTestCase(unittest.TestCase):
     
     def _check_file_through_ssh(self, hostip, username, password, remotepath, content):
         msg = "Trying file injection through SSH to %s, as %s/%s" % (hostip, username, password)
+        log.info(msg)
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -660,9 +661,9 @@ class NetworkTestCase(unittest.TestCase):
     def test_001_create_network(self):
         """Test submit create network request"""
         name = SNF_TEST_PREFIX+TEST_RUN_ID
-        network =  self.client.create_network(name)        
         previous_num = len(self.client.list_networks())
-
+        network =  self.client.create_network(name)        
+       
         #Test if right name is assigned
         self.assertEqual(network['name'], name)
         
@@ -676,7 +677,7 @@ class NetworkTestCase(unittest.TestCase):
         
     
     def test_002_connect_to_network(self):
-        """Test VM to network connection"""
+        """Test connect VM to network"""
         servers = self.compute.list_servers()
         server = choice(servers)
         self.client.connect_server(server['id'], self.networkid)
@@ -685,24 +686,27 @@ class NetworkTestCase(unittest.TestCase):
         cls = type(self)
         cls.serverid = server['id']
 
+        #FIXME: Insist on new connection instead of this
+        time.sleep(15)
+
         connected = (self.client.get_network_details(self.networkid))
         connections = len(connected['servers']['values'])
-        
-        time.sleep(60)
 
-        #FIXME: Insist on new connection
         self.assertTrue(connections>=1)
         
 
     def test_003_disconnect_from_network(self):
-        prev_state = (self.client.get_network_details(self.networkid))
+        prev_state = self.client.get_network_details(self.networkid)
         prev_conn = len(prev_state['servers']['values'])
 
         self.client.disconnect_server(self.serverid, self.networkid)
+
+        #FIXME: Insist on deleting instead of this
+        time.sleep(15)
+
         connected = (self.client.get_network_details(self.networkid))
         curr_conn = len(connected['servers']['values'])
 
-        #FIXME: Insist on deleting
         self.assertTrue(curr_conn < prev_conn)
 
     def test_004_destroy_network(self):
@@ -1014,7 +1018,7 @@ def main():
     #Running all the testcases sequentially
     #seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
 
-    seq_cases = [ServerTestCase]
+    seq_cases = [NetworkTestCase]
     for case in seq_cases:
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
         unittest.TextTestRunner(verbosity=2).run(suite)

@@ -678,14 +678,15 @@ class NetworkTestCase(unittest.TestCase):
         cls.serverid = server['id']
 
         #Insist on connecting until action timeout
-        connected = (self.client.get_network_details(self.networkid))
         fail_tmout = time.time()+self.action_timeout
 
         while True:
+            connected = (self.client.get_network_details(self.networkid))
             connections = connected['servers']['values']
             if (self.serverid in connections):
                 conn_exists = True
-            if time.time() > fail_tmout:
+                break
+            elif time.time() > fail_tmout:
                 self.assertLess(time.time(), fail_tmout)
             else:
                 time.sleep(self.query_interval)
@@ -701,14 +702,15 @@ class NetworkTestCase(unittest.TestCase):
         time.sleep(15)
 
         #Insist on deleting until action timeout
-        connected = (self.client.get_network_details(self.networkid))
         fail_tmout = time.time()+self.action_timeout
 
         while True:
+            connected = (self.client.get_network_details(self.networkid))
             connections = connected['servers']['values']
             if (self.serverid not in connections):
                 conn_exists = False
-            if time.time() > fail_tmout:
+                break
+            elif time.time() > fail_tmout:
                 self.assertLess(time.time(), fail_tmout)
             else:
                 time.sleep(self.query_interval)
@@ -722,20 +724,22 @@ class NetworkTestCase(unittest.TestCase):
 
         curr_net = []
         for net in networks:
-            curr_net.appent(net['id'])
+            curr_net.append(net['id'])
 
         self.assertTrue(self.networkid not in curr_net)
         
     def test_005_cleanup_servers(self):
         """Cleanup servers created for this test"""
-        self.compute.delete_server(self.server_id)
+        self.compute.delete_server(self.serverid)
         fail_tmout = time.time()+self.action_timeout
 
         #Ensure server gets deleted
         while True:
-            status = self.compute.get_server_details(self.serverid)
+            details = self.compute.get_server_details(self.serverid)
+            status = details['status']
             if status == 'DELETED':
                 deleted = True
+                break
             elif time.time() > fail_tmout: 
                 self.assertLess(time.time(), fail_tmout)
             else:

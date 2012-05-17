@@ -534,51 +534,8 @@ themselves (the apps) and should be set as above.
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
-Shibboleth Setup
-----------------
-Optionally, Astakos can delegate user authentication to a Shibboleth federation.
-
-To setup shibboleth, install package::
-
-  apt-get install libapache2-mod-shib2
-
-Change appropriately the configuration files in ``/etc/shibboleth``.
-
-Add in ``/etc/apache2/sites-available/synnefo-ssl``::
-
-  ShibConfig /etc/shibboleth/shibboleth2.xml
-  Alias      /shibboleth-sp /usr/share/shibboleth
-
-  <Location /im/login/shibboleth>
-    AuthType shibboleth
-    ShibRequireSession On
-    ShibUseHeaders On
-    require valid-user
-  </Location>
-
-and before the line containing::
-
-  ProxyPass        / http://localhost:8080/ retry=0
-
-add::
-
-  ProxyPass /Shibboleth.sso !
-
-Then, enable the shibboleth module::
-
-  a2enmod shib2
-
-After passing through the apache module, the following tokens should be available at the destination::
-
-  eppn # eduPersonPrincipalName
-  Shib-InetOrgPerson-givenName
-  Shib-Person-surname
-  Shib-Person-commonName
-  Shib-InetOrgPerson-displayName
-  Shib-EP-Affiliation
-  Shib-Session-ID
-
-Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES``.
+If you are an advanced user and want to use the Shibboleth Authentication method,
+read the relative :ref:`section <shibboleth-auth>`.
 
 Servers Initialization
 ----------------------

@@ -60,6 +60,7 @@ context_processors = [
 
 middlware_classes = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'astakos.im.middleware.CookieAuthenticationMiddleware',
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.SecureMiddleware'
 ]

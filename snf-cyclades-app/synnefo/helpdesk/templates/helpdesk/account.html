@@ -15,7 +15,7 @@
             <li class="divider"></li>
               <li>
                 {% for vm in vms %}
-                <a href="#vm-{{ vm.pk }}">{{ vm.name }}</a>
+                <a href="#vm-{{ vm.pk }}" class="{% if vm.deleted %}deleted{% endif %}">{{ vm.name }}</a>
                 {% endfor %}
             </li>
           </ul>
@@ -27,7 +27,7 @@
             <li class="divider"></li>
               <li>
                 {% for net in networks %}
-                <a href="#network-{{ net.pk }}">{{ net.name }}</a>
+                <a href="#network-{{ net.pk }}" class="{% if net.state == "DELETED" %}deleted{% endif %}">{{ net.name }}</a>
                 {% endfor %}
             </li>
           </ul>

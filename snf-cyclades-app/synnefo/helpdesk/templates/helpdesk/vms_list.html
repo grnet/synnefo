@@ -1,0 +1,74 @@
+{% load helpdesk_tags %}
+<div class="object-anchor" id="vm-{{vm.pk}}"></div>
+<div class="vm-details object-details">
+    <h4><span class="badge badge-info">ID: {{ vm.pk }}</span> {{ vm.name }}</h4>
+    <span class="badge badge-info">{{ vm|vm_public_ip }}</span>
+    {{ vm|vm_status_badge|safe }}
+    <div class="vm-details-content object-details-content">
+        <h5>Details</h5>
+        <dl class="dl-horizontal well">
+            <dt>ID</dt><dd>{{ vm.pk }}</dd>
+            <dt>Name</dt><dd>{{ vm.name }}</dd>
+            <dt>User id</dt><dd>{{ vm.userid }}</dd>
+            <dt>Created</dt><dd>{{ vm.created }}</dd>
+            <dt>Updated</dt><dd>{{ vm.updated }}</dd>
+            <dt>Suspended</dt><dd>{{ vm.suspended }}</dd>
+            <dt>Deleted</dt><dd>{{ vm.deleted }}</dd>
+            <dt>Image id</dt><dd>{{ vm.imageid }}</dd>
+            <dt>Flavor</dt><dd>{{ vm.flavor.cpu }},
+                        {{ vm.flavor.disk }},
+                        {{ vm.flavor.ram }},
+                        {{ vm.flavor.disk_template }}</dd>
+        </dl>
+        <h5>Metadata</h5>
+        <dl class="dl-horizontal well">
+            {% for meta in vm.metadata.all %}
+            <dt>{{ meta.meta_key }}</dt><dd>{{ meta.meta_value }}</dd>
+            {% empty %}
+            <dt>No metadata</dt>
+            {% endfor %}
+        </dl>
+        <h5>Backend info</h5>
+        <dl class="dl-horizontal well">
+            <dt>Action</dt><dd>{{ vm.get_action_display }} ({{ vm.action }})</dd>
+            <dt>Operstate</dt><dd>{{ vm.get_operstate_display }} ({{ vm.operstate }})</dd>
+            <dt>Backend job id</dt><dd>{{ vm.backendjobid }}</dd>
+            <dt>Backend op code</dt><dd>{{ vm.get_backendopcode_display }} ({{ vm.backendopcode }})</dd>
+            <dt>Backend log msg</dt><dd>{{ vm.backendlogmsg }}</dd>
+            <dt>Build percentage</dt><dd>{{ vm.buildpercentage }}</dd>
+        </dl>
+        <h5>Network interfaces</h5>
+        <table class="table well">
+            <thead>
+                <td>ID</td>
+                <td>Network (ID)</td>
+                <td>Created</td>
+                <td>Updated</td>
+                <td>Index</td>
+                <td>MAC</td>
+                <td>IPv4</td>
+                <td>IPv6</td>
+                <td>Firewall</td>
+            </thead>
+            <tbody>
+                {% for nic in vm.nics.all %}
+                <tr>
+                    <td>{{ nic.pk }}</td>
+                    <td>{{ nic.network }} ({{ nic.network.pk }})</td>
+                    <td>{{ nic.created }}</td>
+                    <td>{{ nic.updated }}</td>
+                    <td>{{ nic.index }}</td>
+                    <td>{{ nic.mac }}</td>
+                    <td>{{ nic.ipv4 }}</td>
+                    <td>{{ nic.ipv6 }}</td>
+                    <td>{{ nic.get_firewall_profile_display }} ({{nic.firewall_profile}})</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan=9>No network interface available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,71 @@
+{% extends "helpdesk/base.html" %}
+
+{% block extraheader %}
+<small>/ {{ account }}</small>
+{% endblock %}
+{% block content %}
+<div class="subnav">
+  <ul class="nav nav-pills">
+      <li><h2>{{ account }}</h2></li>
+      <li><a href="#account">Account</a></li>
+      <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#">Virtual machines <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#vms">All</a></li>
+            <li class="divider"></li>
+              <li>
+                {% for vm in vms %}
+                <a href="#vm-{{ vm.pk }}">{{ vm.name }}</a>
+                {% endfor %}
+            </li>
+          </ul>
+      </li>
+      <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#">Networks <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#networks">All</a></li>
+            <li class="divider"></li>
+              <li>
+                {% for net in networks %}
+                <a href="#network-{{ net.pk }}">{{ net.name }}</a>
+                {% endfor %}
+            </li>
+          </ul>
+      </li>
+  </ul>
+</div>
+<div class="row-fluid">
+    <div class="object-anchor" id="account"></div>
+    <div class="account info-block well">
+        <h3>Account</h3>
+        <div class="object-details">
+            <div class="vm-details-content object-details-content">
+                <h5>Details</h5>
+                <dl class="dl-horizontal well">
+                    <dt>Username</dt><dd>{{ account }}</dd>
+                    <dt>Virtual machines</dt><dd>{{ vms|length }}</dd>
+                    <dt>Networks</dt><dd>{{ networks|length }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="object-anchor" id="vms"></div>
+    <div class="vms info-block well">
+        <h3>Virtual machines <span class="badge badge-info">Total: {{ vms|length }}</span></h3>
+        {% for vm in vms %}
+        {% include "helpdesk/vms_list.html" %}
+        {% empty %}
+        <p>No virtual machines available for this account</p>
+        {% endfor %}
+    </div>
+    <div class="object-anchor" id="networks"></div>
+    <div class="networks info-block well">
+        <h3>Networks <span class="badge badge-info">Total: {{ vms|length }}</span></h3>
+        {% for network in networks %}
+        {% include "helpdesk/networks_list.html" %}
+        {% empty %}
+        <p>No networks available for this account</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

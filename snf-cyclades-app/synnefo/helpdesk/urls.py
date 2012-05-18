@@ -1,0 +1,8 @@
+from django.conf.urls.defaults import patterns, url
+
+urlpatterns = patterns('',
+    url(r'^$', 'synnefo.helpdesk.views.index', name='helpdesk-index'),
+    url(r'^(?P<account>.*)$', 'synnefo.helpdesk.views.account',
+        name='helpdesk-details'),
+)
+

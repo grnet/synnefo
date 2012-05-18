@@ -35,7 +35,7 @@ from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.views import password_change
 
 from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED
+from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 from astakos.im.views import signed_terms_required
 
 urlpatterns = patterns('astakos.im.views',
@@ -49,11 +49,15 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^password/?$', 'change_password', {}, name='password_change'),
-    url(r'^email_change/?$', 'change_email', {}, name='email_change'),
-    url(r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
-        name='email_change_confirm')
 )
 
+if EMAILCHANGE_ENABLED:
+    urlpatterns += patterns('astakos.im.views',
+        url(r'^email_change/?$', 'change_email', {}, name='email_change'),
+        url(r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
+            name='email_change_confirm')
+)
+    
 urlpatterns += patterns('astakos.im.target',
     url(r'^login/redirect/?$', 'redirect.login')
 )

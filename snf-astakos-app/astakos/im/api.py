@@ -47,7 +47,8 @@ from django.core.urlresolvers import reverse
 
 from astakos.im.faults import BadRequest, Unauthorized, InternalServerError, Fault
 from astakos.im.models import AstakosUser
-from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED, COOKIE_NAME
+from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED, COOKIE_NAME, \
+EMAILCHANGE_ENABLED
 from astakos.im.util import epoch
 
 logger = logging.getLogger(__name__)
@@ -198,8 +199,9 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             if user.has_usable_password():
                 l.append({ 'url': absolute(reverse('password_change')),
                           'name': "Change password" })
-            l.append({'url':absolute(reverse('email_change')),
-                      'name': "Change email"})
+            if EMAILCHANGE_ENABLED:
+                l.append({'url':absolute(reverse('email_change')),
+                          'name': "Change email"})
             if INVITATIONS_ENABLED:
                 l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
                           'name': "Invitations" })

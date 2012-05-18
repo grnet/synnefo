@@ -9,12 +9,12 @@ def vm_public_ip(vm):
     address
     """
     try:
-        return vm.nics.filter(network__name="public")[0].ipv4
+        return vm.nics.filter(network__public=True)[0].ipv4
     except IndexError:
         return "No public ip"
 
 
-STATE_CSS_MAP = {
+VM_STATE_CSS_MAP = {
         'BUILD': 'warning',
         'ERROR': 'important',
         'STOPPED': 'notice',
@@ -26,13 +26,25 @@ def vm_status_badge(vm):
     """
     Return a span badge styled based on the vm current status
     """
-    state_cls = STATE_CSS_MAP[vm.operstate]
+    state_cls = VM_STATE_CSS_MAP[vm.operstate]
     badge_cls = "badge badge-%s" % state_cls
 
     deleted_badge = ""
     if vm.deleted:
         deleted_badge = '<span class="badge badge-important">Deleted</span>'
-    return '<span class="%s">%s</span>%s' % (badge_cls,
-            vm.operstate, deleted_badge)
+    return '%s\n<span class="%s">%s</span>' % (deleted_badge, badge_cls,
+            vm.operstate)
 
 vm_status_badge.is_safe = True
+
+@register.filter(name="network_deleted_badge")
+def network_deleted_badge(network):
+    """
+    Return a span badge styled based on the vm current status
+    """
+    deleted_badge = ""
+    if network.state == "DELETED":
+        deleted_badge = '<span class="badge badge-important">Deleted</span>'
+    return deleted_badge
+
+network_deleted_badge.is_safe = True

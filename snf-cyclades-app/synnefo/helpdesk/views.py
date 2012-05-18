@@ -19,8 +19,8 @@ def account(request, account):
     """
     Account details view
     """
-    vms = VirtualMachine.objects.all()
-    networks = Network.objects.all()
+    vms = VirtualMachine.objects.filter().order_by('deleted')
+    networks = Network.objects.filter().order_by('state')
     user_context = {
         'vms': vms,
         'account': account,

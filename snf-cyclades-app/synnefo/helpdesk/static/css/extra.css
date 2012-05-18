@@ -105,4 +105,7 @@ h1 { margin-bottom: 20px; }
 .info-block h3 .badge { float: right; font-size: 0.8em; padding: 5px 8px;}
 .info-block table { margin-bottom: 0 }
 .object-details h5 { float: right; margin-top: 10px; margin-right: 10px; font-size: 1em; color: #3A87AD }
-.object-anchor { margin-bottom: 50px }
+.object-anchor { margin-bottom: 70px }
+
+
+.subnav a.deleted { color: #F00 !important }

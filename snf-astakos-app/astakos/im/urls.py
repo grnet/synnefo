@@ -98,6 +98,6 @@ urlpatterns += patterns('astakos.im.api',
     url(r'^authenticate/v2/?$', 'authenticate'),
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'),
-    url(r'^find_userid/?$', 'find_userid'),
-    url(r'^find_email/?$', 'find_email'),
+    url(r'^v2.0/users/?$', 'get_user_by_email'),
+    url(r'^v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
 )

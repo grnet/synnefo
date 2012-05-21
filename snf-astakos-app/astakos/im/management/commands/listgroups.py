@@ -58,8 +58,8 @@ class Command(BaseCommand):
         
         groups = Group.objects.all()
         
-        labels = ('id', 'name')
-        columns = (1, 2)
+        labels = ('id', 'name', 'permissions')
+        columns = (3, 12, 50)
         
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -68,7 +68,8 @@ class Command(BaseCommand):
             self.stdout.write(sep + '\n')
         
         for group in groups:
-            fields = (str(group.id), group.name)
+            fields = (str(group.id), group.name,
+                      ','.join(p.codename for p in group.permissions.all()))
             
             if options['csv']:
                 line = '|'.join(fields)

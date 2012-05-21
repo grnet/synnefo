@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 'last login': format_date(user.last_login),
                 'date joined': format_date(user.date_joined),
                 'last update': format_date(user.updated),
-                'token': user.auth_token,
+                #'token': user.auth_token,
                 'token expiration': format_date(user.auth_token_expires),
                 'invitations': user.invitations,
                 'invitation level': user.level,
@@ -75,8 +75,11 @@ class Command(BaseCommand):
                 'verified': format_bool(user.is_verified),
                 'has_credits': format_bool(user.has_credits),
                 'groups': [elem.name for elem in user.groups.all()],
+                'permissions': [elem.codename for elem in user.user_permissions.all()],
+                'group_permissions': user.get_group_permissions(),
                 'third_party_identifier': user.third_party_identifier,
-                'email_verified': format_bool(user.email_verified)
+                'email_verified': format_bool(user.email_verified),
+                'username': user.username
             }
             if get_latest_terms():
                 has_signed_terms = user.signed_terms()

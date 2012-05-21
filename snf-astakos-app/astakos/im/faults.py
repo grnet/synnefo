@@ -49,3 +49,9 @@ class Unauthorized(Fault):
 
 class InternalServerError(Fault):
     code = 500
+
+class Forbidden(Fault):
+    code = 403
+
+class ItemNotFound(Fault):
+    code = 404

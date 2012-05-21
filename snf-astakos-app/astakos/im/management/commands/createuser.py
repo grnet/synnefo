@@ -41,9 +41,13 @@ from uuid import uuid4
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 
 from astakos.im.models import AstakosUser
 from astakos.im.util import reserved_email
+
+from ._common import add_user_permission
 
 class Command(BaseCommand):
     args = "<email> <first name> <last name> <affiliation>"
@@ -63,7 +67,13 @@ class Command(BaseCommand):
         make_option('--password',
             dest='password',
             metavar='PASSWORD',
-            help="Set user's password")
+            help="Set user's password"),
+        make_option('--add-group',
+            dest='add-group',
+            help="Add user group"),
+        make_option('--add-permission',
+            dest='add-permission',
+            help="Add user permission")
         )
     
     def handle(self, *args, **options):
@@ -108,3 +118,25 @@ class Command(BaseCommand):
             if options['password'] is None:
                 msg += " with password '%s'" % (password,)
             self.stdout.write(msg + '\n')
+            
+            groupname = options.get('add-group')
+            if groupname is not None:
+                try:
+                    group = Group.objects.get(name=groupname)
+                    user.groups.add(group)
+                    self.stdout.write('Group: %s added successfully\n' % groupname)
+                except Group.DoesNotExist, e:
+                    self.stdout.write('Group named %s does not exist\n' % groupname)
+            
+            pname = options.get('add-permission')
+            if pname is not None:
+                try:
+                    r, created = add_user_permission(user, pname)
+                    if created:
+                        self.stdout.write('Permission: %s created successfully\n' % pname)
+                    if r > 0:
+                        self.stdout.write('Permission: %s added successfully\n' % pname)
+                    elif r==0:
+                        self.stdout.write('User has already permission: %s\n' % pname)
+                except Exception, e:
+                    raise CommandError(e)

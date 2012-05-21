@@ -3,6 +3,7 @@
 {% block extraheader %}
 <small>/ {{ account }}</small>
 {% endblock %}
+
 {% block content %}
 <div class="subnav">
   <ul class="nav nav-pills">
@@ -40,12 +41,18 @@
         <h3>Account</h3>
         <div class="object-details">
             <div class="vm-details-content object-details-content">
-                <h5>Details</h5>
-                <dl class="dl-horizontal well">
-                    <dt>Username</dt><dd>{{ account }}</dd>
-                    <dt>Virtual machines</dt><dd>{{ vms|length }}</dd>
-                    <dt>Networks</dt><dd>{{ networks|length }}</dd>
-                </dl>
+            	 <ul class="nav nav-tabs">
+				    <li class="active"><a href="#details{{ account }}" data-toggle="tab">Details</a></li>
+			    </ul>	
+                 <div class="tab-content">
+					<div class="tab-pane active" id="details{{ account }}">
+		                <dl class="dl-horizontal well">
+		                    <dt>Username</dt><dd>{{ account }}</dd>
+		                    <dt>Virtual machines</dt><dd>{{ vms|length }}</dd>
+		                    <dt>Networks</dt><dd>{{ networks|length }}</dd>
+		                </dl>
+		           </div>
+		        </div>
             </div>
         </div>
     </div>

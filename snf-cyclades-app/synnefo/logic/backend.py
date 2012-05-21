@@ -81,6 +81,7 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
         # Set the deleted flag explicitly, cater for admin-initiated removals
         if opcode == 'OP_INSTANCE_REMOVE':
             vm.deleted = True
+            vm.nics.all().delete()
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
@@ -93,6 +94,7 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     if (status == 'error' and opcode == 'OP_INSTANCE_REMOVE' and
         vm.operstate == 'ERROR'):
         vm.deleted = True
+        vm.nics.all().delete()
 
     # Any other notification of failure leaves the operating state unchanged
 
@@ -279,7 +281,6 @@ def create_instance(vm, flavor, image, password, personality):
 def delete_instance(vm):
     start_action(vm, 'DESTROY')
     rapi.DeleteInstance(vm.backend_id, dry_run=settings.TEST)
-    vm.nics.all().delete()
 
 
 def reboot_instance(vm, reboot_type):

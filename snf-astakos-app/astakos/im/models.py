@@ -49,6 +49,7 @@ from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.db import transaction
+from django.db.models.signals import post_save, post_syncdb
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
 AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
@@ -329,3 +330,29 @@ class EmailChange(models.Model):
     def activation_key_expired(self):
         expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
         return self.requested_at + expiration_date < datetime.now()
+
+def create_astakos_user(u):
+    try:
+        AstakosUser.objects.get(user_ptr=u.pk)
+    except AstakosUser.DoesNotExist:
+        extended_user = AstakosUser(user_ptr_id=u.pk)
+        extended_user.__dict__.update(u.__dict__)
+        extended_user.renew_token()
+        extended_user.save()
+    except:
+        pass
+
+def superuser_post_syncdb(sender, **kwargs):
+    # if there was created a superuser
+    # associate it with an AstakosUser
+    admins = User.objects.filter(is_superuser=True)
+    for u in admins:
+        create_astakos_user(u)
+
+post_syncdb.connect(superuser_post_syncdb)
+
+def superuser_post_save(sender, instance, **kwargs):
+    if instance.is_superuser:
+        create_astakos_user(instance)
+
+post_save.connect(superuser_post_save, sender=User)

@@ -41,8 +41,7 @@ from uuid import uuid4
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import Group, Permission
-from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import Group
 
 from astakos.im.models import AstakosUser
 from astakos.im.util import reserved_email

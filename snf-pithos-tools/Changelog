@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.6
+------
+* Fix double content-type header 
+* Fix missing import
+
 v0.9.5
 ------
 * fix pithos-sh put using hashmaps.

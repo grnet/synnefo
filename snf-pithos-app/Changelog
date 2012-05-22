@@ -1,6 +1,14 @@
 Changelog
 =========
 
+dev
+---
+* Do not use sample authentication users by default.
+
+v0.9.6
+------
+* Backend umask support
+
 v0.9.5
 ------
 * Calculate the length of the last block properly. 

@@ -530,7 +530,7 @@ def object_list(request, v_account, v_container):
             objects = request.backend.list_objects(request.user_uniq, v_account,
                                         v_container, prefix, delimiter, marker,
                                         limit, virtual, 'pithos', keys, shared,
-                                        until, public)
+                                        until, None, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:

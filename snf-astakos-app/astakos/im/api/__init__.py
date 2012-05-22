@@ -35,7 +35,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 
 from astakos.im.models import AstakosUser
-from astakos.im.faults import ItemNotFound
+from astakos.im.api.faults import ItemNotFound
 
 format = ('%a, %d %b %Y %H:%M:%S GMT')
 

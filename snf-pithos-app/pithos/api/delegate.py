@@ -34,17 +34,19 @@
 import logging
 
 from urlparse import urlparse
+import urllib
+import urllib2
 
-from django.http import HttpResponseNotFound, HttpResponseRedirect
+from django.http import HttpResponseNotFound, HttpResponseRedirect, HttpResponseBadRequest, HttpResponse
 from django.utils.http import urlencode
+from django.views.decorators.csrf import csrf_exempt
 
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
+from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, SERVICE_TOKEN
 
 
 logger = logging.getLogger(__name__)
 
-
-def redirect_to_login_service(request):
+def delegate_to_login_service(request):
     url = AUTHENTICATION_URL
     users = AUTHENTICATION_USERS
     if users or not url:
@@ -58,3 +60,28 @@ def redirect_to_login_service(request):
     params = dict([(k, v) for k, v in request.GET.items()])
     uri = proto + p.netloc + '/login?' + urlencode(params)
     return HttpResponseRedirect(uri)
+
+@csrf_exempt
+def delegate_to_feedback_service(request):
+    url = AUTHENTICATION_URL
+    users = AUTHENTICATION_USERS
+    if users or not url:
+        return HttpResponseNotFound()
+    
+    p = urlparse(url)
+    if request.is_secure():
+        proto = 'https://'
+    else:
+        proto = 'http://'
+    
+    uri = proto + p.netloc + '/im/service/api/v2.0/feedback'
+    headers = { 'X-Auth-Token' : SERVICE_TOKEN }
+    headers = {}
+    values = dict([(k, v) for k, v in request.POST.items()])
+    data = urllib.urlencode(values)
+    req = urllib2.Request(uri, data, headers)
+    try:
+        urllib2.urlopen(req)
+    except urllib2.HTTPError, e:
+        return HttpResponse(status=e.code)
+    return HttpResponse()

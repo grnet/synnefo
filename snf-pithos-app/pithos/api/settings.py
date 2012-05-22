@@ -40,3 +40,5 @@ BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 # Update object checksums when using hashmaps.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
 
+# Service Token acquired by identity provider.
+SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')

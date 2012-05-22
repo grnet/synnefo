@@ -275,10 +275,13 @@ def container_list(request, v_account):
     shared = False
     if 'shared' in request.GET:
         shared = True
+    public = False
+    if 'public' in request.GET:
+        public = True
     
     try:
         containers = request.backend.list_containers(request.user_uniq, v_account,
-                                                marker, limit, shared, until)
+                                                marker, limit, shared, until, public)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -518,12 +521,16 @@ def object_list(request, v_account, v_container):
     shared = False
     if 'shared' in request.GET:
         shared = True
+    public = False
+    if 'public' in request.GET:
+        public = True
     
     if request.serialization == 'text':
         try:
             objects = request.backend.list_objects(request.user_uniq, v_account,
                                         v_container, prefix, delimiter, marker,
-                                        limit, virtual, 'pithos', keys, shared, until)
+                                        limit, virtual, 'pithos', keys, shared,
+                                        until, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:

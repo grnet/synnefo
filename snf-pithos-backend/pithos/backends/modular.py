@@ -313,7 +313,7 @@ class ModularBackend(BaseBackend):
         self.permissions.group_destroy(account)
     
     @backend_method
-    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
+    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None, public=False):
         """Return a list of containers existing under an account."""
         
         logger.debug("list_containers: %s %s %s %s %s", account, marker, limit, shared, until)
@@ -323,8 +323,12 @@ class ModularBackend(BaseBackend):
             allowed = self._allowed_containers(user, account)
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
-        if shared:
-            allowed = [x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)]
+        if shared or public:
+            allowed = []
+            if shared:
+                allowed.extend([x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)])
+            if public:
+                allowed.extend([x[0].split('/', 2)[1] for x in self.permissions.public_list(account)])
             allowed = list(set(allowed))
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
@@ -461,17 +465,17 @@ class ModularBackend(BaseBackend):
         self.node.node_remove(node)
         self._report_size_change(user, account, -size, {'action': 'container delete'})
     
-    def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props):
+    def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props, public):
         if user != account and until:
             raise NotAllowedError
-        allowed = self._list_object_permissions(user, account, container, prefix, shared)
-        if shared and not allowed:
+        allowed = self._list_object_permissions(user, account, container, prefix, shared, public)
+        if (shared or public) and not allowed:
             return []
         path, node = self._lookup_container(account, container)
         allowed = self._get_formatted_paths(allowed)
         return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
     
-    def _list_object_permissions(self, user, account, container, prefix, shared):
+    def _list_object_permissions(self, user, account, container, prefix, shared, public):
         allowed = []
         path = '/'.join((account, container, prefix)).rstrip('/')
         if user != account:
@@ -481,23 +485,25 @@ class ModularBackend(BaseBackend):
         else:
             if shared:
                 allowed = self.permissions.access_list_shared(path)
+                allowed.extend([x[0] for x in self.permissions.public_list(path)])
+                allowed = list(set(allowed))
                 if not allowed:
                     return []
         return allowed
     
     @backend_method
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
         """Return a list of object (name, version_id) tuples existing under a container."""
         
         logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range)
-        return self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, False)
+        return self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, False, public)
     
     @backend_method
-    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
         """Return a list of object metadata dicts existing under a container."""
         
         logger.debug("list_object_meta: %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range)
-        props = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, True)
+        props = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, True, public)
         objects = []
         for p in props:
             if len(p) == 2:
@@ -520,7 +526,7 @@ class ModularBackend(BaseBackend):
         """Return a list of paths that enforce permissions under a container."""
         
         logger.debug("list_object_permissions: %s %s %s", account, container, prefix)
-        return self._list_object_permissions(user, account, container, prefix, True)
+        return self._list_object_permissions(user, account, container, prefix, True, False)
     
     @backend_method
     def list_object_public(self, user, account, container, prefix=''):

@@ -39,18 +39,18 @@ from traceback import format_exc
 from time import time, mktime
 from urllib import quote
 from urlparse import urlparse
+from collections import defaultdict
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
 
-from astakos.im.faults import BadRequest, Unauthorized, InternalServerError, \
-Fault, ItemNotFound, Forbidden
-from astakos.im.models import AstakosUser
-from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED, COOKIE_NAME, \
-EMAILCHANGE_ENABLED
+from astakos.im.api.faults import *
+from astakos.im.models import AstakosUser, Service
+from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
 from astakos.im.util import epoch
+from astakos.im.api import _get_user_by_email, _get_user_by_username
 
 logger = logging.getLogger(__name__)
 format = ('%a, %d %b %Y %H:%M:%S GMT')
@@ -84,6 +84,9 @@ def api_method(http_method=None, token_required=False, perms=None):
                         raise Unauthorized('Access denied')
                     try:
                         user = AstakosUser.objects.get(auth_token=x_auth_token)
+                        ## Check if the token has expired.
+                        #if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
+                        #    raise Unauthorized('Authentication expired')
                         if not user.has_perms(perms):
                             raise Forbidden('Unauthorized request')
                     except AstakosUser.DoesNotExist, e:
@@ -173,7 +176,9 @@ def authenticate(request, user=None):
 @api_method(http_method='GET')
 def get_services(request):
     callback = request.GET.get('callback', None)
-    data = json.dumps(CLOUD_SERVICES)
+    services = Service.objects.all()
+    data = tuple({'name':s.name, 'url':s.url, 'icon':s.icon} for s in services)
+    data = json.dumps(data)
     mimetype = 'application/json'
 
     if callback:
@@ -225,7 +230,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
 
     return HttpResponse(content=data, mimetype=mimetype)
 
-@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
+@api_method(http_method='GET', token_required=True)
 def get_user_by_email(request, user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
@@ -234,35 +239,9 @@ def get_user_by_email(request, user=None):
     #                       forbidden (403)
     #                       itemNotFound (404)
     email = request.GET.get('name')
-    if not email:
-        raise BadRequest('Email missing')
-    try:
-        user = AstakosUser.objects.get(email = email)
-    except AstakosUser.DoesNotExist, e:
-        raise ItemNotFound('Invalid email')
-    
-    if not user.is_active:
-        raise ItemNotFound('Inactive user')
-    else:
-        response = HttpResponse()
-        response.status=200
-        user_info = {'id':user.id,
-                     'username':user.username,
-                     'email':[user.email],
-                     'enabled':user.is_active,
-                     'name':user.realname,
-                     'auth_token_created':user.auth_token_created.strftime(format),
-                     'auth_token_expires':user.auth_token_expires.strftime(format),
-                     'has_credits':user.has_credits,
-                     'groups':[g.name for g in user.groups.all()],
-                     'user_permissions':[p.codename for p in user.user_permissions.all()],
-                     'group_permissions': list(user.get_group_permissions())}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
+    return _get_user_by_email(email)
 
-@api_method(http_method='GET', token_required=True, perms=['can_access_userinfo'])
+@api_method(http_method='GET', token_required=True)
 def get_user_by_username(request, user_id, user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
@@ -270,23 +249,4 @@ def get_user_by_username(request, user_id, user=None):
     #                       unauthorised (401)
     #                       forbidden (403)
     #                       itemNotFound (404)
-    try:
-        user = AstakosUser.objects.get(username = user_id)
-    except AstakosUser.DoesNotExist, e:
-        raise ItemNotFound('Invalid userid')
-    else:
-        response = HttpResponse()
-        response.status=200
-        user_info = {'id':user.id,
-                     'username':user.username,
-                     'email':[user.email],
-                     'name':user.realname,
-                     'auth_token_created':user.auth_token_created.strftime(format),
-                     'auth_token_expires':user.auth_token_expires.strftime(format),
-                     'has_credits':user.has_credits,
-                     'enabled':user.is_active,
-                     'groups':[g.name for g in user.groups.all()]}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
+    return _get_user_by_username(user_id)

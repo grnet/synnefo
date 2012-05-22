@@ -93,11 +93,18 @@ if 'twitter' in IM_MODULES:
         url(r'^login/twitter/authenticated/?$', 'twitter.authenticated')
     )
 
-urlpatterns += patterns('astakos.im.api',
+urlpatterns += patterns('astakos.im.api.admin',
     url(r'^authenticate/?$', 'authenticate_old'),
-    url(r'^authenticate/v2/?$', 'authenticate'),
+    #url(r'^authenticate/v2/?$', 'authenticate'),
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'),
-    url(r'^v2.0/users/?$', 'get_user_by_email'),
-    url(r'^v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
+    url(r'^admin/api/v2.0/users/?$', 'get_user_by_email'),
+    url(r'^admin/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
+)
+
+urlpatterns += patterns('astakos.im.api.service',
+    #url(r'^service/api/v2.0/tokens/(?P<token_id>.+?)/?$', 'validate_token'),
+    url(r'^service/api/v2.0/feedback/?$', 'send_feedback'),
+    url(r'^service/api/v2.0/users/?$', 'get_user_by_email'),
+    url(r'^service/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
 )

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,44 +31,44 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME, LOGIN_MESSAGES, PROFILE_EXTRA_LINKS
-from astakos.im.api.admin import get_menu
-from astakos.im.util import get_query
+from optparse import make_option
 
-from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.utils import simplejson as json
+from django.core.management.base import BaseCommand, CommandError
 
-def im_modules(request):
-    return {'im_modules': IM_MODULES}
+from astakos.im.models import Service
 
-def next(request):
-    return {'next' : get_query(request).get('next', '')}
-
-def code(request):
-    return {'code' : request.GET.get('code', '')}
-
-def invitations(request):
-    return {'invitations_enabled' :INVITATIONS_ENABLED}
-
-def media(request):
-    return {'IM_STATIC_URL' : IM_STATIC_URL}
-
-def custom_messages(request):
-    return {
-            'LOGIN_MESSAGES' : LOGIN_MESSAGES,
-            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS
-           }
-
-def menu(request):
-    absolute = lambda (url): request.build_absolute_uri(url)
-    resp = get_menu(request, True, False)
-    try:
-        menu_items = json.loads(resp.content)[1:]
-    except Exception, e:
-        return {}
-    else:
-        for item in menu_items:
-            item['is_active'] = absolute(request.path) == item['url']
-        return {'menu':menu_items}
+class Command(BaseCommand):
+    help = "List g"
+    
+    option_list = BaseCommand.option_list + (
+        make_option('-c',
+            action='store_true',
+            dest='csv',
+            default=False,
+            help="Use pipes to separate values"),
+    )
+    
+    def handle(self, *args, **options):
+        if args:
+            raise CommandError("Command doesn't accept any arguments")
+        
+        services = Service.objects.all()
+        
+        labels = ('id', 'name', 'url', 'icon')
+        columns = (3, 12, 40, 40)
+        
+        if not options['csv']:
+            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
+            self.stdout.write(line + '\n')
+            sep = '-' * len(line)
+            self.stdout.write(sep + '\n')
+        
+        for service in services:
+            fields = (str(service.id), service.name, service.url, service.icon)
+            
+            if options['csv']:
+                line = '|'.join(fields)
+            else:
+                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+            
+            self.stdout.write(line.encode('utf8') + '\n')

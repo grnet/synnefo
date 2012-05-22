@@ -331,6 +331,32 @@ class EmailChange(models.Model):
         expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
         return self.requested_at + expiration_date < datetime.now()
 
+class Service(models.Model):
+    name = models.CharField('Name', max_length=255, unique=True)
+    url = models.FilePathField()
+    icon = models.FilePathField(blank=True)
+    auth_token = models.CharField('Authentication Token', max_length=32,
+                                  null=True, blank=True)
+    auth_token_created = models.DateTimeField('Token creation date', null=True)
+    auth_token_expires = models.DateTimeField('Token expiration date', null=True)
+    
+    def save(self, **kwargs):
+        if not self.id:
+            self.renew_token()
+        self.full_clean()
+        super(Service, self).save(**kwargs)
+    
+    def renew_token(self):
+        md5 = hashlib.md5()
+        md5.update(self.name.encode('ascii', 'ignore'))
+        md5.update(self.url.encode('ascii', 'ignore'))
+        md5.update(asctime())
+
+        self.auth_token = b64encode(md5.digest())
+        self.auth_token_created = datetime.now()
+        self.auth_token_expires = self.auth_token_created + \
+                                  timedelta(hours=AUTH_TOKEN_DURATION)
+
 def create_astakos_user(u):
     try:
         AstakosUser.objects.get(user_ptr=u.pk)

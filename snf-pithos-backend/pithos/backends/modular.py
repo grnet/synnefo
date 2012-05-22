@@ -316,7 +316,7 @@ class ModularBackend(BaseBackend):
     def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None, public=False):
         """Return a list of containers existing under an account."""
         
-        logger.debug("list_containers: %s %s %s %s %s", account, marker, limit, shared, until)
+        logger.debug("list_containers: %s %s %s %s %s %s", account, marker, limit, shared, until, public)
         if user != account:
             if until or account not in self._allowed_accounts(user):
                 raise NotAllowedError
@@ -483,26 +483,28 @@ class ModularBackend(BaseBackend):
             if not allowed:
                 raise NotAllowedError
         else:
+            allowed = []
             if shared:
-                allowed = self.permissions.access_list_shared(path)
+                allowed.extend(self.permissions.access_list_shared(path))
+            if public:
                 allowed.extend([x[0] for x in self.permissions.public_list(path)])
-                allowed = list(set(allowed))
-                if not allowed:
-                    return []
+            allowed = list(set(allowed))
+            if not allowed:
+                return []
         return allowed
     
     @backend_method
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
         """Return a list of object (name, version_id) tuples existing under a container."""
         
-        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range)
+        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, public)
         return self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, False, public)
     
     @backend_method
     def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
         """Return a list of object metadata dicts existing under a container."""
         
-        logger.debug("list_object_meta: %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range)
+        logger.debug("list_object_meta: %s %s %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, public)
         props = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, True, public)
         objects = []
         for p in props:

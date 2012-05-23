@@ -547,7 +547,7 @@ def object_list(request, v_account, v_container):
     try:
         objects = request.backend.list_object_meta(request.user_uniq, v_account,
                                     v_container, prefix, delimiter, marker,
-                                    limit, virtual, 'pithos', keys, shared, until)
+                                    limit, virtual, 'pithos', keys, shared, until, None, public)
         object_permissions = {}
         object_public = {}
         if until is None:

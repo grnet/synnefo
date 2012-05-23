@@ -1752,26 +1752,84 @@ class List(BaseTestCase):
                 self.client.publish_object(c, 'o2')
     
     def test_shared_public(self):
-        self.assertEqual(self.client.list_containers(shared=True),
-                         ['c1', 'c2'])
-        self.assertEqual(self.client.list_containers(public=True), ['c1', 'c3'])
-        self.assertEqual(self.client.list_containers(shared=True, public=True), ['c1', 'c2', 'c3'])
+        func, kwargs = self.client.list_containers, {'shared':True}
+        l = func(**kwargs)
+        self.assertEqual(l, ['c1', 'c2'])
+        self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
         
-        self.assertEqual(self.client.list_objects('c1', shared=True), ['o1'])
-        self.assertEqual(self.client.list_objects('c1', public=True), ['o2'])
-        self.assertEqual(self.client.list_objects('c1', shared=True, public=True), ['o1', 'o2'])
+        func, kwargs = self.client.list_containers, {'public':True}
+        l = func(**kwargs)
+        self.assertEqual(l, ['c1', 'c3'])
+        self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
         
-        self.assertEqual(self.client.list_objects('c2', shared=True), ['o1'])
-        self.assertEqual(self.client.list_objects('c2', public=True), '')
-        self.assertEqual(self.client.list_objects('c2', shared=True, public=True), ['o1'])
+        func, kwargs = self.client.list_containers, {'shared':True, 'public':True}
+        l = func(**kwargs)
+        self.assertEqual(l, ['c1', 'c2', 'c3'])
+        self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
         
-        self.assertEqual(self.client.list_objects('c3', shared=True), '')
-        self.assertEqual(self.client.list_objects('c3', public=True), ['o2'])
-        self.assertEqual(self.client.list_objects('c3', shared=True, public=True), ['o2'])
         
-        self.assertEqual(self.client.list_objects('c4', shared=True), '')
-        self.assertEqual(self.client.list_objects('c4', public=True), '')
-        self.assertEqual(self.client.list_objects('c4', shared=True, public=True), '')
+        func, args, kwargs = self.client.list_objects, ['c1'], {'shared':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o1'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        func, args, kwargs = self.client.list_objects, ['c1'], {'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o2'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        func, args, kwargs = self.client.list_objects, ['c1'], {'shared':True, 'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o1', 'o2'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        
+        func, args, kwargs = self.client.list_objects, ['c2'], {'shared':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o1'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        func, args, kwargs = self.client.list_objects, ['c2'], {'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, '')
+        self.assertEqual([], func(*args, format='json', **kwargs))
+        
+        func, args, kwargs = self.client.list_objects, ['c2'], {'shared':True, 'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o1'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        
+        func, args, kwargs = self.client.list_objects, ['c3'], {'shared':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, '')
+        self.assertEqual([], func(*args, format='json', **kwargs))
+        
+        func, args, kwargs = self.client.list_objects, ['c3'], {'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o2'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        func, args, kwargs = self.client.list_objects, ['c3'], {'shared':True, 'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, ['o2'])
+        self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
+        
+        
+        func, args, kwargs = self.client.list_objects, ['c4'], {'shared':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, '')
+        self.assertEqual([], func(*args, format='json', **kwargs))
+        
+        func, args, kwargs = self.client.list_objects, ['c4'], {'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, '')
+        self.assertEqual([], func(*args, format='json', **kwargs))
+        
+        func, args, kwargs = self.client.list_objects, ['c4'], {'shared':True, 'public':True}
+        l = func(*args, **kwargs)
+        self.assertEqual(l, '')
+        self.assertEqual([], func(*args, format='json', **kwargs))
 
 class TestGreek(BaseTestCase):
     def test_create_container(self):

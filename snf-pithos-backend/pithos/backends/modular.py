@@ -330,6 +330,7 @@ class ModularBackend(BaseBackend):
             if public:
                 allowed.extend([x[0].split('/', 2)[1] for x in self.permissions.public_list(account)])
             allowed = list(set(allowed))
+            allowed.sort()
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         node = self.node.node_lookup(account)
@@ -489,6 +490,7 @@ class ModularBackend(BaseBackend):
             if public:
                 allowed.extend([x[0] for x in self.permissions.public_list(path)])
             allowed = list(set(allowed))
+            allowed.sort()
             if not allowed:
                 return []
         return allowed

@@ -375,6 +375,7 @@ class AccountGet(BaseTestCase):
                 self.assertEqual(len(c), len(self.containers) + 1)
             except Fault, f:
                 self.failIf(f.status == 304) #fail if not modified
+        
 
     def test_if_modified_since_invalid_date(self):
         c = self.client.list_containers(if_modified_since='')
@@ -1735,6 +1736,42 @@ class ListSharing(BaseTestCase):
         my_shared_objects = self.client.list_objects('c1', shared=True)
         self.assertTrue('o1' in my_shared_objects)
         self.assertTrue('o2' not in my_shared_objects)
+
+class List(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        for i in range(1, 5):
+            c = 'c%s' % i
+            self.client.create_container(c)
+            for j in range(1, 3):
+                o = 'o%s' % j
+                self.upload_random_data(c, o)
+            if i < 3:
+                self.client.share_object(c, 'o1', ['papagian'], read=True)
+            if i%2 != 0:
+                self.client.publish_object(c, 'o2')
+    
+    def test_shared_public(self):
+        self.assertEqual(self.client.list_containers(shared=True),
+                         ['c1', 'c2'])
+        self.assertEqual(self.client.list_containers(public=True), ['c1', 'c3'])
+        self.assertEqual(self.client.list_containers(shared=True, public=True), ['c1', 'c2', 'c3'])
+        
+        self.assertEqual(self.client.list_objects('c1', shared=True), ['o1'])
+        self.assertEqual(self.client.list_objects('c1', public=True), ['o2'])
+        self.assertEqual(self.client.list_objects('c1', shared=True, public=True), ['o1', 'o2'])
+        
+        self.assertEqual(self.client.list_objects('c2', shared=True), ['o1'])
+        self.assertEqual(self.client.list_objects('c2', public=True), '')
+        self.assertEqual(self.client.list_objects('c2', shared=True, public=True), ['o1'])
+        
+        self.assertEqual(self.client.list_objects('c3', shared=True), '')
+        self.assertEqual(self.client.list_objects('c3', public=True), ['o2'])
+        self.assertEqual(self.client.list_objects('c3', shared=True, public=True), ['o2'])
+        
+        self.assertEqual(self.client.list_objects('c4', shared=True), '')
+        self.assertEqual(self.client.list_objects('c4', public=True), '')
+        self.assertEqual(self.client.list_objects('c4', shared=True, public=True), '')
 
 class TestGreek(BaseTestCase):
     def test_create_container(self):

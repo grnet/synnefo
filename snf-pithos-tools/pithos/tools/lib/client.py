@@ -562,12 +562,14 @@ class Pithos_Client(OOS_Client):
     
     def list_containers(self, format='text', if_modified_since=None,
                         if_unmodified_since=None, limit=None, marker=None,
-                        shared=False, until=None, account=None):
+                        shared=False, until=None, account=None, public=False):
         """returns a list with the account containers"""
         account = account or self.account
         params = {'until':until} if until else {}
         if shared:
             params['shared'] = None
+        if public:
+            params['public'] = None
         headers = {'if-modified-since':if_modified_since,
                    'if-unmodified-since':if_unmodified_since}
         return OOS_Client.list_containers(self, account=account, format=format,
@@ -645,12 +647,14 @@ class Pithos_Client(OOS_Client):
                      limit=None, marker=None, prefix=None, delimiter=None,
                      path=None, shared=False, include_trashed=False, params={},
                      if_modified_since=None, if_unmodified_since=None, meta='',
-                     until=None, account=None):
+                     until=None, account=None, public=False):
         """returns a list with the container objects"""
         account = account or self.account
         params = {'until':until, 'meta':meta}
         if shared:
             params['shared'] = None
+        if public:
+            params['public'] = None
         args = locals().copy()
         for elem in ['self', 'container', 'params', 'until', 'meta']:
             args.pop(elem)

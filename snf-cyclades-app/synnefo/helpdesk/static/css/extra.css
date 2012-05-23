@@ -161,13 +161,13 @@ textarea:focus 					{
 .show-hide-all .badge			{ background-color:#8BBA00; }
 .show-hide-all .badge:hover		{ background-color:#789B0F } 
 .vms h3, 
-.vms h4							{ color:#E42867 }
+.vms h4							{ color:#444 }
 .vms h3:hover,
-.vms h4:hover					{ color:#9F0C3E }
+.vms h4:hover					{ color:#666 }
 .networks h3, 
-.networks h4					{ color:#F46906 }
+.networks h4					{ color:#444 }
 .networks h3:hover,
-.networks h4:hover				{ color:#D65C04 }
+.networks h4:hover				{ color:#666 }
 .account h3, 
 .account h4						{ color:#2956B2 }
 .account h3:hover,
@@ -177,3 +177,8 @@ textarea:focus 					{
 h4 .badge						{ padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
 h4.expanded .badge				{ background-position: 185px 43px}
 .row2							{ background-color:#EDEDED; }
+
+.row1:hover 					{ background-color:#DDD; }
+.row2:hover 					{ background-color:#DDD; }
+
+h4 i { margin-top: 4px; margin-right: 10px;}

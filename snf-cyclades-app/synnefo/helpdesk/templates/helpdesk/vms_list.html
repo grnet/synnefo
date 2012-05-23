@@ -1,10 +1,10 @@
 {% load helpdesk_tags %}
 <div class="object-anchor" id="vm-{{vm.pk}}"></div>
 <div class="vm-details object-details {{ rowcls }}">
-    <h4>{{ vm.name }} <span class="badge">&nbsp;</span></h4>
-    <span class="badge badge-info">ID: {{ vm.pk }}</span>
+    <h4><i class="icon-tasks"></i>{{ vm.name }} <span class="badge">&nbsp;</span></h4>
     {{ vm|vm_status_badge|safe }}
-    <span class="badge badge-info">{{ vm|vm_public_ip }}</span>
+    <span class="badge badge-inverse">ID: {{ vm.pk }}</span>
+    <span class="badge badge-inverse">{{ vm|vm_public_ip }}</span>
     <span class="badge badge-inverse flavor">
         <span class="cpu">{{ vm.flavor.cpu }}x</span>
         <span class="ram">{{ vm.flavor.ram}}MB</span>

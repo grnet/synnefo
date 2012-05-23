@@ -1,9 +1,9 @@
 {% load helpdesk_tags %}
 <div class="object-anchor" id="network-{{network.pk}}"></div>
-<div class="network-details object-details">
-    <h4>{{ network.name }} <span class="badge">&nbsp;</span></h4>
-    <span class="badge badge-info">ID: {{ network.pk }}</span>
+<div class="network-details object-details {{ rowcls }}">
+    <h4><i class="icon-random"></i>{{ network.name }} <span class="badge">&nbsp;</span></h4>
     {{ network|network_deleted_badge|safe }}
+    <span class="badge badge-info">ID: {{ network.pk }}</span>
     
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">

@@ -1,7 +1,7 @@
 {% load helpdesk_tags %}
 <div class="object-anchor" id="vm-{{vm.pk}}"></div>
-<div class="vm-details object-details">
-    <h4> {{ vm.name }}</h4>
+<div class="vm-details object-details {{ rowcls }}">
+    <h4>{{ vm.name }} <span class="badge">&nbsp;</span></h4>
     <span class="badge badge-info">ID: {{ vm.pk }}</span>
     {{ vm|vm_status_badge|safe }}
     <span class="badge badge-info">{{ vm|vm_public_ip }}</span>
@@ -10,9 +10,7 @@
         <span class="ram">{{ vm.flavor.ram}}MB</span>
         <span class="disk">{{ vm.flavor.disk }}GB</span>
     </span>
-    <div class="show-hide-tabs toggle">
-    	<span class="badge">&nbsp;</span>
-    </div>
+     
     <div class="vm-details-content object-details-content">
         
         <ul class="nav nav-tabs">
@@ -27,8 +25,8 @@
 		            <dt>ID</dt><dd>{{ vm.pk }}</dd>
 		            <dt>Name</dt><dd>{{ vm.name }}</dd>
 		            <dt>User id</dt><dd>{{ vm.userid }}</dd>
-		            <dt>Created</dt><dd>{{ vm.created }}( {{ vm.created|timesince }} <strong>ago</strong>)</dd>
-		            <dt>Updated</dt><dd>{{ vm.updated }} ( {{ vm.updated|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Created</dt><dd>{{ vm.created }} ({{ vm.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Updated</dt><dd>{{ vm.updated }} ({{ vm.updated|timesince }} <strong>ago</strong>)</dd>
 		            <dt>Suspended</dt><dd>{{ vm.suspended }}</dd>
 		            <dt>Deleted</dt><dd>{{ vm.deleted }}</dd>
 		            <dt>Image id</dt><dd>{{ vm.imageid }}</dd>

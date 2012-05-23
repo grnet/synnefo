@@ -102,24 +102,25 @@ h1 { margin-bottom: 20px; }
 .subnav-fixed h2 { display: block }
 
 .account-form { float: right; margin-top: 2px; margin-bottom: 0}
-.info-block { margin-top: 30px; background-color: #fff}
+.info-block { margin-top: 30px; background-color: #fff; padding:0;}
 
 .info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
 .info-block table { margin-bottom: 0 }
 .object-details h5 { float: right; margin-top: 10px; margin-right: 10px; font-size: 1em; color: #D9397E }
-.object-anchor { margin-bottom: 70px }
+.object-anchor { margin-bottom: 5px; height:15px; }
 
 
 .subnav a.deleted { color: #F00 !important }
 
 
 /* new styles olga */
+
 h1 a:hover						{ text-decoration:none; }
 .search-query 					{ border-radius:5px; -moz-border-radius:5px; -webkit-border-radius:5px; }
 a								{ color:#659CEF; }
 a:hover							{ color:#2956B2 }
 
-h3								{ font-size:21px; cursor:pointer;}
+h3								{ font-size:21px; cursor:pointer; margin:20px;}
 h4								{ font-size:18px; margin-bottom:1em; }
 input:focus,
 textarea:focus 					{
@@ -145,30 +146,34 @@ textarea:focus 					{
 .nav-tabs > .active > a, 
 .nav-tabs > .active > a:hover	{ background-color:#F5F5F5; color:#2956B2; font-weight:bold;}
 .nav-tabs > li					{ margin-bottom:-2px; }
-.badge							{ border-radius:4px; -moz-border-radius:4px;  -webkit-border-radius:5px; }
+.badge							{ border-radius:4px; -moz-border-radius:4px;  -webkit-border-radius:4px; }
 .object-details .badge			{ margin-right:8px; }
 .label-success, 
 .badge-success					{ background-color:#8BBA00 }
 .badge-important				{ background-color: #F81A23; }
 .badge-info						{ background-color:#659CEF } 
-
 .show-hide-tabs					{ margin:2em 0; }		
-.show-hide-all					{ float:right; margin:0; line-height:27px;}
+.show-hide-all					{ float:right; margin:20px; line-height:27px;}
 .toggle	.badge					{ font-size:14px; padding:5px 9px; }
 .toggle	.badge:hover			{ cursor:pointer;  }
 .show-hide-tabs .badge			{ background-color:#8BBA00; }
 .show-hide-tabs .badge:hover	{ background-color:#789B0F }
 .show-hide-all .badge			{ background-color:#8BBA00; }
-.show-hide-all .badge:hover		{ background-color:#789B0F }
-/*.show-hide-all .badge			{ background-color:#D61153; }
-.show-hide-all .badge:hover		{ background-color:#9F0C3E }*/
-
+.show-hide-all .badge:hover		{ background-color:#789B0F } 
 .vms h3, 
-.vms h4							{ color:#D61153 }
-.vms h3:hover					{ color:#9F0C3E }
+.vms h4							{ color:#E42867 }
+.vms h3:hover,
+.vms h4:hover					{ color:#9F0C3E }
 .networks h3, 
 .networks h4					{ color:#F46906 }
-.networks h3:hover				{ color:#D65C04 }
+.networks h3:hover,
+.networks h4:hover				{ color:#D65C04 }
 .account h3, 
 .account h4						{ color:#2956B2 }
-.account h3:hover				{ color:#213D75 }
+.account h3:hover,
+.account h4:hover				{ color:#213D75 }
+.object-details					{ padding:20px;  }
+.object-details	h4				{ cursor:pointer; }
+h4 .badge						{ padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
+h4.expanded .badge				{ background-position: 185px 43px}
+.row2							{ background-color:#EDEDED; }

@@ -1,12 +1,10 @@
 {% load helpdesk_tags %}
 <div class="object-anchor" id="network-{{network.pk}}"></div>
 <div class="network-details object-details">
-    <h4>{{ network.name }}</h4>
+    <h4>{{ network.name }} <span class="badge">&nbsp;</span></h4>
     <span class="badge badge-info">ID: {{ network.pk }}</span>
     {{ network|network_deleted_badge|safe }}
-    <div class="show-hide-tabs toggle">
-    	<span class="badge">&nbsp;</span>
-    </div>
+    
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">
 		    <li class="active"><a href="#details{{ network.pk }}" data-toggle="tab">Details</a></li>
@@ -18,8 +16,8 @@
 		            <dt>Name</dt><dd>{{ network.name }}</dd>
 		            <dt>Public</dt><dd>{{ network.public }}</dd>
 		            <dt>User ID</dt><dd>{{ network.userid }}</dd>
-		            <dt>Created</dt><dd>{{ network.created }}( {{ network.created|timesince }} <strong>ago</strong>)</dd>
-		            <dt>Updated</dt><dd>{{ network.updated }}( {{ network.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Created</dt><dd>{{ network.created }} ({{ network.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Updated</dt><dd>{{ network.updated }} ({{ network.created|timesince }} <strong>ago</strong>)</dd>
 		            <dt>State</dt><dd>{{ network.get_state_display }} ({{ network.state }})</dd>
 		        </dl>
 			</div>

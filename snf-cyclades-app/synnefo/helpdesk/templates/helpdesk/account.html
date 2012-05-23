@@ -67,6 +67,7 @@
         <h3>Virtual machines <span class="badge badge-info">Total: {{ vms|length }}</span></h3>
         <div class="info-block-content">
 	        {% for vm in vms %}
+	        <!-- {% cycle 'row1' 'row2' as rowcls %}  -->
 	        {% include "helpdesk/vms_list.html" %}
 	        {% empty %}
 	        <p>No virtual machines available for this account</p>
@@ -81,6 +82,7 @@
         <h3>Networks <span class="badge badge-info">Total: {{ networks|length }}</span></h3>
         <div class="info-block-content">
 	        {% for network in networks %}
+	        <!--{% cycle 'row1' 'row2' as rowcls %}-->
 	        {% include "helpdesk/networks_list.html" %}
 	        {% empty %}
 	        <p>No networks available for this account</p>

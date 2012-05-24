@@ -325,6 +325,21 @@ Nodes of type :ref:`LOGIC <LOGIC_NODE>`
     :ref:`snf-webproject <snf-webproject>`,
     :ref:`snf-cyclades-app <snf-cyclades-app>`.
 
+RabbitMQ
+--------
+
+RabbitMQ is used as a generic message broker for Cyclades. It should be
+installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high
+availability configuration as described here:
+
+    http://www.rabbitmq.com/pacemaker.html
+
+The values set for the user and password must be mirrored in the ``RABBIT_*``
+variables in your settings, as managed by :ref:`snf-common <snf-common>`.
+
+.. todo:: Document an active-active configuration based on the latest version
+   of RabbitMQ.
+
 
 Upgrade Notes
 =============

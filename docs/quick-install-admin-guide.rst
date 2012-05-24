@@ -1212,7 +1212,12 @@ connected Ganeti with `NFDHCPD` (and ``kvm-vif-bridge`` works correctly).
 Now ping the outside world. If this works too, then you have also configured
 correctly your physical hosts' networking.
 
-Make sure everything works as expected, before procceding with the Private
+Later, Cyclades will create the first NIC of every new VM by issuing an
+analogous command. The first NIC of the instance will be the NIC connected to
+the Public Network. The ``link`` variable will be set accordingly in the
+Cyclades conf files later on the guide.
+
+Make sure everything works as expected, before proceeding with the Private
 Networks setup.
 
 Private Networks setup
@@ -1221,8 +1226,114 @@ Private Networks setup
 Physical hosts' private networks setup
 ``````````````````````````````````````
 
+At the physical host's level, it is the administrator's responsibility to
+configure the network appropriately, according to his/her needs (as for the
+Public Network).
+
+However we propose the following setup:
+
+For every possible Private Network we assume a pre-provisioned bridge interface
+exists on every host with the same name. Every Private Network will be
+associated with one of the pre-provisioned bridges. Then the instance's new NIC
+(while connecting to the Private Network) will be connected to that bridge. All
+instances' tap interfaces that reside in the same Private Network will be
+connected in the corresponding bridge of that network. Furthermore, every
+bridge will be connected to a corresponding vlan. So, lets assume that our
+Cyclades installation allows for 20 Private Networks to be setup. We should
+pre-provision the corresponding bridges and vlans to all the hosts. We can do
+this by running on all VM-capable Ganeti nodes (in our case node1 and node2):
+
+.. code-block:: console
+
+   # $iface=eth0
+   # for prv in $(seq 1 20); do
+	vlan=$prv
+	bridge=prv$prv
+	vconfig add $iface $vlan
+	ifconfig $iface.$vlan up
+	brctl addbr $bridge
+	brctl setfd $bridge 0
+	brctl addif $bridge $iface.$vlan
+	ifconfig $bridge up
+      done
+
+The above will do the following (assuming ``eth0`` exists on both hosts):
+
+ * provision 20 new bridges: ``prv1`` - ``prv20``
+ * provision 20 new vlans: ``eth0.1`` - ``eth0.20``
+ * add the corresponding vlan to the equivelant bridge
+
+You can run ``brctl show`` on both nodes to see if everything was setup
+correctly.
+
+Everything is now setup to support the 20 Cyclades Private Networks. Later,
+we will configure Cyclades to talk to those 20 pre-provisioned bridges.
+
 Testing the Private Networks
 ````````````````````````````
+
+To test the Private Networks, we will create two instances and put them in the
+same Private Network (``prv1``). This means that the instances will have a
+second NIC connected to the ``prv1`` pre-provisioned bridge.
+
+We run the same command as in the Public Network testing section, but with one
+more argument for the second NIC:
+
+.. code-block:: console
+
+   # gnt-instance add -o snf-image+default --os-parameters
+                      img_passwd=my_vm_example_passw0rd,
+                      img_format=diskdump,
+                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
+                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+                      --net 0:ip=pool,mode=routed,link=public_link
+                      --net 1:ip=none,mode=bridged,link=prv1
+                      testvm3
+
+   # gnt-instance add -o snf-image+default --os-parameters
+                      img_passwd=my_vm_example_passw0rd,
+                      img_format=diskdump,
+                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
+                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+                      --net 0:ip=pool,mode=routed,link=public_link
+                      --net 1:ip=none,mode=bridged,link=prv1
+                      testvm4
+
+Above, we create two instances with their first NIC connected to the Public
+Network and their second NIC connected to the first Private Network (``prv1``).
+Now, connect to the instances using VNC and make sure everything works as
+expected:
+
+a) The instances have access to the public internet through their first eth
+   interface (``eth0``), which has been automatically assigned a public IP.
+
+b) Setup the second eth interface of the instances (``eth1``), by assigning two
+   different private IPs (e.g.: ``10.0.0.1`` and ``10.0.0.2``) and the
+   corresponding netmask. If they ``ping`` each other successfully, then
+   the Private Network works.
+
+Repeat the procedure with more instances connected in different Private Networks
+(``prv{1-20}``), by adding more NICs on each instance. e.g.: We add an instance
+connected to the Public Network and Private Networks 1, 3 and 19:
+
+.. code-block:: console
+
+   # gnt-instance add -o snf-image+default --os-parameters
+                      img_passwd=my_vm_example_passw0rd,
+                      img_format=diskdump,
+                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
+                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+                      --net 0:ip=pool,mode=routed,link=public_link
+                      --net 1:ip=none,mode=bridged,link=prv1
+                      --net 2:ip=none,mode=bridged,link=prv3
+                      --net 3:ip=none,mode=bridged,link=prv19
+                      testvm5
+
+If everything works as expected, then you have finished the Network Setup at the
+backend for both types of Networks (Public & Private).
 
 Synnefo RAPI user
 ~~~~~~~~~~~~~~~~~
@@ -1239,26 +1350,6 @@ so we will call the user ``cyclades``. You can do this, by editting the file
 More about Ganeti's RAPI users `here.
 <http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_
 
-
-
-
-.. _cyclades-install-rabbitmq:
-
-RabbitMQ
-~~~~~~~~
-
-RabbitMQ is used as a generic message broker for cyclades. It should be
-installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high availability
-configuration as described here:
-
-    http://www.rabbitmq.com/pacemaker.html
-
-The values set for the user and password must be mirrored in the
-``RABBIT_*`` variables in your settings, as managed by
-:ref:`snf-common <snf-common>`.
-
-.. todo:: Document an active-active configuration based on the latest version
-   of RabbitMQ.
 
 .. _cyclades-install-vncauthproxy:
 

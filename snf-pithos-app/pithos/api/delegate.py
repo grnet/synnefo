@@ -76,7 +76,6 @@ def delegate_to_feedback_service(request):
     
     uri = proto + p.netloc + '/im/service/api/v2.0/feedback'
     headers = { 'X-Auth-Token' : SERVICE_TOKEN }
-    headers = {}
     values = dict([(k, v) for k, v in request.POST.items()])
     data = urllib.urlencode(values)
     req = urllib2.Request(uri, data, headers)
@@ -84,4 +83,6 @@ def delegate_to_feedback_service(request):
         urllib2.urlopen(req)
     except urllib2.HTTPError, e:
         return HttpResponse(status=e.code)
+    except urllib2.URLError, e:
+        return HttpResponseNotFound(e)
     return HttpResponse()

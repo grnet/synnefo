@@ -765,17 +765,15 @@ If you would like to do more, such as:
  * Uploading your custom Images to Pithos+
  * Spawning VMs from those custom Images
  * Registering existing Pithos+ files as Images
+ * Connect VMs to the Internet
+ * Create Private Networks
+ * Add VMs to Private Networks
 
 please continue with the rest of the guide.
 
 
-Installation of Cyclades (and Plankton) on node1
-================================================
-
-This section describes the installation of Cyclades. Cyclades is Synnefo's
-Compute service. Plankton (the Image Registry service) will get installed
-automatically along with Cyclades, because it is contained in the same Synnefo
-component right now.
+Cyclades (and Plankton) Prerequisites
+=====================================
 
 Before proceeding with the Cyclades (and Plankton) installation, make sure you
 have successfully set up Astakos and Pithos+ first, because Cyclades depends
@@ -785,11 +783,8 @@ please return to the :ref:`top <quick-install-admin-guide>` of this guide.
 Besides Astakos and Pithos+, you will also need a number of additional working
 prerequisites, before you start the Cyclades installation.
 
-Cyclades Prerequisites
-----------------------
-
 Ganeti
-~~~~~~
+------
 
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
@@ -844,10 +839,10 @@ of Ganeti is out of the scope of this guide.
 .. _cyclades-install-snfimage:
 
 snf-image
-~~~~~~~~~
+---------
 
 Installation
-````````````
+~~~~~~~~~~~~
 For :ref:`Cyclades <cyclades>` to be able to launch VMs from specified Images,
 you need the :ref:`snf-image <snf-image>` OS Definition installed on *all*
 VM-capable Ganeti nodes. This means we need :ref:`snf-image <snf-image>` on
@@ -882,7 +877,7 @@ This will create all the needed files under ``/var/lib/snf-image/helper/`` for
 snf-image-host to run successfully.
 
 Configuration
-`````````````
+~~~~~~~~~~~~~
 snf-image supports native access to Images stored on Pithos+. This means that
 snf-image can talk directly to the Pithos+ backend, without the need of providing
 a public URL. More details, are described in the next section. For now, the only
@@ -905,8 +900,7 @@ save them under ``IMAGE_DIR``, however this guide targets Images stored only on
 Pithos+.
 
 Testing
-```````
-
+~~~~~~~
 You can test that snf-image is successfully installed by running on the
 :ref:`GANETI-MASTER <GANETI_NODES>` (in our case node1):
 
@@ -923,7 +917,7 @@ installation instructions, documentation on the design and implementation, and
 supported Image formats.
 
 snf-image's actual Images
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 Now that snf-image is installed successfully we need to provide it with some
 Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
@@ -964,7 +958,7 @@ Of course, you can repeat the procedure to upload more Images, available from th
 <https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_.
 
 Spawning a VM from a Pithos+ Image, using Ganeti
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------
 
 Now, it is time to test our installation so far. So, we have Astakos and
 Pithos+ installed, we have a working Ganeti installation, the snf-image
@@ -1019,12 +1013,13 @@ If everything works, you have successfully connected Ganeti with Pithos+. Let's
 move on to networking now.
 
 .. warning::
-    You can bypass the networking sections and go straight to `FIXME`, if you do
-    not want to setup the Cyclades Network Service, but only the Cyclades Compute
-    Service (recommended for now).
+    You can bypass the networking sections and go straight to
+    :ref:`RAPI user <rapi-user>`, if you do not want to setup the Cyclades
+    Network Service, but only the Cyclades Compute Service (recommended for
+    now).
 
 Network setup overview
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 This part is deployment-specific and must be customized based on the specific
 needs of the system administrator. However, to do so, the administrator needs
@@ -1032,7 +1027,7 @@ to understand how each level handles Virtual Networks, to be able to setup the
 backend appropriately, before installing Cyclades.
 
 Network @ Cyclades level
-````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cyclades understands two types of Virtual Networks:
 
@@ -1061,7 +1056,7 @@ To achieve the above, first of all, we need Network and IP Pool management suppo
 at Ganeti level, for Cyclades to be able to issue the corresponding commands.
 
 Network @ Ganeti level
-``````````````````````
+~~~~~~~~~~~~~~~~~~~~~~
 
 Currently, Ganeti does not support IP Pool management. However, we've been
 actively in touch with the official Ganeti team, who are reviewing a relatively
@@ -1083,7 +1078,7 @@ box, once the patchset makes it into the Ganeti master. When so, Cyclades will
 get updated to become compatible with that Ganeti version.
 
 Network @ Physical host level
-`````````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We talked about the two types of Network from the Cyclades perspective, from the
 VMs perspective and from Ganeti's perspective. Finally, we need to talk about
@@ -1099,10 +1094,10 @@ preprovisioned vlan on each host (node1 and node2). It also uses the `NFDHCPD`
 package for dynamically serving specific public IPs managed by Ganeti.
 
 Public Network setup
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 Physical hosts' public network setup
-````````````````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The physical hosts' setup is out of the scope of this guide.
 
@@ -1115,7 +1110,7 @@ When you setup your physical hosts (node1 and node2) for the Public Network,
 then you need to inform Ganeti about the Network's IP range.
 
 Add the public network to Ganeti
-````````````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once you have Ganeti with IP pool management up and running, you need to choose
 the public network for your VMs and add it to Ganeti. Let's assume, that you
@@ -1138,7 +1133,7 @@ Your new network is now ready from the Ganeti perspective. Now, we need to setup
 each NIC).
 
 NFDHCPD
-```````
+~~~~~~~
 
 At this point, Ganeti knows about your preferred network, it can manage the IP
 pool and choose a specific IP for each new VM's NIC. However, the actual
@@ -1176,7 +1171,7 @@ be installed in the next sections, however you will probably need to write your
 own, according to your underlying network configuration.
 
 Testing the Public Network
-``````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 So, we have setup the bridges/vlans on the physical hosts appropriately, we have
 added the desired network to Ganeti, we have installed nfdhcpd and installed the
@@ -1221,10 +1216,10 @@ Make sure everything works as expected, before proceeding with the Private
 Networks setup.
 
 Private Networks setup
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 Physical hosts' private networks setup
-``````````````````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At the physical host's level, it is the administrator's responsibility to
 configure the network appropriately, according to his/her needs (as for the
@@ -1270,7 +1265,7 @@ Everything is now setup to support the 20 Cyclades Private Networks. Later,
 we will configure Cyclades to talk to those 20 pre-provisioned bridges.
 
 Testing the Private Networks
-````````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To test the Private Networks, we will create two instances and put them in the
 same Private Network (``prv1``). This means that the instances will have a
@@ -1335,10 +1330,12 @@ connected to the Public Network and Private Networks 1, 3 and 19:
 If everything works as expected, then you have finished the Network Setup at the
 backend for both types of Networks (Public & Private).
 
-Synnefo RAPI user
-~~~~~~~~~~~~~~~~~
+.. _rapi-user:
 
-Once you have a working Ganeti installation create a new RAPI user that will
+Synnefo RAPI user
+-----------------
+
+As a last step before installing Cyclades, create a new RAPI user that will
 have ``write`` access. Cyclades will use this user to issue commands to Ganeti,
 so we will call the user ``cyclades``. You can do this, by editting the file
 ``/var/lib/ganeti/rapi/users`` and adding the line:
@@ -1350,11 +1347,23 @@ so we will call the user ``cyclades``. You can do this, by editting the file
 More about Ganeti's RAPI users `here.
 <http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_
 
+You have now finished with all needed Prerequisites for Cyclades (and
+Plankton). Let's move on to the actual Cyclades installation.
+
+
+Installation of Cyclades (and Plankton) on node1
+================================================
+
+This section describes the installation of Cyclades. Cyclades is Synnefo's
+Compute service. Plankton (the Image Registry service) will get installed
+automatically along with Cyclades, because it is contained in the same Synnefo
+component right now.
+
 
 .. _cyclades-install-vncauthproxy:
 
 vncauthproxy
-~~~~~~~~~~~~
+------------
 
 To support OOB console access to the VMs over VNC, the vncauthproxy
 daemon must be running on every :ref:`APISERVER <APISERVER_NODE>` node.

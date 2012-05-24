@@ -269,10 +269,13 @@ def create_server(request):
         flavor=flavor)
 
     try:
-        create_instance(vm, flavor, image, password, personality)
+        jobID = create_instance(vm, flavor, image, password, personality)
     except GanetiApiError:
         vm.delete()
         raise
+
+    vm.backendjobid = jobID
+    vm.save()
 
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(

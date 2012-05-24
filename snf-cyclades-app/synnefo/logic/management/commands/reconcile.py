@@ -62,6 +62,9 @@ class Command(BaseCommand):
                     dest='detect_unsynced',
                     default=False, help='Detect unsynced operstate between ' +
                                         'DB and Ganeti'),
+        make_option('--detect-build-errors', action='store_true',
+                    dest='detect_build_errors', default=False,
+                    help='Detect instances with build error'),
         make_option('--detect-all', action='store_true',
                     dest='detect_all',
                     default=False, help='Enable all --detect-* arguments'),
@@ -72,6 +75,9 @@ class Command(BaseCommand):
         make_option('--fix-unsynced', action='store_true', dest='fix_unsynced',
                     default=False, help='Fix server operstate in DB, set ' +
                                         'from Ganeti'),
+        make_option('--fix-build-errors', action='store_true',
+                    dest='fix_build_errors', default=False,
+                    help='Fix (remove) instances with build errors'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'))
 
@@ -136,6 +142,16 @@ class Command(BaseCommand):
             elif verbosity == 2:
                 print >> sys.stderr, "The operstate of all servers is in sync."
 
+        if options['detect_build_errors']:
+            build_errors = reconciliation.instances_with_build_errors(D, G)
+            if len(build_errors) > 0:
+                print >> sys.stderr, "The os for the following server IDs was "\
+                                     "not build successfully:"
+                print "    " + "\n    ".join(
+                    ["%d" % x for x in build_errors])
+            elif verbosity == 2:
+                print >> sys.stderr, "Found no instances with build errors."
+
         #
         # Then fix them
         #
@@ -172,3 +188,15 @@ class Command(BaseCommand):
                     opcode=opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
+
+        if options['fix_build_errors'] and len(build_errors) > 0:
+            print >> sys.stderr, "Setting the state of %d build-errors VMs:" % \
+                len(build_errors)
+            for id in build_errors:
+                vm = VirtualMachine.objects.get(pk=id)
+                event_time = datetime.datetime.now()
+                backend.process_op_status(vm=vm, etime=event_time ,jobid=-0,
+                    opcode="OP_INSTANCE_CREATE", status='error',
+                    logmsg='Reconciliation: simulated Ganeti event')
+            print >> sys.stderr, "    ...done"
+

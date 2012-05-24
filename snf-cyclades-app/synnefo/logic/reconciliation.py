@@ -67,8 +67,12 @@ except ImportError:
                     "the parent directory of the Synnefo Django project.")
 setup_environ(settings)
 
+
+from datetime import datetime, timedelta
+
 from synnefo.db.models import VirtualMachine
 from synnefo.util.dictconfig import dictConfig
+from synnefo.util.rapi import GanetiApiError
 from synnefo.logic.backend import get_ganeti_instances
 
 
@@ -79,7 +83,28 @@ def stale_servers_in_db(D, G):
     idD = set(D.keys())
     idG = set(G.keys())
 
-    return idD - idG
+    stale = set()
+    for i in idD - idG:
+        if D[i] == 'BUILD':
+            vm = VirtualMachine.objects.get(id=i)
+            # Check time to avoid many rapi calls
+            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+                try:
+                    job_status = vm.client.GetJobStatus(vm.backendjobid)['status']
+                    if job_status in ('queued', 'waiting', 'running'):
+                        # Server is still building in Ganeti
+                        continue
+                    else:
+                        new_vm = vm.client.GetInstance('%s%d' %
+                                (settings.BACKEND_PREFIX_ID, i))
+                        # Server has just been created in Ganeti
+                        continue
+                except GanetiApiError:
+                    stale.add(i)
+        else:
+            stale.add(i)
+
+    return stale
 
 
 def orphan_instances_in_ganeti(D, G):
@@ -98,8 +123,39 @@ def unsynced_operstate(D, G):
         if (G[i] and D[i] != 'STARTED' or
             not G[i] and D[i] not in ('BUILD', 'ERROR', 'STOPPED')):
             unsynced.add((i, D[i], G[i]))
+        if not G[i] and D[i] == 'BUILD':
+            vm = VirtualMachine.objects.get(id=i)
+            # Check time to avoid many rapi calls
+            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+                try:
+                    job_info = vm.client.GetJobStatus(job_id = vm.backendjobid)
+                    if job_info['status'] == 'success':
+                        unsynced.add((i, D[i], G[i]))
+                except GanetiApiError:
+                    pass
 
     return unsynced
+
+
+def instances_with_build_errors(D, G):
+    failed = set()
+    idD = set(D.keys())
+    idG = set(G.keys())
+
+    for i in idD & idG:
+        if not G[i] and D[i] == 'BUILD':
+            vm = VirtualMachine.objects.get(id=i)
+            # Check time to avoid many rapi calls
+            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+                try:
+                    job_info = vm.client.GetJobStatus(job_id = vm.backendjobid)
+                    if job_info['status'] == 'error':
+                        failed.add(i)
+                except GanetiApiError:
+                    failed.add(i)
+
+    return failed
+
 
 
 def get_servers_from_db():

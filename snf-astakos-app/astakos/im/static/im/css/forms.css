@@ -24,7 +24,7 @@ form .form-row.submit 						{ margin: 22px 0 ;}
 form .form-row .extra-link 					{ color: #808080; text-decoration: none; border: none; margin-top:15px; line-height:42px;   float: right; }
 form .form-row .extra-link:hover			{ text-decoration:underline;}
 form .form-row label 						{ font-size: 1.1em; }
-form.innerlabels label 						{ position: absolute; top: 1.1em; left: 1.5em; color: #808080 ; }
+form.innerlabels label 						{ position: absolute; top: 12px; left: 1.5em; color: #808080 ; }
 form.innerlabels p 							{ margin:0; position: relative;}
 form.innerlabels p.p15px					{ font-size:1.154em;}
 form.innerlabels p.p15px a					{ margin:0 5px;}
@@ -65,7 +65,7 @@ form .with-errors input,
 form .with-errors textarea, 
 form .with-errors select 					{ color: #9d261d;}
 form .with-errors label 					{ color: #e4776f; }
-.form-error 								{ color:red; font-style:italic; font-size: 0.8em; padding: 5px 5px; }
+.form-error 								{ color:red;   font-size: 0.8em; padding: 5px 5px; }
 .form-errors.all .form-error 				{ position: relative; border-radius: 0; margin-bottom: 1.3em; padding: 0.5em; }
 div.form-stacked 							{ margin-bottom: 4em; }
 .checkbox-widget.checked 					{ background-color: #FF0000; background-image: url("../images/checkbox.png"); background-position: 50% 50%; }
@@ -76,14 +76,14 @@ form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C
 form span.info								{ position:absolute;z-index:10; top:10px;  left: 290px; }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
 form span.info:hover em 					{ background-position:-4px -3px; }
-form span.info span  						{ position:absolute; left:29px; top:-2px; width:150px; padding-left:55px; background:url(../images/black-line.jpg ) no-repeat left 12px; min-height:50px; display:none; }
+form span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 12px; min-height:50px; display:none; font-size:0.846em;}
 form span.info:hover span 					{ display:block; }
 form .with-errors span.info					{ display:none;}
 form p										{ margin-bottom:0;position:relative;}
-form input[readonly=true] 					{ background-color: #ddd; color: #5e5e5e; }
+form input[readonly=true] 					{ /*background-color: #ddd;*/ color: #5e5e5e; }
 #recaptcha_area 							{ margin-top:20px; } 
 form.innerlabels .with-checkbox .checkbox-widget 	{ margin-top:15px; }
-form.innerlabels .with-checkbox .checkbox-label		{ left:2.5em; }
+form.innerlabels .with-checkbox .checkbox-label		{ left:2.5em; top:17px; }
 
 form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; left:440px;top:10px; z-index:101;}
 form .with-errors .extra-img 				{ background:url(../images/symbols.png) no-repeat -58px -3px;}

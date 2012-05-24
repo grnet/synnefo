@@ -7,5 +7,9 @@ textarea										{ overflow:auto; }
 img												{ -ms-interpolation-mode:bicubic; }
 
 .clearfix										{ zoom:1; }
-.container .navigation ul li						{ display:inline;}
-.lt .box-more ul.col								{ display:inline;}
+.container .navigation ul li					{ display:inline;}
+.lt .box-more ul.col							{ display:inline;}
+
+form input.text, 
+form input[type="text"],
+form input[type="password"]						{ margin-bottom:-3px;}

@@ -29,7 +29,7 @@ a img, :link img, :visited img					{ border:none; }
 a span											{ cursor:pointer; }
 abbr[title], dfn[title]							{ border-bottom:1px dotted; cursor:help; }
 address											{ font-style:italic; margin:0 0 1.5em 0; }
-body											{ background:white; color:#222; font-family: Antic, Arial, sans-serif; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px; }
+body											{ background:white; color:#222; font-family: Antic, Arial, sans-serif; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px;}
 code, kbd, pre, samp							{ font-family:monospace, sans-serif; }
 del												{ text-decoration:line-through; }
 dl												{ margin:1em 0; }
@@ -39,8 +39,8 @@ em, i											{ font-style:italic; font-weight:inherit; }
 h1, h2, h3, h4, h5, h6							{ font-weight:bold; line-height:1.4; margin-bottom:0; }
 /* Typographic scale based on 12px body size */
 h1												{ font-size:4em; }
-h2												{ font-size:1.231em; }
-h3												{ font-size:1.154em; }
+h2												{ font-size:1em; }
+h3												{ font-size:1em; }
 h4												{ font-size:1.5em; }
 h5												{ font-size:1.333em; }
 h6												{ font-size:1.167em; }

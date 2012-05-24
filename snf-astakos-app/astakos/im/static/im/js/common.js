@@ -36,8 +36,16 @@ $(document).ready(function() {
         $(this).parents('.box-more').toggleClass('border');
     });
 	
-	var topMargin=parseInt($('.mainlogo').height())+parseInt($('.top-msg').css('marginBottom'));
-	$('.mainlogo').css('marginTop','-'+topMargin+'px')
+	var fixTopMessageHeight = function() {
+		var topMargin = parseInt($('.mainlogo img').height())+parseInt($('.top-msg').css('marginBottom'));
+		$('.mainlogo').css('marginTop','-'+topMargin+'px');
+	}
+	
+	if ($('.mainlogo img').length > 0) {
+		$('.mainlogo img').bind('load', fixTopMessageHeight)
+	} else {
+		fixTopMessageHeight();
+	}
 	
 	$('.top-msg a.close').click(function(e) {
         $('.top-msg').animate({
@@ -53,21 +61,20 @@ $(document).ready(function() {
              //todo
         });
     });	
-	 
     //$('select').dropkick();
     
  
     
     $('.top-msg .success').parents('.top-msg').css(
     	{
-    		backgroundColor: '#f3c',
+    		backgroundColor: '#00A2B1',
     		color: '#fff'
     	}
     )
     
     $('.top-msg .error').parents('.top-msg').css(
     	{
-    		backgroundColor: 'red',
+    		backgroundColor: '#C43F73',
     		color: '#fff'
     	}
     )
@@ -75,7 +82,14 @@ $(document).ready(function() {
     
     $('.top-msg .warning').parents('.top-msg').css(
     	{
-    		backgroundColor: '#90f',
+    		backgroundColor: '#F0A216',
+    		color: '#fff'
+    	}
+    )
+    
+    $('.top-msg .info').parents('.top-msg').css(
+    	{
+    		backgroundColor: '#75A23A',
     		color: '#fff'
     	}
     )

@@ -32,7 +32,7 @@ $(document).ready(function(){
     }
 
     var root = $('body');
-    var bar = $('<div class="header"></div>');
+    var bar = $('<div class="cloudbar"></div>');
     var services = $('<ul class="services"></ul>');
     var profile = $('<div class="profile"></div>');
     
@@ -100,14 +100,18 @@ $(document).ready(function(){
     // ie fix
     user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
     
-    $('.header .profile ul').mouseover(function(){
+    /*$('.cloudbar .profile ul').mouseover(function(){
         $(this).parents('.profile').css('backgroundColor','#000');
         
     });
-     $('.header .profile ul').mouseout(function(){
+     $('.cloudbar .profile ul').mouseout(function(){
         $(this).parents('.profile').css('backgroundColor','#01A1AE');
         
-    });
+    });*/
+   $('.cloudbar .profile .full a').live('click', function(e){
+   		e.preventDefault();
+   		$(this).siblings('ul').toggle();
+   });
     
     var profileWidth = profile.outerWidth(); 
     $('.header .profile ul').css('width',profileWidth );

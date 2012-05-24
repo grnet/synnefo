@@ -108,9 +108,10 @@ $(document).ready(function(){
         $(this).parents('.profile').css('backgroundColor','#01A1AE');
         
     });*/
-   $('.cloudbar .profile .full a').live('click', function(e){
+   $('.cloudbar .profile .full>a').live('click', function(e){
    		e.preventDefault();
    		$(this).siblings('ul').toggle();
+   		$(this).toggleClass('open');
    });
     
     var profileWidth = profile.outerWidth(); 

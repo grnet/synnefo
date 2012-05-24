@@ -156,6 +156,7 @@
 .cloudbar .profile ul li:hover a				{ color:#01A1AE;}
 
 .cloudbar .profile .full a                      { padding-right:20px; background:url(../images/arrow-white.png) no-repeat right center; width:auto;}
+.cloudbar .profile .full a.open					{ background-image:url(../images/arrow-white-reverse.png); }
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
 .cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:inline; width:auto;}
 .cloudbar ul.services                           { margin:0; padding:0; }

@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import random
-
 from base64 import b64decode
 from logging import getLogger
 
@@ -49,6 +47,10 @@ from synnefo.db.models import Backend, VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.util.rapi import GanetiApiError
+from synnefo.logic.backend_allocator import BackendAllocator
+
+from django.utils import importlib
+
 
 
 log = getLogger('synnefo.api')
@@ -196,7 +198,6 @@ def create_server(request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
-
     req = util.get_request_dict(request)
     log.debug('create_server %s', req)
 
@@ -253,9 +254,13 @@ def create_server(request):
     if count >= vms_limit_for_user:
         raise faults.OverLimit("Server count limit exceeded for your account.")
 
-    backend = random.choice(Backend.objects.all())
-    # We must save the VM instance now, so that it gets a
-    # valid vm.backend_vm_id.
+    backend_allocator = BackendAllocator()
+    backend = backend_allocator.allocate(flavor)
+    if backend is None:
+        raise Exception
+
+    # We must save the VM instance now, so that it gets a valid
+    # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(
         name=name,
         backend=backend,

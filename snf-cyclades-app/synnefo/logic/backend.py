@@ -443,7 +443,7 @@ def get_ganeti_jobs(backend=None, bulk=False):
 def get_backends(backend=None):
     if backend:
         return [backend]
-    return Backend.objects.all()
+    return Backend.objects.filter(offline=False)
 
 
 def get_physical_resources(backend):

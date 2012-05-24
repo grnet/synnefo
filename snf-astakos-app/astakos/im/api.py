@@ -123,7 +123,8 @@ def authenticate_old(request, user=None):
                  'auth_token_created':user.auth_token_created.isoformat(),
                  'auth_token_expires':user.auth_token_expires.isoformat(),
                  'has_credits':user.has_credits,
-                 'has_signed_terms':user.signed_terms()}
+                 'has_signed_terms':user.signed_terms(),
+                 'groups':[g.name for g in user.groups.all()]}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)

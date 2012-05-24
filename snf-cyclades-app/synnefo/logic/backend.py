@@ -389,7 +389,7 @@ def delete_network(net):
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
     rapi.ModifyInstance(vm.backend_id, nics=[('add', nic)],
-                        dry_run=settings.TEST)
+                        hotplug=True, dry_run=settings.TEST)
 
 
 def disconnect_from_network(vm, net):
@@ -397,7 +397,8 @@ def disconnect_from_network(vm, net):
     ops = [('remove', nic.index, {}) for nic in nics if nic.network == net]
     if not ops: # Vm not connected to network
         return
-    rapi.ModifyInstance(vm.backend_id, nics=ops[::-1], dry_run=settings.TEST)
+    rapi.ModifyInstance(vm.backend_id, nics=ops[::-1],
+                        hotplug=True, dry_run=settings.TEST)
 
 
 def set_firewall_profile(vm, profile):

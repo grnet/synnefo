@@ -1941,7 +1941,7 @@
             var m = new models.PublicKey();
 
             // guess a name
-            var name_tpl = "public key";
+            var name_tpl = "my generated public key";
             var name = name_tpl;
             var name_count = 1;
             

@@ -1320,9 +1320,10 @@
         },
 
         // action helper
-        call: function(action_name, success, error) {
+        call: function(action_name, success, error, params) {
             var id_param = [this.id];
-
+            
+            params = params || {};
             success = success || function() {};
             error = error || function() {};
 
@@ -1339,7 +1340,7 @@
                                              success.apply(this, arguments);
                                              snf.api.trigger("call");
                                          },  
-                                         error, 'start');
+                                         error, 'start', params);
                     break;
                 case 'reboot':
                     this.__make_api_call(this.get_action_url(), // vm actions url
@@ -1352,7 +1353,7 @@
                                              snf.api.trigger("call");
                                              self.set({'reboot_required': false});
                                          },
-                                         error, 'reboot');
+                                         error, 'reboot', params);
                     break;
                 case 'shutdown':
                     this.__make_api_call(this.get_action_url(), // vm actions url
@@ -1364,13 +1365,13 @@
                                              success.apply(this, arguments)
                                              snf.api.trigger("call");
                                          },  
-                                         error, 'shutdown');
+                                         error, 'shutdown', params);
                     break;
                 case 'console':
                     this.__make_api_call(this.url() + "/action", "create", {'console': {'type':'vnc'}}, function(data) {
                         var cons_data = data.console;
                         success.apply(this, [cons_data]);
-                    }, undefined, 'console')
+                    }, undefined, 'console', params)
                     break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
@@ -1381,14 +1382,14 @@
                                              self.state('DESTROY');
                                              success.apply(this, arguments)
                                          },  
-                                         error, 'destroy');
+                                         error, 'destroy', params);
                     break;
                 default:
                     throw "Invalid VM action ("+action_name+")";
             }
         },
         
-        __make_api_call: function(url, method, data, success, error, action) {
+        __make_api_call: function(url, method, data, success, error, action, extra_params) {
             var self = this;
             error = error || function(){};
             success = success || function(){};
@@ -1406,6 +1407,7 @@
                 display: false,
                 critical: false
             }
+            _.extend(params, extra_params)
             this.sync(method, this, params);
         },
 

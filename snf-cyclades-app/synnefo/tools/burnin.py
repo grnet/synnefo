@@ -607,35 +607,89 @@ class NetworkTestCase(unittest.TestCase):
 
         images = cls.compute.list_images(detail = True)
         flavors = cls.compute.list_flavors(detail = True)
-        imageid = choice([im['id'] for im in images])
-        flavorid = choice([f["id"] for f in flavors if f["disk"] >= 20])
+
+        is_windows = imagename.lower().find("windows") >= 0
+
+        cls.imageid = choice([im['id'] for im in images] if not is_windows)
+        cls.flavorid = choice([f['id'] for f in flavors if f['disk'] >= 20])
 
         for image in images:
             if image['id'] == imageid:
                 imagename = image['name']
 
-        servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
-        is_windows = imagename.lower().find("windows") >= 0
+        cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
 
-        #Run testcases for server spawning in order to ensure it is done right
-        setupCase =  _spawn_server_test_case(imageid=str(imageid), flavorid=flavorid,
-                                             imagename=imagename,
-                                             personality=None,
-                                             servername=servername,
-                                             is_windows=is_windows,
-                                             action_timeout=200,
-                                             build_warning=1200,
-                                             build_fail=500,
-                                             query_interval=3)
+        #Dictionary initialization for the vms credentials
+        cls.serverid = dict()
+        cls.username = dict()
+        cls.password = dict()
 
-        #Using already implemented tests for server list population
-        suite = unittest.TestSuite()
-        suite.addTest(setupCase('test_001_submit_create_server'))
-        suite.addTest(setupCase('test_002a_server_is_building_in_list'))
-        suite.addTest(setupCase('test_002b_server_is_building_in_details'))        
-        suite.addTest(setupCase('test_003_server_becomes_active'))
-        unittest.TextTestRunner(verbosity=2).run(suite)
-        unittest.TextTestRunner(verbosity=2).run(suite)
+    def test_0001_submit_create_server_A(self):
+        """Test submit create server request"""
+        serverA = self.client.create_server(self.servername, self.flavorid,
+                                           self.imageid, personality=None)
+
+        self.assertEqual(server["name"], self.servername)
+        self.assertEqual(server["flavorRef"], self.flavorid)
+        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["status"], "BUILD")
+
+        # Update class attributes to reflect data on building server
+        cls = type(self)
+        cls.serverid['A'] = server["id"]
+        cls.username['A'] = None
+        cls.password['A'] = server["adminPass"]
+
+    
+    def test_0001_submit_create_server_B(self):
+        """Test submit create server request"""
+        serverA = self.client.create_server(self.servername, self.flavorid,
+                                           self.imageid, personality=None)
+
+        self.assertEqual(server["name"], self.servername)
+        self.assertEqual(server["flavorRef"], self.flavorid)
+        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["status"], "BUILD")
+
+        # Update class attributes to reflect data on building server
+        cls = type(self)
+        cls.serverid['B'] = server["id"]
+        cls.username['B'] = None
+        cls.password['B'] = server["adminPass"]
+
+    def test_0001_serverA_becomes_active(self):
+        """Test server becomes ACTIVE"""
+
+        fail_tmout = time.time()+self.action_timeout
+        while True:
+            d = self.client.get_server_details(self.serverid['A'])
+            status = d['status']
+            if status == 'ACTIVE':
+                active = True
+                break
+            elif time.time() > fail_tmout:
+                self.assertLess(time.time(), fail_tmout)
+            else:
+                time.sleep(self.query_interval)
+
+        self.assertTrue(active)
+
+    def test_0001_serverB_becomes_active(self):
+        """Test server becomes ACTIVE"""
+
+        fail_tmout = time.time()+self.action_timeout
+        while True:
+            d = self.client.get_server_details(self.serverid['B'])
+            status = d['status']
+            if status == 'ACTIVE':
+                active = True
+                break
+            elif time.time() > fail_tmout:
+                self.assertLess(time.time(), fail_tmout)
+            else:
+                time.sleep(self.query_interval)
+
+        self.assertTrue(active)
 
 
     def test_001_create_network(self):
@@ -658,23 +712,17 @@ class NetworkTestCase(unittest.TestCase):
     
     def test_002_connect_to_network(self):
         """Test connect VM to network"""
-        servers = self.compute.list_servers()
 
-        #Pick a server created only for the test
-        server = choice([s for s in servers if s['name'].startswith(SNF_TEST_PREFIX)])
-        self.client.connect_server(server['id'], self.networkid)
-        
-        #Update class attributes
-        cls = type(self)
-        cls.serverid = server['id']
-
+        self.client.connect_server(self.serverid['A'], self.networkid)
+        self.client.connect_server(self.serverid['B'], self.networkid)
+                
         #Insist on connecting until action timeout
         fail_tmout = time.time()+self.action_timeout
 
         while True:
             connected = (self.client.get_network_details(self.networkid))
             connections = connected['servers']['values']
-            if (self.serverid in connections):
+            if (self.serverid['A'] in connections) and (self.serverid['B'] in connections):
                 conn_exists = True
                 break
             elif time.time() > fail_tmout:
@@ -689,8 +737,8 @@ class NetworkTestCase(unittest.TestCase):
         prev_state = self.client.get_network_details(self.networkid)
         prev_conn = len(prev_state['servers']['values'])
 
-        self.client.disconnect_server(self.serverid, self.networkid)
-        time.sleep(15)
+        self.client.disconnect_server(self.serverid['A'], self.networkid)
+        self.client.disconnect_server(self.serverid['B'], self.networkid)
 
         #Insist on deleting until action timeout
         fail_tmout = time.time()+self.action_timeout
@@ -698,7 +746,7 @@ class NetworkTestCase(unittest.TestCase):
         while True:
             connected = (self.client.get_network_details(self.networkid))
             connections = connected['servers']['values']
-            if (self.serverid not in connections):
+            if (self.serverid['A'] not in connections) and (self.serverid['B'] not in connections):
                 conn_exists = False
                 break
             elif time.time() > fail_tmout:
@@ -721,14 +769,20 @@ class NetworkTestCase(unittest.TestCase):
         
     def test_005_cleanup_servers(self):
         """Cleanup servers created for this test"""
-        self.compute.delete_server(self.serverid)
+        self.compute.delete_server(self.serverid['A'])
+        self.compute.delete_server(self.serverid['B'])
+
         fail_tmout = time.time()+self.action_timeout
 
         #Ensure server gets deleted
+        status = dict() 
+
         while True:
-            details = self.compute.get_server_details(self.serverid)
-            status = details['status']
-            if status == 'DELETED':
+            details = self.compute.get_server_details(self.serverid['A'])
+            status['A'] = details['status']
+            details = self.compute.get_server_details(self.serverid['B'])
+            status['B'] = details['status']
+            if (status['A'] == 'DELETED') and (status['B'] == 'DELETED'):
                 deleted = True
                 break
             elif time.time() > fail_tmout: 
@@ -742,7 +796,7 @@ class TestRunnerProcess(Process):
     """A distinct process used to execute part of the tests in parallel"""
     def __init__(self, **kw):
         Process.__init__(self, **kw)
-        kwargs = kw["kwargs"]
+        kwargs = kw["kwargs"]x
         self.testq = kwargs["testq"]
         self.runner = kwargs["runner"]
 

@@ -72,7 +72,7 @@ except ImportError:
 
 API = None
 TOKEN = None
-DEFAULT_API = "http://127.0.0.1:8000/api/v1.1"
+DEFAULT_API = "https://cyclades.okeanos.grnet.gr/api/v1.1"
 
 # A unique id identifying this test run
 TEST_RUN_ID = datetime.datetime.strftime(datetime.datetime.now(),
@@ -88,9 +88,7 @@ class UnauthorizedTestCase(unittest.TestCase):
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         falseToken = '12345'
-        conf = Config()
-        conf.set('compute_token', falseToken)
-        c=ComputeClient(conf)
+        c=ComputeClient(API, falseToken)
 
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
@@ -104,9 +102,7 @@ class ImagesTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
 
-        conf = Config()
-        conf.set('compute_token', TOKEN)
-        cls.client = ComputeClient(conf)
+        cls.client = ComputeClient(API, TOKEN)
         cls.images = cls.client.list_images()
         cls.dimages = cls.client.list_images(detail=True)
 
@@ -143,9 +139,7 @@ class FlavorsTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of flavors"""
         log.info("Getting simple and detailed list of flavors")
 
-        conf = Config()
-        conf.set('compute_token', TOKEN)
-        cls.client = ComputeClient(conf)
+        cls.client = ComputeClient(API, TOKEN)
         cls.flavors = cls.client.list_flavors()
         cls.dflavors = cls.client.list_flavors(detail=True)
 
@@ -187,9 +181,7 @@ class ServersTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of servers"""
         log.info("Getting simple and detailed list of servers")
 
-        conf = Config()
-        conf.set('compute_token', TOKEN)
-        cls.client = ComputeClient(conf)
+        cls.client = ComputeClient(API, TOKEN)
         cls.servers = cls.client.list_servers()
         cls.dservers = cls.client.list_servers(detail=True)
 
@@ -217,10 +209,8 @@ class SpawnServerTestCase(unittest.TestCase):
         """Initialize a kamaki instance"""
         log.info("Spawning server for image `%s'", cls.imagename)
 
-        conf = Config()
-        conf.set('compute_token', TOKEN)
-        cls.client = ComputeClient(conf)
-        cls.cyclades = CycladesClient(conf)
+        cls.client = ComputeClient(API, TOKEN)
+        cls.cyclades = CycladesClient(API, TOKEN)
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
@@ -611,10 +601,9 @@ class NetworkTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         "Initialize kamaki, get list of current networks"
-        conf = Config()
-        conf.set('compute_token', TOKEN)
-        cls.client = CycladesClient(conf)
-        cls.compute = ComputeClient(conf)
+
+        cls.client = CycladesClient(API, TOKEN)
+        cls.compute = ComputeClient(API, TOKEN)
 
         images = cls.compute.list_images(detail = True)
         flavors = cls.compute.list_flavors(detail = True)
@@ -639,13 +628,15 @@ class NetworkTestCase(unittest.TestCase):
                                              build_fail=500,
                                              query_interval=3)
 
-        #Using already implemented tests for serverlist population
+        #Using already implemented tests for server list population
         suite = unittest.TestSuite()
         suite.addTest(setupCase('test_001_submit_create_server'))
         suite.addTest(setupCase('test_002a_server_is_building_in_list'))
         suite.addTest(setupCase('test_002b_server_is_building_in_details'))        
         suite.addTest(setupCase('test_003_server_becomes_active'))
         unittest.TextTestRunner(verbosity=2).run(suite)
+        unittest.TextTestRunner(verbosity=2).run(suite)
+
 
     def test_001_create_network(self):
         """Test submit create network request"""
@@ -849,9 +840,7 @@ def _spawn_network_test_case(**kwargs):
 
 def cleanup_servers(delete_stale=False):
 
-    conf = Config()
-    conf.set('compute_token', TOKEN)
-    c = ComputeClient(conf)
+    c = ComputeClient(API, TOKEN)
 
     servers = c.list_servers()
     stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
@@ -1004,9 +993,7 @@ def main():
 
     # Initialize a kamaki instance, get flavors, images
 
-    conf = Config()
-    conf.set('compute_token', TOKEN)
-    c = ComputeClient(conf)
+    c = ComputeClient(API, TOKEn)
 
     DIMAGES = c.list_images(detail=True)
     DFLAVORS = c.list_flavors(detail=True)
@@ -1025,7 +1012,7 @@ def main():
         flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
         imagename = image["name"]
         
-        
+        #Personality dictionary for file injection test
         if opts.personality_path != None:
             f = open(opts.personality_path)
             content = b64encode(f.read())
@@ -1057,12 +1044,13 @@ def main():
 
 
     #Running all the testcases sequentially
+    
+    #To run all cases
     #seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
     
-    newNetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
-                                                  query_interval = opts.query_interval)
-    
+    newNetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,query_interval = opts.query_interval)    
     seq_cases = [newNetworkTestCase]
+
     for case in seq_cases:
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
         unittest.TextTestRunner(verbosity=2).run(suite)

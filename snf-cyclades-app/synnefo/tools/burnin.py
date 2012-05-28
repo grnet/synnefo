@@ -56,8 +56,9 @@ from IPy import IP
 from multiprocessing import Process, Queue
 from random import choice
 
-from kamaki.clients import ClientError, ComputeClient, CycladesClient
-from kamaki.config import Config
+from kamaki.clients.compute import ComputeClient
+from kamaki.clients.cyclades import CycladesClient
+
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
@@ -608,13 +609,11 @@ class NetworkTestCase(unittest.TestCase):
         images = cls.compute.list_images(detail = True)
         flavors = cls.compute.list_flavors(detail = True)
 
-        is_windows = imagename.lower().find("windows") >= 0
-
-        cls.imageid = choice([im['id'] for im in images] if not is_windows)
+        cls.imageid = choice([im['id'] for im in images if not im['name'].lower().find("windows") >= 0])
         cls.flavorid = choice([f['id'] for f in flavors if f['disk'] >= 20])
 
         for image in images:
-            if image['id'] == imageid:
+            if image['id'] == cls.imageid:
                 imagename = image['name']
 
         cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
@@ -636,14 +635,14 @@ class NetworkTestCase(unittest.TestCase):
 
         # Update class attributes to reflect data on building server
         cls = type(self)
-        cls.serverid['A'] = server["id"]
+        cls.serverid['A'] = serverA["id"]
         cls.username['A'] = None
-        cls.password['A'] = server["adminPass"]
+        cls.password['A'] = serverA["adminPass"]
 
     
     def test_0001_submit_create_server_B(self):
         """Test submit create server request"""
-        serverA = self.client.create_server(self.servername, self.flavorid,
+        serverB = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
 
         self.assertEqual(server["name"], self.servername)
@@ -653,9 +652,9 @@ class NetworkTestCase(unittest.TestCase):
 
         # Update class attributes to reflect data on building server
         cls = type(self)
-        cls.serverid['B'] = server["id"]
+        cls.serverid['B'] = serverB["id"]
         cls.username['B'] = None
-        cls.password['B'] = server["adminPass"]
+        cls.password['B'] = serverB["adminPass"]
 
     def test_0001_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
@@ -796,7 +795,7 @@ class TestRunnerProcess(Process):
     """A distinct process used to execute part of the tests in parallel"""
     def __init__(self, **kw):
         Process.__init__(self, **kw)
-        kwargs = kw["kwargs"]x
+        kwargs = kw["kwargs"]
         self.testq = kwargs["testq"]
         self.runner = kwargs["runner"]
 
@@ -1047,7 +1046,7 @@ def main():
 
     # Initialize a kamaki instance, get flavors, images
 
-    c = ComputeClient(API, TOKEn)
+    c = ComputeClient(API, TOKEN)
 
     DIMAGES = c.list_images(detail=True)
     DFLAVORS = c.list_flavors(detail=True)
@@ -1102,7 +1101,8 @@ def main():
     #To run all cases
     #seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
     
-    newNetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,query_interval = opts.query_interval)    
+    newNetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
+                                                  query_interval = opts.query_interval)    
     seq_cases = [newNetworkTestCase]
 
     for case in seq_cases:

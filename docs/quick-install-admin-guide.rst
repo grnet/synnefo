@@ -248,6 +248,8 @@ Now enable sites and modules by running:
 
        # /etc/init.d/apache2 stop
 
+.. _rabbitmq-setup:
+
 Message Queue setup
 ~~~~~~~~~~~~~~~~~~~
 
@@ -1014,9 +1016,9 @@ move on to networking now.
 
 .. warning::
     You can bypass the networking sections and go straight to
-    :ref:`RAPI user <rapi-user>`, if you do not want to setup the Cyclades
-    Network Service, but only the Cyclades Compute Service (recommended for
-    now).
+    :ref:`Cyclades Ganeti tools <cyclades-gtools>`, if you do not want to setup
+    the Cyclades Network Service, but only the Cyclades Compute Service
+    (recommended for now).
 
 Network setup overview
 ----------------------
@@ -1330,6 +1332,56 @@ connected to the Public Network and Private Networks 1, 3 and 19:
 If everything works as expected, then you have finished the Network Setup at the
 backend for both types of Networks (Public & Private).
 
+.. _cyclades-gtools:
+
+Cyclades Ganeti tools
+---------------------
+
+In order for Ganeti to be connected with Cyclades later on, we need the
+`Cyclades Ganeti tools` available on all Ganeti nodes (node1 & node2 in our
+case). You can install them by running in both nodes:
+
+.. code-block:: console
+
+   # apt-get install snf-cyclades-gtools
+
+This will install the following:
+
+ * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
+ * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
+ * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
+ * ``kvm-vif-bridge`` (installed under ``/etc/ganeti`` to connect Ganeti with
+   NFDHCPD)
+
+Configure ``snf-cyclades-gtools``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The package will install the ``/etc/synnefo/20-snf-cyclades-gtools.conf``
+configuration file. At least we need to set the RabbitMQ endpoint for all tools
+that need it:
+
+.. code-block:: console
+
+   RABBIT_HOST = "node1.example.com:5672"
+   RABBIT_USERNAME = "synnefo"
+   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+
+The above variables should reflect your :ref:`Message Queue setup
+<rabbitmq-setup>`. This file should be editted in all Ganeti nodes.
+
+Connect ``snf-image`` with ``snf-progress-monitor``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, we need to configure ``snf-image`` to publish progress messages during
+the deployment of each Image. To do this, we edit ``/etc/default/snf-image`` and
+set the corresponding variable to ``snf-progress-monitor``:
+
+.. code-block:: console
+
+   PROGRESS_MONITOR="snf-progress-monitor"
+
+This file should be editted in all Ganeti nodes.
+
 .. _rapi-user:
 
 Synnefo RAPI user
@@ -1337,12 +1389,18 @@ Synnefo RAPI user
 
 As a last step before installing Cyclades, create a new RAPI user that will
 have ``write`` access. Cyclades will use this user to issue commands to Ganeti,
-so we will call the user ``cyclades``. You can do this, by editting the file
-``/var/lib/ganeti/rapi/users`` and adding the line:
+so we will call the user ``cyclades`` with password ``example_rapi_passw0rd``.
+You can do this, by first running:
 
 .. code-block:: console
 
-   cyclades {HA1}a62c-example_hash_here-6f0436ddb write
+   # echo -n 'cyclades:Ganeti Remote API:example_rapi_passw0rd' | openssl md5
+
+and then putting the output in ``/var/lib/ganeti/rapi/users`` as follows:
+
+.. code-block:: console
+
+   cyclades {HA1}55aec7050aa4e4b111ca43cb505a61a0 write
 
 More about Ganeti's RAPI users `here.
 <http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_

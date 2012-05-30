@@ -652,10 +652,10 @@ class NetworkTestCase(unittest.TestCase):
         serverA = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
 
-        self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
-        self.assertEqual(server["status"], "BUILD")
+        self.assertEqual(serverA["name"], self.servername)
+        self.assertEqual(serverA["flavorRef"], self.flavorid)
+        self.assertEqual(serverA["imageRef"], self.imageid)
+        self.assertEqual(serverA["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
         cls = type(self)
@@ -669,10 +669,10 @@ class NetworkTestCase(unittest.TestCase):
         serverB = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
 
-        self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
-        self.assertEqual(server["status"], "BUILD")
+        self.assertEqual(serverB["name"], self.servername)
+        self.assertEqual(serverB["flavorRef"], self.flavorid)
+        self.assertEqual(serverB["imageRef"], self.imageid)
+        self.assertEqual(serverB["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
         cls = type(self)

@@ -623,6 +623,30 @@ class NetworkTestCase(unittest.TestCase):
         cls.username = dict()
         cls.password = dict()
 
+
+    def _get_ipv4(self, server):
+    
+        """Get the public IPv4 of a server from the detailed server info"""
+
+        public_addrs = filter(lambda x: x["id"] == "public",
+                              server["addresses"]["values"])
+        self.assertEqual(len(public_addrs), 1)
+        ipv4_addrs = filter(lambda x: x["version"] == 4,
+                            public_addrs[0]["values"])
+        self.assertEqual(len(ipv4_addrs), 1)
+        return ipv4_addrs[0]["addr"]
+
+
+    def _connect_loginname(self, os):
+        """Return the login name for connections based on the server OS"""
+        if os in ("Ubuntu", "Kubuntu", "Fedora"):
+            return "user"
+        elif os in ("windows", "windows_alpha1"):
+            return "Administrator"
+        else:
+            return "root"
+
+
     def test_0001_submit_create_server_A(self):
         """Test submit create server request"""
         serverA = self.client.create_server(self.servername, self.flavorid,
@@ -731,6 +755,87 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(conn_exists)
             
+
+    def test_002a_setup_interface_A(self):
+
+        server = self.client.get_server_details(self.serverid['A'])
+        image = self.client.get_image_details(self.serverid['A'])
+        os = image['metadata']['values']['os']
+        loginname = image["metadata"]["values"].get("users", None)
+        hostip = self._get_ipv4(server) 
+        
+        if not loginname:
+            loginname = self._connect_loginname(os)
+
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(hostip, username = loginname, password = self.password['A'])
+        except socket.error:
+            raise AssertionError
+
+        stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.42"))
+        lines = stdout.readlines()
+
+        self.assertEqual(len(lines), 0)
+        
+
+    def test_002b_setup_interface_B(self):
+
+        server = self.client.get_server_details(self.serverid['B'])
+        image = self.client.get_image_details(self.serverid['B'])
+        os = image['metadata']['values']['os']
+        loginname = image["metadata"]["values"].get("users", None)
+        hostip = self._get_ipv4(server) 
+        
+        if not loginname:
+            loginname = self._connect_loginname(os)
+
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(hostip, username = loginname, password = self.password['B'])
+        except socket.error:
+            raise AssertionError
+
+        stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.43"))
+        lines = stdout.readlines()
+
+        self.assertEqual(len(lines), 0)
+
+
+
+    def test_002a_test_connection_exists(self):
+        """Ping serverB from serverA to test if connection exists"""
+
+        server = self.client.get_server_details(self.serverid['A'])
+        image = self.client.get_image_details(self.serverid['A'])
+        os = image['metadata']['values']['os']
+        loginname = image["metadata"]["values"].get("users", None)
+        
+        hostip = self._get_ipv4(server)
+        
+        if not loginname:
+            loginname = self._connect_loginname(os)
+
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(hostip, username = loginname, password = self.password['A'])
+        except socket.error:
+            raise AssertionError
+
+        cmd = "if ping -c 2 -w 3 %s >/dev/null; then echo \"True\"; fi;" % ("192.168.0.43")
+        stdin, stdout, stderr = ssh.exec_command(cmd)
+        lines = stdout.readlines()
+
+        for i in lines:
+            if i=='True\n':
+                exists = True
+
+        self.assertTrue(exists)
+
+
 
     def test_003_disconnect_from_network(self):
         prev_state = self.client.get_network_details(self.networkid)

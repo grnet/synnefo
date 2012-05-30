@@ -3621,6 +3621,21 @@ div.single div.column3 div.server-name:hover {
     width: 660px;
 }
 
+.single div.lower .stats-select .stats-select-option.selected {
+    background-color: #4085A5;
+    color: #fff;
+}
+
+.single div.lower .stats-select .stats-select-option {
+    cursor: pointer;
+    background-color: #DDF1FB;
+    color: #4085A5;
+    display: block;
+    float: left;
+    padding: 7px 10px;
+    font-size: 0.7em;
+}
+
 .single div.lower img.stats {
     margin-left: 82px;
 }

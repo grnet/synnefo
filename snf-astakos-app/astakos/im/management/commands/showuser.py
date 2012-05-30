@@ -79,7 +79,8 @@ class Command(BaseCommand):
                 'group_permissions': user.get_group_permissions(),
                 'third_party_identifier': user.third_party_identifier,
                 'email_verified': format_bool(user.email_verified),
-                'username': user.username
+                'username': user.username,
+                'activation_sent_date': format_date(user.activation_sent)
             }
             if get_latest_terms():
                 has_signed_terms = user.signed_terms()

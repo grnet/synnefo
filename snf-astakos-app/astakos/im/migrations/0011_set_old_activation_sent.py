@@ -9,8 +9,9 @@ class Migration(DataMigration):
     def forwards(self, orm):
         # set old users activation date sent to epoch
         for u in orm.AstakosUser.objects.all():
-            u.activation_sent = datetime.datetime.utcfromtimestamp(0)
-            u.save()
+            if not u.is_active:
+                u.activation_sent = datetime.datetime.utcfromtimestamp(0)
+                u.save()
 
     def backwards(self, orm):
         # set old users activation date sent to None

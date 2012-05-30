@@ -44,6 +44,7 @@ from django.template import Context, loader
 from urllib import quote
 from urlparse import urljoin
 from smtplib import SMTPException
+from datetime import datetime
 
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL
 from astakos.im.models import Invitation, AstakosUser
@@ -73,6 +74,11 @@ def send_verification(user, template_name='im/activation_email.txt'):
         raise SendVerificationError()
     else:
         logger.info('Sent activation %s', user)
+
+def send_activation(user, template_name='im/activation_email.txt'):
+    send_verification(user, template_name)
+    user.activation_sent = datetime.now()
+    user.save()
 
 def send_admin_notification(user, template_name='im/admin_notification.txt'):
     """

@@ -91,6 +91,8 @@ class AstakosUser(User):
     has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
     date_signed_terms = models.DateTimeField('Signed terms date', null=True, blank=True)
     
+    activation_sent = models.DateTimeField('Activation sent data', null=True, blank=True)
+    
     __has_signed_terms = False
     __groupnames = []
     
@@ -144,6 +146,9 @@ class AstakosUser(User):
                 self.provider = 'local'
         report_user_event(self)
         self.validate_unique_email_isactive()
+        if self.is_active and self.activation_sent:
+            # reset the activation sent
+            self.activation_sent = None
         super(AstakosUser, self).save(**kwargs)
         
         # set group if does not exist

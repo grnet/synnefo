@@ -45,8 +45,10 @@ from urlparse import urljoin
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
-from astakos.im.functions import send_verification, send_admin_notification, activate, SendMailError
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
+from astakos.im.functions import send_verification, send_activation, \
+    send_admin_notification, activate, SendMailError
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, \
+    DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
 
 import socket
 import logging
@@ -100,7 +102,7 @@ class ActivationBackend(object):
         return globals()[formclass](initial_data, instance=instance, request=request)
     
     def handle_activation(self, user, \
-                          verification_template_name='im/activation_email.txt', \
+                          activation_template_name='im/activation_email.txt', \
                           greeting_template_name='im/welcome_email.txt', \
                           admin_email_template_name='im/admin_notification.txt', \
                           switch_accounts_email_template_name='im/switch_accounts_email.txt'):
@@ -127,7 +129,7 @@ class ActivationBackend(object):
                     activate(user, greeting_template_name)
                     return RegistationCompleted()
                 else:
-                    send_verification(user, verification_template_name)
+                    send_activation(user, activation_template_name)
                     return VerificationSent()
             else:
                 send_admin_notification(user, admin_email_template_name)

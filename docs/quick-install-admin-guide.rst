@@ -451,6 +451,9 @@ the experienced administrator the ability to install synnefo in a custom made
 django project. This corner case concerns only very advanced users that know
 what they are doing and want to experiment with synnefo.
 
+
+.. _conf-astakos:
+
 Configuration of Astakos
 ========================
 
@@ -645,6 +648,8 @@ This package provides the standalone pithos web client. The web client is the
 web UI for pithos+ and will be accessible by clicking "pithos+" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
 
+
+.. _conf-pithos:
 
 Configuration of Pithos+
 ========================
@@ -1217,6 +1222,8 @@ Cyclades conf files later on the guide.
 Make sure everything works as expected, before proceeding with the Private
 Networks setup.
 
+.. _private-networks-setup:
+
 Private Networks setup
 ----------------------
 
@@ -1356,7 +1363,7 @@ This will install the following:
 Configure ``snf-cyclades-gtools``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The package will install the ``/etc/synnefo/20-snf-cyclades-gtools.conf``
+The package will install the ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf``
 configuration file. At least we need to set the RabbitMQ endpoint for all tools
 that need it:
 
@@ -1417,70 +1424,206 @@ Compute service. Plankton (the Image Registry service) will get installed
 automatically along with Cyclades, because it is contained in the same Synnefo
 component right now.
 
+We will install Cyclades (and Plankton) on node1. To do so, we install the
+corresponding package by running on node1:
+
+.. code-block:: console
+
+   # apt-get install snf-cyclades-app
+
+If the package installs successfully, then Cyclades and Plankton are installed
+and we proceed with their configuration.
+
 
 Configuration of Cyclades (and Plankton)
 ========================================
 
-This section targets the configuration of the prerequisites for cyclades,
-and the configuration of the associated synnefo software components.
+Conf files
+----------
 
-synnefo components
-------------------
+After installing Cyclades, a number of new configuration files will appear under
+``/etc/synnefo/`` prefixed with ``20-snf-cyclades-app-``. We will descibe here
+only the minimal needed changes to result with a working system. In general, sane
+defaults have been chosen for the most of the options, to cover most of the
+common scenarios. However, if you want to tweak Cyclades feel free to do so,
+once you get familiar with the different options.
 
-cyclades uses :ref:`snf-common <snf-common>` for settings.
-Please refer to the configuration sections of
-:ref:`snf-webproject <snf-webproject>`,
-:ref:`snf-cyclades-app <snf-cyclades-app>`,
-:ref:`snf-cyclades-gtools <snf-cyclades-gtools>` for more
-information on their configuration.
+Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
-Ganeti
-~~~~~~
+.. code-block:: console
 
-Set ``GANETI_NODES``, ``GANETI_MASTER_IP``, ``GANETI_CLUSTER_INFO`` based on
-your :ref:`Ganeti installation <cyclades-install-ganeti>` and change the
-`BACKEND_PREFIX_ID`` setting, using an custom ``PREFIX_ID``.
+   GANETI_MAX_LINK_NUMBER = 20
+   ASTAKOS_URL = 'https://accounts.node1.example.com/im/authenticate'
 
-Database
-~~~~~~~~
+The ``GANETI_MAX_LINK_NUMBER`` is used to construct the names of the bridges
+already pre-provisioned for the Private Networks. Thus we set it to ``20``, to
+reflect our :ref:`Private Networks setup in the host machines
+<private-networks-setup>`. These numbers will suffix the
+``GANETI_LINK_PREFIX``, which is already set to ``prv`` and doesn't need to be
+changed. With those two variables Cyclades will construct the names of the
+available bridges ``prv1`` to ``prv20``, which are the real pre-provisioned
+bridges in the backend.
 
-Once all components are installed and configured,
-initialize the Django DB:
+The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
+to point to Astakos (this should have the same value with Pithos+'s
+``PITHOS_AUTHENTICATION_URL``, setup :ref:`previously <conf-pithos>`).
+
+Edit ``/etc/synnefo/20-snf-cyclades-app-backend.conf``:
+
+.. code-block:: console
+
+   GANETI_MASTER_IP = "ganeti.node1.example.com"
+   GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "cyclades", "example_rapi_passw0rd")
+
+``GANETI_MASTER_IP`` denotes the Ganeti-master's floating IP. We provide the
+corresponding domain that resolves to that IP, than the IP itself, to ensure
+Cyclades can talk to Ganeti even after a Ganeti master-failover.
+
+``GANETI_CLUSTER_INFO`` is a tuple containing the ``GANETI_MASTER_IP``, the RAPI
+port, the RAPI user's username and the RAPI user's password. We set the above to
+reflect our :ref:`RAPI User setup <rapi-user>`.
+
+Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://accounts.node1.example.com/static/im/cloudbar/'
+   CLOUDBAR_ACTIVE_SERVICE = 'cyclades'
+   CLOUDBAR_SERVICES_URL = 'https://accounts.node1.example.com/im/get_services'
+   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
+
+``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
+cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
+used by the Cyclades Web UI to get from Astakos all the information needed to
+fill its own cloudbar. So, we put our Astakos deployment urls there. All the
+above should have the same values we put in the corresponding variables in
+``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf`` on the previous
+:ref:`Pithos configuration <conf-pithos>` section.
+
+The ``CLOUDBAR_ACTIVE_SERVICE`` registers Cyclades as a new service served by
+Astakos. It’s name should be identical with the id name given at the Astakos’
+``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos :ref:`Conf Files
+<conf-astakos>` section, we actually set the second item of the
+``ASTAKOS_CLOUD_SERVICES`` list, to the dictionary: { 'url':'https://nod...',
+'name':'cyclades', 'id':'cyclades' }. This item represents the Cyclades service.
+The ``id`` we set there, is the ``id`` we want here.
+
+Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
+
+.. code-block:: console
+
+   BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
+   BACKEND_BLOCK_PATH = '/srv/pithos/data/'
+
+In this file we configure the Plankton Service. ``BACKEND_DB_CONNECTION``
+denotes the Pithos+ database (where the Image files are stored). So we set that
+to point to our Pithos+ database. ``BACKEND_BLOCK_PATH`` denotes the actual
+Pithos+ data location.
+
+Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
+
+.. code-block:: console
+
+   RABBIT_HOST = "node1.example.com:5672"
+   RABBIT_USERNAME = "synnefo"
+   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+
+The above settings denote the Message Queue. Those settings should have the same
+values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and
+reflect our :ref:`Message Queue setup <rabbitmq-setup>`.
+
+Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
+
+.. code-block:: console
+
+   UI_MEDIA_URL = '/static/ui/static/snf/'
+   UI_LOGIN_URL = "https://accounts.node1.example.com/im/login"
+   UI_LOGOUT_URL = "https://accounts.node1.example.com/im/logout"
+
+``UI_MEDIA_URL`` denotes the location of the UI's static files.
+
+The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
+if they are not logged in. We point that to Astakos.
+
+The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
+user when he/she logs out. We point that to Astakos, too.
+
+We have now finished with the basic Cyclades and Plankton configuration.
+
+Database Initialization
+-----------------------
+
+Once Cyclades is configured, we sync the database:
 
 .. code-block:: console
 
    $ snf-manage syncdb
    $ snf-manage migrate
 
-and load fixtures ``{users, flavors, images}``,
-which make the API usable by end users by defining a sample set of users,
-hardware configurations (flavors) and OS images:
+and load the initial server flavors:
 
 .. code-block:: console
 
-   $ snf-manage loaddata /path/to/users.json
    $ snf-manage loaddata flavors
-   $ snf-manage loaddata images
 
-.. warning::
-    Be sure to load a custom users.json and select a unique token
-    for each of the initial and any other users defined in this file.
-    **DO NOT LEAVE THE SAMPLE AUTHENTICATION TOKENS** enabled in deployed
-    configurations.
+If everything returns successfully, our database is ready.
 
-sample users.json file:
+Servers restart
+---------------
 
-.. literalinclude:: ../../synnefo/db/fixtures/users.json
+We also need to restart gunicorn on node1:
 
-`download <../_static/users.json>`_
+.. code-block:: console
 
-RabbitMQ
-~~~~~~~~
+   # /etc/init.d/gunicorn restart
 
-Change ``RABBIT_*`` settings to match your :ref:`RabbitMQ setup
-<cyclades-install-rabbitmq>`.
+Now let's do the final connections of Cyclades with Ganeti.
 
-.. include:: ../../Changelog
+``snf-dispatcher`` initialization
+---------------------------------
+
+``snf-dispatcher`` dispatches all messages published to the Message Queue and
+manages the Cyclades database accordingly. It also initializes all exchanges. By
+default it is not enabled during installation of Cyclades, so let's enable it in
+its configuration file ``/etc/default/snf-dispatcher``:
+
+.. code-block:: console
+
+   SNF_DSPTCH_ENABLE=true
+
+and start the daemon:
+
+.. code-block:: console
+
+   # /etc/init.d/snf-dispatcher start
+
+You can see that everything works correctly by tailing its log file
+``/var/log/synnefo/dispatcher.log``.
+
+``snf-ganeti-eventd`` on GANETI MASTER
+--------------------------------------
+
+The last step of the Cyclades setup is enabling the ``snf-ganeti-eventd``
+daemon (part of the :ref:`Cyclades Ganeti tools <cyclades-gtools>` package).
+The daemon is already installed on the GANETI MASTER (node1 in our case).
+``snf-ganeti-eventd`` is disabled by default during the ``snf-cyclades-gtools``
+installation, so we enable it in its configuration file
+``/etc/default/snf-ganeti-eventd``:
+
+.. code-block:: console
+
+   SNF_EVENTD_ENABLE=true
+
+and start the daemon:
+
+.. code-block:: console
+
+   # /etc/init.d/snf-ganeti-eventd start
+
+.. warning:: Make sure you start ``snf-ganeti-eventd`` *ONLY* on GANETI MASTER
+
+If all the above return successfully, then you have finished with the Cyclades
+and Plankton installation and setup. Let's test our installation now.
 
 
 Testing of Cyclades (and Plankton)

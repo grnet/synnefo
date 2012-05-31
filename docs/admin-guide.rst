@@ -40,7 +40,12 @@ state by running (on the machine that runs the Astakos app):
 
 There are two different ways to activate a new user. Both need access to a
 running mail server. Your mail server should be defined in the
-``/etc/synnefo/00-snf-common-admins.conf`` related constants:
+``/etc/synnefo/00-snf-common-admins.conf`` related constants. At least:
+
+.. code-block:: console
+
+   EMAIL_HOST = "my_mail_server.example.com"
+   EMAIL_PORT = "25"
 
 Manual activation
 ~~~~~~~~~~~~~~~~~

@@ -1453,7 +1453,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 .. code-block:: console
 
    GANETI_MAX_LINK_NUMBER = 20
-   ASTAKOS_URL = 'https://accounts.node1.example.com/im/authenticate'
+   ASTAKOS_URL = 'https://node1.example.com/im/authenticate'
 
 The ``GANETI_MAX_LINK_NUMBER`` is used to construct the names of the bridges
 already pre-provisioned for the Private Networks. Thus we set it to ``20``, to
@@ -1487,9 +1487,9 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
 .. code-block:: console
 
-   CLOUDBAR_LOCATION = 'https://accounts.node1.example.com/static/im/cloudbar/'
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
    CLOUDBAR_ACTIVE_SERVICE = 'cyclades'
-   CLOUDBAR_SERVICES_URL = 'https://accounts.node1.example.com/im/get_services'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
    CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
@@ -1537,8 +1537,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
 .. code-block:: console
 
    UI_MEDIA_URL = '/static/ui/static/snf/'
-   UI_LOGIN_URL = "https://accounts.node1.example.com/im/login"
-   UI_LOGOUT_URL = "https://accounts.node1.example.com/im/logout"
+   UI_LOGIN_URL = "https://node1.example.com/im/login"
+   UI_LOGOUT_URL = "https://node1.example.com/im/logout"
 
 ``UI_MEDIA_URL`` denotes the location of the UI's static files.
 

@@ -67,7 +67,8 @@ def logged(func, msg):
             user = request.user
         email = user.email if user and user.is_authenticated() else ''
         r = func(*args, **kwargs)
-        logger._log(LOGGING_LEVEL, msg % email, [])
+        if LOGGING_LEVEL:
+            logger._log(LOGGING_LEVEL, msg % email, [])
         return r
     return with_logging
 

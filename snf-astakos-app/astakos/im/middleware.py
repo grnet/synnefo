@@ -32,10 +32,11 @@
 # or implied, of GRNET S.A.
 
 from urllib import unquote
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate
 
 from astakos.im.settings import COOKIE_NAME
 from astakos.im.models import AstakosUser
+from astakos.im.functions import login
 
 class CookieAuthenticationMiddleware(object):
     def process_request(self, request):

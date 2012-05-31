@@ -82,3 +82,7 @@ EMAILCHANGE_ENABLED = getattr(settings, 'ASTAKOS_EMAILCHANGE_ENABLED', False)
 
 # Set the expiration time (in days) of email change requests
 EMAILCHANGE_ACTIVATION_DAYS = getattr(settings, 'ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS', 10)
+
+# Set the astakos message logging severity
+from logging import INFO
+LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)

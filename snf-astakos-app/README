@@ -80,6 +80,7 @@ ASTAKOS_RATELIMIT_RETRIES_ALLOWED   3                                           
                                                                                                                     captcha challenge.
 ASTAKOS_EMAILCHANGE_ENABLED         False                                                                           Enable email change mechanism
 ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS 10                                                                              Number of days that email change requests remain active
+ASTAKOS_LOGGING_LEVEL               INFO                                                                            Message logging severity
 =================================== =============================================================================   ===========================================================================================
 
 Administrator functions

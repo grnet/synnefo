@@ -47,7 +47,6 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
@@ -58,9 +57,9 @@ from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
-from astakos.im.functions import send_greeting, send_feedback, SendMailError
+from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
+    invite as invite_func, logout as auth_logout
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
-from astakos.im.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
 

@@ -52,8 +52,8 @@ from django.db import transaction
 from django.db.models.signals import post_save, post_syncdb
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
-AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
-EMAILCHANGE_ACTIVATION_DAYS
+    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
+    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
 
 QUEUE_CLIENT_ID = 3 # Astakos.
 
@@ -170,6 +170,8 @@ class AstakosUser(User):
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
+        msg = 'Token renewed for %s' % self.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
     def __unicode__(self):
         return self.username

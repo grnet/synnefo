@@ -40,16 +40,39 @@ from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.template import Context, loader
+from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.http import HttpRequest
 
 from urllib import quote
 from urlparse import urljoin
 from smtplib import SMTPException
 from datetime import datetime
+from functools import wraps
 
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, \
+    SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL
 from astakos.im.models import Invitation, AstakosUser
 
 logger = logging.getLogger(__name__)
+
+def logged(func, msg):
+    @wraps(func)
+    def with_logging(*args, **kwargs):
+        email = ''
+        user = None
+        if len(args) == 2 and isinstance(args[1], AstakosUser):
+            user = args[1]
+        elif len(args) == 1 and isinstance(args[0], HttpRequest):
+            request = args[0]
+            user = request.user
+        email = user.email if user and user.is_authenticated() else ''
+        r = func(*args, **kwargs)
+        logger._log(LOGGING_LEVEL, msg % email, [])
+        return r
+    return with_logging
+
+login = logged(auth_login, '%s logged in.')
+logout = logged(auth_logout, '%s logged out.')
 
 def send_verification(user, template_name='im/activation_email.txt'):
     """
@@ -73,7 +96,8 @@ def send_verification(user, template_name='im/activation_email.txt'):
         logger.exception(e)
         raise SendVerificationError()
     else:
-        logger.info('Sent activation %s', user)
+        msg = 'Sent activation %s' % user.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
 def send_activation(user, template_name='im/activation_email.txt'):
     send_verification(user, template_name)
@@ -100,7 +124,8 @@ def send_admin_notification(user, template_name='im/admin_notification.txt'):
         logger.exception(e)
         raise SendNotificationError()
     else:
-        logger.info('Sent admin notification for user %s', user)
+        msg = 'Sent admin notification for user %s' % user.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
 def send_invitation(invitation, template_name='im/invitation.txt'):
     """
@@ -123,7 +148,8 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
         logger.exception(e)
         raise SendInvitationError()
     else:
-        logger.info('Sent invitation %s', invitation)
+        msg = 'Sent invitation %s' % invitation
+        logger._log(LOGGING_LEVEL, msg, [])
 
 def send_greeting(user, email_template_name='im/welcome_email.txt'):
     """
@@ -145,7 +171,8 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
         logger.exception(e)
         raise SendGreetingError()
     else:
-        logger.info('Sent greeting %s', user)
+        msg = 'Sent greeting %s' % user.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     subject = _("Feedback from %s alpha2 testing" % SITENAME)
@@ -161,7 +188,8 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
         logger.exception(e)
         raise SendFeedbackError()
     else:
-        logger.info('Sent feedback from %s', user.email)
+        msg = 'Sent feedback from %s' % user.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
 def send_change_email(ec, request, email_template_name='registration/email_change_email.txt'):
     try:
@@ -177,7 +205,8 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         logger.exception(e)
         raise ChangeEmailError()
     else:
-        logger.info('Sent change email for %s', ec.user.email)
+        msg = 'Sent change email for %s' % ec.user.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
 def activate(user, email_template_name='im/welcome_email.txt'):
     """

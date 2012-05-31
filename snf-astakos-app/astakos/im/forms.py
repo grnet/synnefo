@@ -47,7 +47,9 @@ from django.contrib import messages
 from django.utils.encoding import smart_str
 
 from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, RECAPTCHA_ENABLED
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
+    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
+    RECAPTCHA_ENABLED, LOGGING_LEVEL
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -143,7 +145,7 @@ class LocalUserCreationForm(UserCreationForm):
         user.renew_token()
         if commit:
             user.save()
-            logger.info('Created user %s', user)
+            logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
         return user
 
 class InvitedLocalUserCreationForm(LocalUserCreationForm):
@@ -224,7 +226,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         user.provider = get_query(self.request).get('provider')
         if commit:
             user.save()
-            logger.info('Created user %s', user)
+            logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
         return user
 
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):

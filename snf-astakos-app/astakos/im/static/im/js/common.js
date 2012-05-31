@@ -48,6 +48,7 @@ $(document).ready(function() {
 	}
 	
 	$('.top-msg a.close').click(function(e) {
+		e.preventDefault();
         $('.top-msg').animate({
             paddingTop:'0',
             paddingBottom:'0',

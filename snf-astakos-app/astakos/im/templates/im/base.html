@@ -32,6 +32,9 @@
       <!--[if lte IE 7]>
             <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/ie7.css">
       <![endif]-->
+      <link rel="stylesheet" media="screen and (max-width: 960px)" href="{{ IM_STATIC_URL }}css/max960.css"/>
+      <link rel="stylesheet" media="screen and (max-width: 768px)" href="{{ IM_STATIC_URL }}css/max768.css"/>  
+      <link rel="stylesheet" media="screen and (max-width: 480px)" href="{{ IM_STATIC_URL }}css/max480.css"/>  
   {% endblock page.css %}
 
   {% block headjs %}

@@ -8,7 +8,7 @@
 {% for field in form %}
 <div class="form-row {% if field.errors|length %}with-errors{% endif %}">
         {{ field.errors }}
-     <p class="{% if field.blank %}required{% endif %}">
+     <p class="clearfix {% if field.blank %}required{% endif %}">
         {{ field.label_tag }}
         {{ field|safe }}
         <span class="extra-img">&nbsp;</span>

@@ -1,0 +1,7 @@
+.two-cols  .rt 									{ float:none; width:auto; margin-bottom:10px;}
+.two-cols  .lt									{ float:none; width:auto; }
+.container .navigation 							{ height:auto; margin-bottom:30px; } 
+.bg-wrap										{ background-position:-9999px -9999px; }
+.buttons-list.fixpos 							{ position:static;  }
+.buttons-list .button 							{ margin-left:0; }
+form input.submit, form input[type="submit"] 	{ margin:0; }

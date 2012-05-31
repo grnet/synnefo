@@ -12,7 +12,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .footer a                                       { color:#B3B3B3; text-decoration:none; transition:color 0.15s ease-in-out 0s; -moz-transition: color 0.15s ease-in-out 0s;  -webkit-transition: color 0.15s ease-in-out 0s;  -o-transition: color 0.15s ease-in-out 0s; } 
 .footer:hover a                                 { color:#808080;}
 .footer a:hover                                 { color:#000;}
-.footer ul                                      { float:left; margin:0 0 0 22px; width:140px;  padding:0;}
+.footer ul                                      { float:left; margin:0 22px 0 0; width:140px;  padding:0;}
 .footer ul li                                   { padding:0; margin:0; list-style:none outside;}
 .footer ul li:first-child                       { margin-bottom:1em;	}
 .footer .clearfix                               { padding-bottom:20px;}
@@ -33,8 +33,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .mainlogo h1									{ line-height:100%; font-size:1em; }
 .container .navigation                          { margin:20px 0 0; font-size:1.154em; height:95px;}
 .container .navigation ul                       { margin:5px 0; padding:0;}
-.container .navigation ul li                    { list-style:none outside; padding:0; margin:0 0 0 1em; display:inline-block;}
-.container .navigation ul li:first-child        { margin-left:0;}
+.container .navigation ul li                    { list-style:none outside; padding:0; margin:0 1em 0 0; display:inline-block;}
 .container .navigation ul li a                  { color:#000; text-decoration:none; }
 .container .navigation ul li a:hover            { color:#F89A1C; }	
 .container .navigation ul li.active a           { color:#F89A1C; }					
@@ -55,6 +54,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .landing h2, .landing a:hover                   { color:#01A1AE;}
 .faq h2, .faq a:hover, .faq .current a          { color:#EF4F54; border:0 none;}
 .content .question h2							{ color:#4085A6 }
+.content .backlink								{ margin:1em 0; }
 .content .question .backlink a					{ border:0 none; color:#F89A1C }
 .content .question .backlink a:hover			{ text-decoration:underline; }
 .faq h3											{ color:#4085a6; margin:0;}
@@ -71,7 +71,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .follow ul li p a                               { color:#808080;}   
 .posts ul                                       { margin:0;padding:0; }
 .posts ul li                                    { padding:0; margin:0 0 50px; list-style:none outside; }
-.posts ul li img                                { max-width:580px; margin-bottom:1em;}
+.posts ul li img                                { max-width:100%; margin-bottom:1em;}
 .posts ul li p.info                             { padding-bottom:10px; margin-bottom:20px; font-size:0.769em; color:#808080; background:url(../images/dots.jpg) repeat-x bottom ;}
 .article p.info 								{ margin-top:20px; padding-top:10px; font-size:0.769em; color:#808080; }
 .article h2, .posts h2                          { color:#ef4f53; }
@@ -125,7 +125,7 @@ a.videolink:hover				                { background:url(../images/video_image.png)
 .resources .categories ul li a.selected         { color: #000000 }
 .resources .categories ul li.inactive           { opacity: 0.3; }
 .resources .categories ul li.active             { font-weight: bold; opacity: 1; }
-.resources .list                                { line-height: 1em; margin-top: 60px; position: relative; width:855px; }
+.resources .list                                { line-height: 1em; margin-top: 60px; position: relative; margin-right:-35px; }
 .resources .list .resource-wrapper.first .resource      { margin-left: 0; }
 .resources .list .resource-wrapper              { float: left; height: 250px; margin-bottom: 22px; margin-right: 35px; overflow: hidden; position: relative; width: 250px; }
 .resources .list .resource-wrapper.first        { margin-left: 0; }
@@ -170,8 +170,9 @@ table td.consumed 								{ color: #9D261D; }
 .button.back.right 								{ right: 0; }
 .buttons-list .button 							{ margin-left: 10px; }
 .button.back 									{  z-index: 500; }
-a.button 										{ border:0 none;  color: #FFFFFF;  display: block;  text-align: center; background-color: #3582AC; letter-spacing: 1px;  line-height: 22px; padding: 0.8em 22px; text-decoration: none;}
-a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
+/* Styles for blue button-like back link
+a.button 										{ border:0 none;  color: #FFFFFF;  display: inline-block;  text-align: center; background-color: #3582AC; letter-spacing: 1px;  line-height: 22px; padding: 0.8em 22px; text-decoration: none;}
+a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}*/
 
 /*pagination*/
 .pagination a                                   { border:0 none;}

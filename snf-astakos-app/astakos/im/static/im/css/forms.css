@@ -85,7 +85,8 @@ form input[readonly=true] 					{ /*background-color: #ddd;*/ color: #5e5e5e; }
 form.innerlabels .with-checkbox .checkbox-widget 	{ margin-top:15px; }
 form.innerlabels .with-checkbox .checkbox-label		{ left:2.5em; top:17px; }
 
-form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; left:440px;top:10px; z-index:101;}
+form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; left:440px; bottom:10px; z-index:101;}
+form .with-checkbox .extra-img				{ top:20px; } 
 form .with-errors .extra-img 				{ background:url(../images/symbols.png) no-repeat -58px -3px;}
 form .with-errors textarea+.extra-img,
 form .with-errors noscript+.extra-img		{ background:transparent;}
@@ -95,5 +96,9 @@ form.innerlabels .with-errors .extra-img	{ left:290px;}
 form input[readonly="True"]+ span.extra-img { background:url(../images/symbols.png) no-repeat -111px -3px;}
 .errorlist									{ margin:0; padding:0;}
 .errorlist li								{ list-style:none outside;}
+ 
+@media screen and (max-width : 583px) 		{ 
+    form .extra-img	{ left:222px; }
+    .form-error		{ margin-left:0!important; } 
 
-
+}

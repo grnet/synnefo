@@ -35,8 +35,7 @@ from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.views import password_change
 
 from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED
-from astakos.im.views import signed_terms_required
+from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
@@ -48,9 +47,16 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^activate/?$', 'activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
-    url(r'^password/?$', 'change_password', {}, name='password_change')
+    url(r'^password/?$', 'change_password', {}, name='password_change'),
 )
 
+if EMAILCHANGE_ENABLED:
+    urlpatterns += patterns('astakos.im.views',
+        url(r'^email_change/?$', 'change_email', {}, name='email_change'),
+        url(r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
+            name='email_change_confirm')
+)
+    
 urlpatterns += patterns('astakos.im.target',
     url(r'^login/redirect/?$', 'redirect.login')
 )
@@ -86,11 +92,18 @@ if 'twitter' in IM_MODULES:
         url(r'^login/twitter/authenticated/?$', 'twitter.authenticated')
     )
 
-urlpatterns += patterns('astakos.im.api',
+urlpatterns += patterns('astakos.im.api.admin',
     url(r'^authenticate/?$', 'authenticate_old'),
-    url(r'^authenticate/v2/?$', 'authenticate'),
+    #url(r'^authenticate/v2/?$', 'authenticate'),
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'),
-    url(r'^find_userid/?$', 'find_userid'),
-    url(r'^find_email/?$', 'find_email'),
+    url(r'^admin/api/v2.0/users/?$', 'get_user_by_email'),
+    url(r'^admin/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
+)
+
+urlpatterns += patterns('astakos.im.api.service',
+    #url(r'^service/api/v2.0/tokens/(?P<token_id>.+?)/?$', 'validate_token'),
+    url(r'^service/api/v2.0/feedback/?$', 'send_feedback'),
+    url(r'^service/api/v2.0/users/?$', 'get_user_by_email'),
+    url(r'^service/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
 )

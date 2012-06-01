@@ -48,6 +48,7 @@ installed_apps = [
 context_processors = [
     'django.core.context_processors.media',
     'django.core.context_processors.request',
+    'django.core.context_processors.csrf',
     'astakos.im.context_processors.media',
     'astakos.im.context_processors.im_modules',
     'astakos.im.context_processors.next',
@@ -60,8 +61,10 @@ context_processors = [
 
 middlware_classes = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'astakos.im.middleware.CookieAuthenticationMiddleware',
     'synnefo.lib.middleware.LoggingConfigMiddleware',
-    'synnefo.lib.middleware.SecureMiddleware'
+    'synnefo.lib.middleware.SecureMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware'
 ]
 
 loggers = {
@@ -84,4 +87,3 @@ USE_X_FORWARDED_HOST = False
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
 SESSION_COOKIE_SECURE = True
-

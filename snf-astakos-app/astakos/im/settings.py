@@ -47,12 +47,6 @@ BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
 
-# Set cloud services appear in the horizontal bar
-CLOUD_SERVICES = getattr(settings, 'ASTAKOS_CLOUD_SERVICES', (
-        { 'url':'/', 'name':'grnet cloud', 'id':'cloud', 'icon':'home-icon.png' },
-        { 'url':'/okeanos.html', 'name':'cyclades', 'id':'okeanos' },
-        { 'url':'/ui/', 'name':'pithos+', 'id':'pithos' }))
-
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
 RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
@@ -83,3 +77,12 @@ PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
 # The number of unsuccessful login requests per minute allowed for a specific email
 RATELIMIT_RETRIES_ALLOWED = getattr(settings, 'ASTAKOS_RATELIMIT_RETRIES_ALLOWED', 3)
 
+# If False the email change mechanism is disabled
+EMAILCHANGE_ENABLED = getattr(settings, 'ASTAKOS_EMAILCHANGE_ENABLED', False)
+
+# Set the expiration time (in days) of email change requests
+EMAILCHANGE_ACTIVATION_DAYS = getattr(settings, 'ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS', 10)
+
+# Set the astakos main functions logging severity (None to disable)
+from logging import INFO
+LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)

@@ -42,12 +42,18 @@ from base64 import b64encode
 from urlparse import urlparse, urlunparse
 from random import randint
 
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth.models import User, UserManager, Group
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.db import transaction
+from django.db.models.signals import post_save, post_syncdb
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
+    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
+    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
 
 QUEUE_CLIENT_ID = 3 # Astakos.
 
@@ -84,6 +90,8 @@ class AstakosUser(User):
     has_credits = models.BooleanField('Has credits?', default=False)
     has_signed_terms = models.BooleanField('Agree with the terms?', default=False)
     date_signed_terms = models.DateTimeField('Signed terms date', null=True, blank=True)
+    
+    activation_sent = models.DateTimeField('Activation sent data', null=True, blank=True)
     
     __has_signed_terms = False
     __groupnames = []
@@ -138,6 +146,9 @@ class AstakosUser(User):
                 self.provider = 'local'
         report_user_event(self)
         self.validate_unique_email_isactive()
+        if self.is_active and self.activation_sent:
+            # reset the activation sent
+            self.activation_sent = None
         super(AstakosUser, self).save(**kwargs)
         
         # set group if does not exist
@@ -159,6 +170,8 @@ class AstakosUser(User):
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
+        msg = 'Token renewed for %s' % self.email
+        logger._log(LOGGING_LEVEL, msg, [])
 
     def __unicode__(self):
         return self.username
@@ -190,6 +203,7 @@ class AstakosUser(User):
             return False
         if self.date_signed_terms < term.date:
             self.has_signed_terms = False
+            self.date_signed_terms = None
             self.save()
             return False
         return True
@@ -211,12 +225,8 @@ class Invitation(models.Model):
     realname = models.CharField('Real name', max_length=255)
     username = models.CharField('Unique ID', max_length=255, unique=True)
     code = models.BigIntegerField('Invitation code', db_index=True)
-    #obsolete: we keep it just for transfering the data
-    is_accepted = models.BooleanField('Accepted?', default=False)
     is_consumed = models.BooleanField('Consumed?', default=False)
     created = models.DateTimeField('Creation date', auto_now_add=True)
-    #obsolete: we keep it just for transfering the data
-    accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
     consumed = models.DateTimeField('Consumption date', null=True, blank=True)
     
     def __init__(self, *args, **kwargs):
@@ -275,3 +285,114 @@ def get_latest_terms():
     except IndexError:
         pass
     return None
+
+class EmailChangeManager(models.Manager):
+    @transaction.commit_on_success
+    def change_email(self, activation_key):
+        """
+        Validate an activation key and change the corresponding
+        ``User`` if valid.
+
+        If the key is valid and has not expired, return the ``User``
+        after activating.
+
+        If the key is not valid or has expired, return ``None``.
+
+        If the key is valid but the ``User`` is already active,
+        return ``None``.
+
+        After successful email change the activation record is deleted.
+
+        Throws ValueError if there is already
+        """
+        try:
+            email_change = self.model.objects.get(activation_key=activation_key)
+            if email_change.activation_key_expired():
+                email_change.delete()
+                raise EmailChange.DoesNotExist
+            # is there an active user with this address?
+            try:
+                AstakosUser.objects.get(email=email_change.new_email_address)
+            except AstakosUser.DoesNotExist:
+                pass
+            else:
+                raise ValueError(_('The new email address is reserved.'))
+            # update user
+            user = AstakosUser.objects.get(pk=email_change.user_id)
+            user.email = email_change.new_email_address
+            user.save()
+            email_change.delete()
+            return user
+        except EmailChange.DoesNotExist:
+            raise ValueError(_('Invalid activation key'))
+
+class EmailChange(models.Model):
+    new_email_address = models.EmailField(_(u'new e-mail address'), help_text=_(u'Your old email address will be used until you verify your new one.'))
+    user = models.ForeignKey(AstakosUser, unique=True, related_name='emailchange_user')
+    requested_at = models.DateTimeField(default=datetime.now())
+    activation_key = models.CharField(max_length=40, unique=True, db_index=True)
+
+    objects = EmailChangeManager()
+
+    def activation_key_expired(self):
+        expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
+        return self.requested_at + expiration_date < datetime.now()
+
+class Service(models.Model):
+    name = models.CharField('Name', max_length=255, unique=True)
+    url = models.FilePathField()
+    icon = models.FilePathField(blank=True)
+    auth_token = models.CharField('Authentication Token', max_length=32,
+                                  null=True, blank=True)
+    auth_token_created = models.DateTimeField('Token creation date', null=True)
+    auth_token_expires = models.DateTimeField('Token expiration date', null=True)
+    
+    def save(self, **kwargs):
+        if not self.id:
+            self.renew_token()
+        self.full_clean()
+        super(Service, self).save(**kwargs)
+    
+    def renew_token(self):
+        md5 = hashlib.md5()
+        md5.update(self.name.encode('ascii', 'ignore'))
+        md5.update(self.url.encode('ascii', 'ignore'))
+        md5.update(asctime())
+
+        self.auth_token = b64encode(md5.digest())
+        self.auth_token_created = datetime.now()
+        self.auth_token_expires = self.auth_token_created + \
+                                  timedelta(hours=AUTH_TOKEN_DURATION)
+
+class AdditionalMail(models.Model):
+    """
+    Model for registring invitations
+    """
+    owner = models.ForeignKey(AstakosUser)
+    email = models.EmailField(unique=True)
+
+def create_astakos_user(u):
+    try:
+        AstakosUser.objects.get(user_ptr=u.pk)
+    except AstakosUser.DoesNotExist:
+        extended_user = AstakosUser(user_ptr_id=u.pk)
+        extended_user.__dict__.update(u.__dict__)
+        extended_user.renew_token()
+        extended_user.save()
+    except:
+        pass
+
+def superuser_post_syncdb(sender, **kwargs):
+    # if there was created a superuser
+    # associate it with an AstakosUser
+    admins = User.objects.filter(is_superuser=True)
+    for u in admins:
+        create_astakos_user(u)
+
+post_syncdb.connect(superuser_post_syncdb)
+
+def superuser_post_save(sender, instance, **kwargs):
+    if instance.is_superuser:
+        create_astakos_user(instance)
+
+post_save.connect(superuser_post_save, sender=User)

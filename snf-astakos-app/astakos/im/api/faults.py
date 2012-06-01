@@ -1,18 +1,18 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
-#
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-#
+# 
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-#
+# 
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-#
+# 
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,44 +25,33 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
+# 
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+def camelCase(s):
+    return s[0].lower() + s[1:]
 
-from astakos.im.models import Invitation
+class Fault(Exception):
+    def __init__(self, message='', details='', name=''):
+        Exception.__init__(self, message, details, name)
+        self.message = message
+        self.details = details
+        self.name = name or camelCase(self.__class__.__name__)
 
-from ._common import format_bool, format_date
+class BadRequest(Fault):
+    code = 400
 
+class Unauthorized(Fault):
+    code = 401
 
-class Command(BaseCommand):
-    args = "<invitation ID>"
-    help = "Show invitation info"
-    
-    def handle(self, *args, **options):
-        if len(args) != 1:
-            raise CommandError("Please provide an invitation id")
-        
-        try:
-            invitation = Invitation.objects.get(id=int(args[0]))
-        except Invitation.DoesNotExist:
-            raise CommandError("Unknown invitation id '%s'" % (args[0],))
-        
-        kv = {
-            'id': invitation.id,
-            'real name': invitation.realname,
-            'email': invitation.username,
-            'code': invitation.code,
-            'consumed': format_bool(invitation.is_consumed),
-            'date created': format_date(invitation.created),
-            'date consumed': format_date(invitation.consumed),
-            'inviter real name': invitation.inviter.realname,
-            'invitater email': invitation.inviter.email,
-        }
-        
-        for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(18), val)
-            self.stdout.write(line.encode('utf8'))
+class InternalServerError(Fault):
+    code = 500
+
+class Forbidden(Fault):
+    code = 403
+
+class ItemNotFound(Fault):
+    code = 404

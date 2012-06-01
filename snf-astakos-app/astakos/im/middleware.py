@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,44 +31,29 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from random import choice
-from string import digits, lowercase, uppercase
-from uuid import uuid4
-from time import time
-from os.path import abspath
+from urllib import unquote
+from django.contrib.auth import authenticate
 
-from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+from astakos.im.settings import COOKIE_NAME
+from astakos.im.models import AstakosUser
+from astakos.im.functions import login
 
-from ._common import add_group_permission
-
-class Command(BaseCommand):
-    args = "<groupname> [<permission> ...]"
-    help = "Insert group"
-    
-    def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Invalid number of arguments")
+class CookieAuthenticationMiddleware(object):
+    def process_request(self, request):
+        assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
+        if request.user.is_authenticated():
+            return None
         
-        name = args[0].decode('utf8')
+        cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
+        email, sep, auth_token = cookie.partition('|')
+        if not sep:
+            return None
         
         try:
-            Group.objects.get(name=name)
-            raise CommandError("A group with this name already exists")
-        except Group.DoesNotExist, e:
-            group = Group(name=name)
-            group.save()
-            msg = "Created group id %d" % (group.id,)
-            self.stdout.write(msg + '\n')
-            try:
-                for pname in args[1:]:
-                    r, created = add_group_permission(group, pname)
-                    if created:
-                        self.stdout.write('Permission: %s created successfully\n' % pname)
-                    if r == 0:
-                        self.stdout.write('Group has already permission: %s\n' % pname)
-                    else:
-                        self.stdout.write('Permission: %s added successfully\n' % pname)
-            except Exception, e:
-                raise CommandError(e)
+            user = authenticate(email=email, auth_token=auth_token)
+            if user:
+                request.user = user
+            login(request, user)
+        except:
+            pass
+        return None

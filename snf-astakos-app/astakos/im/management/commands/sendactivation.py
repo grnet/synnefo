@@ -33,7 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.functions import send_verification, SendMailError
+from astakos.im.functions import send_activation, SendMailError
 
 from ._common import get_user
 
@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 continue
             
             try:
-                send_verification(user)
+                send_activation(user)
             except SendMailError, e:
                 raise CommandError(e.message)
             

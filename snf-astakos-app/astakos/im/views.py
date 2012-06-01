@@ -47,7 +47,6 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
@@ -58,9 +57,9 @@ from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
-from astakos.im.functions import send_greeting, send_feedback, SendMailError
+from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
+    invite as invite_func, logout as auth_logout
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
-from astakos.im.functions import invite as invite_func
 
 logger = logging.getLogger(__name__)
 
@@ -327,6 +326,10 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 status = messages.SUCCESS
                 message = result.message
                 user.save()
+                if 'additional_email' in form.cleaned_data:
+                    additional_email = form.cleaned_data['additional_email']
+                    if additional_email != user.email:
+                        user.additionalmail_set.create(email=additional_email)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)
@@ -518,3 +521,52 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 @signed_terms_required
 def change_password(request):
     return password_change(request, post_change_redirect=reverse('astakos.im.views.edit_profile'))
+
+@transaction.commit_manually
+def change_email(request, activation_key=None,
+                 email_template_name='registration/email_change_email.txt',
+                 form_template_name='registration/email_change_form.html',
+                 confirm_template_name='registration/email_change_done.html',
+                 extra_context={}):
+    if activation_key:
+        try:
+            user = EmailChange.objects.change_email(activation_key)
+            if request.user.is_authenticated() and request.user == user:
+                msg = _('Email changed successfully.')
+                messages.add_message(request, messages.SUCCESS, msg)
+                auth_logout(request)
+                response = prepare_response(request, user)
+                transaction.commit()
+                return response
+        except ValueError, e:
+            messages.add_message(request, messages.ERROR, e)
+        return render_response(confirm_template_name,
+                               modified_user = user if 'user' in locals() else None,
+                               context_instance = get_context(request,
+                                                              extra_context))
+    
+    if not request.user.is_authenticated():
+        path = quote(request.get_full_path())
+        url = request.build_absolute_uri(reverse('astakos.im.views.index'))
+        return HttpResponseRedirect(url + '?next=' + path)
+    form = EmailChangeForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            ec = form.save(email_template_name, request)
+        except SendMailError, e:
+            status = messages.ERROR
+            msg = e
+            transaction.rollback()
+        except IntegrityError, e:
+            status = messages.ERROR
+            msg = _('There is already a pending change email request.')
+        else:
+            status = messages.SUCCESS
+            msg = _('Change email request has been registered succefully.\
+                    You are going to receive a verification email in the new address.')
+            transaction.commit()
+        messages.add_message(request, status, msg)
+    return render_response(form_template_name,
+                           form = form,
+                           context_instance = get_context(request,
+                                                          extra_context))

@@ -230,7 +230,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
 
     return HttpResponse(content=data, mimetype=mimetype)
 
-@api_method(http_method='GET', token_required=True)
+@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
 def get_user_by_email(request, user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
@@ -241,7 +241,7 @@ def get_user_by_email(request, user=None):
     email = request.GET.get('name')
     return _get_user_by_email(email)
 
-@api_method(http_method='GET', token_required=True)
+@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
 def get_user_by_username(request, user_id, user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)

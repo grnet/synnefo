@@ -36,7 +36,6 @@ from django.contrib.auth.views import password_change
 
 from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
-from astakos.im.views import signed_terms_required
 
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index', {}, name='index'),

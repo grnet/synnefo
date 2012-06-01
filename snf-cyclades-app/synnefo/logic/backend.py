@@ -221,10 +221,10 @@ def start_action(vm, action):
 def create_instance(vm, flavor, image, password, personality):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
-        
+
         metadata value should be a dictionary.
     """
-    nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
+    nic = {'ip': 'pool', 'network': settings.GANETI_PUBLIC_NETWORK}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:

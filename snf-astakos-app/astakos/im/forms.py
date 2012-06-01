@@ -195,7 +195,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         if get_latest_terms():
             self.fields.keyOrder.append('has_signed_terms')
         #set readonly form fields
-        ro = ["third_party_identifier", "first_name", "last_name"]
+        ro = ["third_party_identifier"]
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
         
@@ -255,6 +255,16 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
         return user
 
 class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
+    additional_email = forms.CharField(widget=forms.HiddenInput(), label='', required = False)
+    
+    def __init__(self, *args, **kwargs):
+        super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder.append('additional_email')
+        # copy email value to additional_mail in case user will change it
+        name = 'email'
+        field = self.fields[name]
+        self.initial['additional_email'] = self.initial.get(name, field.initial)
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         for user in AstakosUser.objects.filter(email = email):

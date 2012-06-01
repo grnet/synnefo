@@ -364,6 +364,13 @@ class Service(models.Model):
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
 
+class AdditionalMail(models.Model):
+    """
+    Model for registring invitations
+    """
+    owner = models.ForeignKey(AstakosUser)
+    email = models.EmailField(unique=True)
+
 def create_astakos_user(u):
     try:
         AstakosUser.objects.get(user_ptr=u.pk)

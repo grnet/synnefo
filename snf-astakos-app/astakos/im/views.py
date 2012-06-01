@@ -326,6 +326,10 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 status = messages.SUCCESS
                 message = result.message
                 user.save()
+                if 'additional_email' in form.cleaned_data:
+                    additional_email = form.cleaned_data['additional_email']
+                    if additional_email != user.email:
+                        user.additionalmail_set.create(email=additional_email)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)

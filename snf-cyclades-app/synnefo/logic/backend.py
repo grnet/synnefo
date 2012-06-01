@@ -388,7 +388,7 @@ def delete_network(net):
 
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
-    rapi.ModifyInstance(vm.backend_id, nics=[('add', nic)],
+    rapi.ModifyInstance(vm.backend_id, nics=[('add', -1, nic)],
                         hotplug=True, dry_run=settings.TEST)
 
 

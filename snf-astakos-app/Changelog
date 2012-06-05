@@ -1,9 +1,18 @@
 Changelog
 ---------
 
-dev
-^^^
+v0.6
+^^^^
 - Fixed default values in cloudbar sample conf file
+- Split api in admin (accessed by superuser and privileged users) and service (accessed by services)
+- Dynamically register/unregister services
+- New management tools for assigning groups and permissions to users
+- New feedback api call
+- Save the date user activation sent
+- Save email returned by shibboleth
+- Add logging for main astakos functionality (logging level controlled by ASTAKOS_LOGGING_LEVEL) 
+- Email change mechanism (enabled by ASTAKOS_EMAILCHANGE_ENABLED -- disabled by default)
+
 
 v0.5.1
 ^^^^^^

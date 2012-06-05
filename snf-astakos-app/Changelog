@@ -4,8 +4,18 @@ Changelog
 v0.6
 ^^^^
 - Fixed default values in cloudbar sample conf file
-- Split api in admin (accessed by superuser and privileged users) and service (accessed by services)
-- Dynamically register/unregister services
+- Split api in admin (accessed by superuser and privileged users) and service 
+  (accessed by services)
+- Dynamically register/unregister services 
+  
+  Setting ``ASTAKOS_CLOUD_SERVICES`` is no longer used. You should remove
+  it from astakos configuration file and migrate the old services configuration
+  using ``snf-manage registerservice`` commands::
+
+  	$ snf-manage registerservice "grnet cloud" https://okeanos.grnet.gr/ home-icon.png
+  	$ snf-manage registerservice "cyclades" https://cyclades.okeanos.grnet.gr/ui/
+  	$ snf-manage registerservice "pithos" https://pithos.okeanos.grnet.gr/
+
 - New management tools for assigning groups and permissions to users
 - New feedback api call
 - Save the date user activation sent

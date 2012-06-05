@@ -619,10 +619,10 @@ class NetworkTestCase(unittest.TestCase):
         cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
 
         #Dictionary initialization for the vms credentials
+
         cls.serverid = dict()
         cls.username = dict()
         cls.password = dict()
-
 
     def _get_ipv4(self, server):
     
@@ -647,7 +647,7 @@ class NetworkTestCase(unittest.TestCase):
             return "root"
 
 
-    def test_0001_submit_create_server_A(self):
+    def test_00001_submit_create_server_A(self):
         """Test submit create server request"""
         serverA = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
@@ -658,13 +658,12 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(serverA["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
-        cls = type(self)
-        cls.serverid['A'] = serverA["id"]
-        cls.username['A'] = None
-        cls.password['A'] = serverA["adminPass"]
+        self.serverid['A'] = serverA["id"]
+        self.username['A'] = None
+        self.password['A'] = serverA["adminPass"]
 
     
-    def test_0001_submit_create_server_B(self):
+    def test_00001_submit_create_server_B(self):
         """Test submit create server request"""
         serverB = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
@@ -675,10 +674,9 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(serverB["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
-        cls = type(self)
-        cls.serverid['B'] = serverB["id"]
-        cls.username['B'] = None
-        cls.password['B'] = serverB["adminPass"]
+        self.serverid['B'] = serverB["id"]
+        self.username['B'] = None
+        self.password['B'] = serverB["adminPass"]
 
     def test_0001_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
@@ -759,7 +757,7 @@ class NetworkTestCase(unittest.TestCase):
     def test_002a_setup_interface_A(self):
 
         server = self.client.get_server_details(self.serverid['A'])
-        image = self.client.get_image_details(self.serverid['A'])
+        image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
         loginname = image["metadata"]["values"].get("users", None)
         hostip = self._get_ipv4(server) 
@@ -783,7 +781,7 @@ class NetworkTestCase(unittest.TestCase):
     def test_002b_setup_interface_B(self):
 
         server = self.client.get_server_details(self.serverid['B'])
-        image = self.client.get_image_details(self.serverid['B'])
+        image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
         loginname = image["metadata"]["values"].get("users", None)
         hostip = self._get_ipv4(server) 
@@ -809,7 +807,7 @@ class NetworkTestCase(unittest.TestCase):
         """Ping serverB from serverA to test if connection exists"""
 
         server = self.client.get_server_details(self.serverid['A'])
-        image = self.client.get_image_details(self.serverid['A'])
+        image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
         loginname = image["metadata"]["values"].get("users", None)
         

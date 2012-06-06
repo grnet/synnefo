@@ -635,7 +635,7 @@ class NetworkTestCase(unittest.TestCase):
                             public_addrs[0]["values"])
         self.assertEqual(len(ipv4_addrs), 1)
         return ipv4_addrs[0]["addr"]
-
+    
 
     def _connect_loginname(self, os):
         """Return the login name for connections based on the server OS"""
@@ -647,7 +647,7 @@ class NetworkTestCase(unittest.TestCase):
             return "root"
 
 
-    def test_00001_submit_create_server_A(self):
+    def test_00001a_submit_create_server_A(self):
         """Test submit create server request"""
         serverA = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
@@ -663,7 +663,7 @@ class NetworkTestCase(unittest.TestCase):
         self.password['A'] = serverA["adminPass"]
 
 
-    def test_00001_serverA_becomes_active(self):
+    def test_00001b_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         fail_tmout = time.time()+self.action_timeout
@@ -682,7 +682,7 @@ class NetworkTestCase(unittest.TestCase):
 
         
     
-    def test_00002_submit_create_server_B(self):
+    def test_00002a_submit_create_server_B(self):
         """Test submit create server request"""
         serverB = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, personality=None)
@@ -698,7 +698,7 @@ class NetworkTestCase(unittest.TestCase):
         self.password['B'] = serverB["adminPass"]
 
 
-        def test_00002_serverB_becomes_active(self):
+    def test_00002b_serverB_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         fail_tmout = time.time()+self.action_timeout
@@ -768,10 +768,15 @@ class NetworkTestCase(unittest.TestCase):
         if not loginname:
             loginname = self._connect_loginname(os)
 
+        myPass = self.password['A']
+
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
         try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(hostip, username = loginname, password = self.password['A'])
+            log.info("My password " + myPass)
+            ssh.connect(hostip, username = loginname, password = myPass)
+
         except socket.error:
             raise AssertionError
 
@@ -791,11 +796,16 @@ class NetworkTestCase(unittest.TestCase):
         
         if not loginname:
             loginname = self._connect_loginname(os)
+        
+        myPass = self.password['B']
+
 
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(hostip, username = loginname, password = self.password['B'])
+            log.info("My password " + myPass)
+            ssh.connect(hostip, username = loginname, password = myPass)
+
         except socket.error:
             raise AssertionError
 
@@ -829,6 +839,8 @@ class NetworkTestCase(unittest.TestCase):
         cmd = "if ping -c 2 -w 3 %s >/dev/null; then echo \"True\"; fi;" % ("192.168.0.43")
         stdin, stdout, stderr = ssh.exec_command(cmd)
         lines = stdout.readlines()
+
+        exists = False
 
         for i in lines:
             if i=='True\n':

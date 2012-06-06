@@ -119,10 +119,10 @@ class VirtualMachine(models.Model):
         'OP_INSTANCE_REBOOT': 'STARTED',
         'OP_INSTANCE_SET_PARAMS': None,
         'OP_INSTANCE_QUERY_DATA': None,
-        'OP_INSTANCE_REINSTALL' : None,
-        'OP_INSTANCE_ACTIVATE_DISKS' : None,
+        'OP_INSTANCE_REINSTALL': None,
+        'OP_INSTANCE_ACTIVATE_DISKS': None,
         'OP_INSTANCE_DEACTIVATE_DISKS': None,
-        'OP_INSTANCE_REPLACE_DISKS' : None,
+        'OP_INSTANCE_REPLACE_DISKS': None,
         'OP_INSTANCE_MIGRATE': None,
         'OP_INSTANCE_CONSOLE': None,
         'OP_INSTANCE_RECREATE_DISKS': None,
@@ -173,23 +173,26 @@ class VirtualMachine(models.Model):
 
     # Error classes
     class InvalidBackendIdError(Exception):
-         def __init__(self, value):
+        def __init__(self, value):
             self.value = value
-         def __str__(self):
+
+        def __str__(self):
             return repr(self.value)
 
     class InvalidBackendMsgError(Exception):
-         def __init__(self, opcode, status):
+        def __init__(self, opcode, status):
             self.opcode = opcode
             self.status = status
-         def __str__(self):
+
+        def __str__(self):
             return repr('<opcode: %s, status: %s>' % (self.opcode,
-                    self.status))
+                        self.status))
 
     class InvalidActionError(Exception):
-         def __init__(self, action):
+        def __init__(self, action):
             self._action = action
-         def __str__(self):
+
+        def __str__(self):
             return repr(str(self._action))
 
     class DeletedError(Exception):

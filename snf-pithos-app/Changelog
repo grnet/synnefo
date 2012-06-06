@@ -4,6 +4,8 @@ Changelog
 v0.9.7
 ------
 * Delegate feedback post request to Identity Provider (astakos)
+  New setting *PITHOS_SERVICE_TOKEN* is required to be set for feedback to 
+  work.
 * Change API calls to include public objects in shared by me
 
 v0.9.6

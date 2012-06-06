@@ -73,9 +73,12 @@ def get_time_from_status(op, job):
     status = op.status
     if status == constants.JOB_STATUS_QUEUED:
         return job.received_timestamp
-    if status == constants.JOB_STATUS_WAITLOCK:
-    #if status == constants.JOB_STATUS_WAITING:
-        return op.start_timestamp
+    try: # Compatibility with Ganeti version
+        if status == constants.JOB_STATUS_WAITLOCK:
+            return op.start_timestamp
+    except AttributeError:
+        if status == constants.JOB_STATUS_WAITING:
+            return op.start_timestamp
     if status == constants.JOB_STATUS_CANCELING:
         return op.start_timestamp
     if status == constants.JOB_STATUS_RUNNING:
@@ -96,6 +99,16 @@ class InvalidBackendStatus(Exception):
         return repr("Invalid backend status: %s in job %s"
                     % (self.status, self.job))
 
+def prefix_from_name(name):
+    return name.split('-')[0]
+
+
+def get_field(from_, field):
+    try:
+        return getattr(from_, field)
+    except AttributeError:
+        None
+
 
 class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger):
@@ -105,6 +118,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
         self.client.connect()
         handler_logger.info("Connected succesfully")
+
+        self.op_handlers = {"INSTANCE": self.process_instance_op,
+                            "NETWORK": self.process_network_op}
+                            # "GROUP": self.process_group_op}
 
     def process_IN_CLOSE_WRITE(self, event):
         self.process_IN_MOVED_TO(event)
@@ -121,31 +138,29 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        try: # Version compatibility issue with Ganeti
+        try: # Compatibility with Ganeti version
             job = jqueue._QueuedJob.Restore(None, data, False)
         except TypeError:
             job = jqueue._QueuedJob.Restore(None, data)
 
+        job_id = int(job.id)
 
         for op in job.ops:
-            instances = None
+            op_id = op.input.OP_ID
+
+            msg = None
             try:
-                instances = " ".join(op.input.instances)
-            except AttributeError:
+                handler_fn = self.op_handlers[op_id.split('_')[1]]
+                msg, routekey = handler_fn(op, job_id)
+            except KeyError:
                 pass
 
-            try:
-                instances = op.input.instance_name
-            except AttributeError:
-                pass
-
-            if not instances or len(instances.split(" ")) != 1:
-                # Do not publish messages for jobs with no or multiple
-                # instances.
-                # Currently snf-dispatcher can not normally handle these messages
-                self.logger.debug("Ignoring Job: %d: %s(%s)", int(job.id),
-                                  op.input.OP_ID, instances)
+            if not msg:
+                self.logger.debug("Ignoring job: %s: %s", job_id, op_id)
                 continue
+
+            # Generate a unique message identifier
+            event_time = get_time_from_status(op, job)
 
             # Get the last line of the op log as message
             try:
@@ -153,34 +168,91 @@ class JobFileHandler(pyinotify.ProcessEvent):
             except IndexError:
                 logmsg = None
 
-            # Generate a unique message identifier
-            event_time = get_time_from_status(op, job)
+            # Add shared attributes for all operations
+            msg.update({"event_time": event_time,
+                        "operation": op_id,
+                        "status": op.status,
+                        "logmsg": logmsg,
+                        "jobId": job_id})
 
-            self.logger.debug("Job: %d: %s(%s) %s %s",
-                    int(job.id), op.input.OP_ID, instances, op.status, logmsg)
-
-            # Construct message
-            msg = {
-                    "event_time" : event_time,
-                    "type": "ganeti-op-status",
-                    "instance": instances,
-                    "operation": op.input.OP_ID,
-                    "jobId": int(job.id),
-                    "status": op.status,
-                    "logmsg": logmsg
-                    }
-
-            instance_prefix = instances.split('-')[0]
-            routekey = "ganeti.%s.event.op" % instance_prefix
-
-            self.logger.debug("Delivering msg: %s (key=%s)", json.dumps(msg),
-                              routekey)
             msg = json.dumps(msg)
+            self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
             # Send the message to RabbitMQ
             self.client.basic_publish(exchange=settings.EXCHANGE_GANETI,
                                       routing_key=routekey,
                                       body=msg)
+
+
+    def process_instance_op(self, op, job_id):
+        """ Process OP_INSTANCE_* opcodes.
+
+        """
+        input = op.input
+        op_id = input.OP_ID
+
+        instances = None
+        instances = get_field(input, 'instance_name')
+        if not instances:
+            instances = get_field(input, 'instances')
+            if not instances or len(instances) > 1:
+                # Do not publish messages for jobs with no or multiple
+                # instances.
+                # Currently snf-dispatcher can not normally handle these messages
+                return None, None
+            else:
+                instances = instances[0]
+
+        self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
+                          instances, op.status)
+
+        msg = {"type": "ganeti-op-status",
+               "instance": instances,
+               "operation": op_id}
+
+        routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
+
+        return msg, routekey
+
+    def process_network_op(self, op, job_id):
+        """ Process OP_NETWORK_* opcodes.
+
+        """
+
+        input = op.input
+        op_id = input.OP_ID
+        network_name = get_field(input, 'network_name')
+
+        if not network_name:
+            return None, None
+
+        self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
+                          network_name, op.status)
+
+        msg = {'operation':    op_id,
+               'type':         "ganeti-network-status",
+               'network':      network_name,
+               'subnet':       get_field(input, 'network'),
+               # 'network_mode': get_field(input, 'network_mode'),
+               # 'network_link': get_field(input, 'network_link'),
+               'gateway':      get_field(input, 'gateway'),
+               # 'reserved_ips': get_field(input, 'reserved_ips'),
+               'group_name':   get_field(input, 'group_name')}
+
+        routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
+
+        return msg, routekey
+
+
+    # def process_group_op(self, op, job_id):
+    #     """ Process OP_GROUP_* opcodes.
+
+    #     """
+    #     return None, None
+
+
+
+
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):

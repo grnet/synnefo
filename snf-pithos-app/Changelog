@@ -1,9 +1,10 @@
 Changelog
 =========
 
-dev
----
-* Do not use sample authentication users by default.
+v0.9.7
+------
+* Delegate feedback post request to Identity Provider (astakos)
+* Change API calls to include public objects in shared by me
 
 v0.9.6
 ------

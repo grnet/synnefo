@@ -662,23 +662,8 @@ class NetworkTestCase(unittest.TestCase):
         self.username['A'] = None
         self.password['A'] = serverA["adminPass"]
 
-    
-    def test_00001_submit_create_server_B(self):
-        """Test submit create server request"""
-        serverB = self.client.create_server(self.servername, self.flavorid,
-                                           self.imageid, personality=None)
 
-        self.assertEqual(serverB["name"], self.servername)
-        self.assertEqual(serverB["flavorRef"], self.flavorid)
-        self.assertEqual(serverB["imageRef"], self.imageid)
-        self.assertEqual(serverB["status"], "BUILD")
-
-        # Update class attributes to reflect data on building server
-        self.serverid['B'] = serverB["id"]
-        self.username['B'] = None
-        self.password['B'] = serverB["adminPass"]
-
-    def test_0001_serverA_becomes_active(self):
+    def test_00001_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         fail_tmout = time.time()+self.action_timeout
@@ -695,7 +680,25 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(active)
 
-    def test_0001_serverB_becomes_active(self):
+        
+    
+    def test_00002_submit_create_server_B(self):
+        """Test submit create server request"""
+        serverB = self.client.create_server(self.servername, self.flavorid,
+                                           self.imageid, personality=None)
+
+        self.assertEqual(serverB["name"], self.servername)
+        self.assertEqual(serverB["flavorRef"], self.flavorid)
+        self.assertEqual(serverB["imageRef"], self.imageid)
+        self.assertEqual(serverB["status"], "BUILD")
+
+        # Update class attributes to reflect data on building server
+        self.serverid['B'] = serverB["id"]
+        self.username['B'] = None
+        self.password['B'] = serverB["adminPass"]
+
+
+        def test_00002_serverB_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         fail_tmout = time.time()+self.action_timeout
@@ -778,7 +781,7 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(len(lines), 0)
         
 
-    def test_002b_setup_interface_B(self):
+    def test_002a_setup_interface_B(self):
 
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
@@ -803,7 +806,7 @@ class NetworkTestCase(unittest.TestCase):
 
 
 
-    def test_002a_test_connection_exists(self):
+    def test_002b_test_connection_exists(self):
         """Ping serverB from serverA to test if connection exists"""
 
         server = self.client.get_server_details(self.serverid['A'])

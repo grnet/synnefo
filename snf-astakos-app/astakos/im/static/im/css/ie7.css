@@ -13,3 +13,5 @@ img												{ -ms-interpolation-mode:bicubic; }
 form input.text, 
 form input[type="text"],
 form input[type="password"]						{ margin-bottom:-3px;}
+#okeanos_recaptcha #recaptcha_response_field	{ margin-bottom:-1px; }
+.container ul.options li a						{ display:inline }

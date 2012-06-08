@@ -71,7 +71,7 @@ def api_method(http_method=None, token_required=False, perms=None):
     """Decorator function for views that implement an API method."""
     if not perms:
         perms = []
-    
+
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
@@ -111,7 +111,7 @@ def authenticate_old(request, user=None):
     #                       unauthorised (401)
     if not user:
         raise BadRequest('No user')
-    
+
     # Check if the is active.
     if not user.is_active:
         raise Unauthorized('User inactive')
@@ -119,10 +119,10 @@ def authenticate_old(request, user=None):
     # Check if the token has expired.
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
         raise Unauthorized('Authentication expired')
-    
+
     if not user.signed_terms():
         raise Unauthorized('Pending approval terms')
-    
+
     response = HttpResponse()
     response.status=204
     user_info = {'username':user.username,
@@ -146,7 +146,7 @@ def authenticate(request, user=None):
     #                       unauthorised (401)
     if not user:
         raise BadRequest('No user')
-    
+
     # Check if the is active.
     if not user.is_active:
         raise Unauthorized('User inactive')
@@ -154,10 +154,10 @@ def authenticate(request, user=None):
     # Check if the token has expired.
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
         raise Unauthorized('Authentication expired')
-    
+
     if not user.signed_terms():
         raise Unauthorized('Pending approval terms')
-    
+
     response = HttpResponse()
     response.status=204
     user_info = {'userid':user.username,
@@ -178,7 +178,7 @@ def authenticate(request, user=None):
 def get_services(request):
     callback = request.GET.get('callback', None)
     services = Service.objects.all()
-    data = tuple({'name':s.name, 'url':s.url, 'icon':s.icon} for s in services)
+    data = tuple({'id':s.pk, 'name':s.name, 'url':s.url, 'icon':s.icon} for s in services)
     data = json.dumps(data)
     mimetype = 'application/json'
 
@@ -220,7 +220,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         if with_signout:
             l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
                       'name': "Sign out"})
-    
+
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))
     mimetype = 'application/json'

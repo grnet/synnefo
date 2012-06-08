@@ -51,7 +51,7 @@ $(document).ready(function(){
             slink.attr('href', el.url);
             slink.attr('title', el.name);
             services.append(slink);
-            if (el.id == ACTIVE_MENU) {
+            if (el.id == ACTIVE_MENU || el.name == ACTIVE_MENU) {
                 slink.addClass("active");
             }
         });

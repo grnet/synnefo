@@ -39,7 +39,7 @@ from astakos.im.models import Service
 
 class Command(BaseCommand):
     help = "List g"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('-c',
             action='store_true',
@@ -47,28 +47,30 @@ class Command(BaseCommand):
             default=False,
             help="Use pipes to separate values"),
     )
-    
+
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
-        
+
         services = Service.objects.all()
-        
-        labels = ('id', 'name', 'url', 'icon')
-        columns = (3, 12, 40, 40)
-        
+
+        labels = ('id', 'name', 'url', 'auth_token', 'icon')
+        columns = (3, 12, 40, 20, 20)
+
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-        
+
         for service in services:
-            fields = (str(service.id), service.name, service.url, service.icon)
-            
+            fields = (str(service.id), service.name, service.url,
+                    service.auth_token,
+                    service.icon)
+
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
+
             self.stdout.write(line.encode('utf8') + '\n')

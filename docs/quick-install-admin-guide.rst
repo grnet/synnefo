@@ -517,11 +517,6 @@ For astakos specific configuration, edit the following options in
 
    ASTAKOS_SITENAME = '~okeanos demo example'
 
-   ASTAKOS_CLOUD_SERVICES = (
-           { 'url':'https://node1.example.com/im/', 'name':'~okeanos home', 'id':'cloud', 'icon':'home-icon.png' },
-           { 'url':'https://node1.example.com/ui/', 'name':'cyclades', 'id':'cyclades' },
-           { 'url':'https://node2.example.com/ui/', 'name':'pithos+', 'id':'pithos' })
-
    ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
    ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
 
@@ -530,11 +525,6 @@ For astakos specific configuration, edit the following options in
 ``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
 is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
 domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
-``ASTAKOS_CLOUD_SERVICES`` contains all services visible to and served by
-astakos. The first element of the dictionary is used to point to a generic
-landing page for your services (cyclades, pithos). If you don't have such a
-page it can be omitted. The second and third element point to our services
-themselves (the apps) and should be set as above.
 
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
@@ -542,20 +532,10 @@ go to https://www.google.com/recaptcha/admin/create and create your own pair.
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 
-Servers Initialization
-----------------------
-
-After configuration is done, we initialize the servers on node1:
-
-.. code-block:: console
-
-   root@node1:~ # /etc/init.d/gunicorn restart
-   root@node1:~ # /etc/init.d/apache2 restart
-
 Database Initialization
 -----------------------
 
-Then, we initialize the database by running:
+After configuration is done, we initialize the database by running:
 
 .. code-block:: console
 
@@ -569,13 +549,37 @@ for astakos:
 
    # snf-manage migrate im
 
-Finally we load the pre-defined user groups
+Then, we load the pre-defined user groups
 
 .. code-block:: console
 
    # snf-manage loaddata groups
 
-You have now finished the Astakos setup. Let's test it now.
+.. _services-reg:
+
+Services Registration
+---------------------
+
+When the database is ready, we configure the elements of the Astakos cloudbar,
+to point to our future services:
+
+.. code-block:: console
+
+   # snf-manage registerservice "~okeanos home" https://node1.example.com/im/ home-icon.png
+   # snf-manage registerservice "cyclades" https://node1.example.com/ui/
+   # snf-manage registerservice "pithos+" https://node2.example.com/ui/
+
+Servers Initialization
+----------------------
+
+Finally, we initialize the servers on node1:
+
+.. code-block:: console
+
+   root@node1:~ # /etc/init.d/gunicorn restart
+   root@node1:~ # /etc/init.d/apache2 restart
+
+We have now finished the Astakos setup. Let's test it now.
 
 
 Testing of Astakos
@@ -709,20 +713,23 @@ pithos+ web UI with the astakos web UI (through the top cloudbar):
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'pithos'
+   PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
 
-The ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` registers the client as a new service
-served by astakos. It's name should be identical with the ``id`` name given at
-the astakos' ``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos "Conf
-Files" section, we actually set the third item of the ``ASTAKOS_CLOUD_SERVICES``
-list, to the dictionary: ``{ 'url':'https://nod...', 'name':'pithos+',
-'id':'pithos }``. This item represents the pithos+ service. The ``id`` we set
-there, is the ``id`` we want here.
+The ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` points to an already registered
+Astakos service. You can see all :ref:`registered services <services-reg>` by
+running on the Astakos node (node1):
+
+.. code-block:: console
+
+   # snf-manage listservices
+
+The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service's
+``id`` as shown by the above command, in our case ``3``.
 
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 pithos+ web client to get from astakos all the information needed to fill its
@@ -1488,7 +1495,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   CLOUDBAR_ACTIVE_SERVICE = 'cyclades'
+   CLOUDBAR_ACTIVE_SERVICE = '2'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
    CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
 
@@ -1500,13 +1507,16 @@ above should have the same values we put in the corresponding variables in
 ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf`` on the previous
 :ref:`Pithos configuration <conf-pithos>` section.
 
-The ``CLOUDBAR_ACTIVE_SERVICE`` registers Cyclades as a new service served by
-Astakos. It’s name should be identical with the id name given at the Astakos’
-``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos :ref:`Conf Files
-<conf-astakos>` section, we actually set the second item of the
-``ASTAKOS_CLOUD_SERVICES`` list, to the dictionary: { 'url':'https://nod...',
-'name':'cyclades', 'id':'cyclades' }. This item represents the Cyclades service.
-The ``id`` we set there, is the ``id`` we want here.
+The ``CLOUDBAR_ACTIVE_SERVICE`` points to an already registered Astakos
+service. You can see all :ref:`registered services <services-reg>` by running
+on the Astakos node (node1):
+
+.. code-block:: console
+
+   # snf-manage listservices
+
+The value of ``CLOUDBAR_ACTIVE_SERVICE`` should be the cyclades service's
+``id`` as shown by the above command, in our case ``2``.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
 

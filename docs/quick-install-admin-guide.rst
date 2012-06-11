@@ -679,6 +679,8 @@ only the two options:
    PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
    PITHOS_AUTHENTICATION_USERS = None
 
+   PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
+
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ app where to
 find the pithos+ backend database. Above we tell pithos+ that its database is
 ``snf_pithos`` at node1 and to connect as user ``synnefo`` with password
@@ -693,6 +695,16 @@ directory at node1's "Pithos+ data directory setup" section.
 The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
 is available the astakos authentication api. If not set, pithos+ tries to
 authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
+
+The ``PITHOS_SERVICE_TOKEN`` should be the Pithos+ token returned by running on
+the Astakos node (node1 in our case):
+
+.. code-block:: console
+
+   # snf-manage listservices
+
+The token has been generated automatically during the :ref:`Pithos+ service
+registration <services-reg>`.
 
 Then we need to setup the web UI and connect it to astakos. To do so, edit
 ``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:

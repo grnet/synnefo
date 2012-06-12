@@ -1,6 +1,9 @@
 Changelog
 ---------
 
+v0.6.1
+^^^^^^
+- skip csrf on login requests
 
 v0.6
 ^^^^

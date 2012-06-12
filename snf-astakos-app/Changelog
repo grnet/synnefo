@@ -1,6 +1,7 @@
 Changelog
 ---------
 
+
 v0.6
 ^^^^
 - Fixed default values in cloudbar sample conf file
@@ -20,8 +21,12 @@ v0.6
 - New feedback api call
 - Save the date user activation sent
 - Save email returned by shibboleth
-- Add logging for main astakos functionality (logging level controlled by ASTAKOS_LOGGING_LEVEL) 
-- Email change mechanism (enabled by ASTAKOS_EMAILCHANGE_ENABLED -- disabled by default)
+- Add logging for main astakos functionality.
+  Logging level controlled by ASTAKOS_LOGGING_LEVEL setting.
+- Email change mechanism
+  Enabled using ASTAKOS_EMAILCHANGE_ENABLED setting (disabled by default)
+- Additional user notification settings
+  ASTAKOS_SIGNUP_MESSAGES, ASTAKOS_PROFILE_MESSAGES, ASTAKOS_GLOBAL_MESSAGES
 
 
 v0.5.1

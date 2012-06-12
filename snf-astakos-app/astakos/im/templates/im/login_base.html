@@ -2,6 +2,9 @@
 
 {% block extra_messages %}
     {% if not messages %}
+        {% for msg_type, msg in GLOBAL_MESSAGES.items %}
+            <li class="{{ msg_type }}">{{ msg|safe }}</li>
+        {% endfor %}
         {% for msg_type, msg in LOGIN_MESSAGES.items %}
             <li class="{{ msg_type }}">{{ msg|safe }}</li>
         {% endfor %}

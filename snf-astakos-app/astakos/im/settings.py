@@ -70,6 +70,18 @@ RE_USER_EMAIL_PATTERNS = getattr(settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
 # e.g. {'warning': 'This warning message will be displayed on the top of login page'}
 LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', {})
 
+# Messages to display on login page header
+# e.g. {'warning': 'This warning message will be displayed on the top of signup page'}
+SIGNUP_MESSAGES = getattr(settings, 'ASTAKOS_SIGNUP_MESSAGES', {})
+
+# Messages to display on login page header
+# e.g. {'warning': 'This warning message will be displayed on the top of profile page'}
+PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', {})
+
+# Messages to display on all pages
+# e.g. {'warning': 'This warning message will be displayed on the top of every page'}
+GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', {})
+
 # messages to display as extra actions in account forms
 # e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})

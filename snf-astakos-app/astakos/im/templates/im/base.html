@@ -93,7 +93,7 @@
             </div>
             {% endblock %}
         </div>
-        {% if messages or LOGIN_MESSAGES %}
+        {% if messages or EXTRA_MESSAGES_SET %}
         <ul class="messages">
             {% block extra_messages %}{% endblock %}
             {% for message in messages %}

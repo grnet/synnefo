@@ -476,6 +476,7 @@
             this.parent = view;
             this.sel = options.el || this.el_sel || ".lower";
             this.el = this.parent.vm(vm).find(this.sel);
+            this.selected_stats_period = 'hourly';
             
             // elements shortcuts
             this.cpu_loading = this.el.find(".cpu-graph .stat-busy");
@@ -488,6 +489,22 @@
             this.loading = this.el.find(".stat-busy");
             this.error = this.el.find(".stat-error");
             this.img = this.el.find(".stat-img");
+            this.stats_period_options = this.el.find(".stats-select-option");
+            
+
+            // handle stats period option select
+            var self = this;
+            this.stats_period_options.click(function(){
+                // skip if current selection is clicked
+                if ($(this).filter(".stats-" + self.selected_stats_period).length) {
+                    return
+                } else {
+                    // identify class
+                    var cls = $(this).attr("class");
+                    regex = /.*\sstats-(\w+)/;
+                    self.set_stats_period(cls.match(regex)[1]);
+                }
+            });
             
             // initial state paremeters
             this.stats = this.vm.get("stats");
@@ -506,9 +523,21 @@
 
             this.net_img.hide();
             this.cpu_img.hide();
+            
+            if (!window.t) {
+                window.t = [];
+            }
+            if (this.parent.menu) {
+                window.t[window.t.length] = this;
+            }
         },
 
         
+        set_stats_period: function(period) {
+            this.selected_stats_period = period;
+            this.update_layout();
+        },
+
         set_handlers: function() {
             // update view state when vm stats update gets triggered
             this.vm.bind("stats:update", _.bind(function(){
@@ -517,12 +546,24 @@
             }, this));
         },
         
-        get_images: function (type) {
-            if (type == "bar") {
-                return {'cpu': this.stats.cpuBar, 'net': this.stats.netBar };
+        get_images: function (type, period) {
+            var period = period || 'hourly';
+            var images;
+
+            if (type == 'bar') {
+                images = {'cpu': this.stats.cpuBar, 'net': this.stats.netBar };
             } else {
-                return {'cpu': this.stats.cpuTimeSeries, 'net': this.stats.netTimeSeries };
+                images = {'cpu': this.stats.cpuTimeSeries, 
+                          'net': this.stats.netTimeSeries };
             }
+
+            if (period == 'weekly' && type != 'bar') {
+                if (images.cpu)
+                    images.cpu = images.cpu.replace('.png', '-w.png')
+                if (images.net)
+                    images.net = images.net.replace('.png', '-w.png')
+            }
+            return images
         },
 
         update_layout: function() {
@@ -533,7 +574,8 @@
             } else {
                 this.loading.hide();
                 this.stats = this.vm.get("stats");
-                var images = this.get_images(this.stats_type);
+                var images = this.get_images(this.stats_type, 
+                                             this.selected_stats_period)
 
                 if (images.cpu) {
                     this.cpu_img.attr({src:images.cpu}).show();
@@ -551,6 +593,11 @@
                     this.net_error.show();
                 }
             }
+                
+            // update selected stats period
+            this.stats_period_options.removeClass("selected");
+            this.stats_period_options.filter(".stats-" + this.selected_stats_period).addClass("selected")
+
             $(window).trigger("resize");
         }
     });

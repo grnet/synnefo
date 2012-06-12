@@ -208,6 +208,8 @@
         
         show_download_private: function(name, private) {
             var download_cont = this.$(".private-cont");
+            var private_download_filename = "id_rsa";
+
             download_cont.show();
             download_cont.find(".key-contents textarea").val("");
             download_cont.find(".private-msg, .down-button").show();
@@ -216,7 +218,7 @@
             download_cont.find("textarea").hide();
             download_cont.find("form").attr({action: snf.config.userdata_keys_url + '/download'})
             download_cont.find('[name=data]').val(private);
-            download_cont.find('[name=name]').val(name);
+            download_cont.find('[name=name]').val(private_download_filename);
         },
 
         update_list_item: function(el, model) {

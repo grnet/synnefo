@@ -102,7 +102,7 @@
         var SKIP_TIMEOUTS = {{ skip_timeouts }};
         var UPDATE_INTERVAL = {{ update_interval }};
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
-        var FEEDBACK_URL = "{% url feedback %}";
+        var FEEDBACK_URL = "{% url ui_feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
         var API_OVERLAY_TITLE = "{% trans "API access" %}";
         var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
@@ -575,7 +575,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             
             // TODO: configurable userdata urls in models.js
             synnefo.config.userdata_url = '/ui/userdata';
-            synnefo.config.userdata_keys_url = '{% url keys_collection %}';
+            synnefo.config.userdata_keys_url = '{% url ui_keys_collection %}';
             synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
             
             // media config

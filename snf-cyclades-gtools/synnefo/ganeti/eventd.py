@@ -104,7 +104,11 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        job = jqueue._QueuedJob.Restore(None, data)
+        try: # Version compatibility issue with Ganeti
+            job = jqueue._QueuedJob.Restore(None, data, False)
+        except TypeError:
+            job = jqueue._QueuedJob.Restore(None, data)
+
 
         for op in job.ops:
             instances = ""

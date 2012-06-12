@@ -65,7 +65,7 @@ def custom_messages(request):
             'LOGIN_MESSAGES' : LOGIN_MESSAGES,
             'PROFILE_MESSAGES' : PROFILE_MESSAGES,
             'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS,
-            'EXTRA_MESSAGES_SET' : PROFILE_EXTRA_LINKS,
+            'EXTRA_MESSAGES_SET' : EXTRA_MESSAGES_SET
            }
 
 def menu(request):

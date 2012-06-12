@@ -57,12 +57,15 @@ def media(request):
     return {'IM_STATIC_URL' : IM_STATIC_URL}
 
 def custom_messages(request):
+    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or \
+            LOGIN_MESSAGES or PROFILE_MESSAGES)
     return {
             'GLOBAL_MESSAGES' : GLOBAL_MESSAGES,
             'SIGNUP_MESSAGES' : SIGNUP_MESSAGES,
             'LOGIN_MESSAGES' : LOGIN_MESSAGES,
             'PROFILE_MESSAGES' : PROFILE_MESSAGES,
-            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS
+            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS,
+            'EXTRA_MESSAGES_SET' : PROFILE_EXTRA_LINKS,
            }
 
 def menu(request):

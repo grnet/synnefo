@@ -145,18 +145,19 @@
 
 
 /* cloudbar header */
-.cloudbar                                       { background:#000; color:#fff;	   line-height:35px; }	
+.cloudbar                                       { background:#000; color:#fff;	   line-height:35px; position:absolute; left:0; top:0; width:100%; }	
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}
-.cloudbar .profile                              { float:right; background:#01A1AE; min-width:150px; padding:0 20px; text-align:right;  }
+.cloudbar .profile                              { float:right; background:#01A1AE; min-width:190px; padding:0; text-align:right;  }
 .cloudbar .profile:hover						{ background:#41b9c2; }
 .cloudbar .profile a                            { text-decoration:none; color:#fff; display:block; width:100%;}
 .cloudbar .profile ul                           { position:absolute;   right:0; top:35px; padding:0; margin:0;  width:190px; display:none;	z-index:9; background:#fff;}
 .cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 20px;}
 .cloudbar .profile ul li:hover a				{ color:#01A1AE;}
-.cloudbar .profile .user a						{ padding-right:20px; width:auto; background:url(../images/arrow-lt.png) no-repeat right center;}
-.cloudbar .profile .full a                      { background-image:url(../images/arrow-down.png); }
-.cloudbar .profile .full a.open					{ background-image:url(../images/arrow-up.png); }
+.cloudbar .profile .user a						{ padding-right:20px; width:auto; }
+.cloudbar .profile .user a span					{ padding-right:20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
+.cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }
+.cloudbar .profile .full a.open span			{ background-image:url(../images/arrow-up.png); }
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
 .cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:inline; width:auto;}
 .cloudbar ul.services                           { margin:0; padding:0; }

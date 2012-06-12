@@ -24,7 +24,7 @@ form .form-row.submit 						{ margin: 22px 0 ;}
 form .form-row .extra-link 					{ color: #808080; text-decoration: none; border: none; margin-top:15px; line-height:98%; display:inline-block; padding-top:15px;   float: right; }
 form .form-row .extra-link:hover			{ border-bottom:1px solid #808080;}
 form .form-row label 						{ font-size: 1.1em; }
-form.innerlabels label 						{ position: absolute; top: 12px; left: 1.5em; color: #808080 ; }
+form.innerlabels label 						{ position: absolute; bottom: 11px; left: 1.5em; color: #808080 ; }
 form.innerlabels p 							{ margin:0; position: relative;}
 form.innerlabels p.p15px					{ font-size:1.154em;}
 form.innerlabels p.p15px a					{ margin:0 5px;}
@@ -108,7 +108,7 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha								{ width:331px; border:1px solid #808080; margin:20px 0; position:relative; }
 #okeanos_recaptcha #recaptcha_image				{ padding:15px 0; }
 #okeanos_recaptcha label.recaptcha_only_if_image,
-#okeanos_recaptcha label.recaptcha_only_if_audio{ position:absolute; top:auto; bottom:12px; }
+#okeanos_recaptcha label.recaptcha_only_if_audio{ position:absolute; top:auto; bottom:11px; }
 #okeanos_recaptcha a.recaptcha_audio_cant_hear_link { margin-left:20px;  }
 #okeanos_recaptcha #recaptcha_response_field	{ width:220px; float:left; border-left:0 none;   }
 #okeanos_recaptcha .img							{ width:23px; float:left; height:23px; overflow:hidden; margin:8px; }

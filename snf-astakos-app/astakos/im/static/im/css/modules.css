@@ -30,6 +30,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg .close:hover                           { color:#000;}
 
 /* container */
+.container										{ border-top:35px solid #000; }
 .container .wrapper                             { padding-bottom:100px;}
 .mainlogo h1									{ line-height:100%; font-size:1em; }
 .container .navigation                          { margin:20px 0 0; font-size:1.154em; height:95px;}

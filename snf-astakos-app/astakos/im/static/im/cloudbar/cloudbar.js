@@ -69,7 +69,7 @@ $(document).ready(function(){
     $.getJSON(get_menu_url, function(data) {
         $.each(data, function(i,el) {
             if (i == 0){
-                username.text(el.name);
+                username.html('<span>'+el.name+'</span>');
                 username.attr('href', el.url);
                 user.removeClass('full');
             }else{

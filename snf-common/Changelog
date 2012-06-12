@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.9.14
+-------
+* Added astakos client lib helper get_token_from_cookie
+
 v0.9.7
 ------
 * Provide a fallback token to user library

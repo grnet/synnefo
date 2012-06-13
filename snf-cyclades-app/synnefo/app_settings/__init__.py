@@ -7,6 +7,7 @@ synnefo_web_apps = [
     'synnefo.plankton',
     'synnefo.helpdesk',
     'synnefo.ui.userdata',
+    'synnefo.helpdesk',
 ]
 
 synnefo_web_middleware = []

@@ -34,12 +34,12 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
-from ._common import get_user
-
 from astakos.im.models import AstakosUser
+from ._common import remove_user_permission, add_user_permission
 
 class Command(BaseCommand):
     args = "<user ID>"
@@ -89,6 +89,12 @@ class Command(BaseCommand):
         make_option('--delete-group',
             dest='delete-group',
             help="Delete user group"),
+        make_option('--add-permission',
+            dest='add-permission',
+            help="Add user permission"),
+        make_option('--delete-permission',
+            dest='delete-permission',
+            help="Delete user permission"),
         )
     
     def handle(self, *args, **options):
@@ -123,7 +129,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.add(group)
             except Group.DoesNotExist, e:
-                raise CommandError("Group named %s does not exist." % groupname)
+                self.stdout.write("Group named %s does not exist\n" % groupname)
         
         groupname = options.get('delete-group')
         if groupname is not None:
@@ -131,7 +137,33 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.remove(group)
             except Group.DoesNotExist, e:
-                raise CommandError("Group named %s does not exist." % groupname)
+                self.stdout.write("Group named %s does not exist\n" % groupname)
+        
+        pname = options.get('add-permission')
+        if pname is not None:
+            try:
+                r, created = add_user_permission(user, pname)
+                if created:
+                    self.stdout.write('Permission: %s created successfully\n' % pname)
+                if r > 0:
+                    self.stdout.write('Permission: %s added successfully\n' % pname)
+                elif r==0:
+                    self.stdout.write('User has already permission: %s\n' % pname)
+            except Exception, e:
+                raise CommandError(e)
+        
+        pname  = options.get('delete-permission')
+        if pname is not None and not user.has_perm(pname):
+            try:
+                r = remove_user_permission(user, pname)
+                if r < 0:
+                    self.stdout.write('Invalid permission codename: %s\n' % pname)
+                elif r == 0:
+                    self.stdout.write('User has not permission: %s\n' % pname)
+                elif r > 0:
+                    self.stdout.write('Permission: %s removed successfully\n' % pname)
+            except Exception, e:
+                raise CommandError(e)
         
         level = options.get('level')
         if level is not None:

@@ -32,8 +32,9 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME, LOGIN_MESSAGES, PROFILE_EXTRA_LINKS
-from astakos.im.api import get_menu
+        COOKIE_NAME, LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES, \
+        GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
+from astakos.im.api.admin import get_menu
 from astakos.im.util import get_query
 
 from django.conf import settings
@@ -56,9 +57,15 @@ def media(request):
     return {'IM_STATIC_URL' : IM_STATIC_URL}
 
 def custom_messages(request):
+    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or \
+            LOGIN_MESSAGES or PROFILE_MESSAGES)
     return {
+            'GLOBAL_MESSAGES' : GLOBAL_MESSAGES,
+            'SIGNUP_MESSAGES' : SIGNUP_MESSAGES,
             'LOGIN_MESSAGES' : LOGIN_MESSAGES,
-            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS
+            'PROFILE_MESSAGES' : PROFILE_MESSAGES,
+            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS,
+            'EXTRA_MESSAGES_SET' : EXTRA_MESSAGES_SET
            }
 
 def menu(request):

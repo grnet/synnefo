@@ -1,18 +1,18 @@
 # Copyright 2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,13 +25,30 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from queue import Queue
+from django.core.management.base import BaseCommand, CommandError
 
-__all__ = ["Queue"]
+from astakos.im.models import Service
 
+class Command(BaseCommand):
+    args = "<name>"
+    help = "Renew service token"
+    
+    def handle(self, *args, **options):
+        if len(args) != 1:
+            raise CommandError("Invalid number of arguments")
+        
+        try:
+            service = Service.objects.get(name=args[0])
+            service.renew_token()
+            service.save()
+            self.stdout.write('New service token: %s\n' % service.auth_token)
+        except Service.DoesNotExist:
+            raise CommandError("Invalid service name")
+        except Exception, e:
+            raise CommandError(e)

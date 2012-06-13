@@ -37,19 +37,19 @@ import time
 
 from urllib import quote
 from urlparse import urlsplit, urlunsplit
-from functools import wraps
 
 from datetime import tzinfo, timedelta
 from django.http import HttpResponse, HttpResponseBadRequest, urlencode
 from django.template import RequestContext
-from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
-from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE
+from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, \
+    COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
+from astakos.im.functions import login
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +142,8 @@ def set_cookie(response, user):
     response.set_cookie(COOKIE_NAME, value=cookie_value,
                         expires=expire_fmt, path='/',
                         domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
+    msg = 'Cookie [expiring %s] set for %s' % (user.auth_token_expires, user.email)
+    logger._log(LOGGING_LEVEL, msg, [])
 
 class lazy_string(object):
     def __init__(self, function, *args, **kwargs):

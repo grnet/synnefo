@@ -34,9 +34,12 @@
 from datetime import datetime
 
 from django.utils.timesince import timesince, timeuntil
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 from astakos.im.models import AstakosUser
 
+content_type = None
 
 def get_user(email_or_id, **kwargs):
     try:
@@ -59,3 +62,59 @@ def format_date(d):
         return timesince(d) + ' ago'
     else:
         return 'in ' + timeuntil(d)
+
+def get_astakosuser_content_type():
+    if content_type:
+        return content_type
+    
+    try:
+        return ContentType.objects.get(app_label='im',
+                                       model='astakosuser')
+    except:
+        return content_type
+    
+def add_user_permission(user, pname):
+    content_type = get_astakosuser_content_type()
+    if user.has_perm(pname):
+        return 0, None
+    p, created = Permission.objects.get_or_create(codename=pname,
+                                                  name=pname.capitalize(),
+                                                  content_type=content_type)
+    user.user_permissions.add(p)
+    return 1, created
+
+def add_group_permission(group, pname):
+    content_type = get_astakosuser_content_type()
+    if pname in [p.codename for p in group.permissions.all()]:
+        return 0, None
+    content_type = ContentType.objects.get(app_label='im',
+                                           model='astakosuser')
+    p, created = Permission.objects.get_or_create(codename=pname,
+                                                  name=pname.capitalize(),
+                                                  content_type=content_type)
+    group.permissions.add(p)
+    return 1, created
+
+def remove_user_permission(user, pname):
+    content_type = get_astakosuser_content_type()
+    if user.has_perm(pname):
+        return 0
+    try:
+        p = Permission.objects.get(codename=pname,
+                                    content_type=content_type)
+        user.user_permissions.remove(p)
+        return 1
+    except Permission.DoesNotExist, e:
+        return -1
+
+def remove_group_permission(group, pname):
+    content_type = get_astakosuser_content_type()
+    if pname not in [p.codename for p in group.permissions.all()]:
+        return 0
+    try:
+        p = Permission.objects.get(codename=pname,
+                                    content_type=content_type)
+        group.permissions.remove(p)
+        return 1
+    except Permission.DoesNotExist, e:
+        return -1

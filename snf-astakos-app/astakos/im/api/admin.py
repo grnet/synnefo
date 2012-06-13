@@ -39,18 +39,21 @@ from traceback import format_exc
 from time import time, mktime
 from urllib import quote
 from urlparse import urlparse
+from collections import defaultdict
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
 
-from astakos.im.faults import BadRequest, Unauthorized, InternalServerError, Fault
-from astakos.im.models import AstakosUser
-from astakos.im.settings import CLOUD_SERVICES, INVITATIONS_ENABLED, COOKIE_NAME
+from astakos.im.api.faults import *
+from astakos.im.models import AstakosUser, Service
+from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
 from astakos.im.util import epoch
+from astakos.im.api import _get_user_by_email, _get_user_by_username
 
 logger = logging.getLogger(__name__)
+format = ('%a, %d %b %Y %H:%M:%S GMT')
 
 def render_fault(request, fault):
     if isinstance(fault, InternalServerError) and settings.DEBUG:
@@ -64,9 +67,11 @@ def render_fault(request, fault):
     response['Content-Length'] = len(response.content)
     return response
 
-def api_method(http_method=None, token_required=False, perms=[]):
+def api_method(http_method=None, token_required=False, perms=None):
     """Decorator function for views that implement an API method."""
-    
+    if not perms:
+        perms = []
+
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
@@ -79,8 +84,11 @@ def api_method(http_method=None, token_required=False, perms=[]):
                         raise Unauthorized('Access denied')
                     try:
                         user = AstakosUser.objects.get(auth_token=x_auth_token)
+                        ## Check if the token has expired.
+                        #if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
+                        #    raise Unauthorized('Authentication expired')
                         if not user.has_perms(perms):
-                            raise Unauthorized('Unauthorized request')
+                            raise Forbidden('Unauthorized request')
                     except AstakosUser.DoesNotExist, e:
                         raise Unauthorized('Invalid X-Auth-Token')
                     kwargs['user'] = user
@@ -103,7 +111,7 @@ def authenticate_old(request, user=None):
     #                       unauthorised (401)
     if not user:
         raise BadRequest('No user')
-    
+
     # Check if the is active.
     if not user.is_active:
         raise Unauthorized('User inactive')
@@ -111,10 +119,10 @@ def authenticate_old(request, user=None):
     # Check if the token has expired.
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
         raise Unauthorized('Authentication expired')
-    
+
     if not user.signed_terms():
         raise Unauthorized('Pending approval terms')
-    
+
     response = HttpResponse()
     response.status=204
     user_info = {'username':user.username,
@@ -123,7 +131,8 @@ def authenticate_old(request, user=None):
                  'auth_token_created':user.auth_token_created.isoformat(),
                  'auth_token_expires':user.auth_token_expires.isoformat(),
                  'has_credits':user.has_credits,
-                 'has_signed_terms':user.signed_terms()}
+                 'has_signed_terms':user.signed_terms(),
+                 'groups':[g.name for g in user.groups.all()]}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
@@ -137,7 +146,7 @@ def authenticate(request, user=None):
     #                       unauthorised (401)
     if not user:
         raise BadRequest('No user')
-    
+
     # Check if the is active.
     if not user.is_active:
         raise Unauthorized('User inactive')
@@ -145,10 +154,10 @@ def authenticate(request, user=None):
     # Check if the token has expired.
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
         raise Unauthorized('Authentication expired')
-    
+
     if not user.signed_terms():
         raise Unauthorized('Pending approval terms')
-    
+
     response = HttpResponse()
     response.status=204
     user_info = {'userid':user.username,
@@ -168,7 +177,9 @@ def authenticate(request, user=None):
 @api_method(http_method='GET')
 def get_services(request):
     callback = request.GET.get('callback', None)
-    data = json.dumps(CLOUD_SERVICES)
+    services = Service.objects.all()
+    data = tuple({'id':s.pk, 'name':s.name, 'url':s.url, 'icon':s.icon} for s in services)
+    data = json.dumps(data)
     mimetype = 'application/json'
 
     if callback:
@@ -179,7 +190,6 @@ def get_services(request):
 
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
-    exclude = []
     index_url = reverse('index')
     absolute = lambda (url): request.build_absolute_uri(url)
     l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
@@ -199,6 +209,9 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             if user.has_usable_password():
                 l.append({ 'url': absolute(reverse('password_change')),
                           'name': "Change password" })
+            if EMAILCHANGE_ENABLED:
+                l.append({'url':absolute(reverse('email_change')),
+                          'name': "Change email"})
             if INVITATIONS_ENABLED:
                 l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
                           'name': "Invitations" })
@@ -207,7 +220,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         if with_signout:
             l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
                       'name': "Sign out"})
-    
+
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))
     mimetype = 'application/json'
@@ -218,46 +231,23 @@ def get_menu(request, with_extra_links=False, with_signout=True):
 
     return HttpResponse(content=data, mimetype=mimetype)
 
-@api_method(http_method='GET', token_required=True, perms=['astakos.im.can_find_userid'])
-def find_userid(request):
-    # Normal Response Codes: 204
+@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
+def get_user_by_email(request, user=None):
+    # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    email = request.GET.get('email')
-    if not email:
-        raise BadRequest('Email missing')
-    try:
-        user = AstakosUser.objects.get(email = email, is_active=True)
-    except AstakosUser.DoesNotExist, e:
-        raise BadRequest('Invalid email')
-    else:
-        response = HttpResponse()
-        response.status=204
-        user_info = {'userid':user.username}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
+    #                       forbidden (403)
+    #                       itemNotFound (404)
+    email = request.GET.get('name')
+    return _get_user_by_email(email)
 
-@api_method(http_method='GET', token_required=True, perms=['astakos.im.can_find_email'])
-def find_email(request):
-    # Normal Response Codes: 204
+@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
+def get_user_by_username(request, user_id, user=None):
+    # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    userid = request.GET.get('userid')
-    if not userid:
-        raise BadRequest('Userid missing')
-    try:
-        user = AstakosUser.objects.get(username = userid)
-    except AstakosUser.DoesNotExist, e:
-        raise BadRequest('Invalid userid')
-    else:
-        response = HttpResponse()
-        response.status=204
-        user_info = {'userid':user.email}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
+    #                       forbidden (403)
+    #                       itemNotFound (404)
+    return _get_user_by_username(user_id)

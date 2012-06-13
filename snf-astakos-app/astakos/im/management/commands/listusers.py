@@ -54,6 +54,11 @@ class Command(BaseCommand):
             dest='pending',
             default=False,
             help="List only users pending activation"),
+        make_option('-n',
+            action='store_true',
+            dest='pending_send_mail',
+            default=False,
+            help="List only users who have not received activation"),
         )
     
     def handle(self, *args, **options):
@@ -63,9 +68,11 @@ class Command(BaseCommand):
         users = AstakosUser.objects.all()
         if options['pending']:
             users = users.filter(is_active=False)
+        elif options['pending_send_mail']:
+            users = users.filter(is_active=False, activation_sent=None)
         
-        labels = ('id', 'email', 'real name', 'affiliation', 'active', 'admin', 'provider')
-        columns = (3, 24, 24, 12, 6, 5, 12)
+        labels = ('id', 'email', 'real name', 'active', 'admin', 'provider', 'groups')
+        columns = (3, 24, 24, 6, 5, 12, 24)
         
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -77,8 +84,8 @@ class Command(BaseCommand):
             id = str(user.id)
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
-            fields = (id, user.email, user.realname, user.affiliation, active,
-                      admin, user.provider)
+            fields = (id, user.email, user.realname, active, admin, user.provider,
+                      ','.join([g.name for g in user.groups.all()]))
             
             if options['csv']:
                 line = '|'.join(fields)

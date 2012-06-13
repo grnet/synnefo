@@ -53,7 +53,7 @@ $(document).ready(function(){
             slink.attr('title', el.name);
             sli.append(slink);
             services.append(sli);
-            if (el.id == ACTIVE_MENU) {
+            if (el.id == ACTIVE_MENU || el.name == ACTIVE_MENU) {
                 sli.addClass("active");
             }
         });

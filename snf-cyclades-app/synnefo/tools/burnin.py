@@ -762,27 +762,40 @@ class NetworkTestCase(unittest.TestCase):
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
-        loginname = image["metadata"]["values"].get("users", None)
-        hostip = self._get_ipv4(server) 
         
-        if not loginname:
-            loginname = self._connect_loginname(os)
+        users = image["metadata"]["values"].get("users", None)
+        userlist = users.split()
 
+        if "root" in userlist:
+            loginname = "root"
+        elif users == None:
+            loginname = self._connect_loginname(os)
+        else:
+            loginname = choice(userlist)
+
+        hostip = self._get_ipv4(server) 
         myPass = self.password['A']
 
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            log.info("My password " + myPass)
+
+            log.info("Username: " + loginname) 
+            log.info("Password " + myPass)
             ssh.connect(hostip, username = loginname, password = myPass)
 
         except socket.error:
             raise AssertionError
 
+        if loginname != "root":
+            stdin, stdout, stderr = ssh.exec_command("sudo su")
+            stdin, stdout, stderr = ssh.exec_command(myPass)
+            
+        
         stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.42"))
         lines = stdout.readlines()
-
+        
         self.assertEqual(len(lines), 0)
         
 
@@ -791,29 +804,38 @@ class NetworkTestCase(unittest.TestCase):
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
-        loginname = image["metadata"]["values"].get("users", None)
-        hostip = self._get_ipv4(server) 
         
-        if not loginname:
+        users = image["metadata"]["values"].get("users", None)
+        userlist = users.split()
+
+        if "root" in userlist:
+            loginname = "root"
+        elif users == None:
             loginname = self._connect_loginname(os)
-        
+        else:
+            loginname = choice(userlist)
+
+        hostip = self._get_ipv4(server)
         myPass = self.password['B']
 
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            log.info("My password " + myPass)
+            log.info("Username: " + loginname) 
+            log.info("Password " + myPass)
             ssh.connect(hostip, username = loginname, password = myPass)
-
         except socket.error:
             raise AssertionError
 
+        if loginname != "root":
+            stdin, stdout, stderr = ssh.exec_command("sudo su")
+            stdin, stdout, stderr = ssh.exec_command(myPass)
+            
         stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.43"))
         lines = stdout.readlines()
-
+        
         self.assertEqual(len(lines), 0)
-
 
 
     def test_002b_test_connection_exists(self):
@@ -822,12 +844,17 @@ class NetworkTestCase(unittest.TestCase):
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
-        loginname = image["metadata"]["values"].get("users", None)
-        
         hostip = self._get_ipv4(server)
-        
-        if not loginname:
+
+        users = image["metadata"]["values"].get("users", None)
+        userlist = users.split()
+
+        if "root" in userlist:
+            loginname = "root"
+        elif users == None:
             loginname = self._connect_loginname(os)
+        else:
+            loginname = choice(userlist)
 
         try:
             ssh = paramiko.SSHClient()
@@ -906,7 +933,7 @@ class NetworkTestCase(unittest.TestCase):
                 self.assertLess(time.time(), fail_tmout)
             else:
                 time.sleep(self.query_interval)
-
+                
         self.assertTrue(deleted)
 
 class TestRunnerProcess(Process):

@@ -49,10 +49,12 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container h2 em 								{ color: #3582AC; font-style:normal; }
 .content a						                { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#000; }
 .content a:hover					            { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#F89A1C; }
-.container ul.options                           { font-size:1.231em; padding:0; margin:0;}
+.container ul.options                           { padding:0; margin:0; font-size:1.154em;}
 .container ul.options li                        { list-style:none outside; margin:0 0 1em 0;padding:0;}
+.container ul.options li h3						{ font-size:1em; margin-bottom:0; }
 .container ul.options li a				        { border:0 none;}
 .container ul.options li a:hover				{ text-decoration:underline;}
+.container .extra ul.options					{ font-size:1em; margin:30px 0 0 ; padding:0 15px; }
 .landing h2, .landing a:hover                   { color:#01A1AE;}
 .faq h2, .faq a:hover, .faq .current a          { color:#EF4F54; border:0 none;}
 .content .question h2							{ color:#4085A6 }
@@ -89,9 +91,9 @@ p.info a:hover                                  { color:#000; border-bottom:0 no
 .bg-wrap .extra .hide-extra:hover img           { margin-top:-16px;}
 .cyclades .bg-wrap .extra .hide-extra:hover img { margin-top:-32px;}
 .pithos h2, .pithos a:hover,                     
-.pithos .extra .options li                      { color:#F89A1C; }
+.pithos .extra .options li h3                     { color:#F89A1C; }
 .cyclades h2, .cyclades a:hover,                     
-.cyclades .extra .options li                    { color:#4085A6; }
+.cyclades .extra .options li h3                   { color:#4085A6; }
 .cyclades a							            { border-bottom:1px solid #4085A6; }
 .cyclades a:hover							    { border-bottom:1px solid #4085A6; }
 a.btn_01                                        { display:block; text-align:center; background:#F6921E; color:#000; padding:10px; text-decoration:none; border:0 none;}
@@ -199,3 +201,11 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 .container ul.options li a.grey:hover			{ border-bottom:1px solid #aaa; }
 .container ul.options li a.blue					{ color:#00A2B1 }
 .container ul.options li a.blue:hover			{ border-bottom:1px solid #00A2B1; }
+
+/* homepage clouds animation */
+#animation                                      { width:94%; height:120px; padding:0 3%; background:url(../images/okeanos_landing.png) no-repeat; max-width:375px; }
+#animation div                                  { margin:0 2%; float:left; width:29%; height:100%; position:relative; }                    
+#animation div a                                { position:absolute; left:0; top:0; border:0 none; }
+#animation div a img							{ width:100%; }
+#animation p                                  	{ position:absolute; bottom:0; left:0; width:100%; text-align:center; }
+#animation p img                                { display:inline-block; width:65%; }

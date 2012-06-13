@@ -22,8 +22,12 @@ def helpdesk_user_required(func, groups=['helpdesk']):
     def wrapper(request, *args, **kwargs):
         token = get_token_from_cookie(request, HELPDESK_AUTH_COOKIE)
         get_user(request, settings.ASTAKOS_URL, fallback_token=token)
-        if request.user:
+        if hasattr(request, 'user'):
             groups = request.user.get('groups', [])
+
+            if not groups:
+                raise PermissionDenied
+
             for g in groups:
                 if not g in groups:
                     raise PermissionDenied

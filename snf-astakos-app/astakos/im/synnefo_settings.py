@@ -81,9 +81,5 @@ AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',
                             'astakos.im.auth_backends.TokenBackend')
 LOGIN_URL = '/im'
 
-# The server is behind a proxy (apache and gunicorn setup).
-USE_X_FORWARDED_HOST = False
-
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
-SESSION_COOKIE_SECURE = True

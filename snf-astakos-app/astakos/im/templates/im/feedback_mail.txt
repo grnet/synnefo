@@ -1,5 +1,5 @@
 Feedback message:
-{{ message }}
+{{ message|safe }}
 
 User info:
 ID: {{ user.id }}

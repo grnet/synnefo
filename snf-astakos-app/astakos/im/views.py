@@ -387,7 +387,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
 
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            msg = form.cleaned_data['feedback_msg'],
+            msg = form.cleaned_data['feedback_msg']
             data = form.cleaned_data['feedback_data']
             try:
                 send_feedback(msg, data, request.user, email_template_name)

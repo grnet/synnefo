@@ -101,6 +101,9 @@
 			
 			// Remove keydown event to save on CPU processing
 			base.$field.unbind('keydown.infieldlabel');
+
+            // ff3.5 fix, forces key to be written in input field
+            base.$field.val('');
 		};
       
 		// Run the initialization method

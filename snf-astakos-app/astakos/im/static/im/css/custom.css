@@ -1,0 +1,10 @@
+ul.messages li { margin-bottom: 5px }
+ul.messages { background-color: transparent; }
+ul.messages li a { font-weight: normal !important }
+ul.messages li.notice { background-color: #284A5E }
+ul.messages li.notice { color: #FFF }
+ul.messages li.notice a { color: #FFF }
+ul.messages li.notice2 { background-color: #F54500 }
+ul.messages li.notice2 { color: #FFF }
+ul.messages li.notice2 { background-color: #F54500 }
+ul.messages li.notice2 a { color: #FFF }

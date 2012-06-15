@@ -33,7 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.functions import send_verification, SendMailError
+from astakos.im.functions import send_activation, SendMailError
 
 from ._common import get_user
 
@@ -48,11 +48,14 @@ class Command(BaseCommand):
         for email_or_id in args:
             user = get_user(email_or_id, is_active=False)
             if not user:
-                self.stderr.write("Unknown or already active user '%s'\n" % (email_or_id,))
+                self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
+                continue
+            if user.is_active:
+                self.stderr.write("Already active user '%s'\n" % (email_or_id,))
                 continue
             
             try:
-                send_verification(user)
+                send_activation(user)
             except SendMailError, e:
                 raise CommandError(e.message)
             

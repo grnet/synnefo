@@ -32,43 +32,45 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from random import choice
-from string import digits, lowercase, uppercase
-from uuid import uuid4
-from time import time
-from os.path import abspath
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
 
-from ._common import add_group_permission
+from astakos.im.models import Service
 
 class Command(BaseCommand):
-    args = "<groupname> [<permission> ...]"
-    help = "Insert group"
-    
+    help = "List g"
+
+    option_list = BaseCommand.option_list + (
+        make_option('-c',
+            action='store_true',
+            dest='csv',
+            default=False,
+            help="Use pipes to separate values"),
+    )
+
     def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Invalid number of arguments")
-        
-        name = args[0].decode('utf8')
-        
-        try:
-            Group.objects.get(name=name)
-            raise CommandError("A group with this name already exists")
-        except Group.DoesNotExist, e:
-            group = Group(name=name)
-            group.save()
-            msg = "Created group id %d" % (group.id,)
-            self.stdout.write(msg + '\n')
-            try:
-                for pname in args[1:]:
-                    r, created = add_group_permission(group, pname)
-                    if created:
-                        self.stdout.write('Permission: %s created successfully\n' % pname)
-                    if r == 0:
-                        self.stdout.write('Group has already permission: %s\n' % pname)
-                    else:
-                        self.stdout.write('Permission: %s added successfully\n' % pname)
-            except Exception, e:
-                raise CommandError(e)
+        if args:
+            raise CommandError("Command doesn't accept any arguments")
+
+        services = Service.objects.all()
+
+        labels = ('id', 'name', 'url', 'auth_token', 'icon')
+        columns = (3, 12, 40, 20, 20)
+
+        if not options['csv']:
+            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
+            self.stdout.write(line + '\n')
+            sep = '-' * len(line)
+            self.stdout.write(sep + '\n')
+
+        for service in services:
+            fields = (str(service.id), service.name, service.url,
+                    service.auth_token,
+                    service.icon)
+
+            if options['csv']:
+                line = '|'.join(fields)
+            else:
+                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+
+            self.stdout.write(line.encode('utf8') + '\n')

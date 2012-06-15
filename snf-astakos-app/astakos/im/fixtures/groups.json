@@ -19,5 +19,12 @@
         "fields": {
             "name": "shibboleth"
         }
+    },
+    {
+        "model": "auth.group",
+        "pk": 4,
+        "fields": {
+            "name": "helpdesk"
+        }
     }
 ]

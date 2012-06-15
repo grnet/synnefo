@@ -35,11 +35,12 @@ from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
+from django.forms.models import inlineformset_factory
 
 from astakos.im.util import prepare_response, get_context, get_invitation
 from astakos.im.views import requires_anonymous, render_response
 from astakos.im.settings import DEFAULT_USER_LEVEL
-from astakos.im.models import AstakosUser, Invitation
+from astakos.im.models import AstakosUser, Invitation, AdditionalMail
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 
@@ -52,6 +53,7 @@ class Tokens:
     SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
     SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
+    SHIB_MAIL = "HTTP_SHIB_MAIL"
 
 @requires_anonymous
 def login(request,  backend=None, on_login_template='im/login.html', on_creation_template='im/third_party_registration.html', extra_context={}):
@@ -72,6 +74,7 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
         return HttpResponseBadRequest("Missing user name in request")
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+    email = tokens.get(Tokens.SHIB_MAIL, None)
     
     try:
         user = AstakosUser.objects.get(provider='shibboleth', third_party_identifier=eppn)
@@ -88,7 +91,8 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
                                    context_instance=RequestContext(request))
     except AstakosUser.DoesNotExist, e:
         user = AstakosUser(third_party_identifier=eppn, realname=realname,
-                           affiliation=affiliation, provider='shibboleth')
+                           affiliation=affiliation, provider='shibboleth',
+                           email=email)
         try:
             if not backend:
                 backend = get_backend(request)
@@ -96,8 +100,6 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
         except Exception, e:
             form = SimpleBackend(request).get_signup_form(provider='shibboleth', instance=user)
             messages.add_message(request, messages.ERROR, e)
-        form.data.update({'third_party_identifier':eppn, 'realname':realname,
-                          'affiliation':affiliation})
         return render_response(on_creation_template,
                                signup_form = form,
                                provider = 'shibboleth',

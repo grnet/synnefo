@@ -72,7 +72,7 @@
 <body>
     <div class="container">
 	    <div class="wrapper">       
-	        {% if messages or LOGIN_MESSAGES %}
+	        {% if messages or EXTRA_MESSAGES_SET %}
 	        <div class="top-msg active">
 	            {% block extra_messages %}{% endblock %}
 	            {% for message in messages %}
@@ -99,8 +99,6 @@
 	            </ul>
             </div>
             {% endblock %}
-	         
-	        
 	        <div class="content">
 	            {% block page.body %}
 	                <div class="full">

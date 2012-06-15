@@ -32,43 +32,42 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from random import choice
-from string import digits, lowercase, uppercase
-from uuid import uuid4
-from time import time
-from os.path import abspath
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 
+from astakos.im.models import AstakosUser
 from ._common import add_group_permission
 
 class Command(BaseCommand):
-    args = "<groupname> [<permission> ...]"
-    help = "Insert group"
+    args = "<groupname> <permission> [<permissions> ...]"
+    help = "Add group permissions"
     
     def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Invalid number of arguments")
+        if len(args) < 2:
+            raise CommandError("Please provide a group name and at least one permission")
         
-        name = args[0].decode('utf8')
+        group = None
+        try:
+            if args[0].isdigit():
+                group = Group.objects.get(id=args[0])
+            else:
+                group = Group.objects.get(name=args[0])
+        except Group.DoesNotExist, e:
+            raise CommandError("Invalid group")
         
         try:
-            Group.objects.get(name=name)
-            raise CommandError("A group with this name already exists")
-        except Group.DoesNotExist, e:
-            group = Group(name=name)
-            group.save()
-            msg = "Created group id %d" % (group.id,)
-            self.stdout.write(msg + '\n')
-            try:
-                for pname in args[1:]:
-                    r, created = add_group_permission(group, pname)
-                    if created:
-                        self.stdout.write('Permission: %s created successfully\n' % pname)
-                    if r == 0:
-                        self.stdout.write('Group has already permission: %s\n' % pname)
-                    else:
-                        self.stdout.write('Permission: %s added successfully\n' % pname)
-            except Exception, e:
-                raise CommandError(e)
+            content_type = ContentType.objects.get(app_label='im',
+                                                       model='astakosuser')
+            for pname in args[1:]:
+                r, created = add_group_permission(group, pname)
+                if created:
+                    self.stdout.write('Permission: %s created successfully\n' % pname)
+                if r == 0:
+                    self.stdout.write('Group has already permission: %s\n' % pname)
+                else:
+                    self.stdout.write('Permission: %s added successfully\n' % pname)
+        except Exception, e:
+            raise CommandError(e)

@@ -53,7 +53,9 @@ class Command(BaseCommand):
         
         inviter = get_user(args[0], is_active=True)
         if not inviter:
-            raise CommandError("Unknown or inactive inviter")
+            raise CommandError("Unknown inviter")
+        if  not inviter.is_active:
+            raise CommandError("Inactive inviter")
         
         if inviter.invitations > 0:
             email = args[1]

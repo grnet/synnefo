@@ -36,7 +36,7 @@ from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.utils.http import urlencode
-from django.contrib.auth import login as auth_login, authenticate, logout
+from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.core.exceptions import ValidationError
 
@@ -45,6 +45,7 @@ from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
 from astakos.im.util import set_cookie
+from astakos.im.functions import login as auth_login, logout
 
 import logging
 

@@ -6,3 +6,4 @@
 .buttons-list .button 							{ margin-left:0; }
 form input.submit, form input[type="submit"] 	{ margin:0; }
 .container .lt-div								{ float:none; width:auto; }
+.container ul.options 							{ margin-bottom:30px; }

@@ -145,7 +145,7 @@
 
 
 /* cloudbar header */
-.cloudbar                                       { background:#000; color:#fff;	   line-height:35px; position:absolute; left:0; top:0; width:100%; }	
+.cloudbar                                       { background:#000; color:#fff;	   line-height:35px;  width:100%; min-width:320px; font-size:13px;}	
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}
 .cloudbar .profile                              { float:right; background:#01A1AE; min-width:190px; padding:0; text-align:right;  }
@@ -155,7 +155,7 @@
 .cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 20px;}
 .cloudbar .profile ul li:hover a				{ color:#01A1AE;}
 .cloudbar .profile .user a						{ padding-right:20px; width:auto; }
-.cloudbar .profile .user a span					{ padding-right:20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
+.cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
 .cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }
 .cloudbar .profile .full a.open span			{ background-image:url(../images/arrow-up.png); }
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
@@ -165,3 +165,7 @@
 .cloudbar ul.services li:first-child            { padding:0 5px;}
 .cloudbar ul.services li.active                 { background:#333;}
 .cloudbar ul.services li:hover                  { background:#444; } 
+
+@media screen and (max-width : 480px) 		{ 
+	.cloudbar .profile 							{ float:none; }	 
+}

@@ -110,12 +110,13 @@ $(document).ready(function(){
     });*/
    $('.cloudbar .profile .full>a').live('click', function(e){
    		e.preventDefault();
+        $('.cloudbar .profile ul').css('width',$('.profile').outerWidth() );
    		$(this).siblings('ul').toggle();
    		$(this).toggleClass('open');
+   		
    });
     
-    var profileWidth = profile.outerWidth(); 
-    $('.header .profile ul').css('width',profileWidth );
+    
 
     
     

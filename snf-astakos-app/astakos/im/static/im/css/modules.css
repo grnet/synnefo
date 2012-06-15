@@ -1,3 +1,4 @@
+body											{ min-width:32px; overflow-y: scroll;}
 .wrapper                                        { margin:0 auto; position:relative; width:820px; padding:36px 70px; }
 .container .wrapper,
 .footer .wrapper                                { border: 1px solid #808080; border-top:0 none;}
@@ -30,7 +31,6 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg .close:hover                           { color:#000;}
 
 /* container */
-.container										{ border-top:35px solid #000; }
 .container .wrapper                             { padding-bottom:100px;}
 .mainlogo h1									{ line-height:100%; font-size:1em; }
 .container .navigation                          { margin:20px 0 0; font-size:1.154em; height:95px;}
@@ -54,13 +54,13 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container ul.options li h3						{ font-size:1em; margin-bottom:0; }
 .container ul.options li a				        { border:0 none;}
 .container ul.options li a:hover				{ text-decoration:underline;}
-.container .extra ul.options					{ font-size:1em; margin:30px 0 0 ; padding:0 15px; }
+.container .extra ul.options					{ font-size:1em; margin:0 ; padding:15px; }
 .landing h2, .landing a:hover                   { color:#01A1AE;}
 .faq h2, .faq a:hover, .faq .current a          { color:#EF4F54; border:0 none;}
 .content .question h2							{ color:#4085A6 }
 .content .backlink								{ margin:1em 0; }
 .content .question .backlink a					{ border:0 none; color:#F89A1C }
-.content .question .backlink a:hover			{ text-decoration:underline; }
+.content .question .backlink a:hover			{ border-bottom:1px solid #F89A1C }
 .faq h3											{ color:#4085a6; margin:0;}
 .faq ul                                         { padding:0; margin:0; }
 .faq ul li                                      { list-style:none outside; padding:0; margin:0;  }
@@ -209,3 +209,6 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 #animation div a img							{ width:100%; }
 #animation p                                  	{ position:absolute; bottom:0; left:0; width:100%; text-align:center; }
 #animation p img                                { display:inline-block; width:65%; }
+
+/* Weird bug in pages that contain captcha. An extra iframe appears in chrome :S*/
+.container +iframe								{ display:none; }

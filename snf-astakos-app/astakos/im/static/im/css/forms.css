@@ -110,7 +110,7 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha label.recaptcha_only_if_image,
 #okeanos_recaptcha label.recaptcha_only_if_audio{ position:absolute; top:auto; bottom:11px; }
 #okeanos_recaptcha a.recaptcha_audio_cant_hear_link { margin-left:20px;  }
-#okeanos_recaptcha #recaptcha_response_field	{ width:220px; float:left; border-left:0 none;   }
+#okeanos_recaptcha #recaptcha_response_field	{ width:220px; float:left; margin-left:-1px;  }
 #okeanos_recaptcha .img							{ width:23px; float:left; height:23px; overflow:hidden; margin:8px; }
 #okeanos_recaptcha .img a						{ display:block; width:100%; height:100%; background:url(../images/refresh_lg.png) no-repeat top left; text-indent:-100px }
 #okeanos_recaptcha .img-refresh	a				{ background:url(../images/refresh_lg.png); }
@@ -119,12 +119,29 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha .img-audio a:hover			{ background:url(../images/sound_g.png); }
 #okeanos_recaptcha .actions-wrap				{ border-top:1px solid #808080 }
 
+input.submit:focus,
+input[type="submit"]:focus						{ border:1px solid #F89A1C; }						
 
 @media screen and (max-width : 591px) 		{ 
-	form.withlabels .extra-img	   { left:222px; }
-    form.withlabels span.info 	   { left:222px; }
-    form .extra-img	               { left:222px; }
-    
-    .form-error		               { margin-left:0!important; } 
+	form.withlabels .extra-img	   				{ left:222px; }
+    form.withlabels span.info 	   				{ left:222px; }
+    form .extra-img	               				{ left:222px; }
+    .form-error		              	 			{ margin-left:0!important; } 
+}
 
+
+@media screen and (max-width : 410px) 		{ 
+	form.login									{ width:auto; }
+	form textarea, 
+	form input.text, 
+	form input[type="text"], 
+	form input[type="password"] 				{ width:90%; }
+	form.innerlabels .extra-img,
+	form.innerlabels .with-errors .extra-img 	{ left:90%; }
+	form.innerlabels							{ width:auto; }
+	.container form.innerlabels.overflow-hidden	{ overflow:visible;}
+	form span.info								{ display:none; }
+	#okeanos_recaptcha							{ width:inherit }
+	#okeanos_recaptcha #recaptcha_response_field	{ width:55%; }
+	#okeanos_recaptcha #recaptcha_image	img		{ width:80%; }
 }

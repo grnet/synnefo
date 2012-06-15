@@ -1,3 +1,4 @@
+//http://www.quirksmode.org/js/detect.html
 var BrowserDetect = {
 	init: function () {
 		this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
@@ -95,6 +96,12 @@ var BrowserDetect = {
 			string: navigator.platform,
 			subString: "Win",
 			identity: "windows"
+		},
+
+		{
+			string: navigator.userAgent.toLowerCase(),
+			subString: "android",
+			identity: "Android"
 		},
 		{
 			string: navigator.platform,

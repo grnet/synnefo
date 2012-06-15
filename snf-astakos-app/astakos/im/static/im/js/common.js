@@ -95,6 +95,27 @@ $(document).ready(function() {
     	}
     )
     
+    $('#animation a').hover(
+      function () {
+        $(this).animate({
+         top: '+=-10'   
+        });
+        $(this).siblings('p').find('img').animate({
+          width: '60%'       
+        });
+      }, 
+      function () {
+        $(this).animate({
+         top: '0'   
+            
+        });
+        $(this).siblings('p').find('img').animate({
+          width: '65%'       
+        });
+      }
+    );
+    
+    
 });
 
 $(window).resize(function() {

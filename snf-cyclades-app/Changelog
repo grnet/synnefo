@@ -1,6 +1,23 @@
 Changelog
 ---------
 
+v0.9.14
+*******
+
+Logic
+^^^^^
+* Remove messages that can not be handled from queue 
+
+UI
+^^
+* Fix create view image selection, Refs (#2487)
+* Display stats period selection in ui 
+* Improve wording on vm create view 
+* Console popup window fix for safari (#2463)
+* Use 'id_rsa' as the filename for the downloaded private key (#2461)
+* Changed the name of the auto generated public key ('my generated public key')
+
+
 v0.9.13
 *******
 

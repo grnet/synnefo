@@ -21,7 +21,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 
 
 /*top message*/
-.top-msg	                                    { margin:-36px -70px 36px; background:blue; padding:100px; color:#fff; display:none; position:relative; font-size:1.538em; }
+.top-msg	                                    { margin:-36px -70px 36px; background:blue; padding:100px; color:#fff; display:none; position:relative; font-size:1.538em; text-align:center;}
 .top-msg p										{ text-align:center; }
 .top-msg p.title	                            { font-size:1.3em;  }
 .top-msg p.title span	                        { border-bottom:2px dotted #fff; padding:0 0 10px 0;}

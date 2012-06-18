@@ -55,7 +55,7 @@ form input[type="submit"].back 				{ text-decoration: none; bottom: 0; float: ri
 form input.submit.back.right, 
 form input[type="submit"].back.right 		{right: 0;}
 form input.submit:hover, 
-form input[type="submit"]:hover 			{ background-color: #f89a1c;}
+form input[type="submit"]:hover 			{ background-color: #f89a1c; border-color:#f89a1c;}
 form input.submit.back, 
 form input[type="submit"].back 				{ text-decoration: none; bottom: 0; float: right; z-index: 500; }
 form input.submit.back.right, 
@@ -120,7 +120,7 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha .actions-wrap				{ border-top:1px solid #808080 }
 
 input.submit:focus,
-input[type="submit"]:focus						{ border:1px solid #F89A1C; }						
+input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #C3C3B9; outline:0 none; }						
 
 @media screen and (max-width : 591px) 		{ 
 	form.withlabels .extra-img	   				{ left:222px; }

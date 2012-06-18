@@ -23,7 +23,7 @@ footer, header, hgroup, menu, nav, section		{ display:block; }
 /* defaults -----------------------------------*/
 :link, a, a:visited								{ color:#F89A1C; text-decoration:none; }
 a:hover											{ outline:0; text-decoration:underline; }
-a:focus											{ outline:0 none; text-decoration:none; }
+a:focus											{ text-decoration:none; }
 a:active										{ outline:0; text-decoration:none; }
 a img, :link img, :visited img					{ border:none; }
 a span											{ cursor:pointer; }

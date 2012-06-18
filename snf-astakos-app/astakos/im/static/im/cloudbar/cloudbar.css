@@ -168,4 +168,5 @@
 
 @media screen and (max-width : 480px) 		{ 
 	.cloudbar .profile 							{ float:none; }	 
+	.cloudbar .services li:first-child			{ position:absolute; left:0; top:0; background:#000}
 }

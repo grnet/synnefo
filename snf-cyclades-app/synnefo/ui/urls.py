@@ -36,8 +36,8 @@ from django.conf import settings
 import os
 
 urlpatterns = patterns('',
-    url(r'^$', 'synnefo.ui.views.home', name='index'),
-    url(r'^feedback$', 'synnefo.ui.views.feedback_submit', name='feedback'),
+    url(r'^$', 'synnefo.ui.views.home', name='ui_index'),
+    url(r'^feedback$', 'synnefo.ui.views.feedback_submit', name='ui_feedback'),
     url(r'userdata/', include('synnefo.ui.userdata.urls'))
 )
 

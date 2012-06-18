@@ -408,8 +408,6 @@
         },
 
         show: function() {
-            // reset previous selection and state of the view
-            this.selected_image = false;
             this.image_details.hide();
             this.parent.$(".create-controls").show();
 
@@ -453,6 +451,7 @@
         },
 
         reset: function() {
+            this.selected_image = false;
             this.select_type("system");
         },
 

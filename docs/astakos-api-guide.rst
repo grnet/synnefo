@@ -20,11 +20,16 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.6 (June 06, 2012)        Split service and admin API.
 0.1 (Feb 10, 2012)         Initial release.
 =========================  ================================
 
-API Operations
---------------
+Admin API Operations
+--------------------
+
+The operations described in this chapter allow users to authenticate themselves and priviledged users (ex. helpdesk) to access other user information.
+
+Most of the operations require a valid token assigned to users having the necessary permissions.
 
 .. _authenticate-api-label:
 
@@ -59,6 +64,7 @@ auth_token_expires           Token expiration date
 auth_token_created           Token creation date
 has_credits                  Whether user has credits
 has_signed_terms             Whether user has aggred on terms
+groups                       User groups
 ===========================  ============================
 
 Example reply:
@@ -66,10 +72,10 @@ Example reply:
 ::
 
   {"username": "4ad9f34d6e7a4992b34502d40f40cb",
-  "uniq": "papagian@example.com"
+  "uniq": "user@example.com"
   "auth_token": "0000",
-  "auth_token_expires": "Tue, 11-Sep-2012 09:17:14 ",
-  "auth_token_created": "Sun, 11-Sep-2011 09:17:14 ",
+  "auth_token_expires": "Fri, 29 Jun 2012 10:03:37 GMT",
+  "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
   "has_credits": false,
   "has_signed_terms": true}
 
@@ -79,10 +85,114 @@ Example reply:
 Return Code                 Description
 =========================== =====================
 204 (No Content)            The request succeeded
-400 (Bad Request)           The request is invalid
+400 (Bad Request)           Method not allowed or no user found
 401 (Unauthorized)          Missing token or inactive user or penging approval terms
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
+
+Get User by email
+^^^^^^^^^^^^^^^^^
+
+Returns a json formatted dictionary containing information about a specific user
+
+============================== =========  ==================
+Uri                            Method     Description
+============================== =========  ==================
+``/im/admin/api/v2.0/users/``  GET        Get user information by email
+============================== =========  ==================
+
+|
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          Authentication token owned by
+                      a user has or inherits ``im.can_access_userinfo`` permission
+====================  ===========================
+
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+name                    Email
+======================  =========================
+
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed
+401 (Unauthorized)          Missing or invalid token or unauthorized user
+404 (Not Found)             Missing email or inactive user
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Example reply:
+
+::
+
+    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
+    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
+    "name": "Firstname Surname",
+    "groups": ["default"],
+    "user_permissions": [],
+    "has_credits": false,
+    "auth_token_expires":"Fri, 29 Jun 2012 10:03:37 GMT",
+    "enabled": true,
+    "email": ["user@example.com"],
+    "id": 4}
+
+Get User by username
+^^^^^^^^^^^^^^^^^^^^
+
+Returns a json formatted dictionary containing information about a specific user
+
+======================================== =========  ==================
+Uri                                      Method     Description
+======================================== =========  ==================
+``/im/admin/api/v2.0/users/{username}``  GET        Get user information by username
+======================================== =========  ==================
+
+|
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          Authentication token owned
+                      by a user has or inherits ``im.can_access_userinfo`` permission
+====================  ===========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed
+401 (Unauthorized)          Missing or invalid token or unauthorized user
+404 (Not Found)             Invalid username
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Example reply:
+
+::
+
+    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
+    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
+    "name": "Firstname Surname",
+    "groups": ["default"],
+    "user_permissions": [],
+    "has_credits": false,
+    "auth_token_expires":
+    "Fri, 29 Jun 2012 10:03:37 GMT",
+    "enabled": true,
+    "email": ["user@example.com"],
+    "id": 4}
 
 Get Services
 ^^^^^^^^^^^^
@@ -99,10 +209,11 @@ Example reply:
 
 ::
 
-[{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "cloud"},
- {"url": "/okeanos.html", "name": "~okeanos", "id": "okeanos"},
- {"url": "/ui/", "name": "pithos+", "id": "pithos"}]
- 
+    [{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "1"},
+    {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
+    {"url": "/ui/", "name": "pithos+", "id": "3"}]
+
+
 Get Menu
 ^^^^^^^^
 
@@ -114,28 +225,164 @@ Uri                  Method     Description
 ``/im/get_menu``     GET        Get cloud bar menu
 ==================== =========  ==================
 
+Example reply if request user is not authenticated:
+
+::
+
+    [{"url": "/im/", "name": "Sign in"}]
+
+Example reply if request user is authenticated:
+
+::
+
+    [{"url": "/im/login", "name": "user@example.com"},
+    {"url": "/im/profile", "name": "My account"},
+    {"url": "/im/logout", "name": "Sign out"}]
+
+Service API Operations
+----------------------
+
+The operations described in this chapter allow services to access user information and perform specific tasks.
+
+The operations require a valid service token.
+
+Send feedback
+^^^^^^^^^^^^^
+
+Via this operaton services can post user feedback requests.
+
+========================= =========  ==================
+Uri                       Method     Description
+========================= =========  ==================
+``/im/service/feedback``  POST       Send feedback
+========================= =========  ==================
+
+|
+
+====================  ============================
+Request Header Name   Value
+====================  ============================
+X-Auth-Token          Service Authentication token
+====================  ============================
+
 |
 
 ======================  =========================
 Request Parameter Name  Value
 ======================  =========================
-location                Location to pass in the next parameter
+auth_token              User token
+feedback_msg            Feedback message
+feedback_data           Additional information about service client status
 ======================  =========================
 
-Example reply if request user is not authenticated:
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed or missing or invalid user token parameter or invalid message data
+401 (Unauthorized)          Missing or expired service token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Get User by email
+^^^^^^^^^^^^^^^^^
+
+Returns a json formatted dictionary containing information about a specific user
+
+================================ =========  ==================
+Uri                              Method     Description
+================================ =========  ==================
+``/im/service/api/v2.0/users/``  GET        Get user information by email
+================================ =========  ==================
+
+|
+
+====================  ============================
+Request Header Name   Value
+====================  ============================
+X-Auth-Token          Service Authentication token
+====================  ============================
+
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+name                    Email
+======================  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed
+401 (Unauthorized)          Missing or expired or invalid service token
+404 (Not Found)             Missing email or inactive user
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Example reply:
 
 ::
 
-[{"url": "/im/login?next=", "name": "login..."}]
+    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
+    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
+    "name": "Firstname Surname",
+    "groups": ["default"],
+    "user_permissions": [],
+    "has_credits": false,
+    "auth_token_expires":"Fri, 29 Jun 2012 10:03:37 GMT",
+    "enabled": true,
+    "email": ["user@example.com"],
+    "id": 4}
 
-Example reply if request user is authenticated::
+Get User by username
+^^^^^^^^^^^^^^^^^^^^
 
-    [{"url": "/im/profile", "name": "user@grnet.gr"},
-     {"url": "/im/profile", "name": "view your profile..."},
-     {"url": "/im/password", "name": "change your password..."},
-     {"url": "/im/feedback", "name": "feedback..."},
-     {"url": "/im/logout", "name": "logout..."}]
+Returns a json formatted dictionary containing information about a specific user
 
+========================================== =========  ==================
+Uri                                        Method     Description
+========================================== =========  ==================
+``/im/service/api/v2.0/users/{username}``  GET        Get user information by username
+========================================== =========  ==================
 
+|
 
+====================  ============================
+Request Header Name   Value
+====================  ============================
+X-Auth-Token          Service Authentication token
+====================  ============================
 
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed
+401 (Unauthorized)          Missing or expired or invalid service token
+404 (Not Found)             Invalid username
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Example reply:
+
+::
+
+    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
+    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
+    "name": "Firstname Surname",
+    "groups": ["default"],
+    "user_permissions": [],
+    "has_credits": false,
+    "auth_token_expires":
+    "Fri, 29 Jun 2012 10:03:37 GMT",
+    "enabled": true,
+    "email": ["user@example.com"],
+    "id": 4}

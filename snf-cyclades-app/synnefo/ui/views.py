@@ -283,7 +283,7 @@ def machines_connect(request):
     else:
         link_title = _("Remote desktop to %s") % ip_address
         link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" % (
-                reverse("machines-connect"), ip_address, operating_system,int(server_id), username, domain)
+                reverse("ui_machines_connect"), ip_address, operating_system,int(server_id), username, domain)
 
         if (operating_system != "windows"):
             link_title = "ssh %s@%s" % (username, ip_address)

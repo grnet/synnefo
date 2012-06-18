@@ -191,38 +191,48 @@ Consider the following algorithm for synchronizing a local folder with the
 server. The "state" is the complete object listing, with the corresponding
 attributes.
  
-::
+.. code-block:: python
 
-  L: local state (stored state from last sync with the server)
-  C: current state (state computed right before sync)
-  S: server state
-
-  if C == L:
-      # No local changes
-      if S == L:
-          # No remote changes, nothing to do
-      else:
-          # Update local state to match that of the server
-         L = S
-  else:
-      # We have local changes
-      if S == L:
-          # No remote changes, update the server
-          S = C
-          L = S
-      else:
-          # Both we and server have changes
-          if C == S:
-              # We were lucky, we did the same change
-              L = S
+  # L: Local State, the last synced state of the object.
+  # Stored locally (e.g. in an SQLite database)
+  
+  # C: Current State, the current local state of the object
+  # Returned by the filesystem
+  
+  # S: Server State, the current server state of the object
+  # Returned by the server (HTTP request)
+  
+  def sync(path):
+      L = get_local_state(path)   # Database action
+      C = get_current_state(path) # Filesystem action
+      S = get_server_state(path)  # Network action
+  
+      if C == L:
+          # No local changes
+          if S == L:
+              # No remote changes, nothing to do
+              return
           else:
-              # We have conflicting changes
-              resolve conflict
+              # Update local state to match that of the server
+              download(path)
+              update_local_state(path, S)
+      else:
+          # Local changes exist
+          if S == L:
+              # No remote changes, update the server and the local state
+              upload(path)
+              update_local_state(path, C)
+          else:
+              # Both local and server changes exist
+              if C == S:
+                  # We were lucky, both did the same
+                  update_local_state(path, C)
+              else:
+                  # Conflicting changes exist
+                  conflict()
+  
 
 Notes:
 
  * States represent file hashes (it is suggested to use Merkle). Deleted or
    non-existing files are assumed to have a magic hash (e.g. empty string).
- * Updating a state (either local or remote) implies downloading, uploading or
-   deleting the appropriate file.
-

@@ -315,10 +315,23 @@
         },
 
         connect_to_console: function(vm) {
+            // It seems that Safari allows popup windows only if the window.open
+            // call is made within an html element click event context. 
+            // Otherwise its behaviour is based on "Block Pop-Up Windows" 
+            // setting, which when enabled no notification appears for the user. 
+            // Since there is no easy way to check for the setting value we use
+            // async:false for the action call so that action success handler 
+            // which opens the new window is called inside the click event 
+            // context.
+            var use_async = true;
+            if ($.client.browser == "Safari") {
+                use_async = false;
+            }
+
             vm.call("console", function(console_data) {
                 var url = vm.get_console_url(console_data);
                 snf.util.open_window(url, "VM_" + vm.get("id") + "_CONSOLE", {});
-            })
+            }, undefined, {async: use_async});
         }
 
     });

@@ -52,7 +52,7 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, COOKIE_NAME, UPDATE_MD5
+from pithos.api.settings import UPDATE_MD5
 
 from pithos.backends.base import NotAllowedError, QuotaError
 from pithos.backends.filter import parse_filters
@@ -66,17 +66,13 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def top_demux(request):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'GET':
-        if getattr(request, 'user', None) is not None:
-            return account_list(request)
-        return authenticate(request)
+        return account_list(request)
     else:
         return method_not_allowed(request)
 
 @csrf_exempt
 def account_demux(request, v_account):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return account_meta(request, v_account)
     elif request.method == 'POST':
@@ -88,7 +84,6 @@ def account_demux(request, v_account):
 
 @csrf_exempt
 def container_demux(request, v_account, v_container):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return container_meta(request, v_account, v_container)
     elif request.method == 'PUT':
@@ -105,12 +100,6 @@ def container_demux(request, v_account, v_container):
 @csrf_exempt
 def object_demux(request, v_account, v_container, v_object):
     # Helper to avoid placing the token in the URL when loading objects from a browser.
-    token = None
-    if request.method in ('HEAD', 'GET') and COOKIE_NAME in request.COOKIES:
-        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        if cookie_value and '|' in cookie_value:
-            token = cookie_value.split('|', 1)[1]
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)
     elif request.method == 'GET':
@@ -156,6 +145,8 @@ def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
     #                       badRequest (400)
+    if getattr(request, 'user', None) is None:
+        return authenticate(request)
     
     response = HttpResponse()
     

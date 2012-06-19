@@ -82,7 +82,9 @@ def delegate_to_feedback_service(request):
     try:
         urllib2.urlopen(req)
     except urllib2.HTTPError, e:
+        logger.exception(e)
         return HttpResponse(status=e.code)
     except urllib2.URLError, e:
-        return HttpResponseNotFound(e)
+        logger.exception(e)
+        return HttpResponse(status=e.reason)
     return HttpResponse()

@@ -49,6 +49,7 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from synnefo.lib.parsedate import parse_http_date_safe, parse_http_date
+from synnefo.lib.astakos import get_user
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
@@ -58,7 +59,10 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                     BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                     BACKEND_BLOCK_UMASK,
                                     BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
-                                    BACKEND_QUOTA, BACKEND_VERSIONING)
+                                    BACKEND_QUOTA, BACKEND_VERSIONING,
+                                    AUTHENTICATION_URL, AUTHENTICATION_USERS,
+                                    SERVICE_TOKEN, COOKIE_NAME)
+
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError
 
@@ -875,8 +879,16 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
             try:
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-                if user_required and getattr(request, 'user', None) is None:
-                    raise Unauthorized('Access denied')
+                
+                if user_required:
+                    token = None
+                    if request.method in ('HEAD', 'GET') and COOKIE_NAME in request.COOKIES:
+                        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
+                        if cookie_value and '|' in cookie_value:
+                            token = cookie_value.split('|', 1)[1]
+                    get_user(request, IDENTITY_BASEURL, AUTHENTICATION_USERS, token)
+                    if  getattr(request, 'user', None) is None:
+                        raise Unauthorized('Access denied')
                 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:
@@ -898,7 +910,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
+                fault = InternalServerError('Unexpected error: %s' % e)
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:

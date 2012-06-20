@@ -40,11 +40,12 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import faults, util
+from synnefo import settings
+from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
-from synnefo.db.models import Network, NetworkLink
+from synnefo.db.models import Network, BridgePool, MacPrefixPool
 from synnefo.logic import backend
 
 
@@ -118,7 +119,7 @@ def list_networks(request, detail=False):
         if not user_networks:
             return HttpResponse(status=304)
     else:
-        user_networks = user_networks.filter(state='ACTIVE')
+        user_networks = user_networks.filter(deleted=False)
 
     networks = [network_to_dict(network, request.user_uniq, detail)
                 for network in user_networks]
@@ -149,24 +150,42 @@ def create_network(request):
     try:
         d = req['network']
         name = d['name']
+        # TODO: Fix this temp values:
+        subnet = d.get('subnet', '192.168.1.0/24')
+        gateway = d.get('gateway', None)
+        type = d.get('type', 'PRIVATE_FILTERED')
+        dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    count = Network.objects.filter(userid=request.user_uniq,
-                                          state='ACTIVE').count()
+    link = None
+    mac_prefix = None
+    if type == 'PUBLIC_ROUTED':
+        pass
+        # raise Exception (user can not create public)
+    if type == 'PRIVATE_FILTERED':
+        link = BridgePool.get_available().value
+        mac_prefix = MacPrefixPool.get_available().value
+        state = 'PENDING'
+    else:
+        link = settings.GANETI_PRIVATE_BRIDGE
+        # Physical-Vlans are pre-provisioned
+        state = 'ACTIVE'
 
-    # get user limit
-    networks_limit_for_user = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_NETWORKS_PER_USER)
+    network = Network.objects.create(
+            name=name,
+            userid=request.user_uniq,
+            subnet=subnet,
+            gateway=gateway,
+            dhcp=dhcp,
+            type=type,
+            link=link,
+            mac_prefix=mac_prefix,
+            state=state)
 
-    if count >= networks_limit_for_user:
-        raise faults.OverLimit("Network count limit exceeded for your account.")
-
-    try:
-        network = backend.create_network(name, request.user_uniq)
-    except NetworkLink.NotAvailable:
-        raise faults.OverLimit('No networks available.')
+    network = backend.create_network(network)
+    if not network:
+        raise OverLimit('Network count limit exceeded for your account.')
 
     networkdict = network_to_dict(network, request.user_uniq)
     return render_network(request, networkdict, status=202)
@@ -229,6 +248,10 @@ def delete_network(request, network_id):
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
+
+    net.action = 'DESTROY'
+    net.save()
+
     backend.delete_network(net)
     return HttpResponse(status=204)
 

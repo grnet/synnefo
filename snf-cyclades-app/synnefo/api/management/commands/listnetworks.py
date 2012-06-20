@@ -67,9 +67,9 @@ class Command(BaseCommand):
 
         networks = Network.objects.all()
         if options['deleted']:
-            networks = networks.filter(state='DELETED')
+            networks = networks.filter(deleted=True)
         else:
-            networks = networks.exclude(state='DELETED')
+            networks = networks.exclude(deleted=True)
 
         if options['public']:
             networks = networks.filter(public=True)
@@ -88,7 +88,7 @@ class Command(BaseCommand):
                       network.name,
                       network.userid or '',
                       network.state,
-                      network.link.name,
+                      network.link,
                       str(network.machines.count()),
                       format_bool(network.public))
 

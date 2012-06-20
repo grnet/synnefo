@@ -76,12 +76,12 @@ def ganeti_net_status(logger, environ):
     """
     nics = {}
 
-    key_to_attr = { 'IP': 'ip', 'MAC': 'mac', 'BRIDGE': 'link' }
+    key_to_attr = { 'IP': 'ip', 'MAC': 'mac', 'BRIDGE': 'link', 'NETWORK' : 'network' }
 
     for env in environ.keys():
         if env.startswith("GANETI_INSTANCE_NIC"):
             s = env.replace("GANETI_INSTANCE_NIC", "").split('_', 1)
-            if len(s) == 2 and s[0].isdigit() and s[1] in ('MAC', 'IP', 'BRIDGE'):
+            if len(s) == 2 and s[0].isdigit() and s[1] in ('MAC', 'IP', 'BRIDGE', 'NETWORK'):
                 index = int(s[0])
                 key = key_to_attr[s[1]]
 

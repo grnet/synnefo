@@ -38,12 +38,10 @@ from django.conf import settings
 from django.db import transaction
 from datetime import datetime
 
-from synnefo.db.models import (Backend, VirtualMachine, Network, NetworkLink,
-                               BACKEND_STATUSES)
+from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               BackendNetwork, BACKEND_STATUSES)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
-
-
 
 log = getLogger('synnefo.logic')
 
@@ -58,6 +56,7 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 def create_client(hostname, port=5080, username=None, password=None):
     return GanetiRapiClient(hostname, port, username, password)
+
 
 @transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg):
@@ -118,21 +117,13 @@ def process_net_status(vm, etime, nics):
 
     vm.nics.all().delete()
     for i, nic in enumerate(nics):
-        if i == 0:
+        network = nic.get('network', '')
+        n = str(network)
+        if n == settings.GANETI_PUBLIC_NETWORK:
             net = Network.objects.get(public=True)
         else:
-            try:
-                link = NetworkLink.objects.get(name=nic['link'])
-            except NetworkLink.DoesNotExist:
-                # Cannot find an instance of NetworkLink for
-                # the link attribute specified in the notification
-                raise NetworkLink.DoesNotExist("Cannot find a NetworkLink "
-                    "object for link='%s'" % nic['link'])
-            net = link.network
-            if net is None:
-                raise Network.DoesNotExist("NetworkLink for link='%s' not "
-                    "associated with an existing Network instance." %
-                    nic['link'])
+            pk = utils.id_from_network_name(n)
+            net = Network.objects.get(id=pk)
 
         firewall = nic.get('firewall', '')
         firewall_profile = _reverse_tags.get(firewall, '')
@@ -147,11 +138,38 @@ def process_net_status(vm, etime, nics):
             ipv6=nic.get('ipv6', ''),
             firewall_profile=firewall_profile)
 
-        # network nics modified, update network object
-        net.save()
-
     vm.backendtime = etime
     vm.save()
+    net.save()
+
+
+@transaction.commit_on_success
+def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
+    if status not in [x[0] for x in BACKEND_STATUSES]:
+        return
+        #raise Network.InvalidBackendMsgError(opcode, status)
+
+    back_network.backendjobid = jobid
+    back_network.backendjobstatus = status
+    back_network.backendopcode = opcode
+    back_network.backendlogmsg = logmsg
+
+    # Notifications of success change the operating state
+    state_for_success = BackendNetwork.OPER_STATE_FROM_OPCODE.get(opcode, None)
+    if status == 'success' and state_for_success is not None:
+        back_network.operstate = state_for_success
+        if opcode == 'OP_NETWORK_REMOVE':
+            back_network.deleted = True
+
+    if status in ('canceled', 'error'):
+        utils.update_state(back_network, 'ERROR')
+
+    if (status == 'error' and opcode == 'OP_NETWORK_REMOVE' and
+        back_network.operstate == 'ERROR'):
+        back_network.deleted = True
+        back_network.operstate = 'DELETED'
+
+    back_network.save()
 
 
 @transaction.commit_on_success
@@ -336,70 +354,160 @@ def update_status(vm, status):
     utils.update_state(vm, status)
 
 
-def create_network_link():
-    try:
-        last = NetworkLink.objects.order_by('-index')[0]
-        index = last.index + 1
-    except IndexError:
-        index = 1
+def create_network(network, backends=None):
+    """ Add and connect a network to backends.
 
-    if index <= settings.GANETI_MAX_LINK_NUMBER:
-        name = '%s%d' % (settings.GANETI_LINK_PREFIX, index)
-        return NetworkLink.objects.create(index=index, name=name,
-                                            available=True)
-    return None     # All link slots are filled
+    @param network: Network object
+    @param backends: List of Backend objects. None defaults to all.
 
-
-@transaction.commit_on_success
-def create_network(name, user_id):
-    try:
-        link = NetworkLink.objects.filter(available=True)[0]
-    except IndexError:
-        link = create_network_link()
-        if not link:
-            raise NetworkLink.NotAvailable
-
-    network = Network.objects.create(
-        name=name,
-        userid=user_id,
-        state='ACTIVE',
-        link=link)
-
-    link.network = network
-    link.available = False
-    link.save()
-
+    """
+    backend_jobs = _create_network(network, backends)
+    connect_network(network, backend_jobs)
     return network
 
 
-@transaction.commit_on_success
-def delete_network(net):
-    link = net.link
-    if link.name != settings.GANETI_NULL_LINK:
-        link.available = True
-        link.network = None
-        link.save()
+def _create_network(network, backends=None):
+    """Add a network to backends.
+    @param network: Network object
+    @param backends: List of Backend objects. None defaults to all.
 
-    for vm in net.machines.all():
-        disconnect_from_network(vm, net)
-        vm.save()
-    net.state = 'DELETED'
-    net.save()
+    """
+
+    network_type = network.public and 'public' or 'private'
+
+    if not backends:
+        backends = Backend.objects.exclude(offline=True)
+
+    tags = network.backend_tag
+    if network.dhcp:
+        tags.append('nfdhcpd')
+    tags = ','.join(tags)
+
+    backend_jobs = []
+    for backend in backends:
+        job = backend.client.CreateNetwork(
+                network_name=network.backend_id,
+                network=network.subnet,
+                gateway=network.gateway,
+                network_type=network_type,
+                mac_prefix=network.mac_prefix,
+                tags=tags)
+        backend_jobs.append((backend, job))
+
+    return backend_jobs
 
 
-def connect_to_network(vm, net):
-    nic = {'mode': 'bridged', 'link': net.link.name}
-    vm.client.ModifyInstance(vm.backend_vm_id, nics=[('add', -1, nic)],
-                        hotplug=True, dry_run=settings.TEST)
+def connect_network(network, backend_jobs=None):
+    """Connect a network to all nodegroups.
+
+    @param network: Network object
+    @param backend_jobs: List of tuples of the form (Backend, jobs) which are
+                         the backends to connect the network and the jobs on
+                         which the connect job depends.
+
+    """
+
+    mode = network.public and 'routed' or 'bridged'
+
+    if not backend_jobs:
+        backend_jobs = [(backend, []) for backend in
+                        Backend.objects.exclude(offline=True)]
+
+    for backend, job in backend_jobs:
+        client = backend.client
+        for group in client.GetGroups():
+            client.ConnectNetwork(network.backend_id, group, mode,
+                                  network.link, [job])
 
 
-def disconnect_from_network(vm, net):
+def connect_network_group(backend, network, group):
+    """Connect a network to a specific nodegroup of a backend.
+
+    """
+    mode = network.public and 'routed' or 'bridged'
+
+    return backend.client.ConnectNetwork(network.backend_id, group, mode,
+                                         network.link)
+
+
+def delete_network(network, backends=None):
+    """ Disconnect and a remove a network from backends.
+
+    @param network: Network object
+    @param backends: List of Backend objects. None defaults to all.
+
+    """
+    backend_jobs = disconnect_network(network, backends)
+    _delete_network(network, backend_jobs)
+
+
+def disconnect_network(network, backends=None):
+    """Disconnect a network from virtualmachines and nodegroups.
+
+    @param network: Network object
+    @param backends: List of Backend objects. None defaults to all.
+
+    """
+
+    if not backends:
+        backends = Backend.objects.exclude(offline=True)
+
+    backend_jobs = []
+    for backend in backends:
+        client = backend.client
+        jobs = []
+        for vm in network.machines.filter(backend=backend):
+            job = disconnect_from_network(vm, network)
+            jobs.append(job)
+
+        jobs2 = []
+        for group in client.GetGroups():
+            job = client.DisconnectNetwork(network.backend_id, group, jobs)
+            jobs2.append(job)
+        backend_jobs.append((backend, jobs2))
+
+    return backend_jobs
+
+
+def disconnect_from_network(vm, network):
+    """Disconnect a virtual machine from a network by removing it's nic.
+
+    @param vm: VirtualMachine object
+    @param network: Network object
+
+    """
+
     nics = vm.nics.filter(network__public=False).order_by('index')
-    ops = [('remove', nic.index, {}) for nic in nics if nic.network == net]
+    ops = [('remove', nic.index, {}) for nic in nics if nic.network == network]
     if not ops:  # Vm not connected to network
         return
-    vm.client.ModifyInstance(vm.backend_vm_id, nics=ops[::-1],
-                        hotplug=True, dry_run=settings.TEST)
+    job = vm.client.ModifyInstance(vm.backend_vm_id, nics=ops[::-1],
+                                    hotplug=True, dry_run=settings.TEST)
+
+    return job
+
+
+def _delete_network(network, backend_jobs=None):
+    if not backend_jobs:
+        backend_jobs = [(backend, []) for backend in
+                Backend.objects.exclude(offline=True)]
+    for backend, jobs in backend_jobs:
+        backend.client.DeleteNetwork(network.backend_id, jobs)
+
+
+def connect_to_network(vm, network):
+    """Connect a virtual machine to a network.
+
+    @param vm: VirtualMachine object
+    @param network: Network object
+
+    """
+
+    ip = network.dhcp and 'pool' or None
+
+    nic = {'ip': ip, 'network': network.backend_id}
+    vm.client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
+                             hotplug=True, dry_run=settings.TEST)
 
 
 def set_firewall_profile(vm, profile):

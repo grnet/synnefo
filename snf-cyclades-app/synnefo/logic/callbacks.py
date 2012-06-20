@@ -33,9 +33,8 @@
 import logging
 import json
 from functools import wraps
-from datetime import datetime
 
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import Backend, VirtualMachine, Network, BackendNetwork
 from synnefo.logic import utils, backend
 
 from synnefo.lib.utils import merge_time
@@ -57,17 +56,18 @@ def handle_message_delivery(func):
             msg = json.loads(message['body'])
             func(msg)
             client.basic_ack(message)
-        except ValueError:
-            log.error("Incoming message not in JSON format: %s", message)
+        except ValueError as e:
+            log.error("Incoming message not in JSON format %s: %s", e, message)
             client.basic_ack(message)
-        except KeyError:
-            log.error("Malformed incoming JSON, missing attributes: %s",
-                      message)
+        except KeyError as e:
+            log.error("Malformed incoming JSON, missing attribute %s: %s",
+                      e, message)
             client.basic_ack(message)
         except Exception as e:
             log.exception("Unexpected error: %s, msg: %s", e, msg)
 
     return wrapper
+
 
 def instance_from_msg(func):
     """ Decorator for getting the VirtualMachine object of the msg.
@@ -87,8 +87,9 @@ def instance_from_msg(func):
                       msg['instance'], vm_id)
     return wrapper
 
+
 def network_from_msg(func):
-    """ Decorator for getting the Network object of the msg.
+    """ Decorator for getting the BackendNetwork object of the msg.
 
     """
     @handle_message_delivery
@@ -97,13 +98,21 @@ def network_from_msg(func):
         try:
             network_id = utils.id_from_network_name(msg["network"])
             network = Network.objects.get(id=network_id)
-            func(network, msg)
+            backend = Backend.objects.get(clustername=msg['cluster'])
+            backend_network = BackendNetwork.objects.get(network=network,
+                                                         backend=backend)
+            func(backend_network, msg)
         except Network.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown network %s.", msg['network'])
         except Network.DoesNotExist:
-            log.error("Network %s with id %d not found in DB.",
-                      msg['network'], vm_id)
+            log.error("Network %s not found in DB.", msg['network'])
+        except Backend.DoesNotExist:
+            log.error("Backend %s not found in DB.", msg['cluster'])
+        except BackendNetwork.DoesNotExist:
+            log.error("Network %s on backend %s not found in DB.",
+                      msg['network'], msg['cluster'])
     return wrapper
+
 
 def if_update_required(func):
     """
@@ -113,9 +122,9 @@ def if_update_required(func):
     - The message has been redelivered and the action has already been
       completed. In this case the event_time will be equal with the one
       in the database.
-    - The message describes a previous state in the ganeti, from the one that is
-      described in the db. In this case the event_time will be smaller from the
-      one in the database.
+    - The message describes a previous state in the ganeti, from the one that
+      is described in the db. In this case the event_time will be smaller from
+      the one in the database.
 
     """
     @wraps(func)
@@ -123,7 +132,7 @@ def if_update_required(func):
         event_time = merge_time(msg['event_time'])
         db_time = target.backendtime
 
-        if event_time <= db_time:
+        if db_time and event_time <= db_time:
             format_ = "%d/%m/%y %H:%M:%S:%f"
             log.debug("Ignoring message %s.\nevent_timestamp: %s db_timestamp: %s",
                       msg,
@@ -179,9 +188,12 @@ def update_network(network, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
+    backend.process_network_status(network, event_time,
+                                   msg['jobId'], msg['operation'],
+                                   msg['status'], msg['logmsg'])
 
-    log.debug("Done processing ganeti-network-status msg for vm %s.",
-              msg['instance'])
+    log.debug("Done processing ganeti-network-status msg for network %s.",
+              msg['network'])
 
 
 @instance_from_msg
@@ -205,4 +217,4 @@ def dummy_proc(client, message, *args, **kwargs):
         log.debug("Msg: %s", message['body'])
         client.basic_ack(message)
     except Exception as e:
-        log.exception("Could not receive message")
+        log.exception("Could not receive message %s" % e)

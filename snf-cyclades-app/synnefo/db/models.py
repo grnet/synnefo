@@ -184,8 +184,20 @@ class Backend(models.Model):
                                  "with backend: %s" % self)
         else:
             # ON_DELETE = SET NULL
-            self.virtual_machines.all().backend=None
+            self.virtual_machines.all().backend = None
             super(Backend, self).delete(*args, **kwargs)
+
+
+# A backend job may be in one of the following possible states
+BACKEND_STATUSES = (
+    ('queued', 'request queued'),
+    ('waiting', 'request waiting for locks'),
+    ('canceling', 'request being canceled'),
+    ('running', 'request running'),
+    ('canceled', 'request canceled'),
+    ('success', 'request completed successfully'),
+    ('error', 'request returned error')
+)
 
 
 class VirtualMachine(models.Model):
@@ -230,16 +242,6 @@ class VirtualMachine(models.Model):
         ('OP_INSTANCE_FAILOVER', 'Failover Instance')
     )
 
-    # A backend job may be in one of the following possible states
-    BACKEND_STATUSES = (
-        ('queued', 'request queued'),
-        ('waiting', 'request waiting for locks'),
-        ('canceling', 'request being canceled'),
-        ('running', 'request running'),
-        ('canceled', 'request canceled'),
-        ('success', 'request completed successfully'),
-        ('error', 'request returned error')
-    )
 
     # The operating state of a VM,
     # upon the successful completion of a backend operation.
@@ -406,31 +408,6 @@ class Network(models.Model):
        ('DESTROY', 'Destroy Network'),
     )
 
-    # The list of possible operations on the backend
-    BACKEND_OPCODES = (
-        ('OP_NETWORK_ADD', 'Create Network'),
-        ('OP_NETWORK_CONNECT', 'Activate Network'),
-        ('OP_NETWORK_DISCONNECT', 'Deactivate Network'),
-        ('OP_NETWORK_REMOVE', 'Remove Network')
-    )
-
-    # A backend job may be in one of the following possible states
-    BACKEND_STATUSES = (
-        ('success', 'request completed successfully'),
-        ('error', 'request returned error')
-    )
-
-    # The operating state of a Network,
-    # upon the successful completion of a backend operation.
-    # IMPORTANT: Make sure all keys have a corresponding
-    # entry in BACKEND_OPCODES if you update this field, see #1035, #1111.
-    OPER_STATE_FROM_OPCODE = {
-        'OP_NETWORK_ADD': 'PENDING',
-        'OP_NETWORK_CONNECT': 'ACTIVE',
-        'OP_NETWORK_DISCONNECT': 'PENDING',
-        'OP_NETWORK_REMOVE': 'DELETED'
-    }
-
     RSAPI_STATE_FROM_OPER_STATE = {
         'PENDING': 'PENDING',
         'ACTIVE': 'ACTIVE',
@@ -445,9 +422,9 @@ class Network(models.Model):
     )
 
     NETWORK_TAGS = {
-        'PUBLIC_ROUTED': ['public-routed'],
-        'PRIVATE_VLAN': ['private-vlan'],
-        'PRIVATE_FILTERED': ['private-filtered']
+        'PUBLIC_ROUTED': ['ip-less-routed'],
+        'PRIVATE_VLAN': ['physical-vlan'],
+        'PRIVATE_FILTERED': ['mac-filtered']
     }
 
     name = models.CharField('Network Name', max_length=128)
@@ -457,62 +434,45 @@ class Network(models.Model):
     dhcp = models.BooleanField('DHCP', default=True)
     type = models.CharField(choices=NETWORK_TYPES, max_length=50, default='PRIVATE_VLAN')
     link = models.CharField('Network Link', max_length=128, null=True)
-    mac_prefix = models.CharField('MAC Prefix', max_length=128, null=True)
+    mac_prefix = models.CharField('MAC Prefix', max_length=32, null=True)
     public = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField('Deleted', default=False)
-    state = models.CharField(choices=OPER_STATES, max_length=30, default='PENDING')
+    state = models.CharField(choices=OPER_STATES, max_length=32,
+                             default='PENDING')
     machines = models.ManyToManyField(VirtualMachine,
                                       through='NetworkInterface')
-
-    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
-    backendjobid = models.PositiveIntegerField(null=True)
-    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
-                                     null=True)
-    backendjobstatus = models.CharField(choices=BACKEND_STATUSES,
-                                        max_length=30, null=True)
-    backendlogmsg = models.TextField(null=True)
-    backendtime = models.DateTimeField(default=datetime.datetime.min)
-
+    action = models.CharField(choices=ACTIONS, max_length=32, null=True,
+                              default=None)
 
     class InvalidBackendIdError(Exception):
-         def __init__(self, value):
+        def __init__(self, value):
             self.value = value
-         def __str__(self):
+
+        def __str__(self):
             return repr(self.value)
 
 
     class InvalidBackendMsgError(Exception):
-         def __init__(self, opcode, status):
+        def __init__(self, opcode, status):
             self.opcode = opcode
             self.status = status
-         def __str__(self):
+
+        def __str__(self):
             return repr('<opcode: %s, status: %s>' % (self.opcode,
                     self.status))
 
     class InvalidActionError(Exception):
-         def __init__(self, action):
+        def __init__(self, action):
             self._action = action
-         def __str__(self):
-            return repr(str(self._action))
 
-    def __init__(self, *args, **kw):
-        """Initialize state for just created Network instances."""
-        super(Network, self).__init__(*args, **kw)
-        # This gets called BEFORE an instance gets save()d for
-        # the first time.
-        if not self.pk:
-            self.action = None
-            self.backendjobid = None
-            self.backendjobstatus = None
-            self.backendopcode = None
-            self.backendlogmsg = None
-            self.backendtime = datetime.datetime.min
+        def __str__(self):
+            return repr(str(self._action))
 
     @property
     def backend_id(self):
-        """Returns the backend id for this Network by prepending backend-prefix."""
+        """Return the backend id by prepending backend-prefix."""
         if not self.id:
             raise Network.InvalidBackendIdError("self.id is None")
         return '%s%s' % (settings.BACKEND_PREFIX_ID, self.id)
@@ -526,6 +486,96 @@ class Network(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def update_oper_state(self):
+        """Update operstate of the Network.
+
+        Update the operstate of the Network depending on the related
+        backend_networks. When backend networks do not have the same operstate,
+        the Network's operstate is PENDING. Otherwise it is the same with
+        the BackendNetworks operstate.
+
+        """
+        backend_states = [s.operstate for s in self.backend_networks.all()]
+        if not backend_states:
+            self.operstate = 'PENDING'
+            self.save()
+            return
+
+        all_equal = len(set(backend_states)) <= 1
+        self.operstate = all_equal and backend_states[0] or 'PENDING'
+
+        if self.operstate == 'DELETED':
+            self.deleted = True
+
+        self.save()
+
+    def save(self, *args, **kwargs):
+        pk = self.pk
+        super(Network, self).save(*args, **kwargs)
+        if not pk:
+            # In case of a new Network, corresponding BackendNetwork's must
+            # be created!
+            for back in Backend.objects.all():
+                BackendNetwork.objects.create(backend=back, network=self)
+
+
+class BackendNetwork(models.Model):
+    OPER_STATES = (
+        ('PENDING', 'Pending'),
+        ('ACTIVE', 'Active'),
+        ('DELETED', 'Deleted'),
+        ('ERROR', 'Error')
+    )
+
+    # The list of possible operations on the backend
+    BACKEND_OPCODES = (
+        ('OP_NETWORK_ADD', 'Create Network'),
+        ('OP_NETWORK_CONNECT', 'Activate Network'),
+        ('OP_NETWORK_DISCONNECT', 'Deactivate Network'),
+        ('OP_NETWORK_REMOVE', 'Remove Network'),
+        # These are listed here for completeness,
+        # and are ignored for the time being
+        ('OP_NETWORK_SET_PARAMS', 'Set Network Parameters'),
+        ('OP_NETWORK_QUERY_DATA', 'Query Network Data')
+    )
+
+    # The operating state of a Netowork,
+    # upon the successful completion of a backend operation.
+    # IMPORTANT: Make sure all keys have a corresponding
+    # entry in BACKEND_OPCODES if you update this field, see #1035, #1111.
+    OPER_STATE_FROM_OPCODE = {
+        'OP_NETWORK_ADD': 'PENDING',
+        'OP_NETWORK_CONNECT': 'ACTIVE',
+        'OP_NETWORK_DISCONNECT': 'PENDING',
+        'OP_NETWORK_REMOVE': 'DELETED',
+        'OP_NETWORK_SET_PARAMS': None,
+        'OP_NETWORK_QUERY_DATA': None
+    }
+
+    network = models.ForeignKey(Network, related_name='backend_networks')
+    backend = models.ForeignKey(Backend, related_name='networks')
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    deleted = models.BooleanField('Deleted', default=False)
+    operstate = models.CharField(choices=OPER_STATES, max_length=30,
+                                 default='PENDING')
+    backendjobid = models.PositiveIntegerField(null=True)
+    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
+                                     null=True)
+    backendjobstatus = models.CharField(choices=BACKEND_STATUSES,
+                                        max_length=30, null=True)
+    backendlogmsg = models.TextField(null=True)
+    backendtime = models.DateTimeField(null=False,
+                                       default=datetime.datetime.min)
+
+    def save(self, *args, **kwargs):
+        super(BackendNetwork, self).save(*args, **kwargs)
+        self.network.update_oper_state()
+
+    def delete(self, *args, **kwargs):
+        super(BackendNetwork, self).delete(*args, **kwargs)
+        self.network.update_oper_state()
 
 
 class NetworkInterface(models.Model):

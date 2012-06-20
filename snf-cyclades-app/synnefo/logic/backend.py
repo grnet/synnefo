@@ -38,7 +38,8 @@ from django.conf import settings
 from django.db import transaction
 from datetime import datetime
 
-from synnefo.db.models import (Backend, VirtualMachine, Network, NetworkLink)
+from synnefo.db.models import (Backend, VirtualMachine, Network, NetworkLink,
+                               BACKEND_STATUSES)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
 
@@ -69,7 +70,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     """
     # See #1492, #1031, #1111 why this line has been removed
     #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
-    if status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]:
+    if status not in [x[0] for x in BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
     vm.backendjobid = jobid

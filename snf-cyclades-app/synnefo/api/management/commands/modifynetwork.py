@@ -51,6 +51,15 @@ class Command(BaseCommand):
             dest='owner',
             metavar='USER_ID',
             help="Set network's owner"),
+        make_option('--subnet',
+            dest='subnet',
+            help="Set network's subnet"),
+        make_option('--gateway',
+            dest='gateway',
+            help="Set network's gateway"),
+        make_option('--dhcp',
+            dest='dhcp',
+            help="Set if network will use nfdhcp"),
         make_option('--state',
             dest='state',
             metavar='STATE',
@@ -74,6 +83,18 @@ class Command(BaseCommand):
         owner = options.get('owner')
         if owner is not None:
             network.userid = owner
+
+        subnet = options.get('subnet')
+        if subnet is not None:
+            network.subnet = subnet
+
+        gateway = options.get('gateway')
+        if gateway is not None:
+            network.gateway = gateway
+
+        dhcp = options.get('dhcp')
+        if dhcp is not None:
+            network.dhcp = dhcp
 
         state = options.get('state')
         if state is not None:

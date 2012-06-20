@@ -74,8 +74,9 @@ class Command(BaseCommand):
         if options['public']:
             networks = networks.filter(public=True)
 
-        labels = ('id', 'name', 'owner', 'state', 'link', 'vms', 'public')
-        columns = (3, 12, 20, 7, 14, 4, 6)
+        labels = ('id', 'name', 'owner', 'subnet', 'gateway', 'mac_prefix',
+                  'dhcp', 'state', 'link', 'vms', 'public')
+        columns = (3, 12, 30, 14, 14, 14, 8, 10, 12, 4, 6)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -87,8 +88,12 @@ class Command(BaseCommand):
             fields = (str(network.id),
                       network.name,
                       network.userid or '',
+                      network.subnet,
+                      network.gateway or '',
+                      network.mac_prefix or '',
+                      str(network.dhcp),
                       network.state,
-                      network.link,
+                      network.link or '',
                       str(network.machines.count()),
                       format_bool(network.public))
 

@@ -303,8 +303,6 @@ def add(request, net, args):
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
     backend.connect_to_network(vm, net)
-    vm.save()
-    net.save()
     return HttpResponse(status=202)
 
 @network_action('remove')
@@ -323,6 +321,4 @@ def remove(request, net, args):
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
     backend.disconnect_from_network(vm, net)
-    vm.save()
-    net.save()
     return HttpResponse(status=202)

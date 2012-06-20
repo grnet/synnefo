@@ -58,6 +58,7 @@ For G, the operating state is True if the machine is up, False otherwise.
 
 import logging
 import sys
+import itertools
 
 from django.core.management import setup_environ
 try:
@@ -70,7 +71,7 @@ setup_environ(settings)
 
 from datetime import datetime, timedelta
 
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import VirtualMachine, Network, BackendNetwork
 from synnefo.util.dictconfig import dictConfig
 from synnefo.util.rapi import GanetiApiError
 from synnefo.logic.backend import get_ganeti_instances
@@ -185,6 +186,128 @@ def get_instances_from_ganeti():
             snf_instances[id] = i['oper_state']
 
     return snf_instances
+
+#
+# Nics
+#
+def get_nics_from_ganeti():
+    """Get network interfaces for each ganeti instance.
+
+    """
+    instances = get_ganeti_instances(bulk=True)
+    prefix = settings.BACKEND_PREFIX_ID
+
+    snf_instances_nics = {}
+    for i in instances:
+        if i['name'].startswith(prefix):
+            try:
+                id = int(i['name'].split(prefix)[1])
+            except Exception:
+                log.error("Ignoring instance with malformed name %s",
+                              i['name'])
+                continue
+            if id in snf_instances_nics:
+                log.error("Ignoring instance with duplicate Synnefo id %s",
+                    i['name'])
+                continue
+
+            ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
+            macs = zip(itertools.repeat('mac'), i['nic.macs'])
+            networks = zip(itertools.repeat('network'), i['nic.networks'])
+            # modes = zip(itertools.repeat('mode'), i['nic.modes'])
+            # links = zip(itertools.repeat('link'), i['nic.links'])
+            # nics = zip(ips,macs,modes,networks,links)
+            nics = zip(ips, macs, networks)
+            nics = map(lambda x:dict(x), nics)
+            nics = dict(enumerate(nics))
+            snf_instances_nics[id] = nics
+
+    return snf_instances_nics
+
+
+def get_nics_from_db():
+    """Get network interfaces for each vm in DB.
+
+    """
+    instances = VirtualMachine.objects.filter(deleted=False)
+    instances_nics = {}
+    for instance in instances:
+        nics = {}
+        for n in instance.nics.all():
+            ipv4 = n.ipv4
+            nic = {'mac':      n.mac,
+                   'network':  n.network.backend_id,
+                   'ipv4':     ipv4 if ipv4 != '' else None
+                   }
+            nics[n.index] = nic
+        instances_nics[instance.id] = nics
+    return instances_nics
+
+
+def unsynced_nics(DBNics, GNics):
+    """Find unsynced network interfaces between DB and Ganeti.
+
+    @ rtype: dict; {instance_id: ganeti_nics}
+    @ return Dictionary containing the instances ids that have unsynced network
+    interfaces between DB and Ganeti and the network interfaces in Ganeti.
+
+    """
+    idD = set(DBNics.keys())
+    idG = set(GNics.keys())
+
+    unsynced = {}
+    for i in idD & idG:
+        nicsD = DBNics[i]
+        nicsG = GNics[i]
+        if len(nicsD) != len(nicsG):
+            unsynced[i] = (nicsD, nicsG)
+            continue
+        for index in nicsG.keys():
+            nicD = nicsD[index]
+            nicG = nicsG[index]
+            if nicD['ipv4'] != nicG['ipv4'] or \
+               nicD['mac'] != nicG['mac'] or \
+               nicD['network'] != nicG['network']:
+                   unsynced[i] = (nicsD, nicsG)
+                   break
+
+    return unsynced
+
+#
+# Networks
+#
+def get_networks_from_ganeti(backend):
+    prefix = settings.BACKEND_PREFIX_ID
+
+    networks = {}
+    for net in backend.client.GetNetworks(bulk=True):
+        if net['name'].startswith(prefix):
+            # TODO: Get it from fun. Catch errors
+            id = int(net['name'].split(prefix)[1])
+            networks[id] = net
+
+    return networks
+
+
+def hanging_networks(backend, GNets):
+    """Get networks that are not connected to all Nodegroups.
+
+    """
+    def get_network_groups(group_list):
+        groups = set()
+        for g in group_list:
+            g_name = g.split('(')[0]
+            groups.add(g_name)
+        return groups
+
+    groups = set(backend.client.GetGroups())
+
+    hanging = {}
+    for id, info in GNets.items():
+        group_list = get_network_groups(info['group_list'])
+        if group_list != groups:
+            hanging[id] = groups - group_list
+    return hanging
 
 
 # Only for testing this module individually

@@ -1450,7 +1450,11 @@ corresponding package by running on node1:
 
    # apt-get install snf-cyclades-app
 
-If the package installs successfully, then Cyclades and Plankton are installed
+.. warning:: Make sure you have installed ``python-gevent`` version >= 0.13.6.
+    This version is available at squeeze-backports and can be installed by
+    running: ``apt-get install -t squeeze-backports python-gevent``
+
+If all packages install successfully, then Cyclades and Plankton are installed
 and we proceed with their configuration.
 
 

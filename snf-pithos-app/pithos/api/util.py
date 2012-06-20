@@ -886,7 +886,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                         cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
                         if cookie_value and '|' in cookie_value:
                             token = cookie_value.split('|', 1)[1]
-                    get_user(request, IDENTITY_BASEURL, AUTHENTICATION_USERS, token)
+                    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
                     if  getattr(request, 'user', None) is None:
                         raise Unauthorized('Access denied')
                 

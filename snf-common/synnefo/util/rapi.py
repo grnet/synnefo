@@ -1659,7 +1659,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
                     gateway6=None, mac_prefix=None, network_type="private",
-                    reserved_ips=None, dry_run=False):
+                    reserved_ips=None, tags=None, dry_run=False):
     """Creates a new network.
 
     @type name: str
@@ -1674,6 +1674,12 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
 
+    if reserved_ips:
+        reserved_ips = reserved_ips.split(',')
+
+    if tags:
+        tags = tags.split(',')
+
     body = {
       "network_name": network_name,
       "gateway": gateway,
@@ -1682,7 +1688,8 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "network6": network6,
       "mac_prefix": mac_prefix,
       "network_type": network_type,
-      "reserved_ips": reserved_ips
+      "reserved_ips": reserved_ips,
+      "tags": tags
       }
 
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,

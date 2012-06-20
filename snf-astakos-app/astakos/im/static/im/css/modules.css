@@ -1,4 +1,4 @@
-body											{ min-width:32px; overflow-y: scroll;}
+body											{ min-width:320px; overflow-y: scroll;}
 .wrapper                                        { margin:0 auto; position:relative; width:820px; padding:36px 70px; }
 .container .wrapper,
 .footer .wrapper                                { border: 1px solid #808080; border-top:0 none;}

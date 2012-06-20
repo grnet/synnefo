@@ -21,7 +21,7 @@ form.login 									{ margin-bottom: 22px; width:340px; }
 form h2 span 								{ padding-bottom: 3px; }
 form .form-row 								{ min-height: 30px; position: relative;}
 form .form-row.submit 						{ margin: 22px 0 ;}
-form .form-row .extra-link 					{ color: #808080; text-decoration: none; border: none; margin-top:15px; line-height:98%; display:inline-block; padding-top:15px;   float: right; }
+form .form-row .extra-link 					{ color: #808080; text-decoration: none; border: none; margin-top:15px; line-height:98%; display:inline-block; padding-top:15px;   float: right; position:absolute; right:0; top:0; }
 form .form-row .extra-link:hover			{ border-bottom:1px solid #808080;}
 form .form-row label 						{ font-size: 1.1em; }
 form.innerlabels label 						{ position: absolute; bottom: 11px; left: 1.5em; color: #808080 ; }
@@ -69,7 +69,7 @@ form .with-errors label 					{ color: #e4776f; }
 .form-errors.all .form-error 				{ position: relative; border-radius: 0; margin-bottom: 1.3em; padding: 0.5em; }
 div.form-stacked 							{ margin-bottom: 4em; }
 .checkbox-widget.checked 					{ background-color: #FF0000; background-image: url("../images/checkbox.png"); background-position: 50% 50%; }
-.checkbox-widget 							{ border: 1px solid #808080; cursor: pointer; display: block; float: left; height: 25px; margin:5px 20px 0 0 ; width: 25px; }
+.content a.checkbox-widget 					{ border: 1px solid #808080; cursor: pointer; display: block; float: left; height: 25px; margin:5px 20px 0 0 ; width: 25px; }
 form.withlabels .checkbox-widget			{ margin-top:20px; }
 form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; }
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
@@ -84,8 +84,9 @@ form .with-errors span.info					{ display:none;}
 form p										{ margin-bottom:0;position:relative;}
 form input[readonly=true] 					{ /*background-color: #ddd;*/ color: #5e5e5e; }
 #recaptcha_area 							{ margin-top:20px; } 
-form.innerlabels .with-checkbox .checkbox-widget 	{ margin-top:15px; }
+form.innerlabels .with-checkbox .checkbox-widget 	{  }
 form.innerlabels .with-checkbox .checkbox-label		{ left:2.5em; top:17px; }
+form.withlabels .with-checkbox .checkbox-widget		{ position:absolute; left:224px; top:0; }
 
 form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; }
 form.withlabels .extra-img					{ left:440px; bottom:12px; }
@@ -105,7 +106,7 @@ form .with-hidden							{ display:none; }
 
 
 /* custom captcha */
-#okeanos_recaptcha								{ width:331px; border:1px solid #808080; margin:20px 0; position:relative; }
+#okeanos_recaptcha								{ width:329px; border:1px solid #808080; margin:0 0 20px; position:relative; }
 #okeanos_recaptcha #recaptcha_image				{ padding:15px 0; }
 #okeanos_recaptcha label.recaptcha_only_if_image,
 #okeanos_recaptcha label.recaptcha_only_if_audio{ position:absolute; top:auto; bottom:11px; }
@@ -127,6 +128,7 @@ input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1p
     form.withlabels span.info 	   				{ left:222px; }
     form .extra-img	               				{ left:222px; }
     .form-error		              	 			{ margin-left:0!important; } 
+    
 }
 
 

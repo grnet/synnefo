@@ -31,11 +31,12 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Backend
+from synnefo.db.models import Backend, Network
 from django.db.utils import IntegrityError
-from synnefo.logic.backend import get_physical_resources, \
-                                  update_resources, \
-                                  create_client
+from synnefo.logic.backend import (get_physical_resources,
+                                   update_resources,
+                                   create_client,
+                                   create_network_synced)
 from synnefo.util.rapi import GanetiApiError
 
 
@@ -48,35 +49,39 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('--clustername', dest='clustername'),
         make_option('--port', dest='port', default=5080),
-        make_option('--username', dest='username'),
-        make_option('--password', dest='password'),
+        make_option('--user', dest='username'),
+        make_option('--pass', dest='password'),
         make_option('--drained', action='store_true',
-                    dest='drained',default=False,
-                    help="Set as drained to exclude from allocations"),
+            dest='drained', default=False,
+            help="Set as drained to exclude from allocations"),
         make_option('--no-check', action='store_false',
-                    dest='check', default=True,
-                    help="Do not perform credentials check and resources update")
+            dest='check', default=True,
+            help="Do not perform credentials check and resources update"),
+        make_option('--no-init', action='store_false',
+            dest='init', default=True,
+            help="Do not perform initialization of the Backend Model")
         )
 
     def handle(self, **options):
         clustername = options['clustername']
-        port= options['port']
-        username = options['username']
-        password = options['password']
+        port = options['port']
+        username = options['user']
+        password = options['pass']
         drained = options['drained']
 
         if not (clustername and username and password):
-            raise CommandError("Clustername, username and password must be supplied")
+            raise CommandError("Clustername, user and pass must be supplied")
 
         # Ensure correctness of credentials
         if options['check']:
             self.stdout.write('Checking connectivity and credentials.\n')
             try:
                 client = create_client(clustername, port, username, password)
-                # This command will raise an exception if there is no write-access
+                # This command will raise an exception if there is no
+                # write-access
                 client.ModifyCluster()
             except GanetiApiError as e:
-                self.stdout.write('Check failed:\n%s\n' %e)
+                self.stdout.write('Check failed:\n%s\n' % e)
                 return
             else:
                 self.stdout.write('Check passed.\n')
@@ -89,16 +94,45 @@ class Command(BaseCommand):
                                              password=password,
                                              drained=drained)
         except IntegrityError as e:
-            self.stdout.write("Cannot create backend: %s\n" % e)
-        else:
-            if options['check']:
-                self.stdout.write('\nRetriving backend resources:\n')
-                resources = get_physical_resources(backend)
-                attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
-                for a in attr:
-                    self.stdout.write(a + ' : ' + str(resources[a])+'\n')
-                update_resources(backend, resources)
+            raise CommandError("Cannot create backend: %s\n" % e)
 
-            self.stdout.write('\nSuccessfully created backend with id %d\n' %
-                              backend.id)
+        self.stdout.write('\nSuccessfully created backend with id %d\n' %
+                          backend.id)
 
+        if not options['check']:
+            return
+
+        self.stdout.write('\rRetrieving backend resources:\n')
+        resources = get_physical_resources(backend)
+        attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
+        self.stdout.write('----------------------------\n')
+        for a in attr:
+            self.stdout.write(a.ljust(12) + ' : ' + str(resources[a]) + '\n')
+        update_resources(backend, resources)
+
+        if not options['init']:
+            return
+
+        networks = Network.objects.filter(deleted=False)
+
+        self.stdout.write('\nCreating the follow networks:\n')
+        fields = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
+        columns = (20, 16, 16, 16, 10)
+        line = ' '.join(f.ljust(c) for f, c in zip(fields, columns))
+        sep = '-' * len(line)
+        self.stdout.write(sep + '\n')
+        self.stdout.write(line + '\n')
+        self.stdout.write(sep + '\n')
+
+        for net in networks:
+            fields = (net.backend_id, str(net.subnet), str(net.gateway),
+                      str(net.mac_prefix), str(net.public))
+            line = ' '.join(f.ljust(c) for f, c in zip(fields, columns))
+            self.stdout.write(line + '\n')
+        self.stdout.write(sep + '\n\n')
+
+        for net in networks:
+            result = create_network_synced(net, backend)
+            if result[0] != "success":
+                self.stdout.write('\nError Creating Network %s: %s\n' %\
+                                  (net.backend_id, result[1])

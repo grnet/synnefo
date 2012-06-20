@@ -606,3 +606,50 @@ def get_memory_from_instances(backend):
     for i in instances:
         mem += i['oper_ram']
     return mem
+
+##
+## Synchronized operations for reconciliation
+##
+
+
+def create_network_synced(network, backend):
+    result = _create_network_synced(network, backend)
+    if result[0] != 'success':
+        return result
+    result = connect_network_synced(network, backend)
+    return result
+
+
+def _create_network_synced(network, backend):
+    client = backend.client
+    job = client.CreateNetwork(network.backend_id, network.subnet)
+    return wait_for_job(client, job)
+
+
+def connect_network_synced(network, backend):
+    mode = network.public and 'routed' or 'bridged'
+    client = backend.client
+
+    for group in client.GetGroups():
+        job = client.ConnectNetwork(network.backend_id, group, mode,
+                                    network.link)
+        result = wait_for_job(client, job)
+        if result[0] != 'success':
+            return result
+
+    return result
+
+
+def wait_for_job(client, jobid):
+    result = client.WaitForJobChange(jobid, ['status', 'opresult'], None, None)
+    status = result['job_info'][0]
+    while status not in ['success', 'error', 'cancel']:
+        result = client.WaitForJobChange(jobid, ['status', 'opresult'],
+                                        [result], None)
+        status = result['job_info'][0]
+
+    if status == 'success':
+        return (status, None)
+    else:
+        error = result['job_info'][1]
+        return (status, error)

@@ -59,6 +59,7 @@ from random import choice
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.cyclades import CycladesClient
 
+from fabric.api import *
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
@@ -646,6 +647,17 @@ class NetworkTestCase(unittest.TestCase):
         else:
             return "root"
 
+    def _ping_once(self, ip):
+    
+        """Test server responds to a single IPv4 or IPv6 ping"""
+        cmd = "ping -c 2 -w 3 %s" % (ip)
+        ping = subprocess.Popen(cmd, shell=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = ping.communicate()
+        ret = ping.wait()
+        
+        return (ret == 0)
+
 
     def test_00001a_submit_create_server_A(self):
         """Test submit create server request"""
@@ -754,10 +766,98 @@ class NetworkTestCase(unittest.TestCase):
             else:
                 time.sleep(self.query_interval)
 
-        self.assertTrue(conn_exists)
-            
+        time.sleep(80)
 
-    def test_002a_setup_interface_A(self):
+        self.assertTrue(conn_exists)
+
+    
+    def test_002a_reboot(self):
+        
+       self.client.reboot_server(self.serverid['A']) 
+       
+       fail_tmout = time.time()+self.action_timeout
+       while True:
+           d = self.client.get_server_details(self.serverid['A'])
+           status = d['status']
+           if status == 'ACTIVE':
+               active = True
+               break
+           elif time.time() > fail_tmout:
+               self.assertLess(time.time(), fail_tmout)
+           else:
+               time.sleep(self.query_interval)
+               
+       self.assertTrue(active)
+
+    def test_002b_reboot(self):
+        
+       self.client.reboot_server(self.serverid['B']) 
+       
+       fail_tmout = time.time()+self.action_timeout
+       while True:
+           d = self.client.get_server_details(self.serverid['B'])
+           status = d['status']
+           if status == 'ACTIVE':
+               active = True
+               break
+           elif time.time() > fail_tmout:
+               self.assertLess(time.time(), fail_tmout)
+           else:
+               time.sleep(self.query_interval)
+               
+       self.assertTrue(active)
+
+    
+    def test_002c_ping_server_A(self):
+        
+        server = self.client.get_server_details(self.serverid['A'])
+        ip = self._get_ipv4(server)
+        
+        fail_tmout = time.time()+self.action_timeout
+        
+        s = False
+
+        while True:
+
+            if self._ping_once(ip):
+                s = True
+                break
+
+            elif time.time() > fail_tmout:
+                self.assertLess(time.time(), fail_tmout)
+
+            else:
+                time.sleep(self.query_interval)
+
+        self.assertTrue(s)
+        
+
+    def test_002d_ping_server_B(self):
+        
+        server = self.client.get_server_details(self.serverid['B'])
+        ip = self._get_ipv4(server)
+        
+        fail_tmout = time.time()+self.action_timeout
+        
+        s = False
+
+        while True:
+
+            if self._ping_once(ip):
+                s = True
+                break
+
+            elif time.time() > fail_tmout:
+                self.assertLess(time.time(), fail_tmout)
+
+            else:
+                time.sleep(self.query_interval)
+
+        self.assertTrue(s)
+
+
+
+    def test_003a_setup_interface_A(self):
 
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
@@ -787,19 +887,31 @@ class NetworkTestCase(unittest.TestCase):
 
         except socket.error:
             raise AssertionError
+        
+        res = False
 
         if loginname != "root":
-            stdin, stdout, stderr = ssh.exec_command("sudo su")
-            stdin, stdout, stderr = ssh.exec_command(myPass)
-            
-        
-        stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.42"))
-        lines = stdout.readlines()
-        
-        self.assertEqual(len(lines), 0)
-        
+            with settings(
+                hide('warnings', 'running', 'stdout', 'stderr'),
+                warn_only=True, 
+                host_string = hostip, 
+                user = loginname, password = myPass
+                ):
 
-    def test_002a_setup_interface_B(self):
+                if run('ifconfig eth1 192.168.0.42') : 
+                    res = True
+            
+        else :
+            stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.42"))
+            lines = stdout.readlines()
+            log.info(lines)
+            if len(lines)==0:
+                res = True
+
+        self.assertTrue(res)
+
+
+    def test_003b_setup_interface_B(self):
 
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
@@ -822,23 +934,38 @@ class NetworkTestCase(unittest.TestCase):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            log.info("Username: " + loginname) 
+            log.info("Username: " + loginname)
             log.info("Password " + myPass)
             ssh.connect(hostip, username = loginname, password = myPass)
         except socket.error:
             raise AssertionError
 
+        res = False
+
         if loginname != "root":
-            stdin, stdout, stderr = ssh.exec_command("sudo su")
-            stdin, stdout, stderr = ssh.exec_command(myPass)
+            with settings(
+                hide('warnings', 'running', 'stdout', 'stderr'),
+                warn_only=True, 
+                host_string = hostip, 
+                user = loginname, password = myPass
+                ):
+                
+                if run('ifconfig eth1 192.168.0.43'):
+                    res = True
             
-        stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.43"))
-        lines = stdout.readlines()
-        
-        self.assertEqual(len(lines), 0)
+        else :
+            stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.43"))
+            lines = stdout.readlines()
+            log.info(lines)
+            
+            if len(lines) == 0:
+                res = True
+
+        self.assertTrue(res)
+            
 
 
-    def test_002b_test_connection_exists(self):
+    def test_003c_test_connection_exists(self):
         """Ping serverB from serverA to test if connection exists"""
 
         server = self.client.get_server_details(self.serverid['A'])
@@ -856,28 +983,27 @@ class NetworkTestCase(unittest.TestCase):
         else:
             loginname = choice(userlist)
 
+        myPass = self.password['A']
+
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(hostip, username = loginname, password = self.password['A'])
+            ssh.connect(hostip, username = loginname, password = myPass)
         except socket.error:
             raise AssertionError
 
-        cmd = "if ping -c 2 -w 3 %s >/dev/null; then echo \"True\"; fi;" % ("192.168.0.43")
+        cmd = "if ping -c 2 -w 3 192.168.0.43 >/dev/null; then echo \'True\'; fi;"
         stdin, stdout, stderr = ssh.exec_command(cmd)
         lines = stdout.readlines()
 
         exists = False
-
-        for i in lines:
-            if i=='True\n':
-                exists = True
+        if 'True\n' in lines:
+            exists = True
 
         self.assertTrue(exists)
 
 
-
-    def test_003_disconnect_from_network(self):
+    def test_004_disconnect_from_network(self):
         prev_state = self.client.get_network_details(self.networkid)
         prev_conn = len(prev_state['servers']['values'])
 
@@ -900,7 +1026,7 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertFalse(conn_exists)
 
-    def test_004_destroy_network(self):
+    def test_005_destroy_network(self):
         """Test submit delete network request"""
         self.client.delete_network(self.networkid)        
         networks = self.client.list_networks()
@@ -911,7 +1037,7 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(self.networkid not in curr_net)
         
-    def test_005_cleanup_servers(self):
+    def test_006_cleanup_servers(self):
         """Cleanup servers created for this test"""
         self.compute.delete_server(self.serverid['A'])
         self.compute.delete_server(self.serverid['B'])

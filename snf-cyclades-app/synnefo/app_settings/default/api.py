@@ -27,7 +27,7 @@ GANETI_PUBLIC_NETWORK = 'snf_public'
 # This link id is assigned to NICs that should be isolated from anything else
 # (e.g., right before the NIC gets deleted).
 # This value is also hardcoded in a fixture in db/fixtures/initial_data.json.
-GANETI_NULL_LINK = 'snf_null'
+GANETI_NULL_LINK = 'snf_public'
 
 # The pool of private network links to use is
 # $GANETI_LINK_PREFIX{1..$GANETI_MAX_LINK_NUMBER}.
@@ -36,10 +36,16 @@ GANETI_NULL_LINK = 'snf_null'
 GANETI_LINK_PREFIX = 'prv'
 # The number of private network links to use.
 GANETI_MAX_LINK_NUMBER = 100
+# The first mac prefix to use
+GANETI_BASE_MAC_PREFIX = 'aa:00:01'
+# The number of mac prefixes to use.
+GANETI_MAX_MAC_PREFIX_NUMBER = 4096
+
 # Firewalling
 GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
 GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:unprotected'
 GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
+
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'

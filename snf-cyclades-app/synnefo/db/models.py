@@ -36,6 +36,7 @@ from django.db import IntegrityError
 from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
+from synnefo import settings as snf_settings
 
 
 BACKEND_CLIENTS = {}    #{hash:Backend client}
@@ -391,22 +392,137 @@ class VirtualMachineMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
+
 class Network(models.Model):
-    NETWORK_STATES = (
+    OPER_STATES = (
+        ('PENDING', 'Pending'),
         ('ACTIVE', 'Active'),
-        ('DELETED', 'Deleted')
+        ('DELETED', 'Deleted'),
+        ('ERROR', 'Error')
     )
 
-    name = models.CharField(max_length=255)
+    ACTIONS = (
+       ('CREATE', 'Create Network'),
+       ('DESTROY', 'Destroy Network'),
+    )
+
+    # The list of possible operations on the backend
+    BACKEND_OPCODES = (
+        ('OP_NETWORK_ADD', 'Create Network'),
+        ('OP_NETWORK_CONNECT', 'Activate Network'),
+        ('OP_NETWORK_DISCONNECT', 'Deactivate Network'),
+        ('OP_NETWORK_REMOVE', 'Remove Network')
+    )
+
+    # A backend job may be in one of the following possible states
+    BACKEND_STATUSES = (
+        ('success', 'request completed successfully'),
+        ('error', 'request returned error')
+    )
+
+    # The operating state of a Network,
+    # upon the successful completion of a backend operation.
+    # IMPORTANT: Make sure all keys have a corresponding
+    # entry in BACKEND_OPCODES if you update this field, see #1035, #1111.
+    OPER_STATE_FROM_OPCODE = {
+        'OP_NETWORK_ADD': 'PENDING',
+        'OP_NETWORK_CONNECT': 'ACTIVE',
+        'OP_NETWORK_DISCONNECT': 'PENDING',
+        'OP_NETWORK_REMOVE': 'DELETED'
+    }
+
+    RSAPI_STATE_FROM_OPER_STATE = {
+        'PENDING': 'PENDING',
+        'ACTIVE': 'ACTIVE',
+        'DELETED': 'DELETED',
+        'ERROR': 'ERROR'
+    }
+
+    NETWORK_TYPES = (
+        ('PUBLIC_ROUTED', 'Public routed network'),
+        ('PRIVATE_VLAN', 'Private vlan network'),
+        ('PRIVATE_FILTERED', 'Private network with mac-filtering')
+    )
+
+    NETWORK_TAGS = {
+        'PUBLIC_ROUTED': ['public-routed'],
+        'PRIVATE_VLAN': ['private-vlan'],
+        'PRIVATE_FILTERED': ['private-filtered']
+    }
+
+    name = models.CharField('Network Name', max_length=128)
+    userid = models.CharField('User ID of the owner', max_length=128, null=True)
+    subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
+    gateway = models.CharField('Gateway', max_length=32, null=True)
+    dhcp = models.BooleanField('DHCP', default=True)
+    type = models.CharField(choices=NETWORK_TYPES, max_length=50, default='PRIVATE_VLAN')
+    link = models.CharField('Network Link', max_length=128, null=True)
+    mac_prefix = models.CharField('MAC Prefix', max_length=128, null=True)
+    public = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    userid = models.CharField('User ID of the owner', max_length=100,
-                              null=True)
-    state = models.CharField(choices=NETWORK_STATES, max_length=30)
-    public = models.BooleanField(default=False)
-    link = models.ForeignKey('NetworkLink', related_name='+')
+    deleted = models.BooleanField('Deleted', default=False)
+    state = models.CharField(choices=OPER_STATES, max_length=30, default='PENDING')
     machines = models.ManyToManyField(VirtualMachine,
                                       through='NetworkInterface')
+
+    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
+    backendjobid = models.PositiveIntegerField(null=True)
+    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
+                                     null=True)
+    backendjobstatus = models.CharField(choices=BACKEND_STATUSES,
+                                        max_length=30, null=True)
+    backendlogmsg = models.TextField(null=True)
+    backendtime = models.DateTimeField(default=datetime.datetime.min)
+
+
+    class InvalidBackendIdError(Exception):
+         def __init__(self, value):
+            self.value = value
+         def __str__(self):
+            return repr(self.value)
+
+
+    class InvalidBackendMsgError(Exception):
+         def __init__(self, opcode, status):
+            self.opcode = opcode
+            self.status = status
+         def __str__(self):
+            return repr('<opcode: %s, status: %s>' % (self.opcode,
+                    self.status))
+
+    class InvalidActionError(Exception):
+         def __init__(self, action):
+            self._action = action
+         def __str__(self):
+            return repr(str(self._action))
+
+    def __init__(self, *args, **kw):
+        """Initialize state for just created Network instances."""
+        super(Network, self).__init__(*args, **kw)
+        # This gets called BEFORE an instance gets save()d for
+        # the first time.
+        if not self.pk:
+            self.action = None
+            self.backendjobid = None
+            self.backendjobstatus = None
+            self.backendopcode = None
+            self.backendlogmsg = None
+            self.backendtime = datetime.datetime.min
+
+    @property
+    def backend_id(self):
+        """Returns the backend id for this Network by prepending backend-prefix."""
+        if not self.id:
+            raise Network.InvalidBackendIdError("self.id is None")
+        return '%s%s' % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def backend_tag(self):
+        """Return the network tag to be used in backend
+
+        """
+        return Network.NETWORK_TAGS[self.type]
 
     def __unicode__(self):
         return self.name
@@ -434,15 +550,69 @@ class NetworkInterface(models.Model):
         return '%s@%s' % (self.machine.name, self.network.name)
 
 
-class NetworkLink(models.Model):
-    network = models.ForeignKey(Network, null=True, related_name='+')
-    index = models.IntegerField()
-    name = models.CharField(max_length=255)
-    available = models.BooleanField(default=True)
+class Pool(models.Model):
+    available = models.BooleanField(default=True, null=False)
+    index = models.IntegerField(null=False, unique=True)
+    value = models.CharField(max_length=128, null=False, unique=True)
+    max_index = 0
 
-    def __unicode__(self):
-        return self.name
+    class Meta:
+        abstract = True
+        ordering = ['index']
 
-    class NotAvailable(Exception):
+    @classmethod
+    def get_available(cls):
+        try:
+            entry = cls.objects.filter(available=True)[0]
+            entry.available = False
+            entry.save()
+            return entry
+        except IndexError:
+            return cls.generate_new()
+
+    @classmethod
+    def generate_new(cls):
+        try:
+            last = cls.objects.order_by('-index')[0]
+            index = last.index + 1
+        except IndexError:
+            index = 1
+
+        if index <= cls.max_index:
+            return cls.objects.create(index=index,
+                                      value=cls.value_from_index(index),
+                                      available=False)
+
+        raise Pool.PoolExhausted()
+
+    @classmethod
+    def set_available(cls, value):
+        entry = cls.objects.get(value=value)
+        entry.available = True
+        entry.save()
+
+
+    class PoolExhausted(Exception):
         pass
 
+
+class BridgePool(Pool):
+    max_index = snf_settings.GANETI_MAX_LINK_NUMBER
+
+    @staticmethod
+    def value_from_index(index):
+        return snf_settings.GANETI_LINK_PREFIX + str(index)
+
+
+class MacPrefixPool(Pool):
+    max_index = snf_settings.GANETI_MAX_MAC_PREFIX_NUMBER
+
+    @staticmethod
+    def value_from_index(index):
+        """Convert number to mac prefix
+
+        """
+        high = snf_settings.GANETI_BASE_MAC_PREFIX
+        a = hex(int(high.replace(":", ""), 16) + index).replace("0x", '')
+        mac_prefix = ":".join([a[x:x + 2] for x in xrange(0, len(a), 2)])
+        return mac_prefix

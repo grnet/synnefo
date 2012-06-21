@@ -277,7 +277,7 @@ def unsynced_nics(DBNics, GNics):
 # Networks
 #
 def get_networks_from_ganeti(backend):
-    prefix = settings.BACKEND_PREFIX_ID
+    prefix = settings.BACKEND_PREFIX_ID + 'net-'
 
     networks = {}
     for net in backend.client.GetNetworks(bulk=True):

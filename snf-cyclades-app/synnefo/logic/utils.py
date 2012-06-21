@@ -61,7 +61,7 @@ def id_from_network_name(name):
     """
     if not str(name).startswith(settings.BACKEND_PREFIX_ID):
         raise Network.InvalidBackendIdError(str(name))
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID, "", 1)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
     if not ns.isdigit():
         raise Network.InvalidBackendIdError(str(name))
 

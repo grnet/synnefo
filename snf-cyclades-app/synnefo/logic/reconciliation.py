@@ -75,6 +75,7 @@ from synnefo.db.models import VirtualMachine, Network, BackendNetwork
 from synnefo.util.dictconfig import dictConfig
 from synnefo.util.rapi import GanetiApiError
 from synnefo.logic.backend import get_ganeti_instances
+from synnefo.logic import utils
 
 
 log = logging.getLogger()
@@ -96,8 +97,7 @@ def stale_servers_in_db(D, G):
                         # Server is still building in Ganeti
                         continue
                     else:
-                        new_vm = vm.client.GetInstance('%s%d' %
-                                (settings.BACKEND_PREFIX_ID, i))
+                        new_vm = vm.client.GetInstance(utils.id_to_instance_name(i))
                         # Server has just been created in Ganeti
                         continue
                 except GanetiApiError:
@@ -172,7 +172,7 @@ def get_instances_from_ganeti():
     for i in ganeti_instances:
         if i['name'].startswith(prefix):
             try:
-                id = int(i['name'].split(prefix)[1])
+                id = utils.id_from_instance_name(i['name'])
             except Exception:
                 log.error("Ignoring instance with malformed name %s",
                               i['name'])
@@ -201,7 +201,7 @@ def get_nics_from_ganeti():
     for i in instances:
         if i['name'].startswith(prefix):
             try:
-                id = int(i['name'].split(prefix)[1])
+                id = utils.id_from_instance_name(i['name'])
             except Exception:
                 log.error("Ignoring instance with malformed name %s",
                               i['name'])
@@ -282,8 +282,7 @@ def get_networks_from_ganeti(backend):
     networks = {}
     for net in backend.client.GetNetworks(bulk=True):
         if net['name'].startswith(prefix):
-            # TODO: Get it from fun. Catch errors
-            id = int(net['name'].split(prefix)[1])
+            id = utils.id_from_network_name(net['name'])
             networks[id] = net
 
     return networks

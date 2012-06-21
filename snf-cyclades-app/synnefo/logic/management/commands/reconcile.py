@@ -44,7 +44,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import reconciliation, backend
+from synnefo.logic import reconciliation, backend, utils
 
 
 class Command(BaseCommand):
@@ -202,8 +202,7 @@ class Command(BaseCommand):
                 len(orphans)
             for id in orphans:
                 vm = VirtualMachine.objects.get(pk=id)
-                vm.client.DeleteInstance('%s%s' %
-                                    (settings.BACKEND_PREFIX_ID, str(id)))
+                vm.client.DeleteInstance(utils.id_to_instance_name(id))
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced'] and len(unsynced) > 0:

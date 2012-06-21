@@ -48,6 +48,11 @@ def id_from_instance_name(name):
 
     return int(ns)
 
+
+def id_to_instance_name(id):
+    return "%s%s" (settings.BACKEND_PREFIX_ID, str(id))
+
+
 def id_from_network_name(name):
     """Returns Network's Django id, given a ganeti machine name.
 
@@ -61,6 +66,10 @@ def id_from_network_name(name):
         raise Network.InvalidBackendIdError(str(name))
 
     return int(ns)
+
+
+def id_to_network_name(id):
+    return "%snet-%s" (settings.BACKEND_PREFIX_ID, str(id))
 
 
 def get_rsapi_state(vm):

@@ -371,7 +371,7 @@ class VirtualMachine(models.Model):
         """Returns the backend id for this VM by prepending backend-prefix."""
         if not self.id:
             raise VirtualMachine.InvalidBackendIdError("self.id is None")
-        return '%s%s' % (settings.BACKEND_PREFIX_ID, self.id)
+        return "%s%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
 
     class Meta:
         verbose_name = u'Virtual machine instance'
@@ -475,7 +475,7 @@ class Network(models.Model):
         """Return the backend id by prepending backend-prefix."""
         if not self.id:
             raise Network.InvalidBackendIdError("self.id is None")
-        return '%s%s' % (settings.BACKEND_PREFIX_ID, self.id)
+        return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
 
     @property
     def backend_tag(self):

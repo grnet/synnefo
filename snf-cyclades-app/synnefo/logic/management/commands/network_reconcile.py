@@ -42,7 +42,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Backend, Network, BackendNetwork
-from synnefo.logic import reconciliation, backend
+from synnefo.logic import reconciliation, backend, utils
 
 
 class Command(BaseCommand):
@@ -163,7 +163,7 @@ def reconcile_networks(out, fix):
                 #XXX:Move this to backend
                 for id in orphans:
                     out.write('Disconnecting and deleting network %d\n' % id)
-                    network = '%s%s' % (settings.BACKEND_PREFIX_ID, str(id))
+                    network = utils.id_to_network_name(id)
                     for group in client.GetGroups():
                         client.DisconnectNetwork(network, group)
                         client.DeleteNetwork(network)

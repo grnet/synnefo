@@ -508,6 +508,12 @@ class Network(models.Model):
         if self.operstate == 'DELETED':
             self.deleted = True
 
+            if self.mac_prefix:
+                MacPrefixPool.set_available(self.mac_prefix)
+
+            if self.link and self.type == 'PRIVATE_VLAN':
+                BridgePool.set_available(self.link)
+
         self.save()
 
     def save(self, *args, **kwargs):

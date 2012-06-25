@@ -476,6 +476,17 @@ class ModularBackend(BaseBackend):
         allowed = self._get_formatted_paths(allowed)
         return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
     
+    def _list_objects_no_limit(self, user, account, container, prefix, delimiter, virtual, domain, keys, shared, until, size_range, all_props, public):
+        objects = []
+        while True:
+            marker = objects[-1] if objects else None
+            limit = 10000
+            l = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props, public)
+            objects.extend(l)
+            if not l or len(l) < limit:
+                break
+        return objects
+    
     def _list_object_permissions(self, user, account, container, prefix, shared, public):
         allowed = []
         path = '/'.join((account, container, prefix)).rstrip('/')
@@ -724,7 +735,8 @@ class ModularBackend(BaseBackend):
             if x[self.SERIAL] >= int(version) and x[self.HASH] == props[self.HASH] and x[self.SIZE] == props[self.SIZE]:
                 self.node.version_put_property(x[self.SERIAL], 'checksum', checksum)
     
-    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, dest_domain=None, dest_meta={}, replace_meta=False, permissions=None, src_version=None, is_move=False):
+    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, dest_domain=None, dest_meta={}, replace_meta=False, permissions=None, src_version=None, is_move=False, delimiter=None):
+        dest_version_ids = []
         self._can_read(user, src_account, src_container, src_name)
         path, node = self._lookup_object(src_account, src_container, src_name)
         # TODO: Will do another fetch of the properties in duplicate version...
@@ -732,32 +744,49 @@ class ModularBackend(BaseBackend):
         src_version_id = props[self.SERIAL]
         hash = props[self.HASH]
         size = props[self.SIZE]
-        
         is_copy = not is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name) # New uuid.
-        dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, type, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy)
-        return dest_version_id
+        dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, dest_name, size, type, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
+        if is_move:
+        	self._delete_object(user, src_account, src_container, src_name)
+        
+        if delimiter:
+            prefix = src_name + delimiter if not src_name.endswith(delimiter) else src_name
+            src_names = self._list_objects_no_limit(user, src_account, src_container, prefix, delimiter=None, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            paths = [elem[0] for elem in src_names]
+            nodes = [elem[2] for elem in src_names]
+            # TODO: Will do another fetch of the properties in duplicate version...
+            props = self._get_versions(nodes) # Check to see if source exists.
+            
+            for prop, path, node in zip(props, paths, nodes):
+                src_version_id = prop[self.SERIAL]
+                hash = prop[self.HASH]
+                vtype = prop[self.TYPE]
+                dest_prefix = dest_name + delimiter if not dest_name.endswith(delimiter) else dest_name
+                vdest_name = path.replace(prefix, dest_prefix, 1)
+                dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, vdest_name, size, vtype, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
+                if is_move:
+                	self._delete_object(user, src_account, src_container, path)
+        return dest_version_ids[0] if len(dest_version_ids) == 1 else dest_version_ids
     
     @backend_method
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None, delimiter=None):
         """Copy an object's data and metadata."""
         
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version)
-        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, False)
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, delimiter)
+        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, False, delimiter)
         return dest_version_id
     
     @backend_method
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, delimiter=None):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions)
+        logger.debug("move_object: %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, delimiter)
         if user != src_account:
             raise NotAllowedError
-        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, None, True)
-        if (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
-            self._delete_object(user, src_account, src_container, src_name)
+        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, None, True, delimiter)
         return dest_version_id
     
-    def _delete_object(self, user, account, container, name, until=None, prefix='', delimiter=None):
+    def _delete_object(self, user, account, container, name, until=None, delimiter=None):
         if user != account:
             raise NotAllowedError
         
@@ -791,13 +820,28 @@ class ModularBackend(BaseBackend):
             self._report_size_change(user, account, -del_size, {'action': 'object delete'})
         self._report_object_change(user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
+        
+        if delimiter:
+            prefix = name + delimiter if not name.endswith(delimiter) else name
+            src_names = self._list_objects_no_limit(user, account, container, prefix, delimiter=None, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            paths = []
+            for t in src_names:
+            	path = '/'.join((account, container, t[0]))
+            	node = t[2]
+                src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
+                del_size = self._apply_versioning(account, container, src_version_id)
+                if del_size:
+                    self._report_size_change(user, account, -del_size, {'action': 'object delete'})
+                self._report_object_change(user, account, path, details={'action': 'object delete'})
+                paths.append(path)
+            self.permissions.access_clear_bulk(paths)
     
     @backend_method
-    def (self, user, account, container, name, until=None, prefix='', delimiter=None):
+    def delete_object(self, user, account, container, name, until=None, prefix='', delimiter=None):
         """Delete/purge an object."""
         
         logger.debug("delete_object: %s %s %s %s %s %s %s", user, account, container, name, until, prefix, delimiter)
-        self._delete_object(user, account, container, name, until)
+        self._delete_object(user, account, container, name, until, delimiter)
     
     @backend_method
     def list_versions(self, user, account, container, name):
@@ -926,6 +970,21 @@ class ModularBackend(BaseBackend):
         if version is None:
             props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is None:
+                raise NameError('Object does not exist')
+        else:
+            try:
+                version = int(version)
+            except ValueError:
+                raise IndexError('Version does not exist')
+            props = self.node.version_get_properties(version)
+            if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
+                raise IndexError('Version does not exist')
+        return props
+
+    def _get_versions(self, nodes, version=None):
+        if version is None:
+            props = self.node.version_lookup_bulk(nodes, inf, CLUSTER_NORMAL)
+            if not props:
                 raise NameError('Object does not exist')
         else:
             try:

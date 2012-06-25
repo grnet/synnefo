@@ -201,6 +201,16 @@ class Node(DBWorker):
             return r[0]
         return None
     
+    def node_lookup_bulk(self, paths):
+    	"""Lookup the current nodes for the given paths.
+           Return () if the path is not found.
+        """
+        
+        placeholders = ','.join('?' for path in paths)
+        q = "select path, node from nodes where path in (%s)" % placeholders
+        self.execute(q, paths)
+        return self.fetchall()
+    
     def node_get_properties(self, node):
         """Return the node's (parent, path).
            Return None if the node is not found.
@@ -500,6 +510,24 @@ class Node(DBWorker):
         if props is not None:
             return props
         return None
+
+    def version_lookup_bulk(self, nodes, before=inf, cluster=0):
+        """Lookup the current versions of the given nodes.
+           Return a list with their properties:
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+        """
+        
+        placeholders = ','.join('?' for node in nodes)
+        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
+             "from versions "
+             "where serial in (select max(serial) "
+                             "from versions "
+                             "where node in (%s) and mtime < ? group by node) "
+             "and cluster = ?" % placeholders)
+        args = nodes
+        args.extend((before, cluster))
+        self.execute(q, args)
+        return self.fetchall()
     
     def version_get_properties(self, serial, keys=(), propnames=_propnames):
         """Return a sequence of values for the properties of
@@ -656,7 +684,6 @@ class Node(DBWorker):
         
         subqlist = []
         args = []
-        print pathq
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 subqlist.append("n.path like ? escape '\\'")

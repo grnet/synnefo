@@ -58,6 +58,11 @@ class Public(DBWorker):
         q = "update public set active = 0 where path = ?"
         self.execute(q, (path,))
     
+    def public_unset_bulk(self, paths):
+        placeholders = ','.join('?' for path in paths)
+        q = "update public set active = 0 where path in (%s)" % placeholders
+        self.execute(q, paths)
+    
     def public_get(self, path):
         q = "select public_id from public where path = ? and active = 1"
         self.execute(q, (path,))

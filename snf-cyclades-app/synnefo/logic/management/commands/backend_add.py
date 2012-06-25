@@ -31,7 +31,7 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Backend, Network
+from synnefo.db.models import Backend, Network, BackendNetwork
 from django.db.utils import IntegrityError
 from synnefo.logic.backend import (get_physical_resources,
                                    update_resources,
@@ -65,8 +65,8 @@ class Command(BaseCommand):
     def handle(self, **options):
         clustername = options['clustername']
         port = options['port']
-        username = options['user']
-        password = options['pass']
+        username = options['username']
+        password = options['password']
         drained = options['drained']
 
         if not (clustername and username and password):
@@ -132,7 +132,8 @@ class Command(BaseCommand):
         self.stdout.write(sep + '\n\n')
 
         for net in networks:
+            BackendNetwork.objects.create(network=net, backend=backend)
             result = create_network_synced(net, backend)
             if result[0] != "success":
                 self.stdout.write('\nError Creating Network %s: %s\n' %\
-                                  (net.backend_id, result[1])
+                                  (net.backend_id, result[1]))

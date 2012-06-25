@@ -153,7 +153,7 @@ def create_network(request):
         # TODO: Fix this temp values:
         subnet = d.get('subnet', '192.168.1.0/24')
         gateway = d.get('gateway', None)
-        type = d.get('type', 'PRIVATE_FILTERED')
+        type = d.get('type', 'PRIVATE_VLAN')
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
@@ -164,11 +164,11 @@ def create_network(request):
         pass
         # raise Exception (user can not create public)
     if type == 'PRIVATE_FILTERED':
-        link = BridgePool.get_available().value
+        link = settings.GANETI_PRIVATE_BRIDGE
         mac_prefix = MacPrefixPool.get_available().value
         state = 'PENDING'
-    else:
-        link = settings.GANETI_PRIVATE_BRIDGE
+    else: # PRIVATE_VLAN
+        link = BridgePool.get_available().value
         # Physical-Vlans are pre-provisioned
         state = 'ACTIVE'
 

@@ -5,6 +5,8 @@
 {% endblock %}
 
 {% block content %}
+
+{% if account_exists %}
 <div class="subnav">
   <ul class="nav nav-pills">
       
@@ -90,4 +92,7 @@
         </div>
     </div>
 </div>
+{% else %}
+<p>Account <em>{{ account }}</em> does not exist in cyclades database</p>
+{% endif %}
 {% endblock %}

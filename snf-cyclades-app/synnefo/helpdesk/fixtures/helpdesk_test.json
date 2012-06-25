@@ -3,7 +3,7 @@
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
-            "userid": "testuser",
+            "userid": "testuser@test.com",
             "name": "user1 vm",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
@@ -17,7 +17,7 @@
         "model": "db.VirtualMachine",
         "pk": 1002,
         "fields": {
-            "userid": "testuser2",
+            "userid": "testuser2@test.com",
             "name": "user2 vm1",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -31,7 +31,7 @@
         "model": "db.VirtualMachine",
         "pk": 1003,
         "fields": {
-            "userid": "testuser2",
+            "userid": "testuser2@test.com",
             "name": "user2 vm2",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -81,7 +81,7 @@
             "state": "ACTIVE",
             "public": 0,
             "link": 1,
-            "userid": "testuser"
+            "userid": "testuser@test.com"
         }
     },
     {

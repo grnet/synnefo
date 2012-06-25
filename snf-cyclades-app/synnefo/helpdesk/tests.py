@@ -75,20 +75,20 @@ class HelpdeskTests(TestCase):
         # anonymous user gets 403
         r = self.client.get(reverse('helpdesk-index'), user_token=None)
         self.assertEqual(r.status_code, 403)
-        r = self.client.get(reverse('helpdesk-details', args=['testuser']),
+        r = self.client.get(reverse('helpdesk-details', args=['testuser@test.com']),
                 user_token=None)
         self.assertEqual(r.status_code, 403)
 
         # user not in helpdesk group gets 403
         r = self.client.get(reverse('helpdesk-index'))
         self.assertEqual(r.status_code, 403)
-        r = self.client.get(reverse('helpdesk-details', args=['testuser']))
+        r = self.client.get(reverse('helpdesk-details', args=['testuser@test.com']))
         self.assertEqual(r.status_code, 403)
 
         # user with helpdesk group gets 200
         r = self.client.get(reverse('helpdesk-index'), user_token="0001")
         self.assertEqual(r.status_code, 200)
-        r = self.client.get(reverse('helpdesk-details', args=['testuser']),
+        r = self.client.get(reverse('helpdesk-details', args=['testuser@test.com']),
                 user_token="0001")
         self.assertEqual(r.status_code, 200)
 
@@ -97,30 +97,60 @@ class HelpdeskTests(TestCase):
         Test that view context data are filtered based on userid provided.
         Check helpdesk_test.json to see the existing database data.
         """
-        r = self.client.get(reverse('helpdesk-details', args=['testuser']),
-                user_token="0001")
 
+        # 'testuser@test.com' details, see helpdes/fixtures/helpdesk_test.json for
+        # more details
+        r = self.client.get(reverse('helpdesk-details', args=['testuser@test.com']),
+                user_token="0001")
         account = r.context['account']
         vms = r.context['vms']
         nets = r.context['networks']
-
-        self.assertEqual(account, "testuser")
+        self.assertEqual(account, "testuser@test.com")
         self.assertEqual(vms[0].name, "user1 vm")
         self.assertEqual(vms.count(), 1)
-        self.assertEqual(nets.count(), 2)
+        self.assertEqual(len(nets), 2)
+        self.assertEqual(r.context['account_exists'], True)
 
 
-        r = self.client.get(reverse('helpdesk-details', args=['testuser2']),
+        # 'testuser2@test.com' details, see helpdes/fixtures/helpdesk_test.json for
+        # more details
+        r = self.client.get(reverse('helpdesk-details', args=['testuser2@test.com']),
                 user_token="0001")
-
         account = r.context['account']
         vms = r.context['vms']
         nets = r.context['networks']
-
-        self.assertEqual(account, "testuser2")
+        self.assertEqual(account, "testuser2@test.com")
         self.assertEqual(vms[0].name, "user2 vm1")
         self.assertEqual(vms[1].name, "user2 vm2")
         self.assertEqual(vms.count(), 2)
-        self.assertEqual(nets.count(), 1)
+        self.assertEqual(len(nets), 1)
+        self.assertEqual(r.context['account_exists'], True)
 
+        # 'testuser5@test.com' does not exist, should be redirected to helpdesk home
+        r = self.client.get(reverse('helpdesk-details', args=['testuser5@test.com']),
+                user_token="0001")
+        vms = r.context['vms']
+        self.assertEqual(r.context['account_exists'], False)
+        self.assertEqual(vms.count(), 0)
+        # 1 public network
+        self.assertEqual(len(nets), 1)
+        self.assertEqual(r.context['account_exists'], False)
+
+    def test_json_users(self):
+        # invalid prefix gives 404 response
+        r = self.client.get(reverse('helpdesk-userslist') + "?prefix=test",
+                user_token="0001")
+        self.assertEqual(r.status_code, 404)
+
+        # no users exist
+        r = self.client.get(reverse('helpdesk-userslist') + "?prefix=test@",
+                user_token="0001")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, "[]")
+
+        # 1 user exist
+        r = self.client.get(reverse('helpdesk-userslist') + "?prefix=testuser@",
+                user_token="0001")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, '["testuser@test.com"]')
 

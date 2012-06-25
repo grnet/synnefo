@@ -1677,9 +1677,6 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     if reserved_ips:
         reserved_ips = reserved_ips.split(',')
 
-    if tags:
-        tags = tags.split(',')
-
     body = {
       "network_name": network_name,
       "gateway": gateway,
@@ -1688,9 +1685,12 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "network6": network6,
       "mac_prefix": mac_prefix,
       "network_type": network_type,
-      "reserved_ips": reserved_ips,
-      "tags": tags
+      "reserved_ips": reserved_ips
       }
+
+    if tags:
+        tags = tags.split(',')
+        body['tags'] = tags
 
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
                              query, body)

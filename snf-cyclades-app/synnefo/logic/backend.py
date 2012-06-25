@@ -86,8 +86,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
             vm.deleted = True
             vm.nics.all().delete()
 
-    # Special case: if OP_INSTANCE_CREATE fails --> ERROR
-    if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
+    if status in ('canceled', 'error'):
         utils.update_state(vm, 'ERROR')
 
     # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,

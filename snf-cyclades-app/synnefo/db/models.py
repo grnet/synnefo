@@ -487,25 +487,25 @@ class Network(models.Model):
     def __unicode__(self):
         return self.name
 
-    def update_oper_state(self):
-        """Update operstate of the Network.
+    def update_state(self):
+        """Update state of the Network.
 
-        Update the operstate of the Network depending on the related
+        Update the state of the Network depending on the related
         backend_networks. When backend networks do not have the same operstate,
-        the Network's operstate is PENDING. Otherwise it is the same with
+        the Network's state is PENDING. Otherwise it is the same with
         the BackendNetworks operstate.
 
         """
         backend_states = [s.operstate for s in self.backend_networks.all()]
         if not backend_states:
-            self.operstate = 'PENDING'
+            self.state = 'PENDING'
             self.save()
             return
 
         all_equal = len(set(backend_states)) <= 1
-        self.operstate = all_equal and backend_states[0] or 'PENDING'
+        self.state = all_equal and backend_states[0] or 'PENDING'
 
-        if self.operstate == 'DELETED':
+        if self.state == 'DELETED':
             self.deleted = True
 
             if self.mac_prefix:
@@ -577,11 +577,11 @@ class BackendNetwork(models.Model):
 
     def save(self, *args, **kwargs):
         super(BackendNetwork, self).save(*args, **kwargs)
-        self.network.update_oper_state()
+        self.network.update_state()
 
     def delete(self, *args, **kwargs):
         super(BackendNetwork, self).delete(*args, **kwargs)
-        self.network.update_oper_state()
+        self.network.update_state()
 
 
 class NetworkInterface(models.Model):

@@ -69,7 +69,7 @@ def id_from_network_name(name):
 
 
 def id_to_network_name(id):
-    return "%snet-%s" (settings.BACKEND_PREFIX_ID, str(id))
+    return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(id))
 
 
 def get_rsapi_state(vm):

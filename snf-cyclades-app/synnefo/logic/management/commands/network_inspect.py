@@ -56,10 +56,12 @@ class Command(BaseCommand):
             raise CommandError("Network not found in DB.")
 
         sep = '-' * 80 + '\n'
-        labels = ('name', 'backend-name', 'owner', 'subnet', 'gateway', 'max_prefix', 'link',
-                  'public', 'dhcp', 'type', 'deleted', 'action')
-        fields = (net.name, net.backend_id, str(net.userid), str(net.subnet), str(net.gateway),
-                  str(net.mac_prefix), str(net.link), str(net.public),  str(net.dhcp),
+        labels = ('name', 'backend-name', 'state', 'owner', 'subnet', 'gateway',
+                  'max_prefix', 'link', 'public', 'dhcp', 'type', 'deleted',
+                  'action')
+        fields = (net.name, net.backend_id, net.state, str(net.userid),
+                  str(net.subnet), str(net.gateway), str(net.mac_prefix),
+                  str(net.link), str(net.public),  str(net.dhcp),
                   str(net.type), str(net.deleted), str(net.action))
 
         self.stdout.write(sep)

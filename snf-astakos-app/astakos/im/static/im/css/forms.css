@@ -5,8 +5,6 @@ input, textarea, .form-widget 				{ background-color: #ffffff; color: #000;borde
 #forms input:focus 							{ position: relative; border: 1px solid #000; z-index: 100; }
 #forms .input:focus label,
 #forms input:focus label 					{ z-index: 300; }
-.altcol 									{ background-color: #c3c3b9 !important; }
-.altcol:hover 								{ background-color: #f89a1c !important; }
 form.withlabels label 						{ width: 224px; display: block; float: left; padding-top: 1em; }
 form.withlabels input[type=text], 
 form.withlabels input[type=password] 		{ width: 224px; }
@@ -45,17 +43,15 @@ form input.text:focus label,
 form input[type="text"]:focus label,
 form input[type="password"]:focus label 	{ z-index: 300;}
 form input.submit, 
-form input[type="submit"]					{font-family: 'Antic', sans-serif;font-size: 14px; font-weight: normal; line-height: 22px; letter-spacing:1px; background-color: #3582ac; color: #ffffff; border: none; padding: 10px 22px;font-size: 1em; margin:15px 0 0 223px; height:43px; }
+form input[type="submit"]					{font-family: 'Antic', sans-serif;font-size: 14px; font-weight: normal; line-height: 22px; letter-spacing:1px;  background-color: #f89a1c;color: #ffffff; border: none; padding: 10px 22px;font-size: 1em; margin:15px 0 0 223px; height:43px; }
 form.innerlabels input.submit, 
 form.innerlabels input[type="submit"]		{margin-left:0;}
 form input.submit:hover, 
-form input[type="submit"]:hover 			{ background-color: #f89a1c;}
+form input[type="submit"]:hover 			{ background-color:#3582ac;border-color:#3582ac;}
 form input.submit.back, 
 form input[type="submit"].back 				{ text-decoration: none; bottom: 0; float: right; z-index: 500; }
 form input.submit.back.right, 
 form input[type="submit"].back.right 		{right: 0;}
-form input.submit:hover, 
-form input[type="submit"]:hover 			{ background-color: #f89a1c; border-color:#f89a1c;}
 form input.submit.back, 
 form input[type="submit"].back 				{ text-decoration: none; bottom: 0; float: right; z-index: 500; }
 form input.submit.back.right, 
@@ -121,7 +117,7 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha .actions-wrap				{ border-top:1px solid #808080 }
 
 input.submit:focus,
-input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #C3C3B9; outline:0 none; }						
+input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none; }						
 
 @media screen and (max-width : 591px) 		{ 
 	form.withlabels .extra-img	   				{ left:222px; }
@@ -146,4 +142,10 @@ input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1p
 	#okeanos_recaptcha							{ width:inherit }
 	#okeanos_recaptcha #recaptcha_response_field	{ width:55%; }
 	#okeanos_recaptcha #recaptcha_image	img		{ width:80%; }
+}
+
+
+@media screen and ( width : 320px) 		{ 
+	#okeanos_recaptcha							{ width:259px }
+    
 }

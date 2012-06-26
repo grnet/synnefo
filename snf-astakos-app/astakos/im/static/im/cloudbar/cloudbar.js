@@ -1,3 +1,9 @@
+function equalWidths ( secondEl, firstEl) {
+	secondEl.css('width',firstEl.outerWidth() );
+}
+
+
+
 $(document).ready(function(){
     
     /*
@@ -110,15 +116,15 @@ $(document).ready(function(){
     });*/
    $('.cloudbar .profile .full>a').live('click', function(e){
    		e.preventDefault();
-        $('.cloudbar .profile ul').css('width',$('.profile').outerWidth() );
+        equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
    		$(this).siblings('ul').toggle();
    		$(this).toggleClass('open');
    		
    });
-    
-    
 
     
-    
-    
+});
+
+$(window).resize(function() {
+	equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
 });

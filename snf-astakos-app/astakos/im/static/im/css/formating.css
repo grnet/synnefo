@@ -39,7 +39,7 @@ em, i											{ font-style:italic; font-weight:inherit; }
 h1, h2, h3, h4, h5, h6							{ font-weight:bold; line-height:1.4; margin-bottom:0; }
 /* Typographic scale based on 12px body size */
 h1												{ font-size:4em; }
-h2												{ font-size:1em; }
+h2												{ font-size:1.154em; }
 h3												{ font-size:1em; }
 h4												{ font-size:1.5em; }
 h5												{ font-size:1.333em; }

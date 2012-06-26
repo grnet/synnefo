@@ -145,7 +145,7 @@
 
 
 /* cloudbar header */
-.cloudbar                                       { background:#000; color:#fff;	   line-height:35px;  width:100%; min-width:320px; font-size:13px;}	
+.cloudbar                                       { background:#000; color:#fff;	   line-height:35px;  width:100%;   font-size:13px; font-family:Antic,Arial,sans-serif;}	
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}
 .cloudbar .profile                              { float:right; background:#01A1AE; min-width:190px; padding:0; text-align:right;  }

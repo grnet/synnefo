@@ -1,4 +1,4 @@
-body											{ min-width:320px; overflow-y: scroll;}
+body											{ overflow-y: scroll;}
 .wrapper                                        { margin:0 auto; position:relative; width:820px; padding:36px 70px; }
 .container .wrapper,
 .footer .wrapper                                { border: 1px solid #808080; border-top:0 none;}
@@ -13,7 +13,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .footer a                                       { color:#B3B3B3; text-decoration:none; transition:color 0.15s ease-in-out 0s; -moz-transition: color 0.15s ease-in-out 0s;  -webkit-transition: color 0.15s ease-in-out 0s;  -o-transition: color 0.15s ease-in-out 0s; } 
 .footer:hover a                                 { color:#808080;}
 .footer a:hover                                 { color:#000;}
-.footer ul                                      { float:left; margin:0 22px 0 0; width:140px;  padding:0;}
+.footer ul                                      { float:left; margin:0 10px 0 0; width:125px;  padding:0;}
 .footer ul li                                   { padding:0; margin:0; list-style:none outside;}
 .footer ul li:first-child                       { margin-bottom:1em;	}
 .footer .clearfix                               { padding-bottom:20px;}
@@ -35,20 +35,28 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .mainlogo h1									{ line-height:100%; font-size:1em; }
 .container .navigation                          { margin:20px 0 0; font-size:1.154em; height:95px;}
 .container .navigation ul                       { margin:5px 0; padding:0;}
+.container .navigation ul + ul					{ font-size:0.933em; }
 .container .navigation ul li                    { list-style:none outside; padding:0; margin:0 1em 0 0; display:inline-block;}
 .container .navigation ul li a                  { color:#000; text-decoration:none; }
 .container .navigation ul li a:hover            { color:#F89A1C; }	
 .container .navigation ul li.active a           { color:#F89A1C; }					
 
 .dotted                                         { background:url(../images/double-dots.jpg) no-repeat bottom center; padding:0 0 30px; margin-bottom:30px;}
+.full-dotted									{ background:url(../images/dots.jpg) repeat-x top; margin-top:20px; padding-top:20px; }
+.full-dotted:first-child						{ background:none; padding-top:0; margin-top:0; }
 .two-cols .rt                                   { float:right; width:400px;}
 .two-cols .lt                                   { float:left; width:400px;}
 .two-cols-blog .rt                              { float:right; width:220px; margin-left:80px; padding-right:65px;}
 .two-cols-blog .lt 	                            { overflow:hidden;}
 .container h2, .container h3                    { font-weight:normal; margin-bottom:1em; }
 .container h2 em 								{ color: #3582AC; font-style:normal; }
-.content a						                { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#000; }
-.content a:hover					            { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#F89A1C; }
+/*.content a						                { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#000; }
+.content a:hover					            { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#F89A1C; }*/
+
+
+.content a						                { text-decoration:none; }
+.content a:hover					            { text-decoration:underline; }
+
 .container ul.options                           { padding:0; margin:0; font-size:1.154em;}
 .container ul.options li                        { list-style:none outside; margin:0 0 1em 0;padding:0;}
 .container ul.options li h3						{ font-size:1em; margin-bottom:0; }
@@ -57,9 +65,8 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container .extra ul.options					{ font-size:1em; margin:0 ; padding:15px; }
 .landing h2, .landing a:hover                   { color:#01A1AE;}
 .faq h2, .faq a:hover, .faq .current a          { color:#EF4F54; border:0 none;}
-.content .question h2							{ color:#4085A6 }
+.content .question h2							{ color:#EF4F54 }
 .content .backlink								{ margin:1em 0; }
-.content .question .backlink a					{ border:0 none; color:#F89A1C }
 .content .question .backlink a:hover			{ border-bottom:1px solid #F89A1C }
 .faq h3											{ color:#4085a6; margin:0;}
 .faq ul                                         { padding:0; margin:0; }
@@ -92,12 +99,10 @@ p.info a:hover                                  { color:#000; border-bottom:0 no
 .cyclades .bg-wrap .extra .hide-extra:hover img { margin-top:-32px;}
 .pithos h2, .pithos a:hover,                     
 .pithos .extra .options li h3                     { color:#F89A1C; }
-.cyclades h2, .cyclades a:hover,                     
+.cyclades h2,                 
 .cyclades .extra .options li h3                   { color:#4085A6; }
-.cyclades a							            { border-bottom:1px solid #4085A6; }
-.cyclades a:hover							    { border-bottom:1px solid #4085A6; }
 a.btn_01                                        { display:block; text-align:center; background:#F6921E; color:#000; padding:10px; text-decoration:none; border:0 none;}
-a.btn_01:hover                                  { background:#01A1AE; color:#000; border:0 none;}
+a.btn_01:hover                                  { background:#01A1AE; color:#000; text-decoration:none;}
 a.btn_01 em                                     { font-style:normal; display:block; }
 a.btn_01 span                                   { color:#fff; }
 .lt .box-more                                   { text-align:center; padding:5px 10px; }
@@ -116,11 +121,11 @@ a.videolink:hover				                { background:url(../images/video_image.png)
 .container .bottom-bordered                     { border-bottom:1px dashed #000000;margin-bottom:20px }
 .container .lt-div                              { width:234px; float:left; }
 .container .overflow-hidden                     { overflow:hidden;}
+.documentation .wrap							{ width:500px; }
 
 
 /* resources*/
 .resources .categories .clear 	                { color: #000000; position:relative; top:-1px; line-height:100%; display:inline-block;}
-.resources .categories .clear:hover				{ border-bottom:1px solid #000; }
 .resources  a, .resources  a:hover              { border:0 none;}
 .resources .categories ul 	                    { margin:0;padding:0;}
 .resources .categories ul li                    { float: left; list-style:none outside;}

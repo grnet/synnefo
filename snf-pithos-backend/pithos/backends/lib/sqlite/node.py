@@ -207,9 +207,12 @@ class Node(DBWorker):
         """
         
         placeholders = ','.join('?' for path in paths)
-        q = "select path, node from nodes where path in (%s)" % placeholders
+        q = "select node from nodes where path in (%s)" % placeholders
         self.execute(q, paths)
-        return self.fetchall()
+        r = self.fetchall()
+        if r is not None:
+        	return [row[0] for row in r]
+        return None
     
     def node_get_properties(self, node):
         """Return the node's (parent, path).
@@ -492,38 +495,48 @@ class Node(DBWorker):
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
     
-    def version_lookup(self, node, before=inf, cluster=0):
+    def version_lookup(self, node, before=inf, cluster=0, all_props=True):
         """Lookup the current version of the given node.
            Return a list with its properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster)
            or None if the current version is not found in the given cluster.
         """
         
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
+        q = ("select %s "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
                              "where node = ? and mtime < ?) "
              "and cluster = ?")
+        if not all_props:
+            q = q % "serial"
+        else:
+            q = q % "serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster"
+        
         self.execute(q, (node, before, cluster))
         props = self.fetchone()
         if props is not None:
             return props
         return None
 
-    def version_lookup_bulk(self, nodes, before=inf, cluster=0):
+    def version_lookup_bulk(self, nodes, before=inf, cluster=0, all_props=True):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
         """
         
-        placeholders = ','.join('?' for node in nodes)
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
+        q = ("select %s "
              "from versions "
              "where serial in (select max(serial) "
                              "from versions "
                              "where node in (%s) and mtime < ? group by node) "
-             "and cluster = ?" % placeholders)
+             "and cluster = ?")
+        placeholders = ','.join('?' for node in nodes)
+        if not all_props:
+            q = q % ("serial",  placeholders)
+        else:
+            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster",  placeholders)
+        
         args = nodes
         args.extend((before, cluster))
         self.execute(q, args)

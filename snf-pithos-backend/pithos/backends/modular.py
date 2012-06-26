@@ -334,7 +334,9 @@ class ModularBackend(BaseBackend):
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         node = self.node.node_lookup(account)
-        return [x[0] for x in self._list_object_properties(node, account, '', '/', marker, limit, False, None, [], until)]
+        containers = [x[0] for x in self._list_object_properties(node, account, '', '/', marker, limit, False, None, [], until)]
+        start, limit = self._list_limits([x[0] for x in containers], marker, limit)
+        return containers[start:start + limit]
     
     @backend_method
     def list_container_meta(self, user, account, container, domain, until=None):
@@ -469,13 +471,45 @@ class ModularBackend(BaseBackend):
     def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props, public):
         if user != account and until:
             raise NotAllowedError
+        if shared and public:
+            # get shared first
+            shared = self._list_object_permissions(user, account, container, prefix, shared=True, public=False)
+            objects = []
+            if shared:
+                path, node = self._lookup_container(account, container)
+                shared = self._get_formatted_paths(shared)
+                objects = self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared, all_props)
+            
+            # get public
+            objects.extend(self._list_public_object_properties(user, account, container, prefix, all_props))
+            
+            objects.sort(key=lambda x: x[0])
+            start, limit = self._list_limits([x[0] for x in objects], marker, limit)
+            return objects[start:start + limit]
+        elif public:
+            objects = self._list_public_object_properties(user, account, container, prefix, all_props)
+            start, limit = self._list_limits([x[0] for x in objects], marker, limit)
+            return objects[start:start + limit]
+        
         allowed = self._list_object_permissions(user, account, container, prefix, shared, public)
-        if (shared or public) and not allowed:
+        if shared and not allowed:
             return []
         path, node = self._lookup_container(account, container)
         allowed = self._get_formatted_paths(allowed)
-        return self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
+        objects = self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
+        start, limit = self._list_limits([x[0] for x in objects], marker, limit)
+        return objects[start:start + limit]
     
+    def _list_public_object_properties(self, user, account, container, prefix, all_props):
+        public = self._list_object_permissions(user, account, container, prefix, shared=False, public=True)
+        paths, nodes = self._lookup_objects(public)
+        path = '/'.join((account, container))
+        cont_prefix = path + '/'
+        paths = [x[len(cont_prefix):] for x in paths]
+        props = self.node.version_lookup_bulk(nodes, all_props=all_props)
+        objects = [(path,) + props for path, props in zip(paths, props)]
+        return objects
+        
     def _list_objects_no_limit(self, user, account, container, prefix, delimiter, virtual, domain, keys, shared, until, size_range, all_props, public):
         objects = []
         while True:
@@ -944,6 +978,12 @@ class ModularBackend(BaseBackend):
             raise NameError('Object does not exist')
         return path, node
     
+    def _lookup_objects(self, paths):
+    	nodes = self.node.node_lookup_bulk(paths)
+        if nodes is None:
+            raise NameError('Object does not exist')
+        return paths, nodes
+    
     def _get_properties(self, node, until=None):
         """Return properties until the timestamp given."""
         
@@ -1074,10 +1114,8 @@ class ModularBackend(BaseBackend):
         objects.extend([(p, None) for p in prefixes] if virtual else [])
         objects.sort(key=lambda x: x[0])
         objects = [(x[0][len(cont_prefix):],) + x[1:] for x in objects]
+        return objects
         
-        start, limit = self._list_limits([x[0] for x in objects], marker, limit)
-        return objects[start:start + limit]
-    
     # Reporting functions.
     
     def _report_size_change(self, user, account, size, details={}):

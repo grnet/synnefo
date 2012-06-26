@@ -595,7 +595,7 @@ class NetworkInterface(models.Model):
     network = models.ForeignKey(Network, related_name='nics')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    index = models.IntegerField(null=True)
+    index = models.IntegerField(null=False)
     mac = models.CharField(max_length=17, null=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)

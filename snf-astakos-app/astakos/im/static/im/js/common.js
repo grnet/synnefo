@@ -13,6 +13,35 @@ function setContainerMinHeight( applicableDiv){
 
 }
 
+// fix for iPhone - iPad orientation bug 
+var metas = document.getElementsByTagName('meta');
+function resetViewport() {
+    var i;
+    if (navigator.userAgent.match(/iPhone/i)) {
+  		for (i=0; i<metas.length; i++) {
+    		if (metas[i].name == "viewport") {
+      			metas[i].content = "width=device-width, minimum-scale=1.0, maximum-scale=1.0";
+    		}
+  		}
+  	}
+}
+resetViewport();
+    
+window.onorientationchange = function() {
+    resetViewport();
+};
+    
+function gestureStart() {
+  for (i=0; i<metas.length; i++) {
+    if (metas[i].name == "viewport") {
+      metas[i].content = "width=device-width, minimum-scale=0.25, maximum-scale=1.6";
+    }
+  }
+}
+document.addEventListener("gesturestart", gestureStart, false);
+
+//end of fix
+
 $(document).ready(function() {
 	
 	 

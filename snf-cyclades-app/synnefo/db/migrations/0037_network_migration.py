@@ -9,6 +9,11 @@ class Migration(DataMigration):
     
     def forwards(self, orm):
         "Write your forwards methods here."
+
+        print '\033[91m' + 'Subnet of all networks is set to 10.0.0.0/24.'
+        print 'Gateway of all networks is set to null.'
+        print "Use `snf-manage modifynetwork` to change them." + '\033[0m'
+
         for network in orm.Network.objects.all():
             if network.state == 'DELETED':
                 network.deleted = True

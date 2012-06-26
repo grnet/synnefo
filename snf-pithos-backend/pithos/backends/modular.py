@@ -780,7 +780,7 @@ class ModularBackend(BaseBackend):
         size = props[self.SIZE]
         is_copy = not is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name) # New uuid.
         dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, dest_name, size, type, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
-        if is_move:
+        if is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
         	self._delete_object(user, src_account, src_container, src_name)
         
         if delimiter:
@@ -798,7 +798,7 @@ class ModularBackend(BaseBackend):
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
                 dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, vdest_name, size, vtype, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
-                if is_move:
+                if is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
                 	self._delete_object(user, src_account, src_container, path)
         return dest_version_ids[0] if len(dest_version_ids) == 1 else dest_version_ids
     

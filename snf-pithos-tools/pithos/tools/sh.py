@@ -143,6 +143,11 @@ class List(Command):
                           default=None, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
+        parser.add_option('--shared', action='store_true', dest='shared',
+                          default=False, help='show only shared')
+        parser.add_option('--public', action='store_true', dest='public',
+                          default=False, help='show only public')
+        
     
     def execute(self, container=None):
         if container:
@@ -152,7 +157,7 @@ class List(Command):
     
     def list_containers(self):
         attrs = ['limit', 'marker', 'if_modified_since',
-                 'if_unmodified_since']
+                 'if_unmodified_since', 'shared', 'public']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         
@@ -167,7 +172,8 @@ class List(Command):
         #prepate params
         params = {}
         attrs = ['limit', 'marker', 'prefix', 'delimiter', 'path',
-                 'meta', 'if_modified_since', 'if_unmodified_since']
+                 'meta', 'if_modified_since', 'if_unmodified_since',
+                 'shared', 'public']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         

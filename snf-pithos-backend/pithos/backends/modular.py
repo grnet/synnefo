@@ -324,13 +324,12 @@ class ModularBackend(BaseBackend):
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         if shared or public:
-            allowed = []
+            allowed = set()
             if shared:
-                allowed.extend([x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)])
+                allowed.update([x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)])
             if public:
-                allowed.extend([x[0].split('/', 2)[1] for x in self.permissions.public_list(account)])
-            allowed = list(set(allowed))
-            allowed.sort()
+                allowed.update([x[0].split('/', 2)[1] for x in self.permissions.public_list(account)])
+            allowed = sorted(allowed)
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         node = self.node.node_lookup(account)
@@ -529,13 +528,12 @@ class ModularBackend(BaseBackend):
             if not allowed:
                 raise NotAllowedError
         else:
-            allowed = []
+            allowed = set()
             if shared:
-                allowed.extend(self.permissions.access_list_shared(path))
+                allowed.update(self.permissions.access_list_shared(path))
             if public:
-                allowed.extend([x[0] for x in self.permissions.public_list(path)])
-            allowed = list(set(allowed))
-            allowed.sort()
+                allowed.update([x[0] for x in self.permissions.public_list(path)])
+            allowed = sorted(allowed)
             if not allowed:
                 return []
         return allowed

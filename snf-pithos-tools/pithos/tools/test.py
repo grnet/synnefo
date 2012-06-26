@@ -1216,8 +1216,8 @@ class ObjectPut(BaseTestCase):
     def _test_maximum_upload_size_exceeds(self):
         name = o_names[0]
         meta = {'test':'test1'}
-        #upload 100MB
-        length=1024*1024*100
+        #upload 5GB
+        length= 5 * (1024 * 1024 * 1024) + 1
         self.assert_raises_fault(400, self.upload_random_data, self.container,
                                  name, length, **meta)
 

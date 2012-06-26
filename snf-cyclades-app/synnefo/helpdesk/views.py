@@ -8,9 +8,25 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.utils import simplejson as json
+from urllib import unquote
 
-from synnefo.lib.astakos import get_user, get_token_from_cookie
+from synnefo.lib.astakos import get_user
 from synnefo.db.models import *
+
+def get_token_from_cookie(request, cookiename):
+    """
+    Extract token from the cookie name provided. Cookie should be in the same
+    form as astakos service sets its cookie contents::
+
+        <user_uniq>|<user_token>
+    """
+    try:
+        cookie_content = unquote(request.COOKIES.get(cookiename, None))
+        return cookie_content.split("|")[1]
+    except AttributeError:
+        pass
+
+    return None
 
 # TODO: here we mix ui setting with helpdesk settings
 # if sometime in the future helpdesk gets splitted from the
@@ -85,6 +101,7 @@ def account(request, account):
     return direct_to_template(request, "helpdesk/account.html",
         extra_context=user_context)
 
+
 @helpdesk_user_required
 def user_list(request):
     """
@@ -93,8 +110,11 @@ def user_list(request):
     """
 
     prefix = request.GET.get('prefix', None)
-    if not prefix or not prefix.endswith("@"):
+    if not prefix or "@" not in prefix:
         raise Http404
+
+    # keep only the user part (e.g. "user@")
+    prefix = prefix.split("@")[0] + "@"
 
     q = Q(userid__startswith=prefix) & ~Q(userid=None)
     vm_users = VirtualMachine.objects.filter(q).values_list("userid", flat=True)

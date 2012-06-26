@@ -148,8 +148,12 @@ class HelpdeskTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, "[]")
 
-        # 1 user exist
+        # 1 user exists
         r = self.client.get(reverse('helpdesk-userslist') + "?prefix=testuser@",
+                user_token="0001")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, '["testuser@test.com"]')
+        r = self.client.get(reverse('helpdesk-userslist') + "?prefix=testuser@t",
                 user_token="0001")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, '["testuser@test.com"]')

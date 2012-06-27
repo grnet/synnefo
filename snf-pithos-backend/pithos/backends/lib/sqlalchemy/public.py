@@ -74,6 +74,13 @@ class Public(DBWorker):
         r = self.conn.execute(s)
         r.close()
     
+    def public_unset_bulk(self, paths):
+        s = self.public.update()
+        s = s.where(self.public.c.path.in_(paths))
+        s = s.values(active=False)
+        r = self.conn.execute(s)
+        r.close()
+    
     def public_get(self, path):
         s = select([self.public.c.public_id])
         s = s.where(and_(self.public.c.path == path,

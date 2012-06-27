@@ -115,6 +115,12 @@ class Permissions(XFeatures, Groups, Public):
         self.xfeature_destroy(path)
         self.public_unset(path)
     
+    def access_clear_bulk(self, paths):
+        """Revoke access to path (both permissions and public)."""
+        
+        self.xfeature_destroy_bulk(paths)
+        self.public_unset_bulk(paths)
+    
     def access_check(self, path, access, member):
         """Return true if the member has this access to the path."""
         

@@ -219,6 +219,18 @@ class Node(DBWorker):
             return row[0]
         return None
     
+    def node_lookup_bulk(self, paths):
+        """Lookup the current nodes for the given paths.
+           Return () if the path is not found.
+        """
+        
+        # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
+        s = select([self.nodes.c.node], self.nodes.c.path.in_(paths))
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return [row[0] for row in rows]
+    
     def node_get_properties(self, node):
         """Return the node's (parent, path).
            Return None if the node is not found.
@@ -571,7 +583,7 @@ class Node(DBWorker):
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
     
-    def version_lookup(self, node, before=inf, cluster=0):
+    def version_lookup(self, node, before=inf, cluster=0, all_props=True):
         """Lookup the current version of the given node.
            Return a list with its properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster)
@@ -579,10 +591,13 @@ class Node(DBWorker):
         """
         
         v = self.versions.alias('v')
-        s = select([v.c.serial, v.c.node, v.c.hash,
-                    v.c.size, v.c.type, v.c.source,
-                    v.c.mtime, v.c.muser, v.c.uuid,
-                    v.c.checksum, v.c.cluster])
+        if not all_props:
+            s = select([v.c.serial])
+        else:
+            s = select([v.c.serial, v.c.node, v.c.hash,
+                        v.c.size, v.c.type, v.c.source,
+                        v.c.mtime, v.c.muser, v.c.uuid,
+                        v.c.checksum, v.c.cluster])
         c = select([func.max(self.versions.c.serial)],
             self.versions.c.node == node)
         if before != inf:
@@ -596,6 +611,31 @@ class Node(DBWorker):
             return props
         return None
     
+    def version_lookup_bulk(self, nodes, before=inf, cluster=0, all_props=True):
+        """Lookup the current versions of the given nodes.
+           Return a list with their properties:
+           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+        """
+        
+        v = self.versions.alias('v')
+        if not all_props:
+            s = select([v.c.serial])
+        else:
+            s = select([v.c.serial, v.c.node, v.c.hash,
+                        v.c.size, v.c.type, v.c.source,
+                        v.c.mtime, v.c.muser, v.c.uuid,
+                        v.c.checksum, v.c.cluster])
+        c = select([func.max(self.versions.c.serial)],
+            self.versions.c.node.in_(nodes)).group_by(self.versions.c.node)
+        if before != inf:
+            c = c.where(self.versions.c.mtime < before)
+        s = s.where(and_(v.c.serial.in_(c),
+                         v.c.cluster == cluster))
+        r = self.conn.execute(s)
+        rproxy = r.fetchall()
+        r.close()
+        return (tuple(row.values()) for row in rproxy)
+        
     def version_get_properties(self, serial, keys=(), propnames=_propnames):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.

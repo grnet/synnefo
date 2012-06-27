@@ -113,6 +113,13 @@ class XFeatures(DBWorker):
         r = self.conn.execute(s)
         r.close()
     
+    def xfeature_destroy_bulk(self, paths):
+        """Destroy features and all their key, value pairs."""
+        
+        s = self.xfeatures.delete().where(self.xfeatures.c.path.in_(paths))
+        r = self.conn.execute(s)
+        r.close()
+    
     def feature_dict(self, feature):
         """Return a dict mapping keys to list of values for feature."""
         

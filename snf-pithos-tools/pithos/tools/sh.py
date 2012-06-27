@@ -143,6 +143,11 @@ class List(Command):
                           default=None, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
+        parser.add_option('--shared', action='store_true', dest='shared',
+                          default=False, help='show only shared')
+        parser.add_option('--public', action='store_true', dest='public',
+                          default=False, help='show only public')
+        
     
     def execute(self, container=None):
         if container:
@@ -152,7 +157,7 @@ class List(Command):
     
     def list_containers(self):
         attrs = ['limit', 'marker', 'if_modified_since',
-                 'if_unmodified_since']
+                 'if_unmodified_since', 'shared', 'public']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         
@@ -167,7 +172,8 @@ class List(Command):
         #prepate params
         params = {}
         attrs = ['limit', 'marker', 'prefix', 'delimiter', 'path',
-                 'meta', 'if_modified_since', 'if_unmodified_since']
+                 'meta', 'if_modified_since', 'if_unmodified_since',
+                 'shared', 'public']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         
@@ -256,6 +262,12 @@ class Delete(Command):
                           default=None, help='remove history until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
+        parser.add_option('--delimiter', action='store', type='str',
+                          dest='delimiter', default=None,
+                          help='mass delete objects with path staring with <src object> + delimiter')
+        parser.add_option('-r', action='store_true',
+                          dest='recursive', default=False,
+                          help='mass delimiter objects with delimiter /')
     
     def execute(self, path):
         container, sep, object = path.partition('/')
@@ -265,7 +277,12 @@ class Delete(Command):
             until = int(_time.mktime(t))
         
         if object:
-            self.client.delete_object(container, object, until)
+            kwargs = {}
+            if self.delimiter:
+                kwargs['delimiter'] = self.delimiter
+            elif self.recursive:
+                kwargs['delimiter'] = '/'
+            self.client.delete_object(container, object, until, **kwargs)
         else:
             self.client.delete_container(container, until)
 
@@ -447,6 +464,12 @@ class CopyObject(Command):
         parser.add_option('--content-type', action='store',
                           dest='content_type', default=None,
                           help='change object\'s content type')
+        parser.add_option('--delimiter', action='store', type='str',
+                          dest='delimiter', default=None,
+                          help='mass copy objects with path staring with <src object> + delimiter')
+        parser.add_option('-r', action='store_true',
+                          dest='recursive', default=False,
+                          help='mass copy with delimiter /')
     
     def execute(self, src, dst, *args):
         src_container, sep, src_object = src.partition('/')
@@ -463,6 +486,10 @@ class CopyObject(Command):
             dst_object = dst
         
         args = {'content_type':self.content_type} if self.content_type else {}
+        if self.delimiter:
+        	args['delimiter'] = self.delimiter
+        elif self.recursive:
+        	args['delimiter'] = '/'
         self.client.copy_object(src_container, src_object, dst_container,
                                 dst_object, meta, self.public, self.version,
                                 **args)
@@ -576,6 +603,12 @@ class MoveObject(Command):
         parser.add_option('--content-type', action='store',
                           dest='content_type', default=None,
                           help='change object\'s content type')
+        parser.add_option('--delimiter', action='store', type='str',
+                          dest='delimiter', default=None,
+                          help='mass move objects with path staring with <src object> + delimiter')
+        parser.add_option('-r', action='store_true',
+                          dest='recursive', default=False,
+                          help='mass move objects with delimiter /')
     
     def execute(self, src, dst, *args):
         src_container, sep, src_object = src.partition('/')
@@ -591,6 +624,10 @@ class MoveObject(Command):
             meta[key] = val
         
         args = {'content_type':self.content_type} if self.content_type else {}
+        if self.delimiter:
+        	args['delimiter'] = self.delimiter
+        elif self.recursive:
+        	args['delimiter'] = '/'
         self.client.move_object(src_container, src_object, dst_container,
                                 dst_object, meta, self.public, **args)
 

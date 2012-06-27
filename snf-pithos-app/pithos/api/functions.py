@@ -52,7 +52,7 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, COOKIE_NAME, UPDATE_MD5
+from pithos.api.settings import UPDATE_MD5
 
 from pithos.backends.base import NotAllowedError, QuotaError
 from pithos.backends.filter import parse_filters
@@ -66,17 +66,13 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def top_demux(request):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'GET':
-        if getattr(request, 'user', None) is not None:
-            return account_list(request)
-        return authenticate(request)
+        return account_list(request)
     else:
         return method_not_allowed(request)
 
 @csrf_exempt
 def account_demux(request, v_account):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return account_meta(request, v_account)
     elif request.method == 'POST':
@@ -88,7 +84,6 @@ def account_demux(request, v_account):
 
 @csrf_exempt
 def container_demux(request, v_account, v_container):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return container_meta(request, v_account, v_container)
     elif request.method == 'PUT':
@@ -105,12 +100,6 @@ def container_demux(request, v_account, v_container):
 @csrf_exempt
 def object_demux(request, v_account, v_container, v_object):
     # Helper to avoid placing the token in the URL when loading objects from a browser.
-    token = None
-    if request.method in ('HEAD', 'GET') and COOKIE_NAME in request.COOKIES:
-        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        if cookie_value and '|' in cookie_value:
-            token = cookie_value.split('|', 1)[1]
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)
     elif request.method == 'GET':
@@ -156,6 +145,8 @@ def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
     #                       badRequest (400)
+    if getattr(request, 'user', None) is None:
+        return authenticate(request)
     
     response = HttpResponse()
     
@@ -797,6 +788,7 @@ def object_write(request, v_account, v_container, v_object):
     copy_from = request.META.get('HTTP_X_COPY_FROM')
     move_from = request.META.get('HTTP_X_MOVE_FROM')
     if copy_from or move_from:
+        delimiter = request.GET.get('delimiter')
         content_length = get_content_length(request) # Required by the API.
         
         src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
@@ -808,14 +800,14 @@ def object_write(request, v_account, v_container, v_object):
             except ValueError:
                 raise BadRequest('Invalid X-Move-From header')
             version_id = copy_or_move_object(request, src_account, src_container, src_name,
-                                                v_account, v_container, v_object, move=True)
+                                                v_account, v_container, v_object, move=True, delimiter=delimiter)
         else:
             try:
                 src_container, src_name = split_container_object_string(copy_from)
             except ValueError:
                 raise BadRequest('Invalid X-Copy-From header')
             version_id = copy_or_move_object(request, src_account, src_container, src_name,
-                                                v_account, v_container, v_object, move=False)
+                                                v_account, v_container, v_object, move=False, delimiter=delimiter)
         response = HttpResponse(status=201)
         response['X-Object-Version'] = version_id
         return response
@@ -976,8 +968,10 @@ def object_copy(request, v_account, v_container, v_object):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
+    delimiter = request.GET.get('delimiter')
+    
     version_id = copy_or_move_object(request, v_account, v_container, v_object,
-                                        dest_account, dest_container, dest_name, move=False)
+                                        dest_account, dest_container, dest_name, move=False, delimiter=delimiter)
     response = HttpResponse(status=201)
     response['X-Object-Version'] = version_id
     return response
@@ -1012,8 +1006,10 @@ def object_move(request, v_account, v_container, v_object):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
+    delimiter = request.GET.get('delimiter')
+    
     version_id = copy_or_move_object(request, v_account, v_container, v_object,
-                                        dest_account, dest_container, dest_name, move=True)
+                                        dest_account, dest_container, dest_name, move=True, delimiter=delimiter)
     response = HttpResponse(status=201)
     response['X-Object-Version'] = version_id
     return response
@@ -1230,9 +1226,11 @@ def object_delete(request, v_account, v_container, v_object):
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
+    delimiter = request.GET.get('delimiter')
+    
     try:
         request.backend.delete_object(request.user_uniq, v_account, v_container,
-                                        v_object, until)
+                                        v_object, until, delimiter=delimiter)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:

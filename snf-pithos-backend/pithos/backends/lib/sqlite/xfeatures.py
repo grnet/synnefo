@@ -99,6 +99,13 @@ class XFeatures(DBWorker):
         q = "delete from xfeatures where path = ?"
         self.execute(q, (path,))
     
+    def xfeature_destroy_bulk(self, paths):
+        """Destroy features and all their key, value pairs."""
+        
+        placeholders = ','.join('?' for path in paths)
+        q = "delete from xfeatures where path in (%s)" % placeholders
+        self.execute(q, paths)
+    
     def feature_dict(self, feature):
         """Return a dict mapping keys to list of values for feature."""
         

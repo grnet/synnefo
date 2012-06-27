@@ -460,7 +460,7 @@ class OOS_Client(Client):
     
     def _change_obj_location(self, src_container, src_object, dst_container,
                              dst_object, remove=False, meta={}, account=None,
-                             content_type=None, **headers):
+                             content_type=None, delimiter=None, **headers):
         account = account or self.account
         path = '/%s/%s/%s' % (account, dst_container, dst_object)
         headers = {} if not headers else headers
@@ -476,16 +476,18 @@ class OOS_Client(Client):
             headers['content_type'] = content_type
         else:
             params['ignore_content_type'] = ''
+        if delimiter:
+        	params['delimiter'] = delimiter
         return self.put(path, headers=headers, params=params)
     
     def copy_object(self, src_container, src_object, dst_container, dst_object,
-                   meta={}, account=None, content_type=None, **headers):
+                   meta={}, account=None, content_type=None, delimiter=None, **headers):
         """copies an object"""
         account = account or self.account
         return self._change_obj_location(src_container, src_object,
                                    dst_container, dst_object, account=account,
                                    remove=False, meta=meta,
-                                   content_type=content_type, **headers)
+                                   content_type=content_type, delimiter=delimiter, **headers)
     
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, meta={}, account=None,
@@ -760,6 +762,18 @@ class Pithos_Client(OOS_Client):
         return OOS_Client.create_zero_length_object(self, container, object,
                                                     **args)
     
+    def create_folder(self, container, name,
+                          meta={}, etag=None, 
+                          content_encoding=None,
+                          content_disposition=None,
+                          x_object_manifest=None, x_object_sharing=None,
+                          x_object_public=None, account=None):
+    	args = locals().copy()
+        for elem in ['self', 'container', 'name']:
+            args.pop(elem)
+        args['content_type'] = 'application/directory'
+        return self.create_zero_length_object(container, name, **args)
+    
     def create_object(self, container, object, f=stdin, format='text',
                       meta={}, params={}, etag=None, content_type=None,
                       content_encoding=None, content_disposition=None,
@@ -870,10 +884,12 @@ class Pithos_Client(OOS_Client):
         args['x_source_object'] = source
         return self.update_object(container, object, f=None, **args)
     
-    def delete_object(self, container, object, until=None, account=None):
+    def delete_object(self, container, object, until=None, account=None, delimiter=None):
         """deletes an object or the object history until the date provided"""
         account = account or self.account
         params = {'until':until} if until else {}
+        if delimiter:
+        	params['delimiter'] = delimiter
         return OOS_Client.delete_object(self, container, object, params, account)
     
     def trash_object(self, container, object):
@@ -908,7 +924,7 @@ class Pithos_Client(OOS_Client):
     
     def copy_object(self, src_container, src_object, dst_container, dst_object,
                     meta={}, public=False, version=None, account=None,
-                    content_type=None):
+                    content_type=None, delimiter=None):
         """copies an object"""
         account = account or self.account
         headers = {}
@@ -918,17 +934,19 @@ class Pithos_Client(OOS_Client):
         return OOS_Client.copy_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
                                       account=account, content_type=content_type,
+                                      delimiter=delimiter,
                                       **headers)
     
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, meta={}, public=False,
-                             account=None, content_type=None):
+                             account=None, content_type=None, delimiter=None):
         """moves an object"""
         headers = {}
         headers['x_object_public'] = public
         return OOS_Client.move_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
                                       account=account, content_type=content_type,
+                                      delimiter=delimiter,
                                       **headers)
     
     def list_shared_by_others(self, limit=None, marker=None, format='text'):

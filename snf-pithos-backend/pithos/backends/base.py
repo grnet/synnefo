@@ -169,7 +169,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
+    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None, public=False):
         """Return a list of container names existing under an account.
         
         Parameters:
@@ -178,6 +178,8 @@ class BaseBackend(object):
             'limit': Number of containers to return
             
             'shared': Only list containers with permissions set
+            
+            'public': Only list containers containing public objects
             
         
         Raises:
@@ -284,7 +286,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
         """Return a list of object (name, version_id) tuples existing under a container.
         
         Parameters:
@@ -312,6 +314,9 @@ class BaseBackend(object):
              
             'size_range': Include objects with byte size in (from, to).
                           Use None to specify unlimited
+            
+            'public': Only list public objects
+             
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -489,7 +494,7 @@ class BaseBackend(object):
         """Update an object's checksum."""
         return
     
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None, delimiter=None):
         """Copy an object's data and metadata and return the new version.
         
         Parameters:
@@ -502,6 +507,8 @@ class BaseBackend(object):
             'permissions': New object permissions
             
             'src_version': Copy from the version provided
+            
+            'delimiter': Copy objects whose path starts with src_name + delimiter
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -516,7 +523,7 @@ class BaseBackend(object):
         """
         return ''
     
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, delimiter=None):
         """Move an object's data and metadata and return the new version.
         
         Parameters:
@@ -527,6 +534,8 @@ class BaseBackend(object):
             'replace_meta': Replace metadata instead of update
             
             'permissions': New object permissions
+            
+            'delimiter': Move objects whose path starts with src_name + delimiter
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -539,8 +548,11 @@ class BaseBackend(object):
         """
         return ''
     
-    def delete_object(self, user, account, container, name, until=None):
+    def delete_object(self, user, account, container, name, until=None, delimiter=None):
         """Delete/purge an object.
+        
+        Parameters:
+            'delimiter': Delete objects whose path starting with name + delimiter
         
         Raises:
             NotAllowedError: Operation not permitted

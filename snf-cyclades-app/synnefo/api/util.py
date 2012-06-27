@@ -55,7 +55,7 @@ from django.utils import simplejson as json
 from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
-                                ItemNotFound, ServiceUnavailable, Unauthorized)
+                                ItemNotFound, ServiceUnavailable, Unauthorized, BadMediaType)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface)
 from synnefo.lib.astakos import get_user
@@ -214,6 +214,18 @@ def get_nic(machine, network):
     except NetworkInterface.DoesNotExist:
         raise ItemNotFound('Server not connected to this network.')
 
+def get_nic_from_index(vm, nic_index):
+    """Returns the nic_index-th nic of a vm
+       Error Response Codes: itemNotFound (404), badMediaType (415)
+    """
+    matching_nics = vm.nics.filter(index=nic_index)
+    matching_nics_len = len(matching_nics)
+    if matching_nics_len < 1:
+        raise  ItemNotFound('NIC not found on VM')
+    elif matching_nics_len > 1:
+        raise BadMediaType('NIC index conflict on VM')
+    nic = matching_nics[0]
+    return nic
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
@@ -321,7 +333,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-
+                
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
@@ -339,3 +351,6 @@ def api_method(http_method=None, atom_allowed=False):
                 return render_fault(request, fault)
         return wrapper
     return decorator
+
+def construct_nic_id(nic):
+    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])

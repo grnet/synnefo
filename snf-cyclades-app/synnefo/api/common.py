@@ -41,4 +41,4 @@ def not_found(request):
 
 @api_method()
 def method_not_allowed(request):
-    raise BadRequest('Method not allowed.')
+    raise BadRequest('Method not allowed')

@@ -62,3 +62,6 @@ class OverLimit(Fault):
 
 class ServiceUnavailable(Fault):
     code = 503
+
+class BadMediaType(Fault):
+    code = 415

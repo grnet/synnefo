@@ -39,8 +39,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import BadRequest, ServiceUnavailable
-from synnefo.api.util import random_password, get_vm
+from synnefo.api.faults import BadRequest, ServiceUnavailable, ItemNotFound
+from synnefo.api.util import random_password, get_vm, get_nic_from_index
 from synnefo.db.models import NetworkInterface
 from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
@@ -316,9 +316,15 @@ def remove(request, net, args):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    server_id = args.get('serverRef', None)
-    if not server_id:
+    try: #attachment string: nic-<vm-id>-<nic-index>
+        server_id = args.get('attachment', None).split('-')[1]
+        nic_index = args.get('attachment', None).split('-')[2]
+    except IndexError:
+        raise BadRequest('Malformed Network Interface Id')
+
+    if not server_id or not nic_index:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
-    backend.disconnect_from_network(vm, net)
+    nic = get_nic_from_index(vm, nic_index)
+    backend.disconnect_nic_from_vm(vm, nic)
     return HttpResponse(status=202)

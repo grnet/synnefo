@@ -84,11 +84,16 @@ def network_to_dict(network, user_id, detail=True):
     network_id = str(network.id) if not network.public else 'public'
     d = {'id': network_id, 'name': network.name}
     if detail:
+        d['cidr'] = network.subnet
+        d['gateway'] = network.gateway
+        d['dhcp'] = network.dhcp
+        d['type'] = network.type
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
-        servers = [vm.id for vm in network.machines.filter(userid=user_id)]
-        d['servers'] = {'values': servers}
+
+        attachments = [util.construct_nic_id(nic) for nic in network.nics.filter(machine__userid= user_id)]
+        d['attachments'] = {'values':attachments}
     return d
 
 

@@ -486,6 +486,16 @@ def disconnect_from_network(vm, network):
     return job
 
 
+def disconnect_nic_from_vm(vm, nic):
+    """Remove a NetworkInterface from a VirtualMachine.
+
+    """
+
+    op = [('remove', nic.index, {})]
+    return vm.client.ModifyInstance(vm.backend_vm_id, nics=op,
+                                   hotplug=True, dry_run=settings.TEST)
+
+
 def _delete_network(network, backend_jobs=None):
     if not backend_jobs:
         backend_jobs = [(backend, []) for backend in

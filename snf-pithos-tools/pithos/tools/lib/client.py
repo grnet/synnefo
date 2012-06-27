@@ -762,6 +762,18 @@ class Pithos_Client(OOS_Client):
         return OOS_Client.create_zero_length_object(self, container, object,
                                                     **args)
     
+    def create_folder(self, container, name,
+                          meta={}, etag=None, 
+                          content_encoding=None,
+                          content_disposition=None,
+                          x_object_manifest=None, x_object_sharing=None,
+                          x_object_public=None, account=None):
+    	args = locals().copy()
+        for elem in ['self', 'container', 'name']:
+            args.pop(elem)
+        args['content_type'] = 'application/directory'
+        return self.create_zero_length_object(container, name, **args)
+    
     def create_object(self, container, object, f=stdin, format='text',
                       meta={}, params={}, etag=None, content_type=None,
                       content_encoding=None, content_disposition=None,

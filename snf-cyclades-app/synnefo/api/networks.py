@@ -51,7 +51,6 @@ from synnefo.logic import backend
 
 log = getLogger('synnefo.api')
 
-
 urlpatterns = patterns('synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
@@ -156,7 +155,7 @@ def create_network(request):
         d = req['network']
         name = d['name']
         # TODO: Fix this temp values:
-        subnet = d.get('subnet', '192.168.1.0/24')
+        subnet = d.get('cidr', '192.168.1.0/24')
         gateway = d.get('gateway', None)
         type = d.get('type', 'PRIVATE_VLAN')
         dhcp = d.get('dhcp', True)

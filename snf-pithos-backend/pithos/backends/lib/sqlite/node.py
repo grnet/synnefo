@@ -530,12 +530,12 @@ class Node(DBWorker):
              "where serial in (select max(serial) "
                              "from versions "
                              "where node in (%s) and mtime < ? group by node) "
-             "and cluster = ?")
+             "and cluster = ? %s")
         placeholders = ','.join('?' for node in nodes)
         if not all_props:
-            q = q % ("serial",  placeholders)
+            q = q % ("serial",  placeholders, '')
         else:
-            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster",  placeholders)
+            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster",  placeholders, 'order by node')
         
         args = nodes
         args.extend((before, cluster))

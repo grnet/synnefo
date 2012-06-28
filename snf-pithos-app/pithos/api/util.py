@@ -64,7 +64,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                     SERVICE_TOKEN, COOKIE_NAME)
 
 from pithos.backends import connect_backend
-from pithos.backends.base import NotAllowedError, QuotaError
+from pithos.backends.base import NotAllowedError, QuotaError, ItemNotExists, VersionNotExists
 
 import logging
 import re
@@ -340,7 +340,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
                                                         content_type, 'pithos', meta, False, permissions, src_version, delimiter)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except (NameError, IndexError):
+    except (ItemNotExists, VersionNotExists):
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
@@ -351,7 +351,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
             request.backend.update_object_public(request.user_uniq, dest_account, dest_container, dest_name, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Object does not exist')
     return version_id
 
@@ -662,7 +662,7 @@ class ObjectWrapper(object):
                 self.block_hash = self.hashmaps[self.file_index][self.block_index]
                 try:
                     self.block = self.backend.get_block(self.block_hash)
-                except NameError:
+                except ItemNotExists:
                     raise ItemNotFound('Block does not exist')
             
             # Get the data from the block.

@@ -42,6 +42,24 @@ class NotAllowedError(Exception):
 class QuotaError(Exception):
     pass
 
+class AccountExists(NameError):
+    pass
+    
+class ContainerExists(NameError):
+    pass
+
+class AccountNotEmpty(IndexError):
+    pass
+
+class ContainerNotEmpty(IndexError):
+    pass
+
+class ItemNotExists(NameError):
+    pass
+
+class VersionNotExists(IndexError):
+    pass
+
 class BaseBackend(object):
     """Abstract backend class that serves as a reference for actual implementations.
     
@@ -165,7 +183,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            IndexError: Account is not empty
+            AccountNotEmpty: Account is not empty
         """
         return
     
@@ -193,7 +211,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
         """
         return []
     
@@ -214,7 +232,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
         """
         return {}
     
@@ -231,7 +249,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
         """
         return
     
@@ -246,7 +264,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
         """
         return {}
     
@@ -256,7 +274,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
             
             ValueError: Invalid policy defined
         """
@@ -268,7 +286,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container already exists
+            ContainerExists: Container already exists
             
             ValueError: Invalid policy defined
         """
@@ -280,9 +298,9 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
             
-            IndexError: Container is not empty
+            ContainerNotEmpty: Container is not empty
         """
         return
     
@@ -321,7 +339,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
         """
         return []
     
@@ -334,7 +352,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
         """
         return []
     
@@ -377,9 +395,9 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
             
-            IndexError: Version does not exist
+            VersionNotExists: Version does not exist
         """
         return {}
     
@@ -396,7 +414,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
         """
         return ''
     
@@ -413,7 +431,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
         """
         return {}
     
@@ -426,7 +444,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
         """
@@ -438,7 +456,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
         """
         return None
     
@@ -451,7 +469,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
         """
         return
     
@@ -461,9 +479,9 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
             
-            IndexError: Version does not exist
+            VersionNotExists: Version does not exist
         """
         return 0, []
     
@@ -482,7 +500,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container does not exist
+            ItemNotExists: Container does not exist
             
             ValueError: Invalid users/groups in permissions
             
@@ -513,9 +531,9 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
             
-            IndexError: Version does not exist
+            VersionNotExists: Version does not exist
             
             ValueError: Invalid users/groups in permissions
             
@@ -540,7 +558,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
             
             ValueError: Invalid users/groups in permissions
             
@@ -557,7 +575,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             
-            NameError: Container/object does not exist
+            ItemNotExists: Container/object does not exist
         """
         return
     
@@ -593,7 +611,7 @@ class BaseBackend(object):
         """Return a block's data.
         
         Raises:
-            NameError: Block does not exist
+            ItemNotExists: Block does not exist
         """
         return ''
     

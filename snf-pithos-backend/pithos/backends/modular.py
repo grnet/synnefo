@@ -39,7 +39,8 @@ import logging
 import hashlib
 import binascii
 
-from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend
+from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend, \
+    AccountExists, ContainerExists, AccountNotEmpty, ContainerNotEmpty, ItemNotExists, VersionNotExists
 
 # Stripped-down version of the HashMap class found in tools.
 class HashMap(list):
@@ -292,7 +293,7 @@ class ModularBackend(BaseBackend):
             raise NotAllowedError
         node = self.node.node_lookup(account)
         if node is not None:
-            raise NameError('Account already exists')
+            raise AccountExists('Account already exists')
         if policy:
             self._check_policy(policy)
         node = self._put_path(user, self.ROOTNODE, account)
@@ -309,7 +310,7 @@ class ModularBackend(BaseBackend):
         if node is None:
             return
         if not self.node.node_remove(node):
-            raise IndexError('Account is not empty')
+            raise AccountNotEmpty('Account is not empty')
         self.permissions.group_destroy(account)
     
     @backend_method
@@ -434,7 +435,7 @@ class ModularBackend(BaseBackend):
         except NameError:
             pass
         else:
-            raise NameError('Container already exists')
+            raise ContainerExists('Container already exists')
         if policy:
             self._check_policy(policy)
         path = '/'.join((account, container))
@@ -459,7 +460,7 @@ class ModularBackend(BaseBackend):
             return
         
         if self._get_statistics(node)[0] > 0:
-            raise IndexError('Container is not empty')
+            raise ContainerNotEmpty('Container is not empty')
         hashes, size = self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
         for h in hashes:
             self.store.map_delete(h)
@@ -601,7 +602,7 @@ class ModularBackend(BaseBackend):
             except NameError: # Object may be deleted.
                 del_props = self.node.version_lookup(node, inf, CLUSTER_DELETED)
                 if del_props is None:
-                    raise NameError('Object does not exist')
+                    raise ItemNotExists('Object does not exist')
                 modified = del_props[self.MTIME]
         
         meta = {}
@@ -919,7 +920,7 @@ class ModularBackend(BaseBackend):
         logger.debug("get_block: %s", hash)
         block = self.store.block_get(binascii.unhexlify(hash))
         if not block:
-            raise NameError('Block does not exist')
+            raise ItemNotExists('Block does not exist')
         return block
     
     @backend_method(autocommit=0)
@@ -966,20 +967,18 @@ class ModularBackend(BaseBackend):
         path = '/'.join((account, container))
         node = self.node.node_lookup(path)
         if node is None:
-            raise NameError('Container does not exist')
+            raise ItemNotExists('Container does not exist')
         return path, node
     
     def _lookup_object(self, account, container, name):
         path = '/'.join((account, container, name))
         node = self.node.node_lookup(path)
         if node is None:
-            raise NameError('Object does not exist')
+            raise ItemNotExists('Object does not exist')
         return path, node
     
     def _lookup_objects(self, paths):
-    	nodes = self.node.node_lookup_bulk(paths)
-        if nodes is None:
-            raise NameError('Object does not exist')
+        nodes = self.node.node_lookup_bulk(paths)
         return paths, nodes
     
     def _get_properties(self, node, until=None):
@@ -990,7 +989,7 @@ class ModularBackend(BaseBackend):
         if props is None and until is not None:
             props = self.node.version_lookup(node, before, CLUSTER_HISTORY)
         if props is None:
-            raise NameError('Path does not exist')
+            raise ItemNotExists('Path does not exist')
         return props
     
     def _get_statistics(self, node, until=None):
@@ -1008,31 +1007,19 @@ class ModularBackend(BaseBackend):
         if version is None:
             props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is None:
-                raise NameError('Object does not exist')
+                raise ItemNotExists('Object does not exist')
         else:
             try:
                 version = int(version)
             except ValueError:
-                raise IndexError('Version does not exist')
+                raise VersionNotExists('Version does not exist')
             props = self.node.version_get_properties(version)
             if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
-                raise IndexError('Version does not exist')
+                raise VersionNotExists('Version does not exist')
         return props
 
-    def _get_versions(self, nodes, version=None):
-        if version is None:
-            props = self.node.version_lookup_bulk(nodes, inf, CLUSTER_NORMAL)
-            if not props:
-                raise NameError('Object does not exist')
-        else:
-            try:
-                version = int(version)
-            except ValueError:
-                raise IndexError('Version does not exist')
-            props = self.node.version_get_properties(version)
-            if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
-                raise IndexError('Version does not exist')
-        return props
+    def _get_versions(self, nodes):
+        return self.node.version_lookup_bulk(nodes, inf, CLUSTER_NORMAL)
     
     def _put_version_duplicate(self, user, node, src_node=None, size=None, type=None, hash=None, checksum=None, cluster=CLUSTER_NORMAL, is_copy=False):
         """Create a new version of the node."""

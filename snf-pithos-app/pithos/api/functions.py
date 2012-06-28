@@ -54,7 +54,8 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
 from pithos.api.settings import UPDATE_MD5
 
-from pithos.backends.base import NotAllowedError, QuotaError
+from pithos.backends.base import NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists, VersionNotExists
+
 from pithos.backends.filter import parse_filters
 
 import logging
@@ -330,7 +331,7 @@ def container_meta(request, v_account, v_container):
                                                         v_container)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
     
     validate_modification_preconditions(request, meta)
@@ -365,7 +366,7 @@ def container_create(request, v_account, v_container):
                                             v_container, policy, replace=False)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container does not exist')
         except ValueError:
             raise BadRequest('Invalid policy header')
@@ -375,7 +376,7 @@ def container_create(request, v_account, v_container):
                                             v_container, 'pithos', meta, replace=False)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container does not exist')
     
     return HttpResponse(status=ret)
@@ -398,7 +399,7 @@ def container_update(request, v_account, v_container):
                                                 v_container, policy, replace)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container does not exist')
         except ValueError:
             raise BadRequest('Invalid policy header')
@@ -408,7 +409,7 @@ def container_update(request, v_account, v_container):
                                                     v_container, 'pithos', meta, replace)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container does not exist')
     
     content_length = -1
@@ -443,9 +444,9 @@ def container_delete(request, v_account, v_container):
                                             until)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
-    except IndexError:
+    except ContainerNotEmpty:
         raise Conflict('Container is not empty')
     return HttpResponse(status=204)
 
@@ -467,7 +468,7 @@ def object_list(request, v_account, v_container):
                                                         v_container)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
     
     validate_modification_preconditions(request, meta)
@@ -524,7 +525,7 @@ def object_list(request, v_account, v_container):
                                         until, None, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container does not exist')
         
         if len(objects) == 0:
@@ -553,7 +554,7 @@ def object_list(request, v_account, v_container):
                 object_public[k[name_idx:]] = v
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
     
     object_meta = []
@@ -610,9 +611,9 @@ def object_meta(request, v_account, v_container, v_object):
             public = None
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Object does not exist')
-    except IndexError:
+    except VersionNotExists:
         raise ItemNotFound('Version does not exist')
     
     update_manifest_meta(request, v_account, meta)
@@ -679,9 +680,9 @@ def object_read(request, v_account, v_container, v_object):
             public = None
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Object does not exist')
-    except IndexError:
+    except VersionNotExists:
         raise ItemNotFound('Version does not exist')
     
     update_manifest_meta(request, v_account, meta)
@@ -712,7 +713,7 @@ def object_read(request, v_account, v_container, v_object):
             raise Forbidden('Not allowed')
         except ValueError:
             raise BadRequest('Invalid X-Object-Manifest header')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container does not exist')
         
         try:
@@ -723,9 +724,9 @@ def object_read(request, v_account, v_container, v_object):
                 hashmaps.append(h)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Object does not exist')
-        except IndexError:
+        except VersionNotExists:
             raise ItemNotFound('Version does not exist')
     else:
         try:
@@ -735,9 +736,9 @@ def object_read(request, v_account, v_container, v_object):
             hashmaps.append(h)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Object does not exist')
-        except IndexError:
+        except VersionNotExists:
             raise ItemNotFound('Version does not exist')
     
     # Reply with the hashmap.
@@ -877,7 +878,7 @@ def object_write(request, v_account, v_container, v_object):
         raise Forbidden('Not allowed')
     except IndexError, e:
         raise Conflict(simple_list_response(request, e.data))
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
@@ -897,7 +898,7 @@ def object_write(request, v_account, v_container, v_object):
                                                 v_container, v_object, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=201)
@@ -926,7 +927,7 @@ def object_write_form(request, v_account, v_container, v_object):
                         file.hashmap, checksum, 'pithos', {}, True)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
@@ -964,7 +965,7 @@ def object_copy(request, v_account, v_container, v_object):
                                             v_container, v_object, 'pithos', src_version)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except (NameError, IndexError):
+        except (ItemNotExists, VersionNotExists):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
@@ -1002,7 +1003,7 @@ def object_move(request, v_account, v_container, v_object):
                                                     v_container, v_object, 'pithos')
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
@@ -1030,7 +1031,7 @@ def object_update(request, v_account, v_container, v_object):
                                                     v_container, v_object, 'pithos')
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Object does not exist')
     
     # Evaluate conditions.
@@ -1053,7 +1054,7 @@ def object_update(request, v_account, v_container, v_object):
                                 v_account, v_container, v_object, permissions)
             except NotAllowedError:
                 raise Forbidden('Not allowed')
-            except NameError:
+            except ItemNotExists:
                 raise ItemNotFound('Object does not exist')
             except ValueError:
                 raise BadRequest('Invalid sharing header')
@@ -1063,7 +1064,7 @@ def object_update(request, v_account, v_container, v_object):
                                                 v_container, v_object, public)
             except NotAllowedError:
                 raise Forbidden('Not allowed')
-            except NameError:
+            except ItemNotExists:
                 raise ItemNotFound('Object does not exist')
         if meta or replace:
             try:
@@ -1071,7 +1072,7 @@ def object_update(request, v_account, v_container, v_object):
                                 v_account, v_container, v_object, 'pithos', meta, replace)
             except NotAllowedError:
                 raise Forbidden('Not allowed')
-            except NameError:
+            except ItemNotExists:
                 raise ItemNotFound('Object does not exist')        
             response['X-Object-Version'] = version_id
         
@@ -1092,7 +1093,7 @@ def object_update(request, v_account, v_container, v_object):
                                             v_account, v_container, v_object)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Object does not exist')
     
     offset, length, total = ranges
@@ -1111,7 +1112,7 @@ def object_update(request, v_account, v_container, v_object):
                                         src_account, src_container, src_name, src_version)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Source object does not exist')
         
         if length is None:
@@ -1197,7 +1198,7 @@ def object_update(request, v_account, v_container, v_object):
                         hashmap, checksum, 'pithos', meta, replace, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
@@ -1209,7 +1210,7 @@ def object_update(request, v_account, v_container, v_object):
                                                 v_container, v_object, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
-        except NameError:
+        except ItemNotExists:
             raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=204)
@@ -1233,7 +1234,7 @@ def object_delete(request, v_account, v_container, v_object):
                                         v_object, until, delimiter=delimiter)
     except NotAllowedError:
         raise Forbidden('Not allowed')
-    except NameError:
+    except ItemNotExists:
         raise ItemNotFound('Object does not exist')
     return HttpResponse(status=204)
 

@@ -631,6 +631,7 @@ class Node(DBWorker):
             c = c.where(self.versions.c.mtime < before)
         s = s.where(and_(v.c.serial.in_(c),
                          v.c.cluster == cluster))
+        s = s.order_by(v.c.node)
         r = self.conn.execute(s)
         rproxy = r.fetchall()
         r.close()

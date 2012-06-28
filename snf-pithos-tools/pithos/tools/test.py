@@ -1432,9 +1432,9 @@ class ObjectCopy(BaseTestCase):
     
     def test_copy_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
-        objects = ('object1', 'subdir/object2', 'dirs')
-        for name in objects[:-1]:
-            self.upload_random_data(self.containers[0], 'dir/%s' % name)
+        objects = ('object1.jpg', 'subdir/object2.pdf', 'dirs')
+        for name, i in zip(objects[:-1], range(1, len(objects[:-1])+1)):
+            self.upload_random_data(self.containers[0], 'dir/%s' % name, length=i*1024)
         self.upload_random_data(self.containers[0], 'dirs')
         
         self.client.copy_object(self.containers[0], 'dir', self.containers[1], 'dir-backup', delimiter='/')
@@ -1485,10 +1485,10 @@ class ObjectMove(BaseTestCase):
     
     def test_move_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
-        objects = ('object1', 'subdir/object2', 'dirs')
+        objects = ('object1.jpg', 'subdir/object2.pdf', 'dirs')
         meta = {}
-        for name in objects[:-1]:
-            self.upload_random_data(self.containers[0], 'dir/%s' % name)
+        for name, i in zip(objects[:-1], range(1, len(objects[:-1])+1)):
+            self.upload_random_data(self.containers[0], 'dir/%s' % name, length=i*1024)
             meta[name] = self.client.retrieve_object_metadata(self.containers[0], 'dir/%s' % name)
         self.upload_random_data(self.containers[0], 'dirs')
         
@@ -1799,7 +1799,7 @@ class ObjectDelete(BaseTestCase):
     
     def test_delete_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
-        objects = ('object1', 'subdir/object2', 'dirs')
+        objects = ('object1.jpg', 'subdir/object2.pdf', 'dirs')
         for name in objects[:-1]:
             self.upload_random_data(self.containers[0], 'dir/%s' % name)
         self.upload_random_data(self.containers[0], 'dirs')

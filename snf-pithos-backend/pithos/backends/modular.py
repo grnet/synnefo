@@ -785,6 +785,7 @@ class ModularBackend(BaseBackend):
         if delimiter:
             prefix = src_name + delimiter if not src_name.endswith(delimiter) else src_name
             src_names = self._list_objects_no_limit(user, src_account, src_container, prefix, delimiter=None, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            src_names.sort(key=lambda x: x[2]) # order by nodes
             paths = [elem[0] for elem in src_names]
             nodes = [elem[2] for elem in src_names]
             # TODO: Will do another fetch of the properties in duplicate version...
@@ -794,6 +795,7 @@ class ModularBackend(BaseBackend):
                 src_version_id = prop[self.SERIAL]
                 hash = prop[self.HASH]
                 vtype = prop[self.TYPE]
+                size = prop[self.SIZE]
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
                 dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, vdest_name, size, vtype, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))

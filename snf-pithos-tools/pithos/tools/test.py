@@ -1432,19 +1432,21 @@ class ObjectCopy(BaseTestCase):
     
     def test_copy_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
-        objects = ('object1.jpg', 'subdir/object2.pdf', 'dirs')
-        for name, i in zip(objects[:-1], range(1, len(objects[:-1])+1)):
-            self.upload_random_data(self.containers[0], 'dir/%s' % name, length=i*1024)
-        self.upload_random_data(self.containers[0], 'dirs')
+        self.client.create_folder(self.containers[0], 'dir/subdir')
+        self.upload_random_data(self.containers[0], 'dir/object1.jpg', length=1024)
+        self.upload_random_data(self.containers[0], 'dir/subdir/object2.pdf', length=2*1024)
+        self.client.create_folder(self.containers[0], 'dirs')
         
+        objects = self.client.list_objects(self.containers[0], prefix='dir')
         self.client.copy_object(self.containers[0], 'dir', self.containers[1], 'dir-backup', delimiter='/')
-        self.assert_object_exists(self.containers[0], 'dir')
-        self.assert_object_not_exists(self.containers[1], 'dirs')
-        for name in objects[:-1]:
-            meta0 = self.client.retrieve_object_metadata(self.containers[0], 'dir/%s' % name)
-            meta1 = self.client.retrieve_object_metadata(self.containers[1], 'dir-backup/%s' % name)
+        for object in objects[:-1]:
+            self.assert_object_exists(self.containers[0], object)
+            self.assert_object_exists(self.containers[1], object.replace('dir', 'dir-backup', 1))
+            meta0 = self.client.retrieve_object_metadata(self.containers[0], object)
+            meta1 = self.client.retrieve_object_metadata(self.containers[1], object.replace('dir', 'dir-backup', 1))
             t = ('content-length', 'x-object-hash', 'content-type')
             (self.assertEqual(meta0[elem], meta1[elem]) for elem in t)
+        self.assert_object_not_exists(self.containers[1], objects[-1])
         
 class ObjectMove(BaseTestCase):
     def setUp(self):
@@ -1484,23 +1486,28 @@ class ObjectMove(BaseTestCase):
     
     
     def test_move_dir(self):
-        self.client.create_folder(self.containers[0], 'dir')
-        objects = ('object1.jpg', 'subdir/object2.pdf', 'dirs')
         meta = {}
-        for name, i in zip(objects[:-1], range(1, len(objects[:-1])+1)):
-            self.upload_random_data(self.containers[0], 'dir/%s' % name, length=i*1024)
-            meta[name] = self.client.retrieve_object_metadata(self.containers[0], 'dir/%s' % name)
-        self.upload_random_data(self.containers[0], 'dirs')
+        self.client.create_folder(self.containers[0], 'dir')
+        meta['dir'] = self.client.retrieve_object_metadata(self.containers[0], 'dir')
+        self.client.create_folder(self.containers[0], 'dir/subdir')
+        meta['dir/subdir'] = self.client.retrieve_object_metadata(self.containers[0], 'dir/subdir')
+        self.upload_random_data(self.containers[0], 'dir/object1.jpg', length=1024)
+        meta['dir/object1.jpg'] = self.client.retrieve_object_metadata(self.containers[0], 'dir/object1.jpg')
+        self.upload_random_data(self.containers[0], 'dir/subdir/object2.pdf', length=2*1024)
+        meta['dir/subdir/object2.pdf'] = self.client.retrieve_object_metadata(self.containers[0], 'dir/subdir/object2.pdf')
+        self.client.create_folder(self.containers[0], 'dirs')
+        meta['dirs'] = self.client.retrieve_object_metadata(self.containers[0], 'dirs')
         
-        self.client.move_object(self.containers[0], 'dir', self.containers[1], 'dir-backup', delimiter='/', content_type='application/folder')
-        self.assert_object_not_exists(self.containers[0], 'dir')
-        self.assert_object_not_exists(self.containers[1], 'dirs')
-        for name in objects[:-1]:
-            self.assert_object_not_exists(self.containers[0], 'dir/%s' % name)
-            self.assert_object_exists(self.containers[1], 'dir-backup/%s' % name)
-            meta1 = self.client.retrieve_object_metadata(self.containers[1], 'dir-backup/%s' % name)
+        objects = self.client.list_objects(self.containers[0], prefix='dir')
+        self.client.move_object(self.containers[0], 'dir', self.containers[1], 'dir-backup', delimiter='/')
+        for object in objects[:-1]:
+            self.assert_object_not_exists(self.containers[0], object)
+            self.assert_object_exists(self.containers[1], object.replace('dir', 'dir-backup', 1))
+            meta1 = self.client.retrieve_object_metadata(self.containers[1], object.replace('dir', 'dir-backup', 1))
             t = ('content-length', 'x-object-hash', 'content-type')
-            (self.assertEqual(meta[name][elem], meta1[elem]) for elem in t)
+            (self.assertEqual(meta0[elem], meta1[elem]) for elem in t)
+        self.assert_object_exists(self.containers[0], objects[-1])
+        self.assert_object_not_exists(self.containers[1], objects[-1])
 
 class ObjectPost(BaseTestCase):
     def setUp(self):
@@ -1799,16 +1806,16 @@ class ObjectDelete(BaseTestCase):
     
     def test_delete_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
-        objects = ('object1.jpg', 'subdir/object2.pdf', 'dirs')
-        for name in objects[:-1]:
-            self.upload_random_data(self.containers[0], 'dir/%s' % name)
-        self.upload_random_data(self.containers[0], 'dirs')
+        self.client.create_folder(self.containers[0], 'dir/subdir')
+        self.upload_random_data(self.containers[0], 'dir/object1.jpg', length=1024)
+        self.upload_random_data(self.containers[0], 'dir/subdir/object2.pdf', length=2*1024)
+        self.client.create_folder(self.containers[0], 'dirs')
         
+        objects = self.client.list_objects(self.containers[0], prefix='dir')
         self.client.delete_object(self.containers[0], 'dir', delimiter='/')
-        self.assert_object_not_exists(self.containers[0], 'dir')
-        self.assert_object_exists(self.containers[0], 'dirs')
-        for name in objects[:-1]:
-            self.assert_object_not_exists(self.containers[0], 'dir/%s' % name)
+        for object in objects[:-1]:
+            self.assert_object_not_exists(self.containers[0], object)
+        self.assert_object_exists(self.containers[0], objects[-1])
 
 class ListSharing(BaseTestCase):
     def setUp(self):

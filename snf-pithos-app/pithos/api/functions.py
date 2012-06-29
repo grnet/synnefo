@@ -439,9 +439,12 @@ def container_delete(request, v_account, v_container):
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
+    
+    delimiter = request.GET.get('delimiter')
+    
     try:
         request.backend.delete_container(request.user_uniq, v_account, v_container,
-                                            until)
+                                            until, delimiter=delimiter)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except ItemNotExists:

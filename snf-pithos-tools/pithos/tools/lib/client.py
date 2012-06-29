@@ -692,10 +692,12 @@ class Pithos_Client(OOS_Client):
         headers['content_length'] = len(data)
         return self.post(path, data, headers=headers, params=params)
     
-    def delete_container(self, container, until=None, account=None):
+    def delete_container(self, container, until=None, account=None, delimiter=None):
         """deletes a container or the container history until the date provided"""
         account = account or self.account
         params = {'until':until} if until else {}
+        if delimiter:
+        	params['delimiter'] = delimiter
         return OOS_Client.delete_container(self, container, account=account,
                                            params=params)
     

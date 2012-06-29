@@ -459,14 +459,29 @@ class ModularBackend(BaseBackend):
             self._report_size_change(user, account, -size, {'action': 'container purge'})
             return
         
-        if self._get_statistics(node)[0] > 0:
-            raise ContainerNotEmpty('Container is not empty')
-        hashes, size = self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
-        for h in hashes:
-            self.store.map_delete(h)
-        self.node.node_purge_children(node, inf, CLUSTER_DELETED)
-        self.node.node_remove(node)
-        self._report_size_change(user, account, -size, {'action': 'container delete'})
+        if not delimiter:
+            if self._get_statistics(node)[0] > 0:
+                raise ContainerNotEmpty('Container is not empty')
+            hashes, size = self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
+            for h in hashes:
+                self.store.map_delete(h)
+            self.node.node_purge_children(node, inf, CLUSTER_DELETED)
+            self.node.node_remove(node)
+            self._report_size_change(user, account, -size, {'action': 'container delete'})
+        else:
+        	# remove only contents
+            src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            paths = []
+            for t in src_names:
+                path = '/'.join((account, container, t[0]))
+                node = t[2]
+                src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
+                del_size = self._apply_versioning(account, container, src_version_id)
+                if del_size:
+                    self._report_size_change(user, account, -del_size, {'action': 'object delete'})
+                self._report_object_change(user, account, path, details={'action': 'object delete'})
+                paths.append(path)
+            self.permissions.access_clear_bulk(paths)
     
     def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props, public):
         if user != account and until:
@@ -784,7 +799,7 @@ class ModularBackend(BaseBackend):
         
         if delimiter:
             prefix = src_name + delimiter if not src_name.endswith(delimiter) else src_name
-            src_names = self._list_objects_no_limit(user, src_account, src_container, prefix, delimiter=None, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            src_names = self._list_objects_no_limit(user, src_account, src_container, prefix, delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
             src_names.sort(key=lambda x: x[2]) # order by nodes
             paths = [elem[0] for elem in src_names]
             nodes = [elem[2] for elem in src_names]
@@ -798,7 +813,7 @@ class ModularBackend(BaseBackend):
                 size = prop[self.SIZE]
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
-                dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, vdest_name, size, vtype, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
+                dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, vdest_name, size, vtype, hash, None, dest_domain, meta={}, replace_meta=False, permissions=None, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
                 if is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
                 	self._delete_object(user, src_account, src_container, path)
         return dest_version_ids[0] if len(dest_version_ids) == 1 else dest_version_ids
@@ -858,7 +873,7 @@ class ModularBackend(BaseBackend):
         
         if delimiter:
             prefix = name + delimiter if not name.endswith(delimiter) else name
-            src_names = self._list_objects_no_limit(user, account, container, prefix, delimiter=None, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            src_names = self._list_objects_no_limit(user, account, container, prefix, delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
             paths = []
             for t in src_names:
             	path = '/'.join((account, container, t[0]))

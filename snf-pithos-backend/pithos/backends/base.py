@@ -280,8 +280,11 @@ class BaseBackend(object):
         """
         return
     
-    def put_container(self, user, account, container, policy={}):
+    def put_container(self, user, account, container, policy={}, delimiter=None):
         """Create a new container with the given name.
+        
+        Parameters:
+            'delimiter': If present deletes container contents instead of the container
         
         Raises:
             NotAllowedError: Operation not permitted

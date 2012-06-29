@@ -142,7 +142,7 @@ class List(Command):
         parser.add_option('--until', action='store', dest='until',
                           default=None, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
-                          default='%d/%m/%Y', help='format to parse until date')
+                          default='%d/%m/%Y %H:%M:%S', help='format to parse until date (default: %d/%m/%Y %H:%M:%S)')
         parser.add_option('--shared', action='store_true', dest='shared',
                           default=False, help='show only shared')
         parser.add_option('--public', action='store_true', dest='public',
@@ -202,7 +202,7 @@ class Meta(Command):
         parser.add_option('--until', action='store', dest='until',
                           default=None, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
-                          default='%d/%m/%Y', help='format to parse until date')
+                          default='%d/%m/%Y %H:%M:%S', help='format to parse until date (default: %d/%m/%Y %H:%M:%S)')
         parser.add_option('--version', action='store', dest='version',
                           default=None, help='show specific version \
                                   (applies only for objects)')
@@ -261,7 +261,7 @@ class Delete(Command):
         parser.add_option('--until', action='store', dest='until',
                           default=None, help='remove history until that date')
         parser.add_option('--format', action='store', dest='format',
-                          default='%d/%m/%Y', help='format to parse until date')
+                          default='%d/%m/%Y %H:%M:%S', help='format to parse until date (default: %d/%m/%Y %H:%M:%S)')
         parser.add_option('--delimiter', action='store', type='str',
                           dest='delimiter', default=None,
                           help='mass delete objects with path staring with <src object> + delimiter')
@@ -276,15 +276,16 @@ class Delete(Command):
             t = _time.strptime(self.until, self.format)
             until = int(_time.mktime(t))
         
+        kwargs = {}
+        if self.delimiter:
+            kwargs['delimiter'] = self.delimiter
+        elif self.recursive:
+            kwargs['delimiter'] = '/'
+        
         if object:
-            kwargs = {}
-            if self.delimiter:
-                kwargs['delimiter'] = self.delimiter
-            elif self.recursive:
-                kwargs['delimiter'] = '/'
             self.client.delete_object(container, object, until, **kwargs)
         else:
-            self.client.delete_container(container, until)
+            self.client.delete_container(container, until, **kwargs)
 
 @cli_command('get')
 class GetObject(Command):

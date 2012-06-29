@@ -117,16 +117,9 @@ class BaseTestCase(unittest.TestCase):
 
     def _clean_account(self):
         for c in self.client.list_containers():
-            while True:
-                #list objects returns at most 10000 objects
-                #so repeat until there are no more objects
-                objects = self.client.list_objects(c)
-                if not objects:
-                    break
-                for o in objects:
-                    self.client.delete_object(c, o)
+            self.client.delete_container(c, delimiter='/')
             self.client.delete_container(c)
-
+    
     def assert_status(self, status, codes):
         l = [elem for elem in self.return_codes]
         if type(codes) == types.ListType:
@@ -850,6 +843,18 @@ class ContainerDelete(BaseTestCase):
 
     def test_delete_invalid(self):
         self.assert_raises_fault(404, self.client.delete_container, 'c3')
+    
+    def test_delete_contents(self):
+        self.client.create_folder(self.containers[0], 'folder-1')
+        self.upload_random_data(self.containers[1], 'folder-1/%s' % o_names[0])
+        self.client.create_folder(self.containers[0], 'folder-1/subfolder')
+        self.client.create_folder(self.containers[0], 'folder-2/%s' % o_names[1])
+                
+        objects = self.client.list_objects(self.containers[0])
+        self.client.delete_container(self.containers[0], delimiter='/')
+        for o in objects:
+            self.assert_object_not_exists(self.containers[0], o)
+        self.assert_container_exists(self.containers[0])
 
 class ObjectGet(BaseTestCase):
     def setUp(self):

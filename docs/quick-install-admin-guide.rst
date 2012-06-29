@@ -517,11 +517,6 @@ For astakos specific configuration, edit the following options in
 
    ASTAKOS_SITENAME = '~okeanos demo example'
 
-   ASTAKOS_CLOUD_SERVICES = (
-           { 'url':'https://node1.example.com/im/', 'name':'~okeanos home', 'id':'cloud', 'icon':'home-icon.png' },
-           { 'url':'https://node1.example.com/ui/', 'name':'cyclades', 'id':'cyclades' },
-           { 'url':'https://node2.example.com/ui/', 'name':'pithos+', 'id':'pithos' })
-
    ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
    ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
 
@@ -530,11 +525,6 @@ For astakos specific configuration, edit the following options in
 ``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
 is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
 domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
-``ASTAKOS_CLOUD_SERVICES`` contains all services visible to and served by
-astakos. The first element of the dictionary is used to point to a generic
-landing page for your services (cyclades, pithos). If you don't have such a
-page it can be omitted. The second and third element point to our services
-themselves (the apps) and should be set as above.
 
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
@@ -542,20 +532,10 @@ go to https://www.google.com/recaptcha/admin/create and create your own pair.
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 
-Servers Initialization
-----------------------
-
-After configuration is done, we initialize the servers on node1:
-
-.. code-block:: console
-
-   root@node1:~ # /etc/init.d/gunicorn restart
-   root@node1:~ # /etc/init.d/apache2 restart
-
 Database Initialization
 -----------------------
 
-Then, we initialize the database by running:
+After configuration is done, we initialize the database by running:
 
 .. code-block:: console
 
@@ -569,13 +549,37 @@ for astakos:
 
    # snf-manage migrate im
 
-Finally we load the pre-defined user groups
+Then, we load the pre-defined user groups
 
 .. code-block:: console
 
    # snf-manage loaddata groups
 
-You have now finished the Astakos setup. Let's test it now.
+.. _services-reg:
+
+Services Registration
+---------------------
+
+When the database is ready, we configure the elements of the Astakos cloudbar,
+to point to our future services:
+
+.. code-block:: console
+
+   # snf-manage registerservice "~okeanos home" https://node1.example.com/im/ home-icon.png
+   # snf-manage registerservice "cyclades" https://node1.example.com/ui/
+   # snf-manage registerservice "pithos+" https://node2.example.com/ui/
+
+Servers Initialization
+----------------------
+
+Finally, we initialize the servers on node1:
+
+.. code-block:: console
+
+   root@node1:~ # /etc/init.d/gunicorn restart
+   root@node1:~ # /etc/init.d/apache2 restart
+
+We have now finished the Astakos setup. Let's test it now.
 
 
 Testing of Astakos
@@ -675,6 +679,8 @@ only the two options:
    PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
    PITHOS_AUTHENTICATION_USERS = None
 
+   PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
+
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ app where to
 find the pithos+ backend database. Above we tell pithos+ that its database is
 ``snf_pithos`` at node1 and to connect as user ``synnefo`` with password
@@ -689,6 +695,16 @@ directory at node1's "Pithos+ data directory setup" section.
 The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
 is available the astakos authentication api. If not set, pithos+ tries to
 authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
+
+The ``PITHOS_SERVICE_TOKEN`` should be the Pithos+ token returned by running on
+the Astakos node (node1 in our case):
+
+.. code-block:: console
+
+   # snf-manage listservices
+
+The token has been generated automatically during the :ref:`Pithos+ service
+registration <services-reg>`.
 
 Then we need to setup the web UI and connect it to astakos. To do so, edit
 ``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:
@@ -709,20 +725,23 @@ pithos+ web UI with the astakos web UI (through the top cloudbar):
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'pithos'
+   PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
 
-The ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` registers the client as a new service
-served by astakos. It's name should be identical with the ``id`` name given at
-the astakos' ``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos "Conf
-Files" section, we actually set the third item of the ``ASTAKOS_CLOUD_SERVICES``
-list, to the dictionary: ``{ 'url':'https://nod...', 'name':'pithos+',
-'id':'pithos }``. This item represents the pithos+ service. The ``id`` we set
-there, is the ``id`` we want here.
+The ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` points to an already registered
+Astakos service. You can see all :ref:`registered services <services-reg>` by
+running on the Astakos node (node1):
+
+.. code-block:: console
+
+   # snf-manage listservices
+
+The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service's
+``id`` as shown by the above command, in our case ``3``.
 
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 pithos+ web client to get from astakos all the information needed to fill its
@@ -923,6 +942,8 @@ it alongside Ganeti without Synnefo), please see
 installation instructions, documentation on the design and implementation, and
 supported Image formats.
 
+.. _snf-image-images:
+
 snf-image's actual Images
 -------------------------
 
@@ -963,6 +984,8 @@ spawning a VM from Ganeti, in the next section.
 Of course, you can repeat the procedure to upload more Images, available from the
 `official snf-image page
 <https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_.
+
+.. _ganeti-with-pithos-images:
 
 Spawning a VM from a Pithos+ Image, using Ganeti
 ------------------------------------------------
@@ -1431,7 +1454,11 @@ corresponding package by running on node1:
 
    # apt-get install snf-cyclades-app
 
-If the package installs successfully, then Cyclades and Plankton are installed
+.. warning:: Make sure you have installed ``python-gevent`` version >= 0.13.6.
+    This version is available at squeeze-backports and can be installed by
+    running: ``apt-get install -t squeeze-backports python-gevent``
+
+If all packages install successfully, then Cyclades and Plankton are installed
 and we proceed with their configuration.
 
 
@@ -1488,7 +1515,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   CLOUDBAR_ACTIVE_SERVICE = 'cyclades'
+   CLOUDBAR_ACTIVE_SERVICE = '2'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
    CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
 
@@ -1500,13 +1527,16 @@ above should have the same values we put in the corresponding variables in
 ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf`` on the previous
 :ref:`Pithos configuration <conf-pithos>` section.
 
-The ``CLOUDBAR_ACTIVE_SERVICE`` registers Cyclades as a new service served by
-Astakos. It’s name should be identical with the id name given at the Astakos’
-``ASTAKOS_CLOUD_SERVICES`` variable. Note that at the Astakos :ref:`Conf Files
-<conf-astakos>` section, we actually set the second item of the
-``ASTAKOS_CLOUD_SERVICES`` list, to the dictionary: { 'url':'https://nod...',
-'name':'cyclades', 'id':'cyclades' }. This item represents the Cyclades service.
-The ``id`` we set there, is the ``id`` we want here.
+The ``CLOUDBAR_ACTIVE_SERVICE`` points to an already registered Astakos
+service. You can see all :ref:`registered services <services-reg>` by running
+on the Astakos node (node1):
+
+.. code-block:: console
+
+   # snf-manage listservices
+
+The value of ``CLOUDBAR_ACTIVE_SERVICE`` should be the cyclades service's
+``id`` as shown by the above command, in our case ``2``.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
 
@@ -1628,6 +1658,172 @@ and Plankton installation and setup. Let's test our installation now.
 
 Testing of Cyclades (and Plankton)
 ==================================
+
+Cyclades Web UI
+---------------
+
+First of all we need to test that our Cyclades Web UI works correctly. Open your
+browser and go to the Astakos home page. Login and then click 'cyclades' on the
+top cloud bar. This should redirect you to:
+
+ `http://node1.example.com/ui/`
+
+and the Cyclades home page should appear. If not, please go back and find what
+went wrong. Do not proceed if you don't see the Cyclades home page.
+
+If the Cyclades home page appears, click on the orange button 'New machine'. The
+first step of the 'New machine wizard' will appear. This step shows all the
+available Images from which you can spawn new VMs. The list should be currently
+empty, as we haven't registered any Images yet. Close the wizard and browse the
+interface (not many things to see yet). If everything seems to work, let's
+register our first Image file.
+
+Cyclades Images
+---------------
+
+To test our Cyclades (and Plankton) installation, we will use an Image stored on
+Pithos+ to spawn a new VM from the Cyclades interface. We will describe all
+steps, even though you may already have uploaded an Image on Pithos+ from a
+:ref:`previous <snf-image-images>` section:
+
+ * Upload an Image file to Pithos+
+ * Register that Image file to Plankton
+ * Spawn a new VM from that Image from the Cyclades Web UI
+
+We will use the `kamaki <http://docs.dev.grnet.gr/kamaki/latest/index.html>`_
+command line client to do the uploading and registering of the Image.
+
+Installation of `kamaki`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can install `kamaki` anywhere you like, since it is a standalone client of
+the APIs and talks to the installation over `http`. For the purpose of this
+guide we will assume that we have downloaded the `Debian Squeeze Base Image
+<https://pithos.okeanos.grnet.gr/public/9epgb>`_ and stored it under node1's
+``/srv/images`` directory. For that reason we will install `kamaki` on node1,
+too. We do this by running:
+
+.. code-block:: console
+
+   # apt-get install kamaki
+
+Configuration of kamaki
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Now we need to setup kamaki, by adding the appropriate URLs and tokens of our
+installation. We do this by running:
+
+.. code-block:: console
+
+   $ kamaki config set astakos.url "https://node1.example.com"
+   $ kamaki config set compute.url="https://node1.example.com/api/v1.1"
+   $ kamaki config set image.url "https://node1.examle.com/plankton"
+   $ kamaki config set storage.url "https://node2.example.com/v1"
+   $ kamaki config set storage.account "user@example.com"
+   $ kamaki config set global.token "bdY_example_user_tokenYUff=="
+
+The token at the last kamaki command is our user's (``user@example.com``) token,
+as it appears on the user's `Profile` web page on the Astakos Web UI.
+
+You can see that the new configuration options have been applied correctly, by
+running:
+
+.. code-block:: console
+
+   $ kamaki config list
+
+Upload an Image file to Pithos+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, that we have set up `kamaki` we will upload the Image that we have
+downloaded and stored under ``/srv/images/``. Although we can upload the Image
+under the root ``Pithos`` container (as you may have done when uploading the
+Image from the Pithos+ Web UI), we will create a new container called ``images``
+and store the Image under that container. We do this for two reasons:
+
+a) To demonstrate how to create containers other than the default ``Pithos``.
+   This can be done only with the `kamaki` client and not through the Web UI.
+
+b) As a best organization practise, so that you won't have your Image files
+   tangled along with all your other Pithos+ files and directory structures.
+
+We create the new ``images`` container by running:
+
+.. code-block:: console
+
+   $ kamaki store create images
+
+Then, we upload the Image file to that container:
+
+.. code-block:: console
+
+   $ kamaki store upload --container images \
+                         /srv/images/debian_base-6.0-7-x86_64.diskdump \
+                         debian_base-6.0-7-x86_64.diskdump
+
+The first is the local path and the second is the remote path on Pithos+. If
+the new container and the file appears on the Pithos+ Web UI, then you have
+successfully created the container and uploaded the Image file.
+
+Register an existing Image file to Plankton
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once the Image file has been successfully uploaded on Pithos+, then we register
+it to Plankton (so that it becomes visible to Cyclades), by running:
+
+.. code-block:: console
+
+   $ kamaki image register "Debian Base"
+                           pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump
+                           --public
+                           --disk-format=diskdump
+                           --property OSFAMILY=linux --property ROOT_PARTITION=1
+                           --property description="Debian Squeeze Base System"
+                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI"
+                           --property sortorder=1 --property USERS=root --property OS=debian
+
+This command registers the Pithos+ file
+``pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
+Image in Plankton. This Image will be public (``--public``), so all users will
+be able to spawn VMs from it and is of type ``diskdump``. The first two
+properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest
+properties are optional, but recommended, so that the Images appear nicely on
+the Cyclades Web UI. ``Debian Base`` will appear as the name of this Image. The
+``OS`` property's valid values may be found in the ``IMAGE_ICONS`` variable
+inside the ``20-snf-cyclades-app-ui.conf`` configuration file.
+
+``OSFAMILY`` and ``ROOT_PARTITION`` are mandatory because they will be passed
+from Plankton to Cyclades and then to Ganeti and `snf-image` (also see
+:ref:`previous section <ganeti-with-pithos-images>`). All other properties are
+used to show information on the Cyclades UI.
+
+Spawn a VM from the Cyclades Web UI
+-----------------------------------
+
+If the registration completes successfully, then go to the Cyclades Web UI from
+your browser at:
+
+ `https://node1.example.com/ui/`
+
+Click on the 'New Machine' button and the first step of the wizard will appear.
+Click on 'My Images' (right after 'System' Images) on the left pane of the
+wizard. Your previously registered Image "Debian Base" should appear under
+'Available Images'. If not, something has gone wrong with the registration. Make
+sure you can see your Image file on the Pithos+ Web UI and ``kamaki image
+register`` returns successfully with all options and properties as shown above.
+
+If the Image appears on the list, select it and complete the wizard by selecting
+a flavor and a name for your VM. Then finish by clicking 'Create'. Make sure you
+write down your password, because you *WON'T* be able to retrieve it later.
+
+If everything was setup correctly, after a few minutes your new machine will go
+to state 'Running' and you will be able to use it. Click 'Console' to connect
+through VNC out of band, or click on the machine's icon to connect directly via
+SSH or RDP (for windows machines).
+
+Congratulations. You have successfully installed the whole Synnefo stack and
+connected all components. Go ahead in the next section to test the Network
+functionality from inside Cyclades and discover even more features.
 
 
 General Testing

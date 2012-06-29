@@ -105,7 +105,7 @@ def download_private_key(request):
     name = request.POST.get("name", "key")
 
     response = http.HttpResponse(mimetype='application/x-pem-key')
-    response['Content-Disposition'] = 'attachment; filename=%s.pem' % name
+    response['Content-Disposition'] = 'attachment; filename=%s' % name
     response.write(data)
     return response
 

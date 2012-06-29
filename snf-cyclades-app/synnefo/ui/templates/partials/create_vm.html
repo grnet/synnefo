@@ -192,7 +192,12 @@
                             <h4>{% trans "Public SSH keys" %} <span><a
                                         class="create-ssh-key" href="#">manage keys</a></span></h4>
                             <p class="desc">
-                                Select ssh keys
+                            {% blocktrans %}
+                            Your account contains the following SSH public keys. 
+                            Select one or more to activate in your new machine. 
+                            You will then be able to ssh with the corresponding 
+                            private key without a password."
+                            {% endblocktrans %}
                             </p>
                             <p class="desc empty hidden">
                             No ssh keys in your account. <a href="#"

@@ -269,8 +269,6 @@
             menubar: 'no',
             toolbar: 'no',
             status: 'no',
-            top: 'no',
-            left: 'no',
             height: screen.height,
             width: screen.width,
             fullscreen: 'yes',

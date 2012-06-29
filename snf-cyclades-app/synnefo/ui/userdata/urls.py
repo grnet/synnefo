@@ -36,11 +36,11 @@ from django.conf.urls.defaults import *
 from synnefo.ui.userdata import views
 
 urlpatterns = patterns('',
-    url(r'^keys$', views.PublicKeyPairCollectionView.as_view('keys_resource'),
-        name='keys_collection'),
+    url(r'^keys$', views.PublicKeyPairCollectionView.as_view('ui_keys_resource'),
+        name='ui_keys_collection'),
     url(r'^keys/(?P<id>\d+)',
-    views.PublicKeyPairResourceView.as_view('keys_resource'),
-        name="keys_resource"),
-    url(r'keys/generate', views.generate_key_pair, name="generate_public_key"),
-    url(r'keys/download', views.download_private_key, name="download_public_key")
+    views.PublicKeyPairResourceView.as_view('ui_keys_resource'),
+        name="ui_keys_resource"),
+    url(r'keys/generate', views.generate_key_pair, name="ui_generate_public_key"),
+    url(r'keys/download', views.download_private_key, name="ui_download_public_key")
 )

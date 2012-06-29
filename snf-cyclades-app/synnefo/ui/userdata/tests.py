@@ -66,7 +66,7 @@ class TestRestViews(TransactionTestCase):
         settings.SKIP_SSH_VALIDATION = True
         self.client = AaiClient()
         self.user = 'test'
-        self.keys_url = reverse('keys_collection')
+        self.keys_url = reverse('ui_keys_collection')
 
     def test_keys_collection_get(self):
         resp = self.client.get(self.keys_url)

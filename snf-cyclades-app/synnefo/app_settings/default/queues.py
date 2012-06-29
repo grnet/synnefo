@@ -5,8 +5,8 @@
 
 # Rabbit work queue endpoint
 RABBIT_HOST = "10.0.0.1:5672"
-RABBIT_USERNAME = "username"
-RABBIT_PASSWORD = "password"
+RABBIT_USERNAME = "rabbit-username"
+RABBIT_PASSWORD = "rabbit-password"
 RABBIT_VHOST = "/"
 AMQP_HOSTS=["amqp://username:password@host:port"]
 

@@ -326,8 +326,6 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
         del(request.META['CONTENT_TYPE'])
     content_type, meta, permissions, public = get_object_headers(request)
-    if delimiter:
-    	public = False # ignore public in that case
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:

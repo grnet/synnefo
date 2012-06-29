@@ -79,7 +79,7 @@ def user_for_token(token, authentication_url, override_users):
             return None
     
     try:
-        authenticate(token, authentication_url)
+        return authenticate(token, authentication_url)
     except Exception, e:
         # In case of Unauthorized response return None
         if e.args and e.args[-1] == 401:

@@ -107,12 +107,12 @@ class Dispatcher:
 
         # Declare queues and exchanges
         for exchange in settings.EXCHANGES:
-            self.client.exchange_declare(exchange_name=exchange,
-                                         exchange_type="topic")
+            self.client.exchange_declare(exchange=exchange,
+                                         type="topic")
 
         for queue in QUEUES:
             # Queues are mirrored to all RabbitMQ brokers
-            self.client.queue_declare(queue=queue,mirrored=True)
+            self.client.queue_declare(queue=queue, mirrored=True)
 
         bindings = BINDINGS
 

@@ -114,9 +114,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger):
         pyinotify.ProcessEvent.__init__(self)
         self.logger = logger
-        self.client = AMQPClient()
+        self.client = AMQPClient(confirm_buffer=100)
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
         self.client.connect()
+        self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
         handler_logger.info("Connected succesfully")
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
@@ -179,10 +180,9 @@ class JobFileHandler(pyinotify.ProcessEvent):
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
             # Send the message to RabbitMQ
-            self.client.basic_publish(exchange=settings.EXCHANGE_GANETI,
-                                      routing_key=routekey,
-                                      body=msg)
-
+            self.client.basic_publish(settings.EXCHANGE_GANETI,
+                                      routekey,
+                                      msg)
 
     def process_instance_op(self, op, job_id):
         """ Process OP_INSTANCE_* opcodes.

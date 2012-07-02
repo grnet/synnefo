@@ -98,7 +98,7 @@ class Command(BaseCommand):
 
         state = options.get('state')
         if state is not None:
-            allowed = [x[0] for x in Network.NETWORK_STATES]
+            allowed = [x[0] for x in Network.OPER_STATES]
             if state not in allowed:
                 msg = "Invalid state, must be one of %s" % ', '.join(allowed)
                 raise CommandError(msg)

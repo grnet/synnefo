@@ -58,6 +58,15 @@ IGNORE_FLAVOR_DISK_SIZES = False
 # Maximum number of VMs a user is allowed to have
 MAX_VMS_PER_USER = 3
 
+# VMs user/quota map.
+VMS_USER_QUOTA = {}
+
+# Maximum number of networks a user is allowed to have
+MAX_NETWORKS_PER_USER = 5
+
+# Networks user/quota map.
+NETWORKS_USER_QUOTA = {}
+
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
 # FIXME: For now we do not encrypt the backend id.

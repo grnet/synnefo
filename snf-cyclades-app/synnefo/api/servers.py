@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -130,7 +130,7 @@ def vm_to_dict(vm, detail=False):
         d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.imageid
-        
+
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
             d['metadata'] = {'values': metadata}
@@ -159,18 +159,18 @@ def list_servers(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
     since = util.isoparse(request.GET.get('changes-since'))
-    
+
     if since:
         user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:
         user_vms = user_vms.filter(deleted=False)
-    
+
     servers = [vm_to_dict(server, detail) for server in user_vms]
 
     if request.serialization == 'xml':
@@ -197,7 +197,7 @@ def create_server(request):
 
     req = util.get_request_dict(request)
     log.debug('create_server %s', req)
-    
+
     try:
         server = req['server']
         name = server['name']
@@ -209,10 +209,10 @@ def create_server(request):
         assert isinstance(personality, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
-    
+
     if len(personality) > settings.MAX_PERSONALITY:
         raise faults.OverLimit("Maximum number of personalities exceeded")
-    
+
     for p in personality:
         # Verify that personalities are well-formed
         try:
@@ -228,7 +228,7 @@ def create_server(request):
                 raise faults.OverLimit("Maximum size of personality exceeded")
         except AssertionError:
             raise faults.BadRequest("Malformed personality in request")
-    
+
     image = {}
     img = util.get_image(image_id, request.user_uniq)
     properties = img.get('properties', {})
@@ -236,22 +236,28 @@ def create_server(request):
     image['format'] = img['disk_format']
     image['metadata'] = dict((key.upper(), val) \
                              for key, val in properties.items())
-    
+
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()
-    
+
     count = VirtualMachine.objects.filter(userid=request.user_uniq,
                                           deleted=False).count()
-    if count >= settings.MAX_VMS_PER_USER:
+
+    # get user limit
+    vms_limit_for_user = \
+        settings.VMS_USER_QUOTA.get(request.user_uniq,
+                settings.MAX_VMS_PER_USER)
+
+    if count >= vms_limit_for_user:
         raise faults.OverLimit("Server count limit exceeded for your account.")
-    
+
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
         userid=request.user_uniq,
         imageid=image_id,
         flavor=flavor)
-    
+
     try:
         create_instance(vm, flavor, image, password, personality)
     except GanetiApiError:
@@ -263,10 +269,10 @@ def create_server(request):
             meta_key=key,
             meta_value=val,
             vm=vm)
-    
+
     log.info('User %s created vm with %s cpus, %s ram and %s storage',
              request.user_uniq, flavor.cpu, flavor.ram, flavor.disk)
-    
+
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
     server['adminPass'] = password
@@ -282,7 +288,7 @@ def get_server_details(request, server_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     log.debug('get_server_details %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     server = vm_to_dict(vm, detail=True)
@@ -303,7 +309,7 @@ def update_server_name(request, server_id):
 
     req = util.get_request_dict(request)
     log.debug('update_server_name %s %s', server_id, req)
-    
+
     try:
         name = req['server']['name']
     except (TypeError, KeyError):
@@ -326,7 +332,7 @@ def delete_server(request, server_id):
     #                       unauthorized (401),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     log.debug('delete_server %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     delete_instance(vm)
@@ -361,11 +367,11 @@ def list_addresses(request, server_id):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     log.debug('list_addresses %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
-    
+
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
@@ -383,13 +389,13 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
     nic = util.get_nic(machine, network)
     address = nic_to_dict(nic)
-    
+
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'address': address})
     else:
@@ -406,7 +412,7 @@ def list_metadata(request, server_id):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     log.debug('list_server_metadata %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
@@ -423,7 +429,7 @@ def update_metadata(request, server_id):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413)
-    
+
     req = util.get_request_dict(request)
     log.debug('update_server_metadata %s %s', server_id, req)
     vm = util.get_vm(server_id, request.user_uniq)
@@ -432,12 +438,12 @@ def update_metadata(request, server_id):
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
-    
+
     for key, val in metadata.items():
         meta, created = vm.metadata.get_or_create(meta_key=key)
         meta.meta_value = val
         meta.save()
-    
+
     vm.save()
     vm_meta = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, vm_meta, status=201)
@@ -452,7 +458,7 @@ def get_metadata_item(request, server_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     log.debug('get_server_metadata_item %s %s', server_id, key)
     vm = util.get_vm(server_id, request.user_uniq)
     meta = util.get_vm_meta(vm, key)
@@ -471,7 +477,7 @@ def create_metadata_item(request, server_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413)
-    
+
     req = util.get_request_dict(request)
     log.debug('create_server_metadata_item %s %s %s', server_id, key, req)
     vm = util.get_vm(server_id, request.user_uniq)
@@ -482,11 +488,11 @@ def create_metadata_item(request, server_id, key):
         assert key in metadict
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
-    
+
     meta, created = VirtualMachineMetadata.objects.get_or_create(
         meta_key=key,
         vm=vm)
-    
+
     meta.meta_value = metadict[key]
     meta.save()
     vm.save()
@@ -505,7 +511,7 @@ def delete_metadata_item(request, server_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413),
-    
+
     log.debug('delete_server_metadata_item %s %s', server_id, key)
     vm = util.get_vm(server_id, request.user_uniq)
     meta = util.get_vm_meta(vm, key)
@@ -523,12 +529,12 @@ def server_stats(request, server_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     log.debug('server_stats %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     #secret = util.encrypt(vm.backend_id)
     secret = vm.backend_id      # XXX disable backend id encryption
-    
+
     stats = {
         'serverRef': vm.id,
         'refresh': settings.STATS_REFRESH_PERIOD,
@@ -536,7 +542,7 @@ def server_stats(request, server_id):
         'cpuTimeSeries': settings.CPU_TIMESERIES_GRAPH_URL % secret,
         'netBar': settings.NET_BAR_GRAPH_URL % secret,
         'netTimeSeries': settings.NET_TIMESERIES_GRAPH_URL % secret}
-    
+
     if request.serialization == 'xml':
         data = render_to_string('server_stats.xml', stats)
     else:

@@ -221,7 +221,7 @@ def start_action(vm, action):
 def create_instance(vm, flavor, image, password, personality):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
-        
+
         metadata value should be a dictionary.
     """
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
@@ -268,9 +268,9 @@ def create_instance(vm, flavor, image, password, personality):
         'img_format': image['format']}
     if personality:
         kw['osparams']['img_personality'] = json.dumps(personality)
-    
+
     kw['osparams']['img_properties'] = json.dumps(image['metadata'])
-    
+
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
 
@@ -356,7 +356,7 @@ def create_network(name, user_id):
     except IndexError:
         link = create_network_link()
         if not link:
-            return None
+            raise NetworkLink.NotAvailable
 
     network = Network.objects.create(
         name=name,

@@ -106,19 +106,19 @@ def isoparse(s):
 
 def random_password():
     """Generates a random password
-    
+
     We generate a windows compliant password: it must contain at least
     one charachter from each of the groups: upper case, lower case, digits.
     """
-    
+
     pool = lowercase + uppercase + digits
     lowerset = set(lowercase)
     upperset = set(uppercase)
     digitset = set(digits)
     length = 10
-    
+
     password = ''.join(choice(pool) for i in range(length - 2))
-    
+
     # Make sure the password is compliant
     chars = set(password)
     if not chars & lowerset:
@@ -127,10 +127,10 @@ def random_password():
         password += choice(uppercase)
     if not chars & digitset:
         password += choice(digits)
-    
+
     # Pad if necessary to reach required length
     password += ''.join(choice(pool) for i in range(length - len(password)))
-    
+
     return password
 
 
@@ -238,7 +238,7 @@ def update_response_headers(request, response):
 
     if settings.TEST:
         response['Date'] = format_date_time(time())
-    
+
     add_never_cache_headers(response)
 
 

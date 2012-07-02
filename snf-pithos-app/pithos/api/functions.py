@@ -68,7 +68,14 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 def top_demux(request):
     if request.method == 'GET':
-        return account_list(request)
+    	try:
+    		request.GET['X-Auth-Token']
+    	except KeyError:
+    		try:
+    			request.META['HTTP_X_AUTH_TOKEN']
+    		except KeyError:
+    			return authenticate(request)
+    		return account_list(request)
     else:
         return method_not_allowed(request)
 
@@ -146,9 +153,6 @@ def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
     #                       badRequest (400)
-    if getattr(request, 'user', None) is None:
-        return authenticate(request)
-    
     response = HttpResponse()
     
     marker = request.GET.get('marker')

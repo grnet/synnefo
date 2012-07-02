@@ -95,6 +95,7 @@ class AMQPPukaClient(object):
         self.unacked = OrderedDict()
         self.unsend = OrderedDict()
         self.consume_promises = []
+        self.exchanges = []
 
     def connect(self, retries=0):
         if retries > self.max_retries:
@@ -135,6 +136,12 @@ class AMQPPukaClient(object):
             for queue, callback in self.consumers.items():
                 self.basic_consume(queue, callback)
 
+        if self.exchanges:
+            exchanges = self.exchanges
+            self.exchanges = []
+            for exchange, type in exchanges:
+                self.exchange_declare(exchange, type)
+
     def exchange_declare(self, exchange, type='direct'):
         """Declare an exchange
         @type exchange_name: string
@@ -149,6 +156,7 @@ class AMQPPukaClient(object):
                                                durable=True,
                                                auto_delete=False)
         self.client.wait(promise)
+        self.exchanges.append((exchange, type))
 
     @reconnect_decorator
     def queue_declare(self, queue, exclusive=False,

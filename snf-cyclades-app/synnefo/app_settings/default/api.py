@@ -55,16 +55,18 @@ IGNORE_FLAVOR_DISK_SIZES = False
 
 # Quota
 #
-# Maximum number of VMs a user is allowed to have
+# Maximum number of VMs a user is allowed to have.
 MAX_VMS_PER_USER = 3
 
-# VMs user/quota map.
+# Override maximum number of VMs for specific users.
+# e.g. VMS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
 VMS_USER_QUOTA = {}
 
-# Maximum number of networks a user is allowed to have
+# Maximum number of networks a user is allowed to have.
 MAX_NETWORKS_PER_USER = 5
 
-# Networks user/quota map.
+# Override maximum number of private networks for specific users.
+# e.g. NETWORKS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
 NETWORKS_USER_QUOTA = {}
 
 # URL templates for the stat graphs.

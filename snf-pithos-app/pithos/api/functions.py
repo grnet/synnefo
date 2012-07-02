@@ -75,7 +75,7 @@ def top_demux(request):
     			request.META['HTTP_X_AUTH_TOKEN']
     		except KeyError:
     			return authenticate(request)
-    		return account_list(request)
+    	return account_list(request)
     else:
         return method_not_allowed(request)
 

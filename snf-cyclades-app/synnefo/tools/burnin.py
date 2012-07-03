@@ -110,11 +110,13 @@ class ImagesTestCase(unittest.TestCase):
 
     def test_001_list_images(self):
         """Test image list actually returns images"""
-        self.assertGreater(len(self.images), 0)
+#        self.assertGreater(len(self.images), 0)
+        self.assertEqual(len(self.images), -1)
 
     def test_002_list_images_detailed(self):
         """Test detailed image list is the same length as list"""
-        self.assertEqual(len(self.dimages), len(self.images))
+#        self.assertEqual(len(self.dimages), len(self.images))
+        self.assertEqual(len(self.dimages), 0)
 
     def test_003_same_image_names(self):
         """Test detailed and simple image list contain same names"""
@@ -1369,56 +1371,30 @@ def main():
                                              query_interval=opts.query_interval,
                                              )
 
-
-    #Running all the testcases sequentially
     
-    #To run all cases
-    #seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase, ServerTestCase, NetworkTestCase]
-    
-    newNetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
+    NetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
                                                   query_interval = opts.query_interval)    
-    seq_cases = [ServerTestCase]
+    seq_cases = [ImagesTestCase]
 
     for case in seq_cases:
+        log_file = 'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+        fail_file = 'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+
+        f = open(log_file, "w")
+        fail = open(fail_file, "w")
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
-        unittest.TextTestRunner(verbosity=2).run(suite)
+        runner = unittest.TextTestRunner(f, verbosity=2)
+        result = runner.run(suite)
         
-    
+        fail.write("Testcases failures: \n\n")
 
-    # # The Following cases run sequentially
-    # seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase]
-    # _run_cases_in_parallel(seq_cases, fanout=3, runner=runner)
+        for res in result.failures:
+            fail.write(str(res[0])+'\n')
+            fail.write(res[0].__doc__ + '\n')
+            fail.write('\n')
+        
+        
 
-    # # The following cases run in parallel
-    # par_cases = []
-
-    # if opts.force_imageid == 'all':
-    #     test_images = DIMAGES
-    # else:
-    #     test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
-
-    # for image in test_images:
-    #     imageid = image["id"]
-    #     imagename = image["name"]
-    #     if opts.force_flavorid:
-    #         flavorid = opts.force_flavorid
-    #     else:
-    #         flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
-    #     personality = None   # FIXME
-    #     servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
-    #     is_windows = imagename.lower().find("windows") >= 0
-    #     case = _spawn_server_test_case(imageid=str(imageid), flavorid=flavorid,
-    #                                    imagename=imagename,
-    #                                    personality=personality,
-    #                                    servername=servername,
-    #                                    is_windows=is_windows,
-    #                                    action_timeout=opts.action_timeout,
-    #                                    build_warning=opts.build_warning,
-    #                                    build_fail=opts.build_fail,
-    #                                    query_interval=opts.query_interval)
-    #     par_cases.append(case)
-
-    # _run_cases_in_parallel(par_cases, fanout=opts.fanout, runner=runner)
 
 if __name__ == "__main__":
     sys.exit(main())

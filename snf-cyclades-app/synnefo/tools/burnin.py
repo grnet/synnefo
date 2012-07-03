@@ -110,12 +110,12 @@ class ImagesTestCase(unittest.TestCase):
 
     def test_001_list_images(self):
         """Test image list actually returns images"""
-#        self.assertGreater(len(self.images), 0)
+        self.assertGreater(len(self.images), 0)
         self.assertEqual(len(self.images), -1)
 
     def test_002_list_images_detailed(self):
         """Test detailed image list is the same length as list"""
-#        self.assertEqual(len(self.dimages), len(self.images))
+        self.assertEqual(len(self.dimages), len(self.images))
         self.assertEqual(len(self.dimages), 0)
 
     def test_003_same_image_names(self):
@@ -1374,7 +1374,7 @@ def main():
     
     NetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
                                                   query_interval = opts.query_interval)    
-    seq_cases = [ImagesTestCase]
+    seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase, NetworkTestCase]
 
     for case in seq_cases:
         log_file = 'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
@@ -1390,9 +1390,8 @@ def main():
 
         for res in result.failures:
             fail.write(str(res[0])+'\n')
-            fail.write(res[0].__doc__ + '\n')
+            fail.write(str(res[0].__doc__) + '\n')
             fail.write('\n')
-        
         
 
 

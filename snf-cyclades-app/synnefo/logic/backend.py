@@ -94,8 +94,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     # when no instance exists at the Ganeti backend.
     # See ticket #799 for all the details.
     #
-    if (status == 'error' and opcode == 'OP_INSTANCE_REMOVE' and
-        vm.operstate == 'ERROR'):
+    if (status == 'error' and opcode == 'OP_INSTANCE_REMOVE'):
         vm.deleted = True
         vm.nics.all().delete()
 

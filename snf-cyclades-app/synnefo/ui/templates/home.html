@@ -593,6 +593,12 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.logout_redirect = '{{ logout_redirect }}';
             synnefo.config.login_redirect = '{{ login_redirect }}';
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
+
+            synnefo.config.network_suggested_subnets = {{ network_suggested_subnets|safe }};
+            synnefo.config.network_available_types = {{ network_available_types|safe }};
+            synnefo.config.network_allow_duplicate_vm_nics = {{ network_allow_duplicate_vm_nics }};
+            synnefo.config.network_strict_destroy = {{ network_strict_destroy }};
+            synnefo.config.network_allow_multiple_destory = {{ network_allow_multiple_destroy }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
@@ -615,7 +621,6 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });
-
         })
     </script>
 </body>

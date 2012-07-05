@@ -120,6 +120,20 @@ GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
+# network settings
+DEFAULT_NETWORK_TYPES = {'PRIVATE_FILTERED': 'mac-filtering'}
+NETWORK_TYPES = getattr(settings,
+                    'UI_NETWORK_AVAILABLE_NETWORK_TYPES', DEFAULT_NETWORK_TYPES)
+DEFAULT_NETWORK_SUBNETS = ['10.0.0.0/24', '192.168.1.1/24']
+NETWORK_SUBNETS = getattr(settings,
+                    'UI_NETWORK_AVAILABLE_SUBNETS', DEFAULT_NETWORK_SUBNETS)
+NETWORK_DUPLICATE_NICS = getattr(settings,
+                    'UI_NETWORK_ALLOW_DUPLICATE_VM_NICS', False)
+NETWORK_STRICT_DESTROY = getattr(settings,
+                    'UI_NETWORK_STRICT_DESTROY', False)
+NETWORK_ALLOW_MULTIPLE_DESTROY = getattr(settings,
+                    'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
+
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -172,7 +186,12 @@ def home(request):
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
                'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
                'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
-               }
+               'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
+               'network_available_types': json.dumps(NETWORK_TYPES),
+               'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
+               'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
+               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY)
+    }
     return template('home', request, context)
 
 def machines_console(request):

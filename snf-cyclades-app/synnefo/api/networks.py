@@ -45,7 +45,7 @@ from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
-from synnefo.db.models import Network, BridgePool, MacPrefixPool
+from synnefo.db.models import Network, Pool, BridgePool, MacPrefixPool
 from synnefo.logic import backend
 
 
@@ -162,19 +162,18 @@ def create_network(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    link = None
-    mac_prefix = None
     if type == 'PUBLIC_ROUTED':
-        pass
-        # raise Exception (user can not create public)
-    if type == 'PRIVATE_FILTERED':
-        link = settings.GANETI_PRIVATE_BRIDGE
-        mac_prefix = MacPrefixPool.get_available().value
-        state = 'PENDING'
-    else: # PRIVATE_VLAN
-        link = BridgePool.get_available().value
-        # Physical-Vlans are pre-provisioned
-        state = 'ACTIVE'
+        raise Unauthorized('Can not create a public network.')
+
+    try:
+        if type == 'PRIVATE_FILTERED':
+            link = settings.GANETI_PRIVATE_BRIDGE
+            mac_prefix = MacPrefixPool.get_available().value
+        else:  # PRIVATE_VLAN
+            link = BridgePool.get_available().value
+            mac_prefix = None
+    except Pool.PoolExhausted:
+        raise OverLimit('Network count limit exceeded.')
 
     network = Network.objects.create(
             name=name,
@@ -185,11 +184,9 @@ def create_network(request):
             type=type,
             link=link,
             mac_prefix=mac_prefix,
-            state=state)
+            state='PENDING')
 
-    network = backend.create_network(network)
-    if not network:
-        raise OverLimit('Network count limit exceeded for your account.')
+    backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
     return render_network(request, networkdict, status=202)

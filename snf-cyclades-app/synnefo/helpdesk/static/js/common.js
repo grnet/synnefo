@@ -1,6 +1,8 @@
 $(document).ready(function(){ $("input").focus(); })
 
 $(document).ready(function(){
+
+	
  // fix sub nav on scroll
   var $win = $(window)
     , $nav = $('.subnav')
@@ -82,8 +84,23 @@ $(document).ready(function(){
   $('.info-block h3').click(function(){
   	$(this).next('.info-block-content').toggle();
   	$(this).prev('.show-hide-all').toggle();
-  })  
-   
+  });  
+  
+  $('.search-query').typeahead()
+  
+  $('.search-query').keyup(function(){
+  	var t = $(".search-query").data("typeahead");
+  	var a = t.lookup().query;
+  	$.ajax({
+  		url:'/helpdesk/api/users/?prefix='+a, 
+  		dataType:'json', 
+  		success:function(d){
+  			t.source = d;
+  		}
+  	})
+  })
+
+
 	
 })
 

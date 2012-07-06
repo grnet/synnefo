@@ -3,11 +3,13 @@
 <div class="network-details object-details {{ rowcls }}">
     <h4><i class="icon-random"></i>{{ network.name }} <span class="badge">&nbsp;</span></h4>
     {{ network|network_deleted_badge|safe }}
+     
     <span class="badge badge-info">ID: {{ network.pk }}</span>
     
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">
 		    <li class="active"><a href="#details{{ network.pk }}" data-toggle="tab">Details</a></li>
+		    <li><a href="#vms{{ network.pk }}" data-toggle="tab">VMs</a></li>
 	    </ul>	
          <div class="tab-content">
 			<div class="tab-pane active" id="details{{ network.pk }}">
@@ -21,9 +23,13 @@
 		            <dt>State</dt><dd>{{ network.get_state_display }} ({{ network.state }})</dd>
 		        </dl>
 			</div>
+			<div class="tab-pane" id="vms{{ network.pk }}">
+				 <div class="well">
+				 	{% for vm in network|network_vms:account %}<a href="#vm-{{ vm.pk }}">{{ vm.name }}</a><br />{% endfor %}
+				 </div>
+			</div>
 		</div>
-        
-        
+		 
     </div>
 </div>
 

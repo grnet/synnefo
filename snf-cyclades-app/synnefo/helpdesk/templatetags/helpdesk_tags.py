@@ -48,3 +48,21 @@ def network_deleted_badge(network):
     return deleted_badge
 
 network_deleted_badge.is_safe = True
+
+@register.filter(name="get_os")
+def get_os(vm):
+    try:
+        return vm.metadata.filter(meta_key="OS").get().meta_value
+    except:
+        return "unknown"
+    
+get_os.is_safe = True
+
+@register.filter(name="network_vms")
+def network_vms(network, account):
+    vms = []
+    for nic in network.nics.filter(machine__userid=account):
+        vms.append(nic.machine)
+    return vms
+    
+network_vms.is_safe = True

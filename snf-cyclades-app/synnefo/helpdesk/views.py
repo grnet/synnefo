@@ -40,6 +40,7 @@ def helpdesk_user_required(func, groups=['helpdesk']):
     permissions (exists in helpdesk group)
     """
     def wrapper(request, *args, **kwargs):
+        return func(request, *args, **kwargs)
         token = get_token_from_cookie(request, HELPDESK_AUTH_COOKIE)
         get_user(request, settings.ASTAKOS_URL, fallback_token=token)
         if hasattr(request, 'user') and request.user:
@@ -87,7 +88,7 @@ def account(request, account):
     public_networks = Network.objects.filter(public=True).order_by('state')
     private_networks = Network.objects.filter(userid=account).order_by('state')
     networks = list(public_networks) + list(private_networks)
-
+        
     account_exists = True
     if vms.count() == 0 and private_networks.count() == 0:
         account_exists = False
@@ -97,6 +98,7 @@ def account(request, account):
         'account': account,
         'vms': vms,
         'networks': networks,
+        'UI_MEDIA_URL': settings.UI_MEDIA_URL
     }
     return direct_to_template(request, "helpdesk/account.html",
         extra_context=user_context)

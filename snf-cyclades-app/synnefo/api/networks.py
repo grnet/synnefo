@@ -116,15 +116,14 @@ def list_networks(request, detail=False):
 
     log.debug('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
-    user_networks = Network.objects.filter(
-                                Q(userid=request.user_uniq) | Q(public=True))
+    user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
+                                           Q(public=True),
+                                           deleted=False)
 
     if since:
         user_networks = user_networks.filter(updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
-    else:
-        user_networks = user_networks.filter(deleted=False)
 
     networks = [network_to_dict(network, request.user_uniq, detail)
                 for network in user_networks]

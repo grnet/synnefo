@@ -601,6 +601,7 @@ class NetworkInterface(models.Model):
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
+    dirty = models.BooleanField(default=False)
 
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)

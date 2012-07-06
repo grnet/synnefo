@@ -44,7 +44,8 @@ from synnefo import settings
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
+from synnefo.api.faults import (BadRequest, OverLimit,
+                                Unauthorized, NetworkInUse)
 from synnefo.db.models import Network, Pool, BridgePool, MacPrefixPool
 from synnefo.logic import backend
 
@@ -249,6 +250,9 @@ def delete_network(request, network_id):
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
+
+    if net.machines.all():  # Nics attached on network
+        raise NetworkInUse('Machines are connected to network.')
 
     net.action = 'DESTROY'
     net.save()

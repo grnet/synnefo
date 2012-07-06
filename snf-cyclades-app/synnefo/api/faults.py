@@ -60,8 +60,11 @@ class BuildInProgress(Fault):
 class OverLimit(Fault):
     code = 413
 
-class ServiceUnavailable(Fault):
-    code = 503
-
 class BadMediaType(Fault):
     code = 415
+
+class NetworkInUse(Fault):
+    code = 421
+
+class ServiceUnavailable(Fault):
+    code = 503

@@ -135,7 +135,8 @@ def process_net_status(vm, etime, nics):
             mac=nic.get('mac', ''),
             ipv4=nic.get('ip', ''),
             ipv6=nic.get('ipv6', ''),
-            firewall_profile=firewall_profile)
+            firewall_profile=firewall_profile,
+            dirty=False)
 
     vm.backendtime = etime
     vm.save()
@@ -441,7 +442,7 @@ def delete_network(network, backends=None):
 
 
 def disconnect_network(network, backends=None):
-    """Disconnect a network from virtualmachines and nodegroups.
+    """Disconnect a network from all nodegroups.
 
     @param network: Network object
     @param backends: List of Backend objects. None defaults to all.
@@ -455,39 +456,19 @@ def disconnect_network(network, backends=None):
     for backend in backends:
         client = backend.client
         jobs = []
-        for vm in network.machines.filter(backend=backend):
-            job = disconnect_from_network(vm, network)
-            jobs.append(job)
-
-        jobs2 = []
         for group in client.GetGroups():
-            job = client.DisconnectNetwork(network.backend_id, group, jobs)
-            jobs2.append(job)
-        backend_jobs.append((backend, jobs2))
+            job = client.DisconnectNetwork(network.backend_id, group)
+            jobs.append(job)
+        backend_jobs.append((backend, jobs))
 
     return backend_jobs
 
 
-def disconnect_from_network(vm, network):
+def disconnect_from_network(vm, nic):
     """Disconnect a virtual machine from a network by removing it's nic.
 
     @param vm: VirtualMachine object
     @param network: Network object
-
-    """
-
-    nics = vm.nics.filter(network__public=False).order_by('index')
-    ops = [('remove', nic.index, {}) for nic in nics if nic.network == network]
-    if not ops:  # Vm not connected to network
-        return
-    job = vm.client.ModifyInstance(vm.backend_vm_id, nics=ops[::-1],
-                                    hotplug=True, dry_run=settings.TEST)
-
-    return job
-
-
-def disconnect_nic_from_vm(vm, nic):
-    """Remove a NetworkInterface from a VirtualMachine.
 
     """
 

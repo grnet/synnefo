@@ -39,7 +39,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import BadRequest, ServiceUnavailable, ItemNotFound
+from synnefo.api.faults import (BadRequest, ServiceUnavailable,
+                                ItemNotFound, BuildInProgress)
 from synnefo.api.util import random_password, get_vm, get_nic_from_index
 from synnefo.db.models import NetworkInterface
 from synnefo.logic import backend
@@ -326,5 +327,11 @@ def remove(request, net, args):
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
     nic = get_nic_from_index(vm, nic_index)
-    backend.disconnect_nic_from_vm(vm, nic)
+
+    if nic.dirty:
+        raise BuildInProgress('Machine is busy.')
+    else:
+        vm.nics.all().update(dirty=True)
+
+    backend.disconnect_from_network(vm, nic)
     return HttpResponse(status=202)

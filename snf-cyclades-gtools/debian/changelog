@@ -1,4 +1,4 @@
-snf-cyclades-gtools (0.10-1) stable; urgency=low
+snf-cyclades-gtools (0.10.0-1) stable; urgency=low
 
   * New upstream version with networks support
 

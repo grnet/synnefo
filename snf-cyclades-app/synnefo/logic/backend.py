@@ -359,7 +359,7 @@ def create_network(name, user_id):
     except IndexError:
         link = create_network_link()
         if not link:
-            return None
+            raise NetworkLink.NotAvailable
 
     network = Network.objects.create(
         name=name,

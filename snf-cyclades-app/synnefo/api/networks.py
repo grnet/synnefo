@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -34,16 +34,17 @@
 from logging import getLogger
 
 from django.conf.urls.defaults import patterns
+from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import util
+from synnefo.api import faults, util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
-from synnefo.db.models import Network
+from synnefo.db.models import Network, NetworkLink
 from synnefo.logic import backend
 
 
@@ -106,22 +107,22 @@ def list_networks(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     log.debug('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(
                                 Q(userid=request.user_uniq) | Q(public=True))
-    
+
     if since:
         user_networks = user_networks.filter(updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
     else:
         user_networks = user_networks.filter(state='ACTIVE')
-    
+
     networks = [network_to_dict(network, request.user_uniq, detail)
                 for network in user_networks]
-    
+
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {
             'networks': networks,
@@ -144,17 +145,29 @@ def create_network(request):
 
     req = util.get_request_dict(request)
     log.debug('create_network %s', req)
-    
+
     try:
         d = req['network']
         name = d['name']
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
-    
-    network = backend.create_network(name, request.user_uniq)
-    if not network:
-        raise OverLimit('Network count limit exceeded for your account.')
-    
+
+    count = Network.objects.filter(userid=request.user_uniq,
+                                          state='ACTIVE').count()
+
+    # get user limit
+    networks_limit_for_user = \
+        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                settings.MAX_NETWORKS_PER_USER)
+
+    if count >= networks_limit_for_user:
+        raise faults.OverLimit("Network count limit exceeded for your account.")
+
+    try:
+        network = backend.create_network(name, request.user_uniq)
+    except NetworkLink.NotAvailable:
+        raise faults.OverLimit('No networks available.')
+
     networkdict = network_to_dict(network, request.user_uniq)
     return render_network(request, networkdict, status=202)
 
@@ -168,7 +181,7 @@ def get_network_details(request, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     log.debug('get_network_details %s', network_id)
     net = util.get_network(network_id, request.user_uniq)
     netdict = network_to_dict(net, request.user_uniq)
@@ -188,7 +201,7 @@ def update_network_name(request, network_id):
 
     req = util.get_request_dict(request)
     log.debug('update_network_name %s', network_id)
-    
+
     try:
         name = req['network']['name']
     except (TypeError, KeyError):
@@ -211,7 +224,7 @@ def delete_network(request, network_id):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       overLimit (413)
-    
+
     log.debug('delete_network %s', network_id)
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
@@ -226,11 +239,11 @@ def network_action(request, network_id):
     log.debug('network_action %s %s', network_id, req)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
-    
+
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not modify the public network.')
-    
+
     key = req.keys()[0]
     val = req[key]
 

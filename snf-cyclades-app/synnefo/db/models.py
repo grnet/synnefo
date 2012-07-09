@@ -40,16 +40,16 @@ class Flavor(models.Model):
     disk_template = models.CharField('Disk template', max_length=32,
             default=settings.DEFAULT_GANETI_DISK_TEMPLATE)
     deleted = models.BooleanField('Deleted', default=False)
-    
+
     class Meta:
         verbose_name = u'Virtual machine flavor'
         unique_together = ('cpu', 'ram', 'disk', 'disk_template')
-    
+
     @property
     def name(self):
         """Returns flavor name (generated)"""
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
-    
+
     def __unicode__(self):
         return self.name
 
@@ -64,7 +64,7 @@ class VirtualMachine(models.Model):
        ('REBOOT', 'Reboot VM'),
        ('DESTROY', 'Destroy VM')
     )
-    
+
     # The internal operating state of a VM
     OPER_STATES = (
         ('BUILD', 'Queued for creation'),
@@ -73,7 +73,7 @@ class VirtualMachine(models.Model):
         ('STARTED', 'Started'),
         ('DESTROYED', 'Destroyed')
     )
-    
+
     # The list of possible operations on the backend
     BACKEND_OPCODES = (
         ('OP_INSTANCE_CREATE', 'Create Instance'),
@@ -95,7 +95,7 @@ class VirtualMachine(models.Model):
         ('OP_INSTANCE_RECREATE_DISKS', 'Recreate Disks'),
         ('OP_INSTANCE_FAILOVER', 'Failover Instance')
     )
-    
+
     # A backend job may be in one of the following possible states
     BACKEND_STATUSES = (
         ('queued', 'request queued'),
@@ -151,12 +151,12 @@ class VirtualMachine(models.Model):
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
 
-    # VM State 
+    # VM State
     # The following fields are volatile data, in the sense
     # that they need not be persistent in the DB, but rather
     # get generated at runtime by quering Ganeti and applying
     # updates received from Ganeti.
-    
+
     # In the future they could be moved to a separate caching layer
     # and removed from the database.
     # [vkoukis] after discussion with [faidon].
@@ -191,37 +191,37 @@ class VirtualMachine(models.Model):
             self._action = action
          def __str__(self):
             return repr(str(self._action))
-    
+
     class DeletedError(Exception):
         pass
-    
+
     class BuildingError(Exception):
         pass
-    
+
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)
         # This gets called BEFORE an instance gets save()d for
         # the first time.
-        if not self.pk: 
+        if not self.pk:
             self.action = None
             self.backendjobid = None
             self.backendjobstatus = None
             self.backendopcode = None
             self.backendlogmsg = None
             self.operstate = 'BUILD'
-    
+
     @property
     def backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
         if not self.id:
             raise VirtualMachine.InvalidBackendIdError("self.id is None")
         return '%s%s' % (settings.BACKEND_PREFIX_ID, self.id)
-    
+
     class Meta:
         verbose_name = u'Virtual machine instance'
         get_latest_by = 'created'
-    
+
     def __unicode__(self):
         return self.name
 
@@ -230,11 +230,11 @@ class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
     vm = models.ForeignKey(VirtualMachine, related_name='metadata')
-    
+
     class Meta:
         unique_together = (('meta_key', 'vm'),)
         verbose_name = u'Key-value pair of metadata for a VM.'
-    
+
     def __unicode__(self):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
@@ -244,7 +244,7 @@ class Network(models.Model):
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted')
     )
-    
+
     name = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -255,7 +255,7 @@ class Network(models.Model):
     link = models.ForeignKey('NetworkLink', related_name='+')
     machines = models.ManyToManyField(VirtualMachine,
                                       through='NetworkInterface')
-    
+
     def __unicode__(self):
         return self.name
 
@@ -266,7 +266,7 @@ class NetworkInterface(models.Model):
         ('DISABLED', 'Disabled'),
         ('PROTECTED', 'Protected')
     )
-    
+
     machine = models.ForeignKey(VirtualMachine, related_name='nics')
     network = models.ForeignKey(Network, related_name='nics')
     created = models.DateTimeField(auto_now_add=True)
@@ -277,7 +277,7 @@ class NetworkInterface(models.Model):
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
-    
+
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)
 
@@ -287,6 +287,10 @@ class NetworkLink(models.Model):
     index = models.IntegerField()
     name = models.CharField(max_length=255)
     available = models.BooleanField(default=True)
-    
+
     def __unicode__(self):
         return self.name
+
+    class NotAvailable(Exception):
+        pass
+

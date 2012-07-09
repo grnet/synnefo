@@ -9,7 +9,7 @@ Homepage: https://code.grnet.gr/projects/synnefo
 
 Package: snf-cyclades-app
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
+Depends: ${misc:Depends}, ${python:Depends}, snf-common (> 0.9.14), python-django-south (>= 0.7)
 Provides: ${python:Provides}
 Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}

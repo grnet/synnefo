@@ -1,4 +1,4 @@
-snf-common (0.10.0-1) stable; urgency=low
+snf-common (0.10.0~rc1-1) stable; urgency=low
 
   * New upstream version with networks support
 

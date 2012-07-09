@@ -1,6 +1,27 @@
 Changelog
 ---------
 
+dev
+***
+* Private networks quota setting added (``MAX_NETWORKS_PER_USER``)
+* Simple per user networks/vms quota mechanism based on
+  NETWORKS_USER_QUOTA/VMS_USER_QUOTA settings. 
+  This allows you to override the global per user quota for the specific user 
+  ids::
+	
+	# limit all users to 2 vms per user
+  	MAX_VMS_PER_USER = 2
+	
+	# but let `user1@grnet.gr` and `user2@grnet.gr` to be able to create up to
+	# 10 vms each.
+	VMS_USER_QUOTA = {
+		'user1@grnet.gr': 10, 
+		'user2@grnet.gr': 10
+	}
+	
+* Fix error message when no available network links can be created.
+
+
 v0.9.14
 *******
 

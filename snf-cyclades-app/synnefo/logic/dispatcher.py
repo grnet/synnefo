@@ -54,6 +54,8 @@ import time
 import socket
 from daemon import daemon
 
+from synnefo.lib.amqp import AMQPClient
+
 # Take care of differences between python-daemon versions.
 try:
     from daemon import pidfile
@@ -75,62 +77,42 @@ BINDINGS = []
 
 
 class Dispatcher:
-    chan = None
     debug = False
-    clienttags = []
+    client_promises = []
 
     def __init__(self, debug=False):
         self.debug = debug
         self._init()
 
     def wait(self):
+        log.info("Waiting for messages..")
         while True:
             try:
-                self.chan.wait()
+                self.client.basic_wait()
             except SystemExit:
                 break
-            except amqp.exceptions.AMQPConnectionException:
-                log.error("Server went away, reconnecting...")
-                self._init()
-            except socket.error:
-                log.error("Server went away, reconnecting...")
-                self._init()
-            except Exception, e:
-                log.exception("Caught unexpected exception")
+            except Exception as e:
+                log.exception("Caught unexpected exception: %s", e)
 
-        [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
-        self.chan.connection.close()
-        self.chan.close()
+        self.client.basic_cancel()
+        self.client.close()
 
     def _init(self):
         global QUEUES, BINDINGS
         log.info("Initializing")
 
-        # Connect to RabbitMQ
-        conn = None
-        while conn == None:
-            log.info("Attempting to connect to %s", settings.RABBIT_HOST)
-            try:
-                conn = amqp.Connection(host=settings.RABBIT_HOST,
-                                       userid=settings.RABBIT_USERNAME,
-                                       password=settings.RABBIT_PASSWORD,
-                                       virtual_host=settings.RABBIT_VHOST)
-            except socket.error:
-                log.error("Failed to connect to %s, retrying in 10s",
-                                  settings.RABBIT_HOST)
-                time.sleep(10)
-
-        log.info("Connection succesful, opening channel")
-        self.chan = conn.channel()
+        self.client = AMQPClient()
+        # Connect to AMQP host
+        self.client.connect()
 
         # Declare queues and exchanges
         for exchange in settings.EXCHANGES:
-            self.chan.exchange_declare(exchange=exchange, type="topic",
-                                       durable=True, auto_delete=False)
+            self.client.exchange_declare(exchange=exchange,
+                                         type="topic")
 
         for queue in QUEUES:
-            self.chan.queue_declare(queue=queue, durable=True,
-                                    exclusive=False, auto_delete=False)
+            # Queues are mirrored to all RabbitMQ brokers
+            self.client.queue_declare(queue=queue, mirrored=True)
 
         bindings = BINDINGS
 
@@ -142,12 +124,15 @@ class Dispatcher:
                 log.error("Cannot find callback %s", binding[3])
                 raise SystemExit(1)
 
-            self.chan.queue_bind(queue=binding[0], exchange=binding[1],
-                                 routing_key=binding[2])
-            tag = self.chan.basic_consume(queue=binding[0], callback=callback)
+            self.client.queue_bind(queue=binding[0], exchange=binding[1],
+                                   routing_key=binding[2])
+
+            consume_promise = self.client.basic_consume(queue=binding[0],
+                                                        callback=callback)
+
             log.debug("Binding %s(%s) to queue %s with handler %s",
-                              binding[1], binding[2], binding[0], binding[3])
-            self.clienttags.append(tag)
+                      binding[1], binding[2], binding[0], binding[3])
+            self.client_promises.append(consume_promise)
 
 
 def _init_queues():
@@ -161,7 +146,7 @@ def _init_queues():
     QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
     QUEUE_RECONC = "%s-reconciliation" % prefix
     if settings.DEBUG is True:
-        QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
+        QUEUE_DEBUG = "%s-debug" % prefix  # Debug queue, retrieves all messages
 
     QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
               QUEUE_GANETI_BUILD_PROGR)
@@ -180,7 +165,6 @@ def _init_queues():
     (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
     (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
     (QUEUE_GANETI_BUILD_PROGR,settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
-    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   RECONC_HANDLER,         'trigger_status_update'),
     ]
 
     if settings.DEBUG is True:
@@ -248,8 +232,8 @@ def purge_queues():
         Delete declared queues from RabbitMQ. Use with care!
     """
     global QUEUES, BINDINGS
-    conn = get_connection()
-    chan = conn.channel()
+    client = AMQPClient()
+    client.connect()
 
     print "Queues to be deleted: ", QUEUES
 
@@ -257,14 +241,10 @@ def purge_queues():
         return
 
     for queue in QUEUES:
-        try:
-            chan.queue_delete(queue=queue)
-            print "Deleting queue %s" % queue
-        except amqp.exceptions.AMQPChannelException as e:
-            print e.amqp_reply_code, " ", e.amqp_reply_text
-            chan = conn.channel()
+        result = client.queue_delete(queue=queue)
+        print "Deleting queue %s. Result: %s" % (queue, result)
 
-    chan.connection.close()
+    client.close()
 
 
 def purge_exchanges():
@@ -272,8 +252,8 @@ def purge_exchanges():
     global QUEUES, BINDINGS
     purge_queues()
 
-    conn = get_connection()
-    chan = conn.channel()
+    client = AMQPClient()
+    client.connect()
 
     print "Exchanges to be deleted: ", settings.EXCHANGES
 
@@ -281,12 +261,10 @@ def purge_exchanges():
         return
 
     for exchange in settings.EXCHANGES:
-        try:
-            chan.exchange_delete(exchange=exchange)
-        except amqp.exceptions.AMQPChannelException as e:
-            print e.amqp_reply_code, " ", e.amqp_reply_text
+        result = client.exchange_delete(exchange=exchange)
+        print "Deleting exchange %s. Result: %s" % (exchange, result)
 
-    chan.connection.close()
+    client.close()
 
 
 def drain_queue(queue):
@@ -303,20 +281,16 @@ def drain_queue(queue):
 
     if not get_user_confirmation():
         return
-    conn = get_connection()
-    chan = conn.channel()
+
+    client = AMQPClient()
+    client.connect()
 
     # Register a temporary queue binding
     for binding in BINDINGS:
         if binding[0] == queue:
             exch = binding[1]
 
-    if not exch:
-        print "Queue not bound to any exchange: %s" % queue
-        return
-
-    chan.queue_bind(queue=queue, exchange=exch, routing_key='#')
-    tag = chan.basic_consume(queue=queue, callback=callbacks.dummy_proc)
+    tag = client.basic_consume(queue=queue, callback=callbacks.dummy_proc)
 
     print "Queue draining about to start, hit Ctrl+c when done"
     time.sleep(2)
@@ -327,20 +301,13 @@ def drain_queue(queue):
 
     num_processed = 0
     while True:
-        chan.wait()
+        client.basic_wait()
         num_processed += 1
         sys.stderr.write("Ignored %d messages\r" % num_processed)
 
-    chan.basic_cancel(tag)
-    chan.connection.close()
+    client.basic_cancel(tag)
+    client.close()
 
-
-def get_connection():
-    conn = amqp.Connection(host=settings.RABBIT_HOST,
-                           userid=settings.RABBIT_USERNAME,
-                           password=settings.RABBIT_PASSWORD,
-                           virtual_host=settings.RABBIT_VHOST)
-    return conn
 
 
 def get_user_confirmation():

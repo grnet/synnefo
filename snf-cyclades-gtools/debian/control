@@ -9,7 +9,7 @@ Homepage: https://code.grnet.gr/projects/synnefo
 
 Package: snf-cyclades-gtools
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-common
+Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-common, snf-network
 Provides: ${python:Provides}, snf-ganeti-tools
 Replaces: snf-ganeti-tools
 Conflicts: snf-ganeti-tools

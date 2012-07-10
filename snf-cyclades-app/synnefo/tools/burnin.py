@@ -609,17 +609,17 @@ class NetworkTestCase(unittest.TestCase):
         cls.client = CycladesClient(API, TOKEN)
         cls.compute = ComputeClient(API, TOKEN)
 
-        images = cls.compute.list_images(detail = True)
-        flavors = cls.compute.list_flavors(detail = True)
+        # images = cls.compute.list_images(detail = True)
+        # flavors = cls.compute.list_flavors(detail = True)
 
-        cls.imageid = choice([im['id'] for im in images if not im['name'].lower().find("windows") >= 0])
-        cls.flavorid = choice([f['id'] for f in flavors if f['disk'] >= 20])
+        # cls.imageid = choice([im['id'] for im in images if not im['name'].lower().find("windows") >= 0])
+        # cls.flavorid = choice([f['id'] for f in flavors if f['disk'] >= 20])
 
-        for image in images:
-            if image['id'] == cls.imageid:
-                imagename = image['name']
+        # for image in images:
+        #     if image['id'] == cls.imageid:
+        #         imagename = image['name']
 
-        cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
+        cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, cls.imagename)
 
         #Dictionary initialization for the vms credentials
         cls.serverid = dict()
@@ -627,7 +627,6 @@ class NetworkTestCase(unittest.TestCase):
         cls.password = dict()
 
     def _get_ipv4(self, server):
-    
         """Get the public IPv4 of a server from the detailed server info"""
 
         public_addrs = filter(lambda x: x["id"] == "public",
@@ -663,7 +662,7 @@ class NetworkTestCase(unittest.TestCase):
     def test_00001a_submit_create_server_A(self):
         """Test submit create server request"""
         serverA = self.client.create_server(self.servername, self.flavorid,
-                                           self.imageid, personality=None)
+                                            self.imageid, personality=None)
 
         self.assertEqual(serverA["name"], self.servername)
         self.assertEqual(serverA["flavorRef"], self.flavorid)
@@ -674,6 +673,10 @@ class NetworkTestCase(unittest.TestCase):
         self.serverid['A'] = serverA["id"]
         self.username['A'] = None
         self.password['A'] = serverA["adminPass"]
+
+        log.info("Created new server A:")
+        log.info("Password " + (self.password['A']) + '\n')
+        
 
 
     def test_00001b_serverA_becomes_active(self):
@@ -693,12 +696,13 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(active)
 
-        
     
     def test_00002a_submit_create_server_B(self):
         """Test submit create server request"""
+        
         serverB = self.client.create_server(self.servername, self.flavorid,
-                                           self.imageid, personality=None)
+                                            self.imageid, personality=None)
+
 
         self.assertEqual(serverB["name"], self.servername)
         self.assertEqual(serverB["flavorRef"], self.flavorid)
@@ -709,6 +713,10 @@ class NetworkTestCase(unittest.TestCase):
         self.serverid['B'] = serverB["id"]
         self.username['B'] = None
         self.password['B'] = serverB["adminPass"]
+
+        log.info("Created new server B:")
+        log.info("Password " + (self.password['B']) + '\n')
+
 
 
     def test_00002b_serverB_becomes_active(self):
@@ -844,7 +852,6 @@ class NetworkTestCase(unittest.TestCase):
         s = False
 
         while True:
-
             if self._ping_once(ip):
                 s = True
                 break
@@ -860,7 +867,7 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_003a_setup_interface_A(self):
         "Set up eth1 for server A"
-        
+
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
@@ -875,20 +882,12 @@ class NetworkTestCase(unittest.TestCase):
         else:
             loginname = choice(userlist)
 
-        hostip = self._get_ipv4(server) 
+        hostip = self._get_ipv4(server)
         myPass = self.password['A']
-
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try:
-
-            log.info("Username: " + loginname) 
-            log.info("Password " + myPass)
-            ssh.connect(hostip, username = loginname, password = myPass)
-
-        except socket.error:
-            raise AssertionError
+        
+        log.info("SSH in server A: \n")
+        log.info("Username: " + loginname + '\n') 
+        log.info("Password " + myPass + '\n')
         
         res = False
 
@@ -900,21 +899,26 @@ class NetworkTestCase(unittest.TestCase):
                 user = loginname, password = myPass
                 ):
 
-                if run('ifconfig eth1 192.168.0.12') : 
+                if sudo('ifconfig eth1 192.168.0.12'): 
                     res = True
             
-        else :
-            stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.12"))
-            lines = stdout.readlines()
+        else:
+            with settings(
+                hide('warnings', 'running', 'stdout', 'stderr'),
+                warn_only=True, 
+                host_string = hostip, 
+                user = loginname, password = myPass
+                ):
 
-            if len(lines)==0:
-                res = True
+                if run('ifconfig eth1 192.168.0.12'):
+                    res = True
 
         self.assertTrue(res)
 
 
     def test_003b_setup_interface_B(self):
         "Setup eth1 for server B"
+
 
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
@@ -933,15 +937,9 @@ class NetworkTestCase(unittest.TestCase):
         hostip = self._get_ipv4(server)
         myPass = self.password['B']
 
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try:
-            log.info("Username: " + loginname)
-            log.info("Password " + myPass)
-            ssh.connect(hostip, username = loginname, password = myPass)
-        except socket.error:
-            raise AssertionError
+        log.info("SSH in server A: \n")
+        log.info("Username: " + loginname + '\n') 
+        log.info("Password " + myPass + '\n')
 
         res = False
 
@@ -953,18 +951,24 @@ class NetworkTestCase(unittest.TestCase):
                 user = loginname, password = myPass
                 ):
                 
-                if run('ifconfig eth1 192.168.0.13'):
+                if sudo('ifconfig eth1 192.168.0.13'):
                     res = True
             
         else :
-            stdin, stdout, stderr = ssh.exec_command("ifconfig eth1 %s up"%("192.168.0.13"))
-            lines = stdout.readlines()
-            
-            if len(lines) == 0:
-                res = True
+            with settings(
+                hide('warnings', 'running', 'stdout', 'stderr'),
+                warn_only=True, 
+                host_string = hostip, 
+                user = loginname, password = myPass
+                ):
+
+                if run('ifconfig eth1 192.168.0.13'):
+                    res = True
+
 
         self.assertTrue(res)
             
+
 
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""
@@ -1003,6 +1007,9 @@ class NetworkTestCase(unittest.TestCase):
             exists = True
 
         self.assertTrue(exists)
+
+
+#TODO: Test IPv6 private connectity
 
 
     def test_004_disconnect_from_network(self):
@@ -1309,6 +1316,7 @@ def main():
     test runner processes.
 
     """
+
     (opts, args) = parse_arguments(sys.argv[1:])
 
     global API, TOKEN
@@ -1373,21 +1381,38 @@ def main():
 
     
     NetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
-                                                  query_interval = opts.query_interval)    
-    seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase, NetworkTestCase]
+                                               imageid = imageid,
+                                               flavorid = flavorid,
+                                               imagename=imagename,
+                                               query_interval = opts.query_interval,
+                                               )
+    
 
+#    seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase, NetworkTestCase]
+
+    seq_cases = [NetworkTestCase]
+    
     for case in seq_cases:
         log_file = 'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
         fail_file = 'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+        error_file = 'error_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
 
         f = open(log_file, "w")
         fail = open(fail_file, "w")
+        error = open(error_file, "w")
+
         suite = unittest.TestLoader().loadTestsFromTestCase(case)
         runner = unittest.TextTestRunner(f, verbosity=2)
         result = runner.run(suite)
         
-        fail.write("Testcases failures: \n\n")
+        error.write("Testcases errors: \n\n")
+        for res in result.errors:
+            error.write(str(res[0])+'\n')
+            error.write(str(res[0].__doc__) + '\n')
+            error.write('\n')
 
+            
+        fail.write("Testcases failures: \n\n")
         for res in result.failures:
             fail.write(str(res[0])+'\n')
             fail.write(str(res[0].__doc__) + '\n')

@@ -21,8 +21,8 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
-# Synnefo assigns this link id to NICs connected on the public network.
-# An IP pool should be associated with this link by the Ganeti administrator.
+# Name of the public network in Ganeti. An IP pool should be associated with
+# this network by the Ganeti administrator.
 GANETI_PUBLIC_NETWORK = 'snf_public'
 # This link id is assigned to NICs that should be isolated from anything else
 # (e.g., right before the NIC gets deleted).

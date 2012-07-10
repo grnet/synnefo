@@ -64,7 +64,7 @@ def reconnect_decorator(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
-            func(self, *args, **kwargs)
+            return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             logger.error('Connection Closed while in %s: %s', func.__name__, e)
             self.consume_promises = []

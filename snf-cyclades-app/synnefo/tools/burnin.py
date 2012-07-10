@@ -893,24 +893,24 @@ class NetworkTestCase(unittest.TestCase):
 
         if loginname != "root":
             with settings(
-                hide('warnings', 'running', 'stdout', 'stderr'),
+                hide('warnings', 'running'),
                 warn_only=True, 
                 host_string = hostip, 
                 user = loginname, password = myPass
                 ):
 
-                if sudo('ifconfig eth1 192.168.0.12'): 
+                if len(sudo('ifconfig eth1 192.168.0.12')) == 0: 
                     res = True
             
         else:
             with settings(
-                hide('warnings', 'running', 'stdout', 'stderr'),
+                hide('warnings', 'running'),
                 warn_only=True, 
                 host_string = hostip, 
                 user = loginname, password = myPass
                 ):
 
-                if run('ifconfig eth1 192.168.0.12'):
+                if len(run('ifconfig eth1 192.168.0.12')) == 0:
                     res = True
 
         self.assertTrue(res)
@@ -945,24 +945,24 @@ class NetworkTestCase(unittest.TestCase):
 
         if loginname != "root":
             with settings(
-                hide('warnings', 'running', 'stdout', 'stderr'),
+                hide('warnings', 'running'),
                 warn_only=True, 
                 host_string = hostip, 
                 user = loginname, password = myPass
                 ):
                 
-                if sudo('ifconfig eth1 192.168.0.13'):
+                if len(sudo('ifconfig eth1 192.168.0.13'))== 0:
                     res = True
             
         else :
             with settings(
-                hide('warnings', 'running', 'stdout', 'stderr'),
+                hide('warnings', 'running'),
                 warn_only=True, 
                 host_string = hostip, 
                 user = loginname, password = myPass
                 ):
 
-                if run('ifconfig eth1 192.168.0.13'):
+                if len(run('ifconfig eth1 192.168.0.13')) == 0:
                     res = True
 
 

@@ -1,3 +1,9 @@
+snf-webproject (0.10.0~rc2-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Thu, 28 Jun 2012 18:13:07 +0300
+
 snf-webproject (0.10.0~rc1-1) stable; urgency=low
 
   * New upstream version with networks support

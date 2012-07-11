@@ -20,6 +20,11 @@ dev
 	}
 	
 * Fix error message when no available network links can be created.
+* Added setting for public network in Ganeti (``GANETI_PUBLIC_NETWORK``)
+* Added setting for RabbitMQ endpoints (``AMQP_HOSTS``)
+* Mechanism for serializing messages from ganeti based based on event timestamp
+* Management command for inspecting messages of a queue (``queue-inspect``)
+* new synnefo.db migration
 
 
 v0.9.14

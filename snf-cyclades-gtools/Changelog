@@ -1,0 +1,7 @@
+Changelog
+---------
+
+dev
+***
+* Setting for RabbitMQ endpoints (``AMQP_HOSTS``)
+* Event timestamp in messages

@@ -37,10 +37,11 @@ from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
 from synnefo import settings as snf_settings
+from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
+BACKEND_CLIENTS = {}  # {hash:Backend client}
+BACKEND_HASHES = {}   # {Backend.id:hash}
 
-BACKEND_CLIENTS = {}    #{hash:Backend client}
-BACKEND_HASHES = {}     #{Backend.id:hash}
 
 def get_client(hash, backend):
     """Get a cached backend client or create a new one.
@@ -59,10 +60,13 @@ def get_client(hash, backend):
     # Always get a new instance to ensure latest credentials
     if isinstance(backend, Backend):
         backend = backend.id
-    (credentials,) = Backend.objects.filter(id=backend).values_list('hash',
-                                'clustername', 'port', 'username', 'password')
 
-    hash, clustername, port, user, password = credentials
+    backend = Backend.objects.get(id=backend)
+    hash = backend.hash
+    clustername = backend.clustername
+    port = backend.port
+    user = backend.username
+    password = backend.password
 
     # Check client for updated hash
     if hash in BACKEND_CLIENTS:
@@ -113,6 +117,7 @@ class BackendQuerySet(models.query.QuerySet):
         for backend in self._clone():
             backend.delete()
 
+
 class ProtectDeleteManager(models.Manager):
     def get_query_set(self):
         return BackendQuerySet(self.model, using=self._db)
@@ -123,7 +128,7 @@ class Backend(models.Model):
     port = models.PositiveIntegerField('Port', default=5080)
     username = models.CharField('Username', max_length=64, blank=True,
                                 null=True)
-    password = models.CharField('Password', max_length=64, blank=True,
+    password_hash = models.CharField('Password', max_length=64, blank=True,
                                 null=True)
     # Sha1 is up to 40 characters long
     hash = models.CharField('Hash', max_length=40, editable=False, null=False)
@@ -167,6 +172,14 @@ class Backend(models.Model):
         return sha1('%s%s%s%s' % \
                 (self.clustername, self.port, self.username, self.password)) \
                 .hexdigest()
+
+    @property
+    def password(self):
+        return decrypt_db_charfield(self.password_hash)
+
+    @password.setter
+    def password(self, value):
+        self.password_hash = encrypt_db_charfield(value)
 
     def save(self, *args, **kwargs):
         # Create a new hash each time a Backend is saved

@@ -101,3 +101,8 @@ DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 
 # The URL of an astakos instance that will be used for user authentication
 ASTAKOS_URL = 'https://astakos.okeanos.grnet.gr/im/authenticate'
+
+# Key for password encryption-decryption. After changing this setting, synnefo
+# will be unable to decrypt all existing Backend passwords. You will need to
+# store again the new password by using 'snf-manage backend-modify'
+ENCRYPTION_KEY= "Password Encryption Key"

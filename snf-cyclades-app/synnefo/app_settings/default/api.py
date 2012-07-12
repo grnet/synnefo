@@ -21,32 +21,63 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
-# Synnefo assigns this link id to NICs connected on the public network.
-# An IP pool should be associated with this link by the Ganeti administrator.
-GANETI_PUBLIC_NETWORK = 'snf-1'
-GANETI_PRIVATE_BRIDGE = 'br2990'
-# This link id is assigned to NICs that should be isolated from anything else
-# (e.g., right before the NIC gets deleted).
-# This value is also hardcoded in a fixture in db/fixtures/initial_data.json.
-GANETI_NULL_LINK = 'snf_public'
+# Name of the network in Ganeti corresponding to the default public network.
+# All created VMs will obtain an IP from this network.
+GANETI_PUBLIC_NETWORK = 'snf-net-1'
 
-# The pool of private network links to use is
-# $GANETI_LINK_PREFIX{1..$GANETI_MAX_LINK_NUMBER}.
-#
-# The prefix to use for private network links.
-GANETI_LINK_PREFIX = 'prv'
-# The number of private network links to use.
-GANETI_MAX_LINK_NUMBER = 100
+ENABLED_NETWORKS = ['PUBLIC_ROUTED',
+                    'PRIVATE_MAC_FILTERED',
+                    'PRIVATE_PHYSICAL_VLAN']
+                    # CUSTOM_ROUTED,
+                    # CUSTOM_BRIDGED,
+
+# Settings for PUBLIC_ROUTED network:
+# -----------------------------------
+# In this case VMCs act as routers that forward the traffic to/from VMs, based
+# on the defined routing table($PUBLIC_ROUTED_ROUTING_TABLE) and ip rules, that
+# exist in every node, implenting an IP-less routed and proxy-arp setup.
+# (This value is also hardcoded in fixture db/fixtures/initial_data.json)
+PUBLIC_ROUTED_ROUTING_TABLE = 'snf_public'
+PUBLIC_ROUTED_TAGS = ['ip-less-routed']
+
+# Settings for PRIVATE_MAC_FILTERED network:
+# ------------------------------------------
+# All networks of this type are bridged to the same bridge. Isolation between
+# networks is achieved by assigning a unique MAC-prefix to each network and
+# filtering packets via ebtables.
+PRIVATE_MAC_FILTERED_BRIDGE = 'br0'
 # The first mac prefix to use
-GANETI_BASE_MAC_PREFIX = 'aa:00:01'
-# The number of mac prefixes to use.
-GANETI_MAX_MAC_PREFIX_NUMBER = 4096
+PRIVATE_MAC_FILTERED_BASE_MAC_PREFIX = 'aa:00:00'
+PRIVATE_MAC_FILTERED_MAX_PREFIX_NUMBER = 8192
+PRIVATE_MAC_FILTERED_TAGS = ['private-filtered']
+
+# Settings for PRIVATE_PHSICAL_VLAN network:
+# ------------------------------------------
+# Each network of this type is mapped to an isolated physical VLAN, which must
+# be preconfigured in the backend. Each vlan corresponds to a bridge named
+# $PRIVATE_PHYSICAL_VLAN_PREFIX{1..$PRIVATE_PHYSICAL_VLAN_MAX_NUMBER} (e.g. prv5)
+# VirtualMachine's taps are eventually bridged to the corresponding bridge.
+PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX = 'prv'
+# The max limit of physical vlan pool
+PRIVATE_PHYSICAL_VLAN_MAX_NUMBER = 100
+
+
+# Settings for CUSTOM_ROUTED:
+# ---------------------------
+# Same as PUBLIC_ROUTED but with custom values
+CUSTOM_ROUTED_ROUTING_TABLE = 'custom_routing_table'
+CUSTOM_ROUTED_TAGS = []
+
+# Settings for CUSTOM_BRIDGED:
+# ---------------------------
+# Same as PRIVATE_BRIDGED but with custom values
+CUSTOM_BRIDGED_BRIDGE = 'custom_bridge'
+CUSTOM_BRIDGED_TAGS = []
 
 # Firewalling
 GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
 GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:unprotected'
 GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
-
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'

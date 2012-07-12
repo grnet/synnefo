@@ -407,7 +407,10 @@ def connect_network(network, backend_jobs=None):
 
     """
 
-    mode = network.public and 'routed' or 'bridged'
+    if network.type in ('PUBLIC_ROUTED', 'CUSTOM_ROUTED'):
+        mode = 'routed'
+    else:
+        mode = 'bridged'
 
     if not backend_jobs:
         backend_jobs = [(backend, []) for backend in
@@ -424,7 +427,10 @@ def connect_network_group(backend, network, group):
     """Connect a network to a specific nodegroup of a backend.
 
     """
-    mode = network.public and 'routed' or 'bridged'
+    if network.type in ('PUBLIC_ROUTED', 'CUSTOM_ROUTED'):
+        mode = 'routed'
+    else:
+        mode = 'bridged'
 
     return backend.client.ConnectNetwork(network.backend_id, group, mode,
                                          network.link)
@@ -617,7 +623,10 @@ def _create_network_synced(network, backend):
 
 
 def connect_network_synced(network, backend):
-    mode = network.public and 'routed' or 'bridged'
+    if network.type in ('PUBLIC_ROUTED', 'CUSTOM_ROUTED'):
+        mode = 'routed'
+    else:
+        mode = 'bridged'
     client = backend.client
 
     for group in client.GetGroups():

@@ -157,7 +157,7 @@ def create_network(request):
         # TODO: Fix this temp values:
         subnet = d.get('cidr', '192.168.1.0/24')
         gateway = d.get('gateway', None)
-        type = d.get('type', 'PRIVATE_VLAN')
+        type = d.get('type', 'PRIVATE_MAC_FILTERED')
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
@@ -165,13 +165,19 @@ def create_network(request):
     if type == 'PUBLIC_ROUTED':
         raise Unauthorized('Can not create a public network.')
 
+    mac_prefix = None
     try:
-        if type == 'PRIVATE_FILTERED':
-            link = settings.GANETI_PRIVATE_BRIDGE
+        if type == 'PRIVATE_MAC_FILTERED':
+            link = settings.PRIVATE_MAC_FILTERED_BRIDGE
             mac_prefix = MacPrefixPool.get_available().value
-        else:  # PRIVATE_VLAN
+        elif type == 'PRIVATE_PHYSICAL_VLAN':
             link = BridgePool.get_available().value
-            mac_prefix = None
+        elif type == 'CUSTOM_ROUTED':
+            link = settings.CUSTOM_ROUTED_ROUTING_TABLE
+        elif type == 'CUSTOM_BRIDGED':
+            link = settings.CUSTOM_BRIDGED_BRIDGE
+        else:
+            raise BadRequest('Unknown network type')
     except Pool.PoolExhausted:
         raise OverLimit('Network count limit exceeded.')
 

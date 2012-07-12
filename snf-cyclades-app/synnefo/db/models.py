@@ -430,22 +430,20 @@ class Network(models.Model):
 
     NETWORK_TYPES = (
         ('PUBLIC_ROUTED', 'Public routed network'),
-        ('PRIVATE_VLAN', 'Private vlan network'),
-        ('PRIVATE_FILTERED', 'Private network with mac-filtering')
+        ('PRIVATE_PHYSICAL_VLAN', 'Private vlan network'),
+        ('PRIVATE_MAC_FILTERED', 'Private network with mac-filtering'),
+        ('CUSTOM_ROUTED', 'Custom routed network'),
+        ('CUSTOM_BRIDGED', 'Custom bridged network')
     )
 
-    NETWORK_TAGS = {
-        'PUBLIC_ROUTED': ['ip-less-routed'],
-        'PRIVATE_VLAN': ['physical-vlan'],
-        'PRIVATE_FILTERED': ['mac-filtered']
-    }
 
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128, null=True)
     subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
     gateway = models.CharField('Gateway', max_length=32, null=True)
     dhcp = models.BooleanField('DHCP', default=True)
-    type = models.CharField(choices=NETWORK_TYPES, max_length=50, default='PRIVATE_VLAN')
+    type = models.CharField(choices=NETWORK_TYPES, max_length=50,
+                            default='PRIVATE_PHYSICAL_VLAN')
     link = models.CharField('Network Link', max_length=128, null=True)
     mac_prefix = models.CharField('MAC Prefix', max_length=32, null=True)
     public = models.BooleanField(default=False)
@@ -495,7 +493,7 @@ class Network(models.Model):
         """Return the network tag to be used in backend
 
         """
-        return Network.NETWORK_TAGS[self.type]
+        return getattr(snf_settings, self.type + '_TAGS')
 
     def __unicode__(self):
         return self.name
@@ -667,22 +665,22 @@ class Pool(models.Model):
 
 
 class BridgePool(Pool):
-    max_index = snf_settings.GANETI_MAX_LINK_NUMBER
+    max_index = snf_settings.PRIVATE_PHYSICAL_VLAN_MAX_NUMBER
 
     @staticmethod
     def value_from_index(index):
-        return snf_settings.GANETI_LINK_PREFIX + str(index)
+        return snf_settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + str(index)
 
 
 class MacPrefixPool(Pool):
-    max_index = snf_settings.GANETI_MAX_MAC_PREFIX_NUMBER
+    max_index = snf_settings.PRIVATE_MAC_FILTERED_MAX_PREFIX_NUMBER
 
     @staticmethod
     def value_from_index(index):
         """Convert number to mac prefix
 
         """
-        high = snf_settings.GANETI_BASE_MAC_PREFIX
+        high = snf_settings.PRIVATE_MAC_FILTERED_BASE_MAC_PREFIX
         a = hex(int(high.replace(":", ""), 16) + index).replace("0x", '')
         mac_prefix = ":".join([a[x:x + 2] for x in xrange(0, len(a), 2)])
         return mac_prefix

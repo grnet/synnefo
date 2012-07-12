@@ -99,6 +99,7 @@ class Command(BaseCommand):
         for network in networks:
             fields = [str(network.id),
                       network.name,
+                      network.type,
                       network.userid or '',
                       network.mac_prefix or '',
                       str(network.dhcp),

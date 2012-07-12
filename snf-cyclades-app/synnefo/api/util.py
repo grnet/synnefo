@@ -55,9 +55,12 @@ from django.utils import simplejson as json
 from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
-                                ItemNotFound, ServiceUnavailable, Unauthorized, BadMediaType)
+                                ItemNotFound, ServiceUnavailable, Unauthorized,
+                                BadMediaType, OverLimit)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, NetworkInterface)
+                               Network, NetworkInterface, BridgePool,
+                               MacPrefixPool, Pool)
+
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
 
@@ -354,3 +357,23 @@ def api_method(http_method=None, atom_allowed=False):
 
 def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
+
+
+def network_specs_from_type(network_type):
+    mac_prefix = None
+    try:
+        if network_type == 'PRIVATE_MAC_FILTERED':
+            link = settings.PRIVATE_MAC_FILTERED_BRIDGE
+            mac_prefix = MacPrefixPool.get_available().value
+        elif network_type == 'PRIVATE_PHYSICAL_VLAN':
+            link = BridgePool.get_available().value
+        elif network_type == 'CUSTOM_ROUTED':
+            link = settings.CUSTOM_ROUTED_ROUTING_TABLE
+        elif network_type == 'CUSTOM_BRIDGED':
+            link = settings.CUSTOM_BRIDGED_BRIDGE
+        else:
+            raise BadRequest('Unknown network network_type')
+    except Pool.PoolExhausted:
+        raise OverLimit('Network count limit exceeded.')
+
+    return link, mac_prefix

@@ -40,13 +40,12 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo import settings
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (BadRequest, OverLimit,
-                                Unauthorized, NetworkInUse)
-from synnefo.db.models import Network, Pool, BridgePool, MacPrefixPool
+from synnefo.api.faults import (BadRequest, Unauthorized,
+                                NetworkInUse)
+from synnefo.db.models import Network
 from synnefo.logic import backend
 
 
@@ -169,21 +168,10 @@ def create_network(request):
     if type == 'PUBLIC_ROUTED':
         raise Unauthorized('Can not create a public network.')
 
-    mac_prefix = None
-    try:
-        if type == 'PRIVATE_MAC_FILTERED':
-            link = settings.PRIVATE_MAC_FILTERED_BRIDGE
-            mac_prefix = MacPrefixPool.get_available().value
-        elif type == 'PRIVATE_PHYSICAL_VLAN':
-            link = BridgePool.get_available().value
-        elif type == 'CUSTOM_ROUTED':
-            link = settings.CUSTOM_ROUTED_ROUTING_TABLE
-        elif type == 'CUSTOM_BRIDGED':
-            link = settings.CUSTOM_BRIDGED_BRIDGE
-        else:
-            raise BadRequest('Unknown network type')
-    except Pool.PoolExhausted:
-        raise OverLimit('Network count limit exceeded.')
+
+    link, mac_prefix = util.network_specs_from_type(type)
+    if not link:
+        raise Exception("Can not create network. No connectivity link.")
 
     network = Network.objects.create(
             name=name,

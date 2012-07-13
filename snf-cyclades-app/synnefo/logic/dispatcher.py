@@ -38,6 +38,7 @@ handled in the dispatched functions.
 """
 from django.core.management import setup_environ
 
+# Fix path to import synnefo settings
 import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
@@ -46,22 +47,21 @@ sys.path.append(path)
 from synnefo import settings
 setup_environ(settings)
 
-from amqplib import client_0_8 as amqp
-from signal import signal, SIGINT, SIGTERM
-
 import logging
 import time
-import socket
-from daemon import daemon
 
-from synnefo.lib.amqp import AMQPClient
+import daemon.runner
+import daemon.daemon
+from lockfile import LockTimeout
+from signal import signal, SIGINT, SIGTERM
 
 # Take care of differences between python-daemon versions.
 try:
-    from daemon import pidfile
+    from daemon import pidfile as pidlockfile
 except:
     from daemon import pidlockfile
 
+from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
 from synnefo.util.dictconfig import dictConfig
 
@@ -164,7 +164,7 @@ def _init_queues():
     # Queue                   # Exchange                # RouteKey              # Handler
     (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
     (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
-    (QUEUE_GANETI_BUILD_PROGR,settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
+    (QUEUE_GANETI_BUILD_PROGR, settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
     ]
 
     if settings.DEBUG is True:
@@ -187,7 +187,7 @@ def _parent_handler(signum, frame):
     """"Catch exit signal in parent process and forward it to children."""
     global children
     log.info("Caught signal %d, sending SIGTERM to children %s",
-                signum, children)
+             signum, children)
     [os.kill(pid, SIGTERM) for pid in children]
 
 
@@ -205,7 +205,7 @@ def child(cmdline):
 def parse_arguments(args):
     from optparse import OptionParser
 
-    default_pid_file = os.path.join("var","run","synnefo","dispatcher.pid")
+    default_pid_file = os.path.join("var", "run", "synnefo", "dispatcher.pid")
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
@@ -332,13 +332,18 @@ def daemon_mode(opts):
     global children
 
     # Create pidfile,
-    # take care of differences between python-daemon versions
-    try:
-        pidf = pidfile.TimeoutPIDLockFile(opts.pid_file, 10)
-    except:
-        pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+    pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
 
-    pidf.acquire()
+    if daemon.runner.is_pidfile_stale(pidf):
+        log.warning("Removing stale PID lock file %s", pidf.path)
+        pidf.break_lock()
+
+    try:
+        pidf.acquire()
+    except (pidlockfile.AlreadyLocked, LockTimeout):
+        log.critical("Failed to lock pidfile %s, another instance running?",
+                     pidf.path)
+        sys.exit(1)
 
     log.info("Became a daemon")
 
@@ -375,11 +380,11 @@ def daemon_mode(opts):
 
 
 def main():
+    (opts, args) = parse_arguments(sys.argv[1:])
+
     dictConfig(settings.DISPATCHER_LOGGING)
 
     global log
-
-    (opts, args) = parse_arguments(sys.argv[1:])
 
     # Init the global variables containing the queues
     _init_queues()
@@ -409,7 +414,7 @@ def main():
         if stream and hasattr(stream, 'fileno'):
             files_preserve.append(handler.stream)
 
-    daemon_context = daemon.DaemonContext(
+    daemon_context = daemon.daemon.DaemonContext(
         files_preserve=files_preserve,
         umask=022)
 

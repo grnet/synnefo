@@ -51,7 +51,8 @@ import logging
 import pyinotify
 import daemon
 import daemon.pidlockfile
-import socket
+import daemon.runner
+from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 
 from ganeti import utils
@@ -286,8 +287,6 @@ def main():
 
     (opts, args) = parse_arguments(sys.argv[1:])
 
-    # Create pidfile
-    pidf = daemon.pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
 
     # Initialize logger
     lvl = logging.DEBUG if opts.debug else logging.INFO
@@ -301,6 +300,14 @@ def main():
     logger.addHandler(handler)
     handler_logger = logger
 
+    # Create pidfile
+    pidf = daemon.pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+
+    # Remove any stale PID files, left behind by previous invocations
+    if daemon.runner.is_pidfile_stale(pidf):
+        logger.warning("Removing stale PID lock file %s", pidf.path)
+        pidf.break_lock()
+
     # Become a daemon:
     # Redirect stdout and stderr to handler.stream to catch
     # early errors in the daemonization process [e.g., pidfile creation]
@@ -311,7 +318,13 @@ def main():
             stdout=handler.stream,
             stderr=handler.stream,
             files_preserve=[handler.stream])
-    daemon_context.open()
+    try:
+        daemon_context.open()
+    except (daemon.pidlockfile.AlreadyLocked, LockTimeout):
+        logger.critical("Failed to lock pidfile %s, another instance running?",
+                        pidf.path)
+        sys.exit(1)
+
     logger.info("Became a daemon")
 
     # Catch signals to ensure graceful shutdown

@@ -40,10 +40,9 @@ import subprocess
 
 from optparse import make_option
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import VirtualMachine, Network
 from synnefo.logic import reconciliation, backend, utils
 
 
@@ -239,8 +238,10 @@ class Command(BaseCommand):
                     vm.nics.all.delete()
                     continue
                 for index, nic in nics.items():
+                    net_id = utils.id_from_network_name(nic['network'])
+                    subnet6 = Network.objects.get(id=net_id).subnet6
                     # Produce ipv6
-                    ipv6 = mac2eui64(nic['mac'], settings.PUBLIC_IPV6_PREFIX)
+                    ipv6 = subnet6 and mac2eui64(nic['mac'], subnet6) or None
                     nic['ipv6'] = ipv6
                     # Rename ipv4 to ip
                     nic['ip'] = nic['ipv4']

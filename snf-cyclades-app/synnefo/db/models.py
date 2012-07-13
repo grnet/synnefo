@@ -440,7 +440,9 @@ class Network(models.Model):
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128, null=True)
     subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
+    subnet6 = models.CharField('IPv6 Subnet', max_length=64, null=True)
     gateway = models.CharField('Gateway', max_length=32, null=True)
+    gateway6 = models.CharField('IPv6 Gateway', max_length=64, null=True)
     dhcp = models.BooleanField('DHCP', default=True)
     type = models.CharField(choices=NETWORK_TYPES, max_length=50,
                             default='PRIVATE_PHYSICAL_VLAN')

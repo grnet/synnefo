@@ -57,6 +57,12 @@ class Command(BaseCommand):
         make_option('--gateway',
             dest='gateway',
             help="Set network's gateway"),
+        make_option('--subnet6',
+            dest='subnet6',
+            help="Set network's IPv6 subnet"),
+        make_option('--gateway6',
+            dest='gateway6',
+            help="Set network's IPv6 gateway"),
         make_option('--dhcp',
             dest='dhcp',
             help="Set if network will use nfdhcp"),
@@ -91,6 +97,14 @@ class Command(BaseCommand):
         gateway = options.get('gateway')
         if gateway is not None:
             network.gateway = gateway
+
+        subnet6 = options.get('subnet6')
+        if subnet6 is not None:
+            network.subnet6 = subnet6
+
+        gateway6 = options.get('gateway6')
+        if gateway6 is not None:
+            network.gateway6 = gateway6
 
         dhcp = options.get('dhcp')
         if dhcp is not None:

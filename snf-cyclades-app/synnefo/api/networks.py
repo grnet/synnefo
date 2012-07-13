@@ -85,7 +85,9 @@ def network_to_dict(network, user_id, detail=True):
     d = {'id': network_id, 'name': network.name}
     if detail:
         d['cidr'] = network.subnet
+        d['cidr6'] = network.subnet6
         d['gateway'] = network.gateway
+        d['gateway6'] = network.gateway6
         d['dhcp'] = network.dhcp
         d['type'] = network.type
         d['updated'] = util.isoformat(network.updated)
@@ -156,7 +158,9 @@ def create_network(request):
         name = d['name']
         # TODO: Fix this temp values:
         subnet = d.get('cidr', '192.168.1.0/24')
+        subnet6 = d.get('cidr6', None)
         gateway = d.get('gateway', None)
+        gateway6 = d.get('gateway6', None)
         type = d.get('type', 'PRIVATE_MAC_FILTERED')
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
@@ -185,7 +189,9 @@ def create_network(request):
             name=name,
             userid=request.user_uniq,
             subnet=subnet,
+            subnet6=subnet6,
             gateway=gateway,
+            gateway6=gateway6,
             dhcp=dhcp,
             type=type,
             link=link,

@@ -1388,14 +1388,17 @@ def main():
                                                )
     
 
-#    seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase, NetworkTestCase]
+    seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
 
-    seq_cases = [NetworkTestCase]
+#    seq_cases = [NetworkTestCase]
+
+
+    os.mkdir(TEST_RUN_ID)
     
     for case in seq_cases:
-        log_file = 'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-        fail_file = 'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-        error_file = 'error_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+        log_file = TEST_RUN_ID+'/'+'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+        fail_file = TEST_RUN_ID+'/'+'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+        error_file = TEST_RUN_ID+'/'+'error_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
 
         f = open(log_file, "w")
         fail = open(fail_file, "w")

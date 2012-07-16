@@ -1,6 +1,5 @@
 # #########################################################################
-# This bash script adds tab-completion feature to django-admin.py and
-# manage.py.
+# This bash script adds tab-completion feature to snf-manage
 #
 # Testing it out without installing
 # =================================
@@ -8,7 +7,7 @@
 # To test out the completion without "installing" this, just run this file
 # directly, like so:
 #
-#     . ~/path/to/synnefo_bash_completion
+#     . ~/path/to/snf_manage_bash_completion
 #
 # Note: There's a dot ('.') at the beginning of that command.
 #
@@ -20,7 +19,7 @@
 #
 # To install this, point to this file from your .bash_profile, like so:
 #
-#     . ~/path/to/synnefo_bash_completion
+#     . ~/path/to/snf_manage_bash_completion
 #
 # Do the same in your .bashrc if .bashrc doesn't invoke .bash_profile.
 #

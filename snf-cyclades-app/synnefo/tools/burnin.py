@@ -58,6 +58,7 @@ from random import choice
 
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.cyclades import CycladesClient
+from kamaki.clients import ClientError
 
 from fabric.api import *
 
@@ -94,7 +95,7 @@ class UnauthorizedTestCase(unittest.TestCase):
 
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
-        self.assertEqual(cm.exception.status, 401)
+            self.assertEqual(cm.exception.status, 401)
 
 
 class ImagesTestCase(unittest.TestCase):
@@ -615,13 +616,14 @@ class SpawnServerTestCase(unittest.TestCase):
         # if the connection to the RDP port is successful.
         sock.close()
 
+
     def test_016_personality_is_enforced(self):
         """Test file injection for personality enforcement"""
+        self._skipIf(self.is_windows, "only implemented for Linux servers")
+        self._skipIf(self.personality == None, "No personality file selected")
 
         log.info("Trying to inject file for personality enforcement")
 
-        self._skipIf(self.is_windows, "only implemented for Linux servers")
-        self._skipIf(self.personality == None, "No personality file selected")
 
         server = self.client.get_server_details(self.serverid)
 

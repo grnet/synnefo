@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,15 +31,40 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+import datetime
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-)
+def split_time(value):
+  """Splits time as floating point number into a tuple.
 
+  @param value: Time in seconds
+  @type value: int or float
+  @return: Tuple containing (seconds, microseconds)
+
+  """
+  (seconds, microseconds) = divmod(int(value * 1000000), 1000000)
+
+  assert 0 <= seconds, \
+    "Seconds must be larger than or equal to 0, but are %s" % seconds
+  assert 0 <= microseconds <= 999999, \
+    "Microseconds must be 0-999999, but are %s" % microseconds
+
+  return (int(seconds), int(microseconds))
+
+
+def merge_time(timetuple):
+  """Merges a tuple into a datetime object
+
+  @param timetuple: Time as tuple, (seconds, microseconds)
+  @type timetuple: tuple
+  @return: Time as a datetime object
+
+  """
+  (seconds, microseconds) = timetuple
+
+  assert 0 <= seconds, \
+    "Seconds must be larger than or equal to 0, but are %s" % seconds
+  assert 0 <= microseconds <= 999999, \
+    "Microseconds must be 0-999999, but are %s" % microseconds
+
+  t1 = float(seconds) + (float(microseconds) * 0.000001)
+  return datetime.datetime.fromtimestamp(t1)

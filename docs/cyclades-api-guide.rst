@@ -116,9 +116,6 @@ Servers
 * ``progress`` is always returned.
 * ``self`` and ``bookmark`` atom links are not returned.
 * **Get Server Details** will also return servers with a DELETED state.
-* **Create Server** ignores ``personality`` of requests.
-* **Create Server** ignores the disk size of the flavor.
-* **Create Server** hardcodes the OS.
 * **Create Server** does not support setting the password in the request.
 
 List Servers

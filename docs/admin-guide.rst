@@ -40,7 +40,12 @@ state by running (on the machine that runs the Astakos app):
 
 There are two different ways to activate a new user. Both need access to a
 running mail server. Your mail server should be defined in the
-``/etc/synnefo/00-snf-common-admins.conf`` related constants:
+``/etc/synnefo/00-snf-common-admins.conf`` related constants. At least:
+
+.. code-block:: console
+
+   EMAIL_HOST = "my_mail_server.example.com"
+   EMAIL_PORT = "25"
 
 Manual activation
 ~~~~~~~~~~~~~~~~~
@@ -241,13 +246,105 @@ Please note the following:
     may actually be stored in a longer-term logfile
 
 
+.. _shibboleth-auth:
+
+Authentication using Shibboleth
+===============================
+
+Astakos can delegate user authentication to a Shibboleth federation.
+
+To setup shibboleth, install package::
+
+  apt-get install libapache2-mod-shib2
+
+Change appropriately the configuration files in ``/etc/shibboleth``.
+
+Add in ``/etc/apache2/sites-available/synnefo-ssl``::
+
+  ShibConfig /etc/shibboleth/shibboleth2.xml
+  Alias      /shibboleth-sp /usr/share/shibboleth
+
+  <Location /im/login/shibboleth>
+    AuthType shibboleth
+    ShibRequireSession On
+    ShibUseHeaders On
+    require valid-user
+  </Location>
+
+and before the line containing::
+
+  ProxyPass        / http://localhost:8080/ retry=0
+
+add::
+
+  ProxyPass /Shibboleth.sso !
+
+Then, enable the shibboleth module::
+
+  a2enmod shib2
+
+After passing through the apache module, the following tokens should be
+available at the destination::
+
+  eppn # eduPersonPrincipalName
+  Shib-InetOrgPerson-givenName
+  Shib-Person-surname
+  Shib-Person-commonName
+  Shib-InetOrgPerson-displayName
+  Shib-EP-Affiliation
+  Shib-Session-ID
+
+Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
+
 Scaling up to multiple nodes
 ============================
 
 Here we will describe how to deploy all services, interconnected with each
-other, on multiple physical nodes. For now, if you installed successfully using
-the quick installation guide and need more details, please refer to each
-component's own documentation.
+other, on multiple physical nodes.
+
+synnefo components
+------------------
+
+You need to install the appropriate synnefo software components on each node,
+depending on its type, see :ref:`Architecture <cyclades-architecture>`.
+
+Please see the page of each synnefo software component for specific
+installation instructions, where applicable.
+
+Install the following synnefo components:
+
+Nodes of type :ref:`APISERVER <APISERVER_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-cyclades-app <snf-cyclades-app>`
+Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
+Nodes of type :ref:`LOGIC <LOGIC_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-cyclades-app <snf-cyclades-app>`.
+
+RabbitMQ
+--------
+
+RabbitMQ is used as a generic message broker for Cyclades. It should be
+installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high
+availability configuration as described here:
+
+    http://www.rabbitmq.com/pacemaker.html
+
+The values set for the user and password must be mirrored in the ``RABBIT_*``
+variables in your settings, as managed by :ref:`snf-common <snf-common>`.
+
+.. todo:: Document an active-active configuration based on the latest version
+   of RabbitMQ.
+
 
 Upgrade Notes
 =============

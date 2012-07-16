@@ -80,8 +80,11 @@ def user_for_token(token, authentication_url, override_users):
     
     try:
         return authenticate(token, authentication_url)
-    except:
-        return None
+    except Exception, e:
+        # In case of Unauthorized response return None
+        if e.args and e.args[-1] == 401:
+            return None
+        raise e
 
 def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate', override_users={}, fallback_token=None):
     request.user = None

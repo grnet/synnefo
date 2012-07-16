@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,15 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+""" Module implementing connection and communication with an AMQP broker.
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-)
+AMQP Client's instatiated by this module silenty detect connection failures and
+try to reconnect to any available broker. Also publishing takes advantage of
+publisher-confirms in order to guarantee that messages are properly delivered
+to the broker.
 
+"""
+
+from synnefo import settings
+
+if settings.AMQP_BACKEND == 'puka':
+    from amqp_puka import AMQPPukaClient as Client
+elif settings.AMQP_BACKEND == 'haigha':
+    from amqp_haigha import AMQPHaighaClient as Client
+else:
+    raise Exception('Unknown Backend %s' % settings.AMQP_BACKEND)
+
+
+class AMQPClient(object):
+    """
+    AMQP generic client implementing most of the basic AMQP operations.
+
+    This class will create an object of AMQPPukaClient or AMQPHaigha client
+    depending on AMQP_BACKEND setting
+    """
+    def __new__(cls, *args, **kwargs):
+        return Client(*args, **kwargs)

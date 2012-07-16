@@ -3,11 +3,10 @@
 # Queues, exchanges and bindings for AMQP
 ###########################################
 
-# Rabbit work queue endpoint
-RABBIT_HOST = "10.0.0.1:5672"
-RABBIT_USERNAME = "username"
-RABBIT_PASSWORD = "password"
-RABBIT_VHOST = "/"
+# List of RabbitMQ endpoints
+AMQP_HOSTS = ["amqp://username:password@host:port"]
+# AMQP Backend Client. Currently only puka
+AMQP_BACKEND = 'puka'
 
 EXCHANGE_GANETI = "ganeti"  # Messages from Ganeti
 EXCHANGE_CRON = "cron"      # Messages from periodically triggered tasks

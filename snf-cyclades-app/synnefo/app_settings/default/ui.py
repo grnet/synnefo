@@ -10,7 +10,7 @@ COMPUTE_API_URL = '/api/v1.1'
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
-UI_MEDIA_URL = '/static/ui/snf/'
+UI_MEDIA_URL = '/static/ui/static/snf/'
 
 # UI requests to the API layer time out after that many milliseconds
 TIMEOUT = 10 * 1000

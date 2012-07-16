@@ -7,6 +7,10 @@ package=snf-webproject
 default_settings_dir=synnefo/webproject/settings/default/
 config_lvl=10
 
+override_dh_install:
+	dh_install
+	chmod 644 debian/$(package)/etc/bash_completion.d/snf_manage_bash_completion
+
 override_dh_auto_install:
 	dh_auto_install
 	

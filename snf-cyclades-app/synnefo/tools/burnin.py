@@ -380,6 +380,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_001_submit_create_server(self):
         """Test submit create server request"""
+
+        log.info("Submit new server request")
         server = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, self.personality)
 
@@ -396,6 +398,9 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_002a_server_is_building_in_list(self):
         """Test server is in BUILD state, in server list"""
+        
+        log.info("Server in BUILD state in server list")
+
         servers = self.client.list_servers(detail=True)
         servers = filter(lambda x: x["name"] == self.servername, servers)
         self.assertEqual(len(servers), 1)
@@ -407,6 +412,9 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_002b_server_is_building_in_details(self):
         """Test server is in BUILD state, in details"""
+
+        log.info("Server in BUILD state in details")
+
         server = self.client.get_server_details(self.serverid)
         self.assertEqual(server["name"], self.servername)
         self.assertEqual(server["flavorRef"], self.flavorid)
@@ -414,6 +422,9 @@ class SpawnServerTestCase(unittest.TestCase):
         self.assertEqual(server["status"], "BUILD")
 
     def test_002c_set_server_metadata(self):
+
+        log.info("Creating server metadata")
+
         image = self.client.get_image_details(self.imageid)
         os = image["metadata"]["values"]["os"]
         loginname = image["metadata"]["values"].get("users", None)
@@ -429,12 +440,18 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_002d_verify_server_metadata(self):
         """Test server metadata keys are set based on image metadata"""
+
+        log.info("Verifying image metadata")
+
         servermeta = self.client.get_server_metadata(self.serverid)
         imagemeta = self.client.get_image_metadata(self.imageid)
         self.assertEqual(servermeta["OS"], imagemeta["os"])
 
     def test_003_server_becomes_active(self):
         """Test server becomes ACTIVE"""
+
+        log.info("Waiting for server to become ACTIVE")
+
         self._insist_on_status_transition("BUILD", "ACTIVE",
                                          self.build_fail, self.build_warning)
 
@@ -479,18 +496,27 @@ class SpawnServerTestCase(unittest.TestCase):
         
     def test_004_server_has_ipv4(self):
         """Test active server has a valid IPv4 address"""
+
+        log.info("Testing server's IPv4")
+
         server = self.client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
         self.assertEquals(IP(ipv4).version(), 4)
 
     def test_005_server_has_ipv6(self):
         """Test active server has a valid IPv6 address"""
+
+        log.info("Testing server's IPv6")
+
         server = self.client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
         self.assertEquals(IP(ipv6).version(), 6)
 
     def test_006_server_responds_to_ping_IPv4(self):
         """Test server responds to ping on IPv4 address"""
+
+        log.info("Testing if server responds to pings in IPv4")
+
         server = self.client.get_server_details(self.serverid)
         ip = self._get_ipv4(server)
         self._try_until_timeout_expires(self.action_timeout,
@@ -501,6 +527,9 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_007_server_responds_to_ping_IPv6(self):
         """Test server responds to ping on IPv6 address"""
+
+        log.info("Testing if server responds to pings in IPv6")
+
         server = self.client.get_server_details(self.serverid)
         ip = self._get_ipv6(server)
         self._try_until_timeout_expires(self.action_timeout,
@@ -511,30 +540,46 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_008_submit_shutdown_request(self):
         """Test submit request to shutdown server"""
+
+        log.info("Shutting down server")
+
         self.cyclades.shutdown_server(self.serverid)
 
     def test_009_server_becomes_stopped(self):
         """Test server becomes STOPPED"""
+
+        log.info("Waiting until server becomes STOPPED")
+        
         self._insist_on_status_transition("ACTIVE", "STOPPED",
                                          self.action_timeout,
                                          self.action_timeout)
 
     def test_010_submit_start_request(self):
         """Test submit start server request"""
+
+        log.info("Starting server")
+
         self.cyclades.start_server(self.serverid)
 
     def test_011_server_becomes_active(self):
         """Test server becomes ACTIVE again"""
+
+        log.info("Waiting until server becomes ACTIVE")
+        
         self._insist_on_status_transition("STOPPED", "ACTIVE",
                                          self.action_timeout,
                                          self.action_timeout)
 
     def test_011a_server_responds_to_ping_IPv4(self):
         """Test server OS is actually up and running again"""
+
+        log.info("Testing if server is actually up and running")
+
         self.test_006_server_responds_to_ping_IPv4()
 
     def test_012_ssh_to_server_IPv4(self):
         """Test SSH to server public IPv4 works, verify hostname"""
+
         self._skipIf(self.is_windows, "only valid for Linux servers")
         server = self.client.get_server_details(self.serverid)
         self._insist_on_ssh_hostname(self._get_ipv4(server),
@@ -572,6 +617,9 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_016_personality_is_enforced(self):
         """Test file injection for personality enforcement"""
+
+        log.info("Trying to inject file for personality enforcement")
+
         self._skipIf(self.is_windows, "only implemented for Linux servers")
         self._skipIf(self.personality == None, "No personality file selected")
 
@@ -585,16 +633,25 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_017_submit_delete_request(self):
         """Test submit request to delete server"""
+
+        log.info("Deleting server")
+
         self.client.delete_server(self.serverid)
 
     def test_018_server_becomes_deleted(self):
         """Test server becomes DELETED"""
+
+        log.info("Testing if server becomes DELETED")
+
         self._insist_on_status_transition("ACTIVE", "DELETED",
                                          self.action_timeout,
                                          self.action_timeout)
 
     def test_019_server_no_longer_in_server_list(self):
         """Test server is no longer in server list"""
+
+        log.info("Test if server is no longer listed")
+
         servers = self.client.list_servers()
         self.assertNotIn(self.serverid, [s["id"] for s in servers])
 
@@ -608,16 +665,6 @@ class NetworkTestCase(unittest.TestCase):
 
         cls.client = CycladesClient(API, TOKEN)
         cls.compute = ComputeClient(API, TOKEN)
-
-        # images = cls.compute.list_images(detail = True)
-        # flavors = cls.compute.list_flavors(detail = True)
-
-        # cls.imageid = choice([im['id'] for im in images if not im['name'].lower().find("windows") >= 0])
-        # cls.flavorid = choice([f['id'] for f in flavors if f['disk'] >= 20])
-
-        # for image in images:
-        #     if image['id'] == cls.imageid:
-        #         imagename = image['name']
 
         cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, cls.imagename)
 
@@ -661,6 +708,9 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_00001a_submit_create_server_A(self):
         """Test submit create server request"""
+
+        log.info("Creating test server A")
+
         serverA = self.client.create_server(self.servername, self.flavorid,
                                             self.imageid, personality=None)
 
@@ -681,6 +731,8 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_00001b_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
+        
+        log.info("Waiting until test server A becomes ACTIVE")
 
         fail_tmout = time.time()+self.action_timeout
         while True:
@@ -700,6 +752,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_00002a_submit_create_server_B(self):
         """Test submit create server request"""
         
+        log.info("Creating test server B")
+
         serverB = self.client.create_server(self.servername, self.flavorid,
                                             self.imageid, personality=None)
 
@@ -722,6 +776,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_00002b_serverB_becomes_active(self):
         """Test server becomes ACTIVE"""
 
+        log.info("Waiting until test server B becomes ACTIVE")
+
         fail_tmout = time.time()+self.action_timeout
         while True:
             d = self.client.get_server_details(self.serverid['B'])
@@ -739,6 +795,9 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_001_create_network(self):
         """Test submit create network request"""
+
+        log.info("Submit new network request")
+
         name = SNF_TEST_PREFIX+TEST_RUN_ID
         previous_num = len(self.client.list_networks())
         network =  self.client.create_network(name)        
@@ -757,6 +816,8 @@ class NetworkTestCase(unittest.TestCase):
     
     def test_002_connect_to_network(self):
         """Test connect VMs to network"""
+
+        log.info("Connect VMs to private network")
 
         self.client.connect_server(self.serverid['A'], self.networkid)
         self.client.connect_server(self.serverid['B'], self.networkid)
@@ -779,7 +840,10 @@ class NetworkTestCase(unittest.TestCase):
 
     
     def test_002a_reboot(self):
-        "Reboot server A"
+        """Rebooting server A"""
+
+        log.info("Rebooting server A")
+
         self.client.reboot_server(self.serverid['A']) 
        
         fail_tmout = time.time()+self.action_timeout
@@ -799,6 +863,8 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_002b_ping_server_A(self):
         "Test if server A is pingable"
+
+        log.info("Testing if server A is pingable")
 
         server = self.client.get_server_details(self.serverid['A'])
         ip = self._get_ipv4(server)
@@ -823,7 +889,10 @@ class NetworkTestCase(unittest.TestCase):
 
 
     def test_002c_reboot(self):
-        "Reboot server B"
+        """Reboot server B"""
+
+        log.info("Rebooting server B")
+
         self.client.reboot_server(self.serverid['B']) 
         
         fail_tmout = time.time()+self.action_timeout
@@ -842,8 +911,10 @@ class NetworkTestCase(unittest.TestCase):
         
 
     def test_002d_ping_server_B(self):
-        "Test if server B is pingable"
+        """Test if server B is pingable"""
 
+
+        log.info("Testing if server B is pingable")
         server = self.client.get_server_details(self.serverid['B'])
         ip = self._get_ipv4(server)
         
@@ -866,7 +937,9 @@ class NetworkTestCase(unittest.TestCase):
 
 
     def test_003a_setup_interface_A(self):
-        "Set up eth1 for server A"
+        """Set up eth1 for server A"""
+
+        log.info("Setting up interface eth1 for server A")
 
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
@@ -917,8 +990,9 @@ class NetworkTestCase(unittest.TestCase):
 
 
     def test_003b_setup_interface_B(self):
-        "Setup eth1 for server B"
+        """Setup eth1 for server B"""
 
+        log.info("Setting up interface eth1 for server B")
 
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
@@ -973,6 +1047,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""
 
+        log.info("Testing if server A is actually connected to server B")
+
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
@@ -1015,6 +1091,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_004_disconnect_from_network(self):
         "Disconnecting server A and B from network"
 
+        log.info("Disconnecting servers from private network")
+
         prev_state = self.client.get_network_details(self.networkid)
         prev_conn = len(prev_state['servers']['values'])
 
@@ -1039,6 +1117,9 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_005_destroy_network(self):
         """Test submit delete network request"""
+
+        log.info("Submitting delete network request")
+
         self.client.delete_network(self.networkid)        
         networks = self.client.list_networks()
 
@@ -1050,6 +1131,9 @@ class NetworkTestCase(unittest.TestCase):
         
     def test_006_cleanup_servers(self):
         """Cleanup servers created for this test"""
+
+        log.info("Delete servers created for this test")
+
         self.compute.delete_server(self.serverid['A'])
         self.compute.delete_server(self.serverid['B'])
 
@@ -1368,6 +1452,7 @@ def main():
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
         
+
     ServerTestCase = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
                                              imagename=imagename,
                                              personality=personality,

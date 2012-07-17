@@ -67,6 +67,7 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_disks_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
@@ -238,7 +239,7 @@
                     <li><a href="networks" title="{% trans "configure networking" %}"
                         class="primary" id="networks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
-                    <li class="hidden"><a href="disks" title="{% trans "manage your storage volumes" %}"
+                    <li><a href="disks" title="{% trans "manage your storage volumes" %}"
                         class="primary" id="disks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}disks-icon.png" /></a></li>
                 </ul>
@@ -250,7 +251,9 @@
                     <div id="networks-pane" class="pane">
                         {% include "partials/networks.html" %}
                     </div>
-                    <div id="disks-pane" class="pane"></div>
+                    <div id="disks-pane" class="pane">
+                    	{% include "partials/disks.html" %}
+                    </div>
 
                     <div class="confirm_multiple clearfix" id="multiple_actions_container">
                         <div class="confirm_multiple_actions confirm-all-cont global hidden confirm_multiple_cont clearfix">

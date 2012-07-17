@@ -66,3 +66,12 @@ def network_vms(network, account):
     return vms
     
 network_vms.is_safe = True
+
+@register.filter(name="network_nics")
+def network_nics(network, account):
+    vms = []
+    for nic in network.nics.filter(machine__userid=account):
+        vms.append(nic)
+    return vms
+    
+network_nics.is_safe = True

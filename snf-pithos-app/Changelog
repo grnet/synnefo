@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v0.9.8
+------
+* improve sql queries
+* support for bulk operations (MOVE/COPY/DELETE)
+* fix feedback response in case of URLError
+* propagate actual astakos response error codes instead of 401 (Unauthorized)
+* change backend to raise custom exceptions
+
 v0.9.7
 ------
 * Delegate feedback post request to Identity Provider (astakos)

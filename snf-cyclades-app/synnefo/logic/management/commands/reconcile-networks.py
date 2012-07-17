@@ -35,19 +35,18 @@ logic/reconciliation.py for a description of reconciliation rules.
 
 """
 import datetime
+import bitarray
 
 from optparse import make_option
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from synnefo.db.models import Backend, Network, BackendNetwork
 from synnefo.logic import reconciliation, backend, utils
 
 
 class Command(BaseCommand):
-    can_import_settings = True
-
     help = 'Reconcile contents of Synnefo DB with state of Ganeti backend'
     output_transaction = True  # The management command runs inside
                                # an SQL transaction
@@ -55,15 +54,19 @@ class Command(BaseCommand):
         make_option('--fix-all', action='store_true',
                     dest='fix', default=False,
                     help='Fix all issues.'),
+        make_option('--conflicting-ips', action='store_true',
+                    dest='conflicting_ips', default=False,
+                    help='Detect conflicting ips')
         )
 
     def handle(self, **options):
         self.verbosity = int(options['verbosity'])
         fix = options['fix']
-        reconcile_networks(self.stdout, fix)
+        conflicting_ips = options['conflicting_ips']
+        reconcile_networks(self.stdout, fix, conflicting_ips)
 
 
-def reconcile_networks(out, fix):
+def reconcile_networks(out, fix, conflicting_ips):
     # Get models from DB
     backends = Backend.objects.exclude(offline=True)
     networks = Network.objects.filter(deleted=False)
@@ -81,6 +84,7 @@ def reconcile_networks(out, fix):
     for network in networks:
         net_id = network.id
         destroying = network.action == 'DESTROY'
+        ip_address_maps = []
 
         # Perform reconcilliation for each backend
         for b in backends:
@@ -149,6 +153,39 @@ def reconcile_networks(out, fix):
                                         0, 'OP_NETWORK_CONNECT', 'success',
                                         'Reconciliation simulated event.')
 
+            # Reconcile IP Pools
+            ip_map = ganeti_networks[b][net_id]['map']
+            ip_address_maps.append(bitarray_from_o1(ip_map))
+
+        network_bitarray = reduce(lambda x, y: x | y, ip_address_maps)
+        if not network.pool.reservations == network_bitarray:
+            out.write('D: Unsynced pool of network %d\n' % net_id)
+            out.write('\t DB:\t%s\n' % network.pool.reservations.to01())
+            out.write('\t Ganeti:%s\n' % network_bitarray.to01())
+            if fix:
+                update_network_reservations(network, network_bitarray)
+                out.write('F: Synchronized network pools\n')
+
+        # Detect conflicting IPs: Detect NIC's that have the same IP
+        # in the same network.
+        if conflicting_ips:
+            machine_ips = network.nics.all().values_list('ipv4', 'machine')
+            ips = map(lambda x: x[0], machine_ips)
+            distinct_ips = set(ips)
+            if len(distinct_ips) < len(ips):
+                out.write('D: Conflicting IP in network %s.\n' % net_id)
+                conflicts = ips
+                for i in distinct_ips:
+                    conflicts.remove(i)
+                for i in conflicts:
+                    machines = [utils.id_to_instance_name(x[1]) \
+                                for x in machine_ips if x[0] == i]
+                    out.write('\tIP:%s Machines: %s\n' %
+                              (i, ', '.join(machines)))
+                if fix:
+                    out.write('F: Can not fix it. Manually resolve the'
+                              ' conflict.\n')
+
     # Detect Orphan Networks in Ganeti
     db_network_ids = set([net.id for net in networks])
     for back_end, ganeti_networks in ganeti_networks.items():
@@ -167,3 +204,13 @@ def reconcile_networks(out, fix):
                     for group in client.GetGroups():
                         client.DisconnectNetwork(network, group)
                         client.DeleteNetwork(network)
+
+
+def bitarray_from_o1(bitmap):
+    return bitarray.bitarray(bitmap.replace("X", "1").replace(".", "0"))
+
+
+@transaction.commit_on_success
+def update_network_reservations(network, reservations):
+    network.pool.reservations = reservations
+    network.pool.save()

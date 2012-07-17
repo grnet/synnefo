@@ -50,7 +50,7 @@ def id_from_instance_name(name):
 
 
 def id_to_instance_name(id):
-    return "%s%s" (settings.BACKEND_PREFIX_ID, str(id))
+    return "%s%s" % (settings.BACKEND_PREFIX_ID, str(id))
 
 
 def id_from_network_name(name):

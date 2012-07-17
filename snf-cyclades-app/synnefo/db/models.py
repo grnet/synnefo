@@ -36,6 +36,7 @@ from django.db import IntegrityError
 from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
+from synnefo.logic.ippool import IPPool
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
@@ -407,7 +408,6 @@ class VirtualMachineMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
-
 class Network(models.Model):
     OPER_STATES = (
         ('PENDING', 'Pending'),
@@ -436,7 +436,6 @@ class Network(models.Model):
         ('CUSTOM_BRIDGED', 'Custom bridged network')
     )
 
-
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128, null=True)
     subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
@@ -458,6 +457,11 @@ class Network(models.Model):
                                       through='NetworkInterface')
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
+
+    reservations = models.TextField(default='')
+
+    ip_pool = None
+
 
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
@@ -538,6 +542,44 @@ class Network(models.Model):
             for back in Backend.objects.all():
                 BackendNetwork.objects.create(backend=back, network=self)
 
+    @property
+    def pool(self):
+        if self.ip_pool:
+            return self.ip_pool
+        else:
+            self.ip_pool = IPPool(self)
+            return self.ip_pool
+
+    def reserve_address(self, address, pool=None):
+        pool = pool or self.pool
+        pool.reserve(address)
+        pool._update_network()
+        self.save()
+
+    def release_address(self, address, pool=None):
+        pool = pool or self.pool
+        pool.release(address)
+        pool._update_network()
+        self.save()
+
+    # def get_free_address(self):
+    #     # Get yourself inside a transaction
+    #     network = Network.objects.get(id=self.id)
+    #     # Get the pool object
+    #     pool = network.pool
+    #     print network is self
+    #     try:
+    #         address = pool.get_free_address()
+    #     except IPPoolExhausted:
+    #         raise Network.NetworkIsFull
+
+    #     pool._update_network()
+    #     network.save()
+    #     return address
+
+    # class NetworkIsFull(Exception):
+    #     pass
+
 
 class BackendNetwork(models.Model):
     OPER_STATES = (
@@ -609,7 +651,7 @@ class NetworkInterface(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=False)
-    mac = models.CharField(max_length=17, null=True)
+    mac = models.CharField(max_length=32, null=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,

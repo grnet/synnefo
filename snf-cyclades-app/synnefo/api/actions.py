@@ -34,6 +34,7 @@
 from socket import getfqdn
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
+from django.db import transaction
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -42,8 +43,8 @@ from django.utils import simplejson as json
 from synnefo.api.faults import (BadRequest, ServiceUnavailable,
                                 ItemNotFound, BuildInProgress)
 from synnefo.api.util import random_password, get_vm, get_nic_from_index
-from synnefo.db.models import NetworkInterface
-from synnefo.logic import backend
+from synnefo.db.models import NetworkInterface, Network
+from synnefo.logic import backend, ippool
 from synnefo.logic.utils import get_rsapi_state
 
 
@@ -289,6 +290,7 @@ def set_firewall_profile(request, vm, args):
 
 
 @network_action('add')
+@transaction.commit_on_success
 def add(request, net, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -303,8 +305,21 @@ def add(request, net, args):
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
-    backend.connect_to_network(vm, net)
+
+    #Dummy write to enforce isolation
+    Network.objects.filter(id=net.id).update(id=net.id)
+    net = Network.objects.get(id=net.id)
+    # Get a free IP from the address pool.
+    pool = ippool.IPPool(net)
+    try:
+        address = pool.get_free_address()
+    except ippool.IPPool.IPPoolExhausted:
+        raise ServiceUnavailable('Network is full')
+    pool.save()
+
+    backend.connect_to_network(vm, net, address)
     return HttpResponse(status=202)
+
 
 @network_action('remove')
 def remove(request, net, args):

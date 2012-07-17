@@ -114,33 +114,58 @@ def process_net_status(vm, etime, nics):
     Update the state of the VM in the DB accordingly.
     """
 
-    vm.nics.all().delete()
-    for i, nic in enumerate(nics):
-        network = nic.get('network', '')
-        n = str(network)
-        if n == settings.GANETI_PUBLIC_NETWORK:
-            net = Network.objects.get(public=True)
-        else:
-            pk = utils.id_from_network_name(n)
-            net = Network.objects.get(id=pk)
+    old_nics = vm.nics.order_by('index')
+    new_nics = enumerate(nics)
 
-        firewall = nic.get('firewall', '')
+    networks = {}
+
+    for old_nic in old_nics:
+        pk = old_nic.network.pk
+        # Get the cached Network or get it from DB
+        if pk in networks:
+            net = networks[pk]
+        else:
+            #Dummy write to enforce isolation
+            Network.objects.filter(id=pk).update(id=pk)
+            net = Network.objects.get(pk=pk)
+        net.release_address(old_nic.ipv4)
+        old_nic.delete()
+
+    for i, new_nic in new_nics:
+        network = new_nic.get('network', '')
+        n = str(network)
+        pk = utils.id_from_network_name(n)
+
+        # Get the cached Network or get it from DB
+        if pk in networks:
+            net = networks[pk]
+        else:
+            net = Network.objects.get(pk=pk)
+
+        # Get the new nic info
+        mac = new_nic.get('mac', '')
+        ipv4 = new_nic.get('ip', '')
+        ipv6 = new_nic.get('ipv6', '')
+
+        firewall = new_nic.get('firewall', '')
         firewall_profile = _reverse_tags.get(firewall, '')
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
+        if ipv4:
+            net.reserve_address(ipv4)
+
         vm.nics.create(
             network=net,
             index=i,
-            mac=nic.get('mac', ''),
-            ipv4=nic.get('ip', ''),
-            ipv6=nic.get('ipv6', ''),
+            mac=mac,
+            ipv4=ipv4,
+            ipv6=ipv6,
             firewall_profile=firewall_profile,
             dirty=False)
 
     vm.backendtime = etime
     vm.save()
-    net.save()
 
 
 @transaction.commit_on_success
@@ -490,7 +515,7 @@ def _delete_network(network, backend_jobs=None):
         backend.client.DeleteNetwork(network.backend_id, jobs)
 
 
-def connect_to_network(vm, network):
+def connect_to_network(vm, network, address):
     """Connect a virtual machine to a network.
 
     @param vm: VirtualMachine object
@@ -498,9 +523,9 @@ def connect_to_network(vm, network):
 
     """
 
-    ip = network.dhcp and 'pool' or None
+    # ip = network.dhcp and 'pool' or None
 
-    nic = {'ip': ip, 'network': network.backend_id}
+    nic = {'ip': address, 'network': network.backend_id}
     vm.client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
                              hotplug=True, dry_run=settings.TEST)
 

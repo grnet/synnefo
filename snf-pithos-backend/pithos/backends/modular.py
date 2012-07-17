@@ -489,14 +489,15 @@ class ModularBackend(BaseBackend):
         if shared and public:
             # get shared first
             shared = self._list_object_permissions(user, account, container, prefix, shared=True, public=False)
-            objects = []
+            objects = set()
             if shared:
                 path, node = self._lookup_container(account, container)
                 shared = self._get_formatted_paths(shared)
-                objects = self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared, all_props)
+                objects |= set(self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared, all_props))
             
             # get public
-            objects.extend(self._list_public_object_properties(user, account, container, prefix, all_props))
+            objects |= set(self._list_public_object_properties(user, account, container, prefix, all_props))
+            objects = list(objects)
             
             objects.sort(key=lambda x: x[0])
             start, limit = self._list_limits([x[0] for x in objects], marker, limit)
@@ -1129,7 +1130,7 @@ class ModularBackend(BaseBackend):
     
     def _report_object_change(self, user, account, path, details={}):
         logger.debug("_report_object_change: %s %s %s %s", user, account, path, details)
-        details.update({'user': user})
+        details.update({'user': user, 'filename':path})
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',), account, QUEUE_INSTANCE_ID, 'object', path, details))
     
     def _report_sharing_change(self, user, account, path, details={}):

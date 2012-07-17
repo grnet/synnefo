@@ -74,6 +74,10 @@ class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
         self.client = Pithos_Client(get_url(), get_auth(), get_user())
+        
+        #keep track of initial containers
+        self.initial_containers = self.client.list_containers()
+        
         self._clean_account()
         self.invalid_client = Pithos_Client(get_url(), get_auth(), 'invalid')
 
@@ -82,7 +86,7 @@ class BaseTestCase(unittest.TestCase):
 
         #keep track of initial account meta
         self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
-
+        
         self.extended = {
             'container':(
                 'name',
@@ -117,8 +121,9 @@ class BaseTestCase(unittest.TestCase):
 
     def _clean_account(self):
         for c in self.client.list_containers():
-            self.client.delete_container(c, delimiter='/')
-            self.client.delete_container(c)
+            if c not in self.initial_containers:
+                self.client.delete_container(c, delimiter='/')
+                self.client.delete_container(c)
     
     def assert_status(self, status, codes):
         l = [elem for elem in self.return_codes]
@@ -258,7 +263,9 @@ class BaseTestCase(unittest.TestCase):
 class AccountHead(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
+        self.containers = list(set(self.initial_containers + ['apples', 'bananas', 'kiwis', 'oranges', 'pears']))
+        self.containers.sort()
+        
         for item in self.containers:
             self.client.create_container(item)
 
@@ -272,11 +279,16 @@ class AccountHead(BaseTestCase):
         containers = self.client.list_containers()
         l = str(len(containers))
         self.assertEqual(meta['x-account-container-count'], l)
-        size = 0
+        size1 = 0
+        size2 = 0
         for c in containers:
             m = self.client.retrieve_container_metadata(c)
-            size = size + int(m['x-container-bytes-used'])
-        self.assertEqual(meta['x-account-bytes-used'], str(size))
+            csum = sum([o['bytes'] for o in self.client.list_objects(c, format='json')])
+            self.assertEqual(int(m['x-container-bytes-used']), csum)
+            size1 += int(m['x-container-bytes-used'])
+            size2 += csum
+        self.assertEqual(meta['x-account-bytes-used'], str(size1))
+        self.assertEqual(meta['x-account-bytes-used'], str(size2))
 
     def test_get_account_403(self):
         self.assert_raises_fault(403,
@@ -307,7 +319,9 @@ class AccountGet(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
         #create some containers
-        self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
+        self.containers = list(set(self.initial_containers + ['apples', 'bananas', 'kiwis', 'oranges', 'pears']))
+        self.containers.sort()
+        
         for item in self.containers:
             self.client.create_container(item)
 
@@ -351,8 +365,9 @@ class AccountGet(BaseTestCase):
         xml = self.client.list_containers(limit=l, marker=m, format='xml')
         self.assert_extended(xml, 'xml', 'container', l)
         nodes = xml.getElementsByTagName('name')
-        self.assertEqual(len(nodes), 1)
-        self.assertEqual(nodes[0].childNodes[0].data, 'pears')
+        self.assertTrue(len(nodes) <= l)
+        names = [n.childNodes[0].data for n in nodes]
+        self.assertTrue('pears' in names or 'pears' > name for name in names)
 
     def test_if_modified_since(self):
         t = datetime.datetime.utcnow()
@@ -368,8 +383,7 @@ class AccountGet(BaseTestCase):
                 self.assertEqual(len(c), len(self.containers) + 1)
             except Fault, f:
                 self.failIf(f.status == 304) #fail if not modified
-        
-
+    
     def test_if_modified_since_invalid_date(self):
         c = self.client.list_containers(if_modified_since='')
         self.assertEqual(len(c), len(self.containers))
@@ -412,7 +426,9 @@ class AccountGet(BaseTestCase):
 class AccountPost(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
+        self.containers = list(set(self.initial_containers + ['apples', 'bananas', 'kiwis', 'oranges', 'pears']))
+        self.containers.sort()
+        
         for item in self.containers:
             self.client.create_container(item)
 
@@ -779,8 +795,9 @@ class ContainerGet(BaseTestCase):
 class ContainerPut(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['c1', 'c2']
-
+        self.containers = list(set(self.initial_containers + ['c1', 'c2']))
+        self.containers.sort()
+    
     def test_create(self):
         self.client.create_container(self.containers[0])
         containers = self.client.list_containers()
@@ -795,19 +812,19 @@ class ContainerPut(BaseTestCase):
         self.client.create_container(self.containers[0])
 
         policy = {'quota':100}
-        self.client.set_container_policies('c1', **policy)
+        self.client.set_container_policies(self.containers[0], **policy)
 
-        meta = self.client.retrieve_container_metadata('c1')
+        meta = self.client.retrieve_container_metadata(self.containers[0])
         self.assertTrue('x-container-policy-quota' in meta)
         self.assertEqual(meta['x-container-policy-quota'], '100')
 
-        args = ['c1', 'o1']
+        args = [self.containers[0], 'o1']
         kwargs = {'length':101}
         self.assert_raises_fault(413, self.upload_random_data, *args, **kwargs)
 
         #reset quota
         policy = {'quota':0}
-        self.client.set_container_policies('c1', **policy)
+        self.client.set_container_policies(self.containers[0], **policy)
 
 class ContainerPost(BaseTestCase):
     def setUp(self):
@@ -828,7 +845,9 @@ class ContainerPost(BaseTestCase):
 class ContainerDelete(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['c1', 'c2']
+        self.containers = list(set(self.initial_containers + ['c1', 'c2']))
+        self.containers.sort()
+        
         for c in self.containers:
             self.client.create_container(c)
 
@@ -859,7 +878,9 @@ class ContainerDelete(BaseTestCase):
 class ObjectGet(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['c1', 'c2']
+        self.containers = list(set(self.initial_containers + ['c1', 'c2']))
+        self.containers.sort()
+        
         #create some containers
         for c in self.containers:
             self.client.create_container(c)
@@ -1371,7 +1392,9 @@ class ObjectPut(BaseTestCase):
 class ObjectCopy(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['c1', 'c2']
+        self.containers = list(set(self.initial_containers + ['c1', 'c2']))
+        self.containers.sort()
+        
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
@@ -1456,7 +1479,9 @@ class ObjectCopy(BaseTestCase):
 class ObjectMove(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['c1', 'c2']
+        self.containers = list(set(self.initial_containers + ['c1', 'c2']))
+        self.containers.sort()
+        
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
@@ -1517,7 +1542,9 @@ class ObjectMove(BaseTestCase):
 class ObjectPost(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.containers = ['c1', 'c2']
+        self.containers = list(set(self.initial_containers + ['c1', 'c2']))
+        self.containers.sort()
+        
         for c in self.containers:
             self.client.create_container(c)
         self.obj = []
@@ -1796,6 +1823,8 @@ class ObjectDelete(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
         self.containers = ['c1', 'c2']
+        self.containers.extend(self.initial_containers)
+        
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
@@ -1869,19 +1898,21 @@ class List(BaseTestCase):
                 self.client.publish_object(c, 'o2')
     
     def test_shared_public(self):
+        diff = lambda l: set(l) - set(self.initial_containers)
+        
         func, kwargs = self.client.list_containers, {'shared':True}
         l = func(**kwargs)
-        self.assertEqual(l, ['c1', 'c2'])
+        self.assertEqual(set(['c1', 'c2']), diff(l))
         self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
         
         func, kwargs = self.client.list_containers, {'public':True}
         l = func(**kwargs)
-        self.assertEqual(l, ['c1', 'c3'])
+        self.assertEqual(set(['c1', 'c3']), diff(l))
         self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
         
         func, kwargs = self.client.list_containers, {'shared':True, 'public':True}
         l = func(**kwargs)
-        self.assertEqual(l, ['c1', 'c2', 'c3'])
+        self.assertEqual(set(['c1', 'c2', 'c3']), diff(l))
         self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
         
         
@@ -2288,7 +2319,7 @@ class TestPermissions(BaseTestCase):
         self.client.share_object(self.container, self.object, self.authorized)
 
         my_shared_containers = self.client.list_containers(shared=True)
-        self.assertEqual(['c'], my_shared_containers)
+        self.assertTrue('c' in my_shared_containers)
         my_shared_objects = self.client.list_objects('c', shared=True)
         self.assertEqual(['o'], my_shared_objects)
 

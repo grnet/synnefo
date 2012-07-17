@@ -167,8 +167,6 @@ class Node(DBWorker):
                     on versions(node, mtime) """)
         execute(""" create index if not exists idx_versions_node_uuid
                     on versions(uuid) """)
-        execute(""" create index if not exists idx_versions_serial_cluster
-                    on versions(serial, cluster) """)
         
         execute(""" create table if not exists attributes
                           ( serial integer,

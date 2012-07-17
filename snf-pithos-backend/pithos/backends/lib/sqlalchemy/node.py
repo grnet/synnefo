@@ -172,7 +172,6 @@ class Node(DBWorker):
         self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
         Index('idx_versions_node_mtime', self.versions.c.node, self.versions.c.mtime)
         Index('idx_versions_node_uuid', self.versions.c.uuid)
-        Index('idx_versions_serial_cluster', self.versions.c.serial, self.versions.c.cluster)
         
         #create attributes table
         columns = []

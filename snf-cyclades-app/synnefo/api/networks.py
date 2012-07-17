@@ -44,9 +44,10 @@ from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import (BadRequest, Unauthorized,
-                                NetworkInUse)
+                                NetworkInUse, OverLimit)
 from synnefo.db.models import Network
 from synnefo.logic import backend
+from synnefo.settings import MAX_CIDR_BLOCK
 
 
 log = getLogger('synnefo.api')
@@ -168,6 +169,10 @@ def create_network(request):
     if type == 'PUBLIC_ROUTED':
         raise Unauthorized('Can not create a public network.')
 
+    cidr_block = int(subnet.split('/')[1])
+    if cidr_block <= MAX_CIDR_BLOCK:
+        raise OverLimit("Network size is to big. Please specify a network"
+                        " smaller than /" + str(MAX_CIDR_BLOCK) + '.')
 
     link, mac_prefix = util.network_specs_from_type(type)
     if not link:

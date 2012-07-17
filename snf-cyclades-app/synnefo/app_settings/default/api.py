@@ -21,6 +21,8 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
+# Maximum allowed network size for private networks.
+MAX_CIDR_BLOCK = 22
 # Name of the network in Ganeti corresponding to the default public network.
 # All created VMs will obtain an IP from this network.
 GANETI_PUBLIC_NETWORK = 'snf-net-1'

@@ -67,6 +67,7 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'snf-common>=0.9.0rc',
     'SQLAlchemy==0.6.3',
+    'alembic>=0.3.4, <0.4',
 ]
 
 EXTRAS_REQUIRES = {
@@ -196,7 +197,8 @@ setup(
 
     entry_points = {
      'console_scripts': [
-         ],
-      },
+         'pithos-migrate = pithos.backends.migrate:main'
+     ],
+    },
 )
 

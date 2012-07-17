@@ -90,6 +90,8 @@ log.setLevel(logging.INFO)
 class UnauthorizedTestCase(unittest.TestCase):
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
+        log.info("Authentication test")
+
         falseToken = '12345'
         c=ComputeClient(API, falseToken)
 
@@ -386,6 +388,9 @@ class SpawnServerTestCase(unittest.TestCase):
         server = self.client.create_server(self.servername, self.flavorid,
                                            self.imageid, self.personality)
 
+        log.info("Server id: " + str(server["id"]))
+        log.info("Server password: " + server["adminPass"])
+        
         self.assertEqual(server["name"], self.servername)
         self.assertEqual(server["flavorRef"], self.flavorid)
         self.assertEqual(server["imageRef"], self.imageid)
@@ -396,6 +401,8 @@ class SpawnServerTestCase(unittest.TestCase):
         cls.serverid = server["id"]
         cls.username = None
         cls.passwd = server["adminPass"]
+
+        
 
     def test_002a_server_is_building_in_list(self):
         """Test server is in BUILD state, in server list"""
@@ -431,12 +438,19 @@ class SpawnServerTestCase(unittest.TestCase):
         loginname = image["metadata"]["values"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os)
 
+        userlist = loginname.split()
+
         # Determine the username to use for future connections
         # to this host
         cls = type(self)
-        cls.username = loginname
-        if not cls.username:
+
+        if "root" in userlist:
+            cls.username = "root"
+        elif users == None:
             cls.username = self._connect_loginname(os)
+        else:
+            cls.username = choice(userlist)
+
         self.assertIsNotNone(cls.username)
 
     def test_002d_verify_server_metadata(self):
@@ -446,6 +460,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         servermeta = self.client.get_server_metadata(self.serverid)
         imagemeta = self.client.get_image_metadata(self.imageid)
+
         self.assertEqual(servermeta["OS"], imagemeta["os"])
 
     def test_003_server_becomes_active(self):
@@ -498,7 +513,7 @@ class SpawnServerTestCase(unittest.TestCase):
     def test_004_server_has_ipv4(self):
         """Test active server has a valid IPv4 address"""
 
-        log.info("Testing server's IPv4")
+        log.info("Validate server's IPv4")
 
         server = self.client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
@@ -507,7 +522,7 @@ class SpawnServerTestCase(unittest.TestCase):
     def test_005_server_has_ipv6(self):
         """Test active server has a valid IPv6 address"""
 
-        log.info("Testing server's IPv6")
+        log.info("Validate server's IPv6")
 
         server = self.client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
@@ -726,8 +741,8 @@ class NetworkTestCase(unittest.TestCase):
         self.username['A'] = None
         self.password['A'] = serverA["adminPass"]
 
-        log.info("Created new server A:")
-        log.info("Password " + (self.password['A']) + '\n')
+        log.info("Server A id:" + str(serverA["id"]))
+        log.info("Server password " + (self.password['A']))
         
 
 
@@ -770,8 +785,8 @@ class NetworkTestCase(unittest.TestCase):
         self.username['B'] = None
         self.password['B'] = serverB["adminPass"]
 
-        log.info("Created new server B:")
-        log.info("Password " + (self.password['B']) + '\n')
+        log.info("Server B id: " + str(serverB["id"]))
+        log.info("Password " + (self.password['B']))
 
 
 
@@ -846,9 +861,21 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Rebooting server A")
 
-        self.client.reboot_server(self.serverid['A']) 
+        self.client.shutdown_server(self.serverid['A']) 
        
         fail_tmout = time.time()+self.action_timeout
+        while True:
+            d = self.client.get_server_details(self.serverid['A'])
+            status = d['status']
+            if status == 'STOPPED':
+                break
+            elif time.time() > fail_tmout:
+                self.assertLess(time.time(), fail_tmout)
+            else:
+                time.sleep(self.query_interval)
+
+        self.client.start_server(self.serverid['A'])
+
         while True:
             d = self.client.get_server_details(self.serverid['A'])
             status = d['status']
@@ -859,6 +886,8 @@ class NetworkTestCase(unittest.TestCase):
                 self.assertLess(time.time(), fail_tmout)
             else:
                 time.sleep(self.query_interval)
+
+
                
         self.assertTrue(active)
 
@@ -895,9 +924,21 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Rebooting server B")
 
-        self.client.reboot_server(self.serverid['B']) 
+        self.client.shutdown_server(self.serverid['B']) 
         
         fail_tmout = time.time()+self.action_timeout
+        while True:
+            d = self.client.get_server_details(self.serverid['B'])
+            status = d['status']
+            if status == 'STOPPED':
+                break
+            elif time.time() > fail_tmout:
+                self.assertLess(time.time(), fail_tmout)
+            else:
+                time.sleep(self.query_interval)
+
+        self.client.start_server(self.serverid['B'])
+
         while True:
             d = self.client.get_server_details(self.serverid['B'])
             status = d['status']
@@ -960,9 +1001,7 @@ class NetworkTestCase(unittest.TestCase):
         hostip = self._get_ipv4(server)
         myPass = self.password['A']
         
-        log.info("SSH in server A: \n")
-        log.info("Username: " + loginname + '\n') 
-        log.info("Password " + myPass + '\n')
+        log.info("SSH in server A as %s/%s" % (loginname,myPass))
         
         res = False
 
@@ -996,6 +1035,7 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Setting up interface eth1 for server B")
 
+
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
         os = image['metadata']['values']['os']
@@ -1013,9 +1053,7 @@ class NetworkTestCase(unittest.TestCase):
         hostip = self._get_ipv4(server)
         myPass = self.password['B']
 
-        log.info("SSH in server A: \n")
-        log.info("Username: " + loginname + '\n') 
-        log.info("Password " + myPass + '\n')
+        log.info("SSH in server B as %s/%s" % (loginname,myPass))
 
         res = False
 
@@ -1430,9 +1468,18 @@ def main():
     else:
         test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
 
+    
+    #New folder for log per image
+    os.mkdir(TEST_RUN_ID)
+
     for image in test_images:
         imageid = str(image["id"])
-        flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
+        
+        if opts.force_flavorid:
+            flavorid = opts.force_flavorid
+        else:
+            flavorid = choice([f["id"] for f in DFLAVORS if f["disk"] >= 20])
+
         imagename = image["name"]
         
         #Personality dictionary for file injection test
@@ -1455,58 +1502,60 @@ def main():
         is_windows = imagename.lower().find("windows") >= 0
         
 
-    ServerTestCase = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
-                                             imagename=imagename,
-                                             personality=personality,
-                                             servername=servername,
-                                             is_windows=is_windows,
-                                             action_timeout=opts.action_timeout,
-                                             build_warning=opts.build_warning,
-                                             build_fail=opts.build_fail,
-                                             query_interval=opts.query_interval,
-                                             )
+        ServerTestCase = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
+                                                 imagename=imagename,
+                                                 personality=personality,
+                                                 servername=servername,
+                                                 is_windows=is_windows,
+                                                 action_timeout=opts.action_timeout,
+                                                 build_warning=opts.build_warning,
+                                                 build_fail=opts.build_fail,
+                                                 query_interval=opts.query_interval,
+                                                 )
 
     
-    NetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
-                                               imageid = imageid,
-                                               flavorid = flavorid,
-                                               imagename=imagename,
-                                               query_interval = opts.query_interval,
-                                               )
+        NetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
+                                                   imageid = imageid,
+                                                   flavorid = flavorid,
+                                                   imagename=imagename,
+                                                   query_interval = opts.query_interval,
+                                                   )
     
 
-    seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
-
-#    seq_cases = [NetworkTestCase]
-
-
-    os.mkdir(TEST_RUN_ID)
-    
-    for case in seq_cases:
-        log_file = TEST_RUN_ID+'/'+'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-        fail_file = TEST_RUN_ID+'/'+'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-        error_file = TEST_RUN_ID+'/'+'error_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-
-        f = open(log_file, "w")
-        fail = open(fail_file, "w")
-        error = open(error_file, "w")
-
-        suite = unittest.TestLoader().loadTestsFromTestCase(case)
-        runner = unittest.TextTestRunner(f, verbosity=2)
-        result = runner.run(suite)
+        # seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
+        seq_cases = [NetworkTestCase]
         
-        error.write("Testcases errors: \n\n")
-        for res in result.errors:
-            error.write(str(res[0])+'\n')
-            error.write(str(res[0].__doc__) + '\n')
-            error.write('\n')
+        # seq_cases = [UnauthorizedTestCase]
+        
+        #folder for each image 
+        image_folder = TEST_RUN_ID + '/' + imageid 
+        os.mkdir(image_folder)
+
+        for case in seq_cases:
+            log_file = image_folder+'/'+'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+            fail_file = image_folder+'/'+'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+            error_file = image_folder+'/'+'error_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+
+            f = open(log_file, "w")
+            fail = open(fail_file, "w")
+            error = open(error_file, "w")
+
+            suite = unittest.TestLoader().loadTestsFromTestCase(case)
+            runner = unittest.TextTestRunner(f, verbosity=2)
+            result = runner.run(suite)
+        
+            error.write("Testcases errors: \n\n")
+            for res in result.errors:
+                error.write(str(res[0])+'\n')
+                error.write(str(res[0].__doc__) + '\n')
+                error.write('\n')
 
             
-        fail.write("Testcases failures: \n\n")
-        for res in result.failures:
-            fail.write(str(res[0])+'\n')
-            fail.write(str(res[0].__doc__) + '\n')
-            fail.write('\n')
+                fail.write("Testcases failures: \n\n")
+                for res in result.failures:
+                    fail.write(str(res[0])+'\n')
+                    fail.write(str(res[0].__doc__) + '\n')
+                    fail.write('\n')
         
 
 

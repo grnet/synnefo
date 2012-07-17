@@ -161,11 +161,10 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         if opcode == 'OP_NETWORK_REMOVE':
             back_network.deleted = True
 
-    if status in ('canceled', 'error'):
+    if status in ('canceled', 'error') and opcode == 'OP_NETWORK_CREATE':
         utils.update_state(back_network, 'ERROR')
 
-    if (status == 'error' and opcode == 'OP_NETWORK_REMOVE' and
-        back_network.operstate == 'ERROR'):
+    if (status == 'error' and opcode == 'OP_NETWORK_REMOVE'):
         back_network.deleted = True
         back_network.operstate = 'DELETED'
 

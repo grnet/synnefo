@@ -77,6 +77,8 @@ class BaseTestCase(unittest.TestCase):
         
         #keep track of initial containers
         self.initial_containers = self.client.list_containers()
+        if self.initial_containers == '':
+            self.initial_containers = []
         
         self._clean_account()
         self.invalid_client = Pithos_Client(get_url(), get_auth(), 'invalid')

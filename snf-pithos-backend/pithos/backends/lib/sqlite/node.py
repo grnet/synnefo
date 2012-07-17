@@ -115,12 +115,15 @@ class Node(DBWorker):
                           ( node       integer primary key,
                             parent     integer default 0,
                             path       text    not null default '',
+                            latest_version     integer,
                             foreign key (parent)
                             references nodes(node)
                             on update cascade
                             on delete cascade ) """)
         execute(""" create unique index if not exists idx_nodes_path
                     on nodes(path) """)
+        execute(""" create index if not exists idx_nodes_parent
+                    on nodes(parent) """)
         
         execute(""" create table if not exists policy
                           ( node   integer,
@@ -164,6 +167,8 @@ class Node(DBWorker):
                     on versions(node, mtime) """)
         execute(""" create index if not exists idx_versions_node_uuid
                     on versions(uuid) """)
+        execute(""" create index if not exists idx_versions_serial_cluster
+                    on versions(serial, cluster) """)
         
         execute(""" create table if not exists attributes
                           ( serial integer,
@@ -433,12 +438,11 @@ class Node(DBWorker):
         
         # The latest version.
         q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
-             "from versions "
-             "where serial = (select max(serial) "
-                             "from versions "
-                             "where node = ? and mtime < ?) "
+             "from versions v "
+             "where serial = %s "
              "and cluster != ?")
-        execute(q, (node, before, except_cluster))
+        subq, args = self._construct_latest_version_subquery(node=node, before=before)
+        execute(q % subq, args + [except_cluster])
         props = fetchone()
         if props is None:
             return None
@@ -447,14 +451,13 @@ class Node(DBWorker):
         # First level, just under node (get population).
         q = ("select count(serial), sum(size), max(mtime) "
              "from versions v "
-             "where serial = (select max(serial) "
-                             "from versions "
-                             "where node = v.node and mtime < ?) "
+             "where serial = %s "
              "and cluster != ? "
              "and node in (select node "
                           "from nodes "
                           "where parent = ?)")
-        execute(q, (before, except_cluster, node))
+        subq, args = self._construct_latest_version_subquery(node=None, before=before)
+        execute(q % subq, args + [except_cluster, node])
         r = fetchone()
         if r is None:
             return None
@@ -467,20 +470,24 @@ class Node(DBWorker):
         # This is why the full path is stored.
         q = ("select count(serial), sum(size), max(mtime) "
              "from versions v "
-             "where serial = (select max(serial) "
-                             "from versions "
-                             "where node = v.node and mtime < ?) "
+             "where serial = %s "
              "and cluster != ? "
              "and node in (select node "
                           "from nodes "
                           "where path like ? escape '\\')")
-        execute(q, (before, except_cluster, self.escape_like(path) + '%'))
+        subq, args = self._construct_latest_version_subquery(node=None, before=before)
+        execute(q % subq, args + [except_cluster, self.escape_like(path) + '%'])
         r = fetchone()
         if r is None:
             return None
         size = r[1] - props[SIZE]
         mtime = max(mtime, r[2])
         return (count, size, mtime)
+    
+    def nodes_set_latest_version(self, node, serial):
+    	q = ("update nodes set latest_version = ? where node = ?")
+        props = (serial, node)
+        self.execute(q, props)
     
     def version_create(self, node, hash, size, type, source, muser, uuid, checksum, cluster=0):
         """Create a new version from the given properties.
@@ -493,6 +500,9 @@ class Node(DBWorker):
         props = (node, hash, size, type, source, mtime, muser, uuid, checksum, cluster)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
+        
+        self.nodes_set_latest_version(node, serial)
+        
         return serial, mtime
     
     def version_lookup(self, node, before=inf, cluster=0, all_props=True):
@@ -503,17 +513,16 @@ class Node(DBWorker):
         """
         
         q = ("select %s "
-             "from versions "
-             "where serial = (select max(serial) "
-                             "from versions "
-                             "where node = ? and mtime < ?) "
+             "from versions v "
+             "where serial = %s "
              "and cluster = ?")
+        subq, args = self._construct_latest_version_subquery(node=node, before=before)
         if not all_props:
-            q = q % "serial"
+            q = q % ("serial", subq)
         else:
-            q = q % "serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster"
+            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster", subq)
         
-        self.execute(q, (node, before, cluster))
+        self.execute(q, args + [cluster])
         props = self.fetchone()
         if props is not None:
             return props
@@ -525,20 +534,19 @@ class Node(DBWorker):
            (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
         """
         
+        if not nodes:
+        	return ()
         q = ("select %s "
              "from versions "
-             "where serial in (select max(serial) "
-                             "from versions "
-                             "where node in (%s) and mtime < ? group by node) "
+             "where serial in %s "
              "and cluster = ? %s")
-        placeholders = ','.join('?' for node in nodes)
+        subq, args = self._construct_latest_versions_subquery(nodes=nodes, before = before)
         if not all_props:
-            q = q % ("serial",  placeholders, '')
+            q = q % ("serial", subq, '')
         else:
-            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster",  placeholders, 'order by node')
+            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster",  subq, 'order by node')
         
-        args = nodes
-        args.extend((before, cluster))
+        args += [cluster]
         self.execute(q, args)
         return self.fetchall()
     
@@ -604,6 +612,10 @@ class Node(DBWorker):
         
         q = "delete from versions where serial = ?"
         self.execute(q, (serial,))
+        
+        props = self.version_lookup(node, cluster=cluster, all_props=False)
+        if props:
+        	self.nodes_set_latest_version(node, props[0])
         return hash, size
     
     def attribute_get(self, serial, domain, keys=()):
@@ -725,6 +737,53 @@ class Node(DBWorker):
         
         return subq, args
     
+    def _construct_versions_nodes_latest_version_subquery(self, before=inf):
+        if before == inf:
+            q = ("n.latest_version ")
+            args = []
+        else:
+            q = ("(select max(serial) "
+				   "from versions "
+				   "where node = v.node and mtime < ?) ")
+            args = [before]
+        return q, args
+    
+    def _construct_latest_version_subquery(self, node=None, before=inf):
+        where_cond = "node = v.node"
+        args = []
+        if node:
+            where_cond = "node = ? "
+            args = [node]
+        
+        if before == inf:
+            q = ("(select latest_version "
+                   "from nodes "
+                   "where %s) ")
+        else:
+            q = ("(select max(serial) "
+                   "from versions "
+                   "where %s and mtime < ?) ")
+            args += [before]
+        return q % where_cond, args
+    
+    def _construct_latest_versions_subquery(self, nodes=(), before=inf):
+        where_cond = ""
+        args = []
+        if nodes:
+            where_cond = "node in (%s) " % ','.join('?' for node in nodes)
+            args = nodes
+        
+        if before == inf:
+            q = ("(select latest_version "
+                   "from nodes "
+                   "where %s ) ")
+        else:
+            q = ("(select max(serial) "
+				 "from versions "
+				 "where %s and mtime < ? group by node) ")
+            args += [before]
+        return q % where_cond, args
+    
     def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
@@ -734,9 +793,7 @@ class Node(DBWorker):
         # TODO: Use another table to store before=inf results.
         q = ("select distinct a.key "
              "from attributes a, versions v, nodes n "
-             "where v.serial = (select max(serial) "
-                               "from versions "
-                               "where node = v.node and mtime < ?) "
+             "where v.serial = %s "
              "and v.cluster != ? "
              "and v.node in (select node "
                             "from nodes "
@@ -744,7 +801,9 @@ class Node(DBWorker):
              "and a.serial = v.serial "
              "and a.domain = ? "
              "and n.node = v.node")
-        args = (before, except_cluster, parent, domain)
+        subq, subargs = self._construct_latest_version_subquery(node=None, before=before)
+        args = subargs + [except_cluster, parent, domain]
+        q = q % subq
         subq, subargs = self._construct_paths(pathq)
         if subq is not None:
             q += subq
@@ -814,20 +873,20 @@ class Node(DBWorker):
         
         q = ("select distinct n.path, %s "
              "from versions v, nodes n "
-             "where v.serial = (select max(serial) "
-                               "from versions "
-                               "where node = v.node and mtime < ?) "
+             "where v.serial = %s "
              "and v.cluster != ? "
              "and v.node in (select node "
                             "from nodes "
                             "where parent = ?) "
              "and n.node = v.node "
              "and n.path > ? and n.path < ?")
+        subq, args = self._construct_versions_nodes_latest_version_subquery(before)
         if not all_props:
-            q = q % "v.serial"
+            q = q % ("v.serial", subq)
         else:
-            q = q % "v.serial, v.node, v.hash, v.size, v.type, v.source, v.mtime, v.muser, v.uuid, v.checksum, v.cluster"
-        args = [before, except_cluster, parent, start, nextling]
+            q = q % ("v.serial, v.node, v.hash, v.size, v.type, v.source, v.mtime, v.muser, v.uuid, v.checksum, v.cluster", subq)
+        args += [except_cluster, parent, start, nextling]
+        start_index = len(args) - 2
         
         subq, subargs = self._construct_paths(pathq)
         if subq is not None:
@@ -886,7 +945,7 @@ class Node(DBWorker):
             if count >= limit: 
                 break
             
-            args[3] = strnextling(pf) # New start.
+            args[start_index] = strnextling(pf) # New start.
             execute(q, args)
         
         return matches, prefixes

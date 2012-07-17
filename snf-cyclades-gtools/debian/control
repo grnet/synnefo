@@ -10,9 +10,7 @@ Homepage: https://code.grnet.gr/projects/synnefo
 Package: snf-cyclades-gtools
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-common (> 0.9.14), snf-network
-Provides: ${python:Provides}, snf-ganeti-tools
-Replaces: snf-ganeti-tools
-Conflicts: snf-ganeti-tools
+Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Ganeti supplementary tools
  This package contains the supplementary tools for Ganeti needed

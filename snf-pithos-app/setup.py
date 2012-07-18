@@ -65,8 +65,8 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-common>=0.9.0rc',
-    'snf-pithos-backend>=0.9.1',
+    'snf-common>0.9.13',
+    'snf-pithos-backend>0.9.7',
     'Django>=1.2, <1.3'
 ]
 

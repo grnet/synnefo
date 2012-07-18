@@ -46,19 +46,43 @@ e.g::
 import sys
 import os
 
-from alembic.config import main as alembic_main
+from alembic.config import main as alembic_main, Config
+from alembic import context, command
+
 from pithos.backends.lib import sqlalchemy as sqlalchemy_backend
+from pithos.backends.lib.sqlalchemy import node, groups, public, xfeatures
+
+import sqlalchemy as sa
 
 DEFAULT_ALEMBIC_INI_PATH = os.path.join(
         os.path.abspath(os.path.dirname(sqlalchemy_backend.__file__)),
         'alembic.ini')
 
+def initialize_db():
+    alembic_cfg = Config(DEFAULT_ALEMBIC_INI_PATH)
+    engine = sa.engine_from_config(
+                alembic_cfg.get_section(alembic_cfg.config_ini_section), prefix='sqlalchemy.')
+    node.create_tables(engine)
+    groups.create_tables(engine)
+    public.create_tables(engine)
+    xfeatures.create_tables(engine)
+    
+    # then, load the Alembic configuration and generate the
+    # version table, "stamping" it with the most recent rev:
+    command.stamp(alembic_cfg, "head")
+
+
+
 def main(argv=None, **kwargs):
     if not argv:
         argv = sys.argv
-
+    
     # clean up args
     argv.pop(0)
+    
+    if argv[0] == 'initdb':
+        initialize_db()
+        return
 
     # default config arg, if not already set
     if not '-c' in argv:

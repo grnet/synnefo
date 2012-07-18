@@ -35,25 +35,36 @@ from collections import defaultdict
 from sqlalchemy import Table, Column, String, MetaData
 from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Index
+from sqlalchemy.exc import NoSuchTableError
+
 from dbworker import DBWorker
 
+def create_tables(engine):
+    metadata = MetaData()
+    columns=[]
+    columns.append(Column('owner', String(256), primary_key=True))
+    columns.append(Column('name', String(256), primary_key=True))
+    columns.append(Column('member', String(256), primary_key=True))
+    groups = Table('groups', metadata, *columns, mysql_engine='InnoDB')
+    
+    # place an index on member
+    Index('idx_groups_member', groups.c.member)
+        
+    metadata.create_all(engine)
+    return metadata.sorted_tables
+    
 class Groups(DBWorker):
     """Groups are named collections of members, belonging to an owner."""
     
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
-        metadata = MetaData()
-        columns=[]
-        columns.append(Column('owner', String(256), primary_key=True))
-        columns.append(Column('name', String(256), primary_key=True))
-        columns.append(Column('member', String(256), primary_key=True))
-        self.groups = Table('groups', metadata, *columns, mysql_engine='InnoDB')
+        try:
+            metadata = MetaData(self.engine)
+            self.groups = Table('groups', metadata, autoload=True)
+        except NoSuchTableError:
+            tables = create_tables(self.engine)
+            map(lambda t: self.__setattr__(t.name, t), tables)
         
-        # place an index on member
-        Index('idx_groups_member', self.groups.c.member)
-        
-        metadata.create_all(self.engine)
-    
     def group_names(self, owner):
         """List all group names belonging to owner."""
         

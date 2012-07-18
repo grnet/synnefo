@@ -36,9 +36,31 @@ from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey
 from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Index
 from sqlalchemy.sql.expression import desc
+from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker
 
+def create_tables(engine):
+    metadata = MetaData()
+    columns=[]
+    columns.append(Column('feature_id', Integer, primary_key=True))
+    columns.append(Column('path', String(2048)))
+    xfeatures = Table('xfeatures', metadata, *columns, mysql_engine='InnoDB')
+    # place an index on path
+    Index('idx_features_path', xfeatures.c.path, unique=True)
+    
+    columns=[]
+    columns.append(Column('feature_id', Integer,
+                          ForeignKey('xfeatures.feature_id',
+                                     ondelete='CASCADE'),
+                          primary_key=True))
+    columns.append(Column('key', Integer, primary_key=True,
+                          autoincrement=False))
+    columns.append(Column('value', String(256), primary_key=True))
+    xfeaturevals = Table('xfeaturevals', metadata, *columns, mysql_engine='InnoDB')
+    
+    metadata.create_all(engine)
+    return metadata.sorted_tables
 
 class XFeatures(DBWorker):
     """XFeatures are path properties that allow non-nested
@@ -47,25 +69,13 @@ class XFeatures(DBWorker):
     
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
-        metadata = MetaData()
-        columns=[]
-        columns.append(Column('feature_id', Integer, primary_key=True))
-        columns.append(Column('path', String(2048)))
-        self.xfeatures = Table('xfeatures', metadata, *columns, mysql_engine='InnoDB')
-        # place an index on path
-        Index('idx_features_path', self.xfeatures.c.path, unique=True)
-        
-        columns=[]
-        columns.append(Column('feature_id', Integer,
-                              ForeignKey('xfeatures.feature_id',
-                                         ondelete='CASCADE'),
-                              primary_key=True))
-        columns.append(Column('key', Integer, primary_key=True,
-                              autoincrement=False))
-        columns.append(Column('value', String(256), primary_key=True))
-        self.xfeaturevals = Table('xfeaturevals', metadata, *columns, mysql_engine='InnoDB')
-        
-        metadata.create_all(self.engine)
+        try:
+            metadata = MetaData(self.engine)
+            self.xfeatures = Table('xfeatures', metadata, autoload=True)
+            self.xfeaturevals = Table('xfeaturevals', metadata, autoload=True)
+        except NoSuchTableError:
+            tables = create_tables(self.engine)
+            map(lambda t: self.__setattr__(t.name, t), tables)
     
 #     def xfeature_inherit(self, path):
 #         """Return the (path, feature) inherited by the path, or None."""

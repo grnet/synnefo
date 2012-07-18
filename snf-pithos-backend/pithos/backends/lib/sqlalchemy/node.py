@@ -38,6 +38,7 @@ from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text, exists
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker
 
@@ -101,6 +102,82 @@ _propnames = {
     'cluster'   : 10
 }
 
+def create_tables(engine):
+    metadata = MetaData()
+        
+    #create nodes table
+    columns=[]
+    columns.append(Column('node', Integer, primary_key=True))
+    columns.append(Column('parent', Integer,
+                          ForeignKey('nodes.node',
+                                     ondelete='CASCADE',
+                                     onupdate='CASCADE'),
+                          autoincrement=False))
+    columns.append(Column('latest_version', Integer))
+    columns.append(Column('path', String(2048), default='', nullable=False))
+    nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
+    Index('idx_nodes_path', nodes.c.path, unique=True)
+    Index('idx_nodes_parent', nodes.c.parent)
+    
+    #create policy table
+    columns=[]
+    columns.append(Column('node', Integer,
+                          ForeignKey('nodes.node',
+                                     ondelete='CASCADE',
+                                     onupdate='CASCADE'),
+                          primary_key=True))
+    columns.append(Column('key', String(128), primary_key=True))
+    columns.append(Column('value', String(256)))
+    policy = Table('policy', metadata, *columns, mysql_engine='InnoDB')
+    
+    #create statistics table
+    columns=[]
+    columns.append(Column('node', Integer,
+                          ForeignKey('nodes.node',
+                                     ondelete='CASCADE',
+                                     onupdate='CASCADE'),
+                          primary_key=True))
+    columns.append(Column('population', Integer, nullable=False, default=0))
+    columns.append(Column('size', BigInteger, nullable=False, default=0))
+    columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
+    columns.append(Column('cluster', Integer, nullable=False, default=0,
+                          primary_key=True, autoincrement=False))
+    statistics = Table('statistics', metadata, *columns, mysql_engine='InnoDB')
+    
+    #create versions table
+    columns=[]
+    columns.append(Column('serial', Integer, primary_key=True))
+    columns.append(Column('node', Integer,
+                          ForeignKey('nodes.node',
+                                     ondelete='CASCADE',
+                                     onupdate='CASCADE')))
+    columns.append(Column('hash', String(256)))
+    columns.append(Column('size', BigInteger, nullable=False, default=0))
+    columns.append(Column('type', String(256), nullable=False, default=''))
+    columns.append(Column('source', Integer))
+    columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
+    columns.append(Column('muser', String(256), nullable=False, default=''))
+    columns.append(Column('uuid', String(64), nullable=False, default=''))
+    columns.append(Column('checksum', String(256), nullable=False, default=''))
+    columns.append(Column('cluster', Integer, nullable=False, default=0))
+    versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
+    Index('idx_versions_node_mtime', versions.c.node, versions.c.mtime)
+    Index('idx_versions_node_uuid', versions.c.uuid)
+    
+    #create attributes table
+    columns = []
+    columns.append(Column('serial', Integer,
+                          ForeignKey('versions.serial',
+                                     ondelete='CASCADE',
+                                     onupdate='CASCADE'),
+                          primary_key=True))
+    columns.append(Column('domain', String(256), primary_key=True))
+    columns.append(Column('key', String(128), primary_key=True))
+    columns.append(Column('value', String(256)))
+    attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
+    
+    metadata.create_all(engine)
+    return metadata.sorted_tables
 
 class Node(DBWorker):
     """Nodes store path organization and have multiple versions.
@@ -112,80 +189,16 @@ class Node(DBWorker):
     
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
-        metadata = MetaData()
-        
-        #create nodes table
-        columns=[]
-        columns.append(Column('node', Integer, primary_key=True))
-        columns.append(Column('parent', Integer,
-                              ForeignKey('nodes.node',
-                                         ondelete='CASCADE',
-                                         onupdate='CASCADE'),
-                              autoincrement=False))
-        columns.append(Column('latest_version', Integer))
-        columns.append(Column('path', String(2048), default='', nullable=False))
-        self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
-        Index('idx_nodes_path', self.nodes.c.path, unique=True)
-        Index('idx_nodes_parent', self.nodes.c.parent)
-        
-        #create policy table
-        columns=[]
-        columns.append(Column('node', Integer,
-                              ForeignKey('nodes.node',
-                                         ondelete='CASCADE',
-                                         onupdate='CASCADE'),
-                              primary_key=True))
-        columns.append(Column('key', String(128), primary_key=True))
-        columns.append(Column('value', String(256)))
-        self.policies = Table('policy', metadata, *columns, mysql_engine='InnoDB')
-        
-        #create statistics table
-        columns=[]
-        columns.append(Column('node', Integer,
-                              ForeignKey('nodes.node',
-                                         ondelete='CASCADE',
-                                         onupdate='CASCADE'),
-                              primary_key=True))
-        columns.append(Column('population', Integer, nullable=False, default=0))
-        columns.append(Column('size', BigInteger, nullable=False, default=0))
-        columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
-        columns.append(Column('cluster', Integer, nullable=False, default=0,
-                              primary_key=True, autoincrement=False))
-        self.statistics = Table('statistics', metadata, *columns, mysql_engine='InnoDB')
-        
-        #create versions table
-        columns=[]
-        columns.append(Column('serial', Integer, primary_key=True))
-        columns.append(Column('node', Integer,
-                              ForeignKey('nodes.node',
-                                         ondelete='CASCADE',
-                                         onupdate='CASCADE')))
-        columns.append(Column('hash', String(256)))
-        columns.append(Column('size', BigInteger, nullable=False, default=0))
-        columns.append(Column('type', String(256), nullable=False, default=''))
-        columns.append(Column('source', Integer))
-        columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
-        columns.append(Column('muser', String(256), nullable=False, default=''))
-        columns.append(Column('uuid', String(64), nullable=False, default=''))
-        columns.append(Column('checksum', String(256), nullable=False, default=''))
-        columns.append(Column('cluster', Integer, nullable=False, default=0))
-        self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
-        Index('idx_versions_node_mtime', self.versions.c.node, self.versions.c.mtime)
-        Index('idx_versions_node_uuid', self.versions.c.uuid)
-        
-        #create attributes table
-        columns = []
-        columns.append(Column('serial', Integer,
-                              ForeignKey('versions.serial',
-                                         ondelete='CASCADE',
-                                         onupdate='CASCADE'),
-                              primary_key=True))
-        columns.append(Column('domain', String(256), primary_key=True))
-        columns.append(Column('key', String(128), primary_key=True))
-        columns.append(Column('value', String(256)))
-        self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
-        
-        metadata.create_all(self.engine)
+        try:
+            metadata = MetaData(self.engine)
+            self.nodes = Table('nodes', metadata, autoload=True)
+            self.policy = Table('policy', metadata, autoload=True)
+            self.statistics = Table('statistics', metadata, autoload=True)
+            self.versions = Table('versions', metadata, autoload=True)
+            self.attributes = Table('attributes', metadata, autoload=True)
+        except NoSuchTableError:
+            tables = create_tables(self.engine)
+            map(lambda t: self.__setattr__(t.name, t), tables)
         
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))
@@ -193,7 +206,7 @@ class Node(DBWorker):
         r = rp.fetchone()
         rp.close()
         if not r:
-            s = self.nodes.insert().values(node=ROOTNODE, parent=ROOTNODE)
+            s = self.nodes.insert().values(node=ROOTNODE, parent=ROOTNODE, path='')
             self.conn.execute(s)
     
     def node_create(self, parent, path):
@@ -407,8 +420,8 @@ class Node(DBWorker):
         return True
     
     def policy_get(self, node):
-        s = select([self.policies.c.key, self.policies.c.value],
-            self.policies.c.node==node)
+        s = select([self.policy.c.key, self.policy.c.value],
+            self.policy.c.node==node)
         r = self.conn.execute(s)
         d = dict(r.fetchall())
         r.close()
@@ -417,13 +430,13 @@ class Node(DBWorker):
     def policy_set(self, node, policy):
         #insert or replace
         for k, v in policy.iteritems():
-            s = self.policies.update().where(and_(self.policies.c.node == node,
-                                                  self.policies.c.key == k))
+            s = self.policy.update().where(and_(self.policy.c.node == node,
+                                                  self.policy.c.key == k))
             s = s.values(value = v)
             rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
-                s = self.policies.insert()
+                s = self.policy.insert()
                 values = {'node':node, 'key':k, 'value':v}
                 r = self.conn.execute(s, values)
                 r.close()

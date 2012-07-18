@@ -45,14 +45,15 @@ import sys
 import os
 import subprocess
 
-import time
 import json
 import socket
 import logging
 
-from amqplib import client_0_8 as amqp
+from time import time
 
 from synnefo import settings
+from synnefo.lib.amqp import AMQPClient
+from synnefo.lib.utils import split_time
 
 
 def mac2eui64(mac, prefixstr):
@@ -135,6 +136,7 @@ def ganeti_net_status(logger, environ):
         nics_list.append(nics[i])
 
     msg = {
+        "event_time": split_time(time()),
         "type": "ganeti-net-status",
         "instance": instance,
         "nics": nics_list
@@ -149,6 +151,15 @@ class GanetiHook():
         self.environ = environ
         self.instance = instance
         self.prefix = prefix
+        # Retry up to two times(per host) to open a channel to RabbitMQ.
+        # The hook needs to abort if this count is exceeded, because it
+        # runs synchronously with VM creation inside Ganeti, and may only
+        # run for a finite amount of time.
+
+        # FIXME: We need a reconciliation mechanism between the DB and
+        #        Ganeti, for cases exactly like this.
+        self.client = AMQPClient(max_retries= 2*len(settings.AMQP_HOSTS))
+        self.client.connect()
 
     def on_master(self):
         """Return True if running on the Ganeti master"""
@@ -158,48 +169,12 @@ class GanetiHook():
         for (msgtype, msg) in msgs:
             routekey = "ganeti.%s.event.%s" % (self.prefix, msgtype)
             self.logger.debug("Pushing message to RabbitMQ: %s (key = %s)",
-                json.dumps(msg), routekey)
-            msg = amqp.Message(json.dumps(msg))
-            msg.properties["delivery_mode"] = 2  # Persistent
-
-            # Retry up to five times to open a channel to RabbitMQ.
-            # The hook needs to abort if this count is exceeded, because it
-            # runs synchronously with VM creation inside Ganeti, and may only
-            # run for a finite amount of time.
-            #
-            # FIXME: We need a reconciliation mechanism between the DB and
-            #        Ganeti, for cases exactly like this.
-            conn = None
-            sent = False
-            retry = 0
-            while not sent and retry < 5:
-                self.logger.debug("Attempting to publish to RabbitMQ at %s",
-                    settings.RABBIT_HOST)
-                try:
-                    if not conn:
-                        conn = amqp.Connection(host=settings.RABBIT_HOST,
-                            userid=settings.RABBIT_USERNAME,
-                            password=settings.RABBIT_PASSWORD,
-                            virtual_host=settings.RABBIT_VHOST)
-                        chann = conn.channel()
-                        self.logger.debug("Successfully connected to RabbitMQ at %s",
-                            settings.RABBIT_HOST)
-
-                    chann.basic_publish(msg,
-                        exchange=settings.EXCHANGE_GANETI,
-                        routing_key=routekey)
-                    sent = True
-                    self.logger.debug("Successfully sent message to RabbitMQ")
-                except socket.error:
-                    conn = False
-                    retry += 1
-                    self.logger.exception("Publish to RabbitMQ failed, retry=%d in 1s",
-                        retry)
-                    time.sleep(1)
-
-            if not sent:
-                raise Exception("Publish to RabbitMQ failed after %d tries, aborting" % retry)
-
+                              json.dumps(msg), routekey)
+            msg = json.dumps(msg)
+            self.client.basic_publish(exchange=settings.EXCHANGE_GANETI,
+                                      routing_key=routekey,
+                                      body=msg)
+        self.client.close()
 
 class PostStartHook(GanetiHook):
     """Post-instance-startup Ganeti Hook.

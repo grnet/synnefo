@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,49 +30,32 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-import os
+""" Module implementing connection and communication with an AMQP broker.
 
-from setuptools import setup
+AMQP Client's instatiated by this module silenty detect connection failures and
+try to reconnect to any available broker. Also publishing takes advantage of
+publisher-confirms in order to guarantee that messages are properly delivered
+to the broker.
 
-HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+"""
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo.versions', 'ganeti', HERE)
-except ImportError:
-    pass
+from synnefo import settings
 
-from synnefo.versions.ganeti import __version__
+if settings.AMQP_BACKEND == 'puka':
+    from amqp_puka import AMQPPukaClient as Client
+elif settings.AMQP_BACKEND == 'haigha':
+    from amqp_haigha import AMQPHaighaClient as Client
+else:
+    raise Exception('Unknown Backend %s' % settings.AMQP_BACKEND)
 
-setup(
-    name="snf-cyclades-gtools",
-    version=__version__,
-    description="Synnefo Ganeti supplementary tools",
-    author="Synnefo Development Team",
-    author_email="synnefo@lists.grnet.gr",
-    license="BSD",
-    url="http://code.grnet.gr/projects/synnefo",
-    namespace_packages=["synnefo", "synnefo.versions"],
-    packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
-    install_requires=[
-        'snf-common>0.9.14',
-        'python-daemon>=1.5.5',
-        'pyinotify>=0.8.9',
-        'puka',
-        'python-prctl>=1.1.1',
-    ],
-    entry_points = {
-     'console_scripts': [
-         'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
-         'snf-ganeti-hook = synnefo.ganeti.hook:main',
-         'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
-         ],
-     'synnefo': [
-            'default_settings = synnefo.ganeti.settings'
-         ]
-     },
-)
+
+class AMQPClient(object):
+    """
+    AMQP generic client implementing most of the basic AMQP operations.
+
+    This class will create an object of AMQPPukaClient or AMQPHaigha client
+    depending on AMQP_BACKEND setting
+    """
+    def __new__(cls, *args, **kwargs):
+        return Client(*args, **kwargs)

@@ -46,11 +46,141 @@ from django.test.client import Client
 from synnefo.db.models import *
 from synnefo.logic.utils import get_rsapi_state
 
+import mock
 
 class AaiClient(Client):
     def request(self, **request):
         request['HTTP_X_AUTH_TOKEN'] = '0000'
         return super(AaiClient, self).request(**request)
+
+
+class TestQuota(TestCase):
+
+    fixtures = ['users', 'flavors']
+    astakos_response_user = 'test'
+
+    def setUp(self):
+
+        self.astakos_response_user = 'test'
+        def get_user_mock(request, *Args, **kwargs):
+            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
+                request.user_uniq = self.astakos_response_user
+                request.user = {'uniq': self.astakos_response_user}
+
+        def get_image_mock(request, *Args, **kwargs):
+            return {'backend_id':'1234', 'location':'pithos://dummyimage',
+                    'disk_format': 'plain'}
+
+        self.rapi_patch = mock.patch('synnefo.logic.backend.rapi')
+        self.rapi_mock = self.rapi_patch.start()
+
+        self.pithos_patch = mock.patch('synnefo.api.util.get_image')
+        self.pithos_mock = self.rapi_patch.start()
+
+        # mock the astakos authentication function
+        from synnefo.api import util
+        util.get_user = get_user_mock
+        util.get_image = get_image_mock
+
+        settings.SKIP_SSH_VALIDATION = True
+        self.client = AaiClient()
+        self.user = 'test'
+
+    def test_vms_quota(self):
+        request = {
+                    "server": {
+                        "name": "new-server-test",
+                        "userid": "test",
+                        "imageRef": 1,
+                        "flavorRef": 1,
+                        "metadata": {
+                            "My Server Name": "Apache1"
+                        },
+                        "personality": []
+                    }
+        }
+
+        def create_server(for_user='test'):
+            self.astakos_response_user = for_user
+            return self.client.post('/api/v1.1/servers', json.dumps(request),
+                content_type="application/json")
+
+        def user_vms_count(user='test'):
+            return VirtualMachine.objects.filter(userid=user).count()
+
+        # admin sets max vms per user to 2
+        settings.MAX_VMS_PER_USER = 2
+        create_server()
+        create_server()
+        self.assertEqual(user_vms_count(), 2)
+
+        # third creation fails
+        resp = create_server()
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_vms_count(), 2)
+
+        # setting changed, no additional servers can get created
+        settings.MAX_VMS_PER_USER = 1
+        resp = create_server()
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_vms_count(), 2)
+
+        # admin wants test user to create 4 vms, now test user can create
+        # one additional vm, but no more
+        settings.VMS_USER_QUOTA = {'test':3}
+        create_server()
+        self.assertEqual(user_vms_count(), 3)
+        resp = create_server()
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_vms_count(), 3)
+        # other users still apply to the global quota
+        create_server("testuser2")
+        self.assertEqual(user_vms_count("testuser2"), 1)
+        resp = create_server("testuser2")
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_vms_count("testuser2"), 1)
+
+
+    def test_networks_quota(self):
+
+        def create_network(for_user='test'):
+            request = json.dumps({'network': {'name': 'user %s network' %
+                for_user}})
+            self.astakos_response_user = for_user
+            return self.client.post('/api/v1.1/networks', request,
+                content_type="application/json")
+
+        def user_networks_count(user='test'):
+            return Network.objects.filter(userid=user).count()
+
+        settings.MAX_NETWORKS_PER_USER = 1
+        create_network()
+        self.assertEqual(user_networks_count(),1)
+        resp = create_network()
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_networks_count(), 1)
+
+        settings.NETWORKS_USER_QUOTA = {'test':2}
+        create_network()
+        self.assertEqual(user_networks_count(),2)
+        resp = create_network()
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_networks_count(), 2)
+
+        create_network("testuser2")
+        self.assertEqual(user_networks_count("testuser2"),1)
+        resp = create_network("testuser2")
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(user_networks_count("testuser2"), 1)
+
+        settings.GANETI_MAX_LINK_NUMBER = 3
+        settings.NETWORKS_USER_QUOTA = {'test':10}
+        resp = create_network()
+        self.assertEqual(Network.objects.count(), 4)
+        self.assertEqual('No networks available.' in resp.content, True)
+        self.assertEqual(user_networks_count(), 2)
+
+
 
 
 class APITestCase(TestCase):

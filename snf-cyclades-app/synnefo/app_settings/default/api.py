@@ -21,9 +21,9 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
-# Synnefo assigns this link id to NICs connected on the public network.
-# An IP pool should be associated with this link by the Ganeti administrator.
-GANETI_PUBLIC_LINK = 'snf_public'
+# Name of the public network in Ganeti. An IP pool should be associated with
+# this network by the Ganeti administrator.
+GANETI_PUBLIC_NETWORK = 'snf_public'
 # This link id is assigned to NICs that should be isolated from anything else
 # (e.g., right before the NIC gets deleted).
 # This value is also hardcoded in a fixture in db/fixtures/initial_data.json.
@@ -55,8 +55,19 @@ IGNORE_FLAVOR_DISK_SIZES = False
 
 # Quota
 #
-# Maximum number of VMs a user is allowed to have
+# Maximum number of VMs a user is allowed to have.
 MAX_VMS_PER_USER = 3
+
+# Override maximum number of VMs for specific users.
+# e.g. VMS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
+VMS_USER_QUOTA = {}
+
+# Maximum number of networks a user is allowed to have.
+MAX_NETWORKS_PER_USER = 5
+
+# Override maximum number of private networks for specific users.
+# e.g. NETWORKS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
+NETWORKS_USER_QUOTA = {}
 
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.

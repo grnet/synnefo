@@ -39,11 +39,12 @@ def id_from_instance_name(name):
     Strips the ganeti prefix atm. Needs a better name!
 
     """
-    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
-        raise VirtualMachine.InvalidBackendIdError(str(name))
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID, "", 1)
+    sname = str(name)
+    if not sname.startswith(settings.BACKEND_PREFIX_ID):
+        raise VirtualMachine.InvalidBackendIdError(sname)
+    ns = sname.replace(settings.BACKEND_PREFIX_ID, "", 1)
     if not ns.isdigit():
-        raise VirtualMachine.InvalidBackendIdError(str(name))
+        raise VirtualMachine.InvalidBackendIdError(sname)
 
     return int(ns)
 

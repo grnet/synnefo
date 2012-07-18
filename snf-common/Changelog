@@ -1,6 +1,12 @@
 Changelog
 =========
 
+
+dev
+***
+* AMQP client which supports connection with multiple brokers using
+  HA-queues and publisher-confirms to guarantee delivery of messages.
+
 v0.9.7
 ------
 * Provide a fallback token to user library

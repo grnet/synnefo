@@ -52,21 +52,30 @@ from alembic import context, command
 from pithos.backends.lib import sqlalchemy as sqlalchemy_backend
 from pithos.backends.lib.sqlalchemy import node, groups, public, xfeatures
 
+from synnefo.settings import PITHOS_BACKEND_DB_CONNECTION
+
 import sqlalchemy as sa
 
 DEFAULT_ALEMBIC_INI_PATH = os.path.join(
         os.path.abspath(os.path.dirname(sqlalchemy_backend.__file__)),
         'alembic.ini')
 
+
 def initialize_db():
     alembic_cfg = Config(DEFAULT_ALEMBIC_INI_PATH)
+
+    db = alembic_cfg.get_main_option("sqlalchemy.url", PITHOS_BACKEND_DB_CONNECTION)
+    alembic_cfg.set_main_option("sqlalchemy.url", db)
+
     engine = sa.engine_from_config(
-                alembic_cfg.get_section(alembic_cfg.config_ini_section), prefix='sqlalchemy.')
+                alembic_cfg.get_section(alembic_cfg.config_ini_section),
+                prefix='sqlalchemy.')
+
     node.create_tables(engine)
     groups.create_tables(engine)
     public.create_tables(engine)
     xfeatures.create_tables(engine)
-    
+
     # then, load the Alembic configuration and generate the
     # version table, "stamping" it with the most recent rev:
     command.stamp(alembic_cfg, "head")
@@ -76,13 +85,16 @@ def initialize_db():
 def main(argv=None, **kwargs):
     if not argv:
         argv = sys.argv
-    
+
     # clean up args
     argv.pop(0)
-    
-    if argv[0] == 'initdb':
+
+    if len(argv) >= 1 and argv[0] == 'initdb':
+        print "Initializing db."
         initialize_db()
-        return
+        print "DB initialized."
+        exit(1)
+
 
     # default config arg, if not already set
     if not '-c' in argv:

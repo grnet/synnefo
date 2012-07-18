@@ -52,7 +52,16 @@ from alembic import context, command
 from pithos.backends.lib import sqlalchemy as sqlalchemy_backend
 from pithos.backends.lib.sqlalchemy import node, groups, public, xfeatures
 
-from synnefo.settings import PITHOS_BACKEND_DB_CONNECTION
+try:
+    # pithos-app case
+    from synnefo.settings import PITHOS_BACKEND_DB_CONNECTION
+except ImportError:
+    try:
+        # plankton case
+        from synnefo.settings import BACKEND_DB_CONNECTION as \
+            PITHOS_BACKEND_DB_CONNECTION
+    except ImportError:
+        PITHOS_BACKEND_DB_CONNECTION = None
 
 import sqlalchemy as sa
 

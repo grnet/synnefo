@@ -2,7 +2,17 @@ from __future__ import with_statement
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from logging.config import fileConfig
-from synnefo.settings import PITHOS_BACKEND_DB_CONNECTION
+
+try:
+    # pithos-app case
+    from synnefo.settings import PITHOS_BACKEND_DB_CONNECTION
+except ImportError:
+    try:
+        # plankton case
+        from synnefo.settings import BACKEND_DB_CONNECTION as \
+            PITHOS_BACKEND_DB_CONNECTION
+    except ImportError:
+        PITHOS_BACKEND_DB_CONNECTION = None
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

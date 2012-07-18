@@ -1,7 +1,9 @@
 Changelog
 ---------
 
-dev
-***
+v0.10.0
+*******
+
+* Improve eventd stale pid lockfile handling
 * Setting for RabbitMQ endpoints (``AMQP_HOSTS``)
 * Event timestamp in messages

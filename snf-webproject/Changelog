@@ -2,6 +2,11 @@ Changelog
 ---------
 
 
+v0.10.0
+*******
+
+* Include snf-manage bash_completion script in `extras` dir
+
 v0.9.12
 *******
 

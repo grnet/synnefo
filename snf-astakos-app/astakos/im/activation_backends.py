@@ -89,7 +89,7 @@ class ActivationBackend(object):
     
     def get_signup_form(self, provider='local', instance=None):
         """
-        Returns the form class name
+        Returns a form instance of the relevant class
         """
         main = provider.capitalize() if provider == 'local' else 'ThirdParty'
         suffix  = 'UserCreationForm'
@@ -152,7 +152,7 @@ class InvitationsBackend(ActivationBackend):
 
     def get_signup_form(self, provider='local', instance=None):
         """
-        Returns the form class
+        Returns a form instance of the relevant class
         
         raises Invitation.DoesNotExist and ValueError if invitation is consumed
         or invitation username is reserved.

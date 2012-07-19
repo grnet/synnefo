@@ -60,7 +60,7 @@ from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
     invite as invite_func, logout as auth_logout
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +279,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     """
     Allows a user to create a local account.
 
-    In case of GET request renders a form for providing the user information.
+    In case of GET request renders a form for entering the user information.
     In case of POST handles the signup.
 
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
@@ -287,7 +287,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.activation_backends.SimpleBackend`` if not
     (see activation_backends);
     
-    Upon successful user creation if ``next`` url parameter is present the user is redirected there
+    Upon successful user creation, if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
     
     On unsuccessful creation, renders ``template_name`` with an error message.
@@ -297,7 +297,6 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     ``template_name``
         A custom template to render. This is optional;
         if not specified, this will default to ``im/signup.html``.
-
 
     ``on_success``
         A custom template to render in case of success. This is optional;
@@ -334,6 +333,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     additional_email = form.cleaned_data['additional_email']
                     if additional_email != user.email:
                         user.additionalmail_set.create(email=additional_email)
+                        msg = 'Additional email: %s saved for user %s.' % (additional_email, user.email)
+                        logger._log(LOGGING_LEVEL, msg, [])
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)

@@ -306,9 +306,9 @@ def add(request, net, args):
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
 
-    #Dummy write to enforce isolation
-    Network.objects.filter(id=net.id).update(id=net.id)
-    net = Network.objects.get(id=net.id)
+    # Get the Network object in exclusive mode in order to
+    # guarantee consistency of the pool
+    net = Network.objects.select_for_update().get(id=net.id)
     # Get a free IP from the address pool.
     pool = ippool.IPPool(net)
     try:

@@ -40,6 +40,8 @@ from synnefo.logic.ippool import IPPool
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
+from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
+
 BACKEND_CLIENTS = {}  # {hash:Backend client}
 BACKEND_HASHES = {}   # {Backend.id:hash}
 
@@ -113,17 +115,6 @@ class Flavor(models.Model):
         return self.name
 
 
-class BackendQuerySet(models.query.QuerySet):
-    def delete(self):
-        for backend in self._clone():
-            backend.delete()
-
-
-class ProtectDeleteManager(models.Manager):
-    def get_query_set(self):
-        return BackendQuerySet(self.model, using=self._db)
-
-
 class Backend(models.Model):
     clustername = models.CharField('Cluster Name', max_length=128, unique=True)
     port = models.PositiveIntegerField('Port', default=5080)
@@ -147,7 +138,7 @@ class Backend(models.Model):
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
     # Custom object manager to protect from cascade delete
-    objects = ProtectDeleteManager()
+    objects = ProtectedDeleteManager()
 
     class Meta:
         verbose_name = u'Backend'
@@ -408,6 +399,7 @@ class VirtualMachineMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
+
 class Network(models.Model):
     OPER_STATES = (
         ('PENDING', 'Pending'),
@@ -462,6 +454,7 @@ class Network(models.Model):
 
     ip_pool = None
 
+    objects = ForUpdateManager()
 
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
@@ -561,6 +554,7 @@ class Network(models.Model):
         pool.release(address)
         pool._update_network()
         self.save()
+
 
     # def get_free_address(self):
     #     # Get yourself inside a transaction

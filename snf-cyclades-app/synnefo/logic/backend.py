@@ -40,7 +40,8 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
-from synnefo.logic import utils
+from synnefo.logic import utils, ippool
+from synnefo.api.faults import ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
 
 log = getLogger('synnefo.logic')
@@ -125,9 +126,9 @@ def process_net_status(vm, etime, nics):
         if pk in networks:
             net = networks[pk]
         else:
-            #Dummy write to enforce isolation
-            Network.objects.filter(id=pk).update(id=pk)
-            net = Network.objects.get(pk=pk)
+            # Get the network object in exclusive mode in order
+            # to guarantee consistency of the address pool
+            net = Network.objects.select_for_update().get(pk=pk)
         net.release_address(old_nic.ipv4)
         old_nic.delete()
 
@@ -140,7 +141,7 @@ def process_net_status(vm, etime, nics):
         if pk in networks:
             net = networks[pk]
         else:
-            net = Network.objects.get(pk=pk)
+            net = Network.objects.select_for_update().get(pk=pk)
 
         # Get the new nic info
         mac = new_nic.get('mac', '')
@@ -272,7 +273,18 @@ def create_instance(vm, flavor, image, password, personality):
 
         metadata value should be a dictionary.
     """
-    nic = {'ip': 'pool', 'network': settings.GANETI_PUBLIC_NETWORK}
+
+    # Get the Network object in exclusive mode in order to
+    # safely (isolated) reserve an IP address
+    network = Network.objects.select_for_update().get(id=1)
+    pool = ippool.IPPool(network)
+    try:
+        address = pool.get_free_address()
+    except ippool.IPPool.IPPoolExhausted:
+        raise ServiceUnavailable('Network is full')
+    pool.save()
+
+    nic = {'ip': address, 'network': settings.GANETI_PUBLIC_NETWORK}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:

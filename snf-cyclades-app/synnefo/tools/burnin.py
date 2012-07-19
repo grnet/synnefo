@@ -481,8 +481,9 @@ class SpawnServerTestCase(unittest.TestCase):
         
         console = self.cyclades.get_server_console(self.serverid)
         self.assertEquals(console['type'], "vnc")
-        sock = self._insist_on_tcp_connection(socket.AF_UNSPEC,
+        sock = self._insist_on_tcp_connection(socket.AF_INET,
                                         console["host"], console["port"])
+
 
         # Step 1. ProtocolVersion message (par. 6.1.1)
         version = sock.recv(1024)
@@ -1450,7 +1451,6 @@ def main():
     # Cleanup stale servers from previous runs
     if opts.show_stale:
         cleanup_servers(delete_stale=opts.delete_stale)
-        return 0
 
     # Initialize a kamaki instance, get flavors, images
 
@@ -1522,8 +1522,8 @@ def main():
                                                    )
     
 
-        # seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
-        seq_cases = [NetworkTestCase]
+        seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
+        # seq_cases = [NetworkTestCase]
         
         # seq_cases = [UnauthorizedTestCase]
         
@@ -1541,21 +1541,18 @@ def main():
             error = open(error_file, "w")
 
             suite = unittest.TestLoader().loadTestsFromTestCase(case)
-            runner = unittest.TextTestRunner(f, verbosity=2)
+            runner = unittest.TextTestRunner(f, verbosity=2, failfast = True)
             result = runner.run(suite)
         
-            error.write("Testcases errors: \n\n")
             for res in result.errors:
                 error.write(str(res[0])+'\n')
                 error.write(str(res[0].__doc__) + '\n')
                 error.write('\n')
 
-            
-                fail.write("Testcases failures: \n\n")
-                for res in result.failures:
-                    fail.write(str(res[0])+'\n')
-                    fail.write(str(res[0].__doc__) + '\n')
-                    fail.write('\n')
+            for res in result.failures:
+                fail.write(str(res[0])+'\n')
+                fail.write(str(res[0].__doc__) + '\n')
+                fail.write('\n')
         
 
 

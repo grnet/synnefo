@@ -52,6 +52,7 @@ from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
@@ -442,8 +443,13 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='im
     except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest(_('No such user'))
     
+    if user.is_active:
+        message = 'Account already active.'
+        messages.add_message(request, messages.ERROR, message)
+        return render_response(on_failure)
+    
     try:
-        local_user = AstakosUser.objects.get(email=user.email, is_active=True)
+        local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
     except AstakosUser.DoesNotExist:
         user.is_active = True
         user.email_verified = True
@@ -453,16 +459,17 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='im
             return HttpResponseBadRequest(e)
     else:
         # switch the existing account to shibboleth one
-        local_user.provider = 'shibboleth'
-        local_user.set_unusable_password()
-        local_user.third_party_identifier = user.third_party_identifier
-        try:
-            local_user.save()
-        except ValidationError, e:
-            return HttpResponseBadRequest(e)
-        user.delete()
-        user = local_user
-    
+        if user.provider == 'shibboleth':
+            local_user.provider = 'shibboleth'
+            local_user.set_unusable_password()
+            local_user.third_party_identifier = user.third_party_identifier
+            try:
+                local_user.save()
+            except ValidationError, e:
+                return HttpResponseBadRequest(e)
+            user.delete()
+            user = local_user
+        
     try:
         send_greeting(user, email_template_name)
         response = prepare_response(request, user, next, renew=True)

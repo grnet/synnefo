@@ -84,9 +84,6 @@ def api_method(http_method=None, token_required=False, perms=None):
                         raise Unauthorized('Access denied')
                     try:
                         user = AstakosUser.objects.get(auth_token=x_auth_token)
-                        ## Check if the token has expired.
-                        #if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-                        #    raise Unauthorized('Authentication expired')
                         if not user.has_perms(perms):
                             raise Forbidden('Unauthorized request')
                     except AstakosUser.DoesNotExist, e:
@@ -196,8 +193,12 @@ def get_menu(request, with_extra_links=False, with_signout=True):
     cookie = urllib.unquote(request.COOKIES.get(COOKIE_NAME, ''))
     email = cookie.partition('|')[0]
     try:
+        if not email:
+            raise ValueError
         user = AstakosUser.objects.get(email=email, is_active=True)
     except AstakosUser.DoesNotExist:
+        pass
+    except ValueError:
         pass
     else:
         l = []

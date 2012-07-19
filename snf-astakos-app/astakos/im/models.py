@@ -372,7 +372,7 @@ class AdditionalMail(models.Model):
     Model for registring invitations
     """
     owner = models.ForeignKey(AstakosUser)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
 
 def create_astakos_user(u):
     try:

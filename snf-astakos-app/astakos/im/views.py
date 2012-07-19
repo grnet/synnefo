@@ -312,7 +312,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     im/signup_complete.html or ``on_success`` keyword argument. 
     """
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('astakos.im.views.index'))
+        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     
     provider = get_query(request).get('provider', 'local')
     try:

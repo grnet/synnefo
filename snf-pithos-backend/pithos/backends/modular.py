@@ -456,7 +456,7 @@ class ModularBackend(BaseBackend):
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
-            self._report_size_change(user, account, -size, {'action': 'container purge'})
+            self._report_size_change(user, account, -size, {'action': 'container purge', 'path':path})
             return
         
         if not delimiter:
@@ -467,7 +467,7 @@ class ModularBackend(BaseBackend):
                 self.store.map_delete(h)
             self.node.node_purge_children(node, inf, CLUSTER_DELETED)
             self.node.node_remove(node)
-            self._report_size_change(user, account, -size, {'action': 'container delete'})
+            self._report_size_change(user, account, -size, {'action': 'container delete', 'path':path})
         else:
         	# remove only contents
             src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
@@ -478,7 +478,7 @@ class ModularBackend(BaseBackend):
                 src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
                 del_size = self._apply_versioning(account, container, src_version_id)
                 if del_size:
-                    self._report_size_change(user, account, -del_size, {'action': 'object delete'})
+                    self._report_size_change(user, account, -del_size, {'action': 'object delete', 'path':path})
                 self._report_object_change(user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
@@ -741,7 +741,7 @@ class ModularBackend(BaseBackend):
                (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
                 # This must be executed in a transaction, so the version is never created if it fails.
                 raise QuotaError
-        self._report_size_change(user, account, size_delta, {'action': 'object update'})
+        self._report_size_change(user, account, size_delta, {'action': 'object update', 'path':path})
         
         if permissions is not None:
             self.permissions.access_set(path, permissions)
@@ -861,14 +861,14 @@ class ModularBackend(BaseBackend):
                 props = self._get_version(node)
             except NameError:
                 self.permissions.access_clear(path)
-            self._report_size_change(user, account, -size, {'action': 'object purge'})
+            self._report_size_change(user, account, -size, {'action': 'object purge', 'path':path})
             return
         
         path, node = self._lookup_object(account, container, name)
         src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
         del_size = self._apply_versioning(account, container, src_version_id)
         if del_size:
-            self._report_size_change(user, account, -del_size, {'action': 'object delete'})
+            self._report_size_change(user, account, -del_size, {'action': 'object delete', 'path':path})
         self._report_object_change(user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
         
@@ -882,7 +882,7 @@ class ModularBackend(BaseBackend):
                 src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
                 del_size = self._apply_versioning(account, container, src_version_id)
                 if del_size:
-                    self._report_size_change(user, account, -del_size, {'action': 'object delete'})
+                    self._report_size_change(user, account, -del_size, {'action': 'object delete', 'path':path})
                 self._report_object_change(user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
@@ -1122,15 +1122,15 @@ class ModularBackend(BaseBackend):
     # Reporting functions.
     
     def _report_size_change(self, user, account, size, details={}):
-        logger.debug("_report_size_change: %s %s %s %s", user, account, size, details)
         account_node = self._lookup_account(account, True)[1]
         total = self._get_statistics(account_node)[1]
         details.update({'user': user, 'total': total})
+        logger.debug("_report_size_change: %s %s %s %s", user, account, size, details)
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',), account, QUEUE_INSTANCE_ID, 'diskspace', float(size), details))
     
     def _report_object_change(self, user, account, path, details={}):
+        details.update({'user': user})
         logger.debug("_report_object_change: %s %s %s %s", user, account, path, details)
-        details.update({'user': user, 'filename':path})
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',), account, QUEUE_INSTANCE_ID, 'object', path, details))
     
     def _report_sharing_change(self, user, account, path, details={}):

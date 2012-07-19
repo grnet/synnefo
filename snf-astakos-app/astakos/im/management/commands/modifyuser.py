@@ -58,11 +58,20 @@ class Command(BaseCommand):
             dest='password',
             metavar='PASSWORD',
             help="Set user's password"),
+        make_option('--provider',
+            dest='provider',
+            metavar='PROVIDER',
+            help="Set user's provider"),
         make_option('--renew-token',
             action='store_true',
             dest='renew_token',
             default=False,
             help="Renew the user's token"),
+        make_option('--renew-password',
+            action='store_true',
+            dest='renew_password',
+            default=False,
+            help="Renew the user's password"),
         make_option('--set-admin',
             action='store_true',
             dest='admin',
@@ -173,6 +182,16 @@ class Command(BaseCommand):
         if password is not None:
             user.set_password(password)
         
+        provider = options.get('provider')
+        if provider is not None:
+            user.provider = provider
+        
+        
+        password = None
+        if options['renew_password']:
+            password = AstakosUser.objects.make_random_password()
+            user.set_password(password)
+        
         if options['renew_token']:
             user.renew_token()
         
@@ -180,3 +199,6 @@ class Command(BaseCommand):
             user.save()
         except ValidationError, e:
             raise CommandError(e)
+        
+        if password:
+            self.stdout.write('User\'s new password: %s\n' % password)

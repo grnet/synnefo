@@ -96,6 +96,9 @@ class AstakosUser(User):
     __has_signed_terms = False
     __groupnames = []
     
+    class Meta:
+        unique_together = ("provider", "third_party_identifier")
+    
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms

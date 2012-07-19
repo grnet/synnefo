@@ -207,15 +207,12 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 
 
 @transaction.commit_on_success
-def process_create_progress(vm, etime, rprogress, wprogress):
+def process_create_progress(vm, etime, progress):
 
-    # XXX: This only uses the read progress for now.
-    #      Explore whether it would make sense to use the value of wprogress
-    #      somewhere.
-    percentage = int(rprogress)
+    percentage = int(progress)
 
     # The percentage may exceed 100%, due to the way
-    # snf-progress-monitor tracks bytes read by image handling processes
+    # snf-image:copy-progress tracks bytes read by image handling processes
     percentage = 100 if percentage > 100 else percentage
     if percentage < 0:
         raise ValueError("Percentage cannot be negative")
@@ -374,7 +371,8 @@ def delete_instance(vm):
 
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
-    vm.client.RebootInstance(vm.backend_vm_id, reboot_type, dry_run=settings.TEST)
+    vm.client.RebootInstance(vm.backend_vm_id, reboot_type,
+                             dry_run=settings.TEST)
     log.info('Rebooting instance %s', vm.backend_vm_id)
 
 

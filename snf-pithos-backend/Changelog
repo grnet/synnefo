@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.10.1
+-------
+
+* Proper migration for latest_version field.
+
 v0.10.0
 -------
 

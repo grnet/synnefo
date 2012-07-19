@@ -114,12 +114,12 @@ class ImagesTestCase(unittest.TestCase):
     def test_001_list_images(self):
         """Test image list actually returns images"""
         self.assertGreater(len(self.images), 0)
-        self.assertEqual(len(self.images), -1)
+
 
     def test_002_list_images_detailed(self):
         """Test detailed image list is the same length as list"""
         self.assertEqual(len(self.dimages), len(self.images))
-        self.assertEqual(len(self.dimages), 0)
+
 
     def test_003_same_image_names(self):
         """Test detailed and simple image list contain same names"""
@@ -192,9 +192,10 @@ class ServersTestCase(unittest.TestCase):
         cls.servers = cls.client.list_servers()
         cls.dservers = cls.client.list_servers(detail=True)
 
-    def test_001_list_servers(self):
-        """Test server list actually returns servers"""
-        self.assertGreater(len(self.servers), 0)
+
+    # def test_001_list_servers(self):
+    #     """Test server list actually returns servers"""
+    #     self.assertGreater(len(self.servers), 0)
 
     def test_002_list_servers_detailed(self):
         """Test detailed server list is the same length as list"""
@@ -1279,8 +1280,8 @@ def _spawn_server_test_case(**kwargs):
     # Patch extra parameters into test names by manipulating method docstrings
     for (mname, m) in \
         inspect.getmembers(cls, lambda x: inspect.ismethod(x)):
-            if hasattr(m, __doc__):
-                m.__func__.__doc__ = "[%s] %s" % (imagename, m.__doc__)
+        if hasattr(m, __doc__):
+            m.__func__.__doc__ = "[%s] %s" % (imagename, m.__doc__)
 
     # Make sure the class can be pickled, by listing it among
     # the attributes of __main__. A PicklingError is raised otherwise.
@@ -1320,6 +1321,29 @@ def cleanup_servers(delete_stale=False):
         print >> sys.stderr, "    ...done"
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
+
+def cleanup_networks(delete_stale=False):
+
+    c = CycladesClient(API, TOKEN)
+
+    networks = c.list_networks()
+    stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
+
+    if len(stale) == 0:
+        return
+
+    print >> sys.stderr, "Found these stale networks from previous runs:"
+    print "    " + \
+          "\n    ".join(["%s: %s" % (str(n["id"]), n["name"]) for n in stale])
+
+    if delete_stale:
+        print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
+        for network in stale:
+            c.delete_network(network["id"])
+        print >> sys.stderr, "    ...done"
+    else:
+        print >> sys.stderr, "Use --delete-stale to delete them."
+
 
 
 def parse_arguments(args):
@@ -1403,6 +1427,12 @@ def parse_arguments(args):
                       action="store", type="string", dest="personality_path",
                       help="Force a personality file injection. File path required. ",
                       default=None)
+    parser.add_option("--log-folder",
+                      action="store", type="string", dest="log_folder",
+                      help="Define the absolute path where the output log is stored. ",
+                      default="/tmp/burnin/")
+
+    
     
 
     # FIXME: Change the default for build-fanout to 10
@@ -1451,6 +1481,8 @@ def main():
     # Cleanup stale servers from previous runs
     if opts.show_stale:
         cleanup_servers(delete_stale=opts.delete_stale)
+        cleanup_networks(delete_stale=opts.delete_stale)
+        return 0
 
     # Initialize a kamaki instance, get flavors, images
 
@@ -1468,11 +1500,17 @@ def main():
     else:
         test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
 
-    
+
     #New folder for log per image
-    os.mkdir(TEST_RUN_ID)
+        
+    if not os.path.exists(opts.log_folder):
+        os.mkdir(opts.log_folder)
+
+    test_folder = os.path.normpath(opts.log_folder +'/'+ TEST_RUN_ID)
+    os.mkdir(test_folder)
 
     for image in test_images:
+        
         imageid = str(image["id"])
         
         if opts.force_flavorid:
@@ -1497,6 +1535,8 @@ def main():
                     })
         else:
             personality = None
+
+
 
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
@@ -1523,12 +1563,9 @@ def main():
     
 
         seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
-        # seq_cases = [NetworkTestCase]
-        
-        # seq_cases = [UnauthorizedTestCase]
         
         #folder for each image 
-        image_folder = TEST_RUN_ID + '/' + imageid 
+        image_folder = test_folder + '/' + imageid 
         os.mkdir(image_folder)
 
         for case in seq_cases:
@@ -1546,12 +1583,12 @@ def main():
         
             for res in result.errors:
                 error.write(str(res[0])+'\n')
-                error.write(str(res[0].__doc__) + '\n')
+                error.write(str(res[0].shortDescription()) + '\n')
                 error.write('\n')
 
             for res in result.failures:
                 fail.write(str(res[0])+'\n')
-                fail.write(str(res[0].__doc__) + '\n')
+                fail.write(str(res[0].shortDescription()) + '\n')
                 fail.write('\n')
         
 

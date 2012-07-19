@@ -65,7 +65,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-common>=0.9.0rc',
+    'snf-common>0.9.13',
     'SQLAlchemy==0.6.3',
     'alembic>=0.3.4, <0.4',
 ]
@@ -79,7 +79,7 @@ TESTS_REQUIRES = [
 
 # Provided as an attribute, so you can append to these instead
 # of replicating them:
-standard_exclude = ["*.py", "*.pyc", "*$py.class", "*~", ".*", "*.bak"]
+standard_exclude = ["*.pyc", "*$py.class", "*~", ".*", "*.bak"]
 standard_exclude_directories = [
     ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info", "snf-0.7"
 ]
@@ -184,8 +184,8 @@ setup(
     namespace_packages = ['pithos'],
     packages = PACKAGES,
     package_dir= {'': PACKAGES_ROOT},
+    package_data=find_package_data("."),
     include_package_data = True,
-    package_data = find_package_data('.'),
     zip_safe = False,
 
     dependency_links = [

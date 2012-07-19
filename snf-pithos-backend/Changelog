@@ -1,8 +1,8 @@
 Changelog
 =========
 
-v0.9.8
-------
+v0.10.0
+-------
 
 * New migration tool added, `pithos-migrate`.
   
@@ -10,10 +10,9 @@ v0.9.8
 	
 	$ pithos-migrate upgrade head
   
-  To enable migrations for a new database, create database schema as usual
-  and then::
+  To initialize the database and then::
   	
-	$ pithos-migrate stamp head
+	$ pithos-migrate initdb
 
 
 v0.9.7

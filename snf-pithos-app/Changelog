@@ -1,7 +1,7 @@
 Changelog
 =========
 
-v0.9.8
+v0.10.0
 ------
 * improve sql queries
 * support for bulk operations (MOVE/COPY/DELETE)

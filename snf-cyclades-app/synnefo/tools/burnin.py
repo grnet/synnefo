@@ -45,13 +45,9 @@ import prctl
 import subprocess
 import signal
 import socket
-import struct
 import sys
 import time
-import hashlib
 from base64 import b64encode
-from pwd import getpwuid
-from grp import getgrgid
 from IPy import IP
 from multiprocessing import Process, Queue
 from random import choice
@@ -87,13 +83,14 @@ logging.basicConfig(format="%(message)s")
 log = logging.getLogger("burnin")
 log.setLevel(logging.INFO)
 
+
 class UnauthorizedTestCase(unittest.TestCase):
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         log.info("Authentication test")
 
         falseToken = '12345'
-        c=ComputeClient(API, falseToken)
+        c = ComputeClient(API, falseToken)
 
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
@@ -115,11 +112,9 @@ class ImagesTestCase(unittest.TestCase):
         """Test image list actually returns images"""
         self.assertGreater(len(self.images), 0)
 
-
     def test_002_list_images_detailed(self):
         """Test detailed image list is the same length as list"""
         self.assertEqual(len(self.dimages), len(self.images))
-
 
     def test_003_same_image_names(self):
         """Test detailed and simple image list contain same names"""
@@ -191,7 +186,6 @@ class ServersTestCase(unittest.TestCase):
         cls.client = ComputeClient(API, TOKEN)
         cls.servers = cls.client.list_servers()
         cls.dservers = cls.client.list_servers(detail=True)
-
 
     # def test_001_list_servers(self):
     #     """Test server list actually returns servers"""
@@ -361,14 +355,13 @@ class SpawnServerTestCase(unittest.TestCase):
             ssh.connect(hostip, username=username, password=password)
         except socket.error:
             raise AssertionError
-        
-        transport = paramiko.Transport((hostip,22))
-        transport.connect(username = username, password = password)
 
-        localpath = '/tmp/'+SNF_TEST_PREFIX+'injection'
+        transport = paramiko.Transport((hostip, 22))
+        transport.connect(username=username, password=password)
+
+        localpath = '/tmp/' + SNF_TEST_PREFIX + 'injection'
         sftp = paramiko.SFTPClient.from_transport(transport)
-        sftp.get(remotepath, localpath)
-        
+        sftp.get(remotepath, localpath)        
         sftp.close()
         transport.close()
 
@@ -391,7 +384,6 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Server id: " + str(server["id"]))
         log.info("Server password: " + server["adminPass"])
-        
         self.assertEqual(server["name"], self.servername)
         self.assertEqual(server["flavorRef"], self.flavorid)
         self.assertEqual(server["imageRef"], self.imageid)
@@ -403,11 +395,8 @@ class SpawnServerTestCase(unittest.TestCase):
         cls.username = None
         cls.passwd = server["adminPass"]
 
-        
-
     def test_002a_server_is_building_in_list(self):
         """Test server is in BUILD state, in server list"""
-        
         log.info("Server in BUILD state in server list")
 
         servers = self.client.list_servers(detail=True)
@@ -479,12 +468,10 @@ class SpawnServerTestCase(unittest.TestCase):
         http://www.realvnc.com/docs/rfbproto.pdf.
 
         """
-        
         console = self.cyclades.get_server_console(self.serverid)
         self.assertEquals(console['type'], "vnc")
         sock = self._insist_on_tcp_connection(socket.AF_INET,
                                         console["host"], console["port"])
-
 
         # Step 1. ProtocolVersion message (par. 6.1.1)
         version = sock.recv(1024)
@@ -633,14 +620,12 @@ class SpawnServerTestCase(unittest.TestCase):
         # if the connection to the RDP port is successful.
         sock.close()
 
-
     def test_016_personality_is_enforced(self):
         """Test file injection for personality enforcement"""
         self._skipIf(self.is_windows, "only implemented for Linux servers")
         self._skipIf(self.personality == None, "No personality file selected")
 
         log.info("Trying to inject file for personality enforcement")
-
 
         server = self.client.get_server_details(self.serverid)
 
@@ -649,7 +634,6 @@ class SpawnServerTestCase(unittest.TestCase):
                                                        self.passwd, inj_file['path'], inj_file['contents'])
             self.assertTrue(equal_files)
         
-
     def test_017_submit_delete_request(self):
         """Test submit request to delete server"""
 
@@ -703,7 +687,6 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(len(ipv4_addrs), 1)
         return ipv4_addrs[0]["addr"]
     
-
     def _connect_loginname(self, os):
         """Return the login name for connections based on the server OS"""
         if os in ("Ubuntu", "Kubuntu", "Fedora"):
@@ -723,7 +706,6 @@ class NetworkTestCase(unittest.TestCase):
         ret = ping.wait()
         
         return (ret == 0)
-
 
     def test_00001a_submit_create_server_A(self):
         """Test submit create server request"""
@@ -746,14 +728,12 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Server A id:" + str(serverA["id"]))
         log.info("Server password " + (self.password['A']))
         
-
-
     def test_00001b_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
         
         log.info("Waiting until test server A becomes ACTIVE")
 
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
         while True:
             d = self.client.get_server_details(self.serverid['A'])
             status = d['status']
@@ -767,7 +747,6 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(active)
 
-    
     def test_00002a_submit_create_server_B(self):
         """Test submit create server request"""
         
@@ -775,7 +754,6 @@ class NetworkTestCase(unittest.TestCase):
 
         serverB = self.client.create_server(self.servername, self.flavorid,
                                             self.imageid, personality=None)
-
 
         self.assertEqual(serverB["name"], self.servername)
         self.assertEqual(serverB["flavorRef"], self.flavorid)
@@ -790,14 +768,12 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Server B id: " + str(serverB["id"]))
         log.info("Password " + (self.password['B']))
 
-
-
     def test_00002b_serverB_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         log.info("Waiting until test server B becomes ACTIVE")
 
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
         while True:
             d = self.client.get_server_details(self.serverid['B'])
             status = d['status']
@@ -811,15 +787,14 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(active)
 
-
     def test_001_create_network(self):
         """Test submit create network request"""
 
         log.info("Submit new network request")
 
-        name = SNF_TEST_PREFIX+TEST_RUN_ID
+        name = SNF_TEST_PREFIX + TEST_RUN_ID
         previous_num = len(self.client.list_networks())
-        network =  self.client.create_network(name)        
+        network = self.client.create_network(name)
        
         #Test if right name is assigned
         self.assertEqual(network['name'], name)
@@ -832,7 +807,6 @@ class NetworkTestCase(unittest.TestCase):
         #Test if new network is created
         self.assertTrue(len(networks) > previous_num)
         
-    
     def test_002_connect_to_network(self):
         """Test connect VMs to network"""
 
@@ -842,7 +816,7 @@ class NetworkTestCase(unittest.TestCase):
         self.client.connect_server(self.serverid['B'], self.networkid)
                 
         #Insist on connecting until action timeout
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
 
         while True:
             connected = (self.client.get_network_details(self.networkid))
@@ -857,7 +831,6 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(conn_exists)
 
-    
     def test_002a_reboot(self):
         """Rebooting server A"""
 
@@ -865,7 +838,7 @@ class NetworkTestCase(unittest.TestCase):
 
         self.client.shutdown_server(self.serverid['A']) 
        
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
         while True:
             d = self.client.get_server_details(self.serverid['A'])
             status = d['status']
@@ -888,11 +861,8 @@ class NetworkTestCase(unittest.TestCase):
                 self.assertLess(time.time(), fail_tmout)
             else:
                 time.sleep(self.query_interval)
-
-
                
         self.assertTrue(active)
-
 
     def test_002b_ping_server_A(self):
         "Test if server A is pingable"
@@ -902,7 +872,7 @@ class NetworkTestCase(unittest.TestCase):
         server = self.client.get_server_details(self.serverid['A'])
         ip = self._get_ipv4(server)
         
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
         
         s = False
 
@@ -920,7 +890,6 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(s)
 
-
     def test_002c_reboot(self):
         """Reboot server B"""
 
@@ -928,7 +897,7 @@ class NetworkTestCase(unittest.TestCase):
 
         self.client.shutdown_server(self.serverid['B']) 
         
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
         while True:
             d = self.client.get_server_details(self.serverid['B'])
             status = d['status']
@@ -953,17 +922,15 @@ class NetworkTestCase(unittest.TestCase):
                 time.sleep(self.query_interval)
                 
         self.assertTrue(active)
-        
-
+    
     def test_002d_ping_server_B(self):
         """Test if server B is pingable"""
-
 
         log.info("Testing if server B is pingable")
         server = self.client.get_server_details(self.serverid['B'])
         ip = self._get_ipv4(server)
         
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
         
         s = False
 
@@ -979,7 +946,6 @@ class NetworkTestCase(unittest.TestCase):
                 time.sleep(self.query_interval)
 
         self.assertTrue(s)
-
 
     def test_003a_setup_interface_A(self):
         """Set up eth1 for server A"""
@@ -1003,15 +969,15 @@ class NetworkTestCase(unittest.TestCase):
         hostip = self._get_ipv4(server)
         myPass = self.password['A']
         
-        log.info("SSH in server A as %s/%s" % (loginname,myPass))
+        log.info("SSH in server A as %s/%s" % (loginname, myPass))
         
         res = False
 
         if loginname != "root":
             with settings(
                 hide('warnings', 'running'),
-                warn_only=True, 
-                host_string = hostip, 
+                warn_only = True,
+                host_string = hostip,
                 user = loginname, password = myPass
                 ):
 
@@ -1021,7 +987,7 @@ class NetworkTestCase(unittest.TestCase):
         else:
             with settings(
                 hide('warnings', 'running'),
-                warn_only=True, 
+                warn_only = True, 
                 host_string = hostip, 
                 user = loginname, password = myPass
                 ):
@@ -1031,12 +997,10 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(res)
 
-
     def test_003b_setup_interface_B(self):
         """Setup eth1 for server B"""
 
         log.info("Setting up interface eth1 for server B")
-
 
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
@@ -1055,7 +1019,7 @@ class NetworkTestCase(unittest.TestCase):
         hostip = self._get_ipv4(server)
         myPass = self.password['B']
 
-        log.info("SSH in server B as %s/%s" % (loginname,myPass))
+        log.info("SSH in server B as %s/%s" % (loginname, myPass))
 
         res = False
 
@@ -1067,10 +1031,10 @@ class NetworkTestCase(unittest.TestCase):
                 user = loginname, password = myPass
                 ):
                 
-                if len(sudo('ifconfig eth1 192.168.0.13'))== 0:
+                if len(sudo('ifconfig eth1 192.168.0.13')) == 0:
                     res = True
             
-        else :
+        else:
             with settings(
                 hide('warnings', 'running'),
                 warn_only=True, 
@@ -1081,10 +1045,7 @@ class NetworkTestCase(unittest.TestCase):
                 if len(run('ifconfig eth1 192.168.0.13')) == 0:
                     res = True
 
-
         self.assertTrue(res)
-            
-
 
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""
@@ -1126,9 +1087,7 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(exists)
 
-
 #TODO: Test IPv6 private connectity
-
 
     def test_004_disconnect_from_network(self):
         "Disconnecting server A and B from network"
@@ -1142,7 +1101,7 @@ class NetworkTestCase(unittest.TestCase):
         self.client.disconnect_server(self.serverid['B'], self.networkid)
 
         #Insist on deleting until action timeout
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
 
         while True:
             connected = (self.client.get_network_details(self.networkid))
@@ -1179,7 +1138,7 @@ class NetworkTestCase(unittest.TestCase):
         self.compute.delete_server(self.serverid['A'])
         self.compute.delete_server(self.serverid['B'])
 
-        fail_tmout = time.time()+self.action_timeout
+        fail_tmout = time.time() + self.action_timeout
 
         #Ensure server gets deleted
         status = dict() 
@@ -1230,7 +1189,6 @@ class TestRunnerProcess(Process):
                 self.runner.run(suite)
             else:
                 raise Exception("Cannot handle msg: %s" % msg)
-
 
 
 def _run_cases_in_parallel(cases, fanout=1, runner=None):
@@ -1288,10 +1246,11 @@ def _spawn_server_test_case(**kwargs):
     setattr(__main__, name, cls)
     return cls 
 
+
 def _spawn_network_test_case(**kwargs):
     """Construct a new unit test case class from NetworkTestCase"""
 
-    name = "NetworkTestCase"+TEST_RUN_ID
+    name = "NetworkTestCase" + TEST_RUN_ID
     cls = type(name, (NetworkTestCase,), kwargs)
 
     # Make sure the class can be pickled, by listing it among
@@ -1322,6 +1281,7 @@ def cleanup_servers(delete_stale=False):
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
+
 def cleanup_networks(delete_stale=False):
 
     c = CycladesClient(API, TOKEN)
@@ -1343,7 +1303,6 @@ def cleanup_networks(delete_stale=False):
         print >> sys.stderr, "    ...done"
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
-
 
 
 def parse_arguments(args):
@@ -1430,10 +1389,7 @@ def parse_arguments(args):
     parser.add_option("--log-folder",
                       action="store", type="string", dest="log_folder",
                       help="Define the absolute path where the output log is stored. ",
-                      default="/tmp/burnin/")
-
-    
-    
+                      default="/var/log/burnin/")
 
     # FIXME: Change the default for build-fanout to 10
     # FIXME: Allow the user to specify a specific set of Images to test
@@ -1500,13 +1456,12 @@ def main():
     else:
         test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
 
-
     #New folder for log per image
         
     if not os.path.exists(opts.log_folder):
         os.mkdir(opts.log_folder)
 
-    test_folder = os.path.normpath(opts.log_folder +'/'+ TEST_RUN_ID)
+    test_folder = os.path.join(opts.log_folder, TEST_RUN_ID)
     os.mkdir(test_folder)
 
     for image in test_images:
@@ -1536,12 +1491,9 @@ def main():
         else:
             personality = None
 
-
-
         servername = "%s%s for %s" % (SNF_TEST_PREFIX, TEST_RUN_ID, imagename)
         is_windows = imagename.lower().find("windows") >= 0
         
-
         ServerTestCase = _spawn_server_test_case(imageid=imageid, flavorid=flavorid,
                                                  imagename=imagename,
                                                  personality=personality,
@@ -1553,7 +1505,6 @@ def main():
                                                  query_interval=opts.query_interval,
                                                  )
 
-    
         NetworkTestCase = _spawn_network_test_case(action_timeout = opts.action_timeout,
                                                    imageid = imageid,
                                                    flavorid = flavorid,
@@ -1561,17 +1512,16 @@ def main():
                                                    query_interval = opts.query_interval,
                                                    )
     
-
-        seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase]
+        seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase, ServersTestCase, ServerTestCase, NetworkTestCase]
         
         #folder for each image 
-        image_folder = test_folder + '/' + imageid 
+        image_folder = os.path.join(test_folder, imageid)
         os.mkdir(image_folder)
 
         for case in seq_cases:
-            log_file = image_folder+'/'+'details_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-            fail_file = image_folder+'/'+'failed_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
-            error_file = image_folder+'/'+'error_'+(case.__name__)+"_"+TEST_RUN_ID+'.log'
+            log_file = os.path.join(image_folder, 'details_' + (case.__name__) + "_" + TEST_RUN_ID + '.log')
+            fail_file = os.path.join(image_folder, 'failed_' + (case.__name__) + "_" + TEST_RUN_ID + '.log')
+            error_file = os.path.join(image_folder, 'error_' + (case.__name__) + "_" + TEST_RUN_ID + '.log')
 
             f = open(log_file, "w")
             fail = open(fail_file, "w")
@@ -1582,16 +1532,14 @@ def main():
             result = runner.run(suite)
         
             for res in result.errors:
-                error.write(str(res[0])+'\n')
+                error.write(str(res[0]) + '\n')
                 error.write(str(res[0].shortDescription()) + '\n')
                 error.write('\n')
 
             for res in result.failures:
-                fail.write(str(res[0])+'\n')
+                fail.write(str(res[0]) + '\n')
                 fail.write(str(res[0].shortDescription()) + '\n')
                 fail.write('\n')
         
-
-
 if __name__ == "__main__":
     sys.exit(main())

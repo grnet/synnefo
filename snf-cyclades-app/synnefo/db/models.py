@@ -120,7 +120,7 @@ class Backend(models.Model):
     port = models.PositiveIntegerField('Port', default=5080)
     username = models.CharField('Username', max_length=64, blank=True,
                                 null=True)
-    password_hash = models.CharField('Password', max_length=64, blank=True,
+    password_hash = models.CharField('Password', max_length=128, blank=True,
                                 null=True)
     # Sha1 is up to 40 characters long
     hash = models.CharField('Hash', max_length=40, editable=False, null=False)

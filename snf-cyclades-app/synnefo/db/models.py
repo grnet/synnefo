@@ -399,7 +399,6 @@ class VirtualMachineMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
-
 class Network(models.Model):
     OPER_STATES = (
         ('PENDING', 'Pending'),
@@ -462,7 +461,6 @@ class Network(models.Model):
 
         def __str__(self):
             return repr(self.value)
-
 
     class InvalidBackendMsgError(Exception):
         def __init__(self, opcode, status):
@@ -556,25 +554,6 @@ class Network(models.Model):
         self.save()
 
 
-    # def get_free_address(self):
-    #     # Get yourself inside a transaction
-    #     network = Network.objects.get(id=self.id)
-    #     # Get the pool object
-    #     pool = network.pool
-    #     print network is self
-    #     try:
-    #         address = pool.get_free_address()
-    #     except IPPoolExhausted:
-    #         raise Network.NetworkIsFull
-
-    #     pool._update_network()
-    #     network.save()
-    #     return address
-
-    # class NetworkIsFull(Exception):
-    #     pass
-
-
 class BackendNetwork(models.Model):
     OPER_STATES = (
         ('PENDING', 'Pending'),
@@ -657,10 +636,20 @@ class NetworkInterface(models.Model):
 
 
 class Pool(models.Model):
+    """ Abstract class modeling a generic pool of resources
+
+        Subclasses must implement 'value_from_index' method which
+        converts and index(Integer) to an arbitrary Char value.
+
+        Methods of this class must be invoked inside a transaction
+        to ensure consistency of the pool.
+    """
     available = models.BooleanField(default=True, null=False)
     index = models.IntegerField(null=False, unique=True)
     value = models.CharField(max_length=128, null=False, unique=True)
     max_index = 0
+
+    objects = ForUpdateManager()
 
     class Meta:
         abstract = True
@@ -669,7 +658,7 @@ class Pool(models.Model):
     @classmethod
     def get_available(cls):
         try:
-            entry = cls.objects.filter(available=True)[0]
+            entry = cls.objects.select_for_update().filter(available=True)[0]
             entry.available = False
             entry.save()
             return entry
@@ -693,10 +682,9 @@ class Pool(models.Model):
 
     @classmethod
     def set_available(cls, value):
-        entry = cls.objects.get(value=value)
+        entry = cls.objects.select_for_update().get(value=value)
         entry.available = True
         entry.save()
-
 
     class PoolExhausted(Exception):
         pass

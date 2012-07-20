@@ -1,0 +1,11 @@
+README
+=======
+
+snf-burnin is an integration testing tool for a running Synnefo deployment. 
+It runs test scenarios from the following categories:
+
+*Authentication
+*Images
+*Flavors
+*Servers
+*Networking

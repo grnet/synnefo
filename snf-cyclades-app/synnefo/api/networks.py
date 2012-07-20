@@ -36,6 +36,7 @@ from logging import getLogger
 from django.conf.urls.defaults import patterns
 from django.conf import settings
 from django.db.models import Q
+from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -141,6 +142,7 @@ def list_networks(request, detail=False):
 
 
 @util.api_method('POST')
+@transaction.commit_on_success
 def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -241,6 +243,7 @@ def update_network_name(request, network_id):
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_network(request, network_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),

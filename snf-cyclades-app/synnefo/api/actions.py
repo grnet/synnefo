@@ -62,6 +62,7 @@ def server_action(name):
         return func
     return decorator
 
+
 def network_action(name):
     '''Decorator for functions implementing network actions.
     `name` is the key in the dict passed by the client.
@@ -84,11 +85,6 @@ def change_password(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-
-    try:
-        password = args['adminPass']
-    except KeyError:
-        raise BadRequest('Malformed request.')
 
     raise ServiceUnavailable('Changing password is not supported.')
 
@@ -195,6 +191,7 @@ def revert_resize(request, vm, args):
 
     raise ServiceUnavailable('Resize not supported.')
 
+
 @server_action('console')
 def get_console(request, vm, args):
     """Arrange for an OOB console of the specified type
@@ -270,7 +267,9 @@ def get_console(request, vm, args):
 
     return HttpResponse(data, mimetype=mimetype, status=200)
 
+
 @server_action('firewallProfile')
+@transaction.commit_on_success
 def set_firewall_profile(request, vm, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
@@ -281,7 +280,7 @@ def set_firewall_profile(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     profile = args.get('profile', '')
     if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
         raise BadRequest("Unsupported firewall profile")
@@ -322,6 +321,7 @@ def add(request, net, args):
 
 
 @network_action('remove')
+@transaction.commit_on_success
 def remove(request, net, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -332,7 +332,7 @@ def remove(request, net, args):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    try: #attachment string: nic-<vm-id>-<nic-index>
+    try:  # attachment string: nic-<vm-id>-<nic-index>
         server_id = args.get('attachment', None).split('-')[1]
         nic_index = args.get('attachment', None).split('-')[2]
     except IndexError:

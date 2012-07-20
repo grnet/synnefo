@@ -36,6 +36,7 @@ from logging import getLogger
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns
+from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -183,6 +184,7 @@ def list_servers(request, detail=False):
 
 
 @util.api_method('POST')
+@transaction.commit_on_success
 def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -331,6 +333,7 @@ def update_server_name(request, server_id):
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -475,6 +478,7 @@ def get_metadata_item(request, server_id, key):
 
 
 @util.api_method('PUT')
+@transaction.commit_on_success
 def create_metadata_item(request, server_id, key):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -509,6 +513,7 @@ def create_metadata_item(request, server_id, key):
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_metadata_item(request, server_id, key):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),

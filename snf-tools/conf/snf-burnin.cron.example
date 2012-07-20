@@ -1,14 +1,19 @@
 #! /bin/bash
 
+#Example script for an snf-burnin cronjob
+#Usage snf-burnin.cron.example TOKEN IMAGE-ID LOG-FOLDER
+
 snf-burnin --token="$1" --delete-stale
 snf-burnin --token="$1" --image-id="$2" --action-timeout 120 --log-folder "$3"
 
+#Delete old folders
 old=$(date -d "30 minutes ago" +%Y%m%d%H%M%S)
 for dir in ${3}/* ; do
     d=`basename $dir`
     (($d<$old)) && rm -r "$dir"
 done
 
+#Check for failed testcases
 curr=$(date -d "30 minutes ago" +%Y%m%d%H%M%S)
 for dir in ${3}/* ; do
     d=`basename $dir`

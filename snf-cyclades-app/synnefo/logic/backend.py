@@ -84,6 +84,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
         utils.update_state(vm, state_for_success)
         # Set the deleted flag explicitly, cater for admin-initiated removals
         if opcode == 'OP_INSTANCE_REMOVE':
+            release_instance_nics(vm)
             vm.deleted = True
             vm.nics.all().delete()
 
@@ -115,23 +116,12 @@ def process_net_status(vm, etime, nics):
     Update the state of the VM in the DB accordingly.
     """
 
-    old_nics = vm.nics.order_by('index')
+    # Release the ips of the old nics. Get back the networks as multiple
+    # changes in the same network, must happen in the same Network object,
+    # because transaction will be commited only on exit of the function.
+    networks = release_instance_nics(vm)
+
     new_nics = enumerate(nics)
-
-    networks = {}
-
-    for old_nic in old_nics:
-        pk = old_nic.network.pk
-        # Get the cached Network or get it from DB
-        if pk in networks:
-            net = networks[pk]
-        else:
-            # Get the network object in exclusive mode in order
-            # to guarantee consistency of the address pool
-            net = Network.objects.select_for_update().get(pk=pk)
-        net.release_address(old_nic.ipv4)
-        old_nic.delete()
-
     for i, new_nic in new_nics:
         network = new_nic.get('network', '')
         n = str(network)
@@ -167,6 +157,24 @@ def process_net_status(vm, etime, nics):
 
     vm.backendtime = etime
     vm.save()
+
+
+def release_instance_nics(vm):
+    networks = {}
+
+    for nic in vm.nics.all():
+        pk = nic.network.pk
+        # Get the cached Network or get it from DB
+        if pk in networks:
+            net = networks[pk]
+        else:
+            # Get the network object in exclusive mode in order
+            # to guarantee consistency of the address pool
+            net = Network.objects.select_for_update().get(pk=pk)
+        net.release_address(nic.ipv4)
+        nic.delete()
+
+    return networks
 
 
 @transaction.commit_on_success

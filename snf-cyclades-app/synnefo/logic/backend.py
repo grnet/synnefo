@@ -41,7 +41,7 @@ from datetime import datetime
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
 from synnefo.logic import utils, ippool
-from synnefo.api.faults import ServiceUnavailable
+from synnefo.api.faults import OverLimit
 from synnefo.util.rapi import GanetiRapiClient
 
 log = getLogger('synnefo.logic')
@@ -281,7 +281,8 @@ def create_instance(vm, flavor, image, password, personality):
     try:
         address = pool.get_free_address()
     except ippool.IPPool.IPPoolExhausted:
-        raise ServiceUnavailable('Network is full')
+        raise OverLimit("Can not allocate IP for new machine."
+                        " Public network is full.")
     pool.save()
 
     nic = {'ip': address, 'network': settings.GANETI_PUBLIC_NETWORK}

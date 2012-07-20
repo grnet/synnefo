@@ -36,7 +36,7 @@ class IPPool(object):
 
         """
         if not self._contains(address):
-            raise Exception("%s does not contain %s" % (self.network, address))
+            raise Exception("%s does not contain %s" % (str(self.network), address))
         addr = ipaddr.IPAddress(address)
 
         return int(addr) - int(self.network.network)
@@ -69,7 +69,7 @@ class IPPool(object):
 
     def get_free_address(self):
         if self.is_full():
-            raise Exception("%s if full", self.network)
+            raise IPPool.IPPoolExhausted("%s if full" % str(self.network))
 
         index = self.reservations.index(False)
         address = str(self.network[index])

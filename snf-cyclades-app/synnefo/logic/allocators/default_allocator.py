@@ -67,5 +67,5 @@ def vm_fits_in_backend(backend, vm):
 def backend_score(backend, flavor):
     mratio = 1 - (backend['mfree'] / backend['mtotal'])
     dratio = 1 - (backend['dfree'] / backend['dtotal'])
-    # cratio = (backend.pinst_cnt+1)/backend.ctotal
-    return 0.5 * (mratio + dratio)
+    cratio = (backend['pinst_cnt'] + 1) / (backend['ctotal'] * 4)
+    return 0.7 * (mratio + dratio) * 0.3 * cratio

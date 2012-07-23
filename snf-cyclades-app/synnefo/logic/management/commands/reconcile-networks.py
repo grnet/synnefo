@@ -157,14 +157,15 @@ def reconcile_networks(out, fix, conflicting_ips):
             ip_map = ganeti_networks[b][net_id]['map']
             ip_address_maps.append(bitarray_from_o1(ip_map))
 
-        network_bitarray = reduce(lambda x, y: x | y, ip_address_maps)
-        if not network.pool.reservations == network_bitarray:
-            out.write('D: Unsynced pool of network %d\n' % net_id)
-            out.write('\t DB:\t%s\n' % network.pool.reservations.to01())
-            out.write('\t Ganeti:%s\n' % network_bitarray.to01())
-            if fix:
-                update_network_reservations(network, network_bitarray)
-                out.write('F: Synchronized network pools\n')
+        if ip_address_maps:
+            network_bitarray = reduce(lambda x, y: x | y, ip_address_maps)
+            if not network.pool.reservations == network_bitarray:
+                out.write('D: Unsynced pool of network %d\n' % net_id)
+                out.write('\t DB:\t%s\n' % network.pool.reservations.to01())
+                out.write('\t Ganeti:%s\n' % network_bitarray.to01())
+                if fix:
+                    update_network_reservations(network, network_bitarray)
+                    out.write('F: Synchronized network pools\n')
 
         # Detect conflicting IPs: Detect NIC's that have the same IP
         # in the same network.

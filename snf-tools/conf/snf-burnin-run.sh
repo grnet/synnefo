@@ -6,7 +6,7 @@
 
 #Usage: ./snf-burnin-run.sh TOKEN IMAGE-ID LOG-FOLDER
 
-timeout 28m snf-burnin --token="$1" --image-id="$2" --action-timeout 120 --log-folder "$3"
+timeout --foreground 25m snf-burnin --token="$1" --image-id="$2" --action-timeout 120 --log-folder "$3"
 snf-burnin --token="$1" --delete-stale
 
 #Delete old folders

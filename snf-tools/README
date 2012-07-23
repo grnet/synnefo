@@ -16,7 +16,7 @@ Usage
 
 Example:
 --------
-snf-burnin --token=TOKEN --image-id=IMAGE-ID --log-folder=LOG_FOLDER
+snf-burnin --api=API_URL --token=TOKEN --image-id=IMAGE-ID --log-folder=LOG_FOLDER
 
 
 For more options:

@@ -4,7 +4,7 @@
 #Starts an a snf-burnin test, deletes stale instances and archives old logs.
 #It aborts if snf-burnin runs for longer than expected.
 
-#Usage: ./snf-burnin.cron.example TOKEN IMAGE-ID LOG-FOLDER
+#Usage: ./snf-burnin-run.sh TOKEN IMAGE-ID LOG-FOLDER
 
 timeout 28m snf-burnin --token="$1" --image-id="$2" --action-timeout 120 --log-folder "$3"
 snf-burnin --token="$1" --delete-stale

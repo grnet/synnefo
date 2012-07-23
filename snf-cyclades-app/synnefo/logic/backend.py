@@ -667,7 +667,9 @@ def create_network_synced(network, backend):
 
 def _create_network_synced(network, backend):
     client = backend.client
-    job = client.CreateNetwork(network.backend_id, network.subnet)
+
+    backend_jobs = _create_network(network, [backend])
+    (_, job) = backend_jobs[0]
     return wait_for_job(client, job)
 
 

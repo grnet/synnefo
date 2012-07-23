@@ -36,7 +36,8 @@ from django.db.utils import IntegrityError
 from synnefo.logic.backend import (get_physical_resources,
                                    update_resources,
                                    create_client,
-                                   create_network_synced)
+                                   create_network_synced,
+                                   connect_network_synced)
 from synnefo.util.rapi import GanetiApiError
 
 
@@ -137,3 +138,11 @@ class Command(BaseCommand):
             if result[0] != "success":
                 self.stdout.write('\nError Creating Network %s: %s\n' %\
                                   (net.backend_id, result[1]))
+            self.stdout.write('Successfully created Network: %s\n' %
+                             net.backend_id)
+            result = connect_network_synced(network=net, backend=backend)
+            if result[0] != "success":
+                self.stdout.write('\nError Connecting Network %s: %s\n' %\
+                                  (net.backend_id, result[1]))
+            self.stdout.write('Successfully connected Network: %s\n' %
+                             net.backend_id)

@@ -68,6 +68,7 @@ PRIVATE_MAC_FILTERED_TAGS = ['private-filtered']
 PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX = 'prv'
 # The max limit of physical vlan pool
 PRIVATE_PHYSICAL_VLAN_MAX_NUMBER = 100
+PRIVATE_PHYSICAL_VLAN_TAGS = ['physical-vlan']
 
 
 # Settings for CUSTOM_ROUTED:

@@ -171,7 +171,8 @@ def release_instance_nics(vm):
             # Get the network object in exclusive mode in order
             # to guarantee consistency of the address pool
             net = Network.objects.select_for_update().get(pk=pk)
-        net.release_address(nic.ipv4)
+        if nic.ipv4:
+            net.release_address(nic.ipv4)
         nic.delete()
 
     return networks

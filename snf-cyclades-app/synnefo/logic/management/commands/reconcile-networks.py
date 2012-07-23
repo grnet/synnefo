@@ -39,6 +39,7 @@ import bitarray
 
 from optparse import make_option
 
+from synnefo.settings import PUBLIC_ROUTED_USE_POOL
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -48,6 +49,7 @@ from synnefo.logic import reconciliation, backend, utils
 
 class Command(BaseCommand):
     help = 'Reconcile contents of Synnefo DB with state of Ganeti backend'
+    can_import_settings = True
     output_transaction = True  # The management command runs inside
                                # an SQL transaction
     option_list = BaseCommand.option_list + (
@@ -84,6 +86,8 @@ def reconcile_networks(out, fix, conflicting_ips):
     for network in networks:
         net_id = network.id
         destroying = network.action == 'DESTROY'
+        uses_pool = not (network.type == 'PUBLIC_ROUTED' and (not
+                        PUBLIC_ROUTED_USE_POOL))
         ip_address_maps = []
 
         # Perform reconcilliation for each backend
@@ -153,11 +157,12 @@ def reconcile_networks(out, fix, conflicting_ips):
                                         0, 'OP_NETWORK_CONNECT', 'success',
                                         'Reconciliation simulated event.')
 
-            # Reconcile IP Pools
-            ip_map = ganeti_networks[b][net_id]['map']
-            ip_address_maps.append(bitarray_from_o1(ip_map))
+            if uses_pool:
+                # Reconcile IP Pools
+                ip_map = ganeti_networks[b][net_id]['map']
+                ip_address_maps.append(bitarray_from_o1(ip_map))
 
-        if ip_address_maps:
+        if ip_address_maps and uses_pool:
             network_bitarray = reduce(lambda x, y: x | y, ip_address_maps)
             if not network.pool.reservations == network_bitarray:
                 out.write('D: Unsynced pool of network %d\n' % net_id)

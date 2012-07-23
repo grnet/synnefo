@@ -283,18 +283,20 @@ def create_instance(vm, flavor, image, password, personality):
         metadata value should be a dictionary.
     """
 
-    # Get the Network object in exclusive mode in order to
-    # safely (isolated) reserve an IP address
-    network = Network.objects.select_for_update().get(id=1)
-    pool = ippool.IPPool(network)
-    try:
-        address = pool.get_free_address()
-    except ippool.IPPool.IPPoolExhausted:
-        raise OverLimit("Can not allocate IP for new machine."
-                        " Public network is full.")
-    pool.save()
-
-    nic = {'ip': address, 'network': settings.GANETI_PUBLIC_NETWORK}
+    if settings.PUBLIC_ROUTED_USE_POOL:
+        # Get the Network object in exclusive mode in order to
+        # safely (isolated) reserve an IP address
+        network = Network.objects.select_for_update().get(id=1)
+        pool = ippool.IPPool(network)
+        try:
+            address = pool.get_free_address()
+        except ippool.IPPool.IPPoolExhausted:
+            raise OverLimit("Can not allocate IP for new machine."
+                            " Public network is full.")
+        pool.save()
+        nic = {'ip': address, 'network': settings.GANETI_PUBLIC_NETWORK}
+    else:
+        nic = {'ip': 'pool', 'network': settings.GANETI_PUBLIC_NETWORK}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:

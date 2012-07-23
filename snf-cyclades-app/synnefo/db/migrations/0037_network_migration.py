@@ -25,7 +25,7 @@ class Migration(DataMigration):
                 network.type = 'PUBLIC_ROUTED'
             else:
                 network.dhcp = False
-                network.type = 'PRIVATE_VLAN'
+                network.type = 'PRIVATE_PHYSICAL_VLAN'
                 bridge = BridgePool.get_available()
                 network.netlink = bridge.value
 

@@ -35,10 +35,10 @@ class Migration(SchemaMigration):
         db.rename_column('db_network', 'link', 'netlink')
 
         # Add column 'Network.link_id'
-        db.add_column('db_network', 'link_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.NetworkLink']))
+        db.add_column('db_network', 'link', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.NetworkLink']))
 
         # Adding index on 'Network', fields ['link']
-        db.create_index('db_network', ['link_id'])
+        # db.create_index('db_network', ['link_id'])
     
     
     models = {

@@ -275,6 +275,7 @@ def start_action(vm, action):
     vm.save()
 
 
+@transaction.commit_on_success
 def create_instance(vm, flavor, image, password, personality):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'

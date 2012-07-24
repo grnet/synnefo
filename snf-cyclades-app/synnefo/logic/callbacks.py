@@ -204,8 +204,8 @@ def update_build_progress(vm, msg, event_time):
     """Process a create progress message"""
     log.debug("Processing ganeti-create-progress msg: %s", msg)
 
-    if msg['type'] not in ('image-copy-progress', 'image-error',
-                           'image-helper'):
+    if msg['type'] not in ('image-copy-progress', 'image-error', 'image-info',
+                           'image-warning', 'image-helper'):
         log.error("Message is of unknown type %s", msg['type'])
         return
 

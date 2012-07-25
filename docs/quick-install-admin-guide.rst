@@ -1380,8 +1380,6 @@ This will install the following:
  * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
  * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
  * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
- * ``kvm-vif-bridge`` (installed under ``/etc/ganeti`` to connect Ganeti with
-   NFDHCPD)
 
 Configure ``snf-cyclades-gtools``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1392,9 +1390,7 @@ that need it:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above variables should reflect your :ref:`Message Queue setup
 <rabbitmq-setup>`. This file should be editted in all Ganeti nodes.
@@ -1554,9 +1550,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above settings denote the Message Queue. Those settings should have the same
 values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and

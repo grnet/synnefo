@@ -537,7 +537,8 @@ def disconnect_from_network(vm, nic):
 
     op = [('remove', nic.index, {})]
     return vm.client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                   hotplug=True, dry_run=settings.TEST)
+                                    hotplug=settings.GANETI_USE_HOTPLUG,
+                                    dry_run=settings.TEST)
 
 
 def _delete_network(network, backend_jobs=None):
@@ -560,7 +561,8 @@ def connect_to_network(vm, network, address):
 
     nic = {'ip': address, 'network': network.backend_id}
     vm.client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
-                             hotplug=True, dry_run=settings.TEST)
+                             hotplug=settings.GANETI_USE_HOTPLUG,
+                             dry_run=settings.TEST)
 
 
 def set_firewall_profile(vm, profile):

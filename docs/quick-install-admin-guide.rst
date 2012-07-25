@@ -529,6 +529,20 @@ domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
+Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
+
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+
+Those settings have to do with the black cloudbar endpoints and will be described
+in more detail later on in this guide. For now, just edit the domain to point at
+node1 which is where we have installed Astakos.
+
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 

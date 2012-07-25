@@ -119,7 +119,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger = logger
         self.cluster_name = cluster_name
 
-        self.client = AMQPClient(confirm_buffer=25)
+        self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25)
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
 
         self.client.connect()

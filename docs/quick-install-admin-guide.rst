@@ -890,7 +890,11 @@ node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-image-host
+   # apt-get install snf-image-host snf-pithos-backend
+
+snf-image also needs the `snf-pithos-backend <snf-pithos-backend>`, to be able to
+handle image files stored on Pithos+. This is why, we also install it on *all*
+VM-capable Ganeti nodes.
 
 Now, you need to download and save the corresponding helper package. Please see
 `here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's

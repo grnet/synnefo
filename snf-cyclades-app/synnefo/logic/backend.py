@@ -287,7 +287,10 @@ def create_instance(vm, flavor, image, password, personality):
     if settings.PUBLIC_ROUTED_USE_POOL:
         # Get the Network object in exclusive mode in order to
         # safely (isolated) reserve an IP address
-        network = Network.objects.select_for_update().get(id=1)
+        try:
+            network = Network.objects.select_for_update().get(public=True)
+        except Network.DoesNotExist:
+            raise Exception('No public network available')
         pool = ippool.IPPool(network)
         try:
             address = pool.get_free_address()

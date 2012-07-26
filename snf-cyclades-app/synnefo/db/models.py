@@ -32,6 +32,9 @@ import datetime
 from django.conf import settings
 from django.db import models
 from django.db import IntegrityError
+from django.db import transaction
+
+import utils
 
 from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
@@ -124,6 +127,10 @@ class Backend(models.Model):
                                 null=True)
     # Sha1 is up to 40 characters long
     hash = models.CharField('Hash', max_length=40, editable=False, null=False)
+    # Unique index of the Backend, used for the mac-prefixes of the
+    # BackendNetworks
+    index = models.PositiveIntegerField('Index', null=False, unique=True,
+                                        default=0)
     drained = models.BooleanField('Drained', default=False, null=False)
     offline = models.BooleanField('Offline', default=False, null=False)
     # Last refresh of backend resources
@@ -191,6 +198,14 @@ class Backend(models.Model):
             # ON_DELETE = SET NULL
             self.virtual_machines.all().backend = None
             super(Backend, self).delete(*args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        super(Backend, self).__init__(*args, **kwargs)
+        if not self.pk:
+            # Generate a unique index for the Backend
+            indexes = Backend.objects.all().values_list('index', flat=True)
+            first_free = [x for x in xrange(0, 16) if x not in indexes][0]
+            self.index = first_free
 
 
 # A backend job may be in one of the following possible states
@@ -437,7 +452,7 @@ class Network(models.Model):
     type = models.CharField(choices=NETWORK_TYPES, max_length=50,
                             default='PRIVATE_PHYSICAL_VLAN')
     link = models.CharField('Network Link', max_length=128, null=True)
-    mac_prefix = models.CharField('MAC Prefix', max_length=32, null=True)
+    mac_prefix = models.CharField('MAC Prefix', max_length=32, null=False)
     public = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -495,6 +510,7 @@ class Network(models.Model):
     def __unicode__(self):
         return self.name
 
+    @transaction.commit_on_success
     def update_state(self):
         """Update state of the Network.
 
@@ -527,6 +543,13 @@ class Network(models.Model):
                 BridgePool.set_available(self.link)
 
         self.save()
+
+    def __init__(self, *args, **kwargs):
+        super(Network, self).__init__(*args, **kwargs)
+        if not self.mac_prefix:
+            # Allocate a MAC prefix for just created Network instances
+            mac_prefix = MacPrefixPool.get_available().value
+            self.mac_prefix = mac_prefix
 
     def save(self, *args, **kwargs):
         pk = self.pk
@@ -596,6 +619,7 @@ class BackendNetwork(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField('Deleted', default=False)
+    mac_prefix = models.CharField('MAC Prefix', max_length=32, null=False)
     operstate = models.CharField(choices=OPER_STATES, max_length=30,
                                  default='PENDING')
     backendjobid = models.PositiveIntegerField(null=True)
@@ -606,6 +630,22 @@ class BackendNetwork(models.Model):
     backendlogmsg = models.TextField(null=True)
     backendtime = models.DateTimeField(null=False,
                                        default=datetime.datetime.min)
+
+    def __init__(self, *args, **kwargs):
+        """Initialize state for just created BackendNetwork instances."""
+        super(BackendNetwork, self).__init__(*args, **kwargs)
+        if not self.mac_prefix:
+            # Generate the MAC prefix of the BackendNetwork, by combining
+            # the Network prefix with the index of the Backend
+            net_prefix = self.network.mac_prefix
+            backend_suffix = hex(self.backend.index).replace('0x', '')
+            mac_prefix = net_prefix + backend_suffix
+            try:
+                utils.validate_mac(mac_prefix + ":00:00:00")
+            except utils.InvalidMacAddress:
+                raise utils.InvalidMacAddress("Invalid MAC prefix '%s'" % \
+                                               mac_prefix)
+            self.mac_prefix = mac_prefix
 
     def save(self, *args, **kwargs):
         super(BackendNetwork, self).save(*args, **kwargs)
@@ -628,7 +668,7 @@ class NetworkInterface(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=False)
-    mac = models.CharField(max_length=32, null=True)
+    mac = models.CharField(max_length=32, null=False, unique=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
@@ -703,14 +743,14 @@ class BridgePool(Pool):
 
 
 class MacPrefixPool(Pool):
-    max_index = snf_settings.PRIVATE_MAC_FILTERED_MAX_PREFIX_NUMBER
+    max_index = snf_settings.MAC_POOL_LIMIT
 
     @staticmethod
     def value_from_index(index):
         """Convert number to mac prefix
 
         """
-        high = snf_settings.PRIVATE_MAC_FILTERED_BASE_MAC_PREFIX
-        a = hex(int(high.replace(":", ""), 16) + index).replace("0x", '')
+        base = snf_settings.MAC_POOL_BASE
+        a = hex(int(base.replace(":", ""), 16) + index).replace("0x", '')
         mac_prefix = ":".join([a[x:x + 2] for x in xrange(0, len(a), 2)])
         return mac_prefix

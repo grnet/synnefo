@@ -27,6 +27,10 @@ MAX_CIDR_BLOCK = 22
 # All created VMs will obtain an IP from this network.
 GANETI_PUBLIC_NETWORK = 'snf-net-1'
 
+# The first mac prefix to use
+MAC_POOL_BASE = 'aa:00:0'
+MAC_POOL_LIMIT = 65536
+
 ENABLED_NETWORKS = ['PUBLIC_ROUTED',
                     'PRIVATE_MAC_FILTERED',
                     'PRIVATE_PHYSICAL_VLAN']
@@ -54,9 +58,6 @@ PUBLIC_ROUTED_USE_POOL = True
 # networks is achieved by assigning a unique MAC-prefix to each network and
 # filtering packets via ebtables.
 PRIVATE_MAC_FILTERED_BRIDGE = 'br0'
-# The first mac prefix to use
-PRIVATE_MAC_FILTERED_BASE_MAC_PREFIX = 'aa:00:00'
-PRIVATE_MAC_FILTERED_MAX_PREFIX_NUMBER = 8192
 PRIVATE_MAC_FILTERED_TAGS = ['private-filtered']
 
 # Settings for PRIVATE_PHSICAL_VLAN network:

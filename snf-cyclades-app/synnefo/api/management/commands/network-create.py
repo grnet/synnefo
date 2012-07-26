@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Network
-from synnefo.api.util import network_specs_from_type
+from synnefo.api.util import network_link_from_type
 from synnefo.logic.backend import create_network
 
 import ipaddr
@@ -96,13 +96,14 @@ class Command(BaseCommand):
 
         name = options['name']
         subnet = options['subnet']
+        typ = options['type']
 
         if not name:
             raise CommandError("Name is required")
         if not subnet:
             raise CommandError("Subnet is required")
 
-        link, mac_prefix = network_specs_from_type(options['type'])
+        link = network_link_from_type(typ)
 
         subnet, gateway, subnet6, gateway6 = validate_network_info(options)
 
@@ -118,7 +119,6 @@ class Command(BaseCommand):
                 type=options['type'],
                 public=options['public'],
                 link=link,
-                mac_prefix=mac_prefix,
                 gateway6=gateway6,
                 subnet6=subnet6,
                 state='PENDING')

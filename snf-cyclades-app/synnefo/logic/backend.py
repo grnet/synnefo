@@ -426,7 +426,6 @@ def _create_network(network, backends=None):
     """
 
     network_type = network.public and 'public' or 'private'
-
     if not backends:
         backends = Backend.objects.exclude(offline=True)
 
@@ -437,12 +436,18 @@ def _create_network(network, backends=None):
 
     backend_jobs = []
     for backend in backends:
+        try:
+            backend_network = BackendNetwork.objects.get(network=network,
+                                                         backend=backend)
+        except BackendNetwork.DoesNotExist:
+            raise Exception("BackendNetwork for network '%s' in backend '%s'"\
+                            " does not exist" % (network.id, backend.id))
         job = backend.client.CreateNetwork(
                 network_name=network.backend_id,
                 network=network.subnet,
                 gateway=network.gateway,
                 network_type=network_type,
-                mac_prefix=network.mac_prefix,
+                mac_prefix=backend_network.mac_prefix,
                 tags=tags)
         backend_jobs.append((backend, job))
 

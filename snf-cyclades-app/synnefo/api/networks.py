@@ -46,7 +46,8 @@ from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import (BadRequest, Unauthorized,
                                 NetworkInUse, OverLimit)
-from synnefo.db.models import Network
+from synnefo.db.models import Network, Pool
+
 from synnefo.logic import backend
 from synnefo.settings import MAX_CIDR_BLOCK
 
@@ -163,12 +164,12 @@ def create_network(request):
         subnet6 = d.get('cidr6', None)
         gateway = d.get('gateway', None)
         gateway6 = d.get('gateway6', None)
-        type = d.get('type', 'PRIVATE_MAC_FILTERED')
+        typ = d.get('type', 'PRIVATE_MAC_FILTERED')
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    if type == 'PUBLIC_ROUTED':
+    if typ == 'PUBLIC_ROUTED':
         raise Unauthorized('Can not create a public network.')
 
     cidr_block = int(subnet.split('/')[1])
@@ -176,22 +177,24 @@ def create_network(request):
         raise OverLimit("Network size is to big. Please specify a network"
                         " smaller than /" + str(MAX_CIDR_BLOCK) + '.')
 
-    link, mac_prefix = util.network_specs_from_type(type)
-    if not link:
-        raise Exception("Can not create network. No connectivity link.")
+    try:
+        link = util.network_link_from_type(typ)
+        if not link:
+            raise Exception("Can not create network. No connectivity link.")
 
-    network = Network.objects.create(
-            name=name,
-            userid=request.user_uniq,
-            subnet=subnet,
-            subnet6=subnet6,
-            gateway=gateway,
-            gateway6=gateway6,
-            dhcp=dhcp,
-            type=type,
-            link=link,
-            mac_prefix=mac_prefix,
-            state='PENDING')
+        network = Network.objects.create(
+                name=name,
+                userid=request.user_uniq,
+                subnet=subnet,
+                subnet6=subnet6,
+                gateway=gateway,
+                gateway6=gateway6,
+                dhcp=dhcp,
+                type=typ,
+                link=link,
+                state='PENDING')
+    except Pool.PoolExhausted:
+        raise OverLimit('Network count limit exceeded.')
 
     backend.create_network(network)
 

@@ -355,25 +355,23 @@ def api_method(http_method=None, atom_allowed=False):
         return wrapper
     return decorator
 
+
 def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
 
-def network_specs_from_type(network_type):
-    mac_prefix = None
-    try:
-        if network_type == 'PRIVATE_MAC_FILTERED':
-            link = settings.PRIVATE_MAC_FILTERED_BRIDGE
-            mac_prefix = MacPrefixPool.get_available().value
-        elif network_type == 'PRIVATE_PHYSICAL_VLAN':
-            link = BridgePool.get_available().value
-        elif network_type == 'CUSTOM_ROUTED':
-            link = settings.CUSTOM_ROUTED_ROUTING_TABLE
-        elif network_type == 'CUSTOM_BRIDGED':
-            link = settings.CUSTOM_BRIDGED_BRIDGE
-        else:
-            raise BadRequest('Unknown network network_type')
-    except Pool.PoolExhausted:
-        raise OverLimit('Network count limit exceeded.')
+def network_link_from_type(network_type):
+    if network_type == 'PRIVATE_MAC_FILTERED':
+        link = settings.PRIVATE_MAC_FILTERED_BRIDGE
+    elif network_type == 'PRIVATE_PHYSICAL_VLAN':
+        link = BridgePool.get_available().value
+    elif network_type == 'CUSTOM_ROUTED':
+        link = settings.CUSTOM_ROUTED_ROUTING_TABLE
+    elif network_type == 'CUSTOM_BRIDGED':
+        link = settings.CUSTOM_BRIDGED_BRIDGE
+    elif network_type == 'PUBLIC_ROUTED':
+        link = settings.PUBLIC_ROUTED_ROUTING_TABLE
+    else:
+        raise BadRequest('Unknown network network_type')
 
-    return link, mac_prefix
+    return link

@@ -160,7 +160,7 @@ def instances_with_build_errors(D, G):
 
 
 def get_servers_from_db():
-    vms = VirtualMachine.objects.filter(deleted=False)
+    vms = VirtualMachine.objects.filter(deleted=False, backend__offline=False)
     return dict(map(lambda x: (x.id, x.operstate), vms))
 
 

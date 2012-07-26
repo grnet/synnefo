@@ -138,11 +138,13 @@ class Command(BaseCommand):
             if result[0] != "success":
                 self.stdout.write('\nError Creating Network %s: %s\n' %\
                                   (net.backend_id, result[1]))
-            self.stdout.write('Successfully created Network: %s\n' %
-                             net.backend_id)
+            else:
+                self.stdout.write('Successfully created Network: %s\n' %
+                                 net.backend_id)
             result = connect_network_synced(network=net, backend=backend)
             if result[0] != "success":
                 self.stdout.write('\nError Connecting Network %s: %s\n' %\
                                   (net.backend_id, result[1]))
-            self.stdout.write('Successfully connected Network: %s\n' %
-                             net.backend_id)
+            else:
+                self.stdout.write('Successfully connected Network: %s\n' %
+                                 net.backend_id)

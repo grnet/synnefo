@@ -18,7 +18,7 @@ class Migration(SchemaMigration):
         db.add_column('db_backend', 'index', self.gf('django.db.models.fields.PositiveIntegerField')(default=0, unique=True), keep_default=False)
 
         # Changing field 'Network.mac_prefix'
-        db.alter_column('db_network', 'mac_prefix', self.gf('django.db.models.fields.CharField')(max_length=32))
+        db.alter_column('db_network', 'mac_prefix',self.gf('django.db.models.fields.CharField')(default='', max_length=32, null=True))
 
         # Adding field 'BackendNetwork.mac_prefix'
         db.add_column('db_backendnetwork', 'mac_prefix', self.gf('django.db.models.fields.CharField')(default='', max_length=32), keep_default=False)
@@ -111,7 +111,8 @@ class Migration(SchemaMigration):
             'gateway6': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'link': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
-            'mac_prefix': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '32'}),
+            'mac_prefix': ('django.db.models.fields.CharField', [], {'default':
+                "''", 'max_length': '32', 'null':'True'}),
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'through': "orm['db.NetworkInterface']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),

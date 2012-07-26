@@ -3,7 +3,31 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from synnefo.db.models import BridgePool
+from synnefo import settings
+
+def get_available_bridge(orm):
+    try:
+        entry = orm.BridgePool.objects.filter(available=True)[0]
+        entry.available = False
+        entry.save()
+        return entry
+    except IndexError:
+        try:
+            last = orm.BridgePool.objects.order_by('-index')[0]
+            index = last.index + 1
+        except IndexError:
+            index = 1
+
+        if index <= settings.PRIVATE_PHYSICAL_VLAN_MAX_NUMBER:
+            create_bridge = orm.BridgePool.objects.create
+            return create_bridge(index=index,
+                                 value=value_from_index(index),
+                                 available=False)
+        raise Exception('Pool of bridges exhausted. Can not'
+                        ' allocate bridge')
+
+def value_from_index(index):
+    return settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + str(index)
 
 class Migration(DataMigration):
     
@@ -26,7 +50,8 @@ class Migration(DataMigration):
             else:
                 network.dhcp = False
                 network.type = 'PRIVATE_PHYSICAL_VLAN'
-                bridge = BridgePool.get_available()
+                entry = get_available_bridge(orm)
+                bridge = entry
                 network.netlink = bridge.value
 
             network.save()

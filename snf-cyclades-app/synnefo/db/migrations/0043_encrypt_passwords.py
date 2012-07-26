@@ -3,17 +3,26 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from synnefo.db.models import Backend
+
+try:
+    from synnefo.db.aes_encrypt import encrypt_db_charfield as encrypt
+    from synnefo.db.aes_encrypt import decrypt_db_charfield as decrypt
+except ImportError:
+    encrypt = None
+    decrypt = None
 
 class Migration(DataMigration):
     
     def forwards(self, orm):
         "Write your forwards methods here."
-        for backend in Backend.objects.all():
-            # Dummy update password in order to be encrypted
-            password = backend.password
-            backend.password = password
-            backend.save()
+        if encrypt and decrypt:
+            for backend in orm.Backend.objects.all():
+                # Dummy update password in order to be encrypted
+                password = decrypt(backend.password_hash)
+                backend.password_hash = encrypt(password)
+                backend.save()
+        else:
+            pass
     
     
     def backwards(self, orm):

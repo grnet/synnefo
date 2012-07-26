@@ -1,66 +1,20 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
-from synnefo import settings
 
-def get_available_mac_prefix(orm):
-    try:
-        entry = orm.MacPrefixPool.objects.filter(available=True)[0]
-        entry.available = False
-        entry.save()
-        return entry
-    except IndexError:
-        try:
-            last = orm.MacPrefixPool.objects.order_by('-index')[0]
-            index = last.index + 1
-        except IndexError:
-            index = 1
-
-        if index <= settings.MAC_POOL_LIMIT:
-            create_mac_prefix = orm.MacPrefixPool.objects.create
-            return create_mac_prefix(index=index,
-                                 value=value_from_index(index),
-                                 available=False)
-        raise Exception('Pool of mac_prefixes exhausted. Can not'
-                        ' allocate mac_prefix.')
-
-def value_from_index(index):
-    """Convert number to mac prefix
-
-    """
-    base = settings.MAC_POOL_BASE
-    a = hex(int(base.replace(":", ""), 16) + index).replace("0x", '')
-    mac_prefix = ":".join([a[x:x + 2] for x in xrange(0, len(a), 2)])
-    return mac_prefix
-
-class Migration(DataMigration):
+class Migration(SchemaMigration):
     
     def forwards(self, orm):
-        "Write your forwards methods here."
-        # Clear the Mac prefix pool. If there were any Networks
-        # with a MAC prefix, they will get a new one.
-        orm.MacPrefixPool.objects.all().delete()
-
-        for network in orm.Network.objects.order_by('id'):
-            if network.deleted:
-                network.mac_prefix = settings.MAC_POOL_BASE
-            else:
-                mac_prefix = get_available_mac_prefix(orm)
-                network.mac_prefix = mac_prefix.value
-            network.save()
-
-        for backend_network in orm.BackendNetwork.objects.order_by('id'):
-            net_prefix = backend_network.network.mac_prefix
-            backend_suffix = hex(backend_network.backend.index).replace('0x', '')
-            mac_prefix = net_prefix + backend_suffix
-            backend_network.mac_prefix = mac_prefix
-            backend_network.save()
+        # Changing field 'Network.mac_prefix'
+        db.alter_column('db_network', 'mac_prefix', self.gf('django.db.models.fields.CharField')(max_length=32, null=False))
+    
     
     def backwards(self, orm):
-        "Write your backwards methods here."
-        pass
+        # Changing field 'Network.mac_prefix'
+        db.alter_column('db_network', 'mac_prefix', self.gf('django.db.models.fields.CharField')(default='', max_length=32, null=True))
+    
     
     models = {
         'db.backend': {
@@ -93,7 +47,7 @@ class Migration(DataMigration):
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'mac_prefix': ('django.db.models.fields.CharField', [], {'default': "'a'", 'max_length': '32'}),
+            'mac_prefix': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'backend_networks'", 'to': "orm['db.Network']"}),
             'operstate': ('django.db.models.fields.CharField', [], {'default': "'PENDING'", 'max_length': '30'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
@@ -131,7 +85,7 @@ class Migration(DataMigration):
             'gateway6': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'link': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
-            'mac_prefix': ('django.db.models.fields.CharField', [], {'default': "'a'", 'max_length': '32'}),
+            'mac_prefix': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'through': "orm['db.NetworkInterface']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),

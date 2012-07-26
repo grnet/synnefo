@@ -504,6 +504,9 @@ class Network(models.Model):
         the BackendNetworks operstate.
 
         """
+
+        old_state = self.state
+
         backend_states = [s.operstate for s in self.backend_networks.all()]
         if not backend_states:
             self.state = 'PENDING'
@@ -513,7 +516,8 @@ class Network(models.Model):
         all_equal = len(set(backend_states)) <= 1
         self.state = all_equal and backend_states[0] or 'PENDING'
 
-        if self.state == 'DELETED':
+        # Release the resources on the deletion of the Network
+        if old_state != 'DELETED' and self.state == 'DELETED':
             self.deleted = True
 
             if self.mac_prefix:

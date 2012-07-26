@@ -192,6 +192,7 @@ def create_network(request):
                 dhcp=dhcp,
                 type=typ,
                 link=link,
+                action='CREATE',
                 state='PENDING')
     except Pool.PoolExhausted:
         raise OverLimit('Network count limit exceeded.')

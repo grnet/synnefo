@@ -30,7 +30,7 @@ NEW FEATURES:
 	* Replaced GANETI_MAX_LINK_NUMBER with PRIVATE_PHYSICAL_VLAN_MAX_NUMBER
 	* Replaced PRIVATE_MAC_FILTERED_BRIDGE
 	* Add setting ENABLED_NETWORKS
-	* Add setting ENCRYPTION_KEY
+	* Add setting SECRET_ENCRYPTION_KEY
 	* Add settings for configuring each network type
 
 

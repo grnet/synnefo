@@ -2,7 +2,7 @@ from binascii import b2a_base64, a2b_base64
 from Crypto.Cipher import AES
 from random import choice
 from string import letters, digits
-from synnefo.settings import ENCRYPTION_KEY
+from synnefo.settings import SECRET_ENCRYPTION_KEY
 
 
 DB_ENCRYPTED_FIELD_PREFIX = 'encrypted'
@@ -16,12 +16,12 @@ def _pad_secret(secret, blocksize=32, padding='}'):
 
 
 def encrypt(s):
-    obj = AES.new(_pad_secret(ENCRYPTION_KEY), AES.MODE_CFB)
+    obj = AES.new(_pad_secret(SECRET_ENCRYPTION_KEY), AES.MODE_CFB)
     return obj.encrypt(s)
 
 
 def decrypt(s):
-    obj = AES.new(_pad_secret(ENCRYPTION_KEY), AES.MODE_CFB)
+    obj = AES.new(_pad_secret(SECRET_ENCRYPTION_KEY), AES.MODE_CFB)
     return obj.decrypt(s)
 
 

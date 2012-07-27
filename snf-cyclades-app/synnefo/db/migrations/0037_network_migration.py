@@ -50,9 +50,17 @@ class Migration(DataMigration):
             else:
                 network.dhcp = False
                 network.type = 'PRIVATE_PHYSICAL_VLAN'
-                entry = get_available_bridge(orm)
-                bridge = entry
-                network.netlink = bridge.value
+                if network.deleted:
+                    try:
+                        link = settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + '0'
+                    except AttributeError:
+                        link = 'prv0'
+                    network.netlink = link
+                else:
+                    # Non-deleted Network. Allocate A Bridge
+                    entry = get_available_bridge(orm)
+                    bridge = entry
+                    network.netlink = bridge.value
 
             network.save()
     

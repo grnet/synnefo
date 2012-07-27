@@ -59,6 +59,7 @@ from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
+from ganeti.cli import GetClient
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
@@ -260,12 +261,15 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
 
 
-
 def find_cluster_name():
-    path = constants.DATA_DIR + "/ssconf_" + constants.SS_CLUSTER_NAME
-    f = open(path)
-    name = f.readline().rstrip()
-    f.close()
+    global handler_logger
+    try:
+        cl = GetClient()
+        name = cl.QueryClusterInfo()['name']
+    except Exception as e:
+        handler_logger.error('Can not get the name of the Cluster: %s' % e)
+        raise e
+
     return name
 
 handler_logger = None
@@ -348,7 +352,9 @@ def main():
     wm = pyinotify.WatchManager()
     mask = pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] | \
            pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
+
     cluster_name = find_cluster_name()
+
     handler = JobFileHandler(logger, cluster_name)
     notifier = pyinotify.Notifier(wm, handler)
 

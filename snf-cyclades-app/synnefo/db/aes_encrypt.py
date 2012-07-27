@@ -10,7 +10,10 @@ SALT_LEN = 8
 
 
 def _pad_secret(secret, blocksize=32, padding='}'):
-    if not len(secret) in (16, 24, 32):
+    len_secret = len(secret)
+    if len_secret > 32:
+        raise ValueError('Encryption key must be smaller than 32 bytes')
+    if not len_secret in (16, 24, 32):
         return secret + (blocksize - len(secret)) * padding
     return secret
 

@@ -29,7 +29,6 @@ GANETI_PUBLIC_NETWORK = 'snf-net-1'
 
 # The first mac prefix to use
 MAC_POOL_BASE = 'aa:00:0'
-# Max number of mac prefixes to use
 MAC_POOL_LIMIT = 65536
 
 ENABLED_NETWORKS = ['PUBLIC_ROUTED',
@@ -65,7 +64,7 @@ PRIVATE_MAC_FILTERED_TAGS = ['private-filtered']
 # ------------------------------------------
 # Each network of this type is mapped to an isolated physical VLAN, which must
 # be preconfigured in the backend. Each vlan corresponds to a bridge named
-# $PRIVATE_PHYSICAL_VLAN_PREFIX{0..$PRIVATE_PHYSICAL_VLAN_MAX_NUMBER} (e.g. prv5)
+# $PRIVATE_PHYSICAL_VLAN_PREFIX{1..$PRIVATE_PHYSICAL_VLAN_MAX_NUMBER} (e.g. prv5)
 # VirtualMachine's taps are eventually bridged to the corresponding bridge.
 PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX = 'prv'
 # The max limit of physical vlan pool

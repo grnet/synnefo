@@ -172,6 +172,10 @@ def create_network(request):
     if typ == 'PUBLIC_ROUTED':
         raise Unauthorized('Can not create a public network.')
 
+    user_networks = len(Network.objects.filter(userid=request.user_uniq))
+    if user_networks > settings.MAX_NETWORKS_PER_USER:
+        raise OverLimit('Network count limit exceeded for your account.')
+
     cidr_block = int(subnet.split('/')[1])
     if cidr_block <= MAX_CIDR_BLOCK:
         raise OverLimit("Network size is to big. Please specify a network"

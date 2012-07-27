@@ -715,7 +715,7 @@ class Pool(models.Model):
             last = cls.objects.order_by('-index')[0]
             index = last.index + 1
         except IndexError:
-            index = 1
+            index = 0
 
         if index <= cls.max_index:
             return cls.objects.create(index=index,

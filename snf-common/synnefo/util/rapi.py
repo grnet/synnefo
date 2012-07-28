@@ -1659,7 +1659,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
                     gateway6=None, mac_prefix=None, network_type=None,
-                    add_reserved_ips=None, tags=None, dry_run=False):
+                    tags=None, dry_run=False):
     """Creates a new network.
 
     @type name: str
@@ -1687,11 +1687,6 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "network_type": network_type,
       "tags": tags
       }
-
-    # not used by synnefo, for now
-    if add_reserved_ips:
-        add_reserved_ips = add_reserved_ips.split(',')
-        body['add_reserved_ips'] = add_reserved_ips
 
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
                              query, body)

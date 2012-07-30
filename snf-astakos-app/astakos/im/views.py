@@ -52,6 +52,7 @@ from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
@@ -59,7 +60,7 @@ from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
     invite as invite_func, logout as auth_logout
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +266,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                 messages.add_message(request, messages.SUCCESS, msg)
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
+    elif request.method == "GET":
+        request.user.is_verified = True
+        request.user.save()
     return render_response(template_name,
                            reset_cookie = reset_cookie,
                            profile_form = form,
@@ -275,7 +279,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     """
     Allows a user to create a local account.
 
-    In case of GET request renders a form for providing the user information.
+    In case of GET request renders a form for entering the user information.
     In case of POST handles the signup.
 
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
@@ -283,7 +287,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.activation_backends.SimpleBackend`` if not
     (see activation_backends);
     
-    Upon successful user creation if ``next`` url parameter is present the user is redirected there
+    Upon successful user creation, if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
     
     On unsuccessful creation, renders ``template_name`` with an error message.
@@ -293,7 +297,6 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     ``template_name``
         A custom template to render. This is optional;
         if not specified, this will default to ``im/signup.html``.
-
 
     ``on_success``
         A custom template to render in case of success. This is optional;
@@ -308,7 +311,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     im/signup_complete.html or ``on_success`` keyword argument. 
     """
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('astakos.im.views.index'))
+        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     
     provider = get_query(request).get('provider', 'local')
     try:
@@ -330,6 +333,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     additional_email = form.cleaned_data['additional_email']
                     if additional_email != user.email:
                         user.additionalmail_set.create(email=additional_email)
+                        msg = 'Additional email: %s saved for user %s.' % (additional_email, user.email)
+                        logger._log(LOGGING_LEVEL, msg, [])
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)
@@ -387,7 +392,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
 
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            msg = form.cleaned_data['feedback_msg'],
+            msg = form.cleaned_data['feedback_msg']
             data = form.cleaned_data['feedback_data']
             try:
                 send_feedback(msg, data, request.user, email_template_name)
@@ -406,9 +411,11 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     """
     Wraps `django.contrib.auth.logout` and delete the cookie.
     """
+    msg = 'Cookie deleted for %s' % (request.user.email)
     auth_logout(request)
     response = HttpResponse()
     response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
+    logger._log(LOGGING_LEVEL, msg, [])
     next = request.GET.get('next')
     if next:
         response['Location'] = next
@@ -439,8 +446,13 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='im
     except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest(_('No such user'))
     
+    if user.is_active:
+        message = 'Account already active.'
+        messages.add_message(request, messages.ERROR, message)
+        return render_response(on_failure)
+    
     try:
-        local_user = AstakosUser.objects.get(email=user.email, is_active=True)
+        local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
     except AstakosUser.DoesNotExist:
         user.is_active = True
         user.email_verified = True
@@ -450,16 +462,17 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='im
             return HttpResponseBadRequest(e)
     else:
         # switch the existing account to shibboleth one
-        local_user.provider = 'shibboleth'
-        local_user.set_unusable_password()
-        local_user.third_party_identifier = user.third_party_identifier
-        try:
-            local_user.save()
-        except ValidationError, e:
-            return HttpResponseBadRequest(e)
-        user.delete()
-        user = local_user
-    
+        if user.provider == 'shibboleth':
+            local_user.provider = 'shibboleth'
+            local_user.set_unusable_password()
+            local_user.third_party_identifier = user.third_party_identifier
+            try:
+                local_user.save()
+            except ValidationError, e:
+                return HttpResponseBadRequest(e)
+            user.delete()
+            user = local_user
+        
     try:
         send_greeting(user, email_template_name)
         response = prepare_response(request, user, next, renew=True)

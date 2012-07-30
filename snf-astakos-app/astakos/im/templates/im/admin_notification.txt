@@ -21,4 +21,4 @@ Is active:      {{user.is_active}}
 Level:          {{user.level}}
 Invitations:    {{user.invitations}}
 
-Fot its activation you can use the command line tool snf-manage sendactivation
+For its activation you can use the command line tool snf-manage sendactivation

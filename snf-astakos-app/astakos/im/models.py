@@ -96,6 +96,9 @@ class AstakosUser(User):
     __has_signed_terms = False
     __groupnames = []
     
+    class Meta:
+        unique_together = ("provider", "third_party_identifier")
+    
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms
@@ -369,7 +372,7 @@ class AdditionalMail(models.Model):
     Model for registring invitations
     """
     owner = models.ForeignKey(AstakosUser)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
 
 def create_astakos_user(u):
     try:

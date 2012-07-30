@@ -1560,6 +1560,8 @@ def main():
                 fail.write(str(res[0]) + '\n')
                 fail.write(str(res[0].shortDescription()) + '\n')
                 fail.write('\n')
+                if opts.nofailfast == False:
+                    sys.exit()
 
 if __name__ == "__main__":
     sys.exit(main())

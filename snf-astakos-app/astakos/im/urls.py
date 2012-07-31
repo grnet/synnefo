@@ -34,7 +34,7 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.views import password_change
 
-from astakos.im.forms import ExtendedPasswordResetForm, LoginForm
+from astakos.im.forms import ExtendedPasswordResetForm, ExtendedPasswordChangeForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 
 urlpatterns = patterns('astakos.im.views',
@@ -73,7 +73,8 @@ if 'local' in IM_MODULES:
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
          'password_reset_confirm'),
         url(r'^local/password/reset/complete/?$', 'password_reset_complete'),
-        url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile'})
+        url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile',
+            'password_change_form':ExtendedPasswordChangeForm})
     )
 
 if INVITATIONS_ENABLED:

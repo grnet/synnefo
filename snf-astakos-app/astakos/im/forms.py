@@ -35,7 +35,8 @@ from datetime import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordResetForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, \
+    PasswordResetForm, PasswordChangeForm
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
@@ -466,3 +467,22 @@ class InvitationForm(forms.ModelForm):
         except Invitation.DoesNotExist:
             pass
         return username
+
+class ExtendedPasswordChangeForm(PasswordChangeForm):
+    """
+    Extends PasswordChangeForm by enabling user
+    to optionally renew also the token.
+    """
+    renew = forms.BooleanField(label='Renew token', required=False)
+    
+    def __init__(self, user, *args, **kwargs):
+        super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
+        print self.fields.keyOrder
+    
+    def save(self, commit=True):
+        user = super(ExtendedPasswordChangeForm, self).save(commit=False)
+        if self.cleaned_data.get('renew'):
+            user.renew_token()
+        if commit:
+            user.save()
+        return user

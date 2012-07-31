@@ -532,7 +532,9 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 @signed_terms_required
 def change_password(request):
-    return password_change(request, post_change_redirect=reverse('astakos.im.views.edit_profile'))
+    return password_change(request,
+                            post_change_redirect=reverse('astakos.im.views.edit_profile'),
+                            password_change_form=ExtendedPasswordChangeForm)
 
 @transaction.commit_manually
 def change_email(request, activation_key=None,

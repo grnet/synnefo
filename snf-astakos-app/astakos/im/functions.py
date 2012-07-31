@@ -258,7 +258,6 @@ def switch_account_to_shibboleth(user, local_user, greeting_template_name='im/we
     
     user.delete()
     local_user.provider = 'shibboleth'
-    local_user.set_unusable_password()
     local_user.third_party_identifier = user.third_party_identifier
     local_user.save()
     send_greeting(local_user, greeting_template_name)

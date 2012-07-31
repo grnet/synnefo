@@ -318,6 +318,12 @@ class LoginForm(AuthenticationForm):
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
             raise forms.ValidationError(_('You have not entered the correct words'))
+    
+    def clean(self):
+        super(LoginForm, self).clean()
+        if self.user_cache.provider != 'local':
+            raise forms.ValidationError(_('Local login is not the current authentication method for this account.'))
+        return self.cleaned_data
 
 class ProfileForm(forms.ModelForm):
     """

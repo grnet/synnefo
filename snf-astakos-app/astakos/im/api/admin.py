@@ -207,7 +207,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
                   'name': "My account" })
         if with_extra_links:
-            if user.has_usable_password():
+            if user.has_usable_password() and user.provider == 'local':
                 l.append({ 'url': absolute(reverse('password_change')),
                           'name': "Change password" })
             if EMAILCHANGE_ENABLED:

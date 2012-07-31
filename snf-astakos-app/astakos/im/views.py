@@ -59,7 +59,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
-    invite as invite_func, logout as auth_logout, send_helpdesk_notification
+    invite as invite_func, logout as auth_logout, activate as activate_func, switch_account_to_shibboleth
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
 
 logger = logging.getLogger(__name__)
@@ -431,8 +431,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     return response
 
 @transaction.commit_manually
-def activate(request, email_template_name='im/welcome_email.txt', on_failure='im/signup.html', 
-                helpdesk_email_template_name='im/helpdesk_notification.txt'):
+def activate(request, email_template_name='im/welcome_email.txt', helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
     Activates the user identified by the ``auth`` request parameter, sends a welcome email
     and renews the user token.
@@ -448,53 +447,49 @@ def activate(request, email_template_name='im/welcome_email.txt', on_failure='im
         return HttpResponseBadRequest(_('No such user'))
     
     if user.is_active:
-        message = 'Account already active.'
+        message = _('Account already active.')
         messages.add_message(request, messages.ERROR, message)
-        return render_response(on_failure)
+        return index(request)
     
-    notify_helpdesk = False
     try:
         local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
     except AstakosUser.DoesNotExist:
-        user.is_active = True
-        user.email_verified = True
         try:
-            user.save()
-        except ValidationError, e:
-            return HttpResponseBadRequest(e)
-        notify_helpdesk = True
+            activate_func(user, email_template_name, helpdesk_email_template_name, verify_email=True)
+            response = prepare_response(request, user, next, renew=True)
+            transaction.commit()
+            return response
+        except SendMailError, e:
+            message = e.message
+            messages.add_message(request, messages.ERROR, message)
+            transaction.rollback()
+            return index(request)
+        except BaseException, e:
+            status = messages.ERROR
+            message = _('Something went wrong.')
+            messages.add_message(request, messages.ERROR, message)
+            logger.exception(e)
+            transaction.rollback()
+            return index(request)
     else:
-        # switch the existing account to shibboleth one
-        if user.provider == 'shibboleth':
-            local_user.provider = 'shibboleth'
-            local_user.set_unusable_password()
-            local_user.third_party_identifier = user.third_party_identifier
-            try:
-                local_user.save()
-            except ValidationError, e:
-                return HttpResponseBadRequest(e)
-            user.delete()
-            user = local_user
-        
-    try:
-        if notify_helpdesk:
-            send_helpdesk_notification(user, helpdesk_email_template_name)
-        send_greeting(user, email_template_name)
-        response = prepare_response(request, user, next, renew=True)
-        transaction.commit()
-        return response
-    except SendMailError, e:
-        message = e.message
-        messages.add_message(request, messages.ERROR, message)
-        transaction.rollback()
-        return render_response(on_failure)
-    except BaseException, e:
-        status = messages.ERROR
-        message = _('Something went wrong.')
-        messages.add_message(request, messages.ERROR, message)
-        logger.exception(e)
-        transaction.rollback()
-        return signup(request, on_failure)
+        try:
+            user = switch_account_to_shibboleth(user, local_user)
+            send_greeting(user, email_template_name)
+            response = prepare_response(request, user, next, renew=True)
+            transaction.commit()
+            return response
+        except SendMailError, e:
+            message = e.message
+            messages.add_message(request, messages.ERROR, message)
+            transaction.rollback()
+            return index(request)
+        except BaseException, e:
+            status = messages.ERROR
+            message = _('Something went wrong.')
+            messages.add_message(request, messages.ERROR, message)
+            logger.exception(e)
+            transaction.rollback()
+            return index(request)
 
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):
     term = None

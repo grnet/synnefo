@@ -232,15 +232,36 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         msg = 'Sent change email for %s' % ec.user.email
         logger._log(LOGGING_LEVEL, msg, [])
 
-def activate(user, email_template_name='im/welcome_email.txt'):
+def activate(user, email_template_name='im/welcome_email.txt',
+                helpdesk_email_template_name='im/helpdesk_notification.txt', verify_email=False):
     """
     Activates the specific user and sends email.
     
     Raises SendGreetingError, ValidationError
     """
     user.is_active = True
+    if verify_email:
+        user.email_verified = True
     user.save()
+    send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
+
+def switch_account_to_shibboleth(user, local_user):
+    if not user or not isinstance(user, AstakosUser):
+        return
+    
+    if not local_user or not isinstance(user, AstakosUser):
+        return
+    
+    if not user.provider == 'shibboleth':
+        return
+    
+    user.delete()
+    local_user.provider = 'shibboleth'
+    local_user.set_unusable_password()
+    local_user.third_party_identifier = user.third_party_identifier
+    local_user.save()
+    return local_user
 
 def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):
     """

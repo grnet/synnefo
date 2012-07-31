@@ -1,5 +1,6 @@
 Changelog
 ---------
+
 next
 ^^^^
 - Rename management commands
@@ -10,6 +11,7 @@ next
 - Extend user_update command by enabling provider modification and password renewal
 - Check for email absence before querying the database for retrieving the user in get menu call
 - Set is_verified in profile view even if the user do not post the form
+- New html/css theme
 
 v0.6.2
 ^^^^^^

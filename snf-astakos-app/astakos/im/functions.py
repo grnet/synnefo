@@ -128,6 +128,29 @@ def send_admin_notification(user, template_name='im/admin_notification.txt'):
         msg = 'Sent admin notification for user %s' % user.email
         logger._log(LOGGING_LEVEL, msg, [])
 
+def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
+    """
+    Send email to DEFAULT_CONTACT_EMAIL to notify for a new user activation.
+    
+    Raises SendNotificationError
+    """
+    if not DEFAULT_CONTACT_EMAIL:
+        return
+    message = render_to_string(template_name, {
+            'user': user,
+            'baseurl': BASEURL,
+            'site_name': SITENAME,
+            'support': DEFAULT_ADMIN_EMAIL})
+    sender = DEFAULT_FROM_EMAIL
+    try:
+        send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_CONTACT_EMAIL])
+    except (SMTPException, socket.error) as e:
+        logger.exception(e)
+        raise SendNotificationError()
+    else:
+        msg = 'Sent helpdesk admin notification for user %s' % user.email
+        logger._log(LOGGING_LEVEL, msg, [])
+
 def send_invitation(invitation, template_name='im/invitation.txt'):
     """
     Send invitation email.
@@ -273,3 +296,8 @@ class ChangeEmailError(SendMailError):
     def __init__(self):
         self.message = _('Failed to send change email')
         super(ChangeEmailError, self).__init__()
+
+class SendNotificationError(SendMailError):
+    def __init__(self):
+        self.message = _('Failed to send notification email')
+        super(SendNotificationError, self).__init__()

@@ -1,0 +1,21 @@
+--- A translation in English follows ---
+
+Έχει ενεργοποιηθεί ο παρακάτω λογαριασμός:
+
+Email:          {{user.email}}
+First name:     {{user.first_name}}
+Last name:      {{user.last_name}}
+Is active:      {{user.is_active}}
+Level:          {{user.level}}
+Invitations:    {{user.invitations}}
+
+--
+
+The following account has been activated:
+
+Email:          {{user.email}}
+First name:     {{user.first_name}}
+Last name:      {{user.last_name}}
+Is active:      {{user.is_active}}
+Level:          {{user.level}}
+Invitations:    {{user.invitations}}

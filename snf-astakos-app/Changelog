@@ -1,5 +1,15 @@
 Changelog
 ---------
+next
+^^^^
+- Rename management commands
+- Optionally renew token on password change
+- Preserve local password for users switched to shibboleth
+- Send notification to DEFAULT_CONTACT_EMAIL on account activation
+- Fix unusable password issue
+- Extend user_update command by enabling provider modification and password renewal
+- Check for email absence before querying the database for retrieving the user in get menu call
+- Set is_verified in profile view even if the user do not post the form
 
 v0.6.2
 ^^^^^^

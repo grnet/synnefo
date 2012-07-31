@@ -88,7 +88,7 @@ class LocalUserCreationForm(UserCreationForm):
             kwargs.pop('request')
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP', None))
-        
+
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
@@ -98,7 +98,7 @@ class LocalUserCreationForm(UserCreationForm):
                                          'recaptcha_response_field',])
         if get_latest_terms():
             self.fields.keyOrder.append('has_signed_terms')
-            
+
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
@@ -168,7 +168,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         ro = ('email', 'username',)
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
-        
+
 
     def save(self, commit=True):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
@@ -184,7 +184,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
     class Meta:
         model = AstakosUser
         fields = ("email", "first_name", "last_name", "third_party_identifier", "has_signed_terms")
-    
+
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
@@ -200,7 +200,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         ro = ["third_party_identifier"]
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
-        
+
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
@@ -208,19 +208,19 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
                     % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
                     mark_safe("I agree with %s" % terms_link_html)
-    
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_("This field is required"))
         return email
-    
+
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
             raise forms.ValidationError(_('You have to agree with the terms'))
         return has_signed_terms
-    
+
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
@@ -245,7 +245,7 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
         ro = ('email',)
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
-    
+
     def save(self, commit=True):
         user = super(InvitedThirdPartyUserCreationForm, self).save(commit=False)
         level = user.invitation.inviter.level + 1
@@ -258,7 +258,7 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
 
 class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
     additional_email = forms.CharField(widget=forms.HiddenInput(), label='', required = False)
-    
+
     def __init__(self, *args, **kwargs):
         super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder.append('additional_email')
@@ -266,7 +266,7 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         name = 'email'
         field = self.fields[name]
         self.initial['additional_email'] = self.initial.get(name, field.initial)
-    
+
     def clean_email(self):
         email = self.cleaned_data['email']
         for user in AstakosUser.objects.filter(email = email):
@@ -280,30 +280,30 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm, InvitedThirdPartyUserCreationForm):
     pass
-    
+
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label=_("Email"))
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
     recaptcha_response_field = forms.CharField(widget=RecaptchaWidget, label='')
-    
+
     def __init__(self, *args, **kwargs):
         was_limited = kwargs.get('was_limited', False)
         request = kwargs.get('request', None)
         if request:
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP', None))
-        
+
         t = ('request', 'was_limited')
         for elem in t:
             if elem in kwargs.keys():
                 kwargs.pop(elem)
         super(LoginForm, self).__init__(*args, **kwargs)
-        
+
         self.fields.keyOrder = ['username', 'password']
         if was_limited and RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field',])
-    
+
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
             self.validate_captcha()
@@ -320,7 +320,7 @@ class LoginForm(AuthenticationForm):
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
             raise forms.ValidationError(_('You have not entered the correct words'))
-    
+
     def clean(self):
         super(LoginForm, self).clean()
         if self.user_cache.provider != 'local':
@@ -392,7 +392,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         except AstakosUser.DoesNotExist, e:
             raise forms.ValidationError(_('That e-mail address doesn\'t have an associated user account. Are you sure you\'ve registered?'))
         return email
-    
+
     def save(self, domain_override=None, email_template_name='registration/password_reset_email.html',
              use_https=False, token_generator=default_token_generator, request=None):
         """
@@ -420,13 +420,13 @@ class EmailChangeForm(forms.ModelForm):
     class Meta:
         model = EmailChange
         fields = ('new_email_address',)
-            
+
     def clean_new_email_address(self):
         addr = self.cleaned_data['new_email_address']
         if AstakosUser.objects.filter(email__iexact=addr):
             raise forms.ValidationError(_(u'This email address is already in use. Please supply a different email address.'))
         return addr
-    
+
     def save(self, email_template_name, request, commit=True):
         ec = super(EmailChangeForm, self).save(commit=False)
         ec.user = request.user
@@ -452,14 +452,14 @@ class SignApprovalTermsForm(forms.ModelForm):
 
 class InvitationForm(forms.ModelForm):
     username = forms.EmailField(label=_("Email"))
-    
+
     def __init__(self, *args, **kwargs):
         super(InvitationForm, self).__init__(*args, **kwargs)
-    
+
     class Meta:
         model = Invitation
         fields = ('username', 'realname')
-    
+
     def clean_username(self):
         username = self.cleaned_data['username']
         try:
@@ -475,11 +475,10 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     to optionally renew also the token.
     """
     renew = forms.BooleanField(label='Renew token', required=False)
-    
+
     def __init__(self, user, *args, **kwargs):
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
-        print self.fields.keyOrder
-    
+
     def save(self, commit=True):
         user = super(ExtendedPasswordChangeForm, self).save(commit=False)
         if self.cleaned_data.get('renew'):

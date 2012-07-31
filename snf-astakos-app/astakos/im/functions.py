@@ -246,7 +246,7 @@ def activate(user, email_template_name='im/welcome_email.txt',
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
-def switch_account_to_shibboleth(user, local_user):
+def switch_account_to_shibboleth(user, local_user, greeting_template_name='im/welcome_email.txt'):
     if not user or not isinstance(user, AstakosUser):
         return
     
@@ -261,6 +261,7 @@ def switch_account_to_shibboleth(user, local_user):
     local_user.set_unusable_password()
     local_user.third_party_identifier = user.third_party_identifier
     local_user.save()
+    send_greeting(local_user, greeting_template_name)
     return local_user
 
 def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):

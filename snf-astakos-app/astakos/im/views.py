@@ -473,8 +473,7 @@ def activate(request, email_template_name='im/welcome_email.txt', helpdesk_email
             return index(request)
     else:
         try:
-            user = switch_account_to_shibboleth(user, local_user)
-            send_greeting(user, email_template_name)
+            user = switch_account_to_shibboleth(user, local_user, email_template_name)
             response = prepare_response(request, user, next, renew=True)
             transaction.commit()
             return response

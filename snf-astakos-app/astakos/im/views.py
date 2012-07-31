@@ -431,7 +431,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     return response
 
 @transaction.commit_manually
-def activate(request, email_template_name='im/welcome_email.txt', helpdesk_email_template_name='im/helpdesk_notification.txt'):
+def activate(request, greeting_email_template_name='im/welcome_email.txt', helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
     Activates the user identified by the ``auth`` request parameter, sends a welcome email
     and renews the user token.
@@ -455,7 +455,7 @@ def activate(request, email_template_name='im/welcome_email.txt', helpdesk_email
         local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
     except AstakosUser.DoesNotExist:
         try:
-            activate_func(user, email_template_name, helpdesk_email_template_name, verify_email=True)
+            activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
             response = prepare_response(request, user, next, renew=True)
             transaction.commit()
             return response
@@ -473,7 +473,7 @@ def activate(request, email_template_name='im/welcome_email.txt', helpdesk_email
             return index(request)
     else:
         try:
-            user = switch_account_to_shibboleth(user, local_user, email_template_name)
+            user = switch_account_to_shibboleth(user, local_user, greeting_email_template_name)
             response = prepare_response(request, user, next, renew=True)
             transaction.commit()
             return response

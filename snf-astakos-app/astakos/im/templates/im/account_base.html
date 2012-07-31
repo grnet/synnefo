@@ -1,12 +1,12 @@
-{% extends "im/base_two_cols.html" %}
+{% extends "im/base.html" %}
 
 {% block extra_messages %}
     {% if not messages %}
         {% for msg_type, msg in GLOBAL_MESSAGES.items %}
-            <li class="{{ msg_type }}">{{ msg|safe }}</li>
+            <div class="{{ msg_type }}">{{ msg|safe }}</div>
         {% endfor %}
         {% for msg_type, msg in PROFILE_MESSAGES.items %}
-            <li class="{{ msg_type }}">{{ msg|safe }}</li>
+            <div class="{{ msg_type }}">{{ msg|safe }}</div>
         {% endfor %}
     {% endif %}
 {% endblock %}
@@ -24,24 +24,26 @@
 
 {% block page.nav.items %}
     {% for item in menu%}
-        <li class="{% if item|lookup:"is_active" %}active{% endif %}">
+        <li {% if item|lookup:"is_active" %}class="active"{% endif %}>
             <a href="{{ item|lookup:"url" }}">{{ item|lookup:"name" }}</a>
         </li>
     {% endfor %}
 {% endblock %}
     
 {% block page.body %}
-<div class="maincol {% block innerpage.class %}full{% endblock %}">
+<div class="{% block innerpage.class %}full{% endblock %}">
 {% block body %}{% endblock %}
 
     {% if PROFILE_EXTRA_LINKS %}
-    <div class="extra-buttons buttons-list fixpos">
+    <div class="buttons-list fixpos">
         {% for href, name in PROFILE_EXTRA_LINKS.items %}
             <a class="button back right" href="{{ href }}">{{ name }}</a>
         {% endfor %}
     </div>
     {% endif %}
+    
 
 </div>
 
 {% endblock %}
+ 

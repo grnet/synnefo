@@ -1,0 +1,18 @@
+ <div id="okeanos_recaptcha" style="display:none" class="clearfix">
+
+   <div id="recaptcha_image"></div>
+   <div class="recaptcha_only_if_incorrect_sol" style="color:red">Incorrect please try again</div>
+
+   <label for="recaptcha_response_field" class="recaptcha_only_if_image">Enter the words above:</label>
+   <label for="recaptcha_response_field" class="recaptcha_only_if_audio">Enter the numbers you hear:</label>
+
+   <input type="text" id="recaptcha_response_field" name="recaptcha_response_field" />
+   <div class="actions-wrap clearfix">
+   	   <div class="img img-refresh"><a href="javascript:Recaptcha.reload()">Get another CAPTCHA</a></div>
+   	   <div class="recaptcha_only_if_image img-audio img"><a href="javascript:Recaptcha.switch_type('audio')">Get an audio CAPTCHA</a></div>
+   </div>
+   
+   <!--<div class="recaptcha_only_if_audio"><a href="javascript:Recaptcha.switch_type('image')">Get an image CAPTCHA</a></div>-->
+
+    
+ </div>

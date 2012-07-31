@@ -27,6 +27,12 @@ $(document).ready(function(){
     var css = $("<link />");
     css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css'});
     $("head").append(css);
+    
+    // load fonts
+    var font_url = 'https://fonts.googleapis.com/css?family=Antic';
+    var css_font = $("<link />");
+    css_font.attr({rel:'stylesheet', type:'text/css', href:font_url});
+    $("head").append(css_font);
 
     // load service specific css
     var SKIP_ADDITIONAL_CSS = window.SKIP_ADDITIONAL_CSS == undefined ? false : window.SKIP_ADDITIONAL_CSS;

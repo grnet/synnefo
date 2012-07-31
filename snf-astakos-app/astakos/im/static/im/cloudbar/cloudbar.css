@@ -7,6 +7,11 @@
 
 /* cloudbar header */
 div.cloudbar                                    { background:#000; color:#fff;	   line-height:35px;  width:100%;   font-size:13px; font-family:Antic,Arial,sans-serif;}	
+
+div.cloudbar a, 
+div.cloudbar .profile span,
+div.cloudbar li {font-family:Antic,Arial,sans-serif !important; letter-spacing: 1px !important}
+
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}
 .cloudbar .profile                              { float:right; background:#01A1AE; min-width:190px; padding:0; text-align:right;  }

@@ -107,6 +107,7 @@ class ImagesTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
 
+        cls.client = ComputeClient(API, TOKEN)
         cls.plankton = ImageClient(PLANKTON, TOKEN)
         cls.images = cls.plankton.list_public()
         cls.dimages = cls.plankton.list_public(detail=True)
@@ -135,7 +136,8 @@ class ImagesTestCase(unittest.TestCase):
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
         keys = frozenset(["os", "description", "size"])
-        for i in self.dimages:
+        details = self.client.list_images(detail=True)
+        for i in details:
             self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
 
 
@@ -690,7 +692,7 @@ class NetworkTestCase(unittest.TestCase):
         cls.serverid = dict()
         cls.username = dict()
         cls.password = dict()
-        cls.is_windows = imagename.lower().find("windows") >= 0
+        cls.is_windows = cls.imagename.lower().find("windows") >= 0
 
     def _skipIf(self, condition, msg):
         if condition:

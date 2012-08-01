@@ -54,6 +54,7 @@ from random import choice
 
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.cyclades import CycladesClient
+from kamaki.clients.image import ImageClient
 from kamaki.clients import ClientError
 
 from fabric.api import *
@@ -72,6 +73,8 @@ except ImportError:
 API = None
 TOKEN = None
 DEFAULT_API = "https://cyclades.okeanos.grnet.gr/api/v1.1"
+DEFAULT_PLANKTON = "https://cyclades.okeanos.grnet.gr/plankton"
+DEFAULT_PLANKTON_USER = "images@okeanos.grnet.gr"
 
 # A unique id identifying this test run
 TEST_RUN_ID = datetime.datetime.strftime(datetime.datetime.now(),
@@ -104,9 +107,9 @@ class ImagesTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
 
-        cls.client = ComputeClient(API, TOKEN)
-        cls.images = cls.client.list_images()
-        cls.dimages = cls.client.list_images(detail=True)
+        cls.plankton = ImageClient(PLANKTON, TOKEN)
+        cls.images = cls.plankton.list_public()
+        cls.dimages = cls.plankton.list_public(detail=True)
 
     def test_001_list_images(self):
         """Test image list actually returns images"""
@@ -123,8 +126,10 @@ class ImagesTestCase(unittest.TestCase):
         self.assertEqual(names, dnames)
 
     def test_004_unique_image_names(self):
-        """Test images have unique names"""
-        names = sorted(map(lambda x: x["name"], self.images))
+        """Test system images have unique names"""
+        sys_images = filter(lambda x: x['owner'] == PLANKTON_USER,
+                            self.dimages)
+        names = sorted(map(lambda x: x["name"], sys_images))
         self.assertEqual(sorted(list(set(names))), names)
 
     def test_005_image_metadata(self):
@@ -427,10 +432,10 @@ class SpawnServerTestCase(unittest.TestCase):
 
         image = self.client.get_image_details(self.imageid)
         os = image["metadata"]["values"]["os"]
-        loginname = image["metadata"]["values"].get("users", None)
+        users = image["metadata"]["values"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os)
-
-        userlist = loginname.split()
+        
+        userlist = users.split()
 
         # Determine the username to use for future connections
         # to this host
@@ -512,6 +517,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_005_server_has_ipv6(self):
         """Test active server has a valid IPv6 address"""
+        self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
 
         log.info("Validate server's IPv6")
 
@@ -534,7 +540,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def test_007_server_responds_to_ping_IPv6(self):
         """Test server responds to ping on IPv6 address"""
-
+        self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
         log.info("Testing if server responds to pings in IPv6")
 
         server = self.client.get_server_details(self.serverid)
@@ -593,6 +599,8 @@ class SpawnServerTestCase(unittest.TestCase):
     def test_013_ssh_to_server_IPv6(self):
         """Test SSH to server public IPv6 works, verify hostname"""
         self._skipIf(self.is_windows, "only valid for Linux servers")
+        self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
+
         server = self.client.get_server_details(self.serverid)
         self._insist_on_ssh_hostname(self._get_ipv6(server),
                                      self.username, self.passwd)
@@ -612,6 +620,8 @@ class SpawnServerTestCase(unittest.TestCase):
     def test_015_rdp_to_server_IPv6(self):
         "Test RDP connection to server public IPv6 works"""
         self._skipIf(not self.is_windows, "only valid for Windows servers")
+        self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
+
         server = self.client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
         sock = _get_tcp_connection(socket.AF_INET6, ipv6, 3389)
@@ -680,6 +690,11 @@ class NetworkTestCase(unittest.TestCase):
         cls.serverid = dict()
         cls.username = dict()
         cls.password = dict()
+        cls.is_windows = imagename.lower().find("windows") >= 0
+
+    def _skipIf(self, condition, msg):
+        if condition:
+            self.skipTest(msg)
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
@@ -956,6 +971,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_003a_setup_interface_A(self):
         """Set up eth1 for server A"""
 
+        self._skipIf(self.is_windows, "only valid for Linux servers")
+
         log.info("Setting up interface eth1 for server A")
 
         server = self.client.get_server_details(self.serverid['A'])
@@ -1005,6 +1022,8 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_003b_setup_interface_B(self):
         """Setup eth1 for server B"""
+
+        self._skipIf(self.is_windows, "only valid for Linux servers")
 
         log.info("Setting up interface eth1 for server B")
 
@@ -1056,6 +1075,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""
 
+        self._skipIf(self.is_windows, "only valid for Linux servers")
+
         log.info("Testing if server A is actually connected to server B")
 
         server = self.client.get_server_details(self.serverid['A'])
@@ -1094,7 +1115,6 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(exists)
 
-#TODO: Test IPv6 private connectity
 
     def test_004_disconnect_from_network(self):
         "Disconnecting server A and B from network"
@@ -1328,6 +1348,14 @@ def parse_arguments(args):
                       action="store", type="string", dest="api",
                       help="The API URI to use to reach the Synnefo API",
                       default=DEFAULT_API)
+    parser.add_option("--plankton",
+                      action="store", type="string", dest="plankton",
+                      help="The API URI to use to reach the Plankton API",
+                      default=DEFAULT_PLANKTON)
+    parser.add_option("--plankton-user",
+                      action="store", type="string", dest="plankton_user",
+                      help="Owner of system images",
+                      default=DEFAULT_PLANKTON_USER)
     parser.add_option("--token",
                       action="store", type="string", dest="token",
                       help="The token to use for authentication to the API")
@@ -1335,6 +1363,10 @@ def parse_arguments(args):
                       action="store_true", dest="nofailfast",
                       help="Do not fail immediately if one of the tests " \
                            "fails (EXPERIMENTAL)",
+                      default=False)
+    parser.add_option("--no-ipv6",
+                      action="store_true", dest="no_ipv6",
+                      help="Disables ipv6 related tests",
                       default=False)
     parser.add_option("--action-timeout",
                       action="store", type="int", dest="action_timeout",
@@ -1440,9 +1472,12 @@ def main():
 
     (opts, args) = parse_arguments(sys.argv[1:])
 
-    global API, TOKEN
+    global API, TOKEN, PLANKTON, PLANKTON_USER, NO_IPV6
     API = opts.api
     TOKEN = opts.token
+    PLANKTON = opts.plankton
+    PLANKTON_USER = opts.plankton_user
+    NO_IPV6 = opts.no_ipv6
 
     # Cleanup stale servers from previous runs
     if opts.show_stale:

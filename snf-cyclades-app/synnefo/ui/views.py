@@ -77,7 +77,7 @@ SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES",
                           SUGGESTED_ROLES_DEFAULT)
 IMAGE_ICONS = settings.IMAGE_ICONS
 IMAGE_DELETED_TITLE = getattr(settings, 'UI_IMAGE_DELETED_TITLE',
-                            '(deleted image)')
+                            '(deleted)')
 IMAGE_DELETED_SIZE_TITLE = getattr(settings, 'UI_IMAGE_DELETED_SIZE_TITLE',
                             '(none)')
 

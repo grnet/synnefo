@@ -44,7 +44,7 @@ $(document).ready(function(){
     }
 
     var root = $('body');
-    var bar = $('<div class="cloudbar clearfix"></div>');
+    var bar = $('<div class="cloudbar servicesbar clearfix"></div>');
     var services = $('<ul class="services"></ul>');
     var profile = $('<div class="profile"></div>');
     

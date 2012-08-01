@@ -1,8 +1,8 @@
 Changelog
 ---------
 
-next
-^^^^
+v0.7.0
+^^^^^^
 - Rename management commands
 - Optionally renew token on password change
 - Preserve local password for users switched to shibboleth

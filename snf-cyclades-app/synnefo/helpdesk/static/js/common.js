@@ -86,21 +86,19 @@ $(document).ready(function(){
   	$(this).prev('.show-hide-all').toggle();
   });  
   
-  $('.search-query').typeahead()
-  
-  $('.search-query').keyup(function(){
-  	var t = $(".search-query").data("typeahead");
-  	var a = t.lookup().query;
-  	$.ajax({
-  		url:'/helpdesk/api/users/?prefix='+a, 
-  		dataType:'json', 
-  		success:function(d){
-  			t.source = d;
-  		}
-  	})
+  $('.search-query').typeahead({
+    source: function(typeahead, query) {
+      if (query.indexOf("@") > -1) {
+        $.ajax({
+          url:'/helpdesk/api/users/?prefix='+query, 
+          dataType:'json', 
+          success: function(d){
+            return typeahead.process(d);
+          }
+      })
+      } else {
+      }
+    }
   })
-
-
-	
 })
 

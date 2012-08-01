@@ -35,6 +35,7 @@ logic/reconciliation.py for a description of reconciliation rules.
 
 """
 import sys
+import datetime
 
 from optparse import make_option
 
@@ -144,7 +145,8 @@ class Command(BaseCommand):
                 "Simulating successful Ganeti removal for %d " \
                 "servers in the DB:" % len(stale)
             for vm in VirtualMachine.objects.filter(pk__in=stale):
-                backend.process_op_status(vm=vm, jobid=-0,
+                event_time = datetime.datetime.now()
+                backend.process_op_status(vm=vm, etime=event_time, jobid=-0,
                     opcode='OP_INSTANCE_REMOVE', status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -166,7 +168,8 @@ class Command(BaseCommand):
                 vm = VirtualMachine.objects.get(pk=id)
                 opcode = "OP_INSTANCE_REBOOT" if ganeti_up \
                          else "OP_INSTANCE_SHUTDOWN"
-                backend.process_op_status(vm=vm, jobid=-0,
+                event_time = datetime.datetime.now()
+                backend.process_op_status(vm=vm, etime=event_time ,jobid=-0,
                     opcode=opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"

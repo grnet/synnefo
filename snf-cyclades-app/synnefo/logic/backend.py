@@ -38,8 +38,7 @@ from logging import getLogger
 from django.conf import settings
 from django.db import transaction
 
-from synnefo.db.models import (VirtualMachine, Network, NetworkInterface,
-                                NetworkLink)
+from synnefo.db.models import (VirtualMachine, Network, NetworkLink)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
 
@@ -57,7 +56,7 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
 @transaction.commit_on_success
-def process_op_status(vm, jobid, opcode, status, logmsg):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -82,6 +81,7 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
         # Set the deleted flag explicitly, cater for admin-initiated removals
         if opcode == 'OP_INSTANCE_REMOVE':
             vm.deleted = True
+            vm.nics.all().delete()
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
@@ -94,14 +94,16 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     if (status == 'error' and opcode == 'OP_INSTANCE_REMOVE' and
         vm.operstate == 'ERROR'):
         vm.deleted = True
+        vm.nics.all().delete()
 
+    vm.backendtime = etime
     # Any other notification of failure leaves the operating state unchanged
 
     vm.save()
 
 
 @transaction.commit_on_success
-def process_net_status(vm, nics):
+def process_net_status(vm, etime, nics):
     """Process a net status notification from the backend
 
     Process an incoming message from the Ganeti backend,
@@ -144,11 +146,12 @@ def process_net_status(vm, nics):
         # network nics modified, update network object
         net.save()
 
+    vm.backendtime = etime
     vm.save()
 
 
 @transaction.commit_on_success
-def process_create_progress(vm, rprogress, wprogress):
+def process_create_progress(vm, etime, rprogress, wprogress):
 
     # XXX: This only uses the read progress for now.
     #      Explore whether it would make sense to use the value of wprogress
@@ -179,6 +182,7 @@ def process_create_progress(vm, rprogress, wprogress):
     #    raise VirtualMachine.IllegalState("VM is not in building state")
 
     vm.buildpercentage = percentage
+    vm.backendtime = etime
     vm.save()
 
 
@@ -221,10 +225,10 @@ def start_action(vm, action):
 def create_instance(vm, flavor, image, password, personality):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
-        
+
         metadata value should be a dictionary.
     """
-    nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
+    nic = {'ip': 'pool', 'network': settings.GANETI_PUBLIC_NETWORK}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:
@@ -268,9 +272,9 @@ def create_instance(vm, flavor, image, password, personality):
         'img_format': image['format']}
     if personality:
         kw['osparams']['img_personality'] = json.dumps(personality)
-    
+
     kw['osparams']['img_properties'] = json.dumps(image['metadata'])
-    
+
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
 
@@ -280,7 +284,6 @@ def create_instance(vm, flavor, image, password, personality):
 def delete_instance(vm):
     start_action(vm, 'DESTROY')
     rapi.DeleteInstance(vm.backend_id, dry_run=settings.TEST)
-    vm.nics.all().delete()
 
 
 def reboot_instance(vm, reboot_type):
@@ -356,7 +359,7 @@ def create_network(name, user_id):
     except IndexError:
         link = create_network_link()
         if not link:
-            return None
+            raise NetworkLink.NotAvailable
 
     network = Network.objects.create(
         name=name,
@@ -388,22 +391,17 @@ def delete_network(net):
 
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
-    rapi.ModifyInstance(vm.backend_id,
-        nics=[('add', nic)],
-        dry_run=settings.TEST)
+    rapi.ModifyInstance(vm.backend_id, nics=[('add', -1, nic)],
+                        hotplug=True, dry_run=settings.TEST)
 
 
 def disconnect_from_network(vm, net):
     nics = vm.nics.filter(network__public=False).order_by('index')
-    new_nics = [nic for nic in nics if nic.network != net]
-    if new_nics == nics:
-        return      # Nothing to remove
-    ops = [('remove', {})]
-    for i, nic in enumerate(new_nics):
-        ops.append((i + 1, {
-            'mode': 'bridged',
-            'link': nic.network.link.name}))
-    rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)
+    ops = [('remove', nic.index, {}) for nic in nics if nic.network == net]
+    if not ops: # Vm not connected to network
+        return
+    rapi.ModifyInstance(vm.backend_id, nics=ops[::-1],
+                        hotplug=True, dry_run=settings.TEST)
 
 
 def set_firewall_profile(vm, profile):

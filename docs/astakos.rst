@@ -84,7 +84,7 @@ Cloud service user
 ~~~~~~~~~~~~~~~~~~
 
 Alice requests a specific resource from a cloud service ex. Pithos+. In the
-request supplies the `X-Auth-Token`` to identify whether she is eligible to
+request supplies the `X-Auth-Token` to identify whether she is eligible to
 perform the specific task. The service contacts Astakos through its
 ``/im/authenticate`` api call (see :ref:`authenticate-api-label`) providing the
 specific ``X-Auth-Token``. Astakos checkes whether the token belongs to an
@@ -97,7 +97,7 @@ the dictionary as the account string to identify the user accessible resources.
 Registration Flow
 -----------------
 
-Responsible for handling the account registration and activation requests is the ``signup`` view. This view checks whether it is a request for a local account. If this is not the case, the user is navigated to the third-party provider to authenticate against it and upon success is redirected back in the ``signup`` view. If the supplied information is valid an inactive account is created. Then the appropriate ``ActivationBackend`` handles the account activation: the ``InvitationsBackend`` if the invitation mechanism is enabled and the ``SimpleBackend`` otherwise. 
+Responsible for handling the account registration and activation requests is the ``signup`` view. This view checks whether it is a request for a local account. If this is not the case, the user is navigated to the third-party provider to authenticate against it and upon success is redirected back in the ``signup`` view. If the supplied information is valid and an inactive account is created. Then the appropriate ``ActivationBackend`` handles the account activation: the ``InvitationsBackend`` if the invitation mechanism is enabled and the ``SimpleBackend`` otherwise. 
 
 In the first case, if the request is accompanied with a valid invitation code the user is automatically activated and since it's email address (where received the invitation) is verified, acquires a valid token and is logged in the system. If there is no invitation associated with the request, the system check whether the email matches any of the ASTAKOS_RE_USER_EMAIL_PATTERNS and if it does it sends an email to the user to verify the email address, otherwise the system sends a notification email to the administrators and informs the user that the account activation will be moderated by them.
 
@@ -131,6 +131,12 @@ During the account registration, if there are approval terms, the user has to ag
 
 In case there are later approval terms that the user has not signed, the ``signed_terms_required`` view decorator redirects to the ``approval_terms`` view.
 
+Service Registration
+--------------------
+
+Services (ex. cyclades, pithos+) are registered in astakos via ``snf-manage registerservice``. This command generates and prints a service token useful for accessing the service API.
+Registered services can be viewed by ``snf-manage showservices`` command and ``snf-manage unregisterservice`` can be used to unregister a service.
+
 .. _authentication-label:
 
 Astakos Users and Authentication
@@ -161,7 +167,7 @@ User entries can also be modified/added via the ``snf-manage`` commands.
 
 Internal Astakos requests are handled using cookie-based django user sessions.
 
-External systems can delgate ``/login`` URI. The server,
+External systems should forward to the ``/login`` URI. The server,
 depending on its configuration will redirect to the appropriate login page.
 When done with logging in, the service's login URI should redirect to the URI
 provided with next, adding user and token parameters, which contain the email

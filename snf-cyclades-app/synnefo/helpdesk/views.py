@@ -1,6 +1,8 @@
+import re
+
 from itertools import chain
 
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.views.generic.simple import direct_to_template
 from django.db.models import get_apps
 from django.conf import settings
@@ -12,6 +14,8 @@ from urllib import unquote
 
 from synnefo.lib.astakos import get_user
 from synnefo.db.models import *
+
+IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
 
 def get_token_from_cookie(request, cookiename):
     """
@@ -40,7 +44,6 @@ def helpdesk_user_required(func, groups=['helpdesk']):
     permissions (exists in helpdesk group)
     """
     def wrapper(request, *args, **kwargs):
-        return func(request, *args, **kwargs)
         token = get_token_from_cookie(request, HELPDESK_AUTH_COOKIE)
         get_user(request, settings.ASTAKOS_URL, fallback_token=token)
         if hasattr(request, 'user') and request.user:
@@ -69,37 +72,51 @@ def index(request):
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
-      return redirect('synnefo.helpdesk.views.account', account=account)
+        return redirect('synnefo.helpdesk.views.account', account_or_ip=account)
 
     # show index template
     return direct_to_template(request, "helpdesk/index.html")
 
 
 @helpdesk_user_required
-def account(request, account):
+def account(request, account_or_ip):
     """
     Account details view.
     """
 
-    # all user vms
-    vms = VirtualMachine.objects.filter(userid=account).order_by('deleted')
-
-    # return all user private and public networks
-    public_networks = Network.objects.filter(public=True).order_by('state')
-    private_networks = Network.objects.filter(userid=account).order_by('state')
-    networks = list(public_networks) + list(private_networks)
-        
     account_exists = True
-    if vms.count() == 0 and private_networks.count() == 0:
-        account_exists = False
+    vms = []
+    networks = []
+    is_ip = IP_SEARCH_REGEX.match(account_or_ip)
+    account = account_or_ip
+
+    if is_ip:
+        try:
+            nic = NetworkInterface.objects.get(ipv4=account_or_ip)
+            account = nic.machine.userid
+        except NetworkInterface.DoesNotExist:
+            account_exists = False
+    else:
+        # all user vms
+        vms = VirtualMachine.objects.filter(userid=account).order_by('deleted')
+
+        # return all user private and public networks
+        public_networks = Network.objects.filter(public=True).order_by('state')
+        private_networks = Network.objects.filter(userid=account).order_by('state')
+        networks = list(public_networks) + list(private_networks)
+
+        if vms.count() == 0 and private_networks.count() == 0:
+            account_exists = False
 
     user_context = {
         'account_exists': account_exists,
+        'is_ip': is_ip,
         'account': account,
         'vms': vms,
         'networks': networks,
         'UI_MEDIA_URL': settings.UI_MEDIA_URL
     }
+
     return direct_to_template(request, "helpdesk/account.html",
         extra_context=user_context)
 

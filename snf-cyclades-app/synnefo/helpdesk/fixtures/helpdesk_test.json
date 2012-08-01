@@ -72,6 +72,15 @@
         }
     },
     {
+        "model": "db.NetworkInterface",
+        "pk": 2,
+        "fields": {
+            "ipv4": "195.251.222.211",
+            "network": 2,
+            "machine": 1002
+        }
+    },
+    {
         "model": "db.Network",
         "pk": 2,
         "fields": {

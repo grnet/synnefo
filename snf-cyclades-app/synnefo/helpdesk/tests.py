@@ -36,6 +36,8 @@ from django.test import TestCase, Client
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
+from synnefo.db import models
+
 class AaiClient(Client):
 
     def request(self, **request):
@@ -69,6 +71,17 @@ class HelpdeskTests(TestCase):
         self.client = AaiClient()
         self.user = 'test'
         self.keys_url = reverse('ui_keys_collection')
+
+    def test_ip_lookup(self):
+        # ip does not exist, proper message gets displayed
+        r = self.client.get(reverse('helpdesk-details',
+            args=["195.251.221.122"]), user_token='0001')
+        self.assertContains(r, 'User with IP')
+
+        # ip exists, 'test' account discovered
+        r = self.client.get(reverse('helpdesk-details',
+            args=["195.251.222.211"]), user_token='0001')
+        self.assertEqual(r.context['account'], 'testuser2@test.com')
 
     def test_view_permissions(self):
 

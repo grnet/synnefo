@@ -432,10 +432,10 @@ class SpawnServerTestCase(unittest.TestCase):
 
         image = self.client.get_image_details(self.imageid)
         os = image["metadata"]["values"]["os"]
-        loginname = image["metadata"]["values"].get("users", None)
+        users = image["metadata"]["values"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os)
-
-        userlist = loginname.split()
+        
+        userlist = users.split()
 
         # Determine the username to use for future connections
         # to this host
@@ -690,6 +690,11 @@ class NetworkTestCase(unittest.TestCase):
         cls.serverid = dict()
         cls.username = dict()
         cls.password = dict()
+        cls.is_windows = imagename.lower().find("windows") >= 0
+
+    def _skipIf(self, condition, msg):
+        if condition:
+            self.skipTest(msg)
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
@@ -966,6 +971,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_003a_setup_interface_A(self):
         """Set up eth1 for server A"""
 
+        self._skipIf(self.is_windows, "only valid for Linux servers")
+
         log.info("Setting up interface eth1 for server A")
 
         server = self.client.get_server_details(self.serverid['A'])
@@ -1015,6 +1022,8 @@ class NetworkTestCase(unittest.TestCase):
 
     def test_003b_setup_interface_B(self):
         """Setup eth1 for server B"""
+
+        self._skipIf(self.is_windows, "only valid for Linux servers")
 
         log.info("Setting up interface eth1 for server B")
 
@@ -1066,6 +1075,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""
 
+        self._skipIf(self.is_windows, "only valid for Linux servers")
+
         log.info("Testing if server A is actually connected to server B")
 
         server = self.client.get_server_details(self.serverid['A'])
@@ -1104,7 +1115,6 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(exists)
 
-#TODO: Test IPv6 private connectity
 
     def test_004_disconnect_from_network(self):
         "Disconnecting server A and B from network"

@@ -162,14 +162,15 @@ def list_servers(request, detail=False):
     #                       overLimit (413)
 
     log.debug('list_servers detail=%s', detail)
-    user_vms = VirtualMachine.objects.filter(userid=request.user_uniq,
-                                             deleted=False)
+    user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
 
     since = util.isoparse(request.GET.get('changes-since'))
     if since:
         user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
+    else:
+        user_vms = user_vms.filter(deleted=True)
 
     servers = [vm_to_dict(server, detail) for server in user_vms]
 

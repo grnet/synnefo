@@ -170,7 +170,7 @@ def list_servers(request, detail=False):
         if not user_vms:
             return HttpResponse(status=304)
     else:
-        user_vms = user_vms.filter(deleted=True)
+        user_vms = user_vms.filter(deleted=False)
 
     servers = [vm_to_dict(server, detail) for server in user_vms]
 

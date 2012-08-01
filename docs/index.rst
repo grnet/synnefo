@@ -15,7 +15,8 @@ Synnefo is opensource software, used to create massively scalable IaaS clouds.
 
    Identity Management (codename: astakos) <astakos>
    Object Storage Service (codename: pithos+) <pithos>
-   Compute/Network Service (codename: cyclades) <cyclades>
+   Compute Service (codename: cyclades) <cyclades>
+   Network Service (part of Cyclades) <networks>
    Image Registry (codename: plankton) <plankton>
    Billing Service (codename: aquarium) <http://docs.dev.grnet.gr/aquarium/latest/index.html>
    Volume Storage Service (codename: archipelago) <archipelago>

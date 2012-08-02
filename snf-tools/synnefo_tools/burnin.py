@@ -51,6 +51,7 @@ from base64 import b64encode
 from IPy import IP
 from multiprocessing import Process, Queue
 from random import choice
+from optparse import OptionParser, OptionValueError
 
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.cyclades import CycladesClient
@@ -1334,9 +1335,18 @@ def cleanup_networks(delete_stale=False):
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
+def parse_comma(option, opt, value, parser):
+    tests=set(['all', 'auth', 'images', 'flavors',
+               'servers', 'server_spawn', 'network_spawn'])
+    parse_input = value.split(',')
+
+    if not (set(parse_input)).issubset(tests):
+        raise OptionValueError("The selected set of tests is invalid")
+
+    setattr(parser.values, option.dest, value.split(','))
+
 
 def parse_arguments(args):
-    from optparse import OptionParser
 
     kw = {}
     kw["usage"] = "%prog [options]"
@@ -1346,6 +1356,8 @@ def parse_arguments(args):
 
     parser = OptionParser(**kw)
     parser.disable_interspersed_args()
+
+
     parser.add_option("--api",
                       action="store", type="string", dest="api",
                       help="The API URI to use to reach the Synnefo API",
@@ -1434,6 +1446,17 @@ def parse_arguments(args):
                       help="Define the absolute path where the output \
                             log is stored. ",
                       default="/var/log/burnin/")
+    parser.add_option("--set-tests",
+                      action="callback",
+                      dest = "tests",
+                      type="string",
+                      help='Set comma seperated tests for this run. \
+                            Available tests: auth, images, flavors, \
+                                             servers, server_spawn, network_spawn. \
+                            Default = all',
+                      default='all',
+                      callback=parse_comma)
+
 
     # FIXME: Change the default for build-fanout to 10
     # FIXME: Allow the user to specify a specific set of Images to test
@@ -1446,7 +1469,12 @@ def parse_arguments(args):
 
     if not opts.show_stale:
         if not opts.force_imageid:
-            print >>sys.stderr, "The --image-id argument is mandatory."
+            print >>sys.stderr, "The --image-id argument is mandatory. \n"
+            parser.print_help()
+            sys.exit(1)
+
+        if not opts.token:
+            print >>sys.stderr, "The --token argument is mandatory. \n"
             parser.print_help()
             sys.exit(1)
 
@@ -1457,6 +1485,8 @@ def parse_arguments(args):
                 print >>sys.stderr, "Invalid value specified for --image-id." \
                                     "Use a valid id, or `all'."
                 sys.exit(1)
+
+        
 
     return (opts, args)
 
@@ -1488,7 +1518,6 @@ def main():
         return 0
 
     # Initialize a kamaki instance, get flavors, images
-
     c = ComputeClient(API, TOKEN)
 
     DIMAGES = c.list_images(detail=True)
@@ -1504,7 +1533,6 @@ def main():
         test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
 
     #New folder for log per image
-
     if not os.path.exists(opts.log_folder):
         os.mkdir(opts.log_folder)
 
@@ -1562,8 +1590,24 @@ def main():
             query_interval=opts.query_interval,
             )
 
-        seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase,
-                     ServersTestCase, ServerTestCase, NetworkTestCase]
+        test_dict = {'auth':UnauthorizedTestCase,
+                     'images':ImagesTestCase,
+                     'flavors':FlavorsTestCase,
+                     'servers':ServersTestCase,
+                     'server_spawn':ServerTestCase,
+                     'network_spawn':NetworkTestCase}
+
+        seq_cases = []
+        if 'all' in opts.tests:
+            seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase,
+                         ServersTestCase, ServerTestCase, NetworkTestCase]
+        else:
+            for test in opts.tests:
+                seq_cases.append(test_dict[test])
+
+        print seq_cases
+        sys.exit()
+                
 
         #folder for each image
         image_folder = os.path.join(test_folder, imageid)

@@ -1,0 +1,16 @@
+.two-cols  .rt 									{ float:none; width:auto; margin-bottom:10px;}
+.two-cols  .lt									{ float:none; width:auto; }
+.container .navigation 							{ height:auto; margin-bottom:30px; } 
+.bg-wrap										{ background-position:-9999px -9999px; }
+.buttons-list.fixpos 							{ position:static;  }
+.buttons-list .button 							{ margin-left:0; }
+.container .lt-div								{ float:none; width:auto; }
+.container ul.options 							{ margin-bottom:30px; }
+.documentation .wrap							{ width:auto; }
+.documentation img								{ max-width:100%; }
+/* forms */
+form input.submit, form input[type="submit"] 	{ margin:0; }
+form .form-row .extra-link 						{ padding-top:0; }
+.faq .two-cols .rt								{ width:auto; }
+.faq .two-cols .lt								{ width:auto; }
+dl.alt-style									{ width:auto; }

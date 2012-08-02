@@ -1,144 +1,38 @@
-/* Variables.less
- * Variables to customize the look and feel of Bootstrap
- * ----------------------------------------------------- */
-/* Mixins.less
- * Snippets of reusable CSS to develop faster and keep code readable
- * ----------------------------------------------------------------- */
-.servicesbar {
-  font-family: arial, sans-serif !important;
-  font-size: 13px !important;
-  line-height: 13px;
-  letter-spacing: 0px;
-  zoom: 1;
-  color: #ccc;
-  z-index: 1000;
-  border-bottom: 1px solid #444;
-  background-color: #000000;
-  position: relative;
-}
-.servicesbar ol, .servicesbar ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.servicesbar li {
-  margin: 0;
-  padding: 0;
-}
-.servicesbar:before, .servicesbar:after {
-  display: table;
-  content: "";
-  zoom: 1;
-}
-.servicesbar:after {
-  clear: both;
-}
-.servicesbar a {
-  border: none !important;
-  font-family: arial, sans-serif !important;
-  font-size: 13px !important;
-  color: #e6e6e6;
-  text-decoration: none;
-  display: block;
-  float: left;
-  padding: 11px;
-  height: 13px;
-}
-.servicesbar a:hover {
-  background-color: #444;
-}
-.servicesbar a.active {
-  font-weight: bold;
-  font-size: 13px !important;
-  background-color: #333;
-}
-.servicesbar a img {
-  border: none;
-  margin: 1px;
-  margin-bottom: 2px;
-}
-.servicesbar .services {
-  zoom: 1;
-}
-.servicesbar .services:before, .servicesbar .services:after {
-  display: table;
-  content: "";
-  zoom: 1;
-}
-.servicesbar .services:after {
-  clear: both;
-}
-.servicesbar .services a {
-  font-size: 13px !important;
-  font-weight: bold;
-  color: #ccc;
-}
-.servicesbar .services a.with-icon {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 35px;
-  height: 35px;
-}
-.servicesbar .services a.active {
-  font-size: 13px !important;
-  color: #ffffff !important;
-}
-.servicesbar .services a:hover {
-  background-color: #444;
-}
-.servicesbar .profile {
-  margin-top: -35px;
-  zoom: 1;
-  text-align: right;
-  min-width: 200px;
-  width: 200px;
-  background-color: #000000;
-  zoom: 1;
-  position: absolute;
-  right: 0;
-  float: right;
-}
-.servicesbar .profile:before, .servicesbar .profile:after {
-  display: table;
-  content: "";
-  zoom: 1;
-}
-.servicesbar .profile:after {
-  clear: both;
-}
-.servicesbar .profile .user > a {
-  font-weight: bold !important;
-  font-size: 12px !important;
-}
-.servicesbar .profile .user.active {
-  background-color: #333;
-}
-.servicesbar .profile a {
-  float: none;
-}
-.servicesbar .profile ul {
-  display: none;
-}
-.servicesbar .profile ul li {
-  width: 100%;
-  border-bottom: 1px solid #444;
-  background-color: #333;
-}
-.servicesbar .profile ul li a {
-  float: none;
-  display: block;
-}
-.servicesbar .profile:hover, .servicesbar .profile.hover {
-  background-color: #222;
-}
-.servicesbar .profile:hover ul, .servicesbar .profile.hover ul {
-  display: block;
-}
-.servicesbar .profile:before, .servicesbar .profile:after {
-  display: table;
-  content: "";
-  zoom: 1;
-}
-.servicesbar .profile:after {
-  clear: both;
+/* helpers ------------------------------------*/
+.clearfix:before,
+.clearfix:after									{ content:" "; display:block; height:0; visibility:hidden; } /* http://www.yuiblog.com/blog/2010/09/27/clearfix-reloaded-overflowhidden-demystified/ */
+.clearfix:after									{ clear:both; }
+.visuallyhidden									{ position:absolute !important; clip:rect(0 0 0 0); }
+
+
+/* cloudbar header */
+div.cloudbar                                    { background:#000; color:#fff;	   line-height:35px;  width:100%;   font-size:13px; font-family: 'Didact Gothic', Verdana, sans-serif;}	
+
+div.cloudbar a, 
+div.cloudbar .profile span,
+div.cloudbar li {font-family:'Didact Gothic',Verdana,sans-serif !important; letter-spacing: 1px !important}
+
+.cloudbar .wrapper                              { width:auto; padding:0;}			
+.cloudbar a                                     { color:#fff; text-decoration:none;}
+.cloudbar .profile                              { float:right; background:#3582AC; min-width:190px; padding:0; text-align:right;  }
+.cloudbar .profile:hover						{ background:#5A97B8; }
+.cloudbar .profile a                            { text-decoration:none; color:#fff; display:block; width:100%;}
+.cloudbar .profile ul                           { position:absolute;   right:0; top:35px; padding:0; margin:0;  width:190px; display:none;	z-index:9; background:#fff;}
+.cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 20px;}
+.cloudbar .profile ul li:hover a				{ color:#3582AC;}
+.cloudbar .profile .user a						{ padding-right:20px; width:auto; }
+.cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
+.cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }
+.cloudbar .profile .full a.open span			{ background-image:url(../images/arrow-up.png); }
+.cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
+.cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:inline; width:auto;}
+.cloudbar ul.services                           { margin:0; padding:0; }
+.cloudbar ul.services li                        { float:left; height:35px; line-height:35px; text-align:center; padding: 0 30px; list-style:none outside;}
+.cloudbar ul.services li:first-child            { padding:0 5px;}
+.cloudbar ul.services li.active                 { background:#333;}
+.cloudbar ul.services li:hover                  { background:#444; } 
+
+@media screen and (max-width : 480px) 		{ 
+	.cloudbar .profile 							{ float:none; }	 
+	.cloudbar .services li:first-child			{ position:absolute; left:0; top:0; background:#000}
 }

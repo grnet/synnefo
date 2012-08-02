@@ -1,15 +1,29 @@
 Changelog
 ---------
-next
-^^^^
+
+v0.7.1
+^^^^^^
+- ASTAKOS_*_MESSAGES settings changed from dict to tuple lists
+- Theme changes (new colors, new font)
+
+v0.7.0
+^^^^^^
 - Rename management commands
 - Optionally renew token on password change
 - Preserve local password for users switched to shibboleth
-- Send notification to DEFAULT_CONTACT_EMAIL on account activation
+- Send notification to ASTAKOS_DEFAULT_CONTACT_EMAIL on account activation
 - Fix unusable password issue
 - Extend user_update command by enabling provider modification and password renewal
 - Check for email absence before querying the database for retrieving the user in get menu call
 - Set is_verified in profile view even if the user do not post the form
+- New html/css theme
+- Database updated.
+  Use::
+  	
+	$ snf-manage syncdb
+	$ snf-manage migrate
+
+  to migrate your database.
 
 v0.6.2
 ^^^^^^

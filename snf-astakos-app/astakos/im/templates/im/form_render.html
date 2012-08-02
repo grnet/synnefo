@@ -6,11 +6,18 @@
 {% endfor %}
 </div>
 {% for field in form %}
-<div class="form-row {% if field.errors|length %}with-errors{% endif %}">
+<div class="form-row {% if field.errors|length %}with-errors{% endif %}  {% if field.is_hidden %}with-hidden{% endif %}">
         {{ field.errors }}
-     <p class="{% if field.blank %}required{% endif %}">
+     <p class="clearfix {% if field.blank %}required{% endif %}">
         {{ field.label_tag }}
         {{ field|safe }}
-        </p>
-    </div>
+        <span class="extra-img">&nbsp;</span>
+        {%  if field.help_text %}
+        	<span class="info"> 
+			    <em>more info</em>
+			    <span>{{ field.help_text|safe }}</span>
+		    </span>
+        {% endif %}
+     </p>
+</div>
 {% endfor %}

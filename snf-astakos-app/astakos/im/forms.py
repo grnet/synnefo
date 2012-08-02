@@ -322,7 +322,7 @@ class LoginForm(AuthenticationForm):
     
     def clean(self):
         super(LoginForm, self).clean()
-        if self.user_cache.provider != 'local':
+        if self.user_cache and self.user_cache.provider not in ('local', ''):
             raise forms.ValidationError(_('Local login is not the current authentication method for this account.'))
         return self.cleaned_data
 
@@ -477,7 +477,6 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     
     def __init__(self, user, *args, **kwargs):
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
-        print self.fields.keyOrder
     
     def save(self, commit=True):
         user = super(ExtendedPasswordChangeForm, self).save(commit=False)

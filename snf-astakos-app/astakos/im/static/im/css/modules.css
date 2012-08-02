@@ -66,6 +66,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container .extra ul.options					{ font-size:1em; margin:0 ; padding:15px; }
 .landing h2, .landing a:hover                   { color:#01A1AE;}
 .faq h2, .faq a:hover, .faq .current a          { color:#EF4F54; border:0 none;}
+.faq .current a									{ text-decoration:underline }
 .question h2									{ color:#EF4F54 }
 .content .backlink								{ margin:1em 0; }
 .faq h3											{ color:#4085a6; margin:0;}
@@ -87,7 +88,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .article p.info 								{ margin-top:20px; padding-top:10px; font-size:0.769em; color:#808080; }
 .article h2, .posts h2                          { color:#ef4f53; }
 .posts h2 a, .posts h2 a:hover                  { border:0 none;color:#ef4f53;}
-.posts p.date, .article p.date                  { margin:0; font-size:1.231em; color:#01a1ae; }
+.posts p.date, .article p.date                  { margin:0; font-size:1.077em; color:#3582AC; }
 p.info a                                        { color:#808080; border-bottom:0 none; }
 p.info a:hover                                  { color:#000; border-bottom:0 none;}
 .bg-wrap                                        { background-position:right top; background-repeat:no-repeat;}
@@ -95,14 +96,13 @@ p.info a:hover                                  { color:#000; border-bottom:0 no
 .bg-wrap.open .extra                            { display:block;}
 .bg-wrap .extra .hide-extra                     { display:block; text-align:right; border:0 none; height:16px; overflow:hidden;}
 .bg-wrap .extra .hide-extra img                 { margin-top:0; vertical-align:top; display:inline; }
-.bg-wrap .extra .hide-extra:hover img           { margin-top:-16px;}
-.cyclades .bg-wrap .extra .hide-extra:hover img { margin-top:-32px;}
-.pithos h2, .pithos a:hover,                     
-.pithos .extra .options li h3                     { color:#F89A1C; }
+.bg-wrap .extra .hide-extra:hover img           { margin-top:-32px;}
+.pithos h2,                       
+.pithos .extra .options li h3                   { color:#BC742B; }
 .cyclades h2,                 
-.cyclades .extra .options li h3                   { color:#4085A6; }
+.cyclades .extra .options li h3                 { color:#00A1B0; }
 a.btn_01                                        { display:block; text-align:center; background:#F6921E; color:#000; padding:10px; text-decoration:none; border:0 none;}
-a.btn_01:hover                                  { background:#01A1AE; color:#000; text-decoration:none;}
+a.btn_01:hover                                  { background:#3582AC; color:#000; text-decoration:none;}
 a.btn_01 em                                     { font-style:normal; display:block; }
 a.btn_01 span                                   { color:#fff; }
 .lt .box-more                                   { text-align:center; padding:5px 10px; }
@@ -165,6 +165,7 @@ a.videolink:hover				                { background:url(../images/video_image.png)
 .resources .list .resource-cat-2.resource               { border-color: #FF6F00  }
 .resources .list .resource-cat-2.resource .title        { color: #FF6F00  }
 .resources .list .resource-cat-2.resource .description  { background-color: #FF6F00  }
+.resources .list .resource-cat-2.resource .description p{ line-height:130%; }
 
 table											{ width:80%; color:#B3B3B3;}
 table th, table td								{ padding:5px 5px 5px 0;  }1234
@@ -188,7 +189,7 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 /*pagination*/
 .pagination .next-prev                          { float:left; }
 .pagination .nums                               { text-align:right;}
-.pagination .nums span                          { color:#F89A1C;}
+.pagination .nums span                          { color:#000;}
                     
 .two-cols .lt .clients-wrapper p				{ padding:0; }
 
@@ -198,10 +199,10 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 .container ul.options li a:hover				{ text-decoration: none; }
 .container ul.options li a.red					{ color:#F24E53 }
 .container ul.options li a.red:hover			{ border-bottom:1px solid #F24E53; }
-.container ul.options li a.grey					{ color:#aaa }
-.container ul.options li a.grey:hover			{ border-bottom:1px solid #aaa; }
-.container ul.options li a.blue					{ color:#00A2B1 }
-.container ul.options li a.blue:hover			{ border-bottom:1px solid #00A2B1; }
+.container ul.options li a.grey					{ color:#F89A1C }
+.container ul.options li a.grey:hover			{ border-bottom:1px solid #F89A1C; }
+.container ul.options li a.blue					{ color:#3582AC }
+.container ul.options li a.blue:hover			{ border-bottom:1px solid #3582AC; }
 
 /* homepage clouds animation */
 #animation                                      { width:94%; height:120px; padding:0 3%; background:url(../images/okeanos_landing.png) no-repeat; max-width:375px; }
@@ -236,7 +237,7 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 /* new faq-userguide styles */
 
 .faq .two-cols .lt								{ width:460px; }
-.faq .two-cols .rt								{ width:340px; }
+.faq .two-cols .rt								{ width:340px; text-align:center; }
 .lt-small .rt									{ width:520px; }
 .lt-small .lt									{ width:280px; }
 .unequal-dotted									{ background:url(../images/double-dots-unequal.jpg) no-repeat top center; padding: 30px 0 0 ; margin-top:30px;}
@@ -244,18 +245,29 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .tirkouaz h2,
 .tirkouaz h2 a,
 .tirkouaz h3,
-.tirkouaz a:hover								{ color:#00A1B0; }
+.tirkouaz a:hover,
+.tirkouaz li.current a							{ color:#00A1B0; }
 .yellow h2,
 .yellow h2 a,
 .yellow h3,
-.yellow a:hover									{ color:#F6921E; }
+.yellow a:hover,
+.yellow li.current a							{ color:#F6921E; }
 .purple h2,
 .purple h2 a,
 .purple h3,
-.purple a:hover									{ color:#7B499C; }
+.purple a:hover,
+.purple li.current a							{ color:#7B499C; }
+.blue h2,
+.blue h2 a,
+.blue h3,
+.blue a:hover,
+.blue li.current a								{ color:#3582AC; }
+.brown h2,
+.brown h2 a,
+.brown h3,
+.brown a:hover,
+.brown li.current a								{ color:#BC742B; }
 
-.details ul li a,
-.details ul li a:hover,
 .question .content a:hover						{ color:#F6921E }
 .details .extra-menu							{ background: url(../images/dots.jpg) repeat-x  center top ;padding-top:20px; margin-top:20px; }
 .details .faq-category h2						{ font-size:1em; }

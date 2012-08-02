@@ -29,7 +29,7 @@ a img, :link img, :visited img					{ border:none; }
 a span											{ cursor:pointer; }
 abbr[title], dfn[title]							{ border-bottom:1px dotted; cursor:help; }
 address											{ font-style:italic; margin:0 0 1.5em 0; }
-body											{ background:white; color:#222; font-family: Antic, Arial, sans-serif; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px;}
+body											{ background:white; color:#222; font-family: 'Didact Gothic', Verdana, sans-serif;  font-style:normal; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px;}
 code, kbd, pre, samp							{ font-family:monospace, sans-serif; }
 del												{ text-decoration:line-through; }
 dl												{ margin:1em 0; }
@@ -48,7 +48,7 @@ hr												{ border:0; border-top:1px solid; display:block; height:1px; margi
 img												{ border:0; vertical-align:middle; }
 ins												{ text-decoration:none; }
 p												{ margin-bottom:1em; }
-pre												{ overflow:auto; line-height:24px; }
+pre												{ overflow:auto;  }
 strong, b										{ font-weight:bold; font-style:inherit; }
 sub, sup										{ font-size:75%; line-height:0; position:relative; vertical-align:baseline; }
 sub												{ bottom:-0.25em; }

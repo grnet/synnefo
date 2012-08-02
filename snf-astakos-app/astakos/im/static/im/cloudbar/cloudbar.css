@@ -6,20 +6,20 @@
 
 
 /* cloudbar header */
-div.cloudbar                                    { background:#000; color:#fff;	   line-height:35px;  width:100%;   font-size:13px; font-family:Antic,Arial,sans-serif;}	
+div.cloudbar                                    { background:#000; color:#fff;	   line-height:35px;  width:100%;   font-size:13px; font-family: 'Didact Gothic', Verdana, sans-serif;}	
 
 div.cloudbar a, 
 div.cloudbar .profile span,
-div.cloudbar li {font-family:Antic,Arial,sans-serif !important; letter-spacing: 1px !important}
+div.cloudbar li {font-family:'Didact Gothic',Verdana,sans-serif !important; letter-spacing: 1px !important}
 
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}
-.cloudbar .profile                              { float:right; background:#01A1AE; min-width:190px; padding:0; text-align:right;  }
-.cloudbar .profile:hover						{ background:#41b9c2; }
+.cloudbar .profile                              { float:right; background:#3582AC; min-width:190px; padding:0; text-align:right;  }
+.cloudbar .profile:hover						{ background:#5A97B8; }
 .cloudbar .profile a                            { text-decoration:none; color:#fff; display:block; width:100%;}
 .cloudbar .profile ul                           { position:absolute;   right:0; top:35px; padding:0; margin:0;  width:190px; display:none;	z-index:9; background:#fff;}
 .cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 20px;}
-.cloudbar .profile ul li:hover a				{ color:#01A1AE;}
+.cloudbar .profile ul li:hover a				{ color:#3582AC;}
 .cloudbar .profile .user a						{ padding-right:20px; width:auto; }
 .cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
 .cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }

@@ -29,7 +29,7 @@ $(document).ready(function(){
     $("head").append(css);
     
     // load fonts
-    var font_url = 'https://fonts.googleapis.com/css?family=Antic';
+    var font_url = 'http://fonts.googleapis.com/css?family=Didact+Gothic&subset=latin,greek,greek-ext';
     var css_font = $("<link />");
     css_font.attr({rel:'stylesheet', type:'text/css', href:font_url});
     $("head").append(css_font);
@@ -111,22 +111,21 @@ $(document).ready(function(){
 
     // ie fix
     user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
-    
-    /*$('.cloudbar .profile ul').mouseover(function(){
-        $(this).parents('.profile').css('backgroundColor','#000');
-        
-    });
-     $('.cloudbar .profile ul').mouseout(function(){
-        $(this).parents('.profile').css('backgroundColor','#01A1AE');
-        
-    });*/
-   $('.cloudbar .profile .full>a').live('click', function(e){
-   		e.preventDefault();
+    $('html').live('click', function(e){
+	 	$('.cloudbar .profile .full>a').removeClass('open');
+	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
+	});
+ 
+   
+   	$('.cloudbar .profile .full>a').live('click', function(e){
+   		
+   		e.stopPropagation();
+        e.preventDefault();
         equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
    		$(this).siblings('ul').toggle();
    		$(this).toggleClass('open');
    		
-   });
+   	});
 
     
 });

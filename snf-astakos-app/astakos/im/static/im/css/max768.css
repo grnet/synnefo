@@ -11,3 +11,6 @@
 /* forms */
 form input.submit, form input[type="submit"] 	{ margin:0; }
 form .form-row .extra-link 						{ padding-top:0; }
+.faq .two-cols .rt								{ width:auto; }
+.faq .two-cols .lt								{ width:auto; }
+dl.alt-style									{ width:auto; }

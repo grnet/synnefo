@@ -50,7 +50,7 @@ SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
 RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
-RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', 
+RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS',
                             {'theme' : 'custom', 'custom_theme_widget': 'okeanos_recaptcha'})
 RECAPTCHA_USE_SSL = getattr(settings, 'ASTAKOS_RECAPTCHA_USE_SSL', True)
 RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', True)
@@ -69,19 +69,19 @@ RE_USER_EMAIL_PATTERNS = getattr(settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of login page'}
-LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', {})
+LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', [])
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of signup page'}
-SIGNUP_MESSAGES = getattr(settings, 'ASTAKOS_SIGNUP_MESSAGES', {})
+SIGNUP_MESSAGES = getattr(settings, 'ASTAKOS_SIGNUP_MESSAGES', [])
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of profile page'}
-PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', {})
+PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', [])
 
 # Messages to display on all pages
 # e.g. {'warning': 'This warning message will be displayed on the top of every page'}
-GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', {})
+GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', [])
 
 # messages to display as extra actions in account forms
 # e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}

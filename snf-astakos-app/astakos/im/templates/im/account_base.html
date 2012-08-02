@@ -1,16 +1,5 @@
 {% extends "im/base.html" %}
 
-{% block extra_messages %}
-    {% if not messages %}
-        {% for msg_type, msg in GLOBAL_MESSAGES.items %}
-            <div class="{{ msg_type }}">{{ msg|safe }}</div>
-        {% endfor %}
-        {% for msg_type, msg in PROFILE_MESSAGES.items %}
-            <div class="{{ msg_type }}">{{ msg|safe }}</div>
-        {% endfor %}
-    {% endif %}
-{% endblock %}
-
 {% load filters %}
 
 {% block page.title %}Profile{% endblock %}

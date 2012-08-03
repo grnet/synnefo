@@ -82,10 +82,46 @@ TEST_RUN_ID = datetime.datetime.strftime(datetime.datetime.now(),
                                          "%Y%m%d%H%M%S")
 SNF_TEST_PREFIX = "snf-test-"
 
-# Setup logging (FIXME - verigak)
-logging.basicConfig(format="%(message)s")
+red = '\x1b[31m'
+yellow = '\x1b[33m'
+green = '\x1b[32m'
+normal = '\x1b[0m'
+
+
+class burninFormatter(logging.Formatter):
+
+    err_fmt = red + "ERROR: %(msg)s" + normal
+    dbg_fmt = green + "   * %(msg)s" + normal
+    info_fmt = "%(msg)s"
+
+    def __init__(self, fmt="%(levelno)s: %(msg)s"):
+        logging.Formatter.__init__(self, fmt)
+
+    def format(self, record):
+
+        format_orig = self._fmt
+
+        # Replace the original format with one customized by logging level
+        if record.levelno == 10:    # DEBUG
+            self._fmt = burninFormatter.dbg_fmt
+
+        elif record.levelno == 20:  # INFO
+            self._fmt = burninFormatter.info_fmt
+
+        elif record.levelno == 40:  # ERROR
+            self._fmt = burninFormatter.err_fmt
+
+        result = logging.Formatter.format(self, record)
+        self._fmt = format_orig
+
+        return result
+
+
 log = logging.getLogger("burnin")
-log.setLevel(logging.INFO)
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setFormatter(burninFormatter())
+log.addHandler(handler)
 
 
 class UnauthorizedTestCase(unittest.TestCase):
@@ -217,7 +253,7 @@ class SpawnServerTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Initialize a kamaki instance"""
-        log.info("Spawning server for image `%s'", cls.imagename)
+        log.info("Spawning server for image `%s'", %cls.imagename)
 
         cls.client = ComputeClient(API, TOKEN)
         cls.cyclades = CycladesClient(API, TOKEN)
@@ -437,7 +473,7 @@ class SpawnServerTestCase(unittest.TestCase):
         os = image["metadata"]["values"]["os"]
         users = image["metadata"]["values"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os)
-        
+
         userlist = users.split()
 
         # Determine the username to use for future connections
@@ -1118,7 +1154,6 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(exists)
 
-
     def test_004_disconnect_from_network(self):
         "Disconnecting server A and B from network"
 
@@ -1300,7 +1335,7 @@ def cleanup_servers(delete_stale=False):
     if len(stale) == 0:
         return
 
-    print >> sys.stderr, "Found these stale servers from previous runs:"
+    print >> sys.stderr, yellow + "Found these stale servers from previous runs:" + normal
     print "    " + \
           "\n    ".join(["%d: %s" % (s["id"], s["name"]) for s in stale])
 
@@ -1308,7 +1343,7 @@ def cleanup_servers(delete_stale=False):
         print >> sys.stderr, "Deleting %d stale servers:" % len(stale)
         for server in stale:
             c.delete_server(server["id"])
-        print >> sys.stderr, "    ...done"
+        print >> sys.stderr, green + "    ...done" + normal
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
@@ -1323,7 +1358,7 @@ def cleanup_networks(delete_stale=False):
     if len(stale) == 0:
         return
 
-    print >> sys.stderr, "Found these stale networks from previous runs:"
+    print >> sys.stderr, yellow + "Found these stale networks from previous runs:" + normal
     print "    " + \
           "\n    ".join(["%s: %s" % (str(n["id"]), n["name"]) for n in stale])
 
@@ -1331,12 +1366,13 @@ def cleanup_networks(delete_stale=False):
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
         for network in stale:
             c.delete_network(network["id"])
-        print >> sys.stderr, "    ...done"
+        print >> sys.stderr, green + "    ...done" + normal
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
+
 def parse_comma(option, opt, value, parser):
-    tests=set(['all', 'auth', 'images', 'flavors',
+    tests = set(['all', 'auth', 'images', 'flavors',
                'servers', 'server_spawn', 'network_spawn'])
     parse_input = value.split(',')
 
@@ -1356,7 +1392,6 @@ def parse_arguments(args):
 
     parser = OptionParser(**kw)
     parser.disable_interspersed_args()
-
 
     parser.add_option("--api",
                       action="store", type="string", dest="api",
@@ -1448,15 +1483,15 @@ def parse_arguments(args):
                       default="/var/log/burnin/")
     parser.add_option("--set-tests",
                       action="callback",
-                      dest = "tests",
+                      dest="tests",
                       type="string",
                       help='Set comma seperated tests for this run. \
                             Available tests: auth, images, flavors, \
-                                             servers, server_spawn, network_spawn. \
+                                             servers, server_spawn, \
+                                             network_spawn. \
                             Default = all',
                       default='all',
                       callback=parse_comma)
-
 
     # FIXME: Change the default for build-fanout to 10
     # FIXME: Allow the user to specify a specific set of Images to test
@@ -1469,12 +1504,14 @@ def parse_arguments(args):
 
     if not opts.show_stale:
         if not opts.force_imageid:
-            print >>sys.stderr, "The --image-id argument is mandatory. \n"
+            print >>sys.stderr, red + "The --image-id argument " \
+                                       "is mandatory.\n" + normal
             parser.print_help()
             sys.exit(1)
 
         if not opts.token:
-            print >>sys.stderr, "The --token argument is mandatory. \n"
+            print >>sys.stderr, red + "The --token argument is " \
+                                      "mandatory.\n" + normal
             parser.print_help()
             sys.exit(1)
 
@@ -1482,11 +1519,9 @@ def parse_arguments(args):
             try:
                 opts.force_imageid = str(opts.force_imageid)
             except ValueError:
-                print >>sys.stderr, "Invalid value specified for --image-id." \
-                                    "Use a valid id, or `all'."
+                print >>sys.stderr, red + "Invalid value specified for" \
+                    "--image-id. Use a valid id, or `all'." + normal
                 sys.exit(1)
-
-        
 
     return (opts, args)
 
@@ -1590,12 +1625,12 @@ def main():
             query_interval=opts.query_interval,
             )
 
-        test_dict = {'auth':UnauthorizedTestCase,
-                     'images':ImagesTestCase,
-                     'flavors':FlavorsTestCase,
-                     'servers':ServersTestCase,
-                     'server_spawn':ServerTestCase,
-                     'network_spawn':NetworkTestCase}
+        test_dict = {'auth': UnauthorizedTestCase,
+                     'images': ImagesTestCase,
+                     'flavors': FlavorsTestCase,
+                     'servers': ServersTestCase,
+                     'server_spawn': ServerTestCase,
+                     'network_spawn': NetworkTestCase}
 
         seq_cases = []
         if 'all' in opts.tests:
@@ -1605,15 +1640,16 @@ def main():
             for test in opts.tests:
                 seq_cases.append(test_dict[test])
 
-        print seq_cases
-        sys.exit()
-                
-
         #folder for each image
         image_folder = os.path.join(test_folder, imageid)
         os.mkdir(image_folder)
 
         for case in seq_cases:
+
+            test = (key for key, value in test_dict.items()
+                    if value == case).next()
+
+            log.info(yellow + '* Starting testcase: %s' %test + normal)
             log_file = os.path.join(image_folder, 'details_' +
                                     (case.__name__) + "_" +
                                     TEST_RUN_ID + '.log')
@@ -1633,16 +1669,24 @@ def main():
             result = runner.run(suite)
 
             for res in result.errors:
+                log.error("snf-burnin encountered an error in " \
+                              "testcase: %s" %test)
+                log.error("See log for details")
                 error.write(str(res[0]) + '\n')
                 error.write(str(res[0].shortDescription()) + '\n')
                 error.write('\n')
 
             for res in result.failures:
+                log.error("snf-burnin failed in testcase: %s" %test)
+                log.error("See log for details")
                 fail.write(str(res[0]) + '\n')
                 fail.write(str(res[0].shortDescription()) + '\n')
                 fail.write('\n')
                 if opts.nofailfast == False:
                     sys.exit()
+
+            if (len(result.failures) == 0) and (len(result.errors) == 0):
+                log.debug("Passed testcase: %s" %test)
 
 if __name__ == "__main__":
     sys.exit(main())

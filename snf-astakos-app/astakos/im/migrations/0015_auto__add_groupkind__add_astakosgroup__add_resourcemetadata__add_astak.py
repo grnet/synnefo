@@ -8,20 +8,140 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding unique constraint on 'AstakosGroupQuota', fields ['group', 'resource']
-        db.create_unique('im_astakosgroupquota', ['group_id', 'resource_id'])
+        # Adding model 'GroupKind'
+        db.create_table('im_groupkind', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
+        ))
+        db.send_create_signal('im', ['GroupKind'])
+
+        # Adding model 'AstakosGroup'
+        db.create_table('im_astakosgroup', (
+            ('group_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['auth.Group'], unique=True, primary_key=True)),
+            ('kind', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.GroupKind'])),
+            ('desc', self.gf('django.db.models.fields.TextField')(null=True)),
+            ('creation_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 8, 3, 11, 26, 47, 642626))),
+            ('issue_date', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('expiration_date', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('moderatation_enabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('approval_date', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('estimated_participants', self.gf('django.db.models.fields.PositiveIntegerField')(null=True)),
+        ))
+        db.send_create_signal('im', ['AstakosGroup'])
+
+        # Adding model 'ResourceMetadata'
+        db.create_table('im_resourcemetadata', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('key', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
+            ('value', self.gf('django.db.models.fields.CharField')(max_length=255)),
+        ))
+        db.send_create_signal('im', ['ResourceMetadata'])
+
+        # Adding model 'AstakosGroupQuota'
+        db.create_table('im_astakosgroupquota', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('limit', self.gf('django.db.models.fields.PositiveIntegerField')()),
+            ('resource', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Resource'])),
+            ('group', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosGroup'], blank=True)),
+        ))
+        db.send_create_signal('im', ['AstakosGroupQuota'])
+
+        # Adding unique constraint on 'AstakosGroupQuota', fields ['resource', 'group']
+        db.create_unique('im_astakosgroupquota', ['resource_id', 'group_id'])
+
+        # Adding model 'Resource'
+        db.create_table('im_resource', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
+            ('service', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Service'])),
+        ))
+        db.send_create_signal('im', ['Resource'])
+
+        # Adding M2M table for field meta on 'Resource'
+        db.create_table('im_resource_meta', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('resource', models.ForeignKey(orm['im.resource'], null=False)),
+            ('resourcemetadata', models.ForeignKey(orm['im.resourcemetadata'], null=False))
+        ))
+        db.create_unique('im_resource_meta', ['resource_id', 'resourcemetadata_id'])
+
+        # Adding model 'Membership'
+        db.create_table('im_membership', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
+            ('group', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosGroup'])),
+            ('date_requested', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 8, 3, 11, 26, 47, 646518))),
+            ('date_joined', self.gf('django.db.models.fields.DateField')(null=True, db_index=True)),
+        ))
+        db.send_create_signal('im', ['Membership'])
+
+        # Adding unique constraint on 'Membership', fields ['person', 'group']
+        db.create_unique('im_membership', ['person_id', 'group_id'])
+
+        # Adding model 'AstakosUserQuota'
+        db.create_table('im_astakosuserquota', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('limit', self.gf('django.db.models.fields.PositiveIntegerField')()),
+            ('resource', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Resource'])),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
+        ))
+        db.send_create_signal('im', ['AstakosUserQuota'])
 
         # Adding unique constraint on 'AstakosUserQuota', fields ['resource', 'user']
         db.create_unique('im_astakosuserquota', ['resource_id', 'user_id'])
 
+        # Adding index on 'Service', fields ['name']
+        db.create_index('im_service', ['name'])
+
+        # Adding M2M table for field owner on 'AstakosUser'
+        db.create_table('im_astakosuser_owner', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('astakosuser', models.ForeignKey(orm['im.astakosuser'], null=False)),
+            ('astakosgroup', models.ForeignKey(orm['im.astakosgroup'], null=False))
+        ))
+        db.create_unique('im_astakosuser_owner', ['astakosuser_id', 'astakosgroup_id'])
+
 
     def backwards(self, orm):
         
+        # Removing index on 'Service', fields ['name']
+        db.delete_index('im_service', ['name'])
+
         # Removing unique constraint on 'AstakosUserQuota', fields ['resource', 'user']
         db.delete_unique('im_astakosuserquota', ['resource_id', 'user_id'])
 
-        # Removing unique constraint on 'AstakosGroupQuota', fields ['group', 'resource']
-        db.delete_unique('im_astakosgroupquota', ['group_id', 'resource_id'])
+        # Removing unique constraint on 'Membership', fields ['person', 'group']
+        db.delete_unique('im_membership', ['person_id', 'group_id'])
+
+        # Removing unique constraint on 'AstakosGroupQuota', fields ['resource', 'group']
+        db.delete_unique('im_astakosgroupquota', ['resource_id', 'group_id'])
+
+        # Deleting model 'GroupKind'
+        db.delete_table('im_groupkind')
+
+        # Deleting model 'AstakosGroup'
+        db.delete_table('im_astakosgroup')
+
+        # Deleting model 'ResourceMetadata'
+        db.delete_table('im_resourcemetadata')
+
+        # Deleting model 'AstakosGroupQuota'
+        db.delete_table('im_astakosgroupquota')
+
+        # Deleting model 'Resource'
+        db.delete_table('im_resource')
+
+        # Removing M2M table for field meta on 'Resource'
+        db.delete_table('im_resource_meta')
+
+        # Deleting model 'Membership'
+        db.delete_table('im_membership')
+
+        # Deleting model 'AstakosUserQuota'
+        db.delete_table('im_astakosuserquota')
+
+        # Removing M2M table for field owner on 'AstakosUser'
+        db.delete_table('im_astakosuser_owner')
 
 
     models = {
@@ -69,19 +189,18 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 3, 1, 33, 55, 30509)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 3, 11, 26, 47, 648667)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'im.astakosgroup': {
             'Meta': {'object_name': 'AstakosGroup', '_ormbases': ['auth.Group']},
             'approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 3, 1, 33, 55, 24384)'}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 3, 11, 26, 47, 642626)'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'estimated_participants': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'expiration_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'group_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.Group']", 'unique': 'True', 'primary_key': 'True'}),
-            'identifier': ('django.db.models.fields.URLField', [], {'default': "''", 'unique': 'True', 'max_length': '200', 'db_index': 'True'}),
             'issue_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'kind': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.GroupKind']"}),
             'moderatation_enabled': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -89,7 +208,7 @@ class Migration(SchemaMigration):
         },
         'im.astakosgroupquota': {
             'Meta': {'unique_together': "(('resource', 'group'),)", 'object_name': 'AstakosGroupQuota'},
-            'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
+            'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']", 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'limit': ('django.db.models.fields.PositiveIntegerField', [], {}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
@@ -128,7 +247,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 3, 1, 33, 55, 32043)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 3, 11, 26, 47, 650373)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.groupkind': {
@@ -150,7 +269,7 @@ class Migration(SchemaMigration):
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'null': 'True', 'db_index': 'True'}),
-            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 8, 3, 1, 33, 55, 28179)'}),
+            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 8, 3, 11, 26, 47, 646518)'}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})

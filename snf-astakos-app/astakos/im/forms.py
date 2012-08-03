@@ -493,13 +493,14 @@ def get_astakos_group_creation_form(request):
         issue_date = forms.DateField(widget=SelectDateWidget())
         expiration_date = forms.DateField(widget=SelectDateWidget())
         kind = forms.ModelChoiceField(queryset=GroupKind.objects.all(), empty_label=None)
+        name = forms.URLField()
         
         class Meta:
             model = AstakosGroup
         
         def __init__(self, *args, **kwargs):
             super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-            self.fields.keyOrder = ['kind', 'name', 'identifier', 'desc', 'issue_date',
+            self.fields.keyOrder = ['kind', 'name', 'desc', 'issue_date',
                                     'expiration_date', 'estimated_participants',
                                     'moderatation_enabled']
         
@@ -508,7 +509,7 @@ def get_astakos_group_creation_form(request):
             if commit: 
                 g.save()
                 g.owner = [request.user]
-                g.approve_member(request.user)
+#                 g.approve_member(request.user)
             return g
     
     return AstakosGroupCreationForm

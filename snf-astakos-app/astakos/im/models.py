@@ -109,14 +109,13 @@ class GroupKind(models.Model):
 class AstakosGroup(Group):
     kind = models.ForeignKey(GroupKind)
     desc = models.TextField('Description', null=True)
-    identifier = models.URLField('URI identifier', unique=True, default='', db_index=True)
     policy = models.ManyToManyField(Resource, null=True, blank=True, through='AstakosGroupQuota')
     creation_date = models.DateTimeField('Creation date', default=datetime.now())
     issue_date = models.DateTimeField('Issue date', null=True)
     expiration_date = models.DateTimeField('Expiration date', null=True)
     moderatation_enabled = models.BooleanField('Moderated membership?', default=False)
     approval_date = models.DateTimeField('Activation date', null=True, blank=True)
-    estimated_participants = models.PositiveIntegerField('Estimated number of participants', null=True)
+    estimated_participants = models.PositiveIntegerField('Estimated #participants', null=True)
     
     @property
     def is_disabled(self):

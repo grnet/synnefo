@@ -113,7 +113,7 @@ class AstakosGroup(Group):
     creation_date = models.DateTimeField('Creation date', default=datetime.now())
     issue_date = models.DateTimeField('Issue date', null=True)
     expiration_date = models.DateTimeField('Expiration date', null=True)
-    moderatation_enabled = models.BooleanField('Moderated membership?', default=False)
+    moderatation_enabled = models.BooleanField('Moderated membership?', default=True)
     approval_date = models.DateTimeField('Activation date', null=True, blank=True)
     estimated_participants = models.PositiveIntegerField('Estimated #participants', null=True)
     
@@ -153,10 +153,10 @@ class AstakosGroup(Group):
         self.save()
     
     def approve_member(self, member):
-        m = self.membership_set.get(person=member)
+        m, created = self.membership_set.get_or_create(person=member, group=self)
         m.date_joined = datetime.now()
         m.save()
-    
+        
     def disapprove_member(self, member):
         m = self.membership_set.remove(member)
     

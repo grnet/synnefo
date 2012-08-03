@@ -491,8 +491,9 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 
 def get_astakos_group_creation_form(request):
     class AstakosGroupCreationForm(forms.ModelForm):
-        issue_date = forms.DateField(widget=SelectDateWidget())
-        expiration_date = forms.DateField(widget=SelectDateWidget())
+        issue_date = forms.DateField(widget=SelectDateWidget(), initial=datetime.now())
+        # TODO set initial in exact one month
+        expiration_date = forms.DateField(widget=SelectDateWidget(), initial = datetime.now() + timedelta(days=30))
         kind = forms.ModelChoiceField(queryset=GroupKind.objects.all(), empty_label=None)
         name = forms.URLField()
         
@@ -510,23 +511,19 @@ def get_astakos_group_creation_form(request):
             if commit: 
                 g.save()
                 g.owner = [request.user]
-#                 g.approve_member(request.user)
+                g.approve_member(request.user)
             return g
     
     return AstakosGroupCreationForm
 
-def get_astakos_group_policy_creation_form(group):
+def get_astakos_group_policy_creation_form(astakosgroup):
     class AstakosGroupPolicyCreationForm(forms.ModelForm):
-        choices = Resource.objects.filter(~Q(astakosgroup=group))
+        choices = Resource.objects.filter(~Q(astakosgroup=astakosgroup))
         resource = forms.ModelChoiceField(queryset=choices, empty_label=None)
+        # TODO check that it does not hit the db
+        group = forms.ModelChoiceField(queryset=AstakosGroup.objects.all(), initial=astakosgroup, widget=forms.HiddenInput())
         
         class Meta:
             model = AstakosGroupQuota
-        
-        def __init__(self, *args, **kwargs):
-            if not args:
-                args = ({'group':group},)
-            super(AstakosGroupPolicyCreationForm, self).__init__(*args, **kwargs)
-            self.fields['group'].widget.attrs['disabled'] = True
     
     return AstakosGroupPolicyCreationForm

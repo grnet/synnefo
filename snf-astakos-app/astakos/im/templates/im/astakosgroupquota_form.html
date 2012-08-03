@@ -35,7 +35,7 @@
             {% include "im/form_render.html" %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="+" />
-                <a class="extra-link" href="{% url group_approval_request group.id %}">Request approval</a>
+                <a href="{% url group_approval_request group.id %}">Request approval</a>
             </div>
     </form>
 </div>

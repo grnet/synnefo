@@ -428,11 +428,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
         return response
-<<<<<<< HEAD
     messages.success(request, _('You have successfully logged out.'))
-=======
-    messages.add_message(request, messages.SUCCESS, _('<p>You have successfully logged out.</p>'))
->>>>>>> origin/newstyles
     context = get_context(request, extra_context)
     response.write(render_to_string(template, context_instance=context))
     return response
@@ -590,14 +586,13 @@ def change_email(request, activation_key=None,
                            form = form,
                            context_instance = get_context(request,
                                                           extra_context))
-<<<<<<< HEAD
 
 @signed_terms_required
 def group_add(request):
     return create_object(request,
                             form_class=get_astakos_group_creation_form(request),
                             login_required = True,
-                            post_save_redirect = '/im/group/%(id)s/policies/add')
+                            post_save_redirect = '/im/group/%(id)s/')
 
 @signed_terms_required
 @login_required
@@ -617,13 +612,17 @@ def group_detail(request, group_id):
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
     d = {}
-    for resource in group.policy.all():
-        d[resource.name] = group.policy.through.objects.get(resource__id=resource.id,
-                                                            group__id=group_id).limit  
+    related_resources = group.policy.through.objects
+    for r in group.policy.all():
+        d[r.name] = related_resources.get(resource__id=r.id, 
+                                            group__id=group_id).limit
+    members = map(lambda m:{m.person.realname:m.is_approved}, group.membership_set.all())
     return object_detail(request,
                             AstakosGroup.objects.all(),
                             object_id=group_id,
-                            extra_context = {'quota':d})
+                            extra_context = {'quota':d,
+                                             'members':members,
+                                             'form':get_astakos_group_policy_creation_form(group)})
 
 @signed_terms_required
 @login_required
@@ -636,7 +635,7 @@ def group_policies_add(request, group_id):
     try:
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
-        raise HttpResponseBadRequest(_('Invalid group.'))
+        return HttpResponseBadRequest(_('Invalid group.'))
     d = {}
     for resource in group.policy.all():
         d[resource.name] = group.policy.through.objects.get(resource__id=resource.id,
@@ -644,7 +643,8 @@ def group_policies_add(request, group_id):
     return create_object(request,
                             form_class=get_astakos_group_policy_creation_form(group),
                             login_required=True,
-                            post_save_redirect = reverse('group_policies_add', kwargs=dict(group_id=group_id)),
+                            template_name = 'im/astakosgroup_detail.html',
+                            post_save_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)),
                             extra_context = {'group':group,
                                              'quota':d})
 @signed_terms_required
@@ -652,5 +652,3 @@ def group_policies_add(request, group_id):
 def group_approval_request(request, group_id):
     return HttpResponse()
     
-=======
->>>>>>> origin/newstyles

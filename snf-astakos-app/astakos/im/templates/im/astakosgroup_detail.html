@@ -7,12 +7,32 @@
         <table class="zebra-striped id-sorted">
               <tr>
                 <th>Name: {{object.name}}</th>
-              </tr> 
-              <tr>
-                <th>Members: {{object.membership.all}}</th>
               </tr>
         </table>
-        <div class="section">
+    <div class="section">
+        <h2>Members:</h2>
+        {% if members %}
+          <table class="zebra-striped id-sorted">
+            <thead>
+              <tr>
+                <th>Realname</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for name, approved in members %}
+              <tr>
+                <td>{{name}}</td>
+                <td>{{approved}}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>No members yet!</p>
+        {% endif %}
+    </div>
+    <div class="section">
         <h2>Policies:</h2>
         {% if quota %}
           <table class="zebra-striped id-sorted">
@@ -35,5 +55,14 @@
             <p>No policies</p>
         {% endif %}
     </div>
+    <div class="rightcol">
+    <form action="{% url group_policies_add object.id %}" method="post" class="innerlabels signup">{% csrf_token %}
+        <h2><span>NEW POLICY</span></h2>
+            {% include "im/form_render.html" %}
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="+" />
+            </div>
+    </form>
+</div>
 </div>
 {% endblock %}

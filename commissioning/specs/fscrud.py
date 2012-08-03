@@ -3,7 +3,7 @@ from commissioning  import (Callpoint,
                             CanonifyException,
                             SpecifyException,
                             Specificator,
-                            Nothing, Integer, String,
+                            Nothing, Integer, Serial, String,
                             Tuple, ListOf, Dict, Args)
 
 Context             =   Dict(classname='Context')
@@ -34,8 +34,13 @@ Positive = Integer  (
         minimum     =   0
 )
 
+Offset = Integer  (
+        classname   =   'Offset',
+        minimum     =   0
+)
+
 DataSpec = Tuple    (
-                        Positive,
+                        Offset,
                         Contents,
 
         classname   =   'DataSpec',
@@ -73,16 +78,16 @@ class FSCrudAPI(Specificator):
             dataspec    =   DataSpec
         ):
 
-        return Nothing
+        return Serial
 
-    def update	(
+    def update  (
             self,
             context     =   Context,
             path        =   Path,
             dataspec    =   DataSpec
         ):
 
-        return Nothing
+        return Serial
 
     def read    (
             self,
@@ -99,7 +104,7 @@ class FSCrudAPI(Specificator):
             path        =   Path
         ):
 
-        return Nothing
+        return Serial
 
 API_Spec = FSCrudAPI
 

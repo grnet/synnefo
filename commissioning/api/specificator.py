@@ -36,7 +36,7 @@ class Canonical(object):
             if item is None:
                 opts['null'] = 1
             else:
-                opts['default'] = self.call(item)
+                opts['default'] = self.check(item)
 
     def init(self):
         return
@@ -50,10 +50,16 @@ class Canonical(object):
         if item is None and can_be_null:
             return None
 
-        return self.call(item)
+        return self.check(item)
 
-    def call(self, item):
+    def check(self, item):
         return item
+
+    def create(self):
+        return None
+
+    def random(self):
+        return None
 
     def tostring(self, depth=0, showopts=0, multiline=0):
         depth += 1
@@ -96,28 +102,28 @@ class Canonical(object):
     def __repr__(self):
         return self.tostring(multiline=0, showopts=1)
 
-    def call(item):
+    def check(item):
         canonified = item
         return canonified
 
 
 class Null(Canonical):
 
-    def call(self, item):
+    def check(self, item):
         return None
 
 Nothing = Null()
 
 class Integer(Canonical):
 
-    def call(self, item):
+    def check(self, item):
         try:
-            num = int(item)
+            num = long(item)
         except ValueError, e:
             try:
-                num = int(item, 16)
+                num = long(item, 16)
             except Exception:
-                m = "%s: cannot convert '%s' to int" % (self, item)
+                m = "%s: cannot convert '%s' to long" % (self, shorts(item))
                 raise CanonifyException(m)
 
         optget = self.opts.get
@@ -133,6 +139,12 @@ class Integer(Canonical):
             raise CanonifyException(m)
 
         return num
+
+
+Serial = Integer(
+            classname   =   'Serial',
+            null        =   True,
+)
 
 
 class String(Canonical):
@@ -157,7 +169,7 @@ class String(Canonical):
             opts['choices'] = dict((unicode(x), unicode(x))
                                     for x in opts['choices'])
 
-    def call(self, item):
+    def check(self, item):
         if not isinstance(item, unicode):
             # require non-unicode items to be utf8
             item = str(item)
@@ -230,14 +242,14 @@ class ListOf(Canonical):
         else:
             self.canonical = Args(**kw)
 
-    def call(self, item):
+    def check(self, item):
         if item is None:
             item = ()
 
         try:
             items = iter(item)
         except TypeError, e:
-            m = "%s: %s is not iterable" % (self, item)
+            m = "%s: %s is not iterable" % (self, shorts(item))
             raise CanonifyException(m)
 
         canonical = self.canonical
@@ -261,11 +273,11 @@ class Args(Canonical):
         if self.args:
             raise ValueError("Args accepts only keyword arguments")
 
-    def call(self, item):
+    def check(self, item):
         try:
             item = dict(item)
         except TypeError, e:
-            m = "%s: %s is not dict-able" % (self, item)
+            m = "%s: %s is not dict-able" % (self, shorts(item))
             raise CanonifyException(m)
 
         canonified = {}
@@ -274,7 +286,8 @@ class Args(Canonical):
             for n, c in self.kw.items():
                 canonified[n] = c(item[n])
         except KeyError:
-            m = "%s: Argument '%s' not found in '%s'" % (self, shorts(n), shorts(item))
+            m = ("%s: Argument '%s' not found in '%s'" 
+                        % (self, shorts(n), shorts(item)))
             raise CanonifyException(m)
 
         return canonified
@@ -282,11 +295,11 @@ class Args(Canonical):
 
 class Tuple(Canonical):
 
-    def call(self, item):
+    def check(self, item):
         try:
             items = list(item)
         except TypeError, e:
-            m = "%s: %s is not iterable" % (self, item)
+            m = "%s: %s is not iterable" % (self, shorts(item))
             raise CanonifyException(m)
 
         canonicals = self.args
@@ -316,7 +329,7 @@ class Dict(Canonical):
 
         self.canonical = canonical
 
-    def call(self, item):
+    def check(self, item):
 
         try:
             item = dict(item)
@@ -339,6 +352,10 @@ class Canonifier(object):
 
     def call_names(self):
         return self.input_canonicals.keys()
+
+    def call_attrs(self):
+        for call_name, canonical in self.input_canonicals.iteritems():
+            yield call_name, canonical.tostring(showopts=1, multiline=1)
 
     def input_canonical(self, name):
         input_canonicals = self.input_canonicals
@@ -410,7 +427,8 @@ class Specificator(object):
             self = object.__new__(cls)
             canonical = f(self)
             if not isinstance(canonical, Canonical):
-                m = "method '%s' does not return a Canonical" % (name,)
+                m = ("method '%s' does not return a Canonical, but a(n) %s "
+                                                    % (name, type(canonical)))
                 raise SpecifyException(m)
             canonical_outputs[name] = canonical
 

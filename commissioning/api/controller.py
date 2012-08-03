@@ -1,6 +1,7 @@
 from .exception import CorruptedError
 from .callpoint import Callpoint
 from .physical import Physical
+from .specificator import CanonifyException
 
 class Controller(object):
 
@@ -81,9 +82,9 @@ class Controller(object):
         commission_issue = self.get_commission_issue(commission_spec)
         entity = commission_issue['entity']
         clientkey = commission_issue['clientkey']
-        physical_description = self.derive_description(commission_spec)
+        physical_description = physical.derive_description(commission_spec)
 
-        serial = holder.issue_commission(entity, provisions)
+        serial = holder.issue_commission(**commission_issue)
         self.register_commission(   serial,
                                     clientkey,
                                     physical_description    )
@@ -167,22 +168,23 @@ class ControlledCallpoint(Callpoint):
         return commission_spec, True
 
     def register_controllable(self, call_name):
-        controllable = self.controllables
+        controllables = self.controllables
         if call_name in controllables:
             return
 
-        try:
-            canonify_output = self.api_spec.canonify_output
-            s = canonify_output(None) is None
-            s += isinstance(canonify_output(1), int)
-            s += isinstance(canonify_output(2**63), int)
-            if s != 3:
-                raise CanonifyException
-        except CanonifyException, e:
-            m = ("Attempt to register controllable call '%s', but"
-                 "the api spec does not define a nullable int (serial) output!"
-                                                                % (call_name,))
-            raise CanonifyException(m, e)
+        canonify_output = self.api_spec.canonify_output
+        if (canonify_output(call_name, None) is not None or
+            not isinstance(canonify_output(call_name, 1L), long)):
+                m = ("Attempt to register controllable call '%s', "
+                     "but the api spec does not define a "
+                     "nullable long (serial) output!" % (call_name,))
+                raise CanonifyException(m)
+
+        if not isinstance(canonify_output(call_name, 2**63), long):
+            m = ("Attempt to register controllable call '%s', "
+                 "but the api spec does not define a nullable long "
+                 "(serial) output with a range up to 2**63!" % (call_name,))
+            raise CanonifyException(m)
 
         controllables.add(call_name)
 

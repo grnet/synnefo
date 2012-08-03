@@ -1,7 +1,21 @@
-# Django settings for quota project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+DATABASES = {
+    'default': {
+        # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'holder',                       # Or path to database file if using sqlite3.
+        'USER': 'holder',                       # Not used with sqlite3.
+        'PASSWORD': 'holder',                   # Not used with sqlite3.
+        'HOST': 'dev84.dev.grnet.gr',           # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '5432',                         # Set to empty string for default. Not used with sqlite3.
+    }
+}
+
+from commissioning.utils.pyconf import pyconf_globals
+pyconf_globals('/etc/fscrud/django.conf')
 
 COMMISSIONING_APP_NAME='quotaholder'
 
@@ -10,20 +24,6 @@ ADMINS = (
 )
 
 MANAGERS = ADMINS
-
-from pvdata import getpv
-
-DATABASES = {
-    'default': {
-        # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'holder',                       # Or path to database file if using sqlite3.
-        'USER': 'holder',                       # Not used with sqlite3.
-        'PASSWORD': getpv('klapeto'),           # Not used with sqlite3.
-        'HOST': 'dev84.dev.grnet.gr',           # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '5432',                         # Set to empty string for default. Not used with sqlite3.
-    }
-}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

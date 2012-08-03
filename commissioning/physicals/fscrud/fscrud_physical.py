@@ -31,11 +31,11 @@ def ensure_directory(dirpath):
 class FSCrudPhysical(Physical):
 
     def __init__(self, queuepath, dataroot, *args, **kw):
-        kw.pop('physical_identity', 'one')
+        physical_identity = kw.pop('physical_identity', 'one')
         self.physical_init(queuepath, dataroot, physical_identity)
         super(FSCrudPhysical, self).__init__(*args[2:], **kw)
 
-    def physical_init(self, queuepath, dataroot, physical_identity):
+    def physical_init(self, queuepath, dataroot, identity):
         self.queuepath = queuepath
         self.dataroot = dataroot
         self.identity = identity

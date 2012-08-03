@@ -19,7 +19,6 @@ def view(request, appname=None, version=None, callname=None):
     if (appname, version) not in callpoints:
         pointname = 'servers.' + appname
         Callpoint = get_callpoint(pointname, version=version)
-
         callpoint = Callpoint()
         callpoints[(appname, version)] = callpoint
 
@@ -32,7 +31,10 @@ def view(request, appname=None, version=None, callname=None):
         if hasattr(callpoint, 'http_exception'):
             status, body = callpoint.http_exception(e)
         else:
-            status, body = 500, 'Unknown Error'
+	    from traceback import print_exc
+	    print_exc()
+            raise e
+            status, body = 500, repr(e)
 
     return HttpResponse(status=status, content=body)
 

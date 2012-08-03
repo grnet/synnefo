@@ -24,7 +24,7 @@ class Callpoint(object):
             m = "No api spec given to '%s'" % (type(self).__name__,)
             raise NotImplementedError(m)
 
-        for call_name in canonifier.call_names():
+        for call_name, call_doc in canonifier.call_attrs():
             if hasattr(self, call_name):
                 m = (   "Method '%s' defined both in natively "
                         "in callpoint '%s' and in api spec '%s'" %
@@ -34,10 +34,16 @@ class Callpoint(object):
 
                 raise ValueError(m)
 
-            def call_func(data):
-                return self.make_call(call_name, data)
-            
-            setattr(self, call_name, call_func)
+            def mk_call_func():
+                local_call_name = call_name
+                def call_func(**data):
+                    return self.make_call(local_call_name, data)
+
+                call_func.__name__ = call_name
+                call_func.__doc__ = call_doc
+                return call_func
+
+            setattr(self, call_name, mk_call_func())
 
     def init_connection(self, connection):
         raise NotImplementedError
@@ -115,11 +121,15 @@ class Callpoint(object):
 
         try:
             data = canonifier.canonify_output(call_name, data)
-        except CanonifyException:
+        except CanonifyException, e:
             m = "Invalid output from call '%s'" % (call_name,)
-            raise self.CorruptedError(m)
+            raise self.CorruptedError(m, e)
 
         return data
+
+
+def mkcallargs(**kw):
+    return kw
 
 
 versiontag_pattern = re_compile('[^a-zA-Z0-9_-]')
@@ -148,7 +158,8 @@ def get_callpoint(pointname, version=None, automake=None, **kw):
 
     appname = components[1]
     pointname = '.'.join(components)
-    modname = 'commissioning.%s.API_Callpoint%s' % (pointname, versiontag)
+    modname = ('commissioning.%s.callpoint.API_Callpoint%s' 
+                                            % (pointname, versiontag))
 
     try:
         API_Callpoint = imp_module(modname)

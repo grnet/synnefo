@@ -3,6 +3,7 @@
 from httplib import HTTPConnection, HTTPException
 from urlparse import urlparse
 from commissioning import Callpoint
+from commissioning.utils.clijson import clijson
 
 import logging
 
@@ -29,19 +30,6 @@ def init_logger_stdout(name, level='DEBUG'):
     level = getattr(logging, level, logging.DEBUG)
     logger.setLevel(level)
     return logger
-
-
-class NULLConnection(object):
-
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
-    def request(self, *args):
-        return None
-
-    def getresponse(self, *args):
-        return None
 
 
 class quota_holder_allocation(object):
@@ -132,13 +120,11 @@ class GenericHTTPClient(Callpoint):
             port = 80
         elif scheme == 'https':
             port = 443
-        elif scheme == 'null':
-            Connection = NULLConnection
         else:
             raise ValueError("Unsupported scheme %s" % (scheme,))
 
         path = url.path.strip('/')
-        path = ('/' + path + '/' + api_call) if path else ('/' + api_Call)
+        path = ('/' + path + '/' + api_call) if path else ('/' + api_call)
 
         netloc = url.netloc.rsplit(':', 1)
         netloclen = len(netloc)
@@ -242,7 +228,7 @@ def main():
                         help=callhelp)
 
     arghelp = 'data to provide to api call'
-    parser.add_argument('data', type=str, action='store', nargs='?',
+    parser.add_argument('data', type=str, action='store', nargs='*',
                         help=callhelp)
 
     urlfilepath = expanduser('~/.qholderrc')
@@ -273,15 +259,18 @@ def main():
     url = get_url()
 
     data = args.data
-
-    if data == '-':
-        from sys import stdin
-        data = stdin.read()
+    if data:
+        if data[0] == '-':
+            from sys import stdin
+            data = stdin.read()
+        else:
+            data = clijson(data)
 
     if not data:
         data = None
 
     client = API_Callpoint(url)
+    print "data", data
     print(client.make_call_from_json(api_call, data))
 
 

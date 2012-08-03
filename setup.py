@@ -23,5 +23,10 @@ setup   (
 			'commissioning.servers.fscrud',
 
                         'commissioning.utils',
+                    ],
+
+    scripts     =   [
+                        'commissioning/servers/quotaholder_django/quotaholder-manage',
+                        'commissioning/servers/fscrud/fscrud-manage',
                     ]
 )

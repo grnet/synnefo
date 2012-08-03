@@ -192,23 +192,22 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
                 try:
                     invitation = form.save()
                     invite_func(invitation, inviter)
-                    status = messages.SUCCESS
                     message = _('Invitation sent to %s' % invitation.username)
+                    messages.success(request, message)
                 except SendMailError, e:
-                    status = messages.ERROR
                     message = e.message
+                    messages.error(request, message)
                     transaction.rollback()
                 except BaseException, e:
-                    status = messages.ERROR
                     message = _('Something went wrong.')
+                    messages.error(request, message)
                     logger.exception(e)
                     transaction.rollback()
                 else:
                     transaction.commit()
         else:
-            status = messages.ERROR
             message = _('No invitations left')
-    messages.add_message(request, status, message)
+            messages.error(request, message)
 
     sent = [{'email': inv.username,
              'realname': inv.realname,
@@ -267,9 +266,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                 if next:
                     return redirect(next)
                 msg = _('Profile has been updated successfully')
-                messages.add_message(request, messages.SUCCESS, msg)
+                messages.success(request, msg)
             except ValueError, ve:
-                messages.add_message(request, messages.ERROR, ve)
+                messages.success(request, ve)
     elif request.method == "GET":
         request.user.is_verified = True
         request.user.save()
@@ -324,7 +323,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         form = backend.get_signup_form(provider)
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
-        messages.add_message(request, messages.ERROR, e)
+        messages.error(request, e)
     if request.method == 'POST':
         if form.is_valid():
             user = form.save(commit=False)
@@ -346,13 +345,11 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 return render_response(on_success,
                                        context_instance=get_context(request, extra_context))
             except SendMailError, e:
-                status = messages.ERROR
                 message = e.message
-                messages.add_message(request, status, message)
+                messages.error(request, message)
             except BaseException, e:
-                status = messages.ERROR
                 message = _('Something went wrong.')
-                messages.add_message(request, status, message)
+                messages.error(request, message)
                 logger.exception(e)
     return render_response(template_name,
                            signup_form = form,
@@ -401,12 +398,11 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
             try:
                 send_feedback(msg, data, request.user, email_template_name)
             except SendMailError, e:
-                message = e.message
                 status = messages.ERROR
+                messages.error(request, message)
             else:
                 message = _('Feedback successfully sent')
-                status = messages.SUCCESS
-            messages.add_message(request, status, message)
+                messages.succeess(request, message)
     return render_response(template_name,
                            feedback_form = form,
                            context_instance = get_context(request, extra_context))
@@ -432,7 +428,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
         return response
-    messages.add_message(request, messages.SUCCESS, _('You have successfully logged out.'))
+    messages.success(request, _('You have successfully logged out.'))
     context = get_context(request, extra_context)
     response.write(render_to_string(template, context_instance=context))
     return response
@@ -455,7 +451,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
     
     if user.is_active:
         message = _('Account already active.')
-        messages.add_message(request, messages.ERROR, message)
+        messages.error(request, message)
         return index(request)
         
     try:
@@ -468,13 +464,12 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
             return response
         except SendMailError, e:
             message = e.message
-            messages.add_message(request, messages.ERROR, message)
+            messages.error(request, message)
             transaction.rollback()
             return index(request)
         except BaseException, e:
-            status = messages.ERROR
             message = _('Something went wrong.')
-            messages.add_message(request, messages.ERROR, message)
+            messages.error(request, message)
             logger.exception(e)
             transaction.rollback()
             return index(request)
@@ -486,13 +481,12 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
             return response
         except SendMailError, e:
             message = e.message
-            messages.add_message(request, messages.ERROR, message)
+            messages.error(request, message)
             transaction.rollback()
             return index(request)
         except BaseException, e:
-            status = messages.ERROR
             message = _('Something went wrong.')
-            messages.add_message(request, messages.ERROR, message)
+            messages.error(request, message)
             logger.exception(e)
             transaction.rollback()
             return index(request)
@@ -556,13 +550,13 @@ def change_email(request, activation_key=None,
             user = EmailChange.objects.change_email(activation_key)
             if request.user.is_authenticated() and request.user == user:
                 msg = _('Email changed successfully.')
-                messages.add_message(request, messages.SUCCESS, msg)
+                messages.success(request, msg)
                 auth_logout(request)
                 response = prepare_response(request, user)
                 transaction.commit()
                 return response
         except ValueError, e:
-            messages.add_message(request, messages.ERROR, e)
+            messages.error(request, e)
         return render_response(confirm_template_name,
                                modified_user = user if 'user' in locals() else None,
                                context_instance = get_context(request,
@@ -577,18 +571,17 @@ def change_email(request, activation_key=None,
         try:
             ec = form.save(email_template_name, request)
         except SendMailError, e:
-            status = messages.ERROR
             msg = e
+            messages.error(request, msg)
             transaction.rollback()
         except IntegrityError, e:
-            status = messages.ERROR
             msg = _('There is already a pending change email request.')
+            messages.error(request, msg)
         else:
-            status = messages.SUCCESS
             msg = _('Change email request has been registered succefully.\
                     You are going to receive a verification email in the new address.')
+            messages.success(request, msg)
             transaction.commit()
-        messages.add_message(request, status, msg)
     return render_response(form_template_name,
                            form = form,
                            context_instance = get_context(request,

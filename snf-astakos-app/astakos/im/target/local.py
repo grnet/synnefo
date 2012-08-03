@@ -74,7 +74,7 @@ def login(request, on_failure='im/login.html'):
     elif not user.is_active:
         message = _('Inactive account')
     if message:
-        messages.add_message(request, messages.ERROR, message)
+        messages.error(request, message)
         return render_to_response(on_failure,
                                   {'form':form},
                                   context_instance=RequestContext(request))

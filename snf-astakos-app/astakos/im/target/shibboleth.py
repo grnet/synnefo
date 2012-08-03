@@ -85,7 +85,7 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
                                     'renew' in request.GET)
         else:
             message = _('Inactive account')
-            messages.add_message(request, messages.ERROR, message)
+            messages.error(request, message)
             return render_response(on_login_template,
                                    login_form = LoginForm(request=request),
                                    context_instance=RequestContext(request))
@@ -99,7 +99,7 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
             form = backend.get_signup_form(provider='shibboleth', instance=user)
         except Exception, e:
             form = SimpleBackend(request).get_signup_form(provider='shibboleth', instance=user)
-            messages.add_message(request, messages.ERROR, e)
+            messages.error(request, e)
         return render_response(on_creation_template,
                                signup_form = form,
                                provider = 'shibboleth',

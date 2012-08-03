@@ -44,9 +44,13 @@ classes in the synnefo.lib.pool module.
 
 """
 
-# Uncomment the following to run a gevent version of the tests
-from gevent import monkey
-monkey.patch_all()
+# Support running under a gevent-monkey-patched environment
+# if the "monkey" argument is specified in the command line.
+import sys
+if "monkey" in sys.argv:
+    from gevent import monkey
+    monkey.patch_all()
+    sys.argv.pop(sys.argv.index("monkey"))
 
 import sys
 import time
@@ -100,7 +104,7 @@ class ObjectPoolTestCase(unittest.TestCase):
 
 
 class NumbersPoolTestCase(unittest.TestCase):
-    N = 150
+    N = 1500
     SEC = 0.5
     maxDiff = None
 

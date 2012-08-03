@@ -65,15 +65,20 @@ class ObjectPool(object):
         self._mutex = Lock()  # Protect shared _set oject
         self._set = set()
 
-    def get(self, blocking=True):
+    def get(self, blocking=True, timeout=None):
         """Get an object from the pool.
 
         Get an object from the pool. Create a new object
         if the pool has not reached its maximum size yet.
 
         """
-        # timeout? supported by gevent and py3k variants of Semaphore
-        r = self._semaphore.acquire(blocking)
+        # timeout argument only supported by gevent and py3k variants
+        # of Semaphore. acquire() will raise TypeError if timeout
+        # is specified but not supported by the underlying implementation.
+        kw = {"blocking": blocking}
+        if timeout is not None:
+            kw["timeout"] = timeout
+        r = self._semaphore.acquire(**kw)
         if not r:
             return None
         with self._mutex:
@@ -84,7 +89,6 @@ class ObjectPool(object):
             except:
                 self._semaphore.release()
                 raise
-            assert len(self._set) <= self.size
         # We keep_semaphore locked, put() will release it
         return obj
 
@@ -98,7 +102,6 @@ class ObjectPool(object):
         with self._mutex:
             self._cleanup(obj)
             self._set.add(obj)
-            assert len(self._set) <= self.size
         self._semaphore.release()
 
     def _create(self):

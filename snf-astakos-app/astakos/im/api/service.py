@@ -32,40 +32,23 @@
 # or implied, of GRNET S.A.
 
 import logging
-import urllib
 
 from functools import wraps
-from traceback import format_exc
 from time import time, mktime
-from urllib import quote
 from urlparse import urlparse
 from collections import defaultdict
 
-from django.conf import settings
 from django.http import HttpResponse
-from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
 
 from astakos.im.api.faults import *
+from astakos.im.api import render_fault
 from astakos.im.models import AstakosUser, Service
-from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
 from astakos.im.util import epoch
 from astakos.im.forms import FeedbackForm
 from astakos.im.functions import send_feedback as send_feedback_func, SendMailError
 
 logger = logging.getLogger(__name__)
-
-def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and settings.DEBUG:
-        fault.details = format_exc(fault)
-
-    request.serialization = 'text'
-    data = fault.message + '\n'
-    if fault.details:
-        data += '\n' + fault.details
-    response = HttpResponse(data, status=fault.code)
-    response['Content-Length'] = len(response.content)
-    return response
 
 def api_method(http_method=None, token_required=False):
     """Decorator function for views that implement an API method."""

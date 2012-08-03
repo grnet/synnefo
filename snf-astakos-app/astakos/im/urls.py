@@ -41,16 +41,16 @@ from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENA
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
     url(r'^login/?$', 'index', {}, name='login'),
-    url(r'^profile/?$', 'edit_profile'),
-    url(r'^feedback/?$', 'feedback'),
-    url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
-    url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
-    url(r'^activate/?$', 'activate'),
+    url(r'^profile/?$', 'edit_profile', {}, name='edit_profile'),
+    url(r'^feedback/?$', 'feedback', {}, name='feedback'),
+    url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'login_form':LoginForm()}}, name='signup'),
+    url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'login_form':LoginForm()}}, name='logout'),
+    url(r'^activate/?$', 'activate', {}, name='activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^password/?$', 'change_password', {}, name='password_change'),
     url(r'^group/add/?$', 'group_add', {}, name='group_add'),
-    url(r'^group/list?$', 'user_group_list', {}, name='user_group_list'),
+    url(r'^group/list/?$', 'group_list', {}, name='group_list'),
     url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {}, name='group_detail'),
     url(r'^group/(?P<group_id>\d+)/policies/list/?$', 'group_policies_list', {}, name='group_policies_list'),
     url(r'^group/(?P<group_id>\d+)/policies/add/?$', 'group_policies_add', {}, name='group_policies_add'),
@@ -86,7 +86,7 @@ if 'local' in IM_MODULES:
 
 if INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
-        url(r'^invite/?$', 'invite')
+        url(r'^invite/?$', 'invite', {}, name='invite')
     )
 
 if 'shibboleth' in IM_MODULES:

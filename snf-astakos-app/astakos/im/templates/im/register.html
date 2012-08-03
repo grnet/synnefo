@@ -5,7 +5,7 @@
 {% endblock title%}
 
 {% block body %}
-<form action={%url astakos.im.views.register%} method="post">{% csrf_token %}
+<form action={%url register%} method="post">{% csrf_token %}
     {{ form.as_p }}
 <div>
     <button type="submit" class="btn primary">Register</button>

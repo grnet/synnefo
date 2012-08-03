@@ -161,27 +161,24 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         pass
     else:
         l = []
-        l.append({ 'url': absolute(reverse('astakos.im.views.index')),
-                  'name': user.email})
-        l.append({ 'url': absolute(reverse('astakos.im.views.edit_profile')),
-                  'name': "My account" })
+        l.append(dict(url=absolute(reverse('index')), name=user.email))
+        l.append(dict(url=absolute(reverse('edit_profile')), name="My account"))
         if with_extra_links:
             if user.has_usable_password() and user.provider == 'local':
-                l.append({ 'url': absolute(reverse('password_change')),
-                          'name': "Change password" })
+                l.append(dict(url=absolute(reverse('password_change')), name="Change password"))
             if EMAILCHANGE_ENABLED:
-                l.append({'url':absolute(reverse('email_change')),
-                          'name': "Change email"})
+                l.append(dict(url=absolute(reverse('email_change')), name="Change email"))
             if INVITATIONS_ENABLED:
-                l.append({ 'url': absolute(reverse('astakos.im.views.invite')),
-                          'name': "Invitations" })
-            l.append({ 'url': absolute(reverse('astakos.im.views.feedback')),
-                      'name': "Feedback" })
-            l.append({ 'url': absolute(reverse('group_add')),
-                      'name': "Add group" })
+                l.append(dict(url=absolute(reverse('invite')), name="Invitations"))
+            l.append(dict(url=absolute(reverse('feedback')), name="Feedback"))
+            if request.user.has_perm('im.add_astakosgroup'):
+                l.append(dict(url=absolute(reverse('group_add')), name="Add group"))
+            url = absolute(reverse('group_list'))
+            l.append(dict(url=url, name="Subscribed groups"))
+            url = '%s?relation=owner' % url
+            l.append(dict(url=url, name="My groups"))
         if with_signout:
-            l.append({ 'url': absolute(reverse('astakos.im.views.logout')),
-                      'name': "Sign out"})
+            l.append(dict(url=absolute(reverse('logout')), name="Sign out"))
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))

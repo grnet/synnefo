@@ -10,7 +10,7 @@
     </div>
 
 <div class="section">
-    <form action="{% url astakos.im.views.signup %}" method="post" class="login innerlabels">{% csrf_token %}
+    <form action="{% url signup %}" method="post" class="login innerlabels">{% csrf_token %}
                 {% with thirdparty_signup_form as form %}
                 {% include "im/form_render.html" %}
                 {% endwith %}

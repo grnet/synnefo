@@ -31,7 +31,7 @@
 
 <div class="rightcol">
  {% if inviter.invitations %}
-  <form action="{% url astakos.im.views.invite %}" method="post"
+  <form action="{% url invite %}" method="post"
     class="innerlabels">{% csrf_token %}
     <h2>INVITE SOMEONE ELSE</h2>
     {% with invitation_form as form %}

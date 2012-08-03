@@ -81,9 +81,9 @@ def send_verification(user, template_name='im/activation_email.txt'):
     
     Raises SendVerificationError
     """
-    url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('astakos.im.views.activate')),
+    url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('activate')),
                                     quote(user.auth_token),
-                                    quote(urljoin(BASEURL, reverse('astakos.im.views.index'))))
+                                    quote(urljoin(BASEURL, reverse('index'))))
     message = render_to_string(template_name, {
             'user': user,
             'url': url,
@@ -158,7 +158,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     Raises SendInvitationError
     """
     subject = _('Invitation to %s alpha2 testing' % SITENAME)
-    url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.index')), invitation.code)
+    url = '%s?code=%d' % (urljoin(BASEURL, reverse('index')), invitation.code)
     message = render_to_string('im/invitation.txt', {
                 'invitation': invitation,
                 'url': url,
@@ -184,7 +184,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
     subject = _('Welcome to %s alpha2 testing' % SITENAME)
     message = render_to_string(email_template_name, {
                 'user': user,
-                'url': urljoin(BASEURL, reverse('astakos.im.views.index')),
+                'url': urljoin(BASEURL, reverse('index')),
                 'baseurl': BASEURL,
                 'site_name': SITENAME,
                 'support': DEFAULT_CONTACT_EMAIL})

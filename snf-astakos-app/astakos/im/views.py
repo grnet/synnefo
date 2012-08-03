@@ -138,7 +138,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     """
     template_name = login_template_name
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
+        return HttpResponseRedirect(reverse('edit_profile'))
     return render_response(template_name,
                            login_form = LoginForm(request=request),
                            context_instance = get_context(request, extra_context))
@@ -315,7 +315,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     im/signup_complete.html or ``on_success`` keyword argument. 
     """
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
+        return HttpResponseRedirect(reverse('edit_profile'))
     
     provider = get_query(request).get('provider', 'local')
     try:
@@ -512,14 +512,14 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
             pass
 
     if not term:
-        return HttpResponseRedirect(reverse('astakos.im.views.index'))
+        return HttpResponseRedirect(reverse('index'))
     f = open(term.location, 'r')
     terms = f.read()
 
     if request.method == 'POST':
         next = request.POST.get('next')
         if not next:
-            next = reverse('astakos.im.views.index')
+            next = reverse('index')
         form = SignApprovalTermsForm(request.POST, instance=request.user)
         if not form.is_valid():
             return render_response(template_name,
@@ -540,7 +540,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 @signed_terms_required
 def change_password(request):
     return password_change(request,
-                            post_change_redirect=reverse('astakos.im.views.edit_profile'),
+                            post_change_redirect=reverse('edit_profile'),
                             password_change_form=ExtendedPasswordChangeForm)
 
 @signed_terms_required
@@ -570,7 +570,7 @@ def change_email(request, activation_key=None,
     
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
-        url = request.build_absolute_uri(reverse('astakos.im.views.index'))
+        url = request.build_absolute_uri(reverse('index'))
         return HttpResponseRedirect(url + '?next=' + path)
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -619,7 +619,7 @@ def group_detail(request, group_id):
     try:
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
-        raise HttpResponseBadRequest(_('Invalid group.'))
+        return HttpResponseBadRequest(_('Invalid group.'))
     d = {}
     for resource in group.policy.all():
         d[resource.name] = group.policy.through.objects.get(resource__id=resource.id,

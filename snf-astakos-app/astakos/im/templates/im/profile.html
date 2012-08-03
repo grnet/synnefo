@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action={%url astakos.im.views.edit_profile %} method="post"
+<form action={%url edit_profile %} method="post"
     class="withlabels">{% csrf_token %}
     
     {% with profile_form as form %}

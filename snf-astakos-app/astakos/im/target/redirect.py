@@ -118,7 +118,7 @@ def login(request):
         next = urlunsplit(parts)
         
         # build url location
-        parts[2] = reverse('astakos.im.views.index')
+        parts[2] = reverse('index')
         params = {'next':next}
         parts[3] = urlencode(params)
         url = urlunsplit(parts)

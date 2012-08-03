@@ -15,7 +15,7 @@
 {% block body.right %}
     {% if "local" in im_modules %}
       <div class="form-stacked">
-        <form action="{% url astakos.im.views.signup %}" method="post"
+        <form action="{% url signup %}" method="post"
             class="innerlabels signup">{% csrf_token %}
           <h2><span>Provide an email address to complete the registration:</span></h2>
             <input type="hidden" name="next" value="{{ next }}">

@@ -119,7 +119,7 @@ def prepare_response(request, user, next='', renew=False):
         params = ''
         if next:
             params = '?' + urlencode({'next': next})
-        next = reverse('astakos.im.views.edit_profile') + params
+        next = reverse('edit_profile') + params
     
     response = HttpResponse()
     
@@ -130,7 +130,7 @@ def prepare_response(request, user, next='', renew=False):
     request.session.set_expiry(user.auth_token_expires)
     
     if not next:
-        next = reverse('astakos.im.views.index')
+        next = reverse('index')
     
     response['Location'] = next
     response.status_code = 302

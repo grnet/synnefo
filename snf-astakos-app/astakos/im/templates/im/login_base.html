@@ -59,7 +59,7 @@ Login
         {% endfor %}
         <div class="bottom">
             {% block body.login.signup %}
-                new to okeanos ? <a href="{% url astakos.im.views.signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">CREATE ACCOUNT</a>
+                new to okeanos ? <a href="{% url signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">CREATE ACCOUNT</a>
             {% endblock %}
             </div>
         </div>

@@ -17,7 +17,7 @@ callpoints = {}
 @transaction.commit_on_success
 def view(request, appname=None, version=None, callname=None):
     if (appname, version) not in callpoints:
-        pointname = 'servers.' + appname
+        pointname = 'servers.%s.django_backend' % (appname,)
         Callpoint = get_callpoint(pointname, version=version)
         callpoint = Callpoint()
         callpoints[(appname, version)] = callpoint
@@ -31,8 +31,8 @@ def view(request, appname=None, version=None, callname=None):
         if hasattr(callpoint, 'http_exception'):
             status, body = callpoint.http_exception(e)
         else:
-	    from traceback import print_exc
-	    print_exc()
+            from traceback import print_exc
+            print_exc()
             raise e
             status, body = 500, repr(e)
 

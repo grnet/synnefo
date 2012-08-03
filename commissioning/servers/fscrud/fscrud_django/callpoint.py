@@ -39,9 +39,9 @@ class FSCrudControlled(ControlledCallpoint):
     api_spec = fscrud_api_spec
 
     def init_connection(self, connection):
-	# ignore connection
-	queuepath = settings.FSCRUD_QUEUE_PATH
-	dataroot = settings.FSCRUD_DATA_ROOT
+        # ignore connection
+        queuepath = settings.FSCRUD_QUEUE_PATH
+        dataroot = settings.FSCRUD_DATA_ROOT
         physical = FSCrudPhysical(queuepath, dataroot)
         quotaholder = qh_callpoint('null://wherever/')
         self.controller = FSCrudDjangoController(quotaholder, physical)

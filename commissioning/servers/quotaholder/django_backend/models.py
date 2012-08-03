@@ -1,10 +1,9 @@
 
-from commissioning.quotaholder \
-import (QuotaholderCallpoint,  QuotaholderException,
-        QuotaholderController, QuotaholderPhysical,
-        QuotaholderCorrupted,  QuotaholderInvalidData,
-        QuotaholderInvalidKey, QuotaholderNoEntity,
-        QuotaholderNoQuantity, QuotaholderNoCapacity)
+from commissioning import ( Callpoint, Controller,
+                            Physical, CommissionException,
+                            CorruptedError, InvalidDataError,
+                            InvalidKeyError, NoEntityError,
+                            NoQuantityError, NoCapacityError    )
 
 
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey
@@ -21,7 +20,7 @@ class Holder(Model):
 def alloc_serial(nr=1):
     if nr < 0:
         m = "Can only receive a positive argument, not %d" % (nr,)
-        raise QuotaholderCorrupted(m)
+        raise CorruptedError(m)
 
     try:
         holder = Holder.objects.get(attribute='serial')
@@ -95,15 +94,15 @@ class Provision(Model):
 
 
 
-class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
+class QuotaholderDjangoDBCallpoint(Callpoint):
 
     http_exc_lookup = {
-        QuotaholderCorrupted:   550,
-        QuotaholderInvalidData: 400,
-        QuotaholderInvalidKey:  401,
-        QuotaholderNoEntity:    404,
-        QuotaholderNoQuantity:  413,
-        QuotaholderNoCapacity:  413,
+        CorruptedError:   550,
+        InvalidDataError: 400,
+        InvalidKeyError:  401,
+        NoEntityError:    404,
+        NoQuantityError:  413,
+        NoCapacityError:  413,
     }
 
     def init_connection(self, connection):
@@ -122,13 +121,13 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
         call_fn = getattr(self, call_name, None)
         if not call_fn:
             m = "cannot find call '%s'" % (call_name,)
-            raise QuotaholderCorrupted(m)
+            raise CorruptedError(m)
 
         return call_fn(**data)
 
     @classmethod
     def http_exception(cls, exc):
-        if not isinstance(exc, QuotaholderException):
+        if not isinstance(exc, CommissionException):
             raise exc
 
         body = str(exc.args)
@@ -154,7 +153,7 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
             e = Entity.objects.get(entity=entity, key=key)
         except Entity.DoesNotExist:
             m = "Entity '%s' does not exist" % (entity,)
-            raise QuotaholderNoEntity(m)
+            raise NoEntityError(m)
 
         children = e.entities.all()
         entities = [e.entity for e in children]
@@ -261,11 +260,11 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
             e = Entity.objects.get()
         except Entity.DoesNotExist:
             m = "No such entity '%s'" % (entity,)
-            raise QuotaholderNoEntity(m)
+            raise NoEntityError(m)
 
         if e.key != key:
             m = "Invalid key for entity '%s'" % (entity,)
-            raise QuotaholderInvalidKey(m)
+            raise InvalidKeyError(m)
 
         holdings = e.holdings.filter(entity=entity)
         resources = [h.resource for h in holdings]
@@ -338,13 +337,13 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
             rejected = self.create_entity(  context=context,
                                             create_entity=create_entity )
             if rejected:
-                raise QuotaholderNoEntity("No target entity '%s'" % (target,))
+                raise NoEntityError("No target entity '%s'" % (target,))
 
             t = Entity.objects.get(entity=target)
         else:
             if t.key != key:
                 m = "Invalid key for target entity '%s'" % (target,)
-                raise QuotaholderInvalidKey(m)
+                raise InvalidKeyError(m)
 
         commission = Commission.objects.create( entity=target,
                                                 clientkey=clientkey )
@@ -356,21 +355,21 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
             except Holding.DoesNotExist:
                 m = ("There is not enough quantity "
                      "to allocate from in %s.%s" % (entity, resource))
-                raise QuotaholderNoQuantity(m)
+                raise NoQuantityError(m)
 
             hp = h.policy
 
             if h.importing - h.exported + hp.quantity - quantity < 0:
                 m = ("There is not enough quantity "
                      "to allocate from in %s.%s" % (entity, resource))
-                raise QuotaholderNoQuantity(m)
+                raise NoQuantityError(m)
 
             try:
                 th = Holding.objects.get(entity=target, resource=resource)
             except Holding.DoesNotExist:
                 m = ("There is not enough capacity "
                      "to allocate into in %s.%s" % (target, resource))
-                raise QuotaholderNoCapacity(m)
+                raise NoCapacityError(m)
 
             tp = th.policy
 
@@ -379,7 +378,7 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
 
                     m = ("There is not enough capacity "
                          "to allocate into in %s.%s" % (target, resource))
-                    raise QuotaholderNoCapacity(m)
+                    raise NoCapacityError(m)
 
             Provision.objects.create(   serial=serial,
                                         entity=entity,
@@ -413,7 +412,7 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
                 th = Holding.objects.get(entity=t, resource=pv.resource)
             except Holding.DoesNotExist:
                 m = "Corrupted provision"
-                raise QuotaholderCorrupted(m)
+                raise CorruptedError(m)
 
             h.exported += pv.quantity
             th.imported += pv.quantity
@@ -442,7 +441,7 @@ class QuotaholderDjangoDBCallpoint(QuotaholderCallpoint):
                 th = Holding.objects.get(entity=t, resource=pv.resource)
             except Holding.DoesNotExist:
                 m = "Corrupted provision"
-                raise QuotaholderCorrupted(m)
+                raise CorruptedError(m)
 
             h.exporting -= pv.quantity
             th.importing -= pv.quantity

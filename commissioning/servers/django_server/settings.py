@@ -3,16 +3,16 @@
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-COMMISSIONING_APP_NAME = None
-
-if not COMMISSIONING_APP_NAME:
+try:
+    _appname = COMMISSIONING_APP_NAME
+except NameError:
     from os import environ
     if 'COMMISSIONING_APP_NAME' not in environ:
         m = ("Cannot determine COMMISSIONING_APP_NAME from "
              "settings.py or getenv()")
         raise ValueError(m)
 
-    COMMISSIONING_APP_NAME = environ['COMMISSIONING_APP_NAME']
+    _appname = environ['COMMISSIONING_APP_NAME']
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -20,19 +20,25 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-from commissioning.utils.pvdata import getpv
-
 DATABASES = {
     'default': {
         # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'holder',                       # Or path to database file if using sqlite3.
         'USER': 'holder',                       # Not used with sqlite3.
-        'PASSWORD': getpv('klapeto'),           # Not used with sqlite3.
+        'PASSWORD': 'holder',                   # Not used with sqlite3.
         'HOST': 'dev84.dev.grnet.gr',           # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '5432',                         # Set to empty string for default. Not used with sqlite3.
     }
 }
+
+ROOT_URLCONF = 'commissioning.servers.django_server.urls'
+
+from commissioning.utils.pyconf import pyconf_vars
+conffile = '/etc/%s/django.conf' % (_appname,)
+pyconf_vars(conffile, locals())
+COMMISSIONING_APP_NAME=_appname
+del _appname
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -41,7 +47,7 @@ DATABASES = {
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'Europe/Athens'
+TIME_ZONE = 'UTC'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -51,25 +57,11 @@ SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
-USE_I18N = True
+USE_I18N = False
 
 # If you set this to False, Django will not format dates, numbers and
 # calendars according to the current locale
-USE_L10N = True
-
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
-
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash if there is a path component (optional in other cases).
-# Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = ''
-
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
+USE_L10N = False
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'ee=*x%x6sp=hcm7j4zzkvpam27g*7*d59fca-q!azaqma!jx*+'
@@ -90,14 +82,11 @@ MIDDLEWARE_CLASSES = (
     #'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'commissioning.servers.django_server.urls'
-
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
 )
-
 
 INSTALLED_APPS = (
     #'django.contrib.auth',

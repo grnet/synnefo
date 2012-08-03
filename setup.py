@@ -18,15 +18,17 @@ setup   (
                         'commissioning.servers',
                         'commissioning.servers.django_server',
                         'commissioning.servers.django_server.server_app',
-                        'commissioning.servers.quotaholder_django',
-                        'commissioning.servers.quotaholder_django.django_backend',
+                        'commissioning.servers.quotaholder',
+                        'commissioning.servers.quotaholder.quotaholder_django',
+                        'commissioning.servers.quotaholder.django_backend',
 			'commissioning.servers.fscrud',
+			'commissioning.servers.fscrud.fscrud_django',
 
                         'commissioning.utils',
                     ],
 
     scripts     =   [
-                        'commissioning/servers/quotaholder_django/quotaholder-manage',
-                        'commissioning/servers/fscrud/fscrud-manage',
+                        'commissioning/servers/quotaholder/quotaholder_django/quotaholder-manage',
+                        'commissioning/servers/fscrud/fscrud_django/fscrud-manage',
                     ]
 )

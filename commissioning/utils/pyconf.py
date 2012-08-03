@@ -12,11 +12,11 @@ def pyconf(filename, keys=None):
 
     keyset = set(k for k in keys if (k and k[0] != '_' and k.isupper()))
     for k in keyset:
-        opts[k] = variables[k]
+        if k in variables:
+            opts[k] = variables[k]
 
     return opts
 
-def pyconf_globals(filename):
-    g = globals()
-    g.update(pyconf(filename, g.keys()))
+def pyconf_vars(filename, variables):
+    variables.update(pyconf(filename, variables.keys()))
 

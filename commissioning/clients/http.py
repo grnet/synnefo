@@ -9,6 +9,7 @@ import logging
 
 from json import loads as json_loads, dumps as json_dumps
 
+_logger = None
 
 def init_logger_file(name, level='DEBUG'):
     logger = logging.getLogger(name)
@@ -18,90 +19,35 @@ def init_logger_file(name, level='DEBUG'):
     logger.addHandler(handler)
     level = getattr(logging, level, logging.DEBUG)
     logger.setLevel(level)
+    global _logger
+    _logger = logger
     return logger
 
-def init_logger_stdout(name, level='DEBUG'):
+def init_logger_stderr(name, level='DEBUG'):
     logger = logging.getLogger(name)
-    from sys import stdout
-    handler = logging.StreamHandler(stdout)
+    from sys import stderr
+    handler = logging.StreamHandler(stderr)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     level = getattr(logging, level, logging.DEBUG)
     logger.setLevel(level)
+    global _logger
+    _logger = logger
     return logger
 
 
-class quota_holder_allocation(object):
-    client = None
-    serial = None
-
-    def __init__(self, *allocations, **pre_allocations):
-        allocations = canonify_list_of_allocations(allocations)
-        pre_allocations = pre_allocations.items()
-        pre_allocations = [(name, pre, 0) for name, pre in pre_allocations]
-        pre_allocations = canonify_list_of_allocations(pre_allocations)
-        allocations.extend(pre_allocations)
-        self.allocations = allocations
-
-        if self.client is None:
-            self.client = QuotaholderClient.instance()
-
-    def __call__(self, func):
-        def wrapped(*args, **kw):
-            client = self.client
-            serial = client.get_provision(self.allocations)
-            try:
-                ret = func(*args, **kw)
-            except Exception:
-                client.recall_provision(serial)
-                raise
-            else:
-                client.commit_provision(serial)
-
-            return ret
-
-        return wrapped
-
-    def __enter__(self):
-        self.serial = self.client.get_provision(self.allocations)
-
-    def __exit__(self, exctype, exc, traceback):
-        serial = self.serial
-        client = self.client
-
-        if exctype is None:
-            client.commit_provision(serial)
-        else:
-            client.recall_provision(serial)
-            raise
+def debug(self, fmt, *args):
+    _logger.debug(fmt % args)
 
 
-class GenericHTTPClient(Callpoint):
+class HTTP_API_Client(Callpoint):
     """Synchronous http client for quota holder API"""
 
     appname = 'http'
-    _http_client = None
-    quota_holder_allocation = quota_holder_allocation
 
     def init_connection(self, connection):
         self.url = connection
-
-        class quota_holder_allocator_class(quota_holder_allocation):
-            client = self
-
-        self.quota_holder_allocation = quota_holder_allocator_class
-        self.logger = logging.getLogger(self.appname)
-
-    @classmethod
-    def instance(cls):
-        client = cls._http_client
-        if client is None:
-            url = "http://127.0.0.1:8000/%s/%s" % (cls.appname, cls.version)
-            client = cls(url)
-            self._http_client = client
-
-        return client
 
     def commit(self):
         return
@@ -109,13 +55,9 @@ class GenericHTTPClient(Callpoint):
     def rollback(self):
         return
 
-    def debug(self, fmt, *args):
-        self.logger.debug(fmt % args)
-
     def do_make_call(self, api_call, data):
         url = urlparse(self.url)
         scheme = url.scheme
-	Connection = HTTPConnection
         if scheme == 'http':
             port = 80
         elif scheme == 'https':
@@ -136,8 +78,8 @@ class GenericHTTPClient(Callpoint):
             msg = "Unsupported network location type '%s'" % (netloc,)
             raise ValueError(msg)
 
-        self.debug("Connecting to %s:%s\n>>>", host, port)
-        conn = Connection(host, port)
+        debug("Connecting to %s:%s\n>>>", host, port)
+        conn = HTTPConnection(host, port)
 
         if (api_call.startswith('list') or
             api_call.startswith('get') or
@@ -148,14 +90,14 @@ class GenericHTTPClient(Callpoint):
                 method = 'POST'
 
         json_data = self.json_dumps(data)
-        self.debug("%s %s\n%s\n<<<\n", method, path, json_data)
+        debug("%s %s\n%s\n<<<\n", method, path, json_data)
 
         req = conn.request(method, path, body=json_data)
         resp = conn.getresponse()
-        self.debug(">>>\nStatus: %s", resp.status)
+        debug(">>>\nStatus: %s", resp.status)
 
         for name, value in resp.getheaders():
-            self.debug("%s: %s", name, value)
+            debug("%s: %s", name, value)
 
         body = ''
         while 1:
@@ -164,7 +106,7 @@ class GenericHTTPClient(Callpoint):
                 break
             body += s
 
-        self.debug("\n%s\n<<<\n", body)
+        debug("\n%s\n<<<\n", body)
 
         status = int(resp.status)
         if status == 200:
@@ -176,7 +118,7 @@ class GenericHTTPClient(Callpoint):
 
         raise IOError("Call Failed", str(resp.status))
 
-API_Callpoint = GenericHTTPClient
+API_Callpoint = HTTP_API_Client
 
 
 def main():
@@ -195,7 +137,7 @@ def main():
         argv = argv[1:]
         progname = basename(argv[0])
 
-    init_logger_stdout(progname)
+    init_logger_stderr(progname)
 
     pointname = 'clients.' + progname
     API_Callpoint = get_callpoint(pointname, automake='http')

@@ -41,7 +41,6 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, GroupKind, Service, Resource
-from astakos.im.encoder import ModelJSONEncoder
 from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError
 from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
 

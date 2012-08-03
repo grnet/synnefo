@@ -1,3 +1,9 @@
+function equalWidths ( secondEl, firstEl) {
+	secondEl.css('width',firstEl.outerWidth() );
+}
+
+
+
 $(document).ready(function(){
     
     /*
@@ -21,6 +27,12 @@ $(document).ready(function(){
     var css = $("<link />");
     css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css'});
     $("head").append(css);
+    
+    // load fonts
+    var font_url = 'http://fonts.googleapis.com/css?family=Didact+Gothic&subset=latin,greek,greek-ext';
+    var css_font = $("<link />");
+    css_font.attr({rel:'stylesheet', type:'text/css', href:font_url});
+    $("head").append(css_font);
 
     // load service specific css
     var SKIP_ADDITIONAL_CSS = window.SKIP_ADDITIONAL_CSS == undefined ? false : window.SKIP_ADDITIONAL_CSS;
@@ -32,8 +44,8 @@ $(document).ready(function(){
     }
 
     var root = $('body');
-    var bar = $('<div class="servicesbar"></div>');
-    var services = $('<div class="services"></div>');
+    var bar = $('<div class="cloudbar clearfix"></div>');
+    var services = $('<ul class="services"></ul>');
     var profile = $('<div class="profile"></div>');
     
     var get_services_url = window.GET_SERVICES_URL || window.CLOUDBAR_SERVICES;
@@ -41,6 +53,7 @@ $(document).ready(function(){
     // create services links and set the active class to the current service
     $.getJSON(get_services_url + "?callback=?", function(data) {
             $.each(data, function(i, el){
+            var sli = $("<li>");
             var slink = $("<a>");
             if (el.icon) {
                 slink.append($('<img src="'+cssloc+el.icon+'"/>'));
@@ -50,9 +63,10 @@ $(document).ready(function(){
             }
             slink.attr('href', el.url);
             slink.attr('title', el.name);
-            services.append(slink);
+            sli.append(slink);
+            services.append(sli);
             if (el.id == ACTIVE_MENU || el.name == ACTIVE_MENU) {
-                slink.addClass("active");
+                sli.addClass("active");
             }
         });
       });
@@ -67,8 +81,9 @@ $(document).ready(function(){
     $.getJSON(get_menu_url, function(data) {
         $.each(data, function(i,el) {
             if (i == 0){
-                username.text(el.name);
+                username.html('<span>'+el.name+'</span>');
                 username.attr('href', el.url);
+                user.removeClass('full');
             }else{
                 var link = $("<a />");
                 link.text(el.name);
@@ -76,6 +91,7 @@ $(document).ready(function(){
                 var li = $("<li />");
                 li.append(link);
                 usermenu.append(li);
+                user.addClass('full');
             }
         });
     });
@@ -86,7 +102,7 @@ $(document).ready(function(){
     user.append(username);
     user.append(usermenu);
     profile.append(user);
-    bar.append(services).append(profile);
+    bar.append(profile).append(services);
     
 
     root.prepend(bar);
@@ -95,4 +111,25 @@ $(document).ready(function(){
 
     // ie fix
     user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
+    $('html').live('click', function(e){
+	 	$('.cloudbar .profile .full>a').removeClass('open');
+	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
+	});
+ 
+   
+   	$('.cloudbar .profile .full>a').live('click', function(e){
+   		
+   		e.stopPropagation();
+        e.preventDefault();
+        equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
+   		$(this).siblings('ul').toggle();
+   		$(this).toggleClass('open');
+   		
+   	});
+
+    
+});
+
+$(window).resize(function() {
+	equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
 });

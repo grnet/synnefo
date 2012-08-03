@@ -1,13 +1,17 @@
-.navigation {
-    min-width: 660px;
-}
+﻿button, input, select, textarea					{ vertical-align:middle; }
+input[type="button"], input[type="submit"]		{ overflow:visible; }
+input[type="checkbox"],
+input[type="radio"]								{ width:13px; height:13px; }
+legend											{ margin-left:-7px; }
+textarea										{ overflow:auto; }
+img												{ -ms-interpolation-mode:bicubic; }
 
-.mainnav.inline {
-    position: absolute;
-    right: -10px;
-}
+.clearfix										{ zoom:1; }
+.container .navigation ul li					{ display:inline;}
+.lt .box-more ul.col							{ display:inline;}
 
-.mainnav.inline.subnav {
-    position: relative;
-    top: 50px;
-}
+form input.text, 
+form input[type="text"],
+form input[type="password"]						{ margin-bottom:-3px;}
+#okeanos_recaptcha #recaptcha_response_field	{ margin-bottom:-1px; }
+.container ul.options li a						{ display:inline }

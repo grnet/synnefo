@@ -5,7 +5,7 @@
     return this.each(function() {
       // process checkboxes
       var $this = $(this);
-      var el = $('<span class="checkbox-widget" />');
+      var el = $('<a class="checkbox-widget" href="javascript:void(0)"/>');
       var form = $this.closest(".form-row");
 
       // add class to identify form rows which contain a checkbox
@@ -33,9 +33,18 @@
       el.click(function() {
         el.toggleClass("checked");
         $this.attr('checked', el.hasClass("checked"));
+      });
+      
+      el.keypress(function(e){
+      	
+      	if (e.keyCode == 0 || e.keyCode == 32){
+      		e.preventDefault();
+      		el.toggleClass("checked");
+        	$this.attr('checked', el.hasClass("checked"));
+      	}
       })
 
-      $this.after(el);
+      $this.prev('label').before(el);
     });
 
 

@@ -1,9 +1,8 @@
-<div class="footer">
-    {% block footer_content %}
-    <div class="last row clearme">
-        Copyright 2011-2012 <a href="http://www.grnet.gr" alt="GRNET S.A.">GRNET S.A.</a> All rights reserved.
-        <div class="termslink" style="float:right"><a href="{% url latest_terms %}">Terms of use</a></div>
-    </div>
-    {% endblock %}
-</div>
+{% block footer_content %}
+ 
+<p class="termslink" style="float:right"><a href="{% url latest_terms %}">Terms of use</a></p>
+<p>Copyright 2011-2012 <a href="http://www.grnet.gr" target="_blank" title="GRNET S.A.">GRNET S.A.</a> All rights reserved.</p>
+ 
+{% endblock %}
+ 
 

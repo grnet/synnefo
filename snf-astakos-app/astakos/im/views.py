@@ -428,7 +428,11 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
         return response
+<<<<<<< HEAD
     messages.success(request, _('You have successfully logged out.'))
+=======
+    messages.add_message(request, messages.SUCCESS, _('<p>You have successfully logged out.</p>'))
+>>>>>>> origin/newstyles
     context = get_context(request, extra_context)
     response.write(render_to_string(template, context_instance=context))
     return response
@@ -586,6 +590,7 @@ def change_email(request, activation_key=None,
                            form = form,
                            context_instance = get_context(request,
                                                           extra_context))
+<<<<<<< HEAD
 
 @signed_terms_required
 def group_add(request):
@@ -647,3 +652,5 @@ def group_policies_add(request, group_id):
 def group_approval_request(request, group_id):
     return HttpResponse()
     
+=======
+>>>>>>> origin/newstyles

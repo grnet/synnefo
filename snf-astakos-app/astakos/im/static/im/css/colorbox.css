@@ -1,0 +1,127 @@
+﻿
+#colorbox, #cboxOverlay, #cboxWrapper {
+    left: 0;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    z-index: 9999;
+}
+#cboxOverlay {
+    height: 100%;
+    position: fixed;
+    width: 100%;
+}
+#cboxMiddleLeft, #cboxBottomLeft {
+    clear: left;
+}
+#cboxContent {
+    position: relative;
+}
+#cboxLoadedContent {
+    overflow: auto;
+}
+#cboxTitle {
+    margin: 0;
+}
+#cboxLoadingOverlay, #cboxLoadingGraphic {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+#cboxPrevious, #cboxNext, #cboxClose, #cboxSlideshow {
+    cursor: pointer;
+}
+.cboxPhoto {
+    border: 0 none;
+    display: block;
+    float: left;
+    margin: auto;
+}
+.cboxIframe {
+    border: 0 none;
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+#cboxOverlay {
+    background: none repeat scroll 0 0 #000000;
+}
+#cboxContent {
+    margin-top: 20px;
+}
+.cboxIframe {
+    background: none repeat scroll 0 0 #FFFFFF;
+}
+#cboxError {
+    border: 1px solid #CCCCCC;
+    padding: 50px;
+}
+#cboxLoadedContent {
+    background: none repeat scroll 0 0 #FFFFFF;
+    border: 5px solid #000000;
+}
+#cboxTitle {
+    color: #CCCCCC;
+    left: 0;
+    position: absolute;
+    top: -20px;
+}
+#cboxCurrent {
+    color: #CCCCCC;
+    position: absolute;
+    right: 0;
+    top: -20px;
+}
+#cboxSlideshow {
+    color: #FFFFFF;
+    position: absolute;
+    right: 90px;
+    top: -20px;
+}
+#cboxPrevious {
+    background: url("../images/colorbox/controls.png") no-repeat scroll left top transparent;
+    height: 65px;
+    left: 5px;
+    margin-top: -32px;
+    position: absolute;
+    text-indent: -9999px;
+    top: 50%;
+    width: 28px;
+}
+#cboxPrevious:hover {
+    background-position: left bottom;
+}
+#cboxNext {
+    background: url("../images/colorbox/controls.png") no-repeat scroll right top transparent;
+    height: 65px;
+    margin-top: -32px;
+    position: absolute;
+    right: 5px;
+    text-indent: -9999px;
+    top: 50%;
+    width: 28px;
+}
+#cboxNext:hover {
+    background-position: right bottom;
+}
+#cboxLoadingOverlay {
+    background: none repeat scroll 0 0 #000000;
+}
+#cboxLoadingGraphic {
+    background: url("../images/colorbox/loading.gif") no-repeat scroll center center transparent;
+}
+#cboxClose {
+    background: url("../images/colorbox/controls.png") no-repeat scroll center top transparent;
+    display: block;
+    height: 19px;
+    position: absolute;
+    right: 5px;
+    text-indent: -9999px;
+    top: 5px;
+    width: 38px;
+}
+#cboxClose:hover {
+    background-position: center bottom;
+}

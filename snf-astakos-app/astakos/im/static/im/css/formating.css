@@ -1,0 +1,105 @@
+﻿/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video						{ border:0; margin:0; padding:0; font-size:100%; font:inherit; vertical-align:baseline; }
+
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section		{ display:block; }
+
+/* defaults -----------------------------------*/
+:link, a, a:visited								{ color:#F89A1C; text-decoration:none; }
+a:hover											{ outline:0; text-decoration:underline; }
+a:focus											{ text-decoration:none; }
+a:active										{ outline:0; text-decoration:none; }
+a img, :link img, :visited img					{ border:none; }
+a span											{ cursor:pointer; }
+abbr[title], dfn[title]							{ border-bottom:1px dotted; cursor:help; }
+address											{ font-style:italic; margin:0 0 1.5em 0; }
+body											{ background:white; color:#222; font-family: 'Didact Gothic', Verdana, sans-serif;  font-style:normal; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px;}
+code, kbd, pre, samp							{ font-family:monospace, sans-serif; }
+del												{ text-decoration:line-through; }
+dl												{ margin:1em 0; }
+dl dd											{ margin-left:1em; }
+dt												{ font-weight:bold; }
+em, i											{ font-style:italic; font-weight:inherit; }
+h1, h2, h3, h4, h5, h6							{ font-weight:bold; line-height:1.4; margin-bottom:0; }
+/* Typographic scale based on 12px body size */
+h1												{ font-size:4em; }
+h2												{ font-size:1.154em; }
+h3												{ font-size:1em; }
+h4												{ font-size:1.5em; }
+h5												{ font-size:1.333em; }
+h6												{ font-size:1.167em; }
+hr												{ border:0; border-top:1px solid; display:block; height:1px; margin:1em 0; padding:0; }
+img												{ border:0; vertical-align:middle; }
+ins												{ text-decoration:none; }
+p												{ margin-bottom:1em; }
+pre												{ overflow:auto;  }
+strong, b										{ font-weight:bold; font-style:inherit; }
+sub, sup										{ font-size:75%; line-height:0; position:relative; vertical-align:baseline; }
+sub												{ bottom:-0.25em; }
+sup												{ top:-0.5em; }
+
+button, input, select, textarea					{ font-size:100%; margin:0; vertical-align:baseline; }
+button, input									{ line-height:normal; }
+button[disabled], input[disabled]				{ cursor:default; }
+button,
+input[type="image"],
+input[type="submit"],
+input[type="reset"],
+input[type="button"]							{ cursor:pointer; overflow:visible; }
+input[type="checkbox"],
+input[type="radio"]								{ box-sizing:border-box; padding:0; }
+legend											{ border:0; white-space:normal; }
+optgroup										{ font-style:normal; font-weight:bold; }
+textarea										{ overflow:auto; vertical-align:top; }
+
+q												{ quotes:"‘" "’" "“" "”"; } /* http://html5doctor.com/blockquote-q-cite/ */
+q:before										{ content:"‘"; content:open-quote; }
+q:after											{ content:"’"; content:close-quote; }
+q q:before										{ content: "“"; content: open-quote; }
+q q:after										{ content: "”"; content: close-quote; }
+blockquote										{ quotes: "“" "”"; margin:1em 40px; }
+blockquote p:before								{ content: "“"; content: open-quote; }
+blockquote p:after								{ content: ""; content: no-close-quote; }
+blockquote p:last-of-type:after					{ content: "”"; content: close-quote; }
+blockquote										{ font-style:italic; margin:1em; }
+
+caption											{ font-weight:bold; text-align:left; margin-bottom:.2em; padding:0; }
+table											{ border-collapse:collapse; border-spacing:0; margin-bottom:1em; }
+tfoot											{ font-style:italic; }
+thead td, th									{ font-weight:bold; vertical-align:top; }
+
+ol												{ list-style-type:decimal; margin:1em 0; padding-left:2em; }
+ol li											{ list-style:decimal outside; }
+ol ol li										{ list-style-type:lower-alpha; }
+ol ol ol li										{ list-style-type:lower-roman; }
+
+ul												{ list-style-type:disc; margin:1em 0; padding-left:2em; }
+ul li											{ list-style:disc outside; }
+ul ul li										{ list-style-type:circle; }
+ul ul ul li										{ list-style-type:square; }
+
+/* helpers ------------------------------------*/
+.clearfix:before,
+.clearfix:after									{ content:" "; display:block; height:0; visibility:hidden; } /* http://www.yuiblog.com/blog/2010/09/27/clearfix-reloaded-overflowhidden-demystified/ */
+.clearfix:after									{ clear:both; }
+.visuallyhidden									{ position:absolute !important; clip:rect(0 0 0 0); }
+
+/* misc ---------------------------------------*/
+img[align="left"]								{ margin:0 1em 0.5em 0; }
+img[align="right"]								{ margin:0 0 0.5em 1em; }

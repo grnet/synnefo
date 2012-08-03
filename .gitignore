@@ -3,4 +3,6 @@ docs/build
 *.pyc
 *.egg-info
 .DS_Store
+.project
+.pydevproject
 snf-astakos-app/astakos/version.py

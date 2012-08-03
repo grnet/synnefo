@@ -94,12 +94,13 @@ class LocalUserCreationForm(UserCreationForm):
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
-        if get_latest_terms():
-            self.fields.keyOrder.append('has_signed_terms')
+
         if RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field',])
-
+        if get_latest_terms():
+            self.fields.keyOrder.append('has_signed_terms')
+            
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label

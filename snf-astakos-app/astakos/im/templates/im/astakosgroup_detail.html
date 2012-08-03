@@ -43,11 +43,13 @@
               </tr>
             </thead>
             <tbody>
-            {% for o in quota %}
-              <tr>
-                <td>{{o}}</td>
-                <td>{{quota|lookup:o}}</td>
-              </tr>
+            {% for q in quota %}
+              {% for k in q|dkeys %}
+                <tr>
+                    <td>{{k}}</td>
+                    <td>{{q|lookup:k}}</td>
+                  </tr>
+                {% endfor %}
             {% endfor %}
             </tbody>
         </table>
@@ -55,14 +57,16 @@
             <p>No policies</p>
         {% endif %}
     </div>
+    {% if more_policies %}
     <div class="rightcol">
-    <form action="{% url group_policies_add object.id %}" method="post" class="innerlabels signup">{% csrf_token %}
-        <h2><span>NEW POLICY</span></h2>
-            {% include "im/form_render.html" %}
-            <div class="form-row submit">
-                <input type="submit" class="submit altcol" value="+" />
-            </div>
-    </form>
-</div>
+        <form action="{% url group_policies_add object.id %}" method="post" class="innerlabels signup">{% csrf_token %}
+            <h2><span>NEW POLICY</span></h2>
+                {% include "im/form_render.html" %}
+                <div class="form-row submit">
+                    <input type="submit" class="submit altcol" value="+" />
+                </div>
+        </form>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -611,18 +611,14 @@ def group_detail(request, group_id):
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
-    d = {}
-    related_resources = group.policy.through.objects
-    for r in group.policy.all():
-        d[r.name] = related_resources.get(resource__id=r.id, 
-                                            group__id=group_id).limit
     members = map(lambda m:{m.person.realname:m.is_approved}, group.membership_set.all())
     return object_detail(request,
                             AstakosGroup.objects.all(),
                             object_id=group_id,
-                            extra_context = {'quota':d,
+                            extra_context = {'quota':group.get_policies(),
                                              'members':members,
-                                             'form':get_astakos_group_policy_creation_form(group)})
+                                             'form':get_astakos_group_policy_creation_form(group),
+                                             'more_policies':group.has_undefined_policies()})
 
 @signed_terms_required
 @login_required
@@ -636,17 +632,14 @@ def group_policies_add(request, group_id):
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
-    d = {}
-    for resource in group.policy.all():
-        d[resource.name] = group.policy.through.objects.get(resource__id=resource.id,
-                                                            group__id=group_id).limit
     return create_object(request,
                             form_class=get_astakos_group_policy_creation_form(group),
                             login_required=True,
                             template_name = 'im/astakosgroup_detail.html',
                             post_save_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)),
                             extra_context = {'group':group,
-                                             'quota':d})
+                                             'quota':group.get_policies(),
+                                             'more_policies':group.has_undefined_policies()})
 @signed_terms_required
 @login_required
 def group_approval_request(request, group_id):

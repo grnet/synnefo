@@ -50,6 +50,7 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models.signals import post_save, post_syncdb
+from django.db.models import Q
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
     AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
@@ -164,6 +165,14 @@ class AstakosGroup(Group):
         if approved:
             return self.membership_set().filter(is_approved=True)
         return self.membership_set().all()
+    
+    def get_policies(self):
+        related = self.policy.through.objects
+        return map(lambda r: {r.name:related.get(resource__id=r.id, group__id=self.id).limit}, self.policy.all())
+    
+    def has_undefined_policies(self):
+        # TODO: can avoid query?
+        return Resource.objects.filter(~Q(astakosgroup=self)).exists()
 
 class AstakosUser(User):
     """

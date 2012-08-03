@@ -38,3 +38,7 @@ register = template.Library()
 @register.filter
 def lookup(d, key):
     return d.get(key)
+
+@register.filter
+def dkeys(d):
+    return d.keys()

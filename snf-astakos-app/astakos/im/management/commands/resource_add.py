@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,10 +31,35 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django import template
+import socket
 
-register = template.Library()
+from optparse import make_option
 
-@register.filter
-def lookup(d, key):
-    return d.get(key)
+from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
+
+from astakos.im.models import Resource, ResourceMetadata, Service
+
+class Command(BaseCommand):
+    args = "<service> <resource> [<key>=<value>...]"
+    help = "Add a resource"
+    
+    def handle(self, *args, **options):
+        if len(args) < 2:
+            raise CommandError("Invalid number of arguments")
+        
+        service_name = args[0]
+        resource_name = args[1]
+        
+        try:
+            service = Service.objects.get(name=service_name)
+        except Service.DoesNotExist:
+            raise CommandError("Invalid service name")
+        else:
+            try:
+                resource = Resource(name=resource_name, service=service)
+                resource.save()
+            except IntegrityError, e:
+                raise CommandError(e)
+            # else:
+#                 resource.meta.add(args[2:])

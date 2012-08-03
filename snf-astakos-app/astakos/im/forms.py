@@ -46,8 +46,10 @@ from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
 from django.contrib import messages
 from django.utils.encoding import smart_str
+from django.forms.extras.widgets import SelectDateWidget
+from django.db.models import Q
 
-from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
+from astakos.im.models import *
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
     BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
     RECAPTCHA_ENABLED, LOGGING_LEVEL
@@ -485,3 +487,43 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
         if commit:
             user.save()
         return user
+
+def get_astakos_group_creation_form(request):
+    class AstakosGroupCreationForm(forms.ModelForm):
+        issue_date = forms.DateField(widget=SelectDateWidget())
+        expiration_date = forms.DateField(widget=SelectDateWidget())
+        kind = forms.ModelChoiceField(queryset=GroupKind.objects.all(), empty_label=None)
+        
+        class Meta:
+            model = AstakosGroup
+        
+        def __init__(self, *args, **kwargs):
+            super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
+            self.fields.keyOrder = ['kind', 'name', 'identifier', 'desc', 'issue_date',
+                                    'expiration_date', 'estimated_participants',
+                                    'moderatation_enabled']
+        
+        def save(self, commit=True):
+            g = super(AstakosGroupCreationForm, self).save(commit=False)
+            if commit: 
+                g.save()
+                g.owner = [request.user]
+            return g
+    
+    return AstakosGroupCreationForm
+
+def get_astakos_group_policy_creation_form(group):
+    class AstakosGroupPolicyCreationForm(forms.ModelForm):
+        choices = Resource.objects.filter(~Q(astakosgroup=group))
+        resource = forms.ModelChoiceField(queryset=choices, empty_label=None)
+        
+        class Meta:
+            model = AstakosGroupQuota
+        
+        def __init__(self, *args, **kwargs):
+            if not args:
+                args = ({'group':group},)
+            super(AstakosGroupPolicyCreationForm, self).__init__(*args, **kwargs)
+            self.fields['group'].widget.attrs['disabled'] = True
+    
+    return AstakosGroupPolicyCreationForm

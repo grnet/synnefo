@@ -53,8 +53,12 @@ from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.forms.models import inlineformset_factory
+from django.forms.models import inlineformset_factory
+from django.views.generic.create_update import *
+from django.views.generic.list_detail import *
 
-from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
+from astakos.im.models import AstakosUser, Invitation, ApprovalTerms, AstakosGroup
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
@@ -407,15 +411,18 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            feedback_form = form,
                            context_instance = get_context(request, extra_context))
 
+@signed_terms_required
 def logout(request, template='registration/logged_out.html', extra_context={}):
     """
     Wraps `django.contrib.auth.logout` and delete the cookie.
     """
-    msg = 'Cookie deleted for %s' % (request.user.email)
-    auth_logout(request)
     response = HttpResponse()
-    response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
-    logger._log(LOGGING_LEVEL, msg, [])
+    if request.user.is_authenticated():
+        email = request.user.email
+        auth_logout(request)
+        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
+        msg = 'Cookie deleted for %s' % email
+        logger._log(LOGGING_LEVEL, msg, [])
     next = request.GET.get('next')
     if next:
         response['Location'] = next
@@ -450,7 +457,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
         message = _('Account already active.')
         messages.add_message(request, messages.ERROR, message)
         return index(request)
-    
+        
     try:
         local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
     except AstakosUser.DoesNotExist:
@@ -536,6 +543,8 @@ def change_password(request):
                             post_change_redirect=reverse('astakos.im.views.edit_profile'),
                             password_change_form=ExtendedPasswordChangeForm)
 
+@signed_terms_required
+@login_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -584,3 +593,66 @@ def change_email(request, activation_key=None,
                            form = form,
                            context_instance = get_context(request,
                                                           extra_context))
+
+@signed_terms_required
+def group_add(request):
+    return create_object(request,
+                            form_class=get_astakos_group_creation_form(request),
+                            login_required = True,
+                            post_save_redirect = '/im/group/%(id)s/policies/add')
+
+@signed_terms_required
+@login_required
+def user_group_list(request):
+    list = AstakosGroup.objects.filter(membership__person=request.user)
+    return object_list(request, queryset=list)
+
+@signed_terms_required
+@login_required
+def owner_group_list(request):
+    list = AstakosGroup.objects.filter(owner__id=request.user.id)
+    return object_list(request, queryset=list)
+
+@signed_terms_required
+@login_required
+def group_detail(request, group_id):
+    try:
+        group = AstakosGroup.objects.select_related().get(id=group_id)
+    except AstakosGroup.DoesNotExist:
+        raise HttpResponseBadRequest(_('Invalid group.'))
+    d = {}
+    for resource in group.policy.all():
+        d[resource.name] = group.policy.through.objects.get(resource__id=resource.id,
+                                                            group__id=group_id).limit  
+    return object_detail(request,
+                            AstakosGroup.objects.all(),
+                            object_id=group_id,
+                            extra_context = {'quota':d})
+
+@signed_terms_required
+@login_required
+def group_policies_list(request, group_id):
+    list = AstakosGroupQuota.objects.filter(group__id=group_id)
+    return object_list(request, queryset=list)
+
+@signed_terms_required
+def group_policies_add(request, group_id):
+    try:
+        group = AstakosGroup.objects.select_related().get(id=group_id)
+    except AstakosGroup.DoesNotExist:
+        raise HttpResponseBadRequest(_('Invalid group.'))
+    d = {}
+    for resource in group.policy.all():
+        d[resource.name] = group.policy.through.objects.get(resource__id=resource.id,
+                                                            group__id=group_id).limit
+    return create_object(request,
+                            form_class=get_astakos_group_policy_creation_form(group),
+                            login_required=True,
+                            post_save_redirect = reverse('group_policies_add', kwargs=dict(group_id=group_id)),
+                            extra_context = {'group':group,
+                                             'quota':d})
+@signed_terms_required
+@login_required
+def group_approval_request(request, group_id):
+    return HttpResponse()
+    

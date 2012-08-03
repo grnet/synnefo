@@ -33,6 +33,7 @@
 
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.views import password_change
+from django.views.generic import list_detail
 
 from astakos.im.forms import ExtendedPasswordResetForm, ExtendedPasswordChangeForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
@@ -48,6 +49,12 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^password/?$', 'change_password', {}, name='password_change'),
+    url(r'^group/add/?$', 'group_add', {}, name='group_add'),
+    url(r'^group/list?$', 'user_group_list', {}, name='user_group_list'),
+    url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {}, name='group_detail'),
+    url(r'^group/(?P<group_id>\d+)/policies/list/?$', 'group_policies_list', {}, name='group_policies_list'),
+    url(r'^group/(?P<group_id>\d+)/policies/add/?$', 'group_policies_add', {}, name='group_policies_add'),
+    url(r'^group/(?P<group_id>\d+)/request/approval/?$', 'group_approval_request', {}, name='group_approval_request'),
 )
 
 if EMAILCHANGE_ENABLED:
@@ -93,11 +100,14 @@ if 'twitter' in IM_MODULES:
         url(r'^login/twitter/authenticated/?$', 'twitter.authenticated')
     )
 
+urlpatterns += patterns('astakos.im.api',
+    url(r'^get_services/?$', 'get_services'),
+    url(r'^get_menu/?$', 'get_menu'),
+)
+
 urlpatterns += patterns('astakos.im.api.admin',
     url(r'^authenticate/?$', 'authenticate_old'),
     #url(r'^authenticate/v2/?$', 'authenticate'),
-    url(r'^get_services/?$', 'get_services'),
-    url(r'^get_menu/?$', 'get_menu'),
     url(r'^admin/api/v2.0/users/?$', 'get_user_by_email'),
     url(r'^admin/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
 )

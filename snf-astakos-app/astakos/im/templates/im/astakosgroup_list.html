@@ -1,0 +1,25 @@
+{% extends "im/account_base.html" %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+      {% if object_list %}
+      <h2>Groups:</h2>
+      <table class="zebra-striped id-sorted">
+            <thead>
+              <tr>
+                <th>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for o in object_list %}
+              <tr>
+                <td><a class="extra-link" href="{% url group_detail o.id %}">{{ o.name }}</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <h2>No groups found!</h2>
+        {% endif %}
+</div>
+{% endblock %}

@@ -26,5 +26,69 @@
         "fields": {
             "name": "helpdesk"
         }
+    },
+    {
+        "model": "auth.group",
+        "pk": 4,
+        "fields": {
+            "name": "faculty"
+        },
+        "permissions": ""
+    },
+    {
+        "model": "auth.group",
+        "pk": 4,
+        "fields": {
+            "name": "ugrad"
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 4,
+        "fields": {
+            "name": "grad"
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 4,
+        "fields": {
+            "name": "researcher"
+        }
+    },
+    {
+        "model": "auth.group",
+        "pk": 4,
+        "fields": {
+            "name": "associate"
+        }
+    },
+    {
+        "model": "im.GroupKind",
+        "pk": 1,
+        "fields": {
+            "name": "course"
+        }
+    },
+    {
+        "model": "im.GroupKind",
+        "pk": 2,
+        "fields": {
+            "name": "project"
+        }
+    },
+    {
+        "model": "im.GroupKind",
+        "pk": 3,
+        "fields": {
+            "name": "laboratory"
+        }
+    },
+    {
+        "model": "im.GroupKind",
+        "pk": 4,
+        "fields": {
+            "name": "organization"
+        }
     }
 ]

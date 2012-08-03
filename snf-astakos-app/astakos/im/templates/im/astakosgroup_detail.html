@@ -1,0 +1,39 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+        <table class="zebra-striped id-sorted">
+              <tr>
+                <th>Name: {{object.name}}</th>
+              </tr> 
+              <tr>
+                <th>Members: {{object.membership.all}}</th>
+              </tr>
+        </table>
+        <div class="section">
+        <h2>Policies:</h2>
+        {% if quota %}
+          <table class="zebra-striped id-sorted">
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for o in quota %}
+              <tr>
+                <td>{{o}}</td>
+                <td>{{quota|lookup:o}}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>No policies</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

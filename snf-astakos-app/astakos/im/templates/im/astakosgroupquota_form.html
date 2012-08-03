@@ -1,0 +1,42 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="section">
+        <h2>{{group.name}} policies:</h2>
+        {% if quota %}
+          <table class="zebra-striped id-sorted">
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for o in quota %}
+              <tr>
+                <td>{{o}}</td>
+                <td>{{quota|lookup:o}}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>No policies</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="rightcol">
+    <form action="" method="post" class="innerlabels signup">{% csrf_token %}
+        <h2><span>NEW POLICY</span></h2>
+            {% include "im/form_render.html" %}
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="+" />
+                <a class="extra-link" href="{% url group_approval_request group.id %}">Request approval</a>
+            </div>
+    </form>
+</div>
+{% endblock %}

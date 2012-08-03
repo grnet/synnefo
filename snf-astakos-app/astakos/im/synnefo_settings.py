@@ -42,7 +42,8 @@ installed_apps = [
         'django.contrib.auth',
         'django.contrib.contenttypes',
         'django.contrib.sessions',
-        'django.contrib.messages'
+        'django.contrib.messages',
+        'django_extensions'
 ]
 
 context_processors = [
@@ -83,3 +84,4 @@ LOGIN_URL = '/im'
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
+#SOUTH_TESTS_MIGRATE = False

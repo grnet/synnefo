@@ -59,6 +59,113 @@ QUEUE_CLIENT_ID = 3 # Astakos.
 
 logger = logging.getLogger(__name__)
 
+class Service(models.Model):
+    name = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    url = models.FilePathField()
+    icon = models.FilePathField(blank=True)
+    auth_token = models.CharField('Authentication Token', max_length=32,
+                                  null=True, blank=True)
+    auth_token_created = models.DateTimeField('Token creation date', null=True)
+    auth_token_expires = models.DateTimeField('Token expiration date', null=True)
+    
+    def save(self, **kwargs):
+        if not self.id:
+            self.renew_token()
+        self.full_clean()
+        super(Service, self).save(**kwargs)
+    
+    def renew_token(self):
+        md5 = hashlib.md5()
+        md5.update(self.name.encode('ascii', 'ignore'))
+        md5.update(self.url.encode('ascii', 'ignore'))
+        md5.update(asctime())
+
+        self.auth_token = b64encode(md5.digest())
+        self.auth_token_created = datetime.now()
+        self.auth_token_expires = self.auth_token_created + \
+                                  timedelta(hours=AUTH_TOKEN_DURATION)
+    
+    def __str__(self):
+        return self.name
+
+class ResourceMetadata(models.Model):
+    key = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    value = models.CharField('Value', max_length=255)
+
+class Resource(models.Model):
+    name = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    meta = models.ManyToManyField(ResourceMetadata)
+    service = models.ForeignKey(Service)
+    
+    def __str__(self):
+        return '%s : %s' % (self.service, self.name)
+
+class GroupKind(models.Model):
+    name = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    
+    def __str__(self):
+        return self.name
+
+class AstakosGroup(Group):
+    kind = models.ForeignKey(GroupKind)
+    desc = models.TextField('Description', null=True)
+    identifier = models.URLField('URI identifier', unique=True, default='', db_index=True)
+    policy = models.ManyToManyField(Resource, null=True, blank=True, through='AstakosGroupQuota')
+    creation_date = models.DateTimeField('Creation date', default=datetime.now())
+    issue_date = models.DateTimeField('Issue date', null=True)
+    expiration_date = models.DateTimeField('Expiration date', null=True)
+    moderatation_enabled = models.BooleanField('Moderated membership?', default=False)
+    approval_date = models.DateTimeField('Activation date', null=True, blank=True)
+    estimated_participants = models.PositiveIntegerField('Estimated number of participants', null=True)
+    
+    @property
+    def is_disabled(self):
+        if not approval_date:
+            return False
+        return True
+    
+    @property
+    def is_active(self):
+        if self.is_disabled:
+            return False
+        if not self.issue_date:
+            return False
+        if not self.expiration_date:
+            return True
+        now = datetime.now()
+        if self.issue_date > now:
+            return False
+        if now >= self.expiration_date:
+            return False
+        return True
+    
+    @property
+    def participants(self):
+        if not self.id:
+            return 0
+        return self.user_set.count()
+    
+    def approve(self):
+        self.approval_date = datetime.now()
+        self.save()
+    
+    def disapprove(self):
+        self.approval_date = None
+        self.save()
+    
+    def approve_member(self, member):
+        m = self.membership_set.get(person=member)
+        m.date_joined = datetime.now()
+        m.save()
+    
+    def disapprove_member(self, member):
+        m = self.membership_set.remove(member)
+    
+    def get_members(self, approved=True):
+        if approved:
+            return self.membership_set().filter(is_approved=True)
+        return self.membership_set().all()
+
 class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
@@ -93,8 +200,16 @@ class AstakosUser(User):
     
     activation_sent = models.DateTimeField('Activation sent data', null=True, blank=True)
     
+    policy = models.ManyToManyField(Resource, null=True, through='AstakosUserQuota')
+    
+    astakos_groups = models.ManyToManyField(AstakosGroup, verbose_name=_('agroups'), blank=True,
+        help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."),
+        through='Membership')
+    
     __has_signed_terms = False
     __groupnames = []
+    
+    owner = models.ManyToManyField(AstakosGroup, related_name='owner', null=True)
     
     class Meta:
         unique_together = ("provider", "third_party_identifier")
@@ -152,6 +267,7 @@ class AstakosUser(User):
         if self.is_active and self.activation_sent:
             # reset the activation sent
             self.activation_sent = None
+        
         super(AstakosUser, self).save(**kwargs)
         
         # set group if does not exist
@@ -210,6 +326,45 @@ class AstakosUser(User):
             self.save()
             return False
         return True
+    
+    def enroll_group(self, group):
+        self.membership_set.add(group)
+    
+    def get_astakos_groups(self, approved=True):
+        if approved:
+            return self.membership_set().filter(is_approved=True)
+        return self.membership_set().all()
+
+class Membership(models.Model):
+    person = models.ForeignKey(AstakosUser)
+    group = models.ForeignKey(AstakosGroup)
+    date_requested = models.DateField(default=datetime.now())
+    date_joined = models.DateField(null=True, db_index=True)
+    
+    class Meta:
+        unique_together = ("person", "group")
+    
+    @property
+    def is_approved(self):
+        if self.date_joined:
+            return True
+        return False
+
+class AstakosGroupQuota(models.Model):
+    limit = models.PositiveIntegerField('Limit')
+    resource = models.ForeignKey(Resource)
+    group = models.ForeignKey(AstakosGroup, blank=True)
+    
+    class Meta:
+        unique_together = ("resource", "group")
+
+class AstakosUserQuota(models.Model):
+    limit = models.PositiveIntegerField('Limit')
+    resource = models.ForeignKey(Resource)
+    user = models.ForeignKey(AstakosUser)
+    
+    class Meta:
+        unique_together = ("resource", "user")
 
 class ApprovalTerms(models.Model):
     """
@@ -251,7 +406,10 @@ def report_user_event(user):
         # or if specific fields are modified
         if not user.id:
             return True
-        db_instance = AstakosUser.objects.get(id = user.id)
+        try:
+            db_instance = AstakosUser.objects.get(id = user.id)
+        except AstakosUser.DoesNotExist:
+            return True
         for f in BILLING_FIELDS:
             if (db_instance.__getattribute__(f) != user.__getattribute__(f)):
                 return True
@@ -340,32 +498,6 @@ class EmailChange(models.Model):
     def activation_key_expired(self):
         expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
         return self.requested_at + expiration_date < datetime.now()
-
-class Service(models.Model):
-    name = models.CharField('Name', max_length=255, unique=True)
-    url = models.FilePathField()
-    icon = models.FilePathField(blank=True)
-    auth_token = models.CharField('Authentication Token', max_length=32,
-                                  null=True, blank=True)
-    auth_token_created = models.DateTimeField('Token creation date', null=True)
-    auth_token_expires = models.DateTimeField('Token expiration date', null=True)
-    
-    def save(self, **kwargs):
-        if not self.id:
-            self.renew_token()
-        self.full_clean()
-        super(Service, self).save(**kwargs)
-    
-    def renew_token(self):
-        md5 = hashlib.md5()
-        md5.update(self.name.encode('ascii', 'ignore'))
-        md5.update(self.url.encode('ascii', 'ignore'))
-        md5.update(asctime())
-
-        self.auth_token = b64encode(md5.digest())
-        self.auth_token_created = datetime.now()
-        self.auth_token_expires = self.auth_token_created + \
-                                  timedelta(hours=AUTH_TOKEN_DURATION)
 
 class AdditionalMail(models.Model):
     """

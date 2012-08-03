@@ -508,6 +508,7 @@ def get_astakos_group_creation_form(request):
             if commit: 
                 g.save()
                 g.owner = [request.user]
+                g.approve_member(request.user)
             return g
     
     return AstakosGroupCreationForm

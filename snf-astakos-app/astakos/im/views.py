@@ -596,14 +596,12 @@ def group_add(request):
 
 @signed_terms_required
 @login_required
-def user_group_list(request):
-    list = AstakosGroup.objects.filter(membership__person=request.user)
-    return object_list(request, queryset=list)
-
-@signed_terms_required
-@login_required
-def owner_group_list(request):
-    list = AstakosGroup.objects.filter(owner__id=request.user.id)
+def group_list(request):
+    relation = get_query(request).get('relation', 'member')
+    if relation == 'member':
+        list = AstakosGroup.objects.filter(membership__person=request.user)
+    else:
+        list = AstakosGroup.objects.filter(owner__id=request.user.id)
     return object_list(request, queryset=list)
 
 @signed_terms_required

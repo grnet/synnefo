@@ -29,7 +29,7 @@ $(document).ready(function(){
     $("head").append(css);
     
     // load fonts
-    var font_url = 'http://fonts.googleapis.com/css?family=Didact+Gothic&subset=latin,greek,greek-ext';
+    var font_url = 'https://fonts.googleapis.com/css?family=Didact+Gothic&subset=latin,greek,greek-ext';
     var css_font = $("<link />");
     css_font.attr({rel:'stylesheet', type:'text/css', href:font_url});
     $("head").append(css_font);

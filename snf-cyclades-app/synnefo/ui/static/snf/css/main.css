@@ -3755,6 +3755,7 @@ div.single div.column3 div.server-name:hover {
     background: transparent;
     margin-bottom: 10px;
     overflow: visible;
+    overflow: hidden;
     width: 700px;
     background: #EFF7FA repeat scroll 0 0;
 }

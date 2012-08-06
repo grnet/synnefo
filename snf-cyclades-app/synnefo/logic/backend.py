@@ -320,8 +320,22 @@ def create_instance(vm, flavor, image, password, personality):
     kw['mode'] = 'create'
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
-    kw['disk_template'] = flavor.disk_template
+
+    # Identify if provider parameter should be set in disk options.
+    # Current implementation support providers only fo ext template.
+    # To select specific provider for an ext template, template name
+    # should be formated as `ext_<provider_name>`.
+    provider = None
+    disk_template = flavor.disk_template
+    if flavor.disk_template.startswith("ext"):
+        disk_template, provider = flavor.disk_template.split("_", 1)
+
+    kw['disk_template'] = disk_template
     kw['disks'] = [{"size": sz}]
+    if provider:
+        kw['disks'][0]['provider'] = provider
+
+
     kw['nics'] = [nic]
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER

@@ -136,6 +136,7 @@ MAX_PERSONALITY = 5
 MAX_PERSONALITY_SIZE = 10240
 
 # Available storage types to be used as disk templates
+# Use ext_<provider_name> to map specific provider for `ext` disk template.
 GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
                          'rbd',  'sharedfile')
 DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'

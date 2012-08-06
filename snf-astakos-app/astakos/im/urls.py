@@ -54,7 +54,12 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {}, name='group_detail'),
     url(r'^group/(?P<group_id>\d+)/policies/list/?$', 'group_policies_list', {}, name='group_policies_list'),
     url(r'^group/(?P<group_id>\d+)/policies/add/?$', 'group_policies_add', {}, name='group_policies_add'),
+    url(r'^group/search/?$', 'group_search', {}, name='group_search'),
+    url(r'^group/(?P<group_id>\d+)/join/?$', 'group_join', {}, name='group_join'),
+    url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave', {}, name='group_leave'),
     url(r'^group/(?P<group_id>\d+)/request/approval/?$', 'group_approval_request', {}, name='group_approval_request'),
+    url(r'^group/(?P<membership_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
+    url(r'^group/(?P<membership_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
 )
 
 if EMAILCHANGE_ENABLED:

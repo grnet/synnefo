@@ -38,23 +38,22 @@ from smtplib import SMTPException
 from urllib import quote
 from functools import wraps
 
-from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseBadRequest
-from django.shortcuts import redirect
-from django.template.loader import render_to_string
-from django.utils.translation import ugettext as _
-from django.core.urlresolvers import reverse
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db import transaction
-from django.utils.http import urlencode
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
-from django.db.utils import IntegrityError
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.db.models import Q
-from django.forms.models import inlineformset_factory
-from django.forms.models import inlineformset_factory
+from django.db.utils import IntegrityError
+from django.forms.fields import URLField
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
+    HttpResponseRedirect, HttpResponseBadRequest
+from django.shortcuts import redirect
+from django.template.loader import render_to_string
+from django.utils.http import urlencode
+from django.utils.translation import ugettext as _
 from django.views.generic.create_update import *
 from django.views.generic.list_detail import *
 
@@ -588,20 +587,16 @@ def change_email(request, activation_key=None,
                                                           extra_context))
 
 @signed_terms_required
+@login_required
 def group_add(request):
     return create_object(request,
-                            form_class=get_astakos_group_creation_form(request),
-                            login_required = True,
-                            post_save_redirect = '/im/group/%(id)s/')
+                         form_class=get_astakos_group_creation_form(request),
+                         post_save_redirect = '/im/group/%(id)s/')
 
 @signed_terms_required
 @login_required
 def group_list(request):
-    relation = get_query(request).get('relation', 'member')
-    if relation == 'member':
-        list = AstakosGroup.objects.filter(membership__person=request.user)
-    else:
-        list = AstakosGroup.objects.filter(owner__id=request.user.id)
+    list = AstakosGroup.objects.filter(membership__person=request.user)
     return object_list(request, queryset=list)
 
 @signed_terms_required
@@ -611,14 +606,12 @@ def group_detail(request, group_id):
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
-    members = map(lambda m:{m.person.realname:m.is_approved}, group.membership_set.all())
     return object_detail(request,
-                            AstakosGroup.objects.all(),
-                            object_id=group_id,
-                            extra_context = {'quota':group.get_policies(),
-                                             'members':members,
-                                             'form':get_astakos_group_policy_creation_form(group),
-                                             'more_policies':group.has_undefined_policies()})
+                         AstakosGroup.objects.all(),
+                         object_id=group_id,
+                         extra_context = {'form':get_astakos_group_policy_creation_form(group),
+                                          'quota':group.policies,
+                                          'more_policies':group.has_undefined_policies})
 
 @signed_terms_required
 @login_required
@@ -627,21 +620,113 @@ def group_policies_list(request, group_id):
     return object_list(request, queryset=list)
 
 @signed_terms_required
+@login_required
 def group_policies_add(request, group_id):
     try:
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
     return create_object(request,
-                            form_class=get_astakos_group_policy_creation_form(group),
-                            login_required=True,
-                            template_name = 'im/astakosgroup_detail.html',
-                            post_save_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)),
-                            extra_context = {'group':group,
-                                             'quota':group.get_policies(),
-                                             'more_policies':group.has_undefined_policies()})
+                         form_class=get_astakos_group_policy_creation_form(group),
+                         template_name = 'im/astakosgroup_detail.html',
+                         post_save_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)),
+                         extra_context = {'group':group,
+                                          'quota':group.policies,
+                                          'more_policies':group.has_undefined_policies})
 @signed_terms_required
 @login_required
 def group_approval_request(request, group_id):
     return HttpResponse()
+
+@signed_terms_required
+@login_required
+def group_search(request, queryset=EmptyQuerySet(), extra_context={}, **kwargs):
+    join_forms = {}
+    if request.method == 'GET':
+        form = AstakosGroupSearchForm()
+    else:
+        form = AstakosGroupSearchForm(get_query(request))
+        if form.is_valid():
+            q = form.cleaned_data['q'].strip()
+            q = URLField().to_python(q)
+            queryset = AstakosGroup.objects.select_related().filter(name=q)
+            f = MembershipCreationForm
+            for g in queryset:
+                join_forms[g.name] = f(dict(group=g,
+                                            person=request.user,
+                                            date_requested=datetime.now().strftime("%d/%m/%Y")))
+    return object_list(request,
+                        queryset,
+                        template_name='im/astakosgroup_list.html',
+                        extra_context=dict(form=form, is_search=True, join_forms=join_forms))
+
+@signed_terms_required
+@login_required
+def group_join(request, group_id):
+    return create_object(request,
+                         model=Membership,
+                         template_name='im/astakosgroup_list.html',
+                         post_save_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)))
+
+@signed_terms_required
+@login_required
+def group_leave(request, group_id):
+    try:
+        m = Membership.objects.select_related().get(group__id=group_id, person=request.user)
+    except Membership.DoesNotExist:
+        return HttpResponseBadRequest(_('Invalid membership.'))
+    if request.user in m.group.owner.all():
+        return HttpResponseForbidden(_('Owner can not leave the group.'))
+    return delete_object(request,
+                         model=Membership,
+                         object_id = m.id,
+                         template_name='im/astakosgroup_list.html',
+                         post_delete_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)))
+
+def handle_membership():
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, membership_id):
+            try:
+                m = Membership.objects.select_related().get(id=membership_id)
+            except Membership.DoesNotExist:
+                return HttpResponseBadRequest(_('Invalid membership.'))
+            else:
+                if request.user not in m.group.owner.all():
+                    return HttpResponseForbidden(_('User is not a group owner.'))
+                func(request, m)
+                return render_response(template='im/astakosgroup_detail.html',
+                                       context_instance=get_context(request),
+                                       object=m.group,
+                                       quota=m.group.policies,
+                                       more_policies=m.group.has_undefined_policies)
+        return wrapper
+    return decorator
+
+@signed_terms_required
+@login_required
+@handle_membership()
+def approve_member(request, membership):
+    try:
+        membership.approve()
+        realname = membership.person.realname
+        msg = _('%s has been successfully joined the group.' % realname)
+        messages.success(request, msg)
+    except BaseException, e:
+        logger.exception(e)
+        msg = _('Something went wrong during %s\'s approval.' % realname)
+        messages.error(request, msg)
     
+@signed_terms_required
+@login_required
+@handle_membership()
+def disapprove_member(request, membership):
+    try:
+        membership.disapprove()
+        realname = membership.person.realname
+        msg = _('%s has been successfully removed from the group.' % realname)
+        messages.success(request, msg)
+    except BaseException, e:
+        logger.exception(e)
+        msg = _('Something went wrong during %s\'s disapproval.' % realname)
+        messages.error(request, msg)

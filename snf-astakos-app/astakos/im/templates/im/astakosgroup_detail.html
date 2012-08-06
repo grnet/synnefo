@@ -1,29 +1,61 @@
 {% extends "im/account_base.html" %}
 
-{% load filters %}
-
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
         <table class="zebra-striped id-sorted">
               <tr>
                 <th>Name: {{object.name}}</th>
               </tr>
+              <tr>
+                <th>Type: {{object.kind}}</th>
+              </tr>
+              <tr>
+                <th>Issue date: {{object.issue_date}}</th>
+              </tr>
+              <tr>
+                <th>Expiration date: {{object.expiration_date}}</th>
+              </tr>
+              <tr>
+                <th>Owner: {% for o in object.owner.all %}
+                                {% if user == o %}
+                                    Me!
+                                {% else%}
+                                    {{o.realname}} ({{o.email}})
+                                
+                                {% endif %}
+                            {% endfor %}
+                </th>
+              </tr>
         </table>
     <div class="section">
         <h2>Members:</h2>
-        {% if members %}
+        {% if object.members %}
           <table class="zebra-striped id-sorted">
             <thead>
               <tr>
+                <th>Email</th>
                 <th>Realname</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-            {% for name, approved in members %}
+            {% for m in object.membership_set.all %}
               <tr>
-                <td>{{name}}</td>
-                <td>{{approved}}</td>
+                <td>{{m.person.email}}</td>
+                <td>{{m.person.realname}}</td>
+                {% if m.person in m.group.owner.all %}
+                <td>Owner</td>
+                {% else %}
+                    {% if m.is_approved %}
+                    <td>Approved</td>
+                    {% else %}
+                    <td>Pending</td>
+                        {% if user in m.group.owner.all %}
+                            <td><a href="{% url approve_member m.id %}">Approve</a></td>
+                            <td><a href="{% url disapprove_member m.id %}">Disapprove</a></td>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
               </tr>
             {% endfor %}
             </tbody>
@@ -44,12 +76,10 @@
             </thead>
             <tbody>
             {% for q in quota %}
-              {% for k in q|dkeys %}
                 <tr>
-                    <td>{{k}}</td>
-                    <td>{{q|lookup:k}}</td>
+                    <td>{{q.resource.name}}</td>
+                    <td>{{q.limit}}</td>
                   </tr>
-                {% endfor %}
             {% endfor %}
             </tbody>
         </table>

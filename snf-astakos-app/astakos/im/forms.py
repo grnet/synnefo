@@ -48,6 +48,7 @@ from django.contrib import messages
 from django.utils.encoding import smart_str
 from django.forms.extras.widgets import SelectDateWidget
 from django.db.models import Q
+from django.db.models.query import EmptyQuerySet
 
 from astakos.im.models import *
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
@@ -527,3 +528,19 @@ def get_astakos_group_policy_creation_form(astakosgroup):
             model = AstakosGroupQuota
     
     return AstakosGroupPolicyCreationForm
+
+class AstakosGroupSearchForm(forms.Form):
+    q = forms.CharField(max_length=200, label='')
+
+class MembershipCreationForm(forms.ModelForm):
+    # TODO check not to hit the db
+    group = forms.ModelChoiceField(queryset=AstakosGroup.objects.all(), widget=forms.HiddenInput())
+    person = forms.ModelChoiceField(queryset=AstakosUser.objects.all(), widget=forms.HiddenInput())
+    date_requested = forms.DateField(widget=forms.HiddenInput(), input_formats="%d/%m/%Y")
+    
+    class Meta:
+        model = Membership
+        exclude = ('date_joined',)
+    
+    def __init__(self, *args, **kwargs):
+        super(MembershipCreationForm, self).__init__(*args, **kwargs)

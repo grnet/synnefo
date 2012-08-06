@@ -141,9 +141,7 @@ class AstakosGroup(Group):
     
     @property
     def participants(self):
-        if not self.id:
-            return 0
-        return self.user_set.count()
+        return len(self.approved_members)
     
     def approve(self):
         self.approval_date = datetime.now()
@@ -153,23 +151,31 @@ class AstakosGroup(Group):
         self.approval_date = None
         self.save()
     
-    def approve_member(self, member):
-        m, created = self.membership_set.get_or_create(person=member, group=self)
-        m.date_joined = datetime.now()
-        m.save()
-        
-    def disapprove_member(self, member):
-        m = self.membership_set.remove(member)
+    def approve_member(self, person):
+        try:
+            self.membership_set.create(person=person, date_joined=datetime.now())
+        except IntegrityError:
+            m = self.membership_set.get(person=person)
+            m.date_joined = datetime.now()
+            m.save()
     
-    def get_members(self, approved=True):
-        if approved:
-            return self.membership_set().filter(is_approved=True)
-        return self.membership_set().all()
+    def disapprove_member(self, person):
+        self.membership_set.remove(person=person)
     
-    def get_policies(self):
-        related = self.policy.through.objects
-        return map(lambda r: {r.name:related.get(resource__id=r.id, group__id=self.id).limit}, self.policy.all())
+    @property
+    def members(self):
+        return map(lambda m:m.person, self.membership_set.all())
     
+    @property
+    def approved_members(self):
+        f = filter(lambda m:m.is_approved, self.membership_set.all())
+        return map(lambda m:m.person, f)
+    
+    @property
+    def policies(self):
+        return self.astakosgroupquota_set.all()
+    
+    @property
     def has_undefined_policies(self):
         # TODO: can avoid query?
         return Resource.objects.filter(~Q(astakosgroup=self)).exists()
@@ -346,8 +352,8 @@ class AstakosUser(User):
 class Membership(models.Model):
     person = models.ForeignKey(AstakosUser)
     group = models.ForeignKey(AstakosGroup)
-    date_requested = models.DateField(default=datetime.now())
-    date_joined = models.DateField(null=True, db_index=True)
+    date_requested = models.DateField(default=datetime.now(), blank=True)
+    date_joined = models.DateField(null=True, db_index=True, blank=True)
     
     class Meta:
         unique_together = ("person", "group")
@@ -357,6 +363,13 @@ class Membership(models.Model):
         if self.date_joined:
             return True
         return False
+    
+    def approve(self):
+        self.date_joined = datetime.now()
+        self.save()
+        
+    def disapprove(self):
+        self.delete()
 
 class AstakosGroupQuota(models.Model):
     limit = models.PositiveIntegerField('Limit')

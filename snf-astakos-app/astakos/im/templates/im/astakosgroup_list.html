@@ -1,19 +1,76 @@
 {% extends "im/account_base.html" %}
 
+{% load filters %}
+
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
+    {% if form %}
+    <form action="{% url group_search %}" method="post" class="innerlabels signup">{% csrf_token %}
+        <h2><span>Search group:</span></h2>
+            {% include "im/form_render.html" %}
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="SEARCH" />
+            </div>
+    </form>
+    {% else %}
+        <p class="submit-rt">
+            <a href="{% url group_add %}" class="submit">Create a group</a>
+            <a href="{% url group_search %}" class="submit">Join a group</a>
+        </p>
+    {% endif %}
       {% if object_list %}
       <h2>Groups:</h2>
       <table class="zebra-striped id-sorted">
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Type</th>
+                <th>Issue date</th>
+                <th>Expiration date</th>
+                <th>Owner?</th>
+                <th>Participants</th>
+                <th>Enrollment status</th>
               </tr>
             </thead>
             <tbody>
               {% for o in object_list %}
               <tr>
-                <td><a class="extra-link" href="{% url group_detail o.id %}">{{ o.name }}</a></td>
+                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
+                <td>{{o.kind}}</td>
+                <td>{{o.issue_date|date:"D d M Y"}}</td>
+                <td>{{o.expiration_date|date:"D d M Y"}}</td>
+                <td>{% if user in o.owner.all %}Yes{% else %}No{% endif %}</td>
+                <td>{{ o.approved_members|length }}/{{ o.members|length }}</td>
+                {% if user in o.approved_members %}
+                    <td>Active</td>
+                    {% if user not in o.owner.all %}
+                    <td>
+                        <form action="{% url group_leave o.id %}" method="post"class="login innerlabels">{% csrf_token %}
+                            <div class="form-row submit clearfix">
+                                <input type="submit" class="submit altcol" value="LEAVE" />
+                            </div>
+                        </form>
+                    </td>
+                    {% endif %}
+                {% else %}
+                    {% if user in o.members %}
+                        <td>Pending</td>
+                    {% else %}
+                        <td>Not member</td>
+                        {% if join_forms %}
+                        <td>
+                            <form action="{% url group_join o.id %}" method="post"class="login innerlabels">{% csrf_token %}
+                                {% with join_forms|lookup:o.name as form %}
+                                    {% include "im/form_render.html" %}
+                                {% endwith %}
+                                <div class="form-row submit clearfix">
+                                    <input type="submit" class="submit altcol" value="JOIN" />
+                                </div>
+                            </form>
+                        </td>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
               </tr>
               {% endfor %}
             </tbody>

@@ -164,19 +164,14 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         l.append(dict(url=absolute(reverse('index')), name=user.email))
         l.append(dict(url=absolute(reverse('edit_profile')), name="My account"))
         if with_extra_links:
-            if user.has_usable_password() and user.provider == 'local':
+            if user.has_usable_password() and user.provider in ('local', ''):
                 l.append(dict(url=absolute(reverse('password_change')), name="Change password"))
             if EMAILCHANGE_ENABLED:
                 l.append(dict(url=absolute(reverse('email_change')), name="Change email"))
             if INVITATIONS_ENABLED:
                 l.append(dict(url=absolute(reverse('invite')), name="Invitations"))
             l.append(dict(url=absolute(reverse('feedback')), name="Feedback"))
-            if request.user.has_perm('im.add_astakosgroup'):
-                l.append(dict(url=absolute(reverse('group_add')), name="Add group"))
-            url = absolute(reverse('group_list'))
-            l.append(dict(url=url, name="Subscribed groups"))
-            url = '%s?relation=owner' % url
-            l.append(dict(url=url, name="My groups"))
+            l.append(dict(url=absolute(reverse('group_list')), name="Groups"))
         if with_signout:
             l.append(dict(url=absolute(reverse('logout')), name="Sign out"))
 

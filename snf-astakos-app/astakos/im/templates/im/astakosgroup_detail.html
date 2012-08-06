@@ -16,6 +16,9 @@
                 <th>Expiration date: {{object.expiration_date}}</th>
               </tr>
               <tr>
+                <th>Moderation: {% if object.moderation_enabled%}Yes{% else %}No{% endif %}</th>
+              </tr>
+              <tr>
                 <th>Owner: {% for o in object.owner.all %}
                                 {% if user == o %}
                                     Me!

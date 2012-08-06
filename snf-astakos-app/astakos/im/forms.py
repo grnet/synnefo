@@ -505,7 +505,7 @@ def get_astakos_group_creation_form(request):
             super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
             self.fields.keyOrder = ['kind', 'name', 'desc', 'issue_date',
                                     'expiration_date', 'estimated_participants',
-                                    'moderatation_enabled']
+                                    'moderation_enabled']
         
         def save(self, commit=True):
             g = super(AstakosGroupCreationForm, self).save(commit=False)

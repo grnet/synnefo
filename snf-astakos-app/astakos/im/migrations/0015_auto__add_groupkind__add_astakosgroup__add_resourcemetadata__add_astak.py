@@ -23,7 +23,7 @@ class Migration(SchemaMigration):
             ('creation_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 8, 3, 11, 26, 47, 642626))),
             ('issue_date', self.gf('django.db.models.fields.DateTimeField')(null=True)),
             ('expiration_date', self.gf('django.db.models.fields.DateTimeField')(null=True)),
-            ('moderatation_enabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('moderation_enabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('approval_date', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('estimated_participants', self.gf('django.db.models.fields.PositiveIntegerField')(null=True)),
         ))
@@ -203,7 +203,7 @@ class Migration(SchemaMigration):
             'group_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.Group']", 'unique': 'True', 'primary_key': 'True'}),
             'issue_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'kind': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.GroupKind']"}),
-            'moderatation_enabled': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'moderation_enabled': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'policy': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': "orm['im.Resource']", 'null': 'True', 'through': "orm['im.AstakosGroupQuota']", 'blank': 'True'})
         },
         'im.astakosgroupquota': {

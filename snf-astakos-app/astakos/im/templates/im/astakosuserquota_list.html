@@ -1,0 +1,30 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="section">
+        {% if quota %}
+          <table class="zebra-striped id-sorted">
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for k in quota|dkeys %}
+                <tr>
+                    <td>{{ k }}</td>
+                    <td>{{ quota|lookup:k }}</td>
+                  </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>No policies</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

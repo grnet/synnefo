@@ -34,15 +34,14 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosGroup
 
 from ._common import format_bool
 
 
 class Command(BaseCommand):
-    help = "List g"
+    help = "List groups"
     
     option_list = BaseCommand.option_list + (
         make_option('-c',
@@ -50,28 +49,38 @@ class Command(BaseCommand):
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
+        make_option('-p',
+            action='store_true',
+            dest='pending',
+            default=False,
+            help="List only groups pending enable"),
     )
     
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
         
-        groups = Group.objects.all()
+        groups = AstakosGroup.objects.all()
         
-        labels = ('id', 'name', 'permissions')
-        columns = (3, 12, 50)
+        if options.get('pending'):
+            groups = filter(lambda g: g.is_disabled, groups)
         
-        if not options['csv']:
+        labels = ('id', 'name', 'enabled', 'permissions')
+        columns = (3, 12, 12, 50)
+        
+        if not options.get('csv'):
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
         
         for group in groups:
-            fields = (str(group.id), group.name,
-                      ','.join(p.codename for p in group.permissions.all()))
+            fields = (  str(group.id),
+                        group.name,
+                        format_bool(group.is_enabled),
+                        ','.join(p.codename for p in group.permissions.all()))
             
-            if options['csv']:
+            if options.get('csv'):
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))

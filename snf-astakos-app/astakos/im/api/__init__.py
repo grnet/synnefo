@@ -172,6 +172,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                 l.append(dict(url=absolute(reverse('invite')), name="Invitations"))
             l.append(dict(url=absolute(reverse('feedback')), name="Feedback"))
             l.append(dict(url=absolute(reverse('group_list')), name="Groups"))
+            l.append(dict(url=absolute(reverse('resource_list')), name="Resources"))
         if with_signout:
             l.append(dict(url=absolute(reverse('logout')), name="Sign out"))
 

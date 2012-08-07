@@ -39,7 +39,8 @@ from time import time
 from os.path import abspath
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+
+from astakos.im.models import AstakosGroup
 
 from ._common import add_group_permission
 
@@ -54,10 +55,10 @@ class Command(BaseCommand):
         name = args[0].decode('utf8')
         
         try:
-            Group.objects.get(name=name)
+            AstakosGroup.objects.get(name=name)
             raise CommandError("A group with this name already exists")
-        except Group.DoesNotExist, e:
-            group = Group(name=name)
+        except AstakosGroup.DoesNotExist, e:
+            group = AstakosGroup(name=name)
             group.save()
             msg = "Created group id %d" % (group.id,)
             self.stdout.write(msg + '\n')

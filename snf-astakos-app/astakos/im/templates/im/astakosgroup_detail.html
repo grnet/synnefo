@@ -1,5 +1,7 @@
 {% extends "im/account_base.html" %}
 
+{% load filters %}
+
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
         <table class="zebra-striped id-sorted">
@@ -10,10 +12,10 @@
                 <th>Type: {{object.kind}}</th>
               </tr>
               <tr>
-                <th>Issue date: {{object.issue_date}}</th>
+                <th>Issue date: {{object.issue_date|date:"d/m/Y"}}</th>
               </tr>
               <tr>
-                <th>Expiration date: {{object.expiration_date}}</th>
+                <th>Expiration date: {{object.expiration_date|date:"d/m/Y"}}</th>
               </tr>
               <tr>
                 <th>Moderation: {% if object.moderation_enabled%}Yes{% else %}No{% endif %}</th>
@@ -21,13 +23,16 @@
               <tr>
                 <th>Owner: {% for o in object.owner.all %}
                                 {% if user == o %}
-                                    Me!
+                                    Me
                                 {% else%}
                                     {{o.realname}} ({{o.email}})
                                 
                                 {% endif %}
                             {% endfor %}
                 </th>
+              </tr>
+              <tr>
+                <th>Enabled: {% if object.is_enabled %}Yes{% else %}No{% endif %}</th>
               </tr>
         </table>
     <div class="section">
@@ -54,8 +59,8 @@
                     {% else %}
                     <td>Pending</td>
                         {% if user in m.group.owner.all %}
-                            <td><a href="{% url approve_member m.id %}">Approve</a></td>
-                            <td><a href="{% url disapprove_member m.id %}">Disapprove</a></td>
+                            <td><a href="{% url approve_member m.group.id m.person.id %}">Approve</a></td>
+                            <td><a href="{% url disapprove_member m.group.id m.person.id  %}">Disapprove</a></td>
                         {% endif %}
                     {% endif %}
                 {% endif %}
@@ -78,10 +83,10 @@
               </tr>
             </thead>
             <tbody>
-            {% for q in quota %}
+            {% for k in quota|dkeys %}
                 <tr>
-                    <td>{{q.resource.name}}</td>
-                    <td>{{q.limit}}</td>
+                    <td>{{ k }}</td>
+                    <td>{{ quota|lookup:k }}</td>
                   </tr>
             {% endfor %}
             </tbody>
@@ -90,7 +95,7 @@
             <p>No policies</p>
         {% endif %}
     </div>
-    {% if more_policies %}
+    {% if user in object.owner.all and more_policies %}
     <div class="rightcol">
         <form action="{% url group_policies_add object.id %}" method="post" class="innerlabels signup">{% csrf_token %}
             <h2><span>NEW POLICY</span></h2>

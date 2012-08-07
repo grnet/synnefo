@@ -610,7 +610,7 @@ def group_detail(request, group_id):
                          AstakosGroup.objects.all(),
                          object_id=group_id,
                          extra_context = {'form':get_astakos_group_policy_creation_form(group),
-                                          'quota':group.policies,
+                                          'quota':group.quota,
                                           'more_policies':group.has_undefined_policies})
 
 @signed_terms_required
@@ -631,7 +631,7 @@ def group_policies_add(request, group_id):
                          template_name = 'im/astakosgroup_detail.html',
                          post_save_redirect = reverse('group_detail', kwargs=dict(group_id=group_id)),
                          extra_context = {'group':group,
-                                          'quota':group.policies,
+                                          'quota':group.quota,
                                           'more_policies':group.has_undefined_policies})
 @signed_terms_required
 @login_required
@@ -686,9 +686,9 @@ def group_leave(request, group_id):
 def handle_membership():
     def decorator(func):
         @wraps(func)
-        def wrapper(request, membership_id):
+        def wrapper(request, group_id, user_id):
             try:
-                m = Membership.objects.select_related().get(id=membership_id)
+                m = Membership.objects.select_related().get(group__id=group_id, person__id=user_id)
             except Membership.DoesNotExist:
                 return HttpResponseBadRequest(_('Invalid membership.'))
             else:
@@ -698,7 +698,7 @@ def handle_membership():
                 return render_response(template='im/astakosgroup_detail.html',
                                        context_instance=get_context(request),
                                        object=m.group,
-                                       quota=m.group.policies,
+                                       quota=m.group.quota,
                                        more_policies=m.group.has_undefined_policies)
         return wrapper
     return decorator
@@ -730,3 +730,10 @@ def disapprove_member(request, membership):
         logger.exception(e)
         msg = _('Something went wrong during %s\'s disapproval.' % realname)
         messages.error(request, msg)
+
+@signed_terms_required
+@login_required
+def resource_list(request):
+    return render_response(template='im/astakosuserquota_list.html',
+                           context_instance=get_context(request),
+                           quota=request.user.quota)

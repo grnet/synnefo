@@ -41,6 +41,7 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 from urlparse import urlparse, urlunparse
 from random import randint
+from collections import defaultdict
 
 from django.db import models, IntegrityError
 from django.contrib.auth.models import User, UserManager, Group
@@ -120,12 +121,12 @@ class AstakosGroup(Group):
     
     @property
     def is_disabled(self):
-        if not approval_date:
-            return False
-        return True
+        if not self.approval_date:
+            return True
+        return False
     
     @property
-    def is_active(self):
+    def is_enabled(self):
         if self.is_disabled:
             return False
         if not self.issue_date:
@@ -143,11 +144,11 @@ class AstakosGroup(Group):
     def participants(self):
         return len(self.approved_members)
     
-    def approve(self):
+    def enable(self):
         self.approval_date = datetime.now()
         self.save()
     
-    def disapprove(self):
+    def disable(self):
         self.approval_date = None
         self.save()
     
@@ -172,8 +173,11 @@ class AstakosGroup(Group):
         return map(lambda m:m.person, f)
     
     @property
-    def policies(self):
-        return self.astakosgroupquota_set.all()
+    def quota(self):
+        d = {}
+        for q in  self.astakosgroupquota_set.all():
+            d[q.resource.name] = q.limit
+        return d
     
     @property
     def has_undefined_policies(self):
@@ -255,7 +259,20 @@ class AstakosUser(User):
             return Invitation.objects.get(username=self.email)
         except Invitation.DoesNotExist:
             return None
-
+    
+    @property
+    def quota(self):
+        d = defaultdict(int)
+        for q in  self.astakosuserquota_set.all():
+            d[q.resource.name] += q.limit
+        for g in self.astakos_groups.all():
+            if not g.is_enabled:
+                continue
+            for r, limit in g.quota.iteritems():
+                d[r] += limit
+        # TODO set default for remaining
+        return d
+        
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
@@ -340,14 +357,6 @@ class AstakosUser(User):
             self.save()
             return False
         return True
-    
-    def enroll_group(self, group):
-        self.membership_set.add(group)
-    
-    def get_astakos_groups(self, approved=True):
-        if approved:
-            return self.membership_set().filter(is_approved=True)
-        return self.membership_set().all()
 
 class Membership(models.Model):
     person = models.ForeignKey(AstakosUser)
@@ -358,11 +367,11 @@ class Membership(models.Model):
     class Meta:
         unique_together = ("person", "group")
     
-    def save(self):
+    def save(self, *args, **kwargs):
         if not self.id:
             if not self.group.moderation_enabled:
                 self.date_joined = datetime.now()
-        super(Membership, self).save()
+        super(Membership, self).save(*args, **kwargs)
     
     @property
     def is_approved(self):

@@ -29,6 +29,7 @@
                 <th>Expiration date</th>
                 <th>Owner?</th>
                 <th>Participants</th>
+                <th>Enabled?</th>
                 <th>Moderation?</th>
                 <th>Enrollment status</th>
               </tr>
@@ -38,10 +39,11 @@
               <tr>
                 <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
                 <td>{{o.kind}}</td>
-                <td>{{o.issue_date|date:"D d M Y"}}</td>
-                <td>{{o.expiration_date|date:"D d M Y"}}</td>
+                <td>{{o.issue_date|date:"d/m/Y"}}</td>
+                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
                 <td>{% if user in o.owner.all %}Yes{% else %}No{% endif %}</td>
                 <td>{{ o.approved_members|length }}/{{ o.members|length }}</td>
+                <td>{% if o.is_enabled %}Yes{% else %}No{% endif %}</td>
                 <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
                 {% if user in o.approved_members %}
                     <td>Active</td>

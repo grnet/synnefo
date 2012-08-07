@@ -34,31 +34,60 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser
-from ._common import remove_group_permission
+from astakos.im.models import AstakosUser, AstakosGroup
+from ._common import add_group_permission
 
 class Command(BaseCommand):
-    args = "<groupname> <permission> [<permissions> ...]"
-    help = "Remove group permissions"
+    args = "<groupname>"
+    help = "Update group"
+    
+    option_list = BaseCommand.option_list + (
+        make_option('--add-permission',
+            dest='add-permission',
+            help="Add user permission"),
+        make_option('--delete-permission',
+            dest='delete-permission',
+            help="Delete user permission"),
+        make_option('--enable',
+            action='store_true',
+            dest='enable',
+            default=False,
+            help="Enable group"),
+    )
     
     def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError("Please provide a group name and at least one permission")
+        if len(args) < 1:
+            raise CommandError("Please provide a group identifier")
         
         group = None
         try:
             if args[0].isdigit():
-                group = Group.objects.get(id=args[0])
+                group = AstakosGroup.objects.get(id=args[0])
             else:
-                group = Group.objects.get(name=args[0])
-        except Group.DoesNotExist, e:
+                group = AstakosGroup.objects.get(name=args[0])
+        except AstakosGroup.DoesNotExist, e:
             raise CommandError("Invalid group")
         
         try:
-            for pname in args[1:]:
+            content_type = ContentType.objects.get(app_label='im',
+                                                       model='astakosuser')
+            
+            pname = options.get('add-permission')
+            if pname:
+                r, created = add_group_permission(group, pname)
+                if created:
+                    self.stdout.write('Permission: %s created successfully\n' % pname)
+                if r == 0:
+                    self.stdout.write('Group has already permission: %s\n' % pname)
+                else:
+                    self.stdout.write('Permission: %s added successfully\n' % pname)
+            
+            pname = options.get('delete-permission')
+            if pname:
                 r = remove_group_permission(group, pname)
                 if r < 0:
                     self.stdout.write('Invalid permission codename: %s\n' % pname)
@@ -66,5 +95,8 @@ class Command(BaseCommand):
                     self.stdout.write('Group has not permission: %s\n' % pname)
                 elif r > 0:
                     self.stdout.write('Permission: %s removed successfully\n' % pname)
+            
+            if options.get('enable'):
+                group.enable()
         except Exception, e:
             raise CommandError(e)

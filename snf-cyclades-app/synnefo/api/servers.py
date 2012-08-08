@@ -66,6 +66,7 @@ urlpatterns = patterns('synnefo.api.servers',
     (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
     (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
     (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
+    (r'^/(\d+)/diagnostics(?:.json)?$', 'get_server_diagnostics'),
 )
 
 
@@ -139,7 +140,41 @@ def vm_to_dict(vm, detail=False):
         attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
         if attachments:
             d['attachments'] = {'values': attachments}
+
+        # include the latest vm diagnostic, if set
+        diagnostic = vm.get_last_diagnostic()
+        if diagnostic:
+            d['diagnostics'] = diagnostics_to_dict([diagnostic])
+
     return d
+
+
+def diagnostics_to_dict(diagnostics):
+    """
+    Extract api data from diagnostics QuerySet.
+    """
+    entries = list()
+
+    for diagnostic in diagnostics:
+        # format source date if set
+        formatted_source_date = None
+        if diagnostic.source_date:
+            formatted_source_date = util.isoformat(diagnostic.source_date)
+
+        entry = {
+            'source': diagnostic.source,
+            'created': util.isoformat(diagnostic.created),
+            'message': diagnostic.message,
+            'details': diagnostic.details,
+            'level': diagnostic.level,
+        }
+
+        if formatted_source_date:
+            entry['source_date'] = formatted_source_date
+
+        entries.append(entry)
+
+    return entries
 
 
 def render_server(request, server, status=200):
@@ -150,6 +185,24 @@ def render_server(request, server, status=200):
     else:
         data = json.dumps({'server': server})
     return HttpResponse(data, status=status)
+
+
+def render_diagnostics(request, diagnostics_dict, status=200):
+    """
+    Render diagnostics dictionary to json response.
+    """
+    return HttpResponse(json.dumps(diagnostics_dict), status=status)
+
+
+@util.api_method('GET')
+def get_server_diagnostics(request, server_id):
+    """
+    Virtual machine diagnostics api view.
+    """
+    log.debug('server_diagnostics %s', server_id)
+    vm = util.get_vm(server_id, request.user_uniq)
+    diagnostics = diagnostics_to_dict(vm.diagnostics.all())
+    return render_diagnostics(request, diagnostics)
 
 
 @util.api_method('GET')
@@ -165,6 +218,7 @@ def list_servers(request, detail=False):
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
 
     since = util.isoparse(request.GET.get('changes-since'))
+
     if since:
         user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:

@@ -80,15 +80,6 @@ class FSCrudAPI(Specificator):
 
         return Serial
 
-    def update  (
-            self,
-            context     =   Context,
-            path        =   Path,
-            dataspec    =   DataSpec
-        ):
-
-        return Serial
-
     def read    (
             self,
             context     =   Context,
@@ -97,6 +88,15 @@ class FSCrudAPI(Specificator):
         ):
 
         return DataSpec
+
+    def update  (
+            self,
+            context     =   Context,
+            path        =   Path,
+            dataspec    =   DataSpec
+        ):
+
+        return Serial
 
     def delete  (
             self,

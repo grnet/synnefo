@@ -85,8 +85,8 @@ def main():
     # determine the routekey for AMPQ
     prefix = instance_name.split('-')[0]
     routekey = "ganeti.%s.event.progress" % prefix
-    amqp_client = AMQPClient()
-    amqp_client.connect(hosts=settings.AMQP_HOSTS, confirm_buffer=10)
+    amqp_client = AMQPClient(confirm_buffer=10)
+    amqp_client.connect()
     amqp_client.exchange_declare(settings.EXCHANGE_GANETI, "topic")
 
     for msg in jsonstream(sys.stdin):

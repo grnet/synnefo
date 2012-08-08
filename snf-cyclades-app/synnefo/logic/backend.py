@@ -39,7 +39,8 @@ from django.db import transaction
 from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
-                               BackendNetwork, BACKEND_STATUSES)
+                               BackendNetwork, VirtualMachineDiagnostic,
+                               BACKEND_STATUSES)
 from synnefo.logic import utils, ippool
 from synnefo.api.faults import OverLimit
 from synnefo.util.rapi import GanetiRapiClient
@@ -87,6 +88,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
             release_instance_nics(vm)
             vm.deleted = True
             vm.nics.all().delete()
+
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
@@ -270,7 +272,24 @@ def start_action(vm, action):
         vm.suspended = True
     elif action == "START":
         vm.suspended = False
+
     vm.save()
+
+
+def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
+    details=None):
+    """
+    Create virtual machine instance diagnostic entry.
+
+    :param vm: VirtualMachine instance to create diagnostic for.
+    :param message: Diagnostic message.
+    :param source: Diagnostic source identifier (e.g. image-helper).
+    :param level: Diagnostic level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+    :param etime: The time the message occured (if available).
+    :param details: Additional details or debug information.
+    """
+    VirtualMachineDiagnostic.objects.create_for_vm(vm, level, source=source,
+            source_date=etime, message=message, details=details)
 
 
 @transaction.commit_on_success
@@ -341,7 +360,7 @@ def create_instance(vm, flavor, image, password, personality):
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
     #
-    # kw['pnode']=rapi.GetNodes()[0]
+    kw['pnode'] = rapi.GetNodes()[0]
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {

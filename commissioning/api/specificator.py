@@ -1,4 +1,6 @@
 
+from random import random, choice, randint
+from math import log
 
 def shorts(s):
     if not isinstance(s, unicode):
@@ -18,10 +20,16 @@ class SpecifyException(Exception):
 
 
 class Canonical(object):
+
+    random_choice = None
+
     def __init__(self, *args, **kw):
         self.args = args
         self.kw = kw
         self.name = kw.pop('classname', self.__class__.__name__)
+        random_choice = kw.pop('random', None)
+        if random_choice is not None:
+            self.random_choice = random_choice
         opts = {}
         for k, v in kw.items():
             if not isinstance(v, Canonical):
@@ -58,8 +66,18 @@ class Canonical(object):
     def create(self):
         return None
 
-    def random(self):
-        return None
+    def random(self, **kw):
+        random_choice = self.random_choice
+        if random_choice is None:
+            return None
+
+        if callable(random_choice):
+            return random_choice(kw)
+
+        if isinstance(random_choice, str):
+            return getattr(self, random_choice)(kw)
+
+        return choice(random_choice)
 
     def tostring(self, depth=0, showopts=0, multiline=0):
         depth += 1
@@ -114,6 +132,7 @@ class Null(Canonical):
 
 Nothing = Null()
 
+
 class Integer(Canonical):
 
     def check(self, item):
@@ -139,6 +158,23 @@ class Integer(Canonical):
             raise CanonifyException(m)
 
         return num
+
+    def random_integer(self, kw):
+        optget = self.opts.get
+        kwget = kw.get
+        minimum = kwget('minimum', optget('minimum', -4294967296L))
+        maximum = kwget('maximum', optget('maximum', 4294967295L))
+        r = random()
+        if r < 0.1:
+            return minimum
+        if r < 0.2:
+            return maximum
+        if minimum <= 0 and maximum >= 0 and r < 0.3:
+            return 0L
+        return long(minimum + r * (maximum - minimum))
+
+    random_choice = random_integer
+
 
 
 Serial = Integer(
@@ -219,6 +255,35 @@ class String(Canonical):
 
         return item
 
+    default_alphabet = '0123456789αβγδεζ'.decode('utf8')
+
+    def random_string(self, kw):
+        opts = self.opts
+        if 'regex' in opts:
+            m = 'Unfortunately, random for regex strings not supported'
+            raise ValueError(m)
+
+        optget = opts.get
+        kwget = kw.get
+        minlen = kwget('minlen', optget('minlen', 0))
+        maxlen = kwget('maxlen', optget('maxlen', 32))
+        alphabet = kwget('alphabet', self.default_alphabet)
+        z = maxlen - minlen
+        if z < 1:
+            z = 1
+
+        g = log(z, 2)
+        r = random() * g
+        z = minlen + int(2**r)
+
+        s = u''
+        for _ in xrange(z):
+            s += choice(alphabet)
+
+        return s
+
+    random_choice = random_string
+
 
 class ListOf(Canonical):
 
@@ -266,6 +331,14 @@ class ListOf(Canonical):
 
         return canonified
 
+    def random_listof(self, kw):
+        z = randint(1, 4)
+        get_random = self.canonical.random
+
+        return [get_random() for _ in xrange(z)]
+
+    random_choice = random_listof
+
 
 class Args(Canonical):
 
@@ -291,6 +364,14 @@ class Args(Canonical):
             raise CanonifyException(m)
 
         return canonified
+
+    def random_args(self, kw):
+        args = {}
+        for n, c in self.kw.items():
+            args[n] = c.random()
+        return args
+
+    random_choice = random_args
 
 
 class Tuple(Canonical):
@@ -319,6 +400,11 @@ class Tuple(Canonical):
         args = self.args + oargs
         return self.__class__(*args)
 
+    def random_tuple(self, kw):
+        return tuple(c.random() for c in self.args)
+
+    random_choice = random_tuple
+
 
 class Dict(Canonical):
 
@@ -342,6 +428,15 @@ class Dict(Canonical):
             canonified[n] = c(item[n])   
 
         return canonified
+
+    def random_dict(self, kw):
+        item = {}
+        for n, c in self.canonical:
+            item[n] = c.random()
+
+        return item
+
+    random_choice = random_dict
 
 
 class Canonifier(object):

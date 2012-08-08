@@ -47,10 +47,121 @@ $(document).ready(function(){
         'compute': '/api/v1.1', 
         'glance':'/images/v1.1'
     };
+    
+    // what messages to display based on vm status
+    synnefo.config.diagnostics_status_messages_map = {
+        'BUILD': ['image-helper-task-start', 'image-info'],
+        'ERROR': ['image-error']
+    };
+    synnefo.config.diagnostic_messages_tpls = {
+      'image-helper-task-start': "Running 'MESSAGE'"
+    };
 
     snf.user = {'token': 'TESTTOKEN'}
 
     module("VM Model")
+    
+    test("vm diagnostics", function() {
+        synnefo.storage.images.add({
+          id:1, 
+          size: 100,
+          metadata:{
+            values: {
+              size: 100
+            }
+          }
+        });
+        synnefo.storage.vms.add({id:1, imageRef:1});
+        var vm = synnefo.storage.vms.at(0);
+        var diagnostics = [{
+          source:'image-helper-task-start', 
+          message:'SSHCopyKey'
+        }];
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 0,
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "init", 
+              "Show initial progress message");
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 10,
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "10.00 MB, 100.00 MB, 10", 
+              "Construct message based on image size");
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 99,
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "99.00 MB, 100.00 MB, 99", 
+              "Calculate 99% of image size and display image");
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 99,
+                                     status: "ERROR"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), null);
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "final", 
+              "Progress is 100, show finializing progress message");
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "BUILD"}], 
+                                    {silent:false});
+
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "Running 'SSHCopyKey'", 
+              "Diagnostics added, show first building diagnostic message");
+
+        diagnostics.unshift({source:'unknown-source', message:'H&^^ACJJ'});
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "Running 'SSHCopyKey'", 
+              "Unwanted diagnostics get filtered out, progress message remains");
+
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "ERROR"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), null, 
+              "In error state since no error diagnostic is set we get null");
+
+        diagnostics.unshift({source:'image-error', message:'Image error'});
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "BUILD"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "Running 'SSHCopyKey'");
+
+        diagnostics.unshift({source:'image-error', message:'Image error'});
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "ERROR"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), "Image error");
+
+        synnefo.storage.vms.update([{id:1, 
+                                     progress: 100,
+                                     diagnostics: _.clone(diagnostics),
+                                     status: "ACTIVE"}], 
+                                    {silent:false});
+        equal(vm.get('status_message'), null);
+
+    });
+
 
     test("model change events", function(){
         expect(8);
@@ -358,7 +469,6 @@ $(document).ready(function(){
 
     module("network vm connections")
     test("network vm connections", function() {
-
         function _net(id, ip) {
             return {
                 id: id,

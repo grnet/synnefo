@@ -49,6 +49,41 @@
     var bb = root.Backbone;
     var util = snf.util;
     
+    // generic details overlay view.
+    views.DetailsView = views.Overlay.extend({
+        view_id: "details_view",
+        
+        content_selector: "#details-overlay",
+        css_class: 'overlay-api-info overlay-info',
+        overlay_id: "overlay-details",
+
+        subtitle: "",
+        title: "Details",
+        
+        show: function(title, msg, content) {
+            this.title = title;
+            this.msg = msg;
+            this.content = content;
+            views.DetailsView.__super__.show.apply(this);
+        },
+
+        beforeOpen: function() {
+            this.set_title(this.title);
+            if (!this.msg) { 
+                this.$(".description.intro").hide() 
+            } else {
+                this.$(".description.intro").html(this.msg).show();
+            }
+
+            if (!this.content) { 
+                this.$(".description.subinfo").hide() 
+            } else {
+                this.$(".description.subinfo").html(this.content).show(); 
+            };
+        }
+
+    });
+
     views.ApiInfoView = views.Overlay.extend({
         view_id: "api_info_view",
         
@@ -513,6 +548,7 @@
         init_overlays: function() {
             this.create_vm_view = new views.CreateVMView();
             this.api_info_view = new views.ApiInfoView();
+            this.details_view = new views.DetailsView();
             //this.notice_view = new views.NoticeView();
         },
         
@@ -663,7 +699,7 @@
         },
 
         update_status: function(msg) {
-            this.log.debug(msg)
+            //this.log.debug(msg)
             this.status = msg;
             $("#loading-view .info").removeClass("hidden")
             $("#loading-view .info").text(this.status);

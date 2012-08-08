@@ -119,6 +119,8 @@ ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
+DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
+                'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
 # network settings
 DEFAULT_NETWORK_TYPES = {'PRIVATE_FILTERED': 'mac-filtering'}
@@ -190,7 +192,8 @@ def home(request):
                'network_available_types': json.dumps(NETWORK_TYPES),
                'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
                'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
-               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY)
+               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
+               'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL)
     }
     return template('home', request, context)
 

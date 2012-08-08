@@ -132,6 +132,24 @@
     
     // Util namespace
     synnefo.util = synnefo.util || {};
+    
+    synnefo.util.FormatDigits = function(num, length) {
+        var r = "" + num;
+        while (r.length < length) {
+            r = "0" + r;
+        }
+        return r;
+    }
+
+    synnefo.util.formatDate = function(d) {
+        var dt = synnefo.util.FormatDigits(d.getDate()) + '/';
+        dt += synnefo.util.FormatDigits(d.getMonth(), 2);
+        dt += '/' + d.getFullYear();
+        dt += ' ' + synnefo.util.FormatDigits(d.getHours(), 2) + ':';
+        dt += synnefo.util.FormatDigits(d.getMinutes(), 2) + ':';
+        dt += synnefo.util.FormatDigits(d.getSeconds(), 2);
+        return dt;
+    },
 
     // Extensions and Utility functions
     synnefo.util.ISODateString = function(d){

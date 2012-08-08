@@ -77,7 +77,7 @@ SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES",
                           SUGGESTED_ROLES_DEFAULT)
 IMAGE_ICONS = settings.IMAGE_ICONS
 IMAGE_DELETED_TITLE = getattr(settings, 'UI_IMAGE_DELETED_TITLE',
-                            '(deleted image)')
+                            '(deleted)')
 IMAGE_DELETED_SIZE_TITLE = getattr(settings, 'UI_IMAGE_DELETED_SIZE_TITLE',
                             '(none)')
 
@@ -214,9 +214,11 @@ href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
 To do so open a terminal and type the following at the prompt to connect to your machine:""")
 CONNECT_LINUX_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
 established using <a target="_blank" href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">Remote Desktop Service</a>.
-To do so, open the following file with an appropriate remote desktop client.""")
+To do so, open the following file with an appropriate remote desktop client.
+IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
+after its creation.""")
 CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have one already
-installed, we suggest the use of <a target="_blank" href="http://sourceforge.net/projects/tsclient/files/tsclient/tsclient-unstable/tsclient-2.0.1.tar.bz2/download">tsclient</a>.""")
+installed, we suggest the use of <a target="_blank" href="http://sourceforge.net/projects/tsclient/files/latest/download?source=files">tsclient</a>.""")
 CONNECT_WINDOWS_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
 Open an ssh client such as PuTTY and type the following:""")
@@ -224,7 +226,10 @@ CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already
 <a target="_blank" href="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe">Download PuTTY</a>""")
 
 CONNECT_WINDOWS_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
-established using Remote Desktop. Click on the following link, and if asked open it using "Remote Desktop Connection" """)
+established using Remote Desktop. Click on the following link, and if asked
+open it using "Remote Desktop Connection".
+IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
+after its creation.""")
 CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use""")
 
 # info/subinfo for all os combinations

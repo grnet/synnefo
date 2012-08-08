@@ -65,7 +65,7 @@ PACKAGES = find_packages(PACKAGES_ROOT)
 CLASSIFIERS = []
 
 # Package requirements
-INSTALL_REQUIRES = ["fabric","IPy","unittest2", "prctl", "paramiko", "vncauthproxy", "kamaki"]
+INSTALL_REQUIRES = ["fabric","IPy","unittest2", "python-prctl", "paramiko", "vncauthproxy", "kamaki"]
 
 setup(
     name = 'snf-tools',

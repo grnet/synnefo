@@ -55,9 +55,12 @@ from django.utils import simplejson as json
 from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
-                                ItemNotFound, ServiceUnavailable, Unauthorized)
+                                ItemNotFound, ServiceUnavailable, Unauthorized,
+                                BadMediaType, OverLimit)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, NetworkInterface)
+                               Network, NetworkInterface, BridgePool,
+                               MacPrefixPool, Pool)
+
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
 
@@ -214,6 +217,18 @@ def get_nic(machine, network):
     except NetworkInterface.DoesNotExist:
         raise ItemNotFound('Server not connected to this network.')
 
+def get_nic_from_index(vm, nic_index):
+    """Returns the nic_index-th nic of a vm
+       Error Response Codes: itemNotFound (404), badMediaType (415)
+    """
+    matching_nics = vm.nics.filter(index=nic_index)
+    matching_nics_len = len(matching_nics)
+    if matching_nics_len < 1:
+        raise  ItemNotFound('NIC not found on VM')
+    elif matching_nics_len > 1:
+        raise BadMediaType('NIC index conflict on VM')
+    nic = matching_nics[0]
+    return nic
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
@@ -321,7 +336,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-
+                
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
@@ -339,3 +354,24 @@ def api_method(http_method=None, atom_allowed=False):
                 return render_fault(request, fault)
         return wrapper
     return decorator
+
+
+def construct_nic_id(nic):
+    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
+
+
+def network_link_from_type(network_type):
+    if network_type == 'PRIVATE_MAC_FILTERED':
+        link = settings.PRIVATE_MAC_FILTERED_BRIDGE
+    elif network_type == 'PRIVATE_PHYSICAL_VLAN':
+        link = BridgePool.get_available().value
+    elif network_type == 'CUSTOM_ROUTED':
+        link = settings.CUSTOM_ROUTED_ROUTING_TABLE
+    elif network_type == 'CUSTOM_BRIDGED':
+        link = settings.CUSTOM_BRIDGED_BRIDGE
+    elif network_type == 'PUBLIC_ROUTED':
+        link = settings.PUBLIC_ROUTED_ROUTING_TABLE
+    else:
+        raise BadRequest('Unknown network network_type')
+
+    return link

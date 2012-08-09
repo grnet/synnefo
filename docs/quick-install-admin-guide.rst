@@ -529,6 +529,20 @@ domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
+Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
+
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+
+Those settings have to do with the black cloudbar endpoints and will be described
+in more detail later on in this guide. For now, just edit the domain to point at
+node1 which is where we have installed Astakos.
+
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 
@@ -876,7 +890,11 @@ node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-image-host
+   # apt-get install snf-image-host snf-pithos-backend
+
+snf-image also needs the `snf-pithos-backend <snf-pithos-backend>`, to be able to
+handle image files stored on Pithos+. This is why, we also install it on *all*
+VM-capable Ganeti nodes.
 
 Now, you need to download and save the corresponding helper package. Please see
 `here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
@@ -1380,8 +1398,6 @@ This will install the following:
  * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
  * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
  * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
- * ``kvm-vif-bridge`` (installed under ``/etc/ganeti`` to connect Ganeti with
-   NFDHCPD)
 
 Configure ``snf-cyclades-gtools``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1392,9 +1408,7 @@ that need it:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above variables should reflect your :ref:`Message Queue setup
 <rabbitmq-setup>`. This file should be editted in all Ganeti nodes.
@@ -1554,9 +1568,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above settings denote the Message Queue. Those settings should have the same
 values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and

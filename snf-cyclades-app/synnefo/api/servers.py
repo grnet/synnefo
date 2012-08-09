@@ -36,6 +36,7 @@ from logging import getLogger
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns
+from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -43,10 +44,14 @@ from django.utils import simplejson as json
 from synnefo.api import faults, util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
+from synnefo.db.models import Backend, VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.util.rapi import GanetiApiError
+from synnefo.logic.backend_allocator import BackendAllocator
+
+from django.utils import importlib
+
 
 
 log = getLogger('synnefo.api')
@@ -103,19 +108,15 @@ def metadata_item_demux(request, server_id, key):
     else:
         return method_not_allowed(request)
 
-
 def nic_to_dict(nic):
     network = nic.network
     network_id = str(network.id) if not network.public else 'public'
-    d = {'id': network_id, 'name': network.name, 'mac': nic.mac}
+    ipv4 = nic.ipv4 if nic.ipv4 else None
+    ipv6 = nic.ipv6 if nic.ipv6 else None
+
+    d = {'id': util.construct_nic_id(nic), 'network_id': network_id, 'mac_address': nic.mac, 'ipv4': ipv4, 'ipv6': ipv6}
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
-    if nic.ipv4 or nic.ipv6:
-        d['values'] = []
-        if nic.ipv4:
-            d['values'].append({'version': 4, 'addr': nic.ipv4})
-        if nic.ipv6:
-            d['values'].append({'version': 6, 'addr': nic.ipv6})
     return d
 
 
@@ -135,9 +136,9 @@ def vm_to_dict(vm, detail=False):
         if metadata:
             d['metadata'] = {'values': metadata}
 
-        addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
-        if addresses:
-            d['addresses'] = {'values': addresses}
+        attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+        if attachments:
+            d['attachments'] = {'values': attachments}
     return d
 
 
@@ -162,8 +163,8 @@ def list_servers(request, detail=False):
 
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
-    since = util.isoparse(request.GET.get('changes-since'))
 
+    since = util.isoparse(request.GET.get('changes-since'))
     if since:
         user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:
@@ -184,6 +185,7 @@ def list_servers(request, detail=False):
 
 
 @util.api_method('POST')
+@transaction.commit_on_success
 def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -194,7 +196,6 @@ def create_server(request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
-
     req = util.get_request_dict(request)
     log.debug('create_server %s', req)
 
@@ -251,18 +252,28 @@ def create_server(request):
     if count >= vms_limit_for_user:
         raise faults.OverLimit("Server count limit exceeded for your account.")
 
-    # We must save the VM instance now, so that it gets a valid vm.backend_id.
+    backend_allocator = BackendAllocator()
+    backend = backend_allocator.allocate(flavor)
+    if backend is None:
+        raise Exception
+
+    # We must save the VM instance now, so that it gets a valid
+    # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(
         name=name,
+        backend=backend,
         userid=request.user_uniq,
         imageid=image_id,
         flavor=flavor)
 
     try:
-        create_instance(vm, flavor, image, password, personality)
+        jobID = create_instance(vm, flavor, image, password, personality)
     except GanetiApiError:
         vm.delete()
         raise
+
+    vm.backendjobid = jobID
+    vm.save()
 
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(
@@ -323,6 +334,7 @@ def update_server_name(request, server_id):
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -467,6 +479,7 @@ def get_metadata_item(request, server_id, key):
 
 
 @util.api_method('PUT')
+@transaction.commit_on_success
 def create_metadata_item(request, server_id, key):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -501,6 +514,7 @@ def create_metadata_item(request, server_id, key):
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_metadata_item(request, server_id, key):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -532,8 +546,8 @@ def server_stats(request, server_id):
 
     log.debug('server_stats %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    #secret = util.encrypt(vm.backend_id)
-    secret = vm.backend_id      # XXX disable backend id encryption
+    #secret = util.encrypt(vm.backend_vm_id)
+    secret = vm.backend_vm_id      # XXX disable backend id encryption
 
     stats = {
         'serverRef': vm.id,

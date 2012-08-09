@@ -59,9 +59,11 @@ from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
+from ganeti.cli import GetClient
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
+
 
 def get_time_from_status(op, job):
     """Generate a unique message identifier for a ganeti job.
@@ -74,7 +76,7 @@ def get_time_from_status(op, job):
     status = op.status
     if status == constants.JOB_STATUS_QUEUED:
         return job.received_timestamp
-    try: # Compatibility with Ganeti version
+    try:  # Compatibility with Ganeti version
         if status == constants.JOB_STATUS_WAITLOCK:
             return op.start_timestamp
     except AttributeError:
@@ -88,7 +90,7 @@ def get_time_from_status(op, job):
         # success, canceled, error
         return op.end_timestamp
 
-    raise InvalidBackendState(status, job)
+    raise InvalidBackendStatus(status, job)
 
 
 class InvalidBackendStatus(Exception):
@@ -99,6 +101,7 @@ class InvalidBackendStatus(Exception):
     def __str__(self):
         return repr("Invalid backend status: %s in job %s"
                     % (self.status, self.job))
+
 
 def prefix_from_name(name):
     return name.split('-')[0]
@@ -112,14 +115,18 @@ def get_field(from_, field):
 
 
 class JobFileHandler(pyinotify.ProcessEvent):
-    def __init__(self, logger):
+    def __init__(self, logger, cluster_name):
         pyinotify.ProcessEvent.__init__(self)
         self.logger = logger
-        self.client = AMQPClient(confirm_buffer=25)
+        self.cluster_name = cluster_name
+
+        self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25)
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
+
         self.client.connect()
-        self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
         handler_logger.info("Connected succesfully")
+
+        self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
                             "NETWORK": self.process_network_op}
@@ -140,7 +147,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        try: # Compatibility with Ganeti version
+        try:  # Compatibility with Ganeti version
             job = jqueue._QueuedJob.Restore(None, data, False)
         except TypeError:
             job = jqueue._QueuedJob.Restore(None, data)
@@ -174,6 +181,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             msg.update({"event_time": event_time,
                         "operation": op_id,
                         "status": op.status,
+                        "cluster": self.cluster_name,
                         "logmsg": logmsg,
                         "jobId": job_id})
 
@@ -253,7 +261,16 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
 
 
+def find_cluster_name():
+    global handler_logger
+    try:
+        cl = GetClient()
+        name = cl.QueryClusterInfo()['name']
+    except Exception as e:
+        handler_logger.error('Can not get the name of the Cluster: %s' % e)
+        raise e
 
+    return name
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):
@@ -335,7 +352,10 @@ def main():
     wm = pyinotify.WatchManager()
     mask = pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] | \
            pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
-    handler = JobFileHandler(logger)
+
+    cluster_name = find_cluster_name()
+
+    handler = JobFileHandler(logger, cluster_name)
     notifier = pyinotify.Notifier(wm, handler)
 
     try:
@@ -344,7 +364,8 @@ def main():
         if res[constants.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s" % constants.QUEUE_DIR)
+        logger.info("Now watching %s of %s" % (constants.QUEUE_DIR,
+                cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

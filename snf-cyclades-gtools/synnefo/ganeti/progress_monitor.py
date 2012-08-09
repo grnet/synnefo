@@ -130,8 +130,9 @@ def main():
     # determine the routekey for AMPQ
     prefix = opts.instance_name.split('-')[0]
     routekey = "ganeti.%s.event.progress" % prefix
-    amqp_client = AMQPClient()
+    amqp_client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=2)
     amqp_client.connect()
+    amqp_client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
     pid = os.fork()
     if pid == 0:
@@ -201,6 +202,8 @@ def main():
 
         # Sleep for a while
         time.sleep(3)
+
+    amqp_client.close()
 
 
 if __name__ == "__main__":

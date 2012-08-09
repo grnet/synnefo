@@ -59,6 +59,11 @@ class Command(BaseCommand):
             dest='public',
             default=False,
             help="List only public networks"),
+        make_option('--ipv6',
+            action='store_true',
+            dest='ipv6',
+            default=False,
+            help="Show IPv6 information of the network"),
         )
 
     def handle(self, *args, **options):
@@ -67,15 +72,23 @@ class Command(BaseCommand):
 
         networks = Network.objects.all()
         if options['deleted']:
-            networks = networks.filter(state='DELETED')
+            networks = networks.filter(deleted=True)
         else:
-            networks = networks.exclude(state='DELETED')
+            networks = networks.exclude(deleted=True)
 
         if options['public']:
             networks = networks.filter(public=True)
 
-        labels = ('id', 'name', 'owner', 'state', 'link', 'vms', 'public')
-        columns = (3, 12, 20, 7, 14, 4, 6)
+        labels = ['id', 'name', 'type', 'owner',
+                  'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']
+        columns = [3, 16, 22, 30, 10, 6, 8, 12, 4, 6]
+
+        if options['ipv6']:
+            labels.extend(['IPv6 Subnet', 'IPv6 Gateway'])
+            columns.extend([16, 16])
+        else:
+            labels.extend(['IPv4 Subnet', 'IPv4 Gateway'])
+            columns.extend([14, 14])
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -84,13 +97,21 @@ class Command(BaseCommand):
             self.stdout.write(sep + '\n')
 
         for network in networks:
-            fields = (str(network.id),
+            fields = [str(network.id),
                       network.name,
+                      network.type,
                       network.userid or '',
+                      network.mac_prefix or '',
+                      str(network.dhcp),
                       network.state,
-                      network.link.name,
+                      network.link or '',
                       str(network.machines.count()),
-                      format_bool(network.public))
+                      format_bool(network.public)]
+
+            if options['ipv6']:
+                fields.extend([network.subnet6 or '', network.gateway6 or ''])
+            else:
+                fields.extend([network.subnet, network.gateway or ''])
 
             if options['csv']:
                 line = '|'.join(fields)

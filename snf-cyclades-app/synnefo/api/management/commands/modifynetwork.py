@@ -51,6 +51,21 @@ class Command(BaseCommand):
             dest='owner',
             metavar='USER_ID',
             help="Set network's owner"),
+        make_option('--subnet',
+            dest='subnet',
+            help="Set network's subnet"),
+        make_option('--gateway',
+            dest='gateway',
+            help="Set network's gateway"),
+        make_option('--subnet6',
+            dest='subnet6',
+            help="Set network's IPv6 subnet"),
+        make_option('--gateway6',
+            dest='gateway6',
+            help="Set network's IPv6 gateway"),
+        make_option('--dhcp',
+            dest='dhcp',
+            help="Set if network will use nfdhcp"),
         make_option('--state',
             dest='state',
             metavar='STATE',
@@ -75,9 +90,29 @@ class Command(BaseCommand):
         if owner is not None:
             network.userid = owner
 
+        subnet = options.get('subnet')
+        if subnet is not None:
+            network.subnet = subnet
+
+        gateway = options.get('gateway')
+        if gateway is not None:
+            network.gateway = gateway
+
+        subnet6 = options.get('subnet6')
+        if subnet6 is not None:
+            network.subnet6 = subnet6
+
+        gateway6 = options.get('gateway6')
+        if gateway6 is not None:
+            network.gateway6 = gateway6
+
+        dhcp = options.get('dhcp')
+        if dhcp is not None:
+            network.dhcp = dhcp
+
         state = options.get('state')
         if state is not None:
-            allowed = [x[0] for x in Network.NETWORK_STATES]
+            allowed = [x[0] for x in Network.OPER_STATES]
             if state not in allowed:
                 msg = "Invalid state, must be one of %s" % ', '.join(allowed)
                 raise CommandError(msg)

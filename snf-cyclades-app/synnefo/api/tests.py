@@ -47,11 +47,77 @@ from synnefo.db.models import *
 from synnefo.logic.utils import get_rsapi_state
 
 import mock
+from synnefo.lib import astakos
+
+from contextlib import contextmanager
+
+# This is a hack to override astakos
+# The global variable ASTAKOS_PATCHED_USER keeps the name of
+# a dummy user that we provide through replacement of the
+# corresponding astakos function with a dummy function.
+ASTAKOS_PATCHED_USER = "user"
+
+@contextmanager
+def astakos_user(user):
+    """
+    Context manager to mock astakos response.
+
+    usage:
+    with astakos_user("user@user.com"):
+        .... make api calls .... get_user will act as user@user.com requested the api.
+
+    """
+    from synnefo.lib import astakos
+    orig_method = astakos.get_user
+    
+    global ASTAKOS_PATCHED_USER
+    ASTAKOS_PATCHED_USER = user
+    def dummy_get_user(request, *args, **kwargs):
+        global ASTAKOS_PATCHED_USER
+        request.user = {'username': ASTAKOS_PATCHED_USER, 'groups': []}
+        request.user_uniq = ASTAKOS_PATCHED_USER
+    astakos.get_user = dummy_get_user
+    yield
+    astakos.get_user = orig_method
 
 class AaiClient(Client):
     def request(self, **request):
         request['HTTP_X_AUTH_TOKEN'] = '0000'
         return super(AaiClient, self).request(**request)
+
+class NetworksTest(TestCase):
+    
+    fixtures = ['network_test_data']
+
+    def test_attachments_list(self):
+        with astakos_user("admin@adminland.com"):
+            r = self.client.get("/api/v1.1/networks")
+            data = json.loads(r.content)
+            self.assertEqual(data["networks"]["values"][1]["name"], "network4admin")
+            #import pdb; pdb.set_trace()
+            self.assertEqual(len(data["networks"]["values"]), 2)
+        with astakos_user("user1@userland.com"):
+            r = self.client.get("/api/v1.1/networks")
+            data = json.loads(r.content)
+            self.assertEqual(data["networks"]["values"][1]["name"], "network4user1")
+            #import pdb; pdb.set_trace()
+            self.assertEqual(len(data["networks"]["values"]), 2)
+
+    def test_create_network(self):
+        with astakos_user("admin@adminland.com"):
+            r = self.client.post("/api/v1.1/networks")
+
+class ServersTest(TestCase):
+
+    fixtures = ['network_test_data']
+
+    def test_attachments_list(self):
+        with astakos_user("admin@adminland.com"):
+            r = self.client.get("/api/v1.1/servers")
+            data = json.loads(r.content)
+            self.assertEqual(data["servers"]["values"][0]["id"], 1001)
+            self.assertEqual(len(data["servers"]["values"]), 1)
+            r = self.client.get("/api/v1.1/servers/1001")
 
 
 class TestQuota(TestCase):
@@ -636,13 +702,14 @@ class BaseTestCase(TestCase):
         return reply['networks']['values']
 
     def create_network(self, name):
-        path = '/api/v1.1/networks'
-        data = json.dumps({'network': {'name': name}})
-        response = self.client.post(path, data, content_type='application/json')
-        self.assertEqual(response.status_code, 202)
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['network'])
-        return reply
+        with astakos_user("admin@adminland.com"):
+            path = '/api/v1.1/networks'
+            data = json.dumps({'network': {'name': name}})
+            response = self.client.post(path, data, content_type='application/json')
+            self.assertEqual(response.status_code, 202)
+            reply = json.loads(response.content)
+            self.assertEqual(reply.keys(), ['network'])
+            return reply
 
     def get_network_details(self, network_id):
         path = '/api/v1.1/networks/%s' % network_id

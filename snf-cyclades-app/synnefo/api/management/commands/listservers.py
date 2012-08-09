@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.api.util import get_image
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import VirtualMachine, Backend
 
 
 class Command(BaseCommand):
@@ -53,18 +53,34 @@ class Command(BaseCommand):
             dest='build',
             default=False,
             help="List only servers in the building state"),
+        make_option('--non-deleted', action='store_true', dest='non_deleted',
+                    default=False,
+                    help="List only non-deleted servers"),
+        make_option('--backend_id', dest='backend_id',
+                    help="List only servers of the specified backend")
         )
     
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
-        
-        servers = VirtualMachine.objects.all()
+
+        if options['backend_id']:
+            servers = \
+            Backend.objects.get(id=options['backend_id']).virtual_machines
+        else:
+            servers = VirtualMachine.objects
+
+        if options['non_deleted']:
+            servers = servers.filter(deleted=False)
+        else:
+            servers = servers.all()
+
         if options['build']:
             servers = servers.filter(operstate='BUILD')
         
-        labels = ('id', 'name', 'owner', 'flavor', 'image', 'state')
-        columns = (3, 12, 20, 11, 12, 9)
+        labels = ('id', 'name', 'owner', 'flavor', 'image', 'state',
+                  'backend')
+        columns = (3, 12, 20, 11, 12, 9, 40)
         
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -83,7 +99,8 @@ class Command(BaseCommand):
                 image = get_image(server.imageid, server.userid)['name']
             except:
                 image = server.imageid
-            fields = (id, name, server.userid, flavor, image, server.operstate)
+            fields = (id, name, server.userid, flavor, image, server.operstate,
+                      str(server.backend))
             
             if options['csv']:
                 line = '|'.join(fields)

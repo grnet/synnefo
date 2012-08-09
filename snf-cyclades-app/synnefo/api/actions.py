@@ -34,15 +34,17 @@
 from socket import getfqdn
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
+from django.db import transaction
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import BadRequest, ServiceUnavailable
-from synnefo.api.util import random_password, get_vm
-from synnefo.db.models import NetworkInterface
-from synnefo.logic import backend
+from synnefo.api.faults import (BadRequest, ServiceUnavailable,
+                                ItemNotFound, BuildInProgress)
+from synnefo.api.util import random_password, get_vm, get_nic_from_index
+from synnefo.db.models import NetworkInterface, Network
+from synnefo.logic import backend, ippool
 from synnefo.logic.utils import get_rsapi_state
 
 
@@ -59,6 +61,7 @@ def server_action(name):
         server_actions[name] = func
         return func
     return decorator
+
 
 def network_action(name):
     '''Decorator for functions implementing network actions.
@@ -82,11 +85,6 @@ def change_password(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-
-    try:
-        password = args['adminPass']
-    except KeyError:
-        raise BadRequest('Malformed request.')
 
     raise ServiceUnavailable('Changing password is not supported.')
 
@@ -193,6 +191,7 @@ def revert_resize(request, vm, args):
 
     raise ServiceUnavailable('Resize not supported.')
 
+
 @server_action('console')
 def get_console(request, vm, args):
     """Arrange for an OOB console of the specified type
@@ -268,7 +267,9 @@ def get_console(request, vm, args):
 
     return HttpResponse(data, mimetype=mimetype, status=200)
 
+
 @server_action('firewallProfile')
+@transaction.commit_on_success
 def set_firewall_profile(request, vm, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
@@ -279,7 +280,7 @@ def set_firewall_profile(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     profile = args.get('profile', '')
     if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
         raise BadRequest("Unsupported firewall profile")
@@ -288,6 +289,7 @@ def set_firewall_profile(request, vm, args):
 
 
 @network_action('add')
+@transaction.commit_on_success
 def add(request, net, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -302,12 +304,24 @@ def add(request, net, args):
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
-    backend.connect_to_network(vm, net)
-    vm.save()
-    net.save()
+
+    # Get the Network object in exclusive mode in order to
+    # guarantee consistency of the pool
+    net = Network.objects.select_for_update().get(id=net.id)
+    # Get a free IP from the address pool.
+    pool = ippool.IPPool(net)
+    try:
+        address = pool.get_free_address()
+    except ippool.IPPool.IPPoolExhausted:
+        raise ServiceUnavailable('Network is full')
+    pool.save()
+
+    backend.connect_to_network(vm, net, address)
     return HttpResponse(status=202)
 
+
 @network_action('remove')
+@transaction.commit_on_success
 def remove(request, net, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -318,11 +332,21 @@ def remove(request, net, args):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    server_id = args.get('serverRef', None)
-    if not server_id:
+    try:  # attachment string: nic-<vm-id>-<nic-index>
+        server_id = args.get('attachment', None).split('-')[1]
+        nic_index = args.get('attachment', None).split('-')[2]
+    except IndexError:
+        raise BadRequest('Malformed Network Interface Id')
+
+    if not server_id or not nic_index:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
-    backend.disconnect_from_network(vm, net)
-    vm.save()
-    net.save()
+    nic = get_nic_from_index(vm, nic_index)
+
+    if nic.dirty:
+        raise BuildInProgress('Machine is busy.')
+    else:
+        vm.nics.all().update(dirty=True)
+
+    backend.disconnect_from_network(vm, nic)
     return HttpResponse(status=202)

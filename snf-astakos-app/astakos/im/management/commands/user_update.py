@@ -32,13 +32,15 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosGroup, Membership
 from ._common import remove_user_permission, add_user_permission
 
 class Command(BaseCommand):
@@ -135,18 +137,24 @@ class Command(BaseCommand):
         groupname = options.get('add-group')
         if groupname is not None:
             try:
-                group = Group.objects.get(name=groupname)
-                user.groups.add(group)
-            except Group.DoesNotExist, e:
+                group = AstakosGroup.objects.get(name=groupname)
+                m = Membership(person=user, group=group, date_joined=datetime.now())
+                m.save()
+            except AstakosGroup.DoesNotExist, e:
                 self.stdout.write("Group named %s does not exist\n" % groupname)
+            except IntegrityError, e:
+                self.stdout.write("User is already member of %s\n" % groupname)
         
         groupname = options.get('delete-group')
         if groupname is not None:
             try:
-                group = Group.objects.get(name=groupname)
-                user.groups.remove(group)
-            except Group.DoesNotExist, e:
+                group = AstakosGroup.objects.get(name=groupname)
+                m = Membership.objects.get(person=user, group=group)
+                m.delete()
+            except AstakosGroup.DoesNotExist, e:
                 self.stdout.write("Group named %s does not exist\n" % groupname)
+            except Membership.DoesNotExist, e:
+                self.stdout.write("User is not a member of %s\n" % groupname)
         
         pname = options.get('add-permission')
         if pname is not None:

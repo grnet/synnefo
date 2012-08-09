@@ -41,9 +41,8 @@ from uuid import uuid4
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import Group
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosGroup
 from astakos.im.util import reserved_email
 
 from ._common import add_user_permission
@@ -121,10 +120,10 @@ class Command(BaseCommand):
             groupname = options.get('add-group')
             if groupname is not None:
                 try:
-                    group = Group.objects.get(name=groupname)
-                    user.groups.add(group)
+                    group = AstakosGroup.objects.get(name=groupname)
+                    user.astakos_groups.add(group)
                     self.stdout.write('Group: %s added successfully\n' % groupname)
-                except Group.DoesNotExist, e:
+                except AstakosGroup.DoesNotExist, e:
                     self.stdout.write('Group named %s does not exist\n' % groupname)
             
             pname = options.get('add-permission')

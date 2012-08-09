@@ -85,7 +85,7 @@ class Command(BaseCommand):
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
             fields = (id, user.email, user.realname, active, admin, user.provider,
-                      ','.join([g.name for g in user.groups.all()]))
+                      ','.join([g.name for g in user.astakos_groups.all()]))
             
             if options['csv']:
                 line = '|'.join(fields)

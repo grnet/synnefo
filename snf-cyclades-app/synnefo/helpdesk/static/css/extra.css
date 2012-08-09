@@ -1,0 +1,188 @@
+/*body { background: url(../img/roughcloth.png);}*/
+
+.container-fluid { margin-top: 20px; }
+h1 { margin-bottom: 20px; }
+
+/* Subnav */
+.subnav {
+  width: 100%;
+  height: 36px;
+  background-color: #eeeeee; /* Old browsers */
+  background-repeat: repeat-x; /* Repeat the gradient */
+  background-image: -moz-linear-gradient(top, #f5f5f5 0%, #eeeeee 100%); /* FF3.6+ */
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f5f5f5), color-stop(100%,#eeeeee)); /* Chrome,Safari4+ */
+  background-image: -webkit-linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* Chrome 10+,Safari 5.1+ */
+  background-image: -ms-linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* IE10+ */
+  background-image: -o-linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* Opera 11.10+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f5f5f5', endColorstr='#eeeeee',GradientType=0 ); /* IE6-9 */
+  background-image: linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* W3C */
+  border: 1px solid #e5e5e5;
+  -webkit-border-radius: 4px;
+     -moz-border-radius: 4px;
+          border-radius: 4px;
+}
+.subnav .nav {
+  margin-bottom: 0;
+}
+.subnav .nav > li > a {
+  margin: 0;
+  padding-top:    11px;
+  padding-bottom: 11px;
+  border-left: 1px solid #f5f5f5;
+  border-right: 1px solid #e5e5e5;
+  -webkit-border-radius: 0;
+     -moz-border-radius: 0;
+          border-radius: 0;
+}
+.subnav .nav > .active > a,
+.subnav .nav > .active > a:hover {
+  padding-left: 13px;
+  color: #777;
+  background-color: #e9e9e9;
+  border-right-color: #ddd;
+  border-left: 0;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0,0,0,.05);
+     -moz-box-shadow: inset 0 3px 5px rgba(0,0,0,.05);
+          box-shadow: inset 0 3px 5px rgba(0,0,0,.05);
+}
+.subnav .nav > .active > a .caret,
+.subnav .nav > .active > a:hover .caret {
+  border-top-color: #777;
+}
+.subnav .nav > li:first-child > a,
+.subnav .nav > li:first-child > a:hover {
+  border-left: 0;
+  padding-left: 12px;
+  -webkit-border-radius: 4px 0 0 4px;
+     -moz-border-radius: 4px 0 0 4px;
+          border-radius: 4px 0 0 4px;
+}
+.subnav .nav > li:last-child > a {
+  border-right: 0;
+}
+.subnav .dropdown-menu {
+  -webkit-border-radius: 0 0 4px 4px;
+     -moz-border-radius: 0 0 4px 4px;
+          border-radius: 0 0 4px 4px;
+}
+
+/* Fixed subnav on scroll, but only for 980px and up (sorry IE!) */
+@media (min-width: 220px) {
+  .subnav-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1020; /* 10 less than .navbar-fixed to prevent any overlap */
+    border-color: #d5d5d5;
+    border-width: 0 0 1px; /* drop the border on the fixed edges */
+    -webkit-border-radius: 0;
+       -moz-border-radius: 0;
+            border-radius: 0;
+    -webkit-box-shadow: inset 0 1px 0 #fff, 0 1px 5px rgba(0,0,0,.1);
+       -moz-box-shadow: inset 0 1px 0 #fff, 0 1px 5px rgba(0,0,0,.1);
+            box-shadow: inset 0 1px 0 #fff, 0 1px 5px rgba(0,0,0,.1);
+    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false); /* IE6-9 */
+  }
+  .subnav-fixed .nav {
+    /*width: 938px; εαν το  ξε-σχολιάσω θα κεντραριστεί*/
+    margin: 0 auto;
+   padding: 0 20px; 
+  }
+  .subnav .nav > li:first-child > a,
+  .subnav .nav > li:first-child > a:hover {
+    -webkit-border-radius: 0;
+       -moz-border-radius: 0;
+            border-radius: 0;
+  }
+}
+
+
+.subnav h2 { padding: 9px; font-size: 1em; line-height: 18px; display: none}
+.subnav-fixed h2 { display: block }
+
+.account-form { float: right; margin-top: 2px; margin-bottom: 0}
+.info-block { margin-top: 30px; background-color: #fff; padding:0;}
+
+.info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
+.info-block table { margin-bottom: 0 }
+.object-details h5 { float: right; margin-top: 10px; margin-right: 10px; font-size: 1em; color: #D9397E }
+.object-anchor { margin-bottom: 5px; height:15px; }
+
+
+.subnav a.deleted { color: #F00 !important }
+
+
+/* new styles olga */
+
+h1 a:hover						{ text-decoration:none; }
+.search-query 					{ border-radius:5px; -moz-border-radius:5px; -webkit-border-radius:5px; }
+a								{ color:#659CEF; }
+a:hover							{ color:#2956B2 }
+
+h3								{ font-size:21px; cursor:pointer; margin:20px;}
+h4								{ font-size:18px; margin-bottom:1em; }
+input:focus,
+textarea:focus 					{
+  border-color: #659CEF;
+  outline: 0;
+  outline: thin dotted \9;
+  /* IE6-9 */
+
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659CEF;
+     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659CEF;
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659CEF;
+}
+
+ 
+.dropdown-menu li > a:hover, 
+.dropdown-menu .active > a, 
+.dropdown-menu .active > a:hover { background-color: #d5d5d5; } 
+
+.object-details-content 		{ margin:1em 0; display:none; }
+.account .object-details-content{ display:block; }
+.nav-tabs						{ margin:0; border:0 none; }
+.tab-content .dl-horizontal		{ margin:0; }
+.nav-tabs > .active > a, 
+.nav-tabs > .active > a:hover	{ background-color:#F5F5F5; color:#2956B2; font-weight:bold;}
+.nav-tabs > li					{ margin-bottom:-2px; }
+.badge							{ border-radius:4px; -moz-border-radius:4px;  -webkit-border-radius:4px; }
+.object-details .badge			{ margin-right:8px; }
+.label-success, 
+.badge-success					{ background-color:#8BBA00 }
+.badge-important				{ background-color: #F81A23; }
+.badge-info						{ background-color:#659CEF } 
+.show-hide-tabs					{ margin:2em 0; }		
+.show-hide-all					{ float:right; margin:20px; line-height:27px;}
+.toggle	.badge					{ font-size:14px; padding:5px 9px; }
+.toggle	.badge:hover			{ cursor:pointer;  }
+.show-hide-tabs .badge			{ background-color:#8BBA00; }
+.show-hide-tabs .badge:hover	{ background-color:#789B0F }
+.show-hide-all .badge			{ background-color:#8BBA00; }
+.show-hide-all .badge:hover		{ background-color:#789B0F } 
+.vms h3, 
+.vms h4							{ color:#444 }
+.vms h3:hover,
+.vms h4:hover					{ color:#666 }
+.networks h3, 
+.networks h4					{ color:#444 }
+.networks h3:hover,
+.networks h4:hover				{ color:#666 }
+.account h3, 
+.account h4						{ color:#444 }
+.account h3:hover,
+.account h4:hover				{ color:#666 }
+.object-details					{ padding:20px;  }
+.object-details	h4				{ cursor:pointer; }
+.object-details h4 em			{ float:right; font-style:normal; font-size:0.833em;}
+.object-details h4 em img		{ margin:0 5px; }
+h4 .badge						{ padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
+h4.expanded .badge				{ background-position: 185px 43px}
+.row2							{ background-color:#EDEDED; }
+
+.row1:hover 					{ background-color:#DDD; }
+.row2:hover 					{ background-color:#DDD; }
+
+h4 i 							{ margin-top: 4px; margin-right: 10px;}
+.container-fluid 				{ margin-left:auto; margin-right:auto; max-width:960px; }
+h3.info							{ cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}

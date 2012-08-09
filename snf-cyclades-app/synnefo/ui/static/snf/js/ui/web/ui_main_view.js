@@ -423,10 +423,10 @@
 
         // views classes registry
         views_classes: {'icon': views.IconView, 'single': views.SingleView, 
-            'list': views.ListView, 'networks': views.NetworksView},
+            'list': views.ListView, 'networks': views.NetworksView, 'disks': views.DisksView},
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3},
+        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'disks':4},
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
@@ -715,6 +715,7 @@
             this.add_view("list");
             this.add_view("single");
             this.add_view("networks");
+            this.add_view("disks");
 
             this.init_menu();
         },

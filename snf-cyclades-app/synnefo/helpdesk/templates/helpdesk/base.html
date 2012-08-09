@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Cyclades helpdesk</title>
+    <link href="{{ MEDIA_URL }}helpdesk/css/bootstrap.css" rel="stylesheet">
+    <link href="{{ MEDIA_URL }}helpdesk/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="{{ MEDIA_URL }}helpdesk/css/extra.css" rel="stylesheet">
+    <style>
+    </style>
+  </head>
+  
+  <body>
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span7">
+              <h1><a href="{% url helpdesk-index %}">Cyclades helpdesk</a>
+              {% block extraheader %}{% endblock %}</h1>
+            </div>
+            <div class="span5">
+                <form class="form-horizontal account-form" method="get" action=".">
+                  <input type="text" class="input-medium search-query" name="account" autocomplete="off">
+                  <button type="submit" class="btn">View account</button>
+              </form>
+          </div>
+      </div>
+          {% if messages %}
+          <div class="messages cleafix row-fuild">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                  <button class="close" data-dismiss="alert">×</button>
+                  {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+          <div class="messages cleafix row-fuild">
+    {% block content %}
+    {% endblock %}
+</div>
+    </div>
+    <script src="{{ MEDIA_URL }}helpdesk/js/jquery.js"></script>
+    <script src="{{ MEDIA_URL }}helpdesk/js/bootstrap.js"></script>
+    <script src="{{ MEDIA_URL }}helpdesk/js/common.js"></script>
+   
+  </body>
+</html>

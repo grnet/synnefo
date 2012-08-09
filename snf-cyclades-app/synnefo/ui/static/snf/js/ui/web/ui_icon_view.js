@@ -759,7 +759,8 @@
                 // update bulding progress
                 el.find("div.machine-ips").hide();
                 el.find("div.build-progress").show();
-                el.find("div.build-progress .message").text(message);
+                el.find("div.build-progress .message").text(util.truncate(message, 42));
+
                 if (vm.in_error_state()) {
                     el.find("div.build-progress .btn").show();
                 } else {

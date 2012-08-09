@@ -32,11 +32,14 @@ def get_token_from_cookie(request, cookiename):
 
     return None
 
+
 # TODO: here we mix ui setting with helpdesk settings
 # if sometime in the future helpdesk gets splitted from the
 # cyclades api code this should change and helpdesk should provide
 # its own setting HELPDESK_AUTH_COOKIE_NAME.
-HELPDESK_AUTH_COOKIE = getattr(settings, 'UI_AUTH_COOKIE_NAME', '_pithos2_a')
+AUTH_COOKIE = getattr(settings, 'UI_AUTH_COOKIE_NAME', getattr(settings,
+    'HELPDESK_AUTH_COOKIE_NAME', '_pithos2_a'))
+
 
 def helpdesk_user_required(func, groups=['helpdesk']):
     """
@@ -44,7 +47,11 @@ def helpdesk_user_required(func, groups=['helpdesk']):
     permissions (exists in helpdesk group)
     """
     def wrapper(request, *args, **kwargs):
-        token = get_token_from_cookie(request, HELPDESK_AUTH_COOKIE)
+        HELPDESK_ENABLED = getattr(settings, 'HELPDESK_ENABLED', True)
+        if not HELPDESK_ENABLED:
+            raise Http404
+
+        token = get_token_from_cookie(request, AUTH_COOKIE)
         get_user(request, settings.ASTAKOS_URL, fallback_token=token)
         if hasattr(request, 'user') and request.user:
             groups = request.user.get('groups', [])

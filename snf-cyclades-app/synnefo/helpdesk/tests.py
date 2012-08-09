@@ -68,9 +68,20 @@ class HelpdeskTests(TestCase):
         astakos.get_user = get_user_mock
 
         settings.SKIP_SSH_VALIDATION = True
+        settings.HELPDESK_ENABLED = True
         self.client = AaiClient()
         self.user = 'test'
         self.keys_url = reverse('ui_keys_collection')
+
+    def test_enabled_setting(self):
+        settings.HELPDESK_ENABLED = False
+
+        # helpdesk is disabled
+        r = self.client.get(reverse('helpdesk-index'), user_token="0001")
+        self.assertEqual(r.status_code, 404)
+        r = self.client.get(reverse('helpdesk-details', args=['testuser@test.com']),
+                user_token="0001")
+        self.assertEqual(r.status_code, 404)
 
     def test_ip_lookup(self):
         # ip does not exist, proper message gets displayed

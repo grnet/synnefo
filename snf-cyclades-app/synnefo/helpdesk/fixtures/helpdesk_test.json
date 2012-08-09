@@ -94,12 +94,13 @@
         }
     },
     {
-        "model": "db.NetworkLink",
+        "model": "db.NetworkInterface",
         "pk": 1,
         "fields": {
             "index": 0,
-            "name": "snf_null",
-            "available": 0
+            "machine": 1,
+            "network": 1,
+            "mac": "00:11"
         }
     }
 ]

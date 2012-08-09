@@ -219,8 +219,8 @@ CONNECT_LINUX_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
 established using <a target="_blank" href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">Remote Desktop Service</a>.
 To do so, open the following file with an appropriate remote desktop client.
 """)
-CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have one already
-installed, we suggest the use of <a target="_blank"
+CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have a Remote Desktop client already installed,
+we suggest the use of <a target="_blank"
 href="http://sourceforge.net/projects/tsclient/files/latest/download?source=files">tsclient</a>.<br
 /><span class="important">IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
 after its creation.</span>""")

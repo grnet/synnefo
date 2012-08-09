@@ -218,10 +218,12 @@ To do so open a terminal and type the following at the prompt to connect to your
 CONNECT_LINUX_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
 established using <a target="_blank" href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">Remote Desktop Service</a>.
 To do so, open the following file with an appropriate remote desktop client.
-IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
-after its creation.""")
+""")
 CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have one already
-installed, we suggest the use of <a target="_blank" href="http://sourceforge.net/projects/tsclient/files/latest/download?source=files">tsclient</a>.""")
+installed, we suggest the use of <a target="_blank"
+href="http://sourceforge.net/projects/tsclient/files/latest/download?source=files">tsclient</a>.<br
+/><span class="important">IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
+after its creation.</span>""")
 CONNECT_WINDOWS_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
 Open an ssh client such as PuTTY and type the following:""")

@@ -360,7 +360,7 @@ def create_instance(vm, flavor, image, password, personality):
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
     #
-    kw['pnode'] = rapi.GetNodes()[0]
+    #kw['pnode'] = rapi.GetNodes()[0]
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {

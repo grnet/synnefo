@@ -1,11 +1,11 @@
 
 from .specificator  import (CanonifyException, SpecifyException,
-                            Specificator, Null, Integer, String,
+                            Specificator, Null, Integer, Text,
                             Tuple, ListOf, Dict, Args)
 
 Context             =   Dict(classname='Context')
 
-class Name(String):
+class Name(Text):
     def init(self):
         self.opts.update({'regex': "[\w.:]+", 'maxlen':512})
 

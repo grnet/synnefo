@@ -183,7 +183,7 @@ Serial = Integer(
 )
 
 
-class String(Canonical):
+class Text(Canonical):
 
     re = None
     matcher = None
@@ -283,6 +283,102 @@ class String(Canonical):
         return s
 
     random_choice = random_string
+
+
+class Bytes(Canonical):
+
+    re = None
+    matcher = None
+    choices = None
+
+    def init(self):
+        opts = self.opts
+        if 'regex' in opts:
+            pat = opts['regex']
+            re = self.re
+            if re is None:
+                import re
+                self.re = re
+
+            self.matcher = re.compile(pat)
+            self.pat = pat
+
+        if 'choices' in opts:
+            opts['choices'] = dict((str(x), str(x))
+                                    for x in opts['choices'])
+
+    def check(self, item):
+        if isinstance(item, unicode):
+            # convert unicode to utf8
+            item = item.encode('utf8')
+
+        opts = self.opts
+        if 'choices' in opts:
+            choices = opts['choices']
+            try:
+                unknown = item not in choices
+            except TypeError, e:
+                m = "%s: unhashable type '%s'" % (self.name, shorts(item))
+                raise CanonifyException(m, e)
+
+            if unknown:
+                m = "%s: '%s' not in choices" % (self.name, shorts(item))
+                raise CanonifyException(m)
+
+            return choices[item]
+
+        optget = opts.get
+        itemlen = len(item)
+        maxlen = optget('maxlen', None)
+        if maxlen is not None and itemlen > maxlen:
+            m = "%s: len('%s') > maxlen=%d" % (self, shorts(item), maxlen)
+            raise CanonifyException(m)
+
+        minlen = optget('minlen', None)
+        if minlen is not None and itemlen < minlen:
+            m = "%s: len('%s') < minlen=%d" % (self, shorts(item), minlen)
+            raise CanonifyException(m)
+            
+        matcher = self.matcher
+        if matcher is not None:
+            match = matcher.match(item)
+            if  (       match is None
+                    or  (match.start(), match.end()) != (0, itemlen)    ):
+
+                    m = ("%s: '%s' does not match '%s'"
+                            % (self, shorts(item), self.pat))
+                    raise CanonifyException(m)
+
+        return item
+
+    default_alphabet = '0123456789abcdef'
+
+    def random_bytes(self, kw):
+        opts = self.opts
+        if 'regex' in opts:
+            m = 'Unfortunately, random for regex strings not supported'
+            raise ValueError(m)
+
+        optget = opts.get
+        kwget = kw.get
+        minlen = kwget('minlen', optget('minlen', 0))
+        maxlen = kwget('maxlen', optget('maxlen', 32))
+        alphabet = kwget('alphabet', self.default_alphabet)
+        z = maxlen - minlen
+        if z < 1:
+            z = 1
+
+        g = log(z, 2)
+        r = random() * g
+        z = minlen + int(2**r)
+
+        s = u''
+        for _ in xrange(z):
+            s += choice(alphabet)
+
+        return s
+
+    random_choice = random_bytes
 
 
 class ListOf(Canonical):

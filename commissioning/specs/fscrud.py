@@ -3,12 +3,12 @@ from commissioning  import (Callpoint,
                             CanonifyException,
                             SpecifyException,
                             Specificator,
-                            Nothing, Integer, Serial, String,
+                            Nothing, Integer, Serial, Text, Bytes,
                             Tuple, ListOf, Dict, Args)
 
 Context             =   Dict(classname='Context')
 
-Command = String    (
+Command = Text  (
         classname       =   'Command',
         choices         =   (
                 'CREATE',
@@ -18,12 +18,12 @@ Command = String    (
         )
 )
 
-Path = String   (
+Path = Text (
         classname   =   'Path',
-        regex       =   '([a-zA-Z_+/]|%[0-9a-fA-F]{2})+'
+        regex       =   '([a-zA-Z0-9_+/]|%[0-9a-fA-F]{2})+'
 )
 
-Contents = String   (
+Contents = Bytes    (
         classname   =   'Contents',
         max_length  =   4096,
         default     =   None
@@ -65,7 +65,7 @@ PhysicalState = Dict    (
         path        =   Path,
         dataspec    =   DataSpec,
         retries     =   Positive,
-        error       =   String(max_length=256)
+        error       =   Text(max_length=256)
 )
 
 

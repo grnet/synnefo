@@ -16,7 +16,7 @@ from .api.specificator  import (Specificator, SpecifyException,
                                 Canonifier, CanonifyException,
                                 Canonical,
                                 Null, Nothing, Integer, Serial,
-                                String, Tuple, ListOf, Dict, Args)
+                                Text, Bytes, Tuple, ListOf, Dict, Args)
 
 # Import quota holder API
 from .api.quotaholder   import  QuotaholderAPI

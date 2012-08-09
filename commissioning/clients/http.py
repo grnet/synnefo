@@ -128,9 +128,13 @@ def main():
     from commissioning import get_callpoint
 
     progname = basename(argv[0])
-    if progname == 'http.py':
+    h, s, t = progname.rpartition('.')
+    if t == 'py':
+	progname = h
+
+    if progname == 'http':
         if len(argv) < 2:
-            usage = "./http.py <appname> <app args...>"
+            usage = "./http <appname> <app args...>"
             print(usage)
             raise SystemExit
 

@@ -1,5 +1,5 @@
 
-from .specificator  import  CanonifyException, String
+from .specificator  import  CanonifyException
 from .exception     import  CorruptedError, InvalidDataError
 from .importing     import  imp_module
 

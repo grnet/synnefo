@@ -263,7 +263,7 @@
             if (hidden) { delay = 300; } else { delay = 0; }
 
             this.is_visible = true;
-            window.setTimeout(_.bind(function(){ this.overlay.load() }, this), delay)
+            window.setTimeout(_.bind(function(){ this.overlay.load(); this.trigger('show') }, this), delay)
             return this;
         },
 

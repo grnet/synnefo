@@ -67,7 +67,7 @@ UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
 
 # predefined values settings
-VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
+VM_IMAGE_COMMON_METADATA = getattr(settings, "UI_VM_IMAGE_COMMON_METADATA", ["OS", "users"])
 SUGGESTED_FLAVORS_DEFAULT = {}
 SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS",
                             SUGGESTED_FLAVORS_DEFAULT)

@@ -5610,6 +5610,23 @@ table.list-machines .wave {
     padding-right: 15px;
 }
 
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title .custom {
+    display: inline-block;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title {
+    background-color: #999 !important;
+    border-color: #888 !important;
+}
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail .custom {
+    float: right;
+    display: none;
+    font-size: 0.8em;
+    margin-left: 10px;
+    color: #DDD;
+    margin-top: 2px;
+}
+
 .create-vm .select-image.wide .images-info-cont .extra-details .image-detail {
     padding: 0px;
     background-color: transparent;

@@ -581,6 +581,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.vm_name_template = {{ vm_name_template|safe }};
             synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
+            synnefo.config.vm_image_common_metadata = {{ vm_image_common_metadata|safe }};
 
             synnefo.config.diagnostics_update_interval = {{ diagnostics_update_interval }};
             // override diagnostic messages display
@@ -646,8 +647,6 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.system_images_owners = {{ system_images_owners|safe }};
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
-              vms = synnefo.storage.vms;
-              vm = vms.at(0);
             });
 
         })

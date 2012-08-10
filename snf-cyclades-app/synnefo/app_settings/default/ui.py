@@ -81,7 +81,7 @@ VM_CREATE_SUGGESTED_FLAVORS = {
 
 # A list of metadata keys to clone from image
 # to the virtual machine on its creation.
-VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain"]
+VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users", "remote"]
 
 # A list of suggested vm roles to display to user on create wizard
 VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "Web server", "Proxy"]

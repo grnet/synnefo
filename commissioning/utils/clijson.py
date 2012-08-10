@@ -6,7 +6,7 @@ keywords = set(['true', 'false', 'null'])
 
 def clijson(argv):
     s = ','.join(argv)
-    tokens = re_split('(\W+)', s)
+    tokens = re_split('([^\w@_.-]+)', s)
 
     strlist = ['{']
     append = strlist.append

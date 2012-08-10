@@ -269,8 +269,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
             except ValueError, ve:
                 messages.success(request, ve)
     elif request.method == "GET":
-        request.user.is_verified = True
-        request.user.save()
+        if not request.user.is_verified:
+            request.user.is_verified = True
+            request.user.save()
     return render_response(template_name,
                            reset_cookie = reset_cookie,
                            profile_form = form,

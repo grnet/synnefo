@@ -180,12 +180,12 @@ def main():
     parser.add_argument('data', type=str, action='store', nargs='*',
                         help=callhelp)
 
-    urlfilepath = expanduser('~/.qholderrc')
+    urlfilepath = expanduser('~/.%s.urlrc' % progname)
 
     def get_url():
         try:
             with open(urlfilepath) as f:
-                url = f.read()
+                url = f.read().strip()
         except Exception:
             m = "Cannot load url from %s. Try --url." % (urlfilepath,)
             raise ValueError(m)
@@ -199,11 +199,11 @@ def main():
 
     args = parser.parse_args(argv[1:])
 
-    api_call = args.api_call[0]
-    api.input_canonical(api_call)
-
     if args.url:
         set_url(args.url)
+
+    api_call = args.api_call[0]
+    api.input_canonical(api_call)
 
     url = get_url()
 
@@ -219,7 +219,6 @@ def main():
         data = None
 
     client = API_Callpoint(url)
-    print "data", data
     print(client.make_call_from_json(api_call, data))
 
 

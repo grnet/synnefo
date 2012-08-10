@@ -161,7 +161,6 @@ def mk_versiontag(version):
 
 def get_callpoint(pointname, version=None, automake=None, **kw):
 
-    print 'get_callpoint', pointname
     versiontag = mk_versiontag(version)
     components = pointname.split('.')
     category = components[0]

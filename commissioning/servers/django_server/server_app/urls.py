@@ -17,7 +17,6 @@ names = names.split(',')
 pats = [(r'(?P<appname>%s)/%s/%s' % (name, ver_ex, call_ex), view)
                                                 for name in names]
 
-patterns
 urlpatterns = patterns('',
     # Uncomment the admin/doc line below to enable admin documentation:
     # (r'^admin/doc/', include('django.contrib.admindocs.urls')),

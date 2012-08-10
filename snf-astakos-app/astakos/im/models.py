@@ -563,16 +563,6 @@ def superuser_post_syncdb(sender, **kwargs):
 
 post_syncdb.connect(superuser_post_syncdb)
 
-def set_default_group(sender, **kwargs):
-    try:
-        default = AstakosGroup.objects.get(name='default')
-        orphans = AstakosUser.objects.annotate(num_groups=Count('astakos_groups')).filter(num_groups = 0)
-        map ( lambda u: Membership(group=default, person=u).save(), orphans )
-    except AstakosGroup.DoesNotExist:
-        pass
-    
-post_migrate.connect(set_default_group)
-
 def superuser_post_save(sender, instance, **kwargs):
     if instance.is_superuser:
         create_astakos_user(instance)

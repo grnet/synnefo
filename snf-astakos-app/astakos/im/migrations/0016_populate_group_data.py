@@ -52,7 +52,7 @@ class Migration(DataMigration):
         map(_create_astakogroup, t)
         
         orphans = orm.AstakosUser.objects.annotate(num_groups=Count('astakos_groups')).filter(num_groups = 0)
-        map ( lambda u: orm.Membership(group=groups['default'], person=u).save(), orphans )
+        map ( lambda u: orm.Membership(group=groups['default'], person=u, date_joined=datetime.datetime.now()).save(), orphans )
         
     def backwards(self, orm):
         def _delete_groupkind(name):

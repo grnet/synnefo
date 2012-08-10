@@ -71,7 +71,7 @@ class Command(BaseCommand):
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
         
-        labels = ('id', 'email', 'real name', 'active', 'admin', 'provider', 'groups')
+        labels = ('id', 'email', 'real name', 'active', 'admin', 'provider')
         columns = (3, 24, 24, 6, 5, 12, 24)
         
         if not options['csv']:
@@ -84,8 +84,7 @@ class Command(BaseCommand):
             id = str(user.id)
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
-            fields = (id, user.email, user.realname, active, admin, user.provider,
-                      ','.join([g.name for g in user.astakos_groups.all()]))
+            fields = (id, user.email, user.realname, active, admin, user.provider)
             
             if options['csv']:
                 line = '|'.join(fields)

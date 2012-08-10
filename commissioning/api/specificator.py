@@ -453,7 +453,8 @@ class Args(Canonical):
 
         try:
             for n, c in self.kw.items():
-                canonified[n] = c(item[n])
+		t = item[n] if n in item else None
+                canonified[n] = c(t)
         except KeyError:
             m = ("%s: Argument '%s' not found in '%s'" 
                         % (self, shorts(n), shorts(item)))
@@ -504,13 +505,6 @@ class Tuple(Canonical):
 
 class Dict(Canonical):
 
-    def init(self):
-        canonical = {}
-        for arg in self.args:
-            canonical.update(arg)
-
-        self.canonical = canonical
-
     def check(self, item):
 
         try:
@@ -520,14 +514,28 @@ class Dict(Canonical):
             raise CanonifyException(m)
 
         canonified = {}
-        for n, c in self.canonical:
+        canonical = self.kw
+
+        for n, c in canonical.items():
+            if n not in item:
+                m = "%s: key '%s' not found" % (self, shorts(n))
+                raise CanonifyException(m)
             canonified[n] = c(item[n])   
+
+        strict = self.opts.get('strict', False)
+        if strict and len(item) != len(canonical):
+            for k in sorted(item.keys()):
+                if k not in canonical:
+                    break
+
+            m = "%s: unexpected key '%s' (strict mode)" % (self, shorts(k))
+            raise CanonifyException(m)
 
         return canonified
 
     def random_dict(self, kw):
         item = {}
-        for n, c in self.canonical:
+        for n, c in self.canonical.items():
             item[n] = c.random()
 
         return item

@@ -12,12 +12,15 @@ class Callpoint(object):
     CorruptedError = CorruptedError
     InvalidDataError = InvalidDataError
 
+    original_calls = {}
+
     def __init__(self, connection=None):
         from json import loads, dumps
 
         self.json_loads = loads
         self.json_dumps = dumps
         self.init_connection(connection)
+        original_calls = self.original_calls
         canonifier = self.api_spec
 
         if canonifier is None:
@@ -26,13 +29,24 @@ class Callpoint(object):
 
         for call_name, call_doc in canonifier.call_attrs():
             if hasattr(self, call_name):
-                m = (   "Method '%s' defined both in natively "
-                        "in callpoint '%s' and in api spec '%s'" %
-                            (call_name,
-                             type(self).__name__,
-                             type(canonifier).__name__)             )
+                # don't crash: wrap the function instead
+                #m = (   "Method '%s' defined both in natively "
+                #        "in callpoint '%s' and in api spec '%s'" %
+                #            (call_name,
+                #             type(self).__name__,
+                #             type(canonifier).__name__)             )
 
-                raise ValueError(m)
+                #raise ValueError(m)
+                call_func = getattr(self, call_name)
+                if not callable(call_func):
+                    m = (   "api spec '%s', method '%s' is not a "
+                            "callable attribute in callpoint '%s'" % 
+                            (   type(canonifier).__name__,
+                                call_name,
+                                type(self).__name       )           )
+                    raise ValueError(m)
+
+                original_calls[call_name] = call_func
 
             def mk_call_func():
                 local_call_name = call_name
@@ -111,8 +125,12 @@ class Callpoint(object):
             m = "Cannot find specified call '%s'" % (call_name,)
             raise self.CorruptedError(m)
 
+        call_func = self.original_calls.get(call_name, None)
         try:
-            data = self.do_make_call(call_name, data)
+            if call_func is None:
+                data = self.do_make_call(call_name, data)
+            else:
+                data = call_func(**data)
         except Exception, e:
             self.rollback()
             raise
@@ -143,6 +161,7 @@ def mk_versiontag(version):
 
 def get_callpoint(pointname, version=None, automake=None, **kw):
 
+    print 'get_callpoint', pointname
     versiontag = mk_versiontag(version)
     components = pointname.split('.')
     category = components[0]

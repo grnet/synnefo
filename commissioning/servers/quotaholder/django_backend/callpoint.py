@@ -7,6 +7,7 @@ from commissioning import ( QuotaholderAPI,
                             ExportLimitError, ImportLimitError)
 
 
+from commissioning.utils.newname import newname
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey
 from django.db import transaction
 from .models import Holder, Entity, Policy, Holding, Commission, Provision
@@ -220,18 +221,30 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 quantity, capacity,
                 import_limit, export_limit, flags  ) in set_quota:
 
+                p = None
+
                 try:
                     h = Holding.objects.get(entity=entity, resource=resource)
                     if h.entity.key != key:
                         append((entity, resource))
                         continue
-                except Holding.DoesNotExist:
-                    append(entity, resource)
-                    continue
+                    p = h.policy
 
-                p = h.policy
-                policy = newname()
-                newp = Policy.objects.create    (
+                except Holding.DoesNotExist:
+                    try:
+                        e = Entity.objects.get(entity=entity)
+                    except Entity.DoesNotExist:
+                        append((entity, resource))
+                        continue
+
+                    if e.key != key:
+                        append((entity, resource))
+                        continue
+
+                    h = None
+
+                policy = newname('policy_')
+                newp = Policy   (
                             policy=policy,
                             quantity=quantity,
                             capacity=capacity,
@@ -239,10 +252,17 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                             export_limit=export_limit
                 )
 
-                h.policy = newp
-                h.save()
+                if h is None:
+                    h = Holding(entity=entity, resource=resource,
+                                policy=newp, flags=flags)
+                else:
+                    h.policy = newp
+                    h.flags = flags
 
-                if p.holdings.count() == 0:
+                h.save()
+                newp.save()
+
+                if p is not None and p.holdings.count() == 0:
                     p.delete()
 
         return rejected

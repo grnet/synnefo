@@ -20,4 +20,9 @@ class NoQuantityError(CommissionException):
 class NoCapacityError(CommissionException):
     pass
 
+class ExportLimitError(CommissionException):
+    pass
+
+class ImportLimitError(CommissionException):
+    pass
 

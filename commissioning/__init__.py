@@ -6,7 +6,9 @@ from .api.exception     import (CommissionException,
                                 InvalidKeyError,
                                 NoEntityError,
                                 NoQuantityError,
-                                NoCapacityError)
+                                NoCapacityError,
+				ExportLimitError,
+				ImportLimitError)
 
 from .api.callpoint     import  Callpoint, get_callpoint, mkcallargs
 from .api.physical      import  Physical

@@ -3,7 +3,8 @@ from commissioning import ( QuotaholderAPI,
                             Callpoint, CommissionException,
                             CorruptedError, InvalidDataError,
                             InvalidKeyError, NoEntityError,
-                            NoQuantityError, NoCapacityError    )
+                            NoQuantityError, NoCapacityError,
+                            ExportLimitError, ImportLimitError)
 
 
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey
@@ -280,6 +281,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             hp = h.policy
 
+            if (hp.export_limit is not None and
+                h.exporting + quantity > hp.export_limit):
+                    m = ("Export limit reached for %s.%s" % (entity, resource))
+                    raise ExportLimitError(m)
+
             if h.importing - h.exported + hp.quantity - quantity < 0:
                 m = ("There is not enough quantity "
                      "to allocate from in %s.%s" % (entity, resource))
@@ -293,6 +299,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 raise NoCapacityError(m)
 
             tp = th.policy
+
+            if (tp.import_limit is not None and
+                th.importing + quantity > tp.import_limit):
+                    m = ("Import limit reached for %s.%s" % (target, resource))
+                    raise ImportLimitError(m)
 
             if (    th.exported - th.importing - tp.quantity
                     + tp.capacity - quantity                ) < 0:

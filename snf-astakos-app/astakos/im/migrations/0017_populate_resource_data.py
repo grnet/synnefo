@@ -1,78 +1,68 @@
 # encoding: utf-8
 import datetime
+import sys
+
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from django.db.models import Count
+from django.db.utils import IntegrityError
+from collections import defaultdict
+from django.db.models import Q
 
+d = {
+        'cyclades' : { 'vm' : 2 },
+        'pithos+': {'diskspace' : 10  } 
+    }
 class Migration(DataMigration):
-    def forwards(self, orm):
-        
-        def _create_groupkind(name):
-            try:
-                orm.GroupKind(name=name).save()
-            except:
-                pass
-                                        
-        t = ('default', 'course', 'project', 'laboratory', 'organization')
-        map(_create_groupkind, t)
-        
-        default = orm.GroupKind.objects.get(name='default')
-        
-        groups = {}
-        def _create_astakogroup(name):
-            try:
-                groups[name] = orm.AstakosGroup.objects.get(name=name)
-            except orm.AstakosGroup.DoesNotExist:
-                try:
-                    g = orm['auth.Group'].objects.get(name=name)
-                    groups[name] = extended = orm.AstakosGroup(group_ptr_id=g.pk)
-                    extended.__dict__.update(g.__dict__)
-                    extended.kind = default
-                    extended.approval_date = datetime.datetime.now()
-                    extended.issue_date = datetime.datetime.now()
-                    extended.moderation_enabled = False
-                    extended.save()
-                    map(lambda u:orm.Membership(    group=extended,
-                                                    person=orm.AstakosUser.objects.get(id=u.id),
-                                                    date_joined=datetime.datetime.now()
-                                                ).save(),
-                        g.user_set.all())
-                except orm['auth.Group'].DoesNotExist:
-                    groups[name] = orm.AstakosGroup(    name=name,
-                                                        kind=default,
-                                                        approval_date=datetime.datetime.now(),
-                                                        issue_date=datetime.datetime.now(),
-                                                        moderation_enabled=False
-                                                    )
-                    groups[name].save()
-        
-        # catch integrate 
-        t = ('default', 'shibboleth', 'helpdesk', 'faculty', 'ugrad', 'grad', 'researcher', 'associate')
-        map(_create_astakogroup, t)
-        
-        orphans = orm.AstakosUser.objects.annotate(num_groups=Count('astakos_groups')).filter(num_groups = 0)
-        map ( lambda u: orm.Membership(group=groups['default'], person=u).save(), orphans )
-        
-    def backwards(self, orm):
-        def _delete_groupkind(name):
-            try:
-                orm.GroupKind.objects.get(name=name).delete()
-            except orm.GroupKind.DoesNotExist:
-                pass
-        
-        def _delete_astakosgroup(name):
-            try:
-                orm.AstakosGroup.objects.get(name=name).delete()
-            except orm.AstakosGroup.DoesNotExist:
-                pass
-        
-        t = ('default', 'shibboleth', 'helpdesk', 'faculty', 'ugrad', 'grad', 'researcher', 'associate')
-        map(_delete_astakosgroup, t)
-        
-        t = ('default', 'course', 'project', 'laboratory', 'organization')
-        map(_delete_groupkind, t)
 
+    def forwards(self, orm):
+        "Write your forwards methods here."
+        
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
+        
+        def create_policies(sn, policy):
+            s, created = orm.Service.objects.get_or_create(name = sn)
+            if created:
+                s.save()
+            
+            for rn, l in policy.iteritems():
+                r, created = orm.Resource.objects.get_or_create (    
+                                                                    service = s,
+                                                                    name = rn
+                                                                )
+                if created:
+                    r.save()
+                
+                q, created = orm.AstakosGroupQuota.objects.get_or_create(   
+                                                                            group = default,
+                                                                            resource = r,
+                                                                            limit = l   
+                                                                        )
+                if created:
+                    q.save()
+                
+        map(lambda i: create_policies(i[0], i[1]), d.iteritems())
+            
+    def backwards(self, orm):
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
+        
+        def destroy_policies(sn, policy):
+            for rn, l in policy.iteritems():
+                try:
+                    q = orm.AstakosGroupQuota.objects.get(group=default, resource__name=rn)
+                    if q.limit == l:
+                        q.delete()
+                except orm.AstakosGroupQuota.DoesNotExist:
+                    return
+                
+        map(lambda i: destroy_policies(i[0], i[1]), d.iteritems())
+    
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},
@@ -118,14 +108,14 @@ class Migration(DataMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 8, 12, 40, 8, 181485)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 289091)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'im.astakosgroup': {
             'Meta': {'object_name': 'AstakosGroup', '_ormbases': ['auth.Group']},
             'approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 8, 12, 40, 8, 175548)'}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 283154)'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'estimated_participants': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'expiration_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
@@ -176,7 +166,7 @@ class Migration(DataMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 8, 12, 40, 8, 183025)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 290713)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.groupkind': {
@@ -198,7 +188,7 @@ class Migration(DataMigration):
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
-            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 8, 8, 12, 40, 8, 179349)', 'blank': 'True'}),
+            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 286925)', 'blank': 'True'}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})

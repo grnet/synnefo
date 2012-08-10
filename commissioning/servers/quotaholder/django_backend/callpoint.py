@@ -226,6 +226,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                         continue
                 except Holding.DoesNotExist:
                     append(entity, resource)
+                    continue
 
                 p = h.policy
                 policy = newname()

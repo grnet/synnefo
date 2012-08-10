@@ -80,7 +80,9 @@
             </tbody>
         </table>
         {% else %}
-            <h2>No groups found!</h2>
+            {% if is_search %}
+                <h2>No groups found!</h2>
+            {% endif %}
         {% endif %}
 </div>
 {% endblock %}

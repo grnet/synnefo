@@ -235,11 +235,27 @@
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
 
+        get_description: function(escape) {
+            if (escape == undefined) { escape = true };
+            if (escape) { return this.escape('description') || "No description available"}
+            return this.get('description') || "No description available."
+        },
+
         get_meta: function(key) {
-            if (this.get('metadata') && this.get('metadata').values && this.get('metadata').values[key]) {
+            if (this.get('metadata') && this.get('metadata').values) {
+                if (!this.get('metadata').values[key]) { return null }
                 return _.escape(this.get('metadata').values[key]);
+            } else {
+                return null;
             }
-            return undefined;
+        },
+
+        get_meta_keys: function() {
+            if (this.get('metadata') && this.get('metadata').values) {
+                return _.keys(this.get('metadata').values);
+            } else {
+                return [];
+            }
         },
 
         get_owner: function() {
@@ -263,7 +279,7 @@
         },
 
         get_os: function() {
-            return this.get("OS");
+            return this.get_meta('OS');
         },
 
         get_gui: function() {
@@ -1169,12 +1185,20 @@
             return flv;
         },
 
-        // retrieve the metadata object
         get_meta: function(key) {
-            try {
+            if (this.get('metadata') && this.get('metadata').values) {
+                if (!this.get('metadata').values[key]) { return null }
                 return _.escape(this.get('metadata').values[key]);
-            } catch (err) {
-                return {};
+            } else {
+                return null;
+            }
+        },
+
+        get_meta_keys: function() {
+            if (this.get('metadata') && this.get('metadata').values) {
+                return _.keys(this.get('metadata').values);
+            } else {
+                return [];
             }
         },
         
@@ -1597,6 +1621,7 @@
         noUpdate: true,
         supportIncUpdates: false,
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
+        meta_labels: {},
         read_method: 'read',
 
         // update collection model with id passed
@@ -1920,11 +1945,22 @@
         },
 
         create: function (name, image, flavor, meta, extra, callback) {
+
             if (this.copy_image_meta) {
+                if (synnefo.config.vm_image_common_metadata) {
+                    _.each(synnefo.config.vm_image_common_metadata, 
+                        function(key){
+                            console.log(key, image.get(key), "image key");
+                            if (image.get_meta(key)) {
+                                meta[key] = image.get_meta(key);
+                            }
+                    });
+                }
+
                 if (image.get("OS")) {
                     meta['OS'] = image.get("OS");
                 }
-           }
+            }
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);

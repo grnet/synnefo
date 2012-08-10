@@ -253,7 +253,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 )
 
                 if h is None:
-                    h = Holding(entity=entity, resource=resource,
+                    h = Holding(entity=e, resource=resource,
                                 policy=newp, flags=flags)
                 else:
                     h.policy = newp

@@ -37,7 +37,10 @@ def init_logger_stderr(name, level='DEBUG'):
     return logger
 
 
-def debug(self, fmt, *args):
+def debug(fmt, *args):
+    global _logger
+    if _logger is None:
+	init_logger_stderr('logger')
     _logger.debug(fmt % args)
 
 

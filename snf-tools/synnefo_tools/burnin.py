@@ -172,7 +172,7 @@ class ImagesTestCase(unittest.TestCase):
 
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
-        keys = frozenset(["os", "description", "size"])
+        keys = frozenset(["osfamily", "root_partition"])
         details = self.client.list_images(detail=True)
         for i in details:
             self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
@@ -253,8 +253,7 @@ class SpawnServerTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Initialize a kamaki instance"""
-        log.info("Spawning server for image `%s'", %cls.imagename)
-
+        log.info("Spawning server for image `%s'" %cls.imagename)
         cls.client = ComputeClient(API, TOKEN)
         cls.cyclades = CycladesClient(API, TOKEN)
 

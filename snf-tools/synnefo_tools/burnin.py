@@ -91,7 +91,7 @@ normal = '\x1b[0m'
 class burninFormatter(logging.Formatter):
 
     err_fmt = red + "ERROR: %(msg)s" + normal
-    dbg_fmt = green + "   * %(msg)s" + normal
+    dbg_fmt = green + "* %(msg)s" + normal
     info_fmt = "%(msg)s"
 
     def __init__(self, fmt="%(levelno)s: %(msg)s"):
@@ -924,9 +924,9 @@ class NetworkTestCase(unittest.TestCase):
         self.assertTrue(active)
 
     def test_002b_ping_server_A(self):
-        "Test if server A is pingable"
+        "Test if server A responds to IPv4 pings"
 
-        log.info("Testing if server A is pingable")
+        log.info("Testing if server A responds to IPv4 pings ")
 
         server = self.client.get_server_details(self.serverid['A'])
         ip = self._get_ipv4(server)
@@ -983,9 +983,9 @@ class NetworkTestCase(unittest.TestCase):
         self.assertTrue(active)
 
     def test_002d_ping_server_B(self):
-        """Test if server B is pingable"""
+        """Test if server B responds to IPv4 pings"""
 
-        log.info("Testing if server B is pingable")
+        log.info("Testing if server B responds to IPv4 pings")
         server = self.client.get_server_details(self.serverid['B'])
         ip = self._get_ipv4(server)
 

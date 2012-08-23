@@ -52,6 +52,13 @@ lines in your ``/etc/apt/sources.list`` file:
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
 
+Also add the following line to enable the ``squeeze-backports`` repository,
+which may provide more recent versions of certain packages. The repository
+is deactivated by default and must be specified expicitly in ``apt-get``
+operations:
+
+| ``deb http://backports.debian.org/debian-backports squeeze-backports main``
+
 You also need a shared directory visible by both nodes. Pithos+ will save all
 data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this

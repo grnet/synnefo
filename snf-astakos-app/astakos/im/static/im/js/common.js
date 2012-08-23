@@ -110,8 +110,10 @@ $(document).ready(function() {
              //todo
         });
     });	
-    //$('.dropkick-select').dropkick();
     
+    
+     
+	$('select').dropkick();
  
     
     $('.top-msg .success').parents('.top-msg').css(
@@ -173,24 +175,7 @@ $(document).ready(function() {
     );
     
     
-    /*$('#animation a').hover(
-      function () {
-      	
-        $(this).animate({
-           top: '+=-10'   
-           }, 600);
-        $(this).siblings('p').find('img').animate({
-          width: '60%'       
-        });
-      }, 
-      function () {
-
-        $(this).animate({top: '0'}, 600);
-        $(this).siblings('p').find('img').animate({
-          width: '65%'       
-        });
-      }
-    );*/
+   
     
     
     if ($('.widjets'.length > 0)) {
@@ -198,23 +183,26 @@ $(document).ready(function() {
 	}
     
     $(function() {
-    	if($("#from").length > 0 ){
-			$( "#from" ).datepicker({
+    	if($("#id_issue_date").length > 0 ){
+			$( "#id_issue_date" ).datepicker({
 				defaultDate: "+0", 
-				dateFormat: "dd-mm-yy",
+				dateFormat: "yy-mm-dd",
 				onSelect: function( selectedDate ) {
-					$( "#to" ).datepicker( "option", "minDate", selectedDate );
+					$( "#id_expiration_date" ).datepicker( "option", "minDate", selectedDate );
 				}
 			});
-			$( "#to" ).datepicker({
+			$( "#id_expiration_date" ).datepicker({
 				defaultDate: "+1w", 
-				dateFormat: "dd-mm-yy",
+				dateFormat: "yy-mm-dd",
 				onSelect: function( selectedDate ) {
-					$( "#from" ).datepicker( "option", "maxDate", selectedDate );
+					$( "#id_issue_date" ).datepicker( "option", "maxDate", selectedDate );
 				}
 			});
 		}
 	});
+	
+	
+	$(".table_sorting").tablesorter(); 
 });
 
 $(window).resize(function() {
@@ -224,11 +212,4 @@ $(window).resize(function() {
 		$('.widjets  li div').equalHeights();
 	}
 
-});
-
-
-
-
- 
-
-
+}); 

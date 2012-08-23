@@ -7,10 +7,11 @@ input, textarea, .form-widget 				{ background-color: #ffffff; color: #000;borde
 #forms input:focus label 					{ z-index: 300; }
 form.withlabels label 						{ width: 224px; display: block; float: left; padding-top: 1em; }
 form.withlabels input[type=text], 
-form.withlabels input[type=password] 		{ width: 240px; }
+form.withlabels input[type=password] 		{ width: 270px; }
 form.withlabels input[type=text].long, 
 form.withlabels input[type=password].long, 
 form.withlabels textarea.long 				{ width: 224px; }
+form.withlabels textarea					{ width:270px; }
 .login-section a.button 					{ margin-bottom: 12px; }
 .login-section a.button:last-child 			{ margin-bottom: none;}
 .login-section a.button.withicon 			{ background-repeat: no-repeat; background-position: 15px 50%; padding-left: 40px; }
@@ -33,7 +34,7 @@ form textarea,
 form input.text,
 form input[type="text"],
 form input[type="password"]  				{ color:#808080; font-family: 'Didact Gothic', Verdana, sans-serif; font-weight: normal; line-height: 22px; letter-spacing: 1px;border: 1px solid #808080; height: 21px; display: inline-block; margin-bottom: -1px; padding: 0.8em; padding-left: 1.5em; z-index: 2; width:300px; }
-form select									{ font-family: 'Didact Gothic', Verdana, sans-serif; font-weight: normal; line-height: 22px; letter-spacing: 1px;  border: 1px solid #808080; display:block;  margin-bottom: -1px; padding: 0.8em;  padding-left: 1.5em;  z-index: 2;  width:331px; }
+form select									{ font-family: 'Didact Gothic', Verdana, sans-serif; font-weight: normal; line-height: 22px; letter-spacing: 1px;  border: 1px solid #808080; display:block;  margin-bottom: -1px; padding: 0.8em;  padding-left: 1.5em;  z-index: 2;  width:301px; }
 form textarea:focus,
 form input.text:focus,
 form input[type="text"]:focus,
@@ -87,7 +88,7 @@ form.innerlabels .with-checkbox .checkbox-label		{ left:2.5em; top:17px; }
 form.withlabels .with-checkbox .checkbox-widget		{ position:absolute; left:224px; top:0; }
 
 form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; }
-form.withlabels .extra-img					{ left:460px; bottom:12px; }
+form.withlabels .extra-img					{ left:485px; bottom:12px; }
 form.innerlabels .extra-img					{ bottom:10px; left:290px }
 form .with-checkbox .extra-img				{ top:20px; } 
 form .with-errors .extra-img 				{ background:url(../images/symbols.png) no-repeat -58px -3px;  z-index:101;}
@@ -176,3 +177,7 @@ form+p:first-child, form legend + p				{ margin-bottom:2em; }
 .form-row .dk-options_inner li					{ list-style:none outside; }
 .form-row .dk_options a:hover, 
 .form-row .dk_option_current a					{ text-shadow:none; background-color: #E7E7E3;}
+
+form.link-like									{ display:inline-block; margin:0 5px; }
+form.link-like input[type="submit"]				{ margin:0; padding:0 5px; background:transparent; color:#F89A1C; cursor:pointer; height:auto;  }
+form.link-like input[type="submit"]:hover		{ text-decoration:underline;  }

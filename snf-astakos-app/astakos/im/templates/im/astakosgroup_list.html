@@ -5,82 +5,142 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     {% if form %}
-    <form action="{% url group_search %}" method="post" class="innerlabels signup">{% csrf_token %}
-        <h2><span>Search group:</span></h2>
+	<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. </p> 
+	<p>You can use the following form to search for a project:</p>
+    
+    
+    <form action="{% url group_search %}" method="post" class="withlabels">{% csrf_token %}
+         
             {% include "im/form_render.html" %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SEARCH" />
             </div>
     </form>
     {% else %}
-        <p class="submit-rt">
-            <a href="{% url group_add %}" class="submit">Create a group</a>
-            <a href="{% url group_search %}" class="submit">Join a group</a>
-        </p>
+    <div class="projects">
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. <br />You can <a href="{% url group_add %}">create a new group</a> or <a href="{% url group_search %}">join</a> to an existing one.</p>
+		 
+		<ul class="widjets clearfix">	
+			<li>
+				<div>
+					<p>WELCOME!<br />Connect with a world of people who share your passions.<br />With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
+					<p class="btn"><a href="{% url group_add %}" class="submit">Create a group</a></p>
+				</div>
+			</li>
+			<li>
+				<div>
+					<p>LOOKING FOR A GROUP?</p><p>Well, this is the place to start!</br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br /><img alt="THINK ABOUT IT" src="/static/medialibrary/2012/06/behind_okeanos.png"></p>
+					<p class="btn"><a href="{% url group_search %}" class="submit">Join a group</a></p>
+				</div>
+			</li>
+		</ul>
+        
     {% endif %}
-      {% if object_list %}
-      <h2>Groups:</h2>
-      <table class="zebra-striped id-sorted">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Issue date</th>
-                <th>Expiration date</th>
-                <th>Owner?</th>
-                <th>Participants</th>
-                <th>Enabled?</th>
-                <th>Moderation?</th>
-                <th>Enrollment status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for o in object_list %}
-              <tr>
-                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
-                <td>{{o.kind}}</td>
-                <td>{{o.issue_date|date:"d/m/Y"}}</td>
-                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-                <td>{% if user in o.owner.all %}Yes{% else %}No{% endif %}</td>
-                <td>{{ o.approved_members|length }}/{{ o.members|length }}</td>
-                <td>{% if o.is_enabled %}Yes{% else %}No{% endif %}</td>
-                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-                {% if user in o.approved_members %}
-                    <td>Active</td>
-                    {% if user not in o.owner.all %}
-                    <td>
-                        <form action="{% url group_leave o.id %}" method="post"class="login innerlabels">{% csrf_token %}
-                            <div class="form-row submit clearfix">
-                                <input type="submit" class="submit altcol" value="LEAVE" />
-                            </div>
-                        </form>
-                    </td>
-                    {% endif %}
-                {% else %}
-                    {% if user in o.members %}
-                        <td>Pending</td>
-                    {% else %}
-                        <td>Not member</td>
-                        {% if join_forms %}
-                        <td>
-                            <form action="{% url group_join o.id %}" method="post"class="login innerlabels">{% csrf_token %}
-                                {% with join_forms|lookup:o.name as form %}
-                                    {% include "im/form_render.html" %}
-                                {% endwith %}
-                                <div class="form-row submit clearfix">
-                                    <input type="submit" class="submit altcol" value="JOIN" />
-                                </div>
-                            </form>
-                        </td>
-                        {% endif %}
-                    {% endif %}
-                {% endif %}
-              </tr>
-              {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <h2>No groups found!</h2>
-        {% endif %}
+      {% with object_list|filter_groups:user as d %}
+      	{% with d|lookup:'mine' as mine %}
+	      	{% if mine %}	
+	      		<div class="full-dotted">
+					<table class="alt-style table_sorting" id="">
+			            <caption>MY GROUPS</caption>
+			            <thead>
+			              <tr>
+			                <th>Name</th>
+			                <th>Type</th>
+			                <th>Issue date</th>
+			                <th>Expiration date</th>
+			                <th>Participants</th>
+			                <th>Activation</th>
+			                <th>Moderation</th>
+			              </tr>
+			            </thead>
+			            <tbody>
+			              {% for o in mine %}
+			              <tr>
+			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
+			                <td>{{o.kind|capfirst}}</td>
+			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
+			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
+			                <td>{{ o.approved_members|length }}/{{ o.members|length }}</td>
+			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
+			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
+			                 
+			              </tr>
+			              {% endfor %}
+			            </tbody>
+			        </table>
+			       
+				</div>
+      		{% endif %}
+      	{% endwith %}
+      	{% with d|lookup:'other' as other %}
+	      	{% if other %}	
+	      		<div class="full-dotted">
+					<table class="alt-style table_sorting">
+			            <caption>I PARTICIPATE IN</caption>
+			            <thead>
+			              <tr>
+			                <th>Name</th>
+			                <th>Type</th>
+			                <th>Issue date</th>
+			                <th>Expiration date</th>
+			                 
+			                <th>Participants</th>
+			                <th>Activation</th>
+			                 
+			                <th>Enrollment status</th>
+			                <th>&nbsp;</th>
+			              </tr>
+			            </thead>
+			            <tbody>
+			              {% for o in other %}
+			              <tr>
+			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
+			                <td>{{o.kind|capfirst}}</td>
+			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
+			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
+			                
+			                <td>{{ o.approved_members|length }}</td>
+			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
+			                
+			                {% if user in o.approved_members %}
+			                    <td>
+			                    	Active
+			                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+			                             <input type="submit"  value="LEAVE GROUP" />
+			                        </form>	
+			                    
+			                    </td>    
+			                {% else %}
+			                    {% if user in o.members %}
+			                        <td>Pending</td>
+			                    {% else %}
+			                        <td>Not member 
+			                        {% if join_forms %}
+			                         
+			                            <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
+			                                {% with join_forms|lookup:o.name as form %}
+			                                    {% include "im/form_render.html" %}
+			                                {% endwith %}
+			                                
+			                                <input type="submit"   value="JOIN GROUP" />
+			                                 
+			                            </form>
+			                        </td>
+			                        {% endif %}
+			                    {% endif %}
+			                {% endif %}
+			              </tr>
+			              {% endfor %}
+			            </tbody>
+			        </table>
+			       
+				</div>
+			{% endif %}
+      	{% endwith %}
+      {% endwith %}
+      {% if not object_list %}
+      	<h2>No groups found!</h2>
+	  {% endif %}
+    </div>
 </div>
 {% endblock %}

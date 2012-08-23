@@ -490,11 +490,14 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
             user.save()
         return user
 
+from django.conf import settings
+settings.DATE_FORMAT =  '%d/%m/%Y'
+settings.DATE_INPUT_FORMATS =  ['%d/%m/%Y']
 def get_astakos_group_creation_form(request):
     class AstakosGroupCreationForm(forms.ModelForm):
-        issue_date = forms.DateField(widget=SelectDateWidget(), initial=datetime.now())
+        issue_date = forms.DateField( initial=datetime.now())
         # TODO set initial in exact one month
-        expiration_date = forms.DateField(widget=SelectDateWidget(), initial = datetime.now() + timedelta(days=30))
+        expiration_date = forms.DateField( initial = datetime.now() + timedelta(days=30))
         kind = forms.ModelChoiceField(queryset=GroupKind.objects.all(), empty_label=None)
         name = forms.URLField()
         
@@ -530,7 +533,7 @@ def get_astakos_group_policy_creation_form(astakosgroup):
     return AstakosGroupPolicyCreationForm
 
 class AstakosGroupSearchForm(forms.Form):
-    q = forms.CharField(max_length=200, label='')
+    q = forms.CharField(max_length=200, label='Group Identifier')
 
 class MembershipCreationForm(forms.ModelForm):
     # TODO check not to hit the db

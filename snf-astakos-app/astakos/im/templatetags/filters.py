@@ -42,3 +42,13 @@ def lookup(d, key):
 @register.filter
 def dkeys(d):
     return d.keys()
+
+@register.filter
+def filter_groups(object_list, user):
+    try:
+        d = {}
+        d['mine'] = filter(lambda o: user in o.owner.all(), object_list)
+        d['other'] = list(set(object_list) - set(d['mine']))
+        return d
+    except:
+        return {'mine':object_list, 'other':[]}

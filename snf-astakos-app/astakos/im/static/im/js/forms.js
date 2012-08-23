@@ -26,7 +26,7 @@
       }
       $this.hide();
       
-      if ($this.is("checked")) {
+      if ($this.attr('checked')) {
         el.addClass("checked");  
       }
 

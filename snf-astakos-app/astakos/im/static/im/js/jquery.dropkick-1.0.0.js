@@ -37,7 +37,7 @@
 
     // HTML template for the dropdowns
     dropdownTemplate = [
-      '<div class="dk_container" id="dk_container_{{ id }}" tabindex="{{ tabindex }}">',
+      '<div class="dk_container" id="dk_container_{{ id }}" tabindex="{{ tabindex }}" style="display:inline-block;">',
         '<a class="dk_toggle">',
           '<span class="dk_label">{{ label }}</span>',
         '</a>',

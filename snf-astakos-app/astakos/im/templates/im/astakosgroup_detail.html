@@ -3,51 +3,75 @@
 {% load filters %}
 
 {% block page.body %}
-<div class="maincol {% block innerpage.class %}{% endblock %}">
-        <table class="zebra-striped id-sorted">
-              <tr>
-                <th>Name: {{object.name}}</th>
-              </tr>
-              <tr>
-                <th>Type: {{object.kind}}</th>
-              </tr>
-              <tr>
-                <th>Issue date: {{object.issue_date|date:"d/m/Y"}}</th>
-              </tr>
-              <tr>
-                <th>Expiration date: {{object.expiration_date|date:"d/m/Y"}}</th>
-              </tr>
-              <tr>
-                <th>Moderation: {% if object.moderation_enabled%}Yes{% else %}No{% endif %}</th>
-              </tr>
-              <tr>
-                <th>Owner: {% for o in object.owner.all %}
-                                {% if user == o %}
-                                    Me
-                                {% else%}
-                                    {{o.realname}} ({{o.email}})
-                                
-                                {% endif %}
-                            {% endfor %}
-                </th>
-              </tr>
-              <tr>
-                <th>Enabled: {% if object.is_enabled %}Yes{% else %}No{% endif %}</th>
-              </tr>
-        </table>
-    <div class="section">
-        <h2>Members:</h2>
-        {% if object.members %}
-          <table class="zebra-striped id-sorted">
-            <thead>
-              <tr>
-                <th>Email</th>
-                <th>Realname</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-            {% for m in object.membership_set.all %}
+<div class="projects">
+	
+	<h2>
+	 	{% if request.user in object.members %}
+			<em>[ ENROLLED ]</em>		
+		{% endif %}
+	 	<span>[ {{object.kind|upper}} ]</span>  
+	 </h2>
+	 <div class="details">
+	 	<p>{{ object.desc }}</p>
+	 </div>
+	 <div class="full-dotted">
+		 <h3>DETAILS:</h3>
+		 <dl class="alt-style">
+		 	<dt>Name</dt>
+		 	<dd>{{object.name}}</dd>
+		 	<dt>Type</dt>
+		 	<dd>{{object.kind|capfirst}}</dd>
+		 	<dt>Issue date:</dt>
+		 	<dd>{{object.issue_date|date:"d/m/Y"}}</dd>
+		 	<dt>Expiration Date</dt>
+		 	<dd>{{object.expiration_date|date:"d/m/Y"}}</dd>
+		 	<dt>Modaration</dt>
+		 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
+		 	<dt>Activated</dt>
+		 	<dd>{% if object.is_enabled %}Yes{% else %}No{% endif %}</dd>
+		 	<dt>Owner</dt>
+		 	<dd>{% for o in object.owner.all %}
+                    {% if user == o %}
+                        Me
+                    {% else%}
+                        {{o.realname}} ({{o.email}})
+                    
+                    {% endif %}
+                {% endfor %}
+            </dd>
+		 </dl>
+	 </div>
+	 
+     <div class="full-dotted">
+		 <h3>POLICIES:</h3>
+		 {% if quota %}
+		 <dl class="alt-style">
+		 	<dt>Resrouce</dt>
+		 	<dd>Limit</dd>
+		 	{% for k in quota|dkeys %}
+                
+                <dt>{{ k }}</dt>
+                <dd>{{ quota|lookup:k }}</dd>
+                  
+            {% endfor %}
+		</dl>
+		{% else %}
+            <p>No policies</p>
+        {% endif %} 
+	 </div>
+	 <div class="full-dotted">
+	 	{% if object.members %}
+		 <table class="alt-style table_sorting">
+		 	<caption>MEMBERS:</caption>
+		 	<thead>
+			 	<tr>
+			 		<th>Email</th>
+			 		<th>Name</th>
+			 		<th>Status</th>
+			 	</tr>
+		 	</thead>
+		 	<tbody>
+		 	{% for m in object.membership_set.all %}
               <tr>
                 <td>{{m.person.email}}</td>
                 <td>{{m.person.realname}}</td>
@@ -57,54 +81,36 @@
                     {% if m.is_approved %}
                     <td>Approved</td>
                     {% else %}
-                    <td>Pending</td>
+                    <td>Pending 
                         {% if user in m.group.owner.all %}
-                            <td><a href="{% url approve_member m.group.id m.person.id %}">Approve</a></td>
-                            <td><a href="{% url disapprove_member m.group.id m.person.id  %}">Disapprove</a></td>
+                            <a href="{% url approve_member m.group.id m.person.id %}">Approve</a>
+                            <a href="{% url disapprove_member m.group.id m.person.id  %}">Disapprove</a>
                         {% endif %}
+                    </td>    
                     {% endif %}
                 {% endif %}
               </tr>
             {% endfor %}
             </tbody>
-        </table>
-        {% else %}
+		 </table>
+		 {% else %}
             <p>No members yet!</p>
         {% endif %}
-    </div>
-    <div class="section">
-        <h2>Policies:</h2>
-        {% if quota %}
-          <table class="zebra-striped id-sorted">
-            <thead>
-              <tr>
-                <th>Resource</th>
-                <th>Limit</th>
-              </tr>
-            </thead>
-            <tbody>
-            {% for k in quota|dkeys %}
-                <tr>
-                    <td>{{ k }}</td>
-                    <td>{{ quota|lookup:k }}</td>
-                  </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <p>No policies</p>
-        {% endif %}
-    </div>
+	 </div>
+     
+     
     {% if user in object.owner.all and more_policies %}
-    <div class="rightcol">
-        <form action="{% url group_policies_add object.id %}" method="post" class="innerlabels signup">{% csrf_token %}
-            <h2><span>NEW POLICY</span></h2>
+    <div class="full-dotted">
+        <form action="{% url group_policies_add object.id %}" method="post" class="withlabels">{% csrf_token %}
+            <h2>NEW POLICY</h2>
                 {% include "im/form_render.html" %}
                 <div class="form-row submit">
-                    <input type="submit" class="submit altcol" value="+" />
+                    <input type="submit" class="submit altcol" value="ADD POLICY" />
                 </div>
         </form>
     </div>
     {% endif %}
+     
+    
 </div>
 {% endblock %}

@@ -308,6 +308,10 @@ def add(request, net, args):
     # Get the Network object in exclusive mode in order to
     # guarantee consistency of the pool
     net = Network.objects.select_for_update().get(id=net.id)
+
+    if net.state != 'ACTIVE':
+        raise ServiceUnavailable('Network not active yet')
+
     # Get a free IP from the address pool.
     pool = ippool.IPPool(net)
     try:

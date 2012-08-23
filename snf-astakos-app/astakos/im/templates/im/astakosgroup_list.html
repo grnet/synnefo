@@ -36,6 +36,7 @@
 		</ul>
         
     {% endif %}
+    {% if object_list %}
       {% with object_list|filter_groups:user as d %}
       	{% with d|lookup:'mine' as mine %}
 	      	{% if mine %}	
@@ -138,9 +139,11 @@
 			{% endif %}
       	{% endwith %}
       {% endwith %}
-      {% if not object_list %}
-      	<h2>No groups found!</h2>
-	  {% endif %}
+      {% else %}
+            {% if is_search %}
+                <h2>No groups found!</h2>
+            {% endif %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}

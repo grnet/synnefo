@@ -42,6 +42,7 @@ from base64 import b64encode
 from urlparse import urlparse, urlunparse
 from random import randint
 from collections import defaultdict
+from south.signals import post_migrate
 
 from django.db import models, IntegrityError
 from django.contrib.auth.models import User, UserManager, Group
@@ -51,7 +52,7 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models.signals import post_save, post_syncdb
-from django.db.models import Q
+from django.db.models import Q, Count
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
     AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
@@ -236,7 +237,7 @@ class AstakosUser(User):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms
         if self.id:
-            self.__groupnames = [g.name for g in self.groups.all()]
+            self.__groupnames = [g.name for g in self.astakos_groups.all()]
         else:
             self.is_active = False
     
@@ -305,9 +306,9 @@ class AstakosUser(User):
         groupname = 'shibboleth' if self.provider == 'shibboleth' else 'default'
         if groupname not in self.__groupnames:
             try:
-                group = Group.objects.get(name = groupname)
-                self.groups.add(group)
-            except Group.DoesNotExist, e:
+                group = AstakosGroup.objects.get(name = groupname)
+                Membership(group=group, person=self, date_joined=datetime.now()).save()
+            except AstakosGroup.DoesNotExist, e:
                 logger.exception(e)
     
     def renew_token(self):

@@ -269,8 +269,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
             except ValueError, ve:
                 messages.success(request, ve)
     elif request.method == "GET":
-        request.user.is_verified = True
-        request.user.save()
+        if not request.user.is_verified:
+            request.user.is_verified = True
+            request.user.save()
     return render_response(template_name,
                            reset_cookie = reset_cookie,
                            profile_form = form,
@@ -640,7 +641,7 @@ def group_approval_request(request, group_id):
 
 @signed_terms_required
 @login_required
-def group_search(request, queryset=EmptyQuerySet(), extra_context={}, **kwargs):
+def group_search(request, extra_context={}, **kwargs):
     join_forms = {}
     if request.method == 'GET':
         form = AstakosGroupSearchForm()
@@ -655,10 +656,13 @@ def group_search(request, queryset=EmptyQuerySet(), extra_context={}, **kwargs):
                 join_forms[g.name] = f(dict(group=g,
                                             person=request.user,
                                             date_requested=datetime.now().strftime("%d/%m/%Y")))
-    return object_list(request,
-                        queryset,
-                        template_name='im/astakosgroup_list.html',
-                        extra_context=dict(form=form, is_search=True, join_forms=join_forms))
+            return object_list(request,
+                                queryset,
+                                template_name='im/astakosgroup_list.html',
+                                extra_context=dict(form=form, is_search=True, join_forms=join_forms))
+    return render_response(template='im/astakosgroup_list.html',
+                            form = form,
+                            context_instance=get_context(request))
 
 @signed_terms_required
 @login_required

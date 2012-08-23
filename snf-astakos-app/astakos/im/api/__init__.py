@@ -146,19 +146,20 @@ def get_services(request):
 
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
-    index_url = reverse('index')
+    user = request.user
+    if not isinstance(user, AstakosUser):
+        cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
+        email = cookie.partition('|')[0]
+        try:
+            if email:
+                user = AstakosUser.objects.get(email=email, is_active=True)
+        except AstakosUser.DoesNotExist:
+            pass
+    
     absolute = lambda (url): request.build_absolute_uri(url)
-    l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
-    cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-    email = cookie.partition('|')[0]
-    try:
-        if not email:
-            raise ValueError
-        user = AstakosUser.objects.get(email=email, is_active=True)
-    except AstakosUser.DoesNotExist:
-        pass
-    except ValueError:
-        pass
+    if not isinstance(user, AstakosUser):
+        index_url = reverse('index')
+        l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
     else:
         l = []
         l.append(dict(url=absolute(reverse('index')), name=user.email))

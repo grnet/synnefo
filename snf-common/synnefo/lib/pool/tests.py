@@ -70,12 +70,12 @@ except ImportError:
 class NumbersPool(ObjectPool):
     max = 0
 
-    def _create(self):
+    def _pool_create(self):
         n = self.max
         self.max += 1
         return n
 
-    def _cleanup(self, obj):
+    def _pool_cleanup(self, obj):
         pass
 
 
@@ -93,14 +93,14 @@ class ObjectPoolTestCase(unittest.TestCase):
         self.assertEqual(pool.size, 100)
 
     def test_get_not_implemented(self):
-        """Test get() method not implemented in abstract class"""
+        """Test pool_get() method not implemented in abstract class"""
         pool = ObjectPool(100)
-        self.assertRaises(NotImplementedError, pool.get)
+        self.assertRaises(NotImplementedError, pool.pool_get)
 
     def test_put_not_implemented(self):
-        """Test put() method not implemented in abstract class"""
+        """Test pool_put() method not implemented in abstract class"""
         pool = ObjectPool(100)
-        self.assertRaises(NotImplementedError, pool.put, None)
+        self.assertRaises(NotImplementedError, pool.pool_put, None)
 
 
 class NumbersPoolTestCase(unittest.TestCase):
@@ -119,16 +119,16 @@ class NumbersPoolTestCase(unittest.TestCase):
         """Test allocation and deallocation of all pool objects"""
         n = []
         for _ in xrange(0, self.N):
-            n.append(self.numbers.get())
+            n.append(self.numbers.pool_get())
         self.assertEqual(n, range(0, self.N))
         for i in n:
-            self.numbers.put(i)
+            self.numbers.pool_put(i)
         self.assertEqual(self.numbers._set, set(n))
 
     def test_parallel_allocate_all(self):
         """Allocate all pool objects in parallel"""
         def allocate_one(pool, results, index):
-            n = pool.get()
+            n = pool.pool_get()
             results[index] = n
 
         results = [None] * self.N
@@ -141,17 +141,17 @@ class NumbersPoolTestCase(unittest.TestCase):
         for t in threads:
             t.join()
 
-        # This nonblocking pool get() should fail
-        self.assertIsNone(self.numbers.get(blocking=False))
+        # This nonblocking pool_get() should fail
+        self.assertIsNone(self.numbers.pool_get(blocking=False))
         self.assertEqual(sorted(results), range(0, self.N))
 
     def test_parallel_get_blocks(self):
         """Test threads block if no object left in the pool"""
         def allocate_one_and_sleep(pool, sec, result, index):
-            n = pool.get()
+            n = pool.pool_get()
             time.sleep(sec)
             result[index] = n
-            pool.put(n)
+            pool.pool_put(n)
 
         results = [None] * (2 * self.N + 1)
         threads = [threading.Thread(target=allocate_one_and_sleep,

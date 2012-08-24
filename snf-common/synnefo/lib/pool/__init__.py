@@ -65,7 +65,7 @@ class ObjectPool(object):
         self._mutex = Lock()  # Protect shared _set oject
         self._set = set()
 
-    def get(self, blocking=True, timeout=None):
+    def pool_get(self, blocking=True, timeout=None):
         """Get an object from the pool.
 
         Get an object from the pool. Create a new object
@@ -85,26 +85,26 @@ class ObjectPool(object):
             try:
                 obj = self._set.pop()
             except KeyError:
-                obj = self._create()
+                obj = self._pool_create()
             except:
                 self._semaphore.release()
                 raise
         # We keep_semaphore locked, put() will release it
         return obj
 
-    def put(self, obj):
+    def pool_put(self, obj):
         """Put an object back into the pool.
 
         Return an object to the pool, for subsequent retrieval
-        by get() calls.
+        by pool_get() calls.
 
         """
         with self._mutex:
-            self._cleanup(obj)
+            self._pool_cleanup(obj)
             self._set.add(obj)
         self._semaphore.release()
 
-    def _create(self):
+    def _pool_create(self):
         """Create a new object to be used with this pool.
 
         Create a new object to be used with this pool,
@@ -113,7 +113,7 @@ class ObjectPool(object):
         """
         raise NotImplementedError
 
-    def _cleanup(self, obj):
+    def _pool_cleanup(self, obj):
         """Cleanup an object before being put back into the pool.
 
         Cleanup an object before it can be put back into the pull,

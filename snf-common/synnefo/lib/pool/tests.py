@@ -56,7 +56,7 @@ import sys
 import time
 import threading
 
-from synnefo.lib.pool import ObjectPool
+from synnefo.lib.pool import ObjectPool, PoolEmptyError
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -76,6 +76,9 @@ class NumbersPool(ObjectPool):
         return n
 
     def _pool_cleanup(self, obj):
+        n = int(obj)
+        if n < 0:
+            return True
         pass
 
 
@@ -83,9 +86,9 @@ class ObjectPoolTestCase(unittest.TestCase):
     def test_create_pool_requires_size(self):
         """Test __init__() requires valid size argument"""
         self.assertRaises(ValueError, ObjectPool)
-        self.assertRaises(ValueError, ObjectPool, {"size": 'size10'})
-        self.assertRaises(ValueError, ObjectPool, {"size": 0})
-        self.assertRaises(ValueError, ObjectPool, {"size": -1})
+        self.assertRaises(ValueError, ObjectPool, size="size10")
+        self.assertRaises(ValueError, ObjectPool, size=0)
+        self.assertRaises(ValueError, ObjectPool, size=-1)
 
     def test_create_pool(self):
         """Test pool creation works"""
@@ -142,8 +145,30 @@ class NumbersPoolTestCase(unittest.TestCase):
             t.join()
 
         # This nonblocking pool_get() should fail
-        self.assertIsNone(self.numbers.pool_get(blocking=False))
+        self.assertRaises(PoolEmptyError, self.numbers.pool_get,
+                          blocking=False)
         self.assertEqual(sorted(results), range(0, self.N))
+
+    def test_allocate_no_create(self):
+        """Allocate objects from the pool without creating them"""
+        for i in xrange(0, self.N):
+            self.assertIsNone(self.numbers.pool_get(create=False))
+
+        # This nonblocking pool_get() should fail
+        self.assertRaises(PoolEmptyError, self.numbers.pool_get,
+                          blocking=False)
+
+    def test_pool_cleanup_returns_failure(self):
+        """Put a broken object, test a new one is retrieved eventually"""
+        n = []
+        for _ in xrange(0, self.N):
+            n.append(self.numbers.pool_get())
+        self.assertEqual(n, range(0, self.N))
+
+        del n[-1:]
+        self.numbers.pool_put(-1)  # This is a broken object
+        self.assertFalse(self.numbers._set)
+        self.assertEqual(self.numbers.pool_get(), self.N)
 
     def test_parallel_get_blocks(self):
         """Test threads block if no object left in the pool"""

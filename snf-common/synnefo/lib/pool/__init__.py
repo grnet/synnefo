@@ -49,7 +49,7 @@ creation, destruction, allocation and release of their specific objects.
 from threading import Semaphore, Lock
 
 
-__all__ = ['ObjectPool']
+__all__ = ['ObjectPool', 'ObjectPoolError', 'PoolEmptyError']
 
 
 class ObjectPoolError(Exception):
@@ -93,9 +93,10 @@ class ObjectPool(object):
             raise PoolEmptyError()
         with self._mutex:
             try:
-                obj = self._set.pop()
-            except KeyError:
-                obj = self._pool_create() if create else None
+                try:
+                    obj = self._set.pop()
+                except KeyError:
+                    obj = self._pool_create() if create else None
             except:
                 self._semaphore.release()
                 raise

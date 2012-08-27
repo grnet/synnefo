@@ -95,16 +95,5 @@
             <p>No policies</p>
         {% endif %}
     </div>
-    {% if user in object.owner.all and more_policies %}
-    <div class="rightcol">
-        <form action="{% url group_policies_add object.id %}" method="post" class="innerlabels signup">{% csrf_token %}
-            <h2><span>NEW POLICY</span></h2>
-                {% include "im/form_render.html" %}
-                <div class="form-row submit">
-                    <input type="submit" class="submit altcol" value="+" />
-                </div>
-        </form>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

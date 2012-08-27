@@ -36,6 +36,7 @@ from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, 
         GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
 from astakos.im.api import get_menu
 from astakos.im.util import get_query
+from astakos.im.models import GroupKind
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -79,3 +80,6 @@ def menu(request):
         for item in menu_items:
             item['is_active'] = absolute(request.path) == item['url']
         return {'menu':menu_items}
+
+def group_kinds(request):
+    return {'group_kinds': GroupKind.objects.exclude(name='default').values_list('name', flat=True)}

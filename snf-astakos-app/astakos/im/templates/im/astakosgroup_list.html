@@ -14,8 +14,10 @@
     </form>
     {% else %}
         <p class="submit-rt">
-            <a href="{% url group_add %}" class="submit">Create a group</a>
-            <a href="{% url group_search %}" class="submit">Join a group</a>
+            {% for gname in group_kinds %}
+            <a href="{% url group_add gname %}" class="submit">Create {{gname}}</a>
+            {% endfor %}
+            <a href="{% url group_search %}" class="submit">Join group</a>
         </p>
     {% endif %}
       {% if object_list %}
@@ -36,18 +38,21 @@
             </thead>
             <tbody>
               {% for o in object_list %}
+                {% with o.owner.all as owners %}
+                    {% with o.members as members %}
+                        {% with o.approved_members as approved_members %}
               <tr>
                 <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
                 <td>{{o.kind}}</td>
                 <td>{{o.issue_date|date:"d/m/Y"}}</td>
                 <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-                <td>{% if user in o.owner.all %}Yes{% else %}No{% endif %}</td>
-                <td>{{ o.approved_members|length }}/{{ o.members|length }}</td>
+                <td>{% if user in owners %}Yes{% else %}No{% endif %}</td>
+                <td>{{ approved_members|length }}/{{ members|length }}</td>
                 <td>{% if o.is_enabled %}Yes{% else %}No{% endif %}</td>
                 <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-                {% if user in o.approved_members %}
+                {% if user in approved_members %}
                     <td>Active</td>
-                    {% if user not in o.owner.all %}
+                    {% if user not in owners %}
                     <td>
                         <form action="{% url group_leave o.id %}" method="post"class="login innerlabels">{% csrf_token %}
                             <div class="form-row submit clearfix">
@@ -57,7 +62,7 @@
                     </td>
                     {% endif %}
                 {% else %}
-                    {% if user in o.members %}
+                    {% if user in members %}
                         <td>Pending</td>
                     {% else %}
                         <td>Not member</td>
@@ -76,6 +81,9 @@
                     {% endif %}
                 {% endif %}
               </tr>
+                        {% endwith %}
+                    {% endwith %}
+                {% endwith %}
               {% endfor %}
             </tbody>
         </table>

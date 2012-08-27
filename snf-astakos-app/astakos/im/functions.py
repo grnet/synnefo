@@ -143,7 +143,7 @@ def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt
             'support': DEFAULT_ADMIN_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_CONTACT_EMAIL])
+        send_mail('%s alpha2 testing account activated' % SITENAME, message, sender, [DEFAULT_CONTACT_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()

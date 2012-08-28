@@ -145,7 +145,7 @@ UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False
 # Whether to display destroy action on private networks that contain vms. If
 # set to True, destroy action will only get displayed if user disconnect all
 # virtual machines from the network.
-UI_NETWORK_STRICT_DESTROY = False
+UI_NETWORK_STRICT_DESTROY = True
 
 
 ###############

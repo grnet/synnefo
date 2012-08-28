@@ -62,7 +62,8 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
 from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
-    invite as invite_func, logout as auth_logout, activate as activate_func, switch_account_to_shibboleth
+    invite as invite_func, logout as auth_logout, activate as activate_func, \
+    switch_account_to_shibboleth, send_admin_notification, SendNotificationError
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
 
 logger = logging.getLogger(__name__)
@@ -455,10 +456,19 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
         return index(request)
         
     try:
-        local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
+        local_user = AstakosUser.objects.get(
+            ~Q(id = user.id),
+            email=user.email,
+            is_active=True
+        )
     except AstakosUser.DoesNotExist:
         try:
-            activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+            activate_func(
+                user,
+                greeting_email_template_name,
+                helpdesk_email_template_name,
+                verify_email=True
+            )
             response = prepare_response(request, user, next, renew=True)
             transaction.commit()
             return response
@@ -475,7 +485,11 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
             return index(request)
     else:
         try:
-            user = switch_account_to_shibboleth(user, local_user, greeting_email_template_name)
+            user = switch_account_to_shibboleth(
+                user,
+                local_user,
+                greeting_email_template_name
+            )
             response = prepare_response(request, user, next, renew=True)
             transaction.commit()
             return response
@@ -595,38 +609,54 @@ def group_add(request, kind_name='default'):
     except:
         return HttpResponseBadRequest(_('No such group kind'))
     
-    template_name=None,
     template_loader=loader
-    extra_context=None
     post_save_redirect='/im/group/%(id)s/'
-    login_required=False
     context_processors=None
     model, form_class = get_model_and_form_class(
         model=None,
         form_class=AstakosGroupCreationForm
     )
-    # TODO better approach???
     resources = dict( (str(r.id), r) for r in Resource.objects.select_related().all() )
+    policies = []
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES, resources=resources)
         if form.is_valid():
             new_object = form.save()
+            
+            # save owner
             new_object.owners = [request.user]
+            
+            # save quota policies
             for (rid, limit) in form.resources():
                 try:
                     r = resources[rid]
                 except KeyError, e:
                     logger.exception(e)
-                    # Should I stay or should I go???
+                    # TODO Should I stay or should I go???
                     continue
                 else:
                     new_object.astakosgroupquota_set.create(
                         resource = r,
                         limit = limit
                     )
+                policies.append('%s %d' % (r, limit))
             msg = _("The %(verbose_name)s was created successfully.") %\
                                     {"verbose_name": model._meta.verbose_name}
             messages.success(request, msg, fail_silently=True)
+            
+            # send notification
+            try:
+                send_admin_notification(
+                    template_name='im/group_creation_notification.txt',
+                    dictionary={
+                        'group':new_object,
+                        'owner':request.user,
+                        'policies':policies,
+                    },
+                    subject='%s alpha2 testing group creation notification' % SITENAME
+                )
+            except SendNotificationError, e:
+                messages.error(request, e, fail_silently=True)
             return redirect(post_save_redirect, new_object)
     else:
         now = datetime.now()

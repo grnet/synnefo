@@ -103,7 +103,7 @@ class Command(BaseCommand):
         if options['active']:
             user.is_active = True
         if options['admin']:
-            user.is_admin = True
+            user.is_superuser = True
         
         try:
             user.save()

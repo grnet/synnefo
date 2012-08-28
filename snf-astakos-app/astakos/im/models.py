@@ -332,7 +332,7 @@ class AstakosUser(User):
         logger._log(LOGGING_LEVEL, msg, [])
 
     def __unicode__(self):
-        return self.username
+        return '%s (%s)' % (self.realname, self.email)
     
     def conflicting_email(self):
         q = AstakosUser.objects.exclude(username = self.username)

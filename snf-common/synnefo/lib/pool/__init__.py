@@ -49,7 +49,15 @@ creation, destruction, allocation and release of their specific objects.
 from threading import Semaphore, Lock
 
 
-__all__ = ['ObjectPool']
+__all__ = ['ObjectPool', 'ObjectPoolError', 'PoolEmptyError']
+
+
+class ObjectPoolError(Exception):
+    pass
+
+
+class PoolEmptyError(ObjectPoolError):
+    pass
 
 
 class ObjectPool(object):
@@ -65,11 +73,13 @@ class ObjectPool(object):
         self._mutex = Lock()  # Protect shared _set oject
         self._set = set()
 
-    def get(self, blocking=True, timeout=None):
+    def pool_get(self, blocking=True, timeout=None, create=True):
         """Get an object from the pool.
 
-        Get an object from the pool. Create a new object
-        if the pool has not reached its maximum size yet.
+        Get an object from the pool. By default (create=True), create a new
+        object if the pool has not reached its maximum size yet. If
+        create == False, the caller is responsible for creating the object and
+        put()ting it back into the pool when done.
 
         """
         # timeout argument only supported by gevent and py3k variants
@@ -80,31 +90,33 @@ class ObjectPool(object):
             kw["timeout"] = timeout
         r = self._semaphore.acquire(**kw)
         if not r:
-            return None
+            raise PoolEmptyError()
         with self._mutex:
             try:
-                obj = self._set.pop()
-            except KeyError:
-                obj = self._create()
+                try:
+                    obj = self._set.pop()
+                except KeyError:
+                    obj = self._pool_create() if create else None
             except:
                 self._semaphore.release()
                 raise
-        # We keep_semaphore locked, put() will release it
+        # We keep _semaphore locked, put() will release it
         return obj
 
-    def put(self, obj):
+    def pool_put(self, obj):
         """Put an object back into the pool.
 
         Return an object to the pool, for subsequent retrieval
-        by get() calls.
+        by pool_get() calls. If _pool_cleanup() returns True,
+        the object has died and is not put back into self._set.
 
         """
         with self._mutex:
-            self._cleanup(obj)
-            self._set.add(obj)
+            if not self._pool_cleanup(obj):
+                self._set.add(obj)
         self._semaphore.release()
 
-    def _create(self):
+    def _pool_create(self):
         """Create a new object to be used with this pool.
 
         Create a new object to be used with this pool,
@@ -113,7 +125,7 @@ class ObjectPool(object):
         """
         raise NotImplementedError
 
-    def _cleanup(self, obj):
+    def _pool_cleanup(self, obj):
         """Cleanup an object before being put back into the pool.
 
         Cleanup an object before it can be put back into the pull,

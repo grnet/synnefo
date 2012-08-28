@@ -1944,15 +1944,16 @@
                 nic.get_network().update_state();
             });
             this.get_vm().bind("remove", function(){
-              try {
-                this.collection.remove(this);
-              } catch (err) {};
+                try {
+                    this.collection.remove(this);
+                } catch (err) {};
             }, this);
             this.get_network().bind("remove", function(){
                 try {
                     this.collection.remove(this);
                 } catch (err) {};
             }, this);
+
         },
 
         get_vm: function() {
@@ -2013,6 +2014,7 @@
         
         add_or_update: function(nic_id, data, vm) {
             var params = _.clone(data);
+            var vm;
             params.attachment_id = params.id;
             params.id = params.id + '-' + params.network_id;
             params.vm_id = parseInt(NIC_REGEX.exec(nic_id)[1]);
@@ -2020,6 +2022,7 @@
             if (!this.get(params.id)) {
                 this.add(params);
                 var nic = this.get(params.id);
+                vm = nic.get_vm();
                 nic.get_network().decrease_connecting();
                 nic.bind("remove", function() {
                     nic.set({"removing": 0});
@@ -2027,10 +2030,15 @@
                         // network might got removed before nic
                         nic.get_network().update_state();
                     }
-                })
+                });
+
             } else {
                 this.get(params.id).set(params);
+                vm = this.get(params.id).get_vm();
             }
+            
+            // vm nics changed, trigger vm update
+            if (vm) { vm.trigger("change", vm)};
         },
         
         reset_nics: function(nics, filter_attr, filter_val) {

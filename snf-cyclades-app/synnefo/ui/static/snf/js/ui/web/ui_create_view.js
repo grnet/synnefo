@@ -343,8 +343,8 @@
 
         update_image_details: function(image) {
             this.image_details_desc.hide().parent().hide();
-            if (image.escape("description")) {
-                this.image_details_desc.text(image.get("description")).show().parent().show();
+            if (image.get_description()) {
+                this.image_details_desc.text(image.get_description(true)).show().parent().show();
             }
             var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
             if (image.get("name")) {
@@ -354,15 +354,17 @@
             var extra_details = this.image_details.find(".extra-details");
             // clean prevously added extra details
             extra_details.find(".image-detail").remove();
-
+            
+            var skip_keys = ['description', 'sortorder']
             var meta_keys = ['owner', 'OS', 'kernel', 'GUI'];
             var detail_tpl = ('<div class="clearfix image-detail {2}">' +
-                             '<span class="title">{0}</span>' +
+                             '<span class="title clearfix">{0}' +
+                             '<span class="custom">custom</span></span>' +
                              '<p class="value">{1}</p>' + 
                              '</div>');
             meta_keys = _.union(meta_keys, this.images_storage.display_metadata || []);
-
-            _.each(meta_keys, function(key) {
+            
+            var append_metadata_row = function(key, is_extra) {
                 var value;
                 var method = 'get_' + key.toLowerCase();
                 var display_method = 'display_' + key.toLowerCase();
@@ -378,12 +380,32 @@
                         value = image.get_meta(key);
                     }
                 }
-
+                    
                 if (!value) { return; }
-                
-                var label = _(key.replace(/_/g," ")).capitalize();
-                extra_details.append(detail_tpl.format(_.escape(label), _.escape(value), key.toLowerCase()));
-            })
+                 
+                var label = this.images_storage.meta_labels[key];
+                if (!label) {
+                    var label = _(key.replace(/_/g," ")).capitalize();
+                }
+                var row_cls = key.toLowerCase();
+                if (is_extra) { row_cls += " extra-meta" };
+                extra_details.append(detail_tpl.format(_.escape(label), _.escape(value), row_cls));
+            }
+
+            _.each(meta_keys, function(key) {
+                append_metadata_row.apply(this, [key]);
+            }, this);
+            
+            if (synnefo.storage.images.display_extra_metadata) {
+                _.each(image.get('metadata').values, function(value, key) {
+                    if (!_.contains(meta_keys, key) && 
+                        !_.contains(meta_keys, key.toLowerCase()) &&
+                        !_.contains(meta_keys, key.toUpperCase()) &&
+                        !_.contains(skip_keys, key)) {
+                            append_metadata_row.apply(this, [key, true]);
+                    }
+                }, this);
+            }
         },
 
         reset_images: function() {
@@ -427,7 +449,7 @@
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.escape("OS")),
                                                   _.escape(img.get_readable_size()),
-                                                  util.truncate(img.escape("description"), 35),
+                                                  util.truncate(img.get_description(), 35),
                                                   _.escape(img.display_owner())));
             image.data("image", img);
             image.data("image_id", img.id);
@@ -1083,7 +1105,7 @@
                 this.$(".confirm-cont.image .image-" + sel + " .value").text(val)
             }
             
-            set_detail("description");
+            set_detail("description", image.get_description());
             set_detail("name");
             set_detail("os", _(image.get_os()).capitalize());
             set_detail("gui", image.get_gui());

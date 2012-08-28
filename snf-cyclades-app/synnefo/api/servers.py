@@ -115,6 +115,7 @@ def nic_to_dict(nic):
          'mac_address': nic.mac,
          'ipv4': nic.ipv4 if nic.ipv4 else None,
          'ipv6': nic.ipv6 if nic.ipv6 else None}
+
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
     return d

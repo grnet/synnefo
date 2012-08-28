@@ -233,7 +233,6 @@ class AstakosUser(User):
         through='Membership')
     
     __has_signed_terms = False
-    __groupnames = []
     
     owner = models.ManyToManyField(AstakosGroup, related_name='owner', null=True)
     
@@ -243,9 +242,7 @@ class AstakosUser(User):
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms
-        if self.id:
-            self.__groupnames = [g.name for g in self.astakos_groups.all()]
-        else:
+        if not self.id:
             self.is_active = False
     
     @property
@@ -308,15 +305,6 @@ class AstakosUser(User):
             self.activation_sent = None
         
         super(AstakosUser, self).save(**kwargs)
-        
-        # set group if does not exist
-        groupname = 'shibboleth' if self.provider == 'shibboleth' else 'default'
-        if groupname not in self.__groupnames:
-            try:
-                group = AstakosGroup.objects.get(name = groupname)
-                Membership(group=group, person=self, date_joined=datetime.now()).save()
-            except AstakosGroup.DoesNotExist, e:
-                logger.exception(e)
     
     def renew_token(self):
         md5 = hashlib.md5()
@@ -575,6 +563,17 @@ def superuser_post_save(sender, instance, **kwargs):
         create_astakos_user(instance)
 
 post_save.connect(superuser_post_save, sender=User)
+
+def set_default_group(sender, instance, created, **kwargs):
+    if not created:
+        return
+    try:
+        default = AstakosGroup.objects.get(name = 'default')
+        Membership(group=default, person=instance, date_joined=datetime.now()).save()
+    except AstakosGroup.DoesNotExist, e:
+        logger.exception(e)
+
+post_save.connect(set_default_group, sender=AstakosUser)
 
 def get_resources():
     # use cache

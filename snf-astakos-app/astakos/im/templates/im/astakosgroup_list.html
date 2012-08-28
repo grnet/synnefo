@@ -5,12 +5,8 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     {% if form %}
-	<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. </p> 
-	<p>You can use the following form to search for a project:</p>
-    
-    
-    <form action="{% url group_search %}" method="post" class="withlabels">{% csrf_token %}
-         
+    <form action="{% url group_search %}" method="post" class="innerlabels signup">{% csrf_token %}
+        <h2><span>Search group:</span></h2>
             {% include "im/form_render.html" %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SEARCH" />
@@ -144,6 +140,5 @@
                 <h2>No groups found!</h2>
             {% endif %}
         {% endif %}
-    </div>
 </div>
 {% endblock %}

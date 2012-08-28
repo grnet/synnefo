@@ -105,30 +105,29 @@ def send_activation(user, template_name='im/activation_email.txt'):
     user.activation_sent = datetime.now()
     user.save()
 
-def send_admin_notification(user, template_name='im/admin_notification.txt'):
+def send_admin_notification(template_name,
+    dictionary={},
+    subject='alpha2 testing notification',
+):
     """
-    Send email to DEFAULT_ADMIN_EMAIL to notify for a new user registration.
+    Send notification email to DEFAULT_ADMIN_EMAIL.
     
     Raises SendNotificationError
     """
     if not DEFAULT_ADMIN_EMAIL:
         return
-    message = render_to_string(template_name, {
-            'user': user,
-            'baseurl': BASEURL,
-            'site_name': SITENAME,
-            'support': DEFAULT_CONTACT_EMAIL})
+    message = render_to_string(template_name, dictionary)
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+        send_mail(subject, message, sender, [DEFAULT_ADMIN_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent admin notification for user %s' % user.email
+        msg = 'Sent admin notification for user %s' % dictionary
         logger._log(LOGGING_LEVEL, msg, [])
 
-def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
+def send_helpdesk_notification(user, template_name='im/account_notification.txt'):
     """
     Send email to DEFAULT_CONTACT_EMAIL to notify for a new user activation.
     
@@ -136,19 +135,23 @@ def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt
     """
     if not DEFAULT_CONTACT_EMAIL:
         return
-    message = render_to_string(template_name, {
-            'user': user,
-            'baseurl': BASEURL,
-            'site_name': SITENAME,
-            'support': DEFAULT_ADMIN_EMAIL})
+    message = render_to_string(
+        template_name,
+        {'user': user}
+    )
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail('%s alpha2 testing account activated' % SITENAME, message, sender, [DEFAULT_CONTACT_EMAIL])
+        send_mail(
+            '%s alpha2 testing account activated' % SITENAME,
+            message,
+            sender,
+            [DEFAULT_CONTACT_EMAIL]
+        )
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent helpdesk admin notification for user %s' % user.email
+        msg = 'Sent helpdesk admin notification for %s' % user.email
         logger._log(LOGGING_LEVEL, msg, [])
 
 def send_invitation(invitation, template_name='im/invitation.txt'):

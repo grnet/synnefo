@@ -104,7 +104,7 @@ class ActivationBackend(object):
     def handle_activation(self, user, \
                           activation_template_name='im/activation_email.txt', \
                           greeting_template_name='im/welcome_email.txt', \
-                          admin_email_template_name='im/admin_notification.txt', \
+                          admin_email_template_name='im/account_notification.txt', \
                           switch_accounts_email_template_name='im/switch_accounts_email.txt'):
         """
         If the user is already active returns immediately.
@@ -132,7 +132,11 @@ class ActivationBackend(object):
                     send_activation(user, activation_template_name)
                     return VerificationSent()
             else:
-                send_admin_notification(user, admin_email_template_name)
+                send_admin_notification(
+                    template_name=admin_email_template_name,
+                    dictionary={'user':user, 'group_creation':True},
+                    subject='%s alpha2 testing account notification' % SITENAME
+                )
                 return NotificationSent()
         except BaseException, e:
             logger.exception(e)

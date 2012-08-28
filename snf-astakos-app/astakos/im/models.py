@@ -154,12 +154,10 @@ class AstakosGroup(Group):
         self.save()
     
     def approve_member(self, person):
-        try:
-            self.membership_set.create(person=person, date_joined=datetime.now())
-        except IntegrityError:
-            m = self.membership_set.get(person=person)
-            m.date_joined = datetime.now()
-            m.save()
+        m, created = self.membership_set.get_or_create(person=person)
+        # update date_joined in any case
+        m.date_joined=datetime.now()
+        m.save()
     
     def disapprove_member(self, person):
         self.membership_set.remove(person=person)
@@ -175,15 +173,24 @@ class AstakosGroup(Group):
     
     @property
     def quota(self):
-        d = {}
-        for q in  self.astakosgroupquota_set.all():
-            d[q.resource.name] = q.limit
+        d = defaultdict(int)
+        for q in self.astakosgroupquota_set.all():
+            d[q.resource] += q.limit
         return d
     
     @property
     def has_undefined_policies(self):
         # TODO: can avoid query?
         return Resource.objects.filter(~Q(astakosgroup=self)).exists()
+    
+    @property
+    def owners(self):
+        return self.owner.all()
+    
+    @owners.setter
+    def owners(self, l):
+        self.owner = l
+        map(self.approve_member, l)
 
 class AstakosUser(User):
     """
@@ -325,7 +332,7 @@ class AstakosUser(User):
         logger._log(LOGGING_LEVEL, msg, [])
 
     def __unicode__(self):
-        return self.username
+        return '%s (%s)' % (self.realname, self.email)
     
     def conflicting_email(self):
         q = AstakosUser.objects.exclude(username = self.username)
@@ -568,3 +575,7 @@ def superuser_post_save(sender, instance, **kwargs):
         create_astakos_user(instance)
 
 post_save.connect(superuser_post_save, sender=User)
+
+def get_resources():
+    # use cache
+    return Resource.objects.select_related().all()

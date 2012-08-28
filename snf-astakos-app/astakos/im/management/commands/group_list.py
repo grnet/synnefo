@@ -65,8 +65,8 @@ class Command(BaseCommand):
         if options.get('pending'):
             groups = filter(lambda g: g.is_disabled, groups)
         
-        labels = ('id', 'name', 'enabled', 'permissions')
-        columns = (3, 12, 12, 50)
+        labels = ('id', 'name', 'enabled', 'moderation', 'permissions')
+        columns = (3, 25, 12, 12, 50)
         
         if not options.get('csv'):
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -78,6 +78,7 @@ class Command(BaseCommand):
             fields = (  str(group.id),
                         group.name,
                         format_bool(group.is_enabled),
+                        format_bool(group.moderation_enabled),
                         ','.join(p.codename for p in group.permissions.all()))
             
             if options.get('csv'):

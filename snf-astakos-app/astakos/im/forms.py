@@ -490,56 +490,61 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
             user.save()
         return user
 
-from django.conf import settings
-settings.DATE_FORMAT =  '%d/%m/%Y'
-settings.DATE_INPUT_FORMATS =  ['%d/%m/%Y']
-def get_astakos_group_creation_form(request):
-    class AstakosGroupCreationForm(forms.ModelForm):
-        issue_date = forms.DateField( initial=datetime.now())
-        # TODO set initial in exact one month
-        expiration_date = forms.DateField( initial = datetime.now() + timedelta(days=30))
-        kind = forms.ModelChoiceField(queryset=GroupKind.objects.all(), empty_label=None)
-        name = forms.URLField()
-        
-        class Meta:
-            model = AstakosGroup
-        
-        def __init__(self, *args, **kwargs):
-            super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-            self.fields.keyOrder = ['kind', 'name', 'desc', 'issue_date',
-                                    'expiration_date', 'estimated_participants',
-                                    'moderation_enabled']
-        
-        def save(self, commit=True):
-            g = super(AstakosGroupCreationForm, self).save(commit=False)
-            if commit: 
-                g.save()
-                g.owner = [request.user]
-                g.approve_member(request.user)
-            return g
+class AstakosGroupCreationForm(forms.ModelForm):
+#     issue_date = forms.DateField(widget=SelectDateWidget())
+#     expiration_date = forms.DateField(widget=SelectDateWidget())
+    kind = forms.ModelChoiceField(
+        queryset=GroupKind.objects.all(),
+        label="",
+        widget=forms.HiddenInput()
+    )
+    name = forms.URLField()
     
-    return AstakosGroupCreationForm
-
-def get_astakos_group_policy_creation_form(astakosgroup):
-    class AstakosGroupPolicyCreationForm(forms.ModelForm):
-        choices = Resource.objects.filter(~Q(astakosgroup=astakosgroup))
-        resource = forms.ModelChoiceField(queryset=choices, empty_label=None)
-        # TODO check that it does not hit the db
-        group = forms.ModelChoiceField(queryset=AstakosGroup.objects.all(), initial=astakosgroup, widget=forms.HiddenInput())
-        
-        class Meta:
-            model = AstakosGroupQuota
+    class Meta:
+        model = AstakosGroup
     
-    return AstakosGroupPolicyCreationForm
+    def __init__(self, *args, **kwargs):
+        try:
+            resources = kwargs.pop('resources')
+        except KeyError:
+            resources = {}
+        super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['kind', 'name', 'desc', 'issue_date',
+                                'expiration_date', 'estimated_participants',
+                                'moderation_enabled']
+        for id, r in resources.iteritems():
+            self.fields['resource_%s' % id] = forms.IntegerField(
+                label=r,
+                required=False,
+                help_text=_('Leave it blank for no additional quota.')
+            )
+        
+    def resources(self):
+        for name, value in self.cleaned_data.items():
+            prefix, delimiter, suffix = name.partition('resource_')
+            if suffix:
+                # yield only those having a value
+                if not value:
+                    continue
+                yield (suffix, value)
 
 class AstakosGroupSearchForm(forms.Form):
-    q = forms.CharField(max_length=200, label='Group Identifier')
+    q = forms.CharField(max_length=200, label='')
 
 class MembershipCreationForm(forms.ModelForm):
     # TODO check not to hit the db
-    group = forms.ModelChoiceField(queryset=AstakosGroup.objects.all(), widget=forms.HiddenInput())
-    person = forms.ModelChoiceField(queryset=AstakosUser.objects.all(), widget=forms.HiddenInput())
-    date_requested = forms.DateField(widget=forms.HiddenInput(), input_formats="%d/%m/%Y")
+    group = forms.ModelChoiceField(
+        queryset=AstakosGroup.objects.all(),
+        widget=forms.HiddenInput()
+    )
+    person = forms.ModelChoiceField(
+        queryset=AstakosUser.objects.all(),
+        widget=forms.HiddenInput()
+    )
+    date_requested = forms.DateField(
+        widget=forms.HiddenInput(),
+        input_formats="%d/%m/%Y"
+    )
     
     class Meta:
         model = Membership

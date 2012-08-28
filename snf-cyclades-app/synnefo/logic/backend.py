@@ -328,6 +328,8 @@ def create_instance(vm, flavor, image, password, personality):
         kw['disks'][0]['provider'] = provider
 
     kw['nics'] = [nic]
+    if settings.GANETI_USE_HOTPLUG:
+        kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False

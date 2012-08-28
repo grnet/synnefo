@@ -626,7 +626,7 @@
 
         get_connectable_vms: function() {
             return storage.vms.filter(function(vm){
-                return !vm.in_error_state();
+                return !vm.in_error_state() && !vm.is_building();
             })
         },
 
@@ -2017,6 +2017,7 @@
             
             this.set({'pending_firewall': value});
             this.set({'pending_firewall_sending': true});
+            this.set({'pending_firewall_from': this.get('firewallProfile')});
 
             var success_cb = function() {
                 if (callback) {
@@ -2034,11 +2035,14 @@
 
         reset_pending_firewall: function() {
             this.set({'pending_firewall': false});
+            this.set({'pending_firewall': false});
         },
 
         check_firewall: function() {
             var firewall = this.get('firewallProfile');
             var pending = this.get('pending_firewall');
+            var previous = this.get('pending_firewall_from');
+            if (previous != firewall) { this.get_vm().require_reboot() };
             this.reset_pending_firewall();
         }
         

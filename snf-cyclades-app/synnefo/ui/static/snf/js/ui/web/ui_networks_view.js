@@ -818,7 +818,13 @@
                 } else {
                     this.cancel_destroy();
                 }
-            }, this))
+            }, this));
+            
+
+            // reset pending destory action after successful removal
+            self.network.bind("remove", _.bind(function(net){
+                net.get("actions").remove_all("destroy");
+            }));
 
             this.$(".net-actions button.no").click(function(e){
                 e.preventDefault();
@@ -1030,7 +1036,8 @@
             }
 
             if (synnefo.config.network_strict_destroy) {
-                if (this.network.get_nics().length == 0) {
+                if (this.network.get_nics().length == 0 && 
+                        !this.network.in_progress()) {
                     this.el.removeClass("disable-destroy");
                 } else {
                     this.el.addClass("disable-destroy");
@@ -1190,6 +1197,7 @@
             if (this.private_list.find(".network").length == 0) {
                 this.private_list.hide();
             }
+            
         },
 
         network_added: function(net) {

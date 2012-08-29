@@ -1,14 +1,16 @@
 {% extends "im/account_base.html" %}
 
 {% block page.body %}
-<div class="maincol {% block innerpage.class %}{% endblock %}">
-    <form action="" method="post"
-            class="withlabels">{% csrf_token %}
-          <h2><span>NEW GROUP</span></h2>
-            {% include "im/form_render.html" %}
-            <div class="form-row submit">
-                <input type="submit" class="submit altcol" value="SUBMIT" />
-            </div>
-    </form>
+<div class="projects">
+	<div class="maincol {% block innerpage.class %}{% endblock %}">
+	    <form action="" method="post"
+	            class="withlabels">{% csrf_token %}
+	          <h2><span>NEW GROUP</span></h2>
+	            {% include "im/form_render.html" %}
+	            <div class="form-row submit">
+	                <input type="submit" class="submit altcol" value="SUBMIT" />
+	            </div>
+	    </form>
+	</div>
 </div>
 {% endblock %}

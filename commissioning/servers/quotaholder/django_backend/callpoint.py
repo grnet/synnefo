@@ -9,7 +9,7 @@ from commissioning import ( QuotaholderAPI,
 
 from commissioning.utils.newname import newname
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from .models import Holder, Entity, Policy, Holding, Commission, Provision
 
 
@@ -66,7 +66,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 append(entity)
                 continue
 
-            Entity.objects.create(entity=entity, owner=owner, key=key)
+            try:
+                Entity.objects.create(entity=entity, owner=owner, key=key)
+            except IntegrityError:
+                append(entity)
 
         return rejected
 

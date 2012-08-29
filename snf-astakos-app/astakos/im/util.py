@@ -36,7 +36,6 @@ import datetime
 import time
 
 from urllib import quote
-from urlparse import urlsplit, urlunsplit
 
 from datetime import tzinfo, timedelta
 from django.http import HttpResponse, HttpResponseBadRequest, urlencode
@@ -46,34 +45,33 @@ from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
-from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, \
+from astakos.im.models import AstakosUser, Invitation
+from astakos.im.settings import COOKIE_NAME, \
     COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
 from astakos.im.functions import login
 
 logger = logging.getLogger(__name__)
 
 class UTC(tzinfo):
-   def utcoffset(self, dt):
-       return timedelta(0)
-
-   def tzname(self, dt):
-       return 'UTC'
-
-   def dst(self, dt):
-       return timedelta(0)
+    def utcoffset(self, dt):
+        return timedelta(0)
+    
+    def tzname(self, dt):
+        return 'UTC'
+    
+    def dst(self, dt):
+        return timedelta(0)
 
 def isoformat(d):
-   """Return an ISO8601 date string that includes a timezone."""
-
-   return d.replace(tzinfo=UTC()).isoformat()
+    """Return an ISO8601 date string that includes a timezone."""
+    
+    return d.replace(tzinfo=UTC()).isoformat()
 
 def epoch(datetime):
     return int(time.mktime(datetime.timetuple())*1000)
 
-def get_context(request, extra_context={}, **kwargs):
-    if not extra_context:
-        extra_context = {}
+def get_context(request, extra_context=None, **kwargs):
+    extra_context = extra_context or {}
     extra_context.update(kwargs)
     return RequestContext(request, extra_context)
 
@@ -143,7 +141,7 @@ def set_cookie(response, user):
                         expires=expire_fmt, path='/',
                         domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
     msg = 'Cookie [expiring %s] set for %s' % (user.auth_token_expires, user.email)
-    logger._log(LOGGING_LEVEL, msg, [])
+    logger.log(LOGGING_LEVEL, msg)
 
 class lazy_string(object):
     def __init__(self, function, *args, **kwargs):

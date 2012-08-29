@@ -34,12 +34,9 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser, AstakosGroup
-from ._common import add_group_permission
+from astakos.im.models import AstakosGroup
+from ._common import add_group_permission, remove_group_permission
 
 class Command(BaseCommand):
     args = "<groupname>"
@@ -73,9 +70,6 @@ class Command(BaseCommand):
             raise CommandError("Invalid group")
         
         try:
-            content_type = ContentType.objects.get(app_label='im',
-                                                       model='astakosuser')
-            
             pname = options.get('add-permission')
             if pname:
                 r, created = add_group_permission(group, pname)

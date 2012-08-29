@@ -41,7 +41,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, GroupKind, Service, Resource
-from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError
+from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
 from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
 
 import logging
@@ -83,7 +83,7 @@ def api_method(http_method=None):
 def _get_user_by_username(user_id):
     try:
         user = AstakosUser.objects.get(username = user_id)
-    except AstakosUser.DoesNotExist, e:
+    except AstakosUser.DoesNotExist:
         raise ItemNotFound('Invalid userid')
     else:
         response = HttpResponse()
@@ -107,7 +107,7 @@ def _get_user_by_email(email):
         raise BadRequest('Email missing')
     try:
         user = AstakosUser.objects.get(email = email)
-    except AstakosUser.DoesNotExist, e:
+    except AstakosUser.DoesNotExist:
         raise ItemNotFound('Invalid email')
     
     if not user.is_active:

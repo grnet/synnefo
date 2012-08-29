@@ -33,24 +33,14 @@
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.contrib import messages
-from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
-from django.db import transaction
 
-from urlparse import urljoin
-
-from astakos.im.models import AstakosUser, Invitation
-from astakos.im.forms import *
+from astakos.im.models import AstakosUser
 from astakos.im.util import get_invitation
 from astakos.im.functions import send_verification, send_activation, \
-    send_admin_notification, activate, SendMailError
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, \
-    DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
+    send_admin_notification, activate
+from astakos.im.settings import INVITATIONS_ENABLED, MODERATION_ENABLED, SITENAME, RE_USER_EMAIL_PATTERNS
 
-import socket
 import logging
 import re
 
@@ -76,10 +66,13 @@ def get_backend(request):
     try:
         backend_class = getattr(mod, backend_class_name)
     except AttributeError:
-        raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, attr))
+        raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, backend_class_name))
     return backend_class(request)
 
 class ActivationBackend(object):
+    def __init__(self, request):
+        self.request = request
+    
     def _is_preaccepted(self, user):
         # return True if user email matches specific patterns
         for pattern in RE_USER_EMAIL_PATTERNS:
@@ -150,9 +143,6 @@ class InvitationsBackend(ActivationBackend):
     account is created and the user is going to receive an email as soon as an
     administrator activates his/her account.
     """
-    def __init__(self, request):
-        self.request = request
-        super(InvitationsBackend, self).__init__()
 
     def get_signup_form(self, provider='local', instance=None):
         """
@@ -215,10 +205,6 @@ class SimpleBackend(ActivationBackend):
     supplies the necessary registation information, an incative user account is
     created and receives an email in order to activate his/her account.
     """
-    def __init__(self, request):
-        self.request = request
-        super(SimpleBackend, self).__init__()
-    
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):
             return True

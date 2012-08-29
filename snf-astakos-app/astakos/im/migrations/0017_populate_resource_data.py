@@ -1,13 +1,6 @@
 # encoding: utf-8
-import datetime
-import sys
 
-from south.db import db
 from south.v2 import DataMigration
-from django.db import models
-from django.db.utils import IntegrityError
-from collections import defaultdict
-from django.db.models import Q
 
 d = {
         'cyclades' : { 'vm' : 2 },

@@ -35,10 +35,9 @@ import json
 
 from time import time
 from hashlib import sha1
-from random import random
 
 class UserEvent(object):
-    def __init__(self, client, user, eventType, details={}):
+    def __init__(self, client, user, eventType, details=None):
         self.eventVersion = '1'
         self.occurredMillis = int(time() * 1000)
         self.receivedMillis = self.occurredMillis
@@ -47,10 +46,18 @@ class UserEvent(object):
         self.isActive = user.is_active
         self.role = 'default'
         self.eventType = eventType
-        self.details = details
+        self.details = details or {}
         hash = sha1()
-        hash.update(json.dumps([client, self.userID, self.isActive, self.role,
-                                self.eventType, self.details, self.occurredMillis]))
+        hash.update(json.dumps([client,
+                self.userID,
+                self.isActive,
+                self.role,
+                self.eventType,
+                self.details,
+                self.occurredMillis
+                ]
+            )
+        )
         self.id = hash.hexdigest()
     
     def format(self):

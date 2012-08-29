@@ -51,7 +51,7 @@ from functools import wraps
 
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, \
     SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL
-from astakos.im.models import Invitation, AstakosUser
+from astakos.im.models import AstakosUser
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def logged(func, msg):
         email = user.email if user and user.is_authenticated() else ''
         r = func(*args, **kwargs)
         if LOGGING_LEVEL:
-            logger._log(LOGGING_LEVEL, msg % email, [])
+            logger.log(LOGGING_LEVEL, msg % email)
         return r
     return with_logging
 
@@ -98,7 +98,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
         raise SendVerificationError()
     else:
         msg = 'Sent activation %s' % user.email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def send_activation(user, template_name='im/activation_email.txt'):
     send_verification(user, template_name)
@@ -106,7 +106,7 @@ def send_activation(user, template_name='im/activation_email.txt'):
     user.save()
 
 def send_admin_notification(template_name,
-    dictionary={},
+    dictionary=None,
     subject='alpha2 testing notification',
 ):
     """
@@ -116,6 +116,7 @@ def send_admin_notification(template_name,
     """
     if not DEFAULT_ADMIN_EMAIL:
         return
+    dictionary = dictionary or {}
     message = render_to_string(template_name, dictionary)
     sender = DEFAULT_FROM_EMAIL
     try:
@@ -125,7 +126,7 @@ def send_admin_notification(template_name,
         raise SendNotificationError()
     else:
         msg = 'Sent admin notification for user %s' % dictionary
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def send_helpdesk_notification(user, template_name='im/account_notification.txt'):
     """
@@ -152,7 +153,7 @@ def send_helpdesk_notification(user, template_name='im/account_notification.txt'
         raise SendNotificationError()
     else:
         msg = 'Sent helpdesk admin notification for %s' % user.email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def send_invitation(invitation, template_name='im/invitation.txt'):
     """
@@ -162,7 +163,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     """
     subject = _('Invitation to %s alpha2 testing' % SITENAME)
     url = '%s?code=%d' % (urljoin(BASEURL, reverse('index')), invitation.code)
-    message = render_to_string('im/invitation.txt', {
+    message = render_to_string(template_name, {
                 'invitation': invitation,
                 'url': url,
                 'baseurl': BASEURL,
@@ -176,7 +177,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
         raise SendInvitationError()
     else:
         msg = 'Sent invitation %s' % invitation
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def send_greeting(user, email_template_name='im/welcome_email.txt'):
     """
@@ -199,7 +200,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
         raise SendGreetingError()
     else:
         msg = 'Sent greeting %s' % user.email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     subject = _("Feedback from %s alpha2 testing" % SITENAME)
@@ -216,7 +217,7 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
         raise SendFeedbackError()
     else:
         msg = 'Sent feedback from %s' % user.email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def send_change_email(ec, request, email_template_name='registration/email_change_email.txt'):
     try:
@@ -233,7 +234,7 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         raise ChangeEmailError()
     else:
         msg = 'Sent change email for %s' % ec.user.email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
 def activate(user, email_template_name='im/welcome_email.txt',
                 helpdesk_email_template_name='im/helpdesk_notification.txt', verify_email=False):

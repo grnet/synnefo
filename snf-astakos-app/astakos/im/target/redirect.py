@@ -32,16 +32,13 @@
 # or implied, of GRNET S.A.
 
 from django.core.urlresolvers import reverse
-from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
-from django.contrib import messages
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.core.exceptions import ValidationError
 
-from urllib import quote
-from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
+from urlparse import urlunsplit, urlsplit, parse_qsl
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
 from astakos.im.util import set_cookie
@@ -95,12 +92,17 @@ def login(request):
             except ValidationError, e:
                 return HttpResponseBadRequest(e)
             # authenticate before login
-            user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
+            user = authenticate(email=request.user.email,
+                auth_token=request.user.auth_token
+            )
             auth_login(request, user)
             set_cookie(response, user)
             logger.info('Token reset for %s' % request.user.email)
         parts = list(urlsplit(next))
-        parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
+        parts[3] = urlencode({'user': request.user.email,
+            'token': request.user.auth_token
+            }
+        )
         url = urlunsplit(parts)
         response['Location'] = url
         response.status_code = 302

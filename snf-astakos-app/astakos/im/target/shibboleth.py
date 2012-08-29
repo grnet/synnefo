@@ -36,10 +36,9 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
 
-from astakos.im.util import prepare_response, get_context, get_invitation
+from astakos.im.util import prepare_response, get_context
 from astakos.im.views import requires_anonymous, render_response
-from astakos.im.settings import DEFAULT_USER_LEVEL
-from astakos.im.models import AstakosUser, Invitation, AdditionalMail
+from astakos.im.models import AstakosUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 
@@ -55,7 +54,10 @@ class Tokens:
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
 @requires_anonymous
-def login(request,  backend=None, on_login_template='im/login.html', on_creation_template='im/third_party_registration.html', extra_context={}):
+def login(request, backend=None, on_login_template='im/login.html',
+    on_creation_template='im/third_party_registration.html',
+    extra_context=None
+):
     tokens = request.META
     
     try:
@@ -76,7 +78,9 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
     email = tokens.get(Tokens.SHIB_MAIL, None)
     
     try:
-        user = AstakosUser.objects.get(provider='shibboleth', third_party_identifier=eppn)
+        user = AstakosUser.objects.get(provider='shibboleth',
+            third_party_identifier=eppn
+        )
         if user.is_active:
             return prepare_response(request,
                                     user,
@@ -97,9 +101,16 @@ def login(request,  backend=None, on_login_template='im/login.html', on_creation
                 backend = get_backend(request)
             form = backend.get_signup_form(provider='shibboleth', instance=user)
         except Exception, e:
-            form = SimpleBackend(request).get_signup_form(provider='shibboleth', instance=user)
+            form = SimpleBackend(request).get_signup_form(
+                provider='shibboleth',
+                instance=user
+            )
             messages.error(request, e)
         return render_response(on_creation_template,
-                               signup_form = form,
-                               provider = 'shibboleth',
-                               context_instance=get_context(request, extra_context))
+            signup_form = form,
+            provider = 'shibboleth',
+            context_instance=get_context(
+                request,
+                extra_context
+            )
+        )

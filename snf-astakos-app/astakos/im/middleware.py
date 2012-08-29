@@ -35,7 +35,6 @@ from urllib import unquote
 from django.contrib.auth import authenticate
 
 from astakos.im.settings import COOKIE_NAME
-from astakos.im.models import AstakosUser
 from astakos.im.functions import login
 
 class CookieAuthenticationMiddleware(object):

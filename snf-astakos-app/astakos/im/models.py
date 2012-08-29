@@ -34,28 +34,24 @@
 import hashlib
 import uuid
 import logging
-import json
 
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
-from urlparse import urlparse, urlunparse
+from urlparse import urlparse
 from random import randint
 from collections import defaultdict
-from south.signals import post_migrate
 
-from django.db import models, IntegrityError
+from django.db import models
 from django.contrib.auth.models import User, UserManager, Group
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
-from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models.signals import post_save, post_syncdb
-from django.db.models import Q, Count
+from django.db.models import Q
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
-    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
+    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, \
     EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
 
 QUEUE_CLIENT_ID = 3 # Astakos.
@@ -294,7 +290,7 @@ class AstakosUser(User):
                 username =  uuid.uuid4().hex[:30]
                 try:
                     AstakosUser.objects.get(username = username)
-                except AstakosUser.DoesNotExist, e:
+                except AstakosUser.DoesNotExist:
                     self.username = username
             if not self.provider:
                 self.provider = 'local'
@@ -317,7 +313,7 @@ class AstakosUser(User):
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
         msg = 'Token renewed for %s' % self.email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
 
     def __unicode__(self):
         return '%s (%s)' % (self.realname, self.email)

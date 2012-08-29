@@ -32,17 +32,14 @@
 # or implied, of GRNET S.A.
 
 import logging
-import socket
 
-from smtplib import SMTPException
 from urllib import quote
 from functools import wraps
+from datetime import datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import password_change
-from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
@@ -51,20 +48,29 @@ from django.forms.fields import URLField
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
     HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import redirect
-from django.template.loader import render_to_string
+from django.template import RequestContext, loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
-from django.views.generic.create_update import *
-from django.views.generic.list_detail import *
+from django.views.generic.create_update import (create_object, delete_object,
+    get_model_and_form_class
+)
+from django.views.generic.list_detail import object_list, object_detail
 
-from astakos.im.models import AstakosUser, Invitation, ApprovalTerms, AstakosGroup, Resource
+from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup, Resource,
+    EmailChange, GroupKind, Membership)
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
-from astakos.im.forms import *
-from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
-    invite as invite_func, logout as auth_logout, activate as activate_func, \
+from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm, FeedbackForm,
+    SignApprovalTermsForm, ExtendedPasswordChangeForm, EmailChangeForm,
+    AstakosGroupCreationForm, AstakosGroupSearchForm
+)
+from astakos.im.functions import (send_feedback, SendMailError,
+    invite as invite_func, logout as auth_logout, activate as activate_func,
     switch_account_to_shibboleth, send_admin_notification, SendNotificationError
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
+)
+from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
+    LOGGING_LEVEL
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +83,7 @@ def render_response(template, tab=None, status=200, reset_cookie=False, context_
     if tab is None:
         tab = template.partition('_')[0].partition('.html')[0]
     kwargs.setdefault('tab', tab)
-    html = render_to_string(template, kwargs, context_instance=context_instance)
+    html = loader.render_to_string(template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
     if reset_cookie:
         set_cookie(response, context_instance['request'].user)
@@ -114,7 +120,7 @@ def signed_terms_required(func):
     return wrapper
 
 @signed_terms_required
-def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context={}):
+def index(request, login_template_name='im/login.html', extra_context=None):
     """
     If there is logged on user renders the profile page otherwise renders login page.
 
@@ -146,7 +152,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
 @login_required
 @signed_terms_required
 @transaction.commit_manually
-def invite(request, template_name='im/invitations.html', extra_context={}):
+def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
 
@@ -222,7 +228,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
 
 @login_required
 @signed_terms_required
-def edit_profile(request, template_name='im/profile.html', extra_context={}):
+def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
 
@@ -251,6 +257,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
 
     * LOGIN_URL: login uri
     """
+    extra_context = extra_context or {}
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
     reset_cookie = False
@@ -279,7 +286,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                            context_instance = get_context(request,
                                                           extra_context))
 
-def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
+def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
 
@@ -338,7 +345,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     if additional_email != user.email:
                         user.additionalmail_set.create(email=additional_email)
                         msg = 'Additional email: %s saved for user %s.' % (additional_email, user.email)
-                        logger._log(LOGGING_LEVEL, msg, [])
+                        logger.log(LOGGING_LEVEL, msg)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)
@@ -359,7 +366,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
 
 @login_required
 @signed_terms_required
-def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
+def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
     """
     Allows a user to send feedback.
 
@@ -399,17 +406,16 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
             try:
                 send_feedback(msg, data, request.user, email_template_name)
             except SendMailError, e:
-                status = messages.ERROR
                 messages.error(request, message)
             else:
                 message = _('Feedback successfully sent')
-                messages.succeess(request, message)
+                messages.success(request, message)
     return render_response(template_name,
                            feedback_form = form,
                            context_instance = get_context(request, extra_context))
 
 @signed_terms_required
-def logout(request, template='registration/logged_out.html', extra_context={}):
+def logout(request, template='registration/logged_out.html', extra_context=None):
     """
     Wraps `django.contrib.auth.logout` and delete the cookie.
     """
@@ -419,7 +425,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         auth_logout(request)
         response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
         msg = 'Cookie deleted for %s' % email
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger.log(LOGGING_LEVEL, msg)
     next = request.GET.get('next')
     if next:
         response['Location'] = next
@@ -431,7 +437,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         return response
     messages.success(request, _('You have successfully logged out.'))
     context = get_context(request, extra_context)
-    response.write(render_to_string(template, context_instance=context))
+    response.write(loader.render_to_string(template, context_instance=context))
     return response
 
 @transaction.commit_manually
@@ -505,7 +511,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
             transaction.rollback()
             return index(request)
 
-def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):
+def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context=None):
     term = None
     terms = None
     if not term_id:
@@ -515,8 +521,8 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
             pass
     else:
         try:
-             term = ApprovalTerms.objects.get(id=term_id)
-        except ApprovalTermDoesNotExist, e:
+            term = ApprovalTerms.objects.get(id=term_id)
+        except ApprovalTerms.DoesNotExist, e:
             pass
 
     if not term:
@@ -558,7 +564,7 @@ def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
                  form_template_name='registration/email_change_form.html',
                  confirm_template_name='registration/email_change_done.html',
-                 extra_context={}):
+                 extra_context=None):
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
@@ -657,7 +663,7 @@ def group_add(request, kind_name='default'):
                 )
             except SendNotificationError, e:
                 messages.error(request, e, fail_silently=True)
-            return redirect(post_save_redirect, new_object)
+            return HttpResponseRedirect(post_save_redirect % new_object.__dict__)
     else:
         now = datetime.now()
         data = {

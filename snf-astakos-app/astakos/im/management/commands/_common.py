@@ -104,7 +104,7 @@ def remove_user_permission(user, pname):
                                     content_type=content_type)
         user.user_permissions.remove(p)
         return 1
-    except Permission.DoesNotExist, e:
+    except Permission.DoesNotExist:
         return -1
 
 def remove_group_permission(group, pname):
@@ -116,5 +116,5 @@ def remove_group_permission(group, pname):
                                     content_type=content_type)
         group.permissions.remove(p)
         return 1
-    except Permission.DoesNotExist, e:
+    except Permission.DoesNotExist:
         return -1

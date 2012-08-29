@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import AstakosUser, AstakosGroup
+from astakos.im.models import AstakosGroup
 
 from ._common import format_bool
 

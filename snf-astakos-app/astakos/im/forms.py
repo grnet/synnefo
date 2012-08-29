@@ -31,34 +31,32 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 from urlparse import urljoin
-from datetime import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, \
+from django.contrib.auth.forms import (UserCreationForm, AuthenticationForm,
     PasswordResetForm, PasswordChangeForm
+)
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
 from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
-from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
-from django.contrib import messages
 from django.utils.encoding import smart_str
 from django.forms.extras.widgets import SelectDateWidget
-from django.db.models import Q
-from django.db.models.query import EmptyQuerySet
 
-from astakos.im.models import *
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
-    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
+from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup, Invitation,
+    Membership, GroupKind, get_latest_terms
+)
+from astakos.im.settings import (INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL,
+    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL,
     RECAPTCHA_ENABLED, LOGGING_LEVEL
+)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
-# since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
-from astakos.im.util import reverse_lazy, reserved_email, get_query
+from astakos.im.util import reserved_email, get_query
 
 import logging
 import hashlib
@@ -150,7 +148,7 @@ class LocalUserCreationForm(UserCreationForm):
         user.renew_token()
         if commit:
             user.save()
-            logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
+            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
         return user
 
 class InvitedLocalUserCreationForm(LocalUserCreationForm):
@@ -231,7 +229,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         user.provider = get_query(self.request).get('provider')
         if commit:
             user.save()
-            logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
+            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
         return user
 
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
@@ -392,7 +390,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             user = AstakosUser.objects.get(email=email, is_active=True)
             if not user.has_usable_password():
                 raise forms.ValidationError(_("This account has not a usable password."))
-        except AstakosUser.DoesNotExist, e:
+        except AstakosUser.DoesNotExist:
             raise forms.ValidationError(_('That e-mail address doesn\'t have an associated user account. Are you sure you\'ve registered?'))
         return email
     

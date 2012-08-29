@@ -31,9 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, include, url
-from django.contrib.auth.views import password_change
-from django.views.generic import list_detail
+from django.conf.urls.defaults import patterns, url
 
 from astakos.im.forms import ExtendedPasswordResetForm, ExtendedPasswordChangeForm, LoginForm
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED

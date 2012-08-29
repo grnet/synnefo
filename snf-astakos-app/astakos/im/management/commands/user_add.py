@@ -34,8 +34,6 @@
 import socket
 
 from optparse import make_option
-from random import choice
-from string import digits, lowercase, uppercase
 from uuid import uuid4
 from datetime import datetime
 

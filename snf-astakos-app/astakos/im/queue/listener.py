@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 import logging
-import json
 
 from astakos.im.functions import set_user_credibility
 

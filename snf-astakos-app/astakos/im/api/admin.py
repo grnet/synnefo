@@ -35,17 +35,15 @@ import logging
 
 from functools import wraps
 from time import time, mktime
-from urlparse import urlparse
-from collections import defaultdict
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-from astakos.im.api.faults import *
-from astakos.im.api import render_fault
-from astakos.im.models import AstakosUser, Service
+from astakos.im.api.faults import (Fault, Unauthorized, InternalServerError, BadRequest,
+    Forbidden)
+from astakos.im.api import render_fault, _get_user_by_email, _get_user_by_username
+from astakos.im.models import AstakosUser
 from astakos.im.util import epoch
-from astakos.im.api import _get_user_by_email, _get_user_by_username
 
 logger = logging.getLogger(__name__)
 format = ('%a, %d %b %Y %H:%M:%S GMT')

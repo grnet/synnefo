@@ -31,14 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import socket
-
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 
-from astakos.im.models import Resource, ResourceMetadata, Service
+from astakos.im.models import Resource, Service
 
 class Command(BaseCommand):
     args = "<service> <resource> [<key>=<value>...]"

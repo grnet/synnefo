@@ -31,13 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from random import choice
-from string import digits, lowercase, uppercase
-from uuid import uuid4
-from time import time
-from os.path import abspath
-
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import AstakosGroup

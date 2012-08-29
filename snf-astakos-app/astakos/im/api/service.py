@@ -35,18 +35,15 @@ import logging
 
 from functools import wraps
 from time import time, mktime
-from urlparse import urlparse
-from collections import defaultdict
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from astakos.im.api.faults import *
-from astakos.im.api import render_fault
+from astakos.im.api.faults import Fault, Unauthorized, InternalServerError, BadRequest
+from astakos.im.api import render_fault, _get_user_by_email, _get_user_by_username
 from astakos.im.models import AstakosUser, Service
-from astakos.im.util import epoch
 from astakos.im.forms import FeedbackForm
-from astakos.im.functions import send_feedback as send_feedback_func, SendMailError
+from astakos.im.functions import send_feedback as send_feedback_func
 
 logger = logging.getLogger(__name__)
 

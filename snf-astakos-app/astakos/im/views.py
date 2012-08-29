@@ -704,8 +704,7 @@ def group_approval_request(request, group_id):
 
 @signed_terms_required
 @login_required
-def group_search(request, extra_context={}, **kwargs):
-    join_forms = {}
+def group_search(request, extra_context=None, **kwargs):
     if request.method == 'GET':
         form = AstakosGroupSearchForm()
     else:
@@ -714,43 +713,40 @@ def group_search(request, extra_context={}, **kwargs):
             q = form.cleaned_data['q'].strip()
             q = URLField().to_python(q)
             queryset = AstakosGroup.objects.select_related().filter(name=q)
-            f = MembershipCreationForm
-            for g in queryset:
-                join_forms[g.name] = f(
-                    dict(
-                        group=g,
-                        person=request.user,
-                        date_requested=datetime.now().strftime("%d/%m/%Y")
-                    )
-                )
             return object_list(
                 request,
                 queryset,
                 template_name='im/astakosgroup_list.html',
                 extra_context=dict(
                     form=form,
-                    is_search=True,
-                    join_forms=join_forms
+                    is_search=True
                 )
             )
     return render_response(
         template='im/astakosgroup_list.html',
         form = form,
-        context_instance=get_context(request)
+        context_instance=get_context(request, extra_context)
     )
 
 @signed_terms_required
 @login_required
 def group_join(request, group_id):
-    return create_object(
-        request,
-        model=Membership,
-        template_name='im/astakosgroup_list.html',
+    m = Membership(group_id=group_id,
+        person=request.user,
+        date_requested=datetime.now()
+    )
+    try:
+        m.save()
         post_save_redirect = reverse(
             'group_detail',
             kwargs=dict(group_id=group_id)
         )
-    )
+        return HttpResponseRedirect(post_save_redirect)
+    except IntegrityError, e:
+        logger.exception(e)
+        msg = _('Failed to join group.')
+        messages.error(request, msg)
+        return group_search(request)
 
 @signed_terms_required
 @login_required

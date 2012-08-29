@@ -530,25 +530,3 @@ class AstakosGroupCreationForm(forms.ModelForm):
 
 class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='')
-
-class MembershipCreationForm(forms.ModelForm):
-    # TODO check not to hit the db
-    group = forms.ModelChoiceField(
-        queryset=AstakosGroup.objects.all(),
-        widget=forms.HiddenInput()
-    )
-    person = forms.ModelChoiceField(
-        queryset=AstakosUser.objects.all(),
-        widget=forms.HiddenInput()
-    )
-    date_requested = forms.DateField(
-        widget=forms.HiddenInput(),
-        input_formats="%d/%m/%Y"
-    )
-    
-    class Meta:
-        model = Membership
-        exclude = ('date_joined',)
-    
-    def __init__(self, *args, **kwargs):
-        super(MembershipCreationForm, self).__init__(*args, **kwargs)

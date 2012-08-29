@@ -112,18 +112,10 @@
 			                        <td>Pending</td>
 			                    {% else %}
 			                        <td>Not member 
-			                        {% if join_forms %}
-			                         
 			                            <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
-			                                {% with join_forms|lookup:o.name as form %}
-			                                    {% include "im/form_render.html" %}
-			                                {% endwith %}
-			                                
 			                                <input type="submit"   value="JOIN GROUP" />
-			                                 
 			                            </form>
 			                        </td>
-			                        {% endif %}
 			                    {% endif %}
 			                {% endif %}
 			              </tr>

@@ -37,12 +37,13 @@ from optparse import make_option
 from random import choice
 from string import digits, lowercase, uppercase
 from uuid import uuid4
+from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser, AstakosGroup
+from astakos.im.models import AstakosUser, AstakosGroup, Membership
 from astakos.im.util import reserved_email
 
 from ._common import add_user_permission
@@ -121,7 +122,7 @@ class Command(BaseCommand):
             if groupname is not None:
                 try:
                     group = AstakosGroup.objects.get(name=groupname)
-                    user.astakos_groups.add(group)
+                    Membership(group=group, person=user, date_joined=datetime.now()).save()
                     self.stdout.write('Group: %s added successfully\n' % groupname)
                 except AstakosGroup.DoesNotExist, e:
                     self.stdout.write('Group named %s does not exist\n' % groupname)

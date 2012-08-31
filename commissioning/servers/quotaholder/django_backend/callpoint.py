@@ -191,7 +191,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             m = "Invalid key for entity '%s'" % (entity,)
             raise InvalidKeyError(m)
 
-        holdings = e.holdings.filter(entity=entity)
+        holdings = e.holding_set.filter(entity=entity)
         resources = [h.resource for h in holdings]
         return resources
 
@@ -265,7 +265,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.save()
                 newp.save()
 
-                if p is not None and p.holdings.count() == 0:
+                if p is not None and p.holding_set.count() == 0:
                     p.delete()
 
         return rejected

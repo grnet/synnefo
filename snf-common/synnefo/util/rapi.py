@@ -1684,9 +1684,12 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "gateway6": gateway6,
       "network6": network6,
       "mac_prefix": mac_prefix,
-      "network_type": network_type,
-      "reserved_ips": reserved_ips
+      "network_type": network_type
       }
+    
+    # not used by synnefo, for now
+    if reserved_ips:
+        body['reserved_ips'] = reserved_ips
 
     if tags:
         tags = tags.split(',')

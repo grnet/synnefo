@@ -33,14 +33,22 @@
 
 import logging
 
-from astakos.im.functions import set_user_credibility
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger('endpoint.aquarium')
 
-logger = logging.getLogger(__name__)
+from astakos.im.models import AstakosUser
 
 def on_creditevent(msg):
+    """
+    Queue handler for updating AstakosUser has_credits
+    """
     try:
         email = msg.get('userid')
-        has_credits = True if msg.get('status') == 'on' else False
-        set_user_credibility(email, has_credits)
-    except Exception, e:
+        has_credits = msg.get('status') == 'on' or False
+        user = AstakosUser.objects.get(email=email, is_active=True)
+        user.has_credits = has_credits
+        user.save()
+    except BaseException, e:
         logger.exception(e)

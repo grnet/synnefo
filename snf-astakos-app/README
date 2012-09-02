@@ -106,7 +106,7 @@ showuser         Show user info
 
 To update user credibility from the billing system (Aquarium), enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
 
-    pithos-dispatcher --exchange=aquarium --callback=astakos.im.queue.listener.on_creditevent
+    pithos-dispatcher --exchange=aquarium --callback=astakos.im.endpoints.aquarium.consumer.on_creditevent
 
 Load groups:
 ------------

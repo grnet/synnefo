@@ -39,6 +39,7 @@ from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
 from astakos.im.models import AstakosUser, AstakosGroup, Membership
+from astakos.im.endpoints.aquarium.producer import report_user_credits_event
 from ._common import remove_user_permission, add_user_permission
 
 class Command(BaseCommand):
@@ -104,6 +105,11 @@ class Command(BaseCommand):
         make_option('--delete-permission',
             dest='delete-permission',
             help="Delete user permission"),
+        make_option('--refill-credits',
+            action='store_true',
+            dest='refill',
+            default=False,
+            help="Refill user credits"),
         )
     
     def handle(self, *args, **options):
@@ -200,6 +206,9 @@ class Command(BaseCommand):
         
         if options['renew_token']:
             user.renew_token()
+        
+        if options['refill']:
+            report_user_credits_event(user)
         
         try:
             user.save()

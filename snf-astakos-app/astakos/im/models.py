@@ -38,7 +38,6 @@ import logging
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
-from urlparse import urlparse
 from random import randint
 from collections import defaultdict
 
@@ -47,14 +46,17 @@ from django.contrib.auth.models import User, UserManager, Group
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models.signals import post_save, post_syncdb
+from django.db.models.signals import pre_save, post_save, post_syncdb, post_delete
+from django.dispatch import Signal
 from django.db.models import Q
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
-    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, \
-    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
+from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
+    AUTH_TOKEN_DURATION, BILLING_FIELDS, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
+)
+from astakos.im.endpoints.quotaholder import register_users, send_quota
+from astakos.im.endpoints.aquarium.producer import report_user_event
 
-QUEUE_CLIENT_ID = 3 # Astakos.
+from astakos.im.tasks import propagate_groupmembers_quota
 
 logger = logging.getLogger(__name__)
 
@@ -108,13 +110,23 @@ class GroupKind(models.Model):
 class AstakosGroup(Group):
     kind = models.ForeignKey(GroupKind)
     desc = models.TextField('Description', null=True)
-    policy = models.ManyToManyField(Resource, null=True, blank=True, through='AstakosGroupQuota')
-    creation_date = models.DateTimeField('Creation date', default=datetime.now())
+    policy = models.ManyToManyField(Resource, null=True, blank=True,
+        through='AstakosGroupQuota'
+    )
+    creation_date = models.DateTimeField('Creation date',
+        default=datetime.now()
+    )
     issue_date = models.DateTimeField('Issue date', null=True)
     expiration_date = models.DateTimeField('Expiration date', null=True)
-    moderation_enabled = models.BooleanField('Moderated membership?', default=True)
-    approval_date = models.DateTimeField('Activation date', null=True, blank=True)
-    estimated_participants = models.PositiveIntegerField('Estimated #participants', null=True)
+    moderation_enabled = models.BooleanField('Moderated membership?',
+        default=True
+    )
+    approval_date = models.DateTimeField('Activation date', null=True,
+        blank=True
+    )
+    estimated_participants = models.PositiveIntegerField('Estimated #members',
+        null=True
+    )
     
     @property
     def is_disabled(self):
@@ -137,17 +149,25 @@ class AstakosGroup(Group):
             return False
         return True
     
-    @property
-    def participants(self):
-        return len(self.approved_members)
+#     @property
+#     def participants(self):
+#         return len(self.approved_members)
     
     def enable(self):
+        if self.is_enabled:
+            return
         self.approval_date = datetime.now()
         self.save()
+        quota_disturbed.send(sender=self, users=approved_members)
+        update_groupmembers_quota.apply_async(args=[self], eta=self.issue_date)
+        update_groupmembers_quota.apply_async(args=[self], eta=self.expiration_date)
     
     def disable(self):
+        if self.is_disabled:
+            return
         self.approval_date = None
         self.save()
+        quota_disturbed.send(sender=self, users=self.approved_members)
     
     def approve_member(self, person):
         m, created = self.membership_set.get_or_create(person=person)
@@ -160,12 +180,11 @@ class AstakosGroup(Group):
     
     @property
     def members(self):
-        return map(lambda m:m.person, self.membership_set.all())
+        return [m.person for m in self.membership_set.all()]
     
     @property
     def approved_members(self):
-        f = filter(lambda m:m.is_approved, self.membership_set.all())
-        return map(lambda m:m.person, f)
+        return [m.person for m in self.membership_set.all() if m.is_approved]
     
     @property
     def quota(self):
@@ -173,11 +192,6 @@ class AstakosGroup(Group):
         for q in self.astakosgroupquota_set.all():
             d[q.resource] += q.limit
         return d
-    
-    @property
-    def has_undefined_policies(self):
-        # TODO: can avoid query?
-        return Resource.objects.filter(~Q(astakosgroup=self)).exists()
     
     @property
     def owners(self):
@@ -266,7 +280,10 @@ class AstakosUser(User):
         d = defaultdict(int)
         for q in  self.astakosuserquota_set.all():
             d[q.resource.name] += q.limit
-        for g in self.astakos_groups.all():
+        for m in self.membership_set.all():
+            if not m.is_approved:
+                continue
+            g = m.group
             if not g.is_enabled:
                 continue
             for r, limit in g.quota.iteritems():
@@ -294,7 +311,6 @@ class AstakosUser(User):
                     self.username = username
             if not self.provider:
                 self.provider = 'local'
-        report_user_event(self)
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent
@@ -374,9 +390,11 @@ class Membership(models.Model):
     def approve(self):
         self.date_joined = datetime.now()
         self.save()
-        
+        quota_disturbed.send(sender=self, users=(self.person,))
+    
     def disapprove(self):
         self.delete()
+        quota_disturbed.send(sender=self, users=(self.person,))
 
 class AstakosGroupQuota(models.Model):
     limit = models.PositiveIntegerField('Limit')
@@ -427,53 +445,6 @@ class Invitation(models.Model):
 
     def __unicode__(self):
         return '%s -> %s [%d]' % (self.inviter, self.username, self.code)
-
-def report_user_event(user):
-    def should_send(user):
-        # report event incase of new user instance
-        # or if specific fields are modified
-        if not user.id:
-            return True
-        try:
-            db_instance = AstakosUser.objects.get(id = user.id)
-        except AstakosUser.DoesNotExist:
-            return True
-        for f in BILLING_FIELDS:
-            if (db_instance.__getattribute__(f) != user.__getattribute__(f)):
-                return True
-        return False
-
-    if QUEUE_CONNECTION and should_send(user):
-
-        from astakos.im.queue.userevent import UserEvent
-        from synnefo.lib.queue import exchange_connect, exchange_send, \
-                exchange_close
-
-        eventType = 'create' if not user.id else 'modify'
-        body = UserEvent(QUEUE_CLIENT_ID, user, eventType, {}).format()
-        conn = exchange_connect(QUEUE_CONNECTION)
-        parts = urlparse(QUEUE_CONNECTION)
-        exchange = parts.path[1:]
-        routing_key = '%s.user' % exchange
-        exchange_send(conn, routing_key, body)
-        exchange_close(conn)
-
-def _generate_invitation_code():
-    while True:
-        code = randint(1, 2L**63 - 1)
-        try:
-            Invitation.objects.get(code=code)
-            # An invitation with this code already exists, try again
-        except Invitation.DoesNotExist:
-            return code
-
-def get_latest_terms():
-    try:
-        term = ApprovalTerms.objects.order_by('-id')[0]
-        return term
-    except IndexError:
-        pass
-    return None
 
 class EmailChangeManager(models.Manager):
     @transaction.commit_on_success
@@ -534,6 +505,23 @@ class AdditionalMail(models.Model):
     owner = models.ForeignKey(AstakosUser)
     email = models.EmailField()
 
+def _generate_invitation_code():
+    while True:
+        code = randint(1, 2L**63 - 1)
+        try:
+            Invitation.objects.get(code=code)
+            # An invitation with this code already exists, try again
+        except Invitation.DoesNotExist:
+            return code
+
+def get_latest_terms():
+    try:
+        term = ApprovalTerms.objects.order_by('-id')[0]
+        return term
+    except IndexError:
+        pass
+    return None
+
 def create_astakos_user(u):
     try:
         AstakosUser.objects.get(user_ptr=u.pk)
@@ -542,35 +530,88 @@ def create_astakos_user(u):
         extended_user.__dict__.update(u.__dict__)
         extended_user.renew_token()
         extended_user.save()
-    except:
+    except BaseException, e:
+        logger.exception(e)
         pass
 
-def superuser_post_syncdb(sender, **kwargs):
-    # if there was created a superuser
-    # associate it with an AstakosUser
+def fix_superusers(sender, **kwargs):
+    # Associate superusers with AstakosUser
     admins = User.objects.filter(is_superuser=True)
     for u in admins:
         create_astakos_user(u)
 
-post_syncdb.connect(superuser_post_syncdb)
-
-def superuser_post_save(sender, instance, **kwargs):
-    if instance.is_superuser:
-        create_astakos_user(instance)
-
-post_save.connect(superuser_post_save, sender=User)
-
-def set_default_group(sender, instance, created, **kwargs):
+def user_post_save(sender, instance, created, **kwargs):
     if not created:
         return
+    create_astakos_user(instance)
+
+def set_default_group(user):
     try:
         default = AstakosGroup.objects.get(name = 'default')
-        Membership(group=default, person=instance, date_joined=datetime.now()).save()
+        Membership(group=default, person=user, date_joined=datetime.now()).save()
     except AstakosGroup.DoesNotExist, e:
         logger.exception(e)
 
-post_save.connect(set_default_group, sender=AstakosUser)
+def astakosuser_pre_save(sender, instance, **kwargs):
+    instance.aquarium_report = False
+    instance.new = False
+    try:
+        db_instance = AstakosUser.objects.get(id = instance.id)
+    except AstakosUser.DoesNotExist:
+        # create event
+        instance.aquarium_report = True
+        instance.new = True
+    else:
+        get = AstakosUser.__getattribute__
+        l = filter(lambda f: get(db_instance, f) != get(instance, f),
+            BILLING_FIELDS
+        )
+        instance.aquarium_report = True if l else False
 
-def get_resources():
-    # use cache
-    return Resource.objects.select_related().all()
+def astakosuser_post_save(sender, instance, created, **kwargs):
+    if instance.aquarium_report:
+        report_user_event(instance, create=instance.new)
+    if not created:
+        return
+    set_default_group(instance)
+    # TODO handle socket.error & IOError
+    register_users((instance,))
+
+def send_quota_disturbed(sender, instance, **kwargs):
+    users = []
+    extend = users.extend
+    if sender == Membership:
+        if not instance.group.is_enabled:
+            return
+        extend([instance.person])
+    elif sender == AstakosUserQuota:
+        extend([instance.user])
+    elif sender == AstakosGroupQuota:
+        if not instance.group.is_enabled:
+            return
+        extend(instance.group.astakosuser_set.all())
+    elif sender == AstakosGroup:
+        if not instance.is_enabled:
+            return
+    quota_disturbed.send(sender=sender, users=users)
+
+def on_quota_disturbed(sender, users, **kwargs):
+    print '>>>', locals()
+    if not users:
+        return
+    send_quota(users)
+
+post_syncdb.connect(fix_superusers)
+post_save.connect(user_post_save, sender=User)
+pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
+post_save.connect(astakosuser_post_save, sender=AstakosUser)
+
+quota_disturbed = Signal(providing_args=["users"])
+quota_disturbed.connect(on_quota_disturbed)
+
+post_delete.connect(send_quota_disturbed, sender=AstakosGroup)
+post_delete.connect(send_quota_disturbed, sender=Membership)
+post_save.connect(send_quota_disturbed, sender=AstakosUserQuota)
+post_delete.connect(send_quota_disturbed, sender=AstakosUserQuota)
+post_save.connect(send_quota_disturbed, sender=AstakosGroupQuota)
+post_delete.connect(send_quota_disturbed, sender=AstakosGroupQuota)

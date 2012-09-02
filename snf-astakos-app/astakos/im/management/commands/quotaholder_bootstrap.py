@@ -31,56 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
 
-from astakos.im.models import AstakosGroup
-
-from ._common import format_bool
-
+from astakos.im.models import AstakosUser
+from astakos.im.endpoints.quotaholder import register_users
 
 class Command(BaseCommand):
-    help = "List groups"
-    
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        make_option('-p',
-            action='store_true',
-            dest='pending',
-            default=False,
-            help="List only groups pending enable"),
-    )
+    help = "Send user information and resource quota in the Quotaholder"
     
     def handle(self, *args, **options):
-        groups = AstakosGroup.objects.all()
-        
-        if options.get('pending'):
-            groups = filter(lambda g: g.is_disabled, groups)
-        
-        labels = ('id', 'name', 'enabled', 'moderation', 'permissions')
-        columns = (3, 25, 12, 12, 50)
-        
-        if not options.get('csv'):
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-        
-        for group in groups:
-            fields = (  str(group.id),
-                        group.name,
-                        format_bool(group.is_enabled),
-                        format_bool(group.moderation_enabled),
-                        ','.join(p.codename for p in group.permissions.all()))
-            
-            if options.get('csv'):
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
-            self.stdout.write(line.encode('utf8') + '\n')
+        try:
+            r = register_users(AstakosUser.objects.all())
+            self.stdout.write("Rejected: %s\n" % r)
+        except BaseException, e:
+            print e
+            raise CommandError("Bootstrap failed.")

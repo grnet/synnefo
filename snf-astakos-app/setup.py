@@ -81,6 +81,9 @@ INSTALL_REQUIRES = [
     'snf-common>=0.9.0',
     'django-recaptcha',
     'django-ratelimit==0.1'
+    'django-ratelimit==0.1',
+    'commissioning',
+    'celery'
 ]
 
 EXTRAS_REQUIRES = {

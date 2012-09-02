@@ -54,6 +54,11 @@ class Command(BaseCommand):
             dest='enable',
             default=False,
             help="Enable group"),
+        make_option('--disable',
+            action='store_true',
+            dest='disable',
+            default=False,
+            help="Disable group"),
     )
     
     def handle(self, *args, **options):
@@ -92,5 +97,8 @@ class Command(BaseCommand):
             
             if options.get('enable'):
                 group.enable()
+            elif options.get('disable'):
+                group.disable()
+        
         except Exception, e:
             raise CommandError(e)

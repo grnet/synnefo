@@ -667,9 +667,7 @@ def group_add(request, kind_name='default'):
     else:
         now = datetime.now()
         data = {
-            'kind':kind,
-            'issue_date':now,
-            'expiration_date':now + timedelta(days=30)
+            'kind':kind
         }
         form = form_class(data, resources=resources)
 
@@ -796,8 +794,7 @@ def handle_membership():
                     template='im/astakosgroup_detail.html',
                     context_instance=get_context(request),
                     object=m.group,
-                    quota=m.group.quota,
-                    more_policies=m.group.has_undefined_policies
+                    quota=m.group.quota
                 )
         return wrapper
     return decorator

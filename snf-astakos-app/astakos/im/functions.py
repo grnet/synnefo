@@ -279,16 +279,6 @@ def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):
     inviter.invitations = max(0, inviter.invitations - 1)
     inviter.save()
 
-def set_user_credibility(email, has_credits):
-    try:
-        user = AstakosUser.objects.get(email=email, is_active=True)
-        user.has_credits = has_credits
-        user.save()
-    except AstakosUser.DoesNotExist, e:
-        logger.exception(e)
-    except ValidationError, e:
-        logger.exception(e)
-
 class SendMailError(Exception):
     pass
 

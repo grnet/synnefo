@@ -50,7 +50,7 @@ form.innerlabels input.submit,
 form.innerlabels input[type="submit"]		{margin-left:0;}
 form input.submit:hover, 
 form input[type="submit"]:hover,
-a.submit:hover					 			{ background-color:#3582AC;border-color:#3582ac; text-decoration:none;}
+.content a.submit:hover					 	{ background-color:#3582AC;border-color:#3582ac; text-decoration:none;}
 form input.submit.back, 
 form input[type="submit"].back 				{ text-decoration: none; bottom: 0; float: right; z-index: 500; }
 form input.submit.back.right, 
@@ -74,7 +74,7 @@ form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; 
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
 form span.info								{ position:absolute;z-index:10; bottom:32px;  }
 form.innerlabels span.info					{ left: 290px; }
-form.withlabels span.info					{ left: 440px; }
+form.withlabels span.info					{ left:485px;  }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
 form span.info:hover em 					{ background-position:-4px -3px; }
 form span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 12px; min-height:50px; display:none; font-size:0.846em;}
@@ -90,7 +90,7 @@ form.withlabels .with-checkbox .checkbox-widget		{ position:absolute; left:224px
 form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; }
 form.withlabels .extra-img					{ left:485px; bottom:12px; }
 form.innerlabels .extra-img					{ bottom:10px; left:290px }
-form .with-checkbox .extra-img				{ top:20px; } 
+form .with-checkbox .extra-img				{   } 
 form .with-errors .extra-img 				{ background:url(../images/symbols.png) no-repeat -58px -3px;  z-index:101;}
 form .with-errors textarea+.extra-img,
 form .with-errors noscript+.extra-img		{ background:transparent;}
@@ -98,6 +98,7 @@ form .with-errors input[type="text"],
 form .with-errors input[type="password"]	{ border:1px solid red;}
 form.innerlabels .with-errors .extra-img	{ left:290px;}
 form input[readonly="True"]+ span.extra-img { background:url(../images/symbols.png) no-repeat -111px -3px; z-index:101;}
+form.withlabels .with-checkbox .extra-img	{ display:none; } 
 .errorlist									{ margin:0; padding:0;}
 .errorlist li								{ list-style:none outside;}
 
@@ -120,39 +121,9 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha .actions-wrap				{ border-top:1px solid #808080 }
 
 input.submit:focus,
-input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none; }						
-
-@media screen and (max-width : 591px) 		{ 
-	form.withlabels .extra-img	   				{ left:222px; }
-    form.withlabels span.info 	   				{ left:222px; }
-    form .extra-img	               				{ left:222px; }
-    .form-error		              	 			{ margin-left:0!important; } 
-    
-}
-
-
-@media screen and (max-width : 410px) 		{ 
-	form.login									{ width:auto; }
-	form textarea, 
-	form input.text, 
-	form input[type="text"], 
-	form input[type="password"] 				{ width:90%; }
-	form.withlabels select									{ width:90%; }
-	form.innerlabels .extra-img,
-	form.innerlabels .with-errors .extra-img 	{ left:90%; }
-	form.innerlabels							{ width:auto; }
-	.container form.innerlabels.overflow-hidden	{ overflow:visible;}
-	form span.info								{ display:none; }
-	#okeanos_recaptcha							{ width:inherit }
-	#okeanos_recaptcha #recaptcha_response_field	{ width:55%; }
-	#okeanos_recaptcha #recaptcha_image	img		{ width:80%; }
-}
-
-
-@media screen and ( width : 320px) 		{ 
-	#okeanos_recaptcha							{ width:259px }
-    
-}
+input[type="submit"]:focus,
+.content a.submit:focus							{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none; }						
+.content a.submit:hover							{ border-color:#3582AC; }
 
 p+ form											{ margin:2em 0; }
 .full-dotted legend								{ padding-top:40px; }
@@ -164,8 +135,8 @@ form+p:first-child, form legend + p				{ margin-bottom:2em; }
 
 /* dropkick select extra styles */
 
-.form-row .dk_container							{ border-radius:0; margin-bottom:0; border: 1px solid #808080; height: 21px; letter-spacing: 1px; line-height: 22px; margin-bottom: -1px; width:254px; padding:0.8em 0; font-weight:normal; font-family: 'Didact Gothic', Verdana, sans-serif; font-size:1em; background:transparent; color:#808080;}
-.form-row .dk_toggle  							{ border-radius:0;  padding:7px 0;  border:0 none; text-indent:1.5em; text-decoration:none;background-image:url(../images/arrow_02.jpg); background-position:90% 5px;}
+.form-row .dk_container							{ border-radius:0; margin-bottom:0; border: 1px solid #808080; height: 21px; letter-spacing: 1px; line-height: 22px; margin-bottom: -1px; width:300px; padding:0.8em 0; font-weight:normal; font-family: 'Didact Gothic', Verdana, sans-serif; font-size:1em; background:transparent; color:#808080;}
+.form-row .dk_toggle  							{ border-radius:0;  padding:2px 0 10px;  border:0 none; text-indent:1.5em; text-decoration:none;background-image:url(../images/arrow-down_black.png); background-position:90% 5px;}
 .form-row .dk_toggle:hover						{ text-decoration:none; }
 .form-row .dk_open								{ background:transparent; box-shadow: none; }
 .form-row .dk_open .dk_toggle					{ background-color:transparent; border:0 none; color:#000; box-shadow: none;}
@@ -176,8 +147,60 @@ form+p:first-child, form legend + p				{ margin-bottom:2em; }
 .form-row .dk_options_inner						{ padding:0; margin:0; box-shadow:none; text-shadow:none;  border-radius:0; border:1px solid #8C8C8E ;}
 .form-row .dk-options_inner li					{ list-style:none outside; }
 .form-row .dk_options a:hover, 
-.form-row .dk_option_current a					{ text-shadow:none; background-color: #E7E7E3;}
+.form-row .dk_option_current a					{ text-shadow:none; background-color: #E7E7E3; text-decoration:none;}
 
 form.link-like									{ display:inline-block; margin:0 5px; }
 form.link-like input[type="submit"]				{ margin:0; padding:0 5px; background:transparent; color:#F89A1C; cursor:pointer; height:auto;  }
 form.link-like input[type="submit"]:hover		{ text-decoration:underline;  }
+.projects form.withlabels .checkbox-widget		{ margin-top:5px; }
+.projects form .with-checkbox					{ margin:20px 0; }
+.projects form .with-checkbox label				{ padding-top:7px; }
+.projects form .with-checkbox form span.info	{ bottom:24px; }
+
+
+@media screen and (max-width : 630px) 		{ 
+	form.withlabels .extra-img	   				{ left:260px; }
+    form.withlabels span.info 	   				{ left:260px; }
+    form .extra-img	               				{ left:260px; }
+    .form-error		              	 			{ margin-left:0!important; } 
+    
+}
+
+
+@media screen and (max-width : 410px) 		{ 
+	form.withlabels .extra-img	   				{ left:90% }	
+	form.login									{ width:auto; }
+	form textarea, 
+	form input.text, 
+	form input[type="text"], 
+	form input[type="password"] 				{ width:90%; }
+	form.withlabels input[type="text"], 
+    form.withlabels input[type="password"],
+    form.withlabels textarea,
+    form textarea, 
+	form input.text, 
+	form input[type="text"], 
+	form input[type="password"]					{ width:90%; }
+	form.withlabels select						{ width:90%; }
+	form.innerlabels .extra-img,
+	form.innerlabels .with-errors .extra-img 	{ left:90%; }
+	form.innerlabels							{ width:auto; }
+	.container form.innerlabels.overflow-hidden	{ overflow:visible;}
+	form span.info								{ display:none; }
+	#okeanos_recaptcha							{ width:inherit }
+	#okeanos_recaptcha #recaptcha_response_field	{ width:55%; }
+	#okeanos_recaptcha #recaptcha_image	img		{ width:80%; }
+}
+
+
+@media screen and ( max-width : 320px) 		{ 
+	#okeanos_recaptcha							{ width:259px }
+    form.withlabels input[type="text"], 
+    form.withlabels input[type="password"],
+    form.withlabels textarea,
+    form textarea, 
+	form input.text, 
+	form input[type="text"], 
+	form input[type="password"]					{ width:90%; }
+	.form-row .dk_container 					{ width:100%; }
+}

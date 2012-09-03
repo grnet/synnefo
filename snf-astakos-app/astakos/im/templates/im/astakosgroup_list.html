@@ -5,8 +5,8 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     {% if form %}
-    <form action="{% url group_search %}" method="post" class="innerlabels signup">{% csrf_token %}
-        <h2><span>Search group:</span></h2>
+    <p>You can search for a group by name</p>
+    <form action="{% url group_search %}" method="post" class="withlabels signup">{% csrf_token %}
             {% include "im/form_render.html" %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SEARCH" />

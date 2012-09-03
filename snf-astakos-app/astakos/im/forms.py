@@ -527,4 +527,4 @@ class AstakosGroupCreationForm(forms.ModelForm):
                 yield (suffix, value)
 
 class AstakosGroupSearchForm(forms.Form):
-    q = forms.CharField(max_length=200, label='')
+    q = forms.CharField(max_length=200, label='Search group')

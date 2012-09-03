@@ -18,13 +18,13 @@
 		 <h3>DETAILS:</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
-		 	<dd>{{object.name}}</dd>
+		 	<dd>{{object.name}}&nbsp;</dd>
 		 	<dt>Type</dt>
-		 	<dd>{{object.kind|capfirst}}</dd>
+		 	<dd>{{object.kind|capfirst}}&nbsp;</dd>
 		 	<dt>Issue date:</dt>
-		 	<dd>{{object.issue_date|date:"d/m/Y"}}</dd>
+		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Expiration Date</dt>
-		 	<dd>{{object.expiration_date|date:"d/m/Y"}}</dd>
+		 	<dd>{{object.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Modaration</dt>
 		 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Activated</dt>
@@ -51,7 +51,7 @@
 		 	{% for k in quota|dkeys %}
                 
                 <dt>{{ k }}</dt>
-                <dd>{{ quota|lookup:k }}</dd>
+                <dd>{{ quota|lookup:k }}&nbsp;</dd>
                   
             {% endfor %}
 		</dl>
@@ -96,6 +96,21 @@
 		 {% else %}
             <p>No members yet!</p>
         {% endif %}
-	 </div>   
+	 </div>
+     
+     
+    {% if user in object.owner.all and more_policies %}
+    <div class="full-dotted">
+        <form action="{% url group_policies_add object.id %}" method="post" class="withlabels">{% csrf_token %}
+            <h2>NEW POLICY</h2>
+                {% include "im/form_render.html" %}
+                <div class="form-row submit">
+                    <input type="submit" class="submit altcol" value="ADD POLICY" />
+                </div>
+        </form>
+    </div>
+    {% endif %}
+     
+    
 </div>
 {% endblock %}

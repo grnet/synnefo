@@ -36,9 +36,10 @@ import logging
 
 from django.utils.translation import ugettext as _
 
-from commissioning.clients.quotaholder import QuotaholderHTTP
-
 from astakos.im.settings import QUOTA_HOLDER_URL, LOGGING_LEVEL
+
+if QUOTA_HOLDER_URL:
+    from commissioning.clients.quotaholder import QuotaholderHTTP
 
 ENTITY_KEY = '1'
 

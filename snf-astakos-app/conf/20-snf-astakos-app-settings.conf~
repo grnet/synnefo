@@ -17,9 +17,9 @@
 #}
 
 # Address to use for outgoing emails
-#ASTAKOS_DEFAULT_FROM_EMAIL = 'GRNET Cloud <no-reply@grnet.gr>'
+#ASTAKOS_DEFAULT_FROM_EMAIL = 'GRNET Cloud <no-reply@grnet.gr>' #Deprecated: use SERVER_EMAIL instead
 #ASTAKOS_DEFAULT_CONTACT_EMAIL = 'support@cloud.grnet.gr'
-#ASTAKOS_DEFAULT_ADMIN_EMAIL = 'admin@cloud.grnet.gr'
+#ASTAKOS_DEFAULT_ADMIN_EMAIL = 'admin@cloud.grnet.gr' #Deprecated: use ADMINS instead
 
 # Identity Management enabled modules
 #ASTAKOS_IM_MODULES = ['local', 'twitter', 'shibboleth']
@@ -82,3 +82,17 @@ ASTAKOS_RECAPTCHA_OPTIONS = {'theme':'clean'}
 # e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
 #ASTAKOS_PROFILE_EXTRA_LINKS = {}
 
+# The number of unsuccessful login requests per minute allowed for a specific user
+#ASTAKOS_RATELIMIT_RETRIES_ALLOWED = 3
+
+# If set to False the email change mechanism is disabled
+#ASTAKOS_EMAILCHANGE_ENABLED = False
+
+# Set the expiration time (in days) of email change requests
+#ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS = 10
+
+# Set the astakos main functions logging severity (None to disable)
+#ASTAKOS_LOGGING_LEVEL = INFO
+
+# Set the quota holder component URI
+ASTAKOS_QUOTA_HOLDER_URL = ''

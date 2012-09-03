@@ -19,9 +19,7 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 })
 
 # Address to use for outgoing emails
-DEFAULT_FROM_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_FROM_EMAIL', 'GRNET Cloud <no-reply@grnet.gr>')
 DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
-DEFAULT_ADMIN_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_ADMIN_EMAIL', 'support@cloud.grnet.gr')
 
 # Identity Management enabled modules
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'shibboleth'])
@@ -87,7 +85,7 @@ GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', {})
 # e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
 
-# The number of unsuccessful login requests per minute allowed for a specific email
+# The number of unsuccessful login requests per minute allowed for a specific user
 RATELIMIT_RETRIES_ALLOWED = getattr(settings, 'ASTAKOS_RATELIMIT_RETRIES_ALLOWED', 3)
 
 # If False the email change mechanism is disabled
@@ -100,4 +98,5 @@ EMAILCHANGE_ACTIVATION_DAYS = getattr(settings, 'ASTAKOS_EMAILCHANGE_ACTIVATION_
 from logging import INFO
 LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 
+# Set the quota holder component URI
 QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')

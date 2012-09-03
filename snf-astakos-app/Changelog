@@ -2,6 +2,12 @@ Changelog
 ---------
 next
 ^^^^
+
+- Setting ASTAKOS_DEFAULT_ADMIN_EMAIL has been deprecated. Use ADMINS django setting instead.
+- Setting ASTAKOS_DEFAULT_FROM_EMAIL has been deprecated. Use SERVER_EMAIL django setting instead.
+
+0.7.3
+^^^^
 - Rename management commands
 - Optionally renew token on password change
 - Preserve local password for users switched to shibboleth

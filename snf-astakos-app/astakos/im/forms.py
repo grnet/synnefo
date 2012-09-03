@@ -45,13 +45,14 @@ from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
 from django.forms.extras.widgets import SelectDateWidget
+from django.conf import settings
 
 from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup, Invitation,
     Membership, GroupKind, get_latest_terms
 )
-from astakos.im.settings import (INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL,
-    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL,
-    RECAPTCHA_ENABLED, LOGGING_LEVEL
+from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
+    RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL,
+    LOGGING_LEVEL
 )
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
@@ -401,8 +402,10 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = reverse('django.contrib.auth.views.password_reset_confirm',
-                          kwargs={'uidb36':int_to_base36(user.id),
-                                  'token':token_generator.make_token(user)})
+                kwargs={'uidb36':int_to_base36(user.id),
+                    'token':token_generator.make_token(user)
+                }
+            )
             url = urljoin(BASEURL, url)
             t = loader.get_template(email_template_name)
             c = {
@@ -413,7 +416,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'baseurl': BASEURL,
                 'support': DEFAULT_CONTACT_EMAIL
             }
-            from_email = DEFAULT_FROM_EMAIL
+            from_email = settings.SERVER_EMAIL
             send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
                 t.render(Context(c)), from_email, [user.email])
 

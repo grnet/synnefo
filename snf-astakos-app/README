@@ -46,9 +46,7 @@ Name                                Default value                               
 ASTAKOS_AUTH_TOKEN_DURATION         one month                                                                       Expiration time of newly created auth tokens
 ASTAKOS_DEFAULT_USER_LEVEL          4                                                                               Default (not-invited) user level
 ASTAKOS_INVITATIONS_PER_LEVEL       {0:100, 1:2, 2:0, 3:0, 4:0}                                                     Number of user invitations per user level
-ASTAKOS_DEFAULT_FROM_EMAIL          GRNET Cloud <no-reply\@grnet.gr>                                                ``from`` parameter passed in ``django.core.mail.send_mail``
 ASTAKOS_DEFAULT_CONTACT_EMAIL       support\@cloud.grnet.gr                                                         Contact email
-ASTAKOS_DEFAULT_ADMIN_EMAIL         support\@cloud.grnet.gr                                                         Administrator email to receive user creation notifications (if None disables notifications)
 ASTAKOS_IM_MODULES                  ['local', 'shibboleth']                                                         Signup modules
 ASTAKOS_FORCE_PROFILE_UPDATE        True                                                                            Force user profile verification
 ASTAKOS_INVITATIONS_ENABLED         True                                                                            Enable invitations
@@ -81,6 +79,7 @@ ASTAKOS_RATELIMIT_RETRIES_ALLOWED   3                                           
 ASTAKOS_EMAILCHANGE_ENABLED         False                                                                           Enable email change mechanism
 ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS 10                                                                              Number of days that email change requests remain active
 ASTAKOS_LOGGING_LEVEL               INFO                                                                            Message logging severity
+ASTAKOS_QUOTA_HOLDER_URL            ''                                                                              The quota holder URI
 =================================== =============================================================================   ===========================================================================================
 
 Administrator functions

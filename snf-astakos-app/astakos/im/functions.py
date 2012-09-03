@@ -42,6 +42,7 @@ from django.core.exceptions import ValidationError
 from django.template import Context, loader
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.http import HttpRequest
+from django.conf import settings
 
 from urllib import quote
 from urlparse import urljoin
@@ -49,8 +50,9 @@ from smtplib import SMTPException
 from datetime import datetime
 from functools import wraps
 
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, \
-    SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL
+from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL,
+    LOGGING_LEVEL
+)
 from astakos.im.models import AstakosUser
 
 logger = logging.getLogger(__name__)
@@ -90,7 +92,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
             'baseurl': BASEURL,
             'site_name': SITENAME,
             'support': DEFAULT_CONTACT_EMAIL})
-    sender = DEFAULT_FROM_EMAIL
+    sender = settings.SERVER_EMAIL
     try:
         send_mail('%s alpha2 testing account activation is needed' % SITENAME, message, sender, [user.email])
     except (SMTPException, socket.error) as e:
@@ -110,17 +112,17 @@ def send_admin_notification(template_name,
     subject='alpha2 testing notification',
 ):
     """
-    Send notification email to DEFAULT_ADMIN_EMAIL.
+    Send notification email to settings.ADMINS.
     
     Raises SendNotificationError
     """
-    if not DEFAULT_ADMIN_EMAIL:
+    if not settings.ADMINS:
         return
     dictionary = dictionary or {}
     message = render_to_string(template_name, dictionary)
-    sender = DEFAULT_FROM_EMAIL
+    sender = settings.SERVER_EMAIL
     try:
-        send_mail(subject, message, sender, [DEFAULT_ADMIN_EMAIL])
+        send_mail(subject, message, sender, [i[1] for i in settings.ADMINS])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -140,7 +142,7 @@ def send_helpdesk_notification(user, template_name='im/account_notification.txt'
         template_name,
         {'user': user}
     )
-    sender = DEFAULT_FROM_EMAIL
+    sender = settings.SERVER_EMAIL
     try:
         send_mail(
             '%s alpha2 testing account activated' % SITENAME,
@@ -169,7 +171,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                 'baseurl': BASEURL,
                 'site_name': SITENAME,
                 'support': DEFAULT_CONTACT_EMAIL})
-    sender = DEFAULT_FROM_EMAIL
+    sender = settings.SERVER_EMAIL
     try:
         send_mail(subject, message, sender, [invitation.username])
     except (SMTPException, socket.error) as e:
@@ -192,7 +194,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                 'baseurl': BASEURL,
                 'site_name': SITENAME,
                 'support': DEFAULT_CONTACT_EMAIL})
-    sender = DEFAULT_FROM_EMAIL
+    sender = settings.SERVER_EMAIL
     try:
         send_mail(subject, message, sender, [user.email])
     except (SMTPException, socket.error) as e:
@@ -226,7 +228,7 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         url = request.build_absolute_uri(url)
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME}
-        from_email = DEFAULT_FROM_EMAIL
+        from_email = settings.SERVER_EMAIL
         send_mail(_("Email change on %s alpha2 testing") % SITENAME,
             t.render(Context(c)), from_email, [ec.new_email_address])
     except (SMTPException, socket.error) as e:

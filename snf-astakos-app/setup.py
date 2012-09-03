@@ -80,7 +80,6 @@ INSTALL_REQUIRES = [
     'httplib2>=0.6.0',
     'snf-common>=0.9.0',
     'django-recaptcha',
-    'django-ratelimit==0.1'
     'django-ratelimit==0.1',
     'commissioning',
     'celery'

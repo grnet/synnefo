@@ -35,10 +35,10 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import Service
+from astakos.im.models import Resource
 
 class Command(BaseCommand):
-    help = "List services"
+    help = "List resources"
 
     option_list = BaseCommand.option_list + (
         make_option('-c',
@@ -49,10 +49,10 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        services = Service.objects.all()
+        resources = Resource.objects.select_related().all()
 
-        labels = ('id', 'name', 'url', 'auth_token', 'icon')
-        columns = (3, 12, 40, 20, 20)
+        labels = ('id', 'service', 'name')
+        columns = (3, 40, 40)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -60,10 +60,8 @@ class Command(BaseCommand):
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
-        for service in services:
-            fields = (str(service.id), service.name, service.url,
-                    service.auth_token,
-                    service.icon)
+        for r in resources:
+            fields = (str(r.id), r.service.name, r.name)
 
             if options['csv']:
                 line = '|'.join(fields)

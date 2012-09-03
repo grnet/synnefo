@@ -31,43 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
 
-from astakos.im.models import Service
+from astakos.im.models import Resource
 
 class Command(BaseCommand):
-    help = "List services"
-
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-    )
-
+    args = "<resource>"
+    help = "Add a resource"
+    
     def handle(self, *args, **options):
-        services = Service.objects.all()
-
-        labels = ('id', 'name', 'url', 'auth_token', 'icon')
-        columns = (3, 12, 40, 20, 20)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for service in services:
-            fields = (str(service.id), service.name, service.url,
-                    service.auth_token,
-                    service.icon)
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+        if len(args) < 1:
+            raise CommandError("Invalid number of arguments")
+        
+        kwargs = {}
+        if args[0].isdigit():
+            kwargs['id']=args[0]
+        else:
+            kwargs['name']=args[0]
+        
+        try:
+            r = Resource.objects.get(**kwargs)
+        except Resource.DoesNotExist, e:
+            raise CommandError("Invalid resource")
+        r.delete()

@@ -16,28 +16,22 @@ class Migration(DataMigration):
         except orm.AstakosGroup.DoesNotExist:
             return
         
-        def create_policies(sn, policy):
+        def create_policies(args):
+            sn, policy = args
             s, created = orm.Service.objects.get_or_create(name = sn)
-            if created:
-                s.save()
             
             for rn, l in policy.iteritems():
-                r, created = orm.Resource.objects.get_or_create (    
-                                                                    service = s,
-                                                                    name = rn
-                                                                )
-                if created:
-                    r.save()
+                r, created = orm.Resource.objects.get_or_create (
+                    service = s,
+                    name = rn
+                )
                 
-                q, created = orm.AstakosGroupQuota.objects.get_or_create(   
-                                                                            group = default,
-                                                                            resource = r,
-                                                                            limit = l   
-                                                                        )
-                if created:
-                    q.save()
-                
-        map(lambda i: create_policies(i[0], i[1]), d.iteritems())
+                q, created = orm.AstakosGroupQuota.objects.get_or_create(
+                    group = default,
+                    resource = r,
+                    limit = l
+                )
+        map(create_policies, d.iteritems())
             
     def backwards(self, orm):
         try:
@@ -45,16 +39,20 @@ class Migration(DataMigration):
         except orm.AstakosGroup.DoesNotExist:
             return
         
-        def destroy_policies(sn, policy):
+        def destroy_policies(args):
+            sn, policy = args
             for rn, l in policy.iteritems():
                 try:
-                    q = orm.AstakosGroupQuota.objects.get(group=default, resource__name=rn)
+                    q = orm.AstakosGroupQuota.objects.get(
+                        group=default,
+                        resource__name=rn
+                    )
                     if q.limit == l:
                         q.delete()
                 except orm.AstakosGroupQuota.DoesNotExist:
                     return
                 
-        map(lambda i: destroy_policies(i[0], i[1]), d.iteritems())
+        map(destroy_policies, d.iteritems())
     
     models = {
         'auth.group': {

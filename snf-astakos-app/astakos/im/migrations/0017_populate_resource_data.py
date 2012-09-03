@@ -21,7 +21,7 @@ class Migration(DataMigration):
             s, created = orm.Service.objects.get_or_create(name = sn)
             
             for rn, l in policy.iteritems():
-                r, created = orm.Resource.objects.get_or_create (
+                r, created = orm.Resource.objects.get_or_create(
                     service = s,
                     name = rn
                 )

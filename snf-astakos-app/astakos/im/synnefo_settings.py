@@ -43,7 +43,6 @@ installed_apps = [
         'django.contrib.contenttypes',
         'django.contrib.sessions',
         'django.contrib.messages',
-        'django_extensions',
         'djcelery',
 ]
 

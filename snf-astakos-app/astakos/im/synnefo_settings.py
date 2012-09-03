@@ -43,7 +43,7 @@ installed_apps = [
         'django.contrib.contenttypes',
         'django.contrib.sessions',
         'django.contrib.messages',
-        'django_extensions'
+        'django_extensions',
         'djcelery',
 ]
 
@@ -67,7 +67,7 @@ middlware_classes = [
     'astakos.im.middleware.CookieAuthenticationMiddleware',
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.SecureMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware'
+    'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
 loggers = {
@@ -91,4 +91,4 @@ CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 import djcelery
 djcelery.setup_loader()
 
-BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+BROKER_URL = ''

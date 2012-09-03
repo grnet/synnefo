@@ -36,6 +36,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser
+from astakos.im.forms import LocalUserCreationForm, ShibbolethUserCreationForm
 from astakos.im.util import get_invitation
 from astakos.im.functions import send_verification, send_activation, \
     send_admin_notification, activate

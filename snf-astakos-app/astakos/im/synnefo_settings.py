@@ -44,6 +44,7 @@ installed_apps = [
         'django.contrib.sessions',
         'django.contrib.messages',
         'django_extensions'
+        'djcelery',
 ]
 
 context_processors = [
@@ -86,3 +87,8 @@ LOGIN_URL = '/im'
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
 #SOUTH_TESTS_MIGRATE = False
+
+import djcelery
+djcelery.setup_loader()
+
+BROKER_URL = 'amqp://guest:guest@localhost:5672/'

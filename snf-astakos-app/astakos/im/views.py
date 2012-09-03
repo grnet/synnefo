@@ -835,3 +835,11 @@ def resource_list(request):
         context_instance=get_context(request),
         quota=request.user.quota
     )
+    
+@signed_terms_required
+@login_required
+def group_create_list(request):
+    return render_response(
+        template='im/astakosgroup_create_list.html',
+        context_instance=get_context(request),
+    )    

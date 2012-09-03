@@ -14,13 +14,13 @@
     </form>
     {% else %}
     <div class="projects">
-		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. <br />You can <a href="{% url group_add %}">create a new group</a> or <a href="{% url group_search %}">join</a> to an existing one.</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. <br />You can <a href="{% url group_create_list %}">create a new group</a> or <a href="{% url group_search %}">join</a> to an existing one.</p>
 		 
 		<ul class="widjets clearfix">	
 			<li>
 				<div>
 					<p>WELCOME!<br />Connect with a world of people who share your passions.<br />With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
-					<p class="btn"><a href="{% url group_add %}" class="submit">Create a group</a></p>
+					<p class="btn"><a href="{% url group_create_list %}" class="submit">Create a group</a></p>
 				</div>
 			</li>
 			<li>

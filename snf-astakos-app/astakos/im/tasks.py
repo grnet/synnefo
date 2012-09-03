@@ -37,7 +37,9 @@ from celery.schedules import crontab
 from functools import wraps
 
 from astakos.im.endpoints.quotaholder import send_quota
-from astakos.im.endpoints.aquarium.producer import report_credits_event, report_user_event
+from astakos.im.endpoints.aquarium.producer import (report_credits_event
+    , report_user_event
+)
 
 import logging
 
@@ -50,8 +52,7 @@ def log(func):
         return func(*args, **kwargs)
     return wrapper
 
-#@periodic_task(run_every=crontab(day_of_month='1'))
-@periodic_task(run_every=crontab())
+@periodic_task(run_every=crontab(day_of_month='1'))
 @log
 def propagate_credits_update():
     report_credits_event()

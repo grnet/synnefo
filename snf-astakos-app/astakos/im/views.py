@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import logging
+import calendar
 
 from urllib import quote
 from functools import wraps
@@ -71,6 +72,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
 from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
     LOGGING_LEVEL
 )
+from astakos.im.tasks import request_billing
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +186,6 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
 
     * LOGIN_URL: login uri
     * ASTAKOS_DEFAULT_CONTACT_EMAIL: service support email
-    * ASTAKOS_DEFAULT_FROM_EMAIL: from email
     """
     status = None
     message = None
@@ -836,10 +837,32 @@ def resource_list(request):
         quota=request.user.quota
     )
     
-@signed_terms_required
-@login_required
 def group_create_list(request):
     return render_response(
         template='im/astakosgroup_create_list.html',
         context_instance=get_context(request),
-    )    
+    )
+
+@signed_terms_required
+@login_required
+def billing(request):
+    today = datetime.today()
+    month_last_day = calendar.monthrange(today.year, today.month)[1]
+    start = datetime(today.year, today.month, 1).strftime("%s")
+    end = datetime(today.year, today.month, month_last_day).strftime("%s")
+    r = request_billing.apply(args=(request.user.email,
+        int(start) * 1000,
+        int(end) * 1000)
+    )
+    data = None
+    try:
+        status, data = r.result
+        if status != 200:
+            messages.error(request, _('Service response status: %d' % status))
+    except:
+        messages.error(request, r.result)
+    return render_response(
+        template='im/billing.html',
+        context_instance=get_context(request),
+        data = data
+    )

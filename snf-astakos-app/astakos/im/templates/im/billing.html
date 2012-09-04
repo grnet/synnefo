@@ -1,0 +1,9 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+    {% if data %}
+        {{ data }}
+    {% endif %}
+{% endblock %}

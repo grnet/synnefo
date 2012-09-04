@@ -44,7 +44,6 @@ from distutils.util import convert_path
 from setuptools import setup, find_packages
 from astakos import get_version
 
-
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 try:
     # try to update the version file
@@ -82,7 +81,8 @@ INSTALL_REQUIRES = [
     'django-recaptcha',
     'django-ratelimit==0.1',
     'commissioning',
-    'celery'
+    'celery',
+    'requests',
 ]
 
 EXTRAS_REQUIRES = {

@@ -80,6 +80,9 @@ ASTAKOS_EMAILCHANGE_ENABLED         False                                       
 ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS 10                                                                              Number of days that email change requests remain active
 ASTAKOS_LOGGING_LEVEL               INFO                                                                            Message logging severity
 ASTAKOS_QUOTA_HOLDER_URL            ''                                                                              The quota holder URI
+                                                                                                                    e.g. ``http://localhost:8080/api/quotaholder/v``
+AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
+                                                                                                                    e.g. ``http://localhost:8888/user``
 =================================== =============================================================================   ===========================================================================================
 
 Administrator functions

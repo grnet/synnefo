@@ -100,3 +100,6 @@ LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 
 # Set the quota holder component URI
 QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
+
+# Set the billing URI
+AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')

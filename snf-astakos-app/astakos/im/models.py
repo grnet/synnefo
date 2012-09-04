@@ -158,9 +158,9 @@ class AstakosGroup(Group):
             return
         self.approval_date = datetime.now()
         self.save()
-        quota_disturbed.send(sender=self, users=approved_members)
-        update_groupmembers_quota.apply_async(args=[self], eta=self.issue_date)
-        update_groupmembers_quota.apply_async(args=[self], eta=self.expiration_date)
+        quota_disturbed.send(sender=self, users=self.approved_members)
+        propagate_groupmembers_quota.apply_async(args=[self], eta=self.issue_date)
+        propagate_groupmembers_quota.apply_async(args=[self], eta=self.expiration_date)
     
     def disable(self):
         if self.is_disabled:

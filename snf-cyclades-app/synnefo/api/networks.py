@@ -47,7 +47,6 @@ from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import (BadRequest, Unauthorized,
                                 NetworkInUse, OverLimit)
 from synnefo.db.models import Network, Pool
-
 from synnefo.logic import backend
 from synnefo.settings import MAX_CIDR_BLOCK
 
@@ -83,8 +82,7 @@ def network_demux(request, network_id):
 
 
 def network_to_dict(network, user_id, detail=True):
-    network_id = str(network.id) if not network.public else 'public'
-    d = {'id': network_id, 'name': network.name}
+    d = {'id': str(network.id), 'name': network.name}
     if detail:
         d['cidr'] = network.subnet
         d['cidr6'] = network.subnet6
@@ -95,9 +93,11 @@ def network_to_dict(network, user_id, detail=True):
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
+        d['public'] = network.public
 
-        attachments = [util.construct_nic_id(nic) for nic in network.nics.filter(machine__userid= user_id)]
-        d['attachments'] = {'values':attachments}
+        attachments = [util.construct_nic_id(nic)
+                       for nic in network.nics.filter(machine__userid=user_id)]
+        d['attachments'] = {'values': attachments}
     return d
 
 

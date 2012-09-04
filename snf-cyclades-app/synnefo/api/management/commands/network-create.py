@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Network
+from synnefo.db.models import Network, Backend
 from synnefo.api.util import network_link_from_type
 from synnefo.logic.backend import create_network
 
@@ -88,6 +88,11 @@ class Command(BaseCommand):
             dest='gateway6',
             default=None,
             help='IPv6 gateway of the network'),
+        make_option('--backend-id',
+            dest='backend_id',
+            default=None,
+            help='ID of the backend that the network will be created. Only for'
+                 ' public networks')
         )
 
     def handle(self, *args, **options):
@@ -97,11 +102,27 @@ class Command(BaseCommand):
         name = options['name']
         subnet = options['subnet']
         typ = options['type']
+        backend_id = options['backend_id']
+        public = options['public']
 
         if not name:
             raise CommandError("Name is required")
         if not subnet:
             raise CommandError("Subnet is required")
+        if public and not backend_id:
+            raise CommandError("backend-id is required")
+        if backend_id and not public:
+            raise CommandError("Private networks must be created to"
+                               " all backends")
+
+        if backend_id:
+            try:
+                backend_id = int(backend_id)
+                backend = Backend.objects.get(id=backend_id)
+            except ValueError:
+                raise CommandError("Invalid backend ID")
+            except Backend.DoesNotExist:
+                raise CommandError("Backend not found in DB")
 
         link = network_link_from_type(typ)
 
@@ -117,17 +138,21 @@ class Command(BaseCommand):
                 gateway=gateway,
                 dhcp=options['dhcp'],
                 type=options['type'],
-                public=options['public'],
+                public=public,
                 link=link,
                 gateway6=gateway6,
                 subnet6=subnet6,
                 state='PENDING')
 
-        # Create BackendNetwork entries for each Backend
-        network.create_backend_network()
+        if public:
+            # Create BackendNetwork only to the specified Backend
+            network.create_backend_network(backend)
+            create_network(network, backends=[backend])
+        else:
+            # Create BackendNetwork entries for all Backends
+            network.create_backend_network()
+            create_network(network)
 
-        # Create the network to the backends
-        create_network(network)
 
 
 def validate_network_info(options):

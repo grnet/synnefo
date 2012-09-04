@@ -61,9 +61,8 @@ class BackendAllocator():
 
         # Find the best backend to host the vm, based on the allocation
         # strategy
-        backend_id = self.strategy_mod.allocate(available_backends, vm)
+        backend = self.strategy_mod.allocate(available_backends, vm)
 
-        backend = Backend.objects.get(id=backend_id)
         # Reduce the free resources of the selected backend by the size of
         # the vm
         reduce_backend_resources(backend, vm)
@@ -75,14 +74,7 @@ def get_available_backends():
     """Get available backends from db.
 
     """
-    attrs = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
-    backends = {}
-    for b in Backend.objects.filter(drained=False, offline=False):
-        backend = {}
-        for a in attrs:
-            backend[a] = getattr(b, a)
-        backends[b.id] = backend
-    return backends
+    return Backend.objects.filter(drained=False, offline=False)
 
 
 def flavor_disk(flavor):

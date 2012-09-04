@@ -108,13 +108,13 @@ def metadata_item_demux(request, server_id, key):
     else:
         return method_not_allowed(request)
 
-def nic_to_dict(nic):
-    network = nic.network
-    network_id = str(network.id) if not network.public else 'public'
-    ipv4 = nic.ipv4 if nic.ipv4 else None
-    ipv6 = nic.ipv6 if nic.ipv6 else None
 
-    d = {'id': util.construct_nic_id(nic), 'network_id': network_id, 'mac_address': nic.mac, 'ipv4': ipv4, 'ipv6': ipv6}
+def nic_to_dict(nic):
+    d = {'id': util.construct_nic_id(nic),
+         'network_id': str(nic.network.id),
+         'mac_address': nic.mac,
+         'ipv4': nic.ipv4 if nic.ipv4 else None,
+         'ipv6': nic.ipv6 if nic.ipv6 else None}
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
     return d

@@ -133,6 +133,9 @@ class Command(BaseCommand):
         self.stdout.write(sep + '\n\n')
 
         for net in networks:
+            if net.public:
+                # Do not create public networks since are backend-specific
+                continue
             net.create_backend_network(backend)
             result = create_network_synced(net, backend)
             if result[0] != "success":

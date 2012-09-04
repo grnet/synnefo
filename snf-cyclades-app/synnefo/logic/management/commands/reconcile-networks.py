@@ -92,6 +92,11 @@ def reconcile_networks(out, fix, conflicting_ips):
 
         # Perform reconcilliation for each backend
         for b in backends:
+            if network.public and not \
+                BackendNetwork.objects.filter(network=network,
+                                              backend=b).exists():
+                    continue
+
             info = (net_id, b.clustername)
             back_network = None
 

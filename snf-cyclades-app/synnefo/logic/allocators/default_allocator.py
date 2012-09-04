@@ -32,15 +32,16 @@
 # or implied, of GRNET S.A.
 
 from __future__ import division
+from synnefo.api.util import backend_public_networks
 
 
 def allocate(backends, vm):
     if len(backends) == 1:
-        return backends.keys()[0]
+        return backends[0]
 
     # Filter those that can not host the vm
-    capable_backends = dict((k, v) for k, v in backends.iteritems()\
-                            if vm_fits_in_backend(v, vm))
+    capable_backends = [backend for backend in backends
+                        if vm_fits_in_backend(backend, vm)]
 
     # Since we are conservatively updating backend resources on each
     # allocation, a backend may actually be able to host a vm (despite
@@ -49,23 +50,31 @@ def allocate(backends, vm):
         capable_backends = backends
 
     # Compute the scores for each backend
-    backend_scores = [(back_id, backend_score(back_resources, vm))\
-                      for back_id, back_resources in \
-                      capable_backends.iteritems()]
+    backend_scores = [(backend, backend_score(backend, vm))
+                      for backend in capable_backends]
 
     # Pick out the best
-    result = min(backend_scores, key=lambda (b_id, b_score): b_score)
-    backend_id = result[0]
+    result = min(backend_scores, key=lambda (b, b_score): b_score)
+    backend = result[0]
 
-    return backend_id
+    return backend
 
 
 def vm_fits_in_backend(backend, vm):
-    return backend['dfree'] > vm['disk'] and backend['mfree'] > vm['ram']
+    return backend.dfree > vm['disk'] and backend.mfree > vm['ram'] and\
+           has_free_ip(backend)
 
 
 def backend_score(backend, flavor):
-    mratio = 1 - (backend['mfree'] / backend['mtotal'])
-    dratio = 1 - (backend['dfree'] / backend['dtotal'])
-    cratio = (backend['pinst_cnt'] + 1) / (backend['ctotal'] * 4)
+    mratio = 1 - (backend.mfree / backend.mtotal)
+    dratio = 1 - (backend.dfree / backend.dtotal)
+    cratio = (backend.pinst_cnt + 1) / (backend.ctotal * 4)
     return 0.7 * (mratio + dratio) * 0.3 * cratio
+
+
+def has_free_ip(backend):
+    """Find if Backend has any free public IP."""
+    for network in backend_public_networks(backend):
+        if not network.pool.is_full():
+            return True
+    return False

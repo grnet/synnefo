@@ -56,13 +56,14 @@ from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType, OverLimit)
+                                BadMediaType)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, NetworkInterface, BridgePool,
-                               MacPrefixPool, Pool)
+                               Network, BackendNetwork, NetworkInterface,
+                               BridgePool)
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
+from synnefo.logic import ippool
 
 
 log = getLogger('synnefo.api')
@@ -202,13 +203,39 @@ def get_network(network_id, user_id):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
-        if network_id == 'public':
-            return Network.objects.get(public=True)
-        else:
-            network_id = int(network_id)
-            return Network.objects.get(id=network_id, userid=user_id)
+        network_id = int(network_id)
+        return Network.objects.get(id=network_id, userid=user_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
+
+
+def backend_public_networks(backend):
+    """Return available public networks of the backend.
+
+    Iterator for non-deleted public networks that are available
+    to the specified backend.
+
+    """
+    for network in Network.objects.filter(public=True, deleted=False):
+        if BackendNetwork.objects.filter(network=network,
+                                         backend=backend).exists():
+            yield network
+
+
+def get_network_free_address(network):
+    """Reserve an IP address from the IP Pool of the network.
+
+    Raises Network.DoesNotExist , ippool.IPPool.IPPoolExhausted
+
+    """
+
+    # Get the Network object in exclusive mode in order to
+    # safely (isolated) reserve an IP address
+    network = Network.objects.select_for_update().get(id=network.id)
+    pool = ippool.IPPool(network)
+    address = pool.get_free_address()
+    pool.save()
+    return address
 
 
 def get_nic(machine, network):
@@ -216,6 +243,7 @@ def get_nic(machine, network):
         return NetworkInterface.objects.get(machine=machine, network=network)
     except NetworkInterface.DoesNotExist:
         raise ItemNotFound('Server not connected to this network.')
+
 
 def get_nic_from_index(vm, nic_index):
     """Returns the nic_index-th nic of a vm
@@ -229,6 +257,7 @@ def get_nic_from_index(vm, nic_index):
         raise BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
     return nic
+
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
@@ -336,7 +365,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-                
+
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
@@ -348,7 +377,7 @@ def api_method(http_method=None, atom_allowed=False):
                 return render_fault(request, fault)
             except Fault, fault:
                 return render_fault(request, fault)
-            except BaseException, e:
+            except BaseException:
                 log.exception('Unexpected error')
                 fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)

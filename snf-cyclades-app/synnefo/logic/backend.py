@@ -42,6 +42,7 @@ from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
 from synnefo.logic import utils, ippool
 from synnefo.api.faults import OverLimit
+from synnefo.api.util import backend_public_networks, get_network_free_address
 from synnefo.util.rapi import GanetiRapiClient
 
 log = getLogger('synnefo.logic')
@@ -285,22 +286,13 @@ def create_instance(vm, flavor, image, password, personality):
     """
 
     if settings.PUBLIC_ROUTED_USE_POOL:
-        # Get the Network object in exclusive mode in order to
-        # safely (isolated) reserve an IP address
-        try:
-            network = Network.objects.select_for_update().get(public=True)
-        except Network.DoesNotExist:
-            raise Exception('No public network available')
-        pool = ippool.IPPool(network)
-        try:
-            address = pool.get_free_address()
-        except ippool.IPPool.IPPoolExhausted:
+        (network, address) = allocate_public_address(vm)
+        if address is None:
             raise OverLimit("Can not allocate IP for new machine."
-                            " Public network is full.")
-        pool.save()
-        nic = {'ip': address, 'network': settings.GANETI_PUBLIC_NETWORK}
+                            " Public networks are full.")
+        nic = {'ip': address, 'network': network.backend_id}
     else:
-        nic = {'ip': 'pool', 'network': settings.GANETI_PUBLIC_NETWORK}
+        nic = {'ip': 'pool', 'network': network.backend_id}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:
@@ -335,7 +327,6 @@ def create_instance(vm, flavor, image, password, personality):
     if provider:
         kw['disks'][0]['provider'] = provider
 
-
     kw['nics'] = [nic]
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
@@ -365,6 +356,17 @@ def create_instance(vm, flavor, image, password, personality):
     # kw['hvparams'] = dict(serial_console=False)
 
     return vm.client.CreateInstance(**kw)
+
+
+def allocate_public_address(vm):
+    """Allocate a public IP for a vm."""
+    for network in backend_public_networks(vm.backend):
+        try:
+            address = get_network_free_address(network)
+            return (network, address)
+        except ippool.IPPool.IPPoolExhausted:
+            pass
+    return (None, None)
 
 
 def delete_instance(vm):

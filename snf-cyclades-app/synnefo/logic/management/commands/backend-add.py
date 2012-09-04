@@ -133,7 +133,7 @@ class Command(BaseCommand):
         self.stdout.write(sep + '\n\n')
 
         for net in networks:
-            BackendNetwork.objects.create(network=net, backend=backend)
+            net.create_backend_network(backend)
             result = create_network_synced(net, backend)
             if result[0] != "success":
                 self.stdout.write('\nError Creating Network %s: %s\n' %\

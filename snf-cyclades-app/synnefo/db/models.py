@@ -551,14 +551,12 @@ class Network(models.Model):
             mac_prefix = MacPrefixPool.get_available().value
             self.mac_prefix = mac_prefix
 
-    def save(self, *args, **kwargs):
-        pk = self.pk
-        super(Network, self).save(*args, **kwargs)
-        if not pk:
-            # In case of a new Network, corresponding BackendNetwork's must
-            # be created!
-            for back in Backend.objects.all():
-                BackendNetwork.objects.create(backend=back, network=self)
+    def create_backend_network(self, backend=None):
+        """Create corresponding BackendNetwork entries."""
+
+        backends = [backend] if backend else Backend.objects.all()
+        for backend in backends:
+            BackendNetwork.objects.create(backend=backend, network=self)
 
     @property
     def pool(self):
@@ -630,6 +628,10 @@ class BackendNetwork(models.Model):
     backendlogmsg = models.TextField(null=True)
     backendtime = models.DateTimeField(null=False,
                                        default=datetime.datetime.min)
+
+    class Meta:
+        # Ensure one entry for each network in each backend
+        unique_together = (("network", "backend"))
 
     def __init__(self, *args, **kwargs):
         """Initialize state for just created BackendNetwork instances."""

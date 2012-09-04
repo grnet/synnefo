@@ -123,6 +123,10 @@ class Command(BaseCommand):
                 subnet6=subnet6,
                 state='PENDING')
 
+        # Create BackendNetwork entries for each Backend
+        network.create_backend_network()
+
+        # Create the network to the backends
         create_network(network)
 
 

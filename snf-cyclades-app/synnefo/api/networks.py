@@ -203,6 +203,10 @@ def create_network(request):
     except Pool.PoolExhausted:
         raise OverLimit('Network count limit exceeded.')
 
+    # Create BackendNetwork entries for each Backend
+    network.create_backend_network()
+
+    # Create the network in the actual backends
     backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)

@@ -68,16 +68,16 @@ def custom_messages(request):
            }
 
 def menu(request):
-    absolute = lambda (url): request.build_absolute_uri(url)
-    resp = get_menu(request, True, False)
     try:
+        resp = get_menu(request, True, False)
         menu_items = json.loads(resp.content)[1:]
     except Exception, e:
         return {}
     else:
-        for item in menu_items:
-            item['is_active'] = absolute(request.path) == item['url']
         return {'menu':menu_items}
 
 def group_kinds(request):
-    return {'group_kinds': GroupKind.objects.exclude(name='default').values_list('name', flat=True)}
+    return {'group_kinds':GroupKind.objects.exclude(
+            name='default'
+        ).values_list('name', flat=True)
+    }

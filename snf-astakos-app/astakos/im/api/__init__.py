@@ -49,6 +49,8 @@ logger = logging.getLogger(__name__)
 
 format = ('%a, %d %b %Y %H:%M:%S GMT')
 
+absolute = lambda request, url: request.build_absolute_uri(url)
+
 def render_fault(request, fault):
     if isinstance(fault, InternalServerError) and settings.DEBUG:
         fault.details = format_exc(fault)
@@ -155,29 +157,96 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                 user = AstakosUser.objects.get(email=email, is_active=True)
         except AstakosUser.DoesNotExist:
             pass
-    
-    absolute = lambda (url): request.build_absolute_uri(url)
     if not isinstance(user, AstakosUser):
         index_url = reverse('index')
-        l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
+        l = [{ 'url': absolute(request, index_url), 'name': "Sign in"}]
     else:
         l = []
-        l.append(dict(url=absolute(reverse('index')), name=user.email))
-        l.append(dict(url=absolute(reverse('edit_profile')), name="My account"))
+        append = l.append
+        item = MenuItem
+        item.current_path = absolute(request, request.path)
+        append(
+            item(
+                url=absolute(request, reverse('index')),
+                name=user.email
+            )
+        )
+        append(
+            item(
+                url=absolute(request, reverse('edit_profile')),
+                name="My account"
+            )
+        )
         if with_extra_links:
             if user.has_usable_password() and user.provider in ('local', ''):
-                l.append(dict(url=absolute(reverse('password_change')), name="Change password"))
+                append(
+                    item(
+                        url=absolute(request, reverse('password_change')),
+                        name="Change password"
+                    )
+                )
             if EMAILCHANGE_ENABLED:
-                l.append(dict(url=absolute(reverse('email_change')), name="Change email"))
+                append(
+                    item(
+                        url=absolute(request, reverse('email_change')),
+                        name="Change email"
+                    )
+                )
             if INVITATIONS_ENABLED:
-                l.append(dict(url=absolute(reverse('invite')), name="Invitations"))
-            l.append(dict(url=absolute(reverse('feedback')), name="Feedback"))
-            l.append(dict(url=absolute(reverse('group_list')), name="Groups"))
-            l.append(dict(url=absolute(reverse('resource_list')), name="Resources"))
-            l.append(dict(url=absolute(reverse('billing')), name="Billing"))
+                append(
+                    item(
+                        url=absolute(request, reverse('invite')),
+                        name="Invitations"
+                    )
+                )
+            append(
+                item(
+                    url=absolute(request, reverse('feedback')),
+                    name="Feedback"
+                )
+            )
+            append(
+                item(
+                    url=absolute(request, reverse('group_list')),
+                    name="Groups",
+                    submenu=(
+                        item(
+                            url=absolute(request, reverse('group_list')),
+                            name="Overview"
+                        ),
+                        item(
+                            url=absolute(request,
+                                reverse('group_create_list')
+                            ),
+                            name="Create"
+                        ),
+                        item(
+                            url=absolute(request, reverse('group_search')),
+                            name="Join"
+                        ),
+                    )
+                )
+            )
+            append(
+                item(
+                    url=absolute(request, reverse('resource_list')),
+                    name="Resources"
+                )
+            )
+            append(
+                item(
+                    url=absolute(request, reverse('billing')),
+                    name="Billing"
+                )
+            )
         if with_signout:
-            l.append(dict(url=absolute(reverse('logout')), name="Sign out"))
-
+            append(
+                item(
+                    url=absolute(request, reverse('logout')),
+                    name="Sign out"
+                )
+            )
+    
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))
     mimetype = 'application/json'
@@ -187,3 +256,24 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         data = '%s(%s)' % (callback, data)
 
     return HttpResponse(content=data, mimetype=mimetype)
+
+class MenuItem(dict):
+    current_path = ''
+    
+    def __init__(self, *args, **kwargs):
+        super(MenuItem, self).__init__(*args, **kwargs)
+        if kwargs.get('url') or kwargs.get('submenu'):
+            self.__set_is_active__()
+    
+    def __setitem__(self, key, value):
+        super(MenuItem, self).__setitem__(key, value)
+        if key in ('url', 'submenu'):
+            self.__set_is_active__()
+    
+    def __set_is_active__(self):
+        if self.current_path == self.get('url'):
+            self.__setitem__('is_active', True)
+        else:
+            urls = [d.get('url') for d in self.get('submenu', ())]
+            if self.current_path in urls:
+                self.__setitem__('is_active', True)

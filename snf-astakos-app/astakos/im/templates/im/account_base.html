@@ -29,7 +29,21 @@
         </li>
     {% endfor %}
 {% endblock %}
-    
+
+{% block page.subnav %}
+    {% for item in menu%}
+        {% if item|lookup:"is_active" %}
+            {% with item|lookup:"submenu" as submenu %}
+                {% for item in submenu %}
+                    <li {% if item|lookup:"is_active" %}class="active"{% endif %}>
+                        <a href="{{ item|lookup:"url" }}">{{ item|lookup:"name" }}</a>
+                    </li>
+                {% endfor %}
+            {% endwith %}
+        {% endif %}
+    {% endfor %}
+{%endblock %}
+
 {% block page.body %}
 <div class="{% block innerpage.class %}full{% endblock %}">
 {% block body %}{% endblock %}

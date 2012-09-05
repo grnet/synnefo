@@ -147,7 +147,7 @@ def get_services(request):
     return HttpResponse(content=data, mimetype=mimetype)
 
 @api_method()
-def get_menu(request, with_extra_links=False, with_signout=True):
+def get_menu(request, with_extra_links=True, with_signout=True):
     user = request.user
     if not isinstance(user, AstakosUser):
         cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
@@ -271,9 +271,22 @@ class MenuItem(dict):
             self.__set_is_active__()
     
     def __set_is_active__(self):
+        if self.get('is_active'):
+            return
         if self.current_path == self.get('url'):
             self.__setitem__('is_active', True)
         else:
-            urls = [d.get('url') for d in self.get('submenu', ())]
-            if self.current_path in urls:
+            submenu = self.get('submenu', ())
+            current = (i for i in submenu if i.get('url') == self.current_path)
+            try:
+                current_node = current.next()
+                if not current_node.get('is_active'):
+                    current_node.__setitem__('is_active', True)
                 self.__setitem__('is_active', True)
+            except StopIteration:
+                return
+        
+    def __setattribute__(self, name, value):
+        super(MenuItem, self).__setattribute__(name, value)
+        if name == 'current_path':
+            self.__set_is_active__()

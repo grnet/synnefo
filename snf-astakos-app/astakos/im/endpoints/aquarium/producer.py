@@ -43,7 +43,7 @@ if QUEUE_CONNECTION:
             exchange_close, UserEvent, Receipt
     )
 
-QUEUE_CLIENT_ID = 3 # Astakos.
+QUEUE_CLIENT_ID = '3' # Astakos.
 INSTANCE_ID = '1'
 RESOURCE = 'addcredits'
 DEFAULT_CREDITS = 1000

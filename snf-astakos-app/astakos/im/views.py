@@ -113,7 +113,7 @@ def signed_terms_required(func):
     """
     @wraps(func)
     def wrapper(request, *args, **kwargs):
-        if request.user.is_authenticated() and not request.user.signed_terms():
+        if request.user.is_authenticated() and not request.user.signed_terms:
             params = urlencode({'next': request.build_absolute_uri(),
                               'show_form':''})
             terms_uri = reverse('latest_terms') + '?' + params
@@ -545,7 +545,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
         return HttpResponseRedirect(next)
     else:
         form = None
-        if request.user.is_authenticated() and not request.user.signed_terms():
+        if request.user.is_authenticated() and not request.user.signed_terms:
             form = SignApprovalTermsForm(instance=request.user)
         return render_response(template_name,
                                terms = terms,

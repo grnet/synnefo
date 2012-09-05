@@ -149,10 +149,6 @@ class AstakosGroup(Group):
             return False
         return True
     
-#     @property
-#     def participants(self):
-#         return len(self.approved_members)
-    
     def enable(self):
         if self.is_enabled:
             return
@@ -351,6 +347,7 @@ class AstakosUser(User):
         if q.count() != 0:
             raise ValidationError({'__all__':[_('Another account with the same email & is_active combination found.')]})
     
+    @property
     def signed_terms(self):
         term = get_latest_terms()
         if not term:

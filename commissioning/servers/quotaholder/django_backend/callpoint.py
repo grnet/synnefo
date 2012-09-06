@@ -68,8 +68,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             try:
                 entity = Entity.objects.get(entity=entity, owner=owner)
-                if entity.key != key:
-                    append(entity)
+                append(entity)
             except Entity.DoesNotExist:
                 entity = Entity.objects.create( entity=entity,
                                                 owner=owner,

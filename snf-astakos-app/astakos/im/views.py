@@ -716,8 +716,7 @@ def group_search(request, extra_context=None, **kwargs):
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            q = URLField().to_python(q)
-            queryset = AstakosGroup.objects.select_related().filter(name=q)
+            queryset = AstakosGroup.objects.select_related().filter(name__contains=q)
             return object_list(
                 request,
                 queryset,

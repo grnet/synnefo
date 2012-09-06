@@ -492,14 +492,13 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
         return user
 
 class AstakosGroupCreationForm(forms.ModelForm):
-#     issue_date = forms.DateField(widget=SelectDateWidget())
-#     expiration_date = forms.DateField(widget=SelectDateWidget())
     kind = forms.ModelChoiceField(
         queryset=GroupKind.objects.all(),
         label="",
         widget=forms.HiddenInput()
     )
     name = forms.URLField()
+    homepage = forms.URLField()
     
     class Meta:
         model = AstakosGroup
@@ -510,8 +509,9 @@ class AstakosGroupCreationForm(forms.ModelForm):
         except KeyError:
             resources = {}
         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['kind', 'name', 'desc', 'issue_date',
-                                'expiration_date', 'estimated_participants',
+        self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
+                                'issue_date', 'expiration_date',
+                                'estimated_participants',
                                 'moderation_enabled']
         for id, r in resources.iteritems():
             self.fields['resource_%s' % id] = forms.IntegerField(

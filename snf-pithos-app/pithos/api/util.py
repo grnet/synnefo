@@ -788,7 +788,8 @@ def simple_list_response(request, l):
     if request.serialization == 'json':
         return json.dumps(l)
 
-def get_backend():
+
+def _get_backend():
     backend = connect_backend(db_module=BACKEND_DB_MODULE,
                               db_connection=BACKEND_DB_CONNECTION,
                               block_module=BACKEND_BLOCK_MODULE,
@@ -799,6 +800,43 @@ def get_backend():
     backend.default_policy['quota'] = BACKEND_QUOTA
     backend.default_policy['versioning'] = BACKEND_VERSIONING
     return backend
+
+
+def _pooled_backend_close(backend):
+    backend._pool.pool_put(backend)
+
+
+from synnefo.lib.pool import ObjectPool
+from new import instancemethod
+
+USAGE_LIMIT = 500
+POOL_SIZE = 5
+
+class PithosBackendPool(ObjectPool):
+    def _pool_create(self):
+        backend = _get_backend()
+        backend._real_close = backend.close
+        backend.close = instancemethod(_pooled_backend_close, backend,
+                                       type(backend))
+        backend._pool = self
+        backend._use_count = USAGE_LIMIT
+        return backend
+
+    def _pool_cleanup(self, backend):
+        c = backend._use_count - 1
+        if c < 0:
+            backend._real_close()
+            return True
+
+        backend._use_count = c
+        return False
+
+_pithos_backend_pool = PithosBackendPool(size=POOL_SIZE)
+
+
+def get_backend():
+    return _pithos_backend_pool.pool_get()
+
 
 def update_request_headers(request):
     # Handle URL-encoded keys and values.
@@ -869,6 +907,7 @@ def request_serialization(request, format_allowed=False):
             return 'xml'
     
     return 'text'
+
 
 def api_method(http_method=None, format_allowed=False, user_required=True):
     """Decorator function for views that implement an API method."""

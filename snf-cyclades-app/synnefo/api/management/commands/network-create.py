@@ -36,8 +36,9 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Network, Backend
-from synnefo.api.util import network_link_from_type
+from synnefo.api.util import network_link_from_type, validate_network_size
 from synnefo.logic.backend import create_network
+from synnefo import settings
 
 import ipaddr
 
@@ -47,6 +48,8 @@ NETWORK_TYPES = ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
 
 
 class Command(BaseCommand):
+    can_import_settings = True
+
     help = "Create a new network"
 
     option_list = BaseCommand.option_list + (
@@ -154,7 +157,6 @@ class Command(BaseCommand):
             create_network(network)
 
 
-
 def validate_network_info(options):
     subnet = options['subnet']
     gateway = options['gateway']
@@ -162,7 +164,12 @@ def validate_network_info(options):
     gateway6 = options['gateway6']
 
     try:
-        ipaddr.IPv4Network(subnet)
+        net = ipaddr.IPv4Network(subnet)
+        prefix = net.prefixlen
+        if not validate_network_size(prefix):
+            raise CommandError("Unsupport network mask %d."
+                               " Must be in range (%s,29] "
+                               % (prefix, settings.MAX_CIDR_BLOCK))
     except ValueError:
         raise CommandError('Malformed subnet')
     try:

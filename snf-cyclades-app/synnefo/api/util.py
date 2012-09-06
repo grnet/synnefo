@@ -64,6 +64,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
 from synnefo.logic import ippool
+from synnefo.settings import MAX_CIDR_BLOCK
 
 
 log = getLogger('synnefo.api')
@@ -207,6 +208,11 @@ def get_network(network_id, user_id):
         return Network.objects.get(id=network_id, userid=user_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
+
+
+def validate_network_size(cidr_block):
+    """Return True if network size is allowed."""
+    return cidr_block <= 29 and cidr_block > MAX_CIDR_BLOCK
 
 
 def backend_public_networks(backend):

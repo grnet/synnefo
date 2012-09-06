@@ -48,7 +48,6 @@ from synnefo.api.faults import (BadRequest, Unauthorized,
                                 NetworkInUse, OverLimit)
 from synnefo.db.models import Network, Pool
 from synnefo.logic import backend
-from synnefo.settings import MAX_CIDR_BLOCK
 
 
 log = getLogger('synnefo.api')
@@ -179,9 +178,8 @@ def create_network(request):
         raise OverLimit('Network count limit exceeded for your account.')
 
     cidr_block = int(subnet.split('/')[1])
-    if cidr_block <= MAX_CIDR_BLOCK:
-        raise OverLimit("Network size is to big. Please specify a network"
-                        " smaller than /" + str(MAX_CIDR_BLOCK) + '.')
+    if not util.validate_network_size(cidr_block):
+        raise OverLimit("Unsupported network size.")
 
     try:
         link = util.network_link_from_type(typ)

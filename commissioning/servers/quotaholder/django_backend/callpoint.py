@@ -67,10 +67,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             try:
-                Entity.objects.create(entity=entity, owner=owner, key=key)
-            except IntegrityError:
-                append(entity)
-
+                entity = Entity.objects.get(entity=entity, owner=owner)
+                if entity.key != key:
+                    append(entity)
+            except Entity.DoesNotExist:
+                entity = Entity.objects.create( entity=entity,
+                                                owner=owner,
+                                                key=key )
         return rejected
 
     def list_entities(self, context={}, entity=None, key=None):

@@ -78,7 +78,6 @@ BINDINGS = []
 
 class Dispatcher:
     debug = False
-    client_promises = []
 
     def __init__(self, debug=False):
         self.debug = debug
@@ -127,12 +126,11 @@ class Dispatcher:
             self.client.queue_bind(queue=binding[0], exchange=binding[1],
                                    routing_key=binding[2])
 
-            consume_promise = self.client.basic_consume(queue=binding[0],
+            self.client.basic_consume(queue=binding[0],
                                                         callback=callback)
 
             log.debug("Binding %s(%s) to queue %s with handler %s",
                       binding[1], binding[2], binding[0], binding[3])
-            self.client_promises.append(consume_promise)
 
 
 def _init_queues():

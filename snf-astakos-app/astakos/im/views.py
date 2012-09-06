@@ -687,7 +687,11 @@ def group_add(request, kind_name='default'):
 @login_required
 def group_list(request):
     list = request.user.astakos_groups.select_related().all()
-    return object_list(request, queryset=list)
+    return object_list(request, queryset=list,
+                extra_context=dict(
+                    is_search=False
+                )
+    )
 
 @signed_terms_required
 @login_required

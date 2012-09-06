@@ -1,4 +1,4 @@
-
+# -*- coding: utf8 -*- 
 from random import random, choice, randint
 from math import log
 

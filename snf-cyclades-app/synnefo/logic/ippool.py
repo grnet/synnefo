@@ -5,6 +5,12 @@ from base64 import b64encode, b64decode
 
 
 class IPPool(object):
+    """IP pool class, based on a models.Network object
+
+    Implementation of an IP address pool based on a models.Network
+    object.
+
+    """
     def __init__(self, network):
         self.net = network
         self.network = ipaddr.IPNetwork(self.net.subnet)
@@ -21,8 +27,8 @@ class IPPool(object):
             self.reservations.setall(False)
             self.reservations[0] = True
             self.reservations[numhosts - 1] = True
-            # if self.net.type == 'PUBLIC_ROUTED':
-            #     self.reservations[numhosts - 2] = True
+            if self.gateway:
+                self.reserve(self.gateway)
 
     def _contains(self, address):
         if address is None:
@@ -36,7 +42,8 @@ class IPPool(object):
 
         """
         if not self._contains(address):
-            raise Exception("%s does not contain %s" % (str(self.network), address))
+            raise Exception("%s does not contain %s" %
+                            (str(self.network), address))
         addr = ipaddr.IPAddress(address)
 
         return int(addr) - int(self.network.network)
@@ -56,7 +63,7 @@ class IPPool(object):
         return self.reservations[index]
 
     def is_full(self):
-        return self.reservations.all()
+            return self.reservations.all()
 
     def count_reserved(self):
         return self.reservations.count(True)
@@ -68,6 +75,7 @@ class IPPool(object):
         return self.reservations.to01().replace("1", "X").replace("0", ".")
 
     def get_free_address(self):
+        """Get the first available address."""
         if self.is_full():
             raise IPPool.IPPoolExhausted("%s if full" % str(self.network))
 
@@ -77,6 +85,7 @@ class IPPool(object):
         return address
 
     def save(self):
+        """Update the Network model and save it to DB."""
         self._update_network()
         self.net.save()
 

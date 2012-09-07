@@ -109,6 +109,7 @@ class GroupKind(models.Model):
 
 class AstakosGroup(Group):
     kind = models.ForeignKey(GroupKind)
+    homepage = models.CharField('Homepage', max_length=255, null=True, blank=True)
     desc = models.TextField('Description', null=True)
     policy = models.ManyToManyField(Resource, null=True, blank=True,
         through='AstakosGroupQuota'
@@ -148,10 +149,6 @@ class AstakosGroup(Group):
         if now >= self.expiration_date:
             return False
         return True
-    
-#     @property
-#     def participants(self):
-#         return len(self.approved_members)
     
     def enable(self):
         if self.is_enabled:
@@ -351,6 +348,7 @@ class AstakosUser(User):
         if q.count() != 0:
             raise ValidationError({'__all__':[_('Another account with the same email & is_active combination found.')]})
     
+    @property
     def signed_terms(self):
         term = get_latest_terms()
         if not term:

@@ -32,9 +32,10 @@
 		</ul>
         
     {% endif %}
+    {% with object_list|enabled:is_search as object_list %}
     {% if object_list %}
-      {% with object_list|filter_groups:user as d %}
-      	{% with d|lookup:'mine' as mine %}
+      {% with object_list|split:user as d %}
+      	{% with d|lookup:'own' as mine %}
 	      	{% if mine %}	
 	      		<div class="full-dotted">
 					<table class="alt-style table_sorting" id="">
@@ -131,6 +132,7 @@
             {% if is_search %}
                 <h2>No groups found!</h2>
             {% endif %}
-        {% endif %}
+      {% endif %}
+    {% endwith %}
 </div>
 {% endblock %}

@@ -113,7 +113,7 @@ def signed_terms_required(func):
     """
     @wraps(func)
     def wrapper(request, *args, **kwargs):
-        if request.user.is_authenticated() and not request.user.signed_terms():
+        if request.user.is_authenticated() and not request.user.signed_terms:
             params = urlencode({'next': request.build_absolute_uri(),
                               'show_form':''})
             terms_uri = reverse('latest_terms') + '?' + params
@@ -545,7 +545,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
         return HttpResponseRedirect(next)
     else:
         form = None
-        if request.user.is_authenticated() and not request.user.signed_terms():
+        if request.user.is_authenticated() and not request.user.signed_terms:
             form = SignApprovalTermsForm(instance=request.user)
         return render_response(template_name,
                                terms = terms,
@@ -687,7 +687,11 @@ def group_add(request, kind_name='default'):
 @login_required
 def group_list(request):
     list = request.user.astakos_groups.select_related().all()
-    return object_list(request, queryset=list)
+    return object_list(request, queryset=list,
+                extra_context=dict(
+                    is_search=False
+                )
+    )
 
 @signed_terms_required
 @login_required
@@ -716,8 +720,7 @@ def group_search(request, extra_context=None, **kwargs):
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            q = URLField().to_python(q)
-            queryset = AstakosGroup.objects.select_related().filter(name=q)
+            queryset = AstakosGroup.objects.select_related().filter(name__contains=q)
             return object_list(
                 request,
                 queryset,

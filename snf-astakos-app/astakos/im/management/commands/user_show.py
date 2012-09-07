@@ -84,7 +84,7 @@ class Command(BaseCommand):
                 'resources' : user.quota
             }
             if get_latest_terms():
-                has_signed_terms = user.signed_terms()
+                has_signed_terms = user.signed_terms
                 kv['has_signed_terms'] = format_bool(has_signed_terms)
                 if has_signed_terms:
                     kv['date_signed_terms'] = format_date(user.date_signed_terms)

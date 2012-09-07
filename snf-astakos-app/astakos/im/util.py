@@ -105,7 +105,7 @@ def prepare_response(request, user, next='', renew=False):
        or user has not a valid token.
     """
     renew = renew or (not user.auth_token)
-    renew = renew or (user.auth_token_expires and user.auth_token_expires < datetime.datetime.now())
+    renew = renew or (user.auth_token_expires < datetime.datetime.now())
     if renew:
         user.renew_token()
         try:
@@ -138,9 +138,13 @@ def set_cookie(response, user):
     expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
     cookie_value = quote(user.email + '|' + user.auth_token)
     response.set_cookie(COOKIE_NAME, value=cookie_value,
-                        expires=expire_fmt, path='/',
-                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
-    msg = 'Cookie [expiring %s] set for %s' % (user.auth_token_expires, user.email)
+        expires=expire_fmt, path='/',
+        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE
+    )
+    msg = 'Cookie [expiring %s] set for %s' % (
+        user.auth_token_expires,
+        user.email
+    )
     logger.log(LOGGING_LEVEL, msg)
 
 class lazy_string(object):
@@ -161,4 +165,7 @@ def reserved_email(email):
     return AstakosUser.objects.filter(email = email).count() != 0
 
 def get_query(request):
-    return request.__getattribute__(request.method)
+    try:
+        return request.__getattribute__(request.method)
+    except AttributeError:
+        return request.GET

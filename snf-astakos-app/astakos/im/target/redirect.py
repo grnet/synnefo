@@ -68,7 +68,7 @@ def login(request):
     if request.user.is_authenticated():
         # if user has not signed the approval terms
         # redirect to approval terms with next the request path
-        if not request.user.signed_terms():
+        if not request.user.signed_terms:
             # first build next parameter
             parts = list(urlsplit(request.build_absolute_uri()))
             params = dict(parse_qsl(parts[3], keep_blank_values=True))

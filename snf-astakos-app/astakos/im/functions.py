@@ -50,7 +50,10 @@ from datetime import datetime
 from functools import wraps
 
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, \
-    SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL
+    SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL, \
+    VERIFICATION_EMAIL_SUBJECT, ADMIN_NOTIFICATION_EMAIL_SUBJECT, \
+    HELPDESK_NOTIFICATION_EMAIL_SUBJECT, INVITATION_EMAIL_SUBJECT, \
+    GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT, EMAIL_CHANGE_EMAIL_SUBJECT
 from astakos.im.models import Invitation, AstakosUser
 
 logger = logging.getLogger(__name__)
@@ -92,7 +95,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail('%s alpha2 testing account activation is needed' % SITENAME, message, sender, [user.email])
+        send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendVerificationError()
@@ -120,7 +123,7 @@ def send_admin_notification(user, template_name='im/admin_notification.txt'):
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_ADMIN_EMAIL])
+        send_mail(_(ADMIN_NOTIFICATION_EMAIL_SUBJECT), message, sender, [DEFAULT_ADMIN_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -143,7 +146,7 @@ def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt
             'support': DEFAULT_ADMIN_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail('%s alpha2 testing account notification' % SITENAME, message, sender, [DEFAULT_CONTACT_EMAIL])
+        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT), message, sender, [DEFAULT_CONTACT_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -157,7 +160,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     
     Raises SendInvitationError
     """
-    subject = _('Invitation to %s alpha2 testing' % SITENAME)
+    subject = _(INVITATION_EMAIL_SUBJECT)
     url = '%s?code=%d' % (urljoin(BASEURL, reverse('astakos.im.views.index')), invitation.code)
     message = render_to_string('im/invitation.txt', {
                 'invitation': invitation,
@@ -181,7 +184,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
     
     Raises SMTPException, socket.error
     """
-    subject = _('Welcome to %s alpha2 testing' % SITENAME)
+    subject = _(GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                 'user': user,
                 'url': urljoin(BASEURL, reverse('astakos.im.views.index')),
@@ -199,7 +202,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
         logger._log(LOGGING_LEVEL, msg, [])
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
-    subject = _("Feedback from %s alpha2 testing" % SITENAME)
+    subject = _(FEEDBACK_EMAIL_SUBJECT)
     from_email = user.email
     recipient_list = [DEFAULT_CONTACT_EMAIL]
     content = render_to_string(email_template_name, {
@@ -223,7 +226,7 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME}
         from_email = DEFAULT_FROM_EMAIL
-        send_mail(_("Email change on %s alpha2 testing") % SITENAME,
+        send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT),
             t.render(Context(c)), from_email, [ec.new_email_address])
     except (SMTPException, socket.error) as e:
         logger.exception(e)

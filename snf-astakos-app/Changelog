@@ -3,11 +3,20 @@ Changelog
 
 v0.7.4
 ^^^^^^
-- Use https for google webfonts
+- Configurable subjects for all emails send by astakos app. Introduced settings
+	* ASTAKOS_INVITATION_EMAIL_SUBJECT
+	* ASTAKOS_GREETING_EMAIL_SUBJECT
+	* ASTAKOS_FEEDBACK_EMAIL_SUBJECT
+	* ASTAKOS_VERIFICATION_EMAIL_SUBJECT
+	* ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT
+	* ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT
+	* ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT
+	* ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT
 
 
 v0.7.3
 ^^^^^^
+- Use https for google webfonts
 - Fix anonymoususer logout
 
 v0.7.1

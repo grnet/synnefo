@@ -50,7 +50,7 @@ from django.utils.encoding import smart_str
 from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
     BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
-    RECAPTCHA_ENABLED, LOGGING_LEVEL
+    RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -413,7 +413,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'support': DEFAULT_CONTACT_EMAIL
             }
             from_email = DEFAULT_FROM_EMAIL
-            send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
+            send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
                 t.render(Context(c)), from_email, [user.email])
 
 class EmailChangeForm(forms.ModelForm):

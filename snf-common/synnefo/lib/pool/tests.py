@@ -55,8 +55,9 @@ if "monkey" in sys.argv:
 import sys
 import time
 import threading
+from collections import defaultdict
 
-from synnefo.lib.pool import ObjectPool, PoolEmptyError
+from synnefo.lib.pool import ObjectPool, PoolLimitError, PoolVerificationError
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -67,19 +68,37 @@ except ImportError:
     import unittest
 
 
+from threading import Lock
+
+mutex = Lock()
+
 class NumbersPool(ObjectPool):
     max = 0
 
-    def _pool_create(self):
+    def _pool_create_safe(self):
+        with mutex:
+            n = self.max
+            self.max += 1
+        return n
+
+    def _pool_create_unsafe(self):
         n = self.max
         self.max += 1
         return n
+
+    # set this to _pool_create_unsafe to check
+    # the thread-safety test
+    #_pool_create = _pool_create_unsafe
+    _pool_create = _pool_create_safe
+
+    def _pool_verify(self, obj):
+        return True
 
     def _pool_cleanup(self, obj):
         n = int(obj)
         if n < 0:
             return True
-        pass
+        return False
 
 
 class ObjectPoolTestCase(unittest.TestCase):
@@ -98,12 +117,13 @@ class ObjectPoolTestCase(unittest.TestCase):
     def test_get_not_implemented(self):
         """Test pool_get() method not implemented in abstract class"""
         pool = ObjectPool(100)
-        self.assertRaises(NotImplementedError, pool.pool_get)
+        self.assertRaises(NotImplementedError, pool._pool_create)
+        self.assertRaises(NotImplementedError, pool._pool_verify, None)
 
     def test_put_not_implemented(self):
         """Test pool_put() method not implemented in abstract class"""
         pool = ObjectPool(100)
-        self.assertRaises(NotImplementedError, pool.pool_put, None)
+        self.assertRaises(NotImplementedError, pool._pool_cleanup, None)
 
 
 class NumbersPoolTestCase(unittest.TestCase):
@@ -136,7 +156,7 @@ class NumbersPoolTestCase(unittest.TestCase):
 
         results = [None] * self.N
         threads = [threading.Thread(target=allocate_one,
-                                    args=(self.numbers, results, i,))
+                                    args=(self.numbers, results, i))
                    for i in xrange(0, self.N)]
 
         for t in threads:
@@ -145,7 +165,7 @@ class NumbersPoolTestCase(unittest.TestCase):
             t.join()
 
         # This nonblocking pool_get() should fail
-        self.assertRaises(PoolEmptyError, self.numbers.pool_get,
+        self.assertRaises(PoolLimitError, self.numbers.pool_get,
                           blocking=False)
         self.assertEqual(sorted(results), range(0, self.N))
 
@@ -155,7 +175,7 @@ class NumbersPoolTestCase(unittest.TestCase):
             self.assertIsNone(self.numbers.pool_get(create=False))
 
         # This nonblocking pool_get() should fail
-        self.assertRaises(PoolEmptyError, self.numbers.pool_get,
+        self.assertRaises(PoolLimitError, self.numbers.pool_get,
                           blocking=False)
 
     def test_pool_cleanup_returns_failure(self):
@@ -178,10 +198,11 @@ class NumbersPoolTestCase(unittest.TestCase):
             result[index] = n
             pool.pool_put(n)
 
-        results = [None] * (2 * self.N + 1)
+        nr_threads = 2 * self.N + 1
+        results = [None] * nr_threads
         threads = [threading.Thread(target=allocate_one_and_sleep,
-                                    args=(self.numbers, self.SEC, results, i,))
-                   for i in xrange(0, 2 * self.N + 1)]
+                                    args=(self.numbers, self.SEC, results, i))
+                   for i in xrange(nr_threads)]
 
         # This should take 3 * SEC seconds
         start = time.time()
@@ -193,16 +214,76 @@ class NumbersPoolTestCase(unittest.TestCase):
         self.assertTrue(diff > 3 * self.SEC)
         self.assertLess((diff - 3 * self.SEC) / 3 * self.SEC, .5)
 
-        # One number must have been used three times,
-        # all others must have been used once
-        freq = {}
+        freq = defaultdict(int)
         for r in results:
-            freq[r] = freq.get(r, 0) + 1
-        self.assertTrue(len([r for r in results if freq[r] == 2]), self. N)
+            freq[r] += 1
+
+        # The maximum number used must be exactly the pool size.
+        self.assertEqual(max(results), self.N - 1)
+        # At least one number must have been used three times
         triples = [r for r in freq if freq[r] == 3]
-        self.assertTrue(len(triples), 1)
-        self.assertEqual(sorted(results),
-                         sorted(2 * range(0, self.N) + triples))
+        self.assertGreater(len(triples), 0)
+        # The sum of all frequencies must equal to the number of threads.
+        self.assertEqual(sum(freq.values()), nr_threads)
+
+    def test_verify_create(self):
+        numbers = self.numbers
+        nums = [numbers.pool_get() for _ in xrange(self.N)]
+        for num in nums:
+            numbers.pool_put(num)
+
+        def verify(num):
+            if num in nums:
+                return False
+            return True
+
+        self.numbers._pool_verify = verify
+        self.assertEqual(numbers.pool_get(), self.N)
+
+    def test_verify_error(self):
+        numbers = self.numbers
+        nums = [numbers.pool_get() for _ in xrange(self.N)]
+        for num in nums:
+            numbers.pool_put(num)
+
+        def false(*args):
+            return False
+
+        self.numbers._pool_verify = false
+        self.assertRaises(PoolVerificationError, numbers.pool_get)
+
+class ThreadSafetyTest(unittest.TestCase):
+
+    pool_class = NumbersPool
+
+    def setUp(self):
+        size = 3000
+        self.size = size
+        self.pool = self.pool_class(size)
+
+    def test_parallel_sleeping_create(self):
+        def create(pool, results, i):
+            time.sleep(1)
+            results[i] = pool._pool_create()
+
+        pool = self.pool
+        N = self.size
+        results = [None] * N
+        threads = [threading.Thread(target=create, args=(pool, results, i))
+                   for i in xrange(N)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        freq = defaultdict(int)
+        for r in results:
+            freq[r] += 1
+
+        mults = [(n, c) for n, c in freq.items() if c > 1]
+        if mults:
+            #print mults
+            raise AssertionError("_pool_create() is not thread safe")
 
 
 if __name__ == '__main__':

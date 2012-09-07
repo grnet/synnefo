@@ -111,8 +111,8 @@ class ObjectPool(object):
         the object has died and is not put back into self._set.
 
         """
-        with self._mutex:
-            if not self._pool_cleanup(obj):
+        if not self._pool_cleanup(obj):
+            with self._mutex:
                 self._set.add(obj)
         self._semaphore.release()
 

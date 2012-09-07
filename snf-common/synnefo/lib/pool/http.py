@@ -85,8 +85,7 @@ class HTTPConnectionPool(ObjectPool):
         return True
 
 
-def get_http_connection(netloc=None, scheme='http',
-                        verify=0, pool_size=pool_size):
+def get_http_connection(netloc=None, scheme='http', pool_size=pool_size):
     if netloc is None:
         m = "netloc cannot be None"
         raise ValueError(m)

@@ -110,9 +110,9 @@ FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
 VERIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
         '%s alpha2 testing account activation is needed' % SITENAME)
 ADMIN_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT',
-        '%s alpha2 testing account notification' % SITENAME)
+        '%s alpha2 testing account created (%%(user)s)' % SITENAME)
 HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
-        '%s alpha2 testing account notification' % SITENAME)
+        '%s alpha2 testing account activated (%%(user)s)' % SITENAME)
 EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
         'Email change on %s alpha2 testing' % SITENAME)
 PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',

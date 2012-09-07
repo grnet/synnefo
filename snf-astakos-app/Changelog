@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+v0.7.5
+^^^^^^
+- Include user email in registered/activated notification mails subject
+
 v0.7.4
 ^^^^^^
 - Configurable subjects for all emails send by astakos app. Introduced settings

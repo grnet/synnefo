@@ -123,7 +123,7 @@ def send_admin_notification(user, template_name='im/admin_notification.txt'):
             'support': DEFAULT_CONTACT_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail(_(ADMIN_NOTIFICATION_EMAIL_SUBJECT), message, sender, [DEFAULT_ADMIN_EMAIL])
+        send_mail(_(ADMIN_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email}, message, sender, [DEFAULT_ADMIN_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -146,7 +146,7 @@ def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt
             'support': DEFAULT_ADMIN_EMAIL})
     sender = DEFAULT_FROM_EMAIL
     try:
-        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT), message, sender, [DEFAULT_CONTACT_EMAIL])
+        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email}, message, sender, [DEFAULT_CONTACT_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()

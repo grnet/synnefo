@@ -43,6 +43,9 @@ class http_request(object):
     body        =   None
     headers     =   None
 
+    conn        =   None
+    response    =   None
+
     scheme_ports = {
             'http':     '80',
             'https':    '443',
@@ -96,6 +99,9 @@ class http_request(object):
             self.connect()
 
     def connect(self):
+        if self.conn is not None:
+            self.dismiss()
+
         conn = get_http_connection(netloc=self.netloc, scheme=self.scheme)
         try:
             kw = {}
@@ -112,5 +118,17 @@ class http_request(object):
         self.conn = conn
 
     def getresponse(self):
-        return self.conn.getresponse()
+        conn = self.conn
+        if conn is None:
+            self.connect()
+            conn = self.conn
+        response = self.conn.getresponse()
+        self.response = response
+        return response
+
+    def dismiss(self):
+        conn = self.conn
+        if conn is not None:
+            conn.close()
+        conn.response = None
 

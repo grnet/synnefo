@@ -49,18 +49,59 @@ creation, destruction, allocation and release of their specific objects.
 from threading import Semaphore, Lock
 
 
-__all__ = ['ObjectPool', 'ObjectPoolError', 'PoolEmptyError']
+__all__ = [ 'ObjectPool', 'ObjectPoolError',
+            'PoolLimitError', 'PoolVerificationError' ]
 
 
 class ObjectPoolError(Exception):
     pass
 
+class PoolLimitError(ObjectPoolError):
+    pass
 
-class PoolEmptyError(ObjectPoolError):
+class PoolVerificationError(ObjectPoolError):
     pass
 
 
 class ObjectPool(object):
+    """Generic Object Pool.
+
+    The pool consists of an object set and an allocation semaphore.
+
+    pool_get() gets an allocation from the semaphore
+               and an object from the pool set.
+
+    pool_put() releases an allocation to the semaphore
+               and puts an object back to the pool set.
+
+    Subclasses must implement these thread-safe hooks:
+    _pool_create()
+            is used as a subclass hook to auto-create new objects in pool_get().
+    _pool_verify()
+            verifies objects before they are returned by pool_get()
+    _pool_cleanup()
+            cleans up and verifies objects before their return by pool_put().
+
+    While allocations are strictly accounted for and limited by
+    the semaphore, objects are expendable:
+
+    The hook provider and the caller are solely responsible for object handling.
+    pool_get() may create an object if there is none in the pool set.
+    pool_get() may return no object, leaving object creation to the caller.
+    pool_put() may return no object to the pool set.
+    Objects to pool_put() to the pool need not be those from pool_get().
+    Objects to pool_get() need not be those from pool_put().
+
+
+    Callers beware:
+    The pool limit size must be greater than the total working set of objects,
+    otherwise it will hang. When in doubt, use an impossibly large size limit.
+    Since the pool grows on demand, this will not waste resources.
+    However, in that case, the pool must not be used as a flow control device
+    (i.e. relying on pool_get() blocking to stop threads),
+    as the impossibly large pool size limit will defer blocking until too late.
+
+    """
     def __init__(self, size=None):
         try:
             self.size = int(size)
@@ -69,17 +110,18 @@ class ObjectPool(object):
             raise ValueError("Invalid size for pool (positive integer "
                              "required): %r" % (size,))
 
-        self._semaphore = Semaphore(size)  # Pool grows up to size
+        self._semaphore = Semaphore(size)  # Pool grows up to size limit
         self._mutex = Lock()  # Protect shared _set oject
         self._set = set()
 
-    def pool_get(self, blocking=True, timeout=None, create=True):
+    def pool_get(self, blocking=True, timeout=None, create=True, verify=True):
         """Get an object from the pool.
 
-        Get an object from the pool. By default (create=True), create a new
-        object if the pool has not reached its maximum size yet. If
-        create == False, the caller is responsible for creating the object and
-        put()ting it back into the pool when done.
+        Get a pool allocation and an object from the pool set.
+        Raise PoolLimitError if the pool allocation limit has been reached.
+        If the pool set is empty, create a new object (create==True),
+        or return None (create==False) and let the caller create it.
+        All objects returned (except None) are verified.
 
         """
         # timeout argument only supported by gevent and py3k variants
@@ -88,30 +130,46 @@ class ObjectPool(object):
         kw = {"blocking": blocking}
         if timeout is not None:
             kw["timeout"] = timeout
-        r = self._semaphore.acquire(**kw)
+        sema = self._semaphore
+        r = sema.acquire(**kw)
         if not r:
-            raise PoolEmptyError()
-        with self._mutex:
-            try:
-                try:
-                    obj = self._set.pop()
-                except KeyError:
-                    obj = self._pool_create() if create else None
-            except:
-                self._semaphore.release()
-                raise
-        # We keep _semaphore locked, put() will release it
+            raise PoolLimitError()
+
+        try:
+            created = 0
+            while 1:
+                with self._mutex:
+                    try:
+                        obj = self._set.pop()
+                    except KeyError:
+                        obj = None
+                if obj is None and create:
+                    obj = self._pool_create()
+                    created = 1
+
+                if not self._pool_verify(obj):
+                    if created:
+                        m = "Pool %r cannot verify new object %r" % (self, obj)
+                        raise PoolVerificationError(m)
+                    continue
+                break
+        except:
+            sema.release()
+            raise
+
+        # We keep _semaphore acquired, put() will release it
         return obj
 
     def pool_put(self, obj):
         """Put an object back into the pool.
 
-        Return an object to the pool, for subsequent retrieval
-        by pool_get() calls. If _pool_cleanup() returns True,
-        the object has died and is not put back into self._set.
+        Release an allocation and return an object to the pool.
+        If obj is None, or _pool_cleanup returns True,
+        then the allocation is released,
+        but no object returned to the pool set
 
         """
-        if not self._pool_cleanup(obj):
+        if obj is not None and not self._pool_cleanup(obj):
             with self._mutex:
                 self._set.add(obj)
         self._semaphore.release()
@@ -121,6 +179,18 @@ class ObjectPool(object):
 
         Create a new object to be used with this pool,
         should be overriden in subclasses.
+        Must be thread-safe.
+        """
+        raise NotImplementedError
+
+    def _pool_verify(self, obj):
+        """Verify an object after getting it from the pool.
+
+        If it returns False, the object is discarded
+        and another one is drawn from the pool.
+        If the pool is empty, a new object is created.
+        If the new object fails to verify, pool_get() will fail.
+        Must be thread-safe.
 
         """
         raise NotImplementedError
@@ -130,6 +200,7 @@ class ObjectPool(object):
 
         Cleanup an object before it can be put back into the pull,
         ensure it is in a stable, reusable state.
+        Must be thread-safe.
 
         """
         raise NotImplementedError

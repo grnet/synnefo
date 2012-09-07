@@ -147,7 +147,7 @@ def get_services(request):
     return HttpResponse(content=data, mimetype=mimetype)
 
 @api_method()
-def get_menu(request, with_extra_links=True, with_signout=True):
+def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
     if not isinstance(user, AstakosUser):
         cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))

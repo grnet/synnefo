@@ -29,14 +29,20 @@ OwnerKey            =   Name(classname='OwnerKey')
 Resource            =   Name(classname='Resource')
 Policy              =   Name(classname='Policy')
 
-Quantity            =   Nonnegative(classname='Quantity')
+Quantity            =   Integer(classname='Quantity')
 Capacity            =   Nonnegative(classname='Capacity')
 ImportLimit         =   Nonnegative(classname='ImportLimit')
 ExportLimit         =   Nonnegative(classname='ExportLimit')
 Imported            =   Nonnegative(classname='Imported')
 Exported            =   Nonnegative(classname='Exported')
+Regained            =   Nonnegative(classname='Regained')
+Released            =   Nonnegative(classname='Released')
 Flags               =   Nonnegative(classname='Flags')
 
+Timepoint           =   Text(classname='Timepoint', maxlen=24)
+Reason              =   Text(   classname   =   'Reason',
+                                regex       =   '(ACCEPT|REJECT):.*',
+                                maxlen      =   128         )
 
 class QuotaholderAPI(Specificator):
 
@@ -97,7 +103,7 @@ class QuotaholderAPI(Specificator):
         ):
 
         holdings = ListOf(  Entity, Resource, Policy,
-                            Imported, Exported, Flags       )
+                            Imported, Exported, Regained, Released, Flags   )
         return holdings
 
     def set_holding (
@@ -129,6 +135,7 @@ class QuotaholderAPI(Specificator):
                         Quantity, Capacity,
                         ImportLimit, ExportLimit,
                         Imported, Exported,
+                        Regained, Released,
                         Flags)
         return quotas
 
@@ -201,4 +208,22 @@ class QuotaholderAPI(Specificator):
 
         rejected = ListOf(Entity)
         return rejected
+
+    def get_timeline    (
+                self,
+                context         =   Context,
+                after           =   Timepoint,
+                before          =   Timepoint,
+                entities        =   ListOf(Entity, Key)
+        ):
+
+        timeline = ListOf(  Dict(   serial      =   Serial,
+                                    source      =   Entity,
+                                    target      =   Entity,
+                                    resource    =   Resource,
+                                    quantity    =   Quantity,
+                                    issue_time  =   Timepoint,
+                                    log_time    =   Timepoint,
+                                    reason      =   Reason      )   )
+        return timeline
 

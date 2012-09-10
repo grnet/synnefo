@@ -8,9 +8,10 @@ from commissioning import ( QuotaholderAPI,
 
 
 from commissioning.utils.newname import newname
-from django.db.models import Model, BigIntegerField, CharField, ForeignKey
+from django.db.models import Model, BigIntegerField, CharField, ForeignKey, Q
 from django.db import transaction, IntegrityError
-from .models import Holder, Entity, Policy, Holding, Commission, Provision
+from .models import (Holder, Entity, Policy, Holding,
+                     Commission, Provision, ProvisionLog)
 
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
@@ -272,10 +273,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return rejected
 
-    def issue_commission(self,  context={}, clientkey=None,
-                                target=None, key=None,
-                                owner=None, ownerkey=None,
-                                provisions=()               ):
+    def issue_commission(self,  context     =   {},
+                                clientkey   =   None,
+                                target      =   None,
+                                key         =   None,
+                                owner       =   None,
+                                ownerkey    =   None,
+                                provisions  =   ()  ):
 
         try:
             t = Entity.objects.get(entity=target)
@@ -295,6 +299,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         commission = Commission.objects.create( entity=target,
                                                 clientkey=clientkey )
         serial = commission.serial
+        release = 0
+        if quantity < 0:
+            release = 1
 
         for entity, resource, quantity in provisions:
             try:
@@ -311,7 +318,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     m = ("Export limit reached for %s.%s" % (entity, resource))
                     raise ExportLimitError(m)
 
-            if h.importing - h.exported + hp.quantity - quantity < 0:
+            available = (+ hp.quantity + h.imported + h.regained
+                         - h.exporting - h.releasing)
+
+            if available - quantity < 0:
                 m = ("There is not enough quantity "
                      "to allocate from in %s.%s" % (entity, resource))
                 raise NoQuantityError(m)
@@ -330,9 +340,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     m = ("Import limit reached for %s.%s" % (target, resource))
                     raise ImportLimitError(m)
 
-            if (    th.exported - th.importing - tp.quantity
-                    + tp.capacity - quantity                ) < 0:
+            capacity = (+ tp.capacity + th.exported + th.released
+                        - th.importing - th.regaining)
 
+            if capacity - quantity < 0:
                     m = ("There is not enough capacity "
                          "to allocate into in %s.%s" % (target, resource))
                     raise NoCapacityError(m)
@@ -342,27 +353,31 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                         resource=resource,
                                         quantity=quantity   )
 
-            h.exporting += quantity
-            th.importing += quantity
+            if release:
+                h.regaining -= quantity
+                th.releasing -= quantity
+            else:
+                h.exporting += quantity
+                th.importing += quantity
 
             h.save()
             th.save()
 
         return serial
 
-    def accept_commission(self, context={}, clientkey=None, serial=None):
+    def accept_commission(self, context={}, clientkey=None,
+                                serial=None, reason=''):
         try:
             c = Commission.objects.get(clientkey=clientkey, serial=serial)
         except Commission.DoesNotExist:
             return
 
         t = c.entity
+        log_time = now()
 
         provisions = Provision.objects.filter(  clientkey=clientkey,
                                                 serial=serial       )
         for pv in provisions:
-            pv.entity,
-            pv.resource
             try:
                 h = Holding.objects.get(entity=pv.entity.entity,
                                         resource=pv.resource    )
@@ -371,15 +386,35 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 m = "Corrupted provision"
                 raise CorruptedError(m)
 
-            h.exported += pv.quantity
-            th.imported += pv.quantity
+            quantity = pv.quantity
+            release = 0
+            if quantity < 0:
+                release = 1
+
+            if release:
+                h.regained -= quantity
+                th.released -= quantity
+            else:
+                h.exported += quantity
+                th.imported += quantity
+
+            reason = 'ACCEPT:' + reason[:121]
+            ProvisionLog.objects.create(serial      =   serial,
+                                        source      =   pv.entity.entity,
+                                        target      =   t,
+                                        resource    =   pv.resource,
+                                        quantity    =   quantity,
+                                        issue_time  =   pv.issue_time,
+                                        log_time    =   log_Time,
+                                        reason      =   reason)
             h.save()
             th.save()
             pv.delete()
 
         return
 
-    def reject_commission(self, context={}, clientkey=None, serial=None):
+    def reject_commission(self, context={}, clientkey=None,
+                                serial=None, reason=''):
         try:
             c = Commission.objects.get(clientkey=clientkey, serial=serial)
         except Commission.DoesNotExist:
@@ -390,8 +425,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         provisions = Provision.objects.filter(  clientkey=clientkey,
                                                 serial=serial       )
         for pv in provisions:
-            pv.entity,
-            pv.resource
             try:
                 h = Holding.objects.get(entity=pv.entity.entity,
                                         resource=pv.resource    )
@@ -400,8 +433,27 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 m = "Corrupted provision"
                 raise CorruptedError(m)
 
-            h.exporting -= pv.quantity
-            th.importing -= pv.quantity
+            quantity = pv.quantity
+            release = 0
+            if quantity < 0:
+                release = 1
+
+            if release:
+                h.regaining += quantity
+                th.releasing += quantity
+            else:
+                h.exporting -= quantity
+                th.importing -= quantity
+
+            reason = 'ACCEPT:' + reason[:121]
+            ProvisionLog.objects.create(serial      =   serial,
+                                        source      =   pv.entity.entity,
+                                        target      =   t,
+                                        resource    =   pv.resource,
+                                        quantity    =   quantity,
+                                        issue_time  =   pv.issue_time,
+                                        log_time    =   log_Time,
+                                        reason      =   reason)
             h.save()
             th.save()
             pv.delete()
@@ -454,4 +506,42 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return rejected
 
+    def get_timeline(self, context={}, after="", before="Z", entities=()):
+        entity_set = set()
+        add = entity_set.add
+
+        for entity, key in entities:
+            try:
+                e = Entity.objects.get(entity=entity, key=key)
+                add(entity)
+            except Entity.DoesNotExist:
+                continue
+
+        chunk_size = 65536
+        nr = 0
+        timeline = []
+        extend = timeline.extend
+        while 1:
+            filterlogs = ProvisionLog.objects.filter
+            q_entity = Q(source__in = entity_set) | Q(target__in = entity_set)
+            logs = filterlogs(  issue_time__gt      =   after,
+                                issue_time__lte     =   before,
+                                reason__startswith  =   'ACCEPT:',
+                                q_entity                        )
+
+            logs = logs.order_by('issue_time')
+            logs = logs.values()
+            logs = logs[:chunk_size]
+            nr += len(logs)
+            if not logs:
+                break
+            extend(logs)
+            after = logs[-1]['issue_time']
+            if after >= before:
+                break
+
+        return timeline
+
+
 API_Callpoint = QuotaholderDjangoDBCallpoint
+

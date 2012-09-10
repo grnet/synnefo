@@ -63,6 +63,10 @@ class Holding(Model):
     importing   =   BigIntegerField(null=False, default=0)
     exported    =   BigIntegerField(null=False, default=0)
     exporting   =   BigIntegerField(null=False, default=0)
+    regained    =   BigIntegerField(null=False, default=0)
+    regaining   =   BigIntegerField(null=False, default=0)
+    released    =   BigIntegerField(null=False, default=0)
+    releasing   =   BigIntegerField(null=False, default=0)
 
     class Meta:
         unique_together = (('entity', 'resource'),)
@@ -71,7 +75,7 @@ class Holding(Model):
 from datetime import datetime
 
 def now():
-    return datetime.now().strftime('%Y-%m-%dT:%H:%M:%S.%f')[:24]
+    return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')[:24]
 
 
 class Commission(Model):
@@ -92,4 +96,15 @@ class Provision(Model):
     resource    =   CharField(max_length=72, null=False)
     quantity    =   BigIntegerField(null=False)
 
+
+class ProvisionLog(Model):
+
+    serial      =   BigIntegerField(primary_key=True)
+    source      =   CharField(max_length=72)
+    target      =   CharField(max_length=72)
+    issue_time  =   CharField(max_length=24)
+    log_time    =   CharField(max_length=24)
+    resource    =   CharField(max_length=72)
+    quantity    =   BigIntegerField()
+    reason      =   CharField(max_length=8)
 

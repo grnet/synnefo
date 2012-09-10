@@ -515,7 +515,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         except KeyError:
             resources = {}
         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['kind', 'name', 'desc', 'issue_date',
+        self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc', 'issue_date',
                                 'expiration_date', 'estimated_participants',
                                 'moderation_enabled']
         for id, r in resources.iteritems():

@@ -733,8 +733,9 @@ def group_search(request, extra_context=None, **kwargs):
     return render_response(
         template='im/astakosgroup_list.html',
         form = form,
-        context_instance=get_context(request, extra_context)
-    )
+        context_instance=get_context(request, extra_context),
+        is_search=False
+        )
 
 @signed_terms_required
 @login_required

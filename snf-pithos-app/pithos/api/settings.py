@@ -15,26 +15,33 @@ sample_users = {
     '0009': 'διογένης'
 }
 
-AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL', 'http://127.0.0.1:8000/im/authenticate')
+AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
+                             'http://127.0.0.1:8000/im/authenticate')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
-BACKEND_DB_MODULE = getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
-BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:////tmp/pithos-backend.db')
+BACKEND_DB_MODULE = getattr(
+    settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
+BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION',
+                                'sqlite:////tmp/pithos-backend.db')
 
 # Block storage.
-BACKEND_BLOCK_MODULE = getattr(settings, 'PITHOS_BACKEND_BLOCK_MODULE', 'pithos.backends.lib.hashfiler')
-BACKEND_BLOCK_PATH = getattr(settings, 'PITHOS_BACKEND_BLOCK_PATH', '/tmp/pithos-data/')
+BACKEND_BLOCK_MODULE = getattr(
+    settings, 'PITHOS_BACKEND_BLOCK_MODULE', 'pithos.backends.lib.hashfiler')
+BACKEND_BLOCK_PATH = getattr(
+    settings, 'PITHOS_BACKEND_BLOCK_PATH', '/tmp/pithos-data/')
 BACKEND_BLOCK_UMASK = getattr(settings, 'PITHOS_BACKEND_BLOCK_UMASK', 0o022)
 
 # Queue for billing.
-BACKEND_QUEUE_MODULE = getattr(settings, 'PITHOS_BACKEND_QUEUE_MODULE', None) # Example: 'pithos.backends.lib.rabbitmq'
-BACKEND_QUEUE_CONNECTION = getattr(settings, 'PITHOS_BACKEND_QUEUE_CONNECTION', None) # Example: 'rabbitmq://guest:guest@localhost:5672/pithos'
+BACKEND_QUEUE_MODULE = getattr(settings, 'PITHOS_BACKEND_QUEUE_MODULE',
+                               None)  # Example: 'pithos.backends.lib.rabbitmq'
+BACKEND_QUEUE_CONNECTION = getattr(settings, 'PITHOS_BACKEND_QUEUE_CONNECTION', None)  # Example: 'rabbitmq://guest:guest@localhost:5672/pithos'
 
 # Default setting for new accounts.
-BACKEND_QUOTA = getattr(settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
+BACKEND_QUOTA = getattr(
+    settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 
 # Update object checksums when using hashmaps.

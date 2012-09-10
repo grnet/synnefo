@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -74,7 +74,7 @@ def file_sync_write_chunks(openfile, chunksize, offset, chunks, size=None):
     for chunk in chunks:
         if padding:
             if seek:
-                seek(padding -1, SEEK_CUR)
+                seek(padding - 1, SEEK_CUR)
                 fwrite("\x00")
             else:
                 fwrite(buffer(zeros(chunksize), 0, padding))
@@ -160,7 +160,7 @@ class ContextFile(object):
             #if self.dirty:
             #    fsync(fdesc.fileno())
             fdesc.close()
-        return False # propagate exceptions
+        return False  # propagate exceptions
 
     def seek(self, offset, whence=SEEK_SET):
         return self.fdesc.seek(offset, whence)
@@ -191,4 +191,3 @@ class ContextFile(object):
 
     def sync_read_chunks(self, chunksize, nr, offset=0):
         return file_sync_read_chunks(self.fdesc, chunksize, nr, offset)
-

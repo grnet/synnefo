@@ -38,28 +38,31 @@ from functools import wraps
 
 from astakos.im.endpoints.quotaholder import send_quota
 from astakos.im.endpoints.aquarium.producer import (report_credits_event,
-    report_user_event
-)
+                                                    report_user_event
+                                                    )
 from astakos.im.endpoints.aquarium.client import AquariumClient
 
 import logging
 
 logger = logging.getLogger(__name__)
 
+
 def log(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         logger.info('Starting the %s with args=%s kwargs=%s' % (
-                func, args, kwargs
-            )
-        )
+                    func, args, kwargs
+                    )
+                    )
         return func(*args, **kwargs)
     return wrapper
+
 
 @periodic_task(run_every=crontab(day_of_month='1'))
 @log
 def propagate_credits_update():
     report_credits_event()
+
 
 @task
 @log
@@ -67,6 +70,7 @@ def propagate_groupmembers_quota(group):
     if group.is_disabled:
         return
     send_quota(group.approved_members)
+
 
 @task
 @log

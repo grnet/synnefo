@@ -37,17 +37,18 @@ from django.contrib.auth import authenticate
 from astakos.im.settings import COOKIE_NAME
 from astakos.im.functions import login
 
+
 class CookieAuthenticationMiddleware(object):
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
         if request.user.is_authenticated():
             return None
-        
+
         cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
         email, sep, auth_token = cookie.partition('|')
         if not sep:
             return None
-        
+
         try:
             user = authenticate(email=email, auth_token=auth_token)
             if user:

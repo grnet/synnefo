@@ -11,15 +11,16 @@ TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
 DEFAULT_USER_LEVEL = getattr(settings, 'ASTAKOS_DEFAULT_USER_LEVEL', 4)
 
 INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
-    0   :   100,
-    1   :   2,
-    2   :   0,
-    3   :   0,
-    4   :   0
+    0: 100,
+    1: 2,
+    2: 0,
+    3: 0,
+    4: 0
 })
 
 # Address to use for outgoing emails
-DEFAULT_CONTACT_EMAIL = getattr(settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
+DEFAULT_CONTACT_EMAIL = getattr(
+    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
 
 # Identity Management enabled modules
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local', 'shibboleth'])
@@ -48,8 +49,8 @@ SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
 RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
-RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS', 
-                            {'theme' : 'custom', 'custom_theme_widget': 'okeanos_recaptcha'})
+RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS',
+                            {'theme': 'custom', 'custom_theme_widget': 'okeanos_recaptcha'})
 RECAPTCHA_USE_SSL = getattr(settings, 'ASTAKOS_RECAPTCHA_USE_SSL', True)
 RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', True)
 
@@ -57,13 +58,14 @@ RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', True)
 BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['is_active'])
 
 # Queue for billing.
-QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None) # Example: 'rabbitmq://guest:guest@localhost:5672/astakos'
+QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None)  # Example: 'rabbitmq://guest:guest@localhost:5672/astakos'
 
 # Set where the user should be redirected after logout
 LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 
 # Set user email patterns that are automatically activated
-RE_USER_EMAIL_PATTERNS = getattr(settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
+RE_USER_EMAIL_PATTERNS = getattr(
+    settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of login page'}
@@ -86,13 +88,15 @@ GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', {})
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
 
 # The number of unsuccessful login requests per minute allowed for a specific user
-RATELIMIT_RETRIES_ALLOWED = getattr(settings, 'ASTAKOS_RATELIMIT_RETRIES_ALLOWED', 3)
+RATELIMIT_RETRIES_ALLOWED = getattr(
+    settings, 'ASTAKOS_RATELIMIT_RETRIES_ALLOWED', 3)
 
 # If False the email change mechanism is disabled
 EMAILCHANGE_ENABLED = getattr(settings, 'ASTAKOS_EMAILCHANGE_ENABLED', False)
 
 # Set the expiration time (in days) of email change requests
-EMAILCHANGE_ACTIVATION_DAYS = getattr(settings, 'ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS', 10)
+EMAILCHANGE_ACTIVATION_DAYS = getattr(
+    settings, 'ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS', 10)
 
 # Set the astakos main functions logging severity (None to disable)
 from logging import INFO

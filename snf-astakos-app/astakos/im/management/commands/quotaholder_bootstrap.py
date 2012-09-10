@@ -37,9 +37,10 @@ from django.db.utils import IntegrityError
 from astakos.im.models import AstakosUser
 from astakos.im.endpoints.quotaholder import register_users
 
+
 class Command(BaseCommand):
     help = "Send user information and resource quota in the Quotaholder"
-    
+
     def handle(self, *args, **options):
         try:
             r = register_users(AstakosUser.objects.all())

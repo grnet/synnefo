@@ -37,16 +37,17 @@ from astakos.im.models import AstakosGroup
 
 from ._common import add_group_permission
 
+
 class Command(BaseCommand):
     args = "<groupname> [<permission> ...]"
     help = "Insert group"
-    
+
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Invalid number of arguments")
-        
+
         name = args[0].decode('utf8')
-        
+
         try:
             AstakosGroup.objects.get(name=name)
             raise CommandError("A group with this name already exists")
@@ -59,10 +60,13 @@ class Command(BaseCommand):
                 for pname in args[1:]:
                     r, created = add_group_permission(group, pname)
                     if created:
-                        self.stdout.write('Permission: %s created successfully\n' % pname)
+                        self.stdout.write(
+                            'Permission: %s created successfully\n' % pname)
                     if r == 0:
-                        self.stdout.write('Group has already permission: %s\n' % pname)
+                        self.stdout.write(
+                            'Group has already permission: %s\n' % pname)
                     else:
-                        self.stdout.write('Permission: %s added successfully\n' % pname)
+                        self.stdout.write(
+                            'Permission: %s added successfully\n' % pname)
             except Exception, e:
                 raise CommandError(e)

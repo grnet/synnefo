@@ -37,22 +37,23 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import ApprovalTerms
 
+
 class Command(BaseCommand):
     args = "<location>"
     help = "Insert approval terms"
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
-        
+
         location = abspath(args[0].decode('utf8'))
         try:
             open(location, 'r')
         except IOError:
             raise CommandError("Invalid location")
-        
+
         terms = ApprovalTerms(location=location)
         terms.save()
-        
+
         msg = "Created term id %d" % (terms.id,)
         self.stdout.write(msg + '\n')

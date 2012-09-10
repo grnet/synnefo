@@ -2,19 +2,18 @@
 from south.db import db
 from south.v2 import SchemaMigration
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding field 'AstakosUser.third_party_identifier'
         db.add_column('im_astakosuser', 'third_party_identifier', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True), keep_default=False)
 
-
     def backwards(self, orm):
-        
+
         # Deleting field 'AstakosUser.third_party_identifier'
         db.delete_column('im_astakosuser', 'third_party_identifier')
-
 
     models = {
         'auth.group': {

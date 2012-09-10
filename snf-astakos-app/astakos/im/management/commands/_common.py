@@ -41,6 +41,7 @@ from astakos.im.models import AstakosUser
 
 content_type = None
 
+
 def get_user(email_or_id, **kwargs):
     try:
         if email_or_id.isdigit():
@@ -49,6 +50,7 @@ def get_user(email_or_id, **kwargs):
             return AstakosUser.objects.get(email=email_or_id, **kwargs)
     except AstakosUser.DoesNotExist, AstakosUser.MultipleObjectsReturned:
         return None
+
 
 def format_bool(b):
     return 'YES' if b else 'NO'
@@ -63,16 +65,18 @@ def format_date(d):
     else:
         return 'in ' + timeuntil(d)
 
+
 def get_astakosuser_content_type():
     if content_type:
         return content_type
-    
+
     try:
         return ContentType.objects.get(app_label='im',
                                        model='astakosuser')
     except:
         return content_type
-    
+
+
 def add_user_permission(user, pname):
     content_type = get_astakosuser_content_type()
     if user.has_perm(pname):
@@ -82,6 +86,7 @@ def add_user_permission(user, pname):
                                                   content_type=content_type)
     user.user_permissions.add(p)
     return 1, created
+
 
 def add_group_permission(group, pname):
     content_type = get_astakosuser_content_type()
@@ -95,17 +100,19 @@ def add_group_permission(group, pname):
     group.permissions.add(p)
     return 1, created
 
+
 def remove_user_permission(user, pname):
     content_type = get_astakosuser_content_type()
     if user.has_perm(pname):
         return 0
     try:
         p = Permission.objects.get(codename=pname,
-                                    content_type=content_type)
+                                   content_type=content_type)
         user.user_permissions.remove(p)
         return 1
     except Permission.DoesNotExist:
         return -1
+
 
 def remove_group_permission(group, pname):
     content_type = get_astakosuser_content_type()
@@ -113,7 +120,7 @@ def remove_group_permission(group, pname):
         return 0
     try:
         p = Permission.objects.get(codename=pname,
-                                    content_type=content_type)
+                                   content_type=content_type)
         group.permissions.remove(p)
         return 1
     except Permission.DoesNotExist:

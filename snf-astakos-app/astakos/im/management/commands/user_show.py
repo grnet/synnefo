@@ -41,11 +41,11 @@ from ._common import format_bool, format_date
 class Command(BaseCommand):
     args = "<user ID or email>"
     help = "Show user info"
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID or email")
-        
+
         email_or_id = args[0]
         if email_or_id.isdigit():
             users = AstakosUser.objects.filter(id=int(email_or_id))
@@ -55,7 +55,7 @@ class Command(BaseCommand):
             field = 'id' if email_or_id.isdigit() else 'email'
             msg = "Unknown user with %s '%s'" % (field, email_or_id)
             raise CommandError(msg)
-        
+
         for user in users:
             kv = {
                 'id': user.id,
@@ -81,14 +81,15 @@ class Command(BaseCommand):
                 'email_verified': format_bool(user.email_verified),
                 'username': user.username,
                 'activation_sent_date': format_date(user.activation_sent),
-                'resources' : user.quota
+                'resources': user.quota
             }
             if get_latest_terms():
                 has_signed_terms = user.signed_terms
                 kv['has_signed_terms'] = format_bool(has_signed_terms)
                 if has_signed_terms:
-                    kv['date_signed_terms'] = format_date(user.date_signed_terms)
-            
+                    kv['date_signed_terms'] = format_date(
+                        user.date_signed_terms)
+
             for key, val in sorted(kv.items()):
                 line = '%s: %s\n' % (key.rjust(22), val)
                 self.stdout.write(line.encode('utf8'))

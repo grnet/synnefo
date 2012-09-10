@@ -42,113 +42,116 @@ from astakos.im.models import AstakosUser, AstakosGroup, Membership
 from astakos.im.endpoints.aquarium.producer import report_user_credits_event
 from ._common import remove_user_permission, add_user_permission
 
+
 class Command(BaseCommand):
     args = "<user ID>"
     help = "Modify a user's attributes"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('--invitations',
-            dest='invitations',
-            metavar='NUM',
-            help="Update user's invitations"),
+                    dest='invitations',
+                    metavar='NUM',
+                    help="Update user's invitations"),
         make_option('--level',
-            dest='level',
-            metavar='NUM',
-            help="Update user's level"),
+                    dest='level',
+                    metavar='NUM',
+                    help="Update user's level"),
         make_option('--password',
-            dest='password',
-            metavar='PASSWORD',
-            help="Set user's password"),
+                    dest='password',
+                    metavar='PASSWORD',
+                    help="Set user's password"),
         make_option('--provider',
-            dest='provider',
-            metavar='PROVIDER',
-            help="Set user's provider"),
+                    dest='provider',
+                    metavar='PROVIDER',
+                    help="Set user's provider"),
         make_option('--renew-token',
-            action='store_true',
-            dest='renew_token',
-            default=False,
-            help="Renew the user's token"),
+                    action='store_true',
+                    dest='renew_token',
+                    default=False,
+                    help="Renew the user's token"),
         make_option('--renew-password',
-            action='store_true',
-            dest='renew_password',
-            default=False,
-            help="Renew the user's password"),
+                    action='store_true',
+                    dest='renew_password',
+                    default=False,
+                    help="Renew the user's password"),
         make_option('--set-admin',
-            action='store_true',
-            dest='admin',
-            default=False,
-            help="Give user admin rights"),
+                    action='store_true',
+                    dest='admin',
+                    default=False,
+                    help="Give user admin rights"),
         make_option('--set-noadmin',
-            action='store_true',
-            dest='noadmin',
-            default=False,
-            help="Revoke user's admin rights"),
+                    action='store_true',
+                    dest='noadmin',
+                    default=False,
+                    help="Revoke user's admin rights"),
         make_option('--set-active',
-            action='store_true',
-            dest='active',
-            default=False,
-            help="Change user's state to inactive"),
+                    action='store_true',
+                    dest='active',
+                    default=False,
+                    help="Change user's state to inactive"),
         make_option('--set-inactive',
-            action='store_true',
-            dest='inactive',
-            default=False,
-            help="Change user's state to inactive"),
+                    action='store_true',
+                    dest='inactive',
+                    default=False,
+                    help="Change user's state to inactive"),
         make_option('--add-group',
-            dest='add-group',
-            help="Add user group"),
+                    dest='add-group',
+                    help="Add user group"),
         make_option('--delete-group',
-            dest='delete-group',
-            help="Delete user group"),
+                    dest='delete-group',
+                    help="Delete user group"),
         make_option('--add-permission',
-            dest='add-permission',
-            help="Add user permission"),
+                    dest='add-permission',
+                    help="Add user permission"),
         make_option('--delete-permission',
-            dest='delete-permission',
-            help="Delete user permission"),
+                    dest='delete-permission',
+                    help="Delete user permission"),
         make_option('--refill-credits',
-            action='store_true',
-            dest='refill',
-            default=False,
-            help="Refill user credits"),
-        )
-    
+                    action='store_true',
+                    dest='refill',
+                    default=False,
+                    help="Refill user credits"),
+    )
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID")
-        
+
         if args[0].isdigit():
-            user = AstakosUser.objects.get(id=int( args[0]))
+            user = AstakosUser.objects.get(id=int(args[0]))
         else:
             raise CommandError("Invalid ID")
-        
+
         if not user:
             raise CommandError("Unknown user")
-        
+
         if options.get('admin'):
             user.is_superuser = True
         elif options.get('noadmin'):
             user.is_superuser = False
-        
+
         if options.get('active'):
             user.is_active = True
         elif options.get('inactive'):
             user.is_active = False
-        
+
         invitations = options.get('invitations')
         if invitations is not None:
             user.invitations = int(invitations)
-        
+
         groupname = options.get('add-group')
         if groupname is not None:
             try:
                 group = AstakosGroup.objects.get(name=groupname)
-                m = Membership(person=user, group=group, date_joined=datetime.now())
+                m = Membership(
+                    person=user, group=group, date_joined=datetime.now())
                 m.save()
             except AstakosGroup.DoesNotExist, e:
-                self.stdout.write("Group named %s does not exist\n" % groupname)
+                self.stdout.write(
+                    "Group named %s does not exist\n" % groupname)
             except IntegrityError, e:
                 self.stdout.write("User is already member of %s\n" % groupname)
-        
+
         groupname = options.get('delete-group')
         if groupname is not None:
             try:
@@ -156,64 +159,69 @@ class Command(BaseCommand):
                 m = Membership.objects.get(person=user, group=group)
                 m.delete()
             except AstakosGroup.DoesNotExist, e:
-                self.stdout.write("Group named %s does not exist\n" % groupname)
+                self.stdout.write(
+                    "Group named %s does not exist\n" % groupname)
             except Membership.DoesNotExist, e:
                 self.stdout.write("User is not a member of %s\n" % groupname)
-        
+
         pname = options.get('add-permission')
         if pname is not None:
             try:
                 r, created = add_user_permission(user, pname)
                 if created:
-                    self.stdout.write('Permission: %s created successfully\n' % pname)
+                    self.stdout.write(
+                        'Permission: %s created successfully\n' % pname)
                 if r > 0:
-                    self.stdout.write('Permission: %s added successfully\n' % pname)
-                elif r==0:
-                    self.stdout.write('User has already permission: %s\n' % pname)
+                    self.stdout.write(
+                        'Permission: %s added successfully\n' % pname)
+                elif r == 0:
+                    self.stdout.write(
+                        'User has already permission: %s\n' % pname)
             except Exception, e:
                 raise CommandError(e)
-        
-        pname  = options.get('delete-permission')
+
+        pname = options.get('delete-permission')
         if pname is not None and not user.has_perm(pname):
             try:
                 r = remove_user_permission(user, pname)
                 if r < 0:
-                    self.stdout.write('Invalid permission codename: %s\n' % pname)
+                    self.stdout.write(
+                        'Invalid permission codename: %s\n' % pname)
                 elif r == 0:
                     self.stdout.write('User has not permission: %s\n' % pname)
                 elif r > 0:
-                    self.stdout.write('Permission: %s removed successfully\n' % pname)
+                    self.stdout.write(
+                        'Permission: %s removed successfully\n' % pname)
             except Exception, e:
                 raise CommandError(e)
-        
+
         level = options.get('level')
         if level is not None:
             user.level = int(level)
-        
+
         password = options.get('password')
         if password is not None:
             user.set_password(password)
-        
+
         provider = options.get('provider')
         if provider is not None:
             user.provider = provider
-        
-        
+
         password = None
         if options['renew_password']:
             password = AstakosUser.objects.make_random_password()
             user.set_password(password)
-        
+
         if options['renew_token']:
             user.renew_token()
-        
+
         if options['refill']:
             report_user_credits_event(user)
-        
+
         try:
             user.save()
         except ValidationError, e:
             raise CommandError(e)
-        
+
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)

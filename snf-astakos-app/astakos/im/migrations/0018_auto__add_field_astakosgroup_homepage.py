@@ -4,19 +4,18 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding field 'AstakosGroup.homepage'
         db.add_column('im_astakosgroup', 'homepage', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True), keep_default=False)
 
-
     def backwards(self, orm):
-        
+
         # Deleting field 'AstakosGroup.homepage'
         db.delete_column('im_astakosgroup', 'homepage')
-
 
     models = {
         'auth.group': {

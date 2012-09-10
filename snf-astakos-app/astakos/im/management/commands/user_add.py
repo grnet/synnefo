@@ -46,64 +46,65 @@ from astakos.im.util import reserved_email
 
 from ._common import add_user_permission
 
+
 class Command(BaseCommand):
     args = "<email> <first name> <last name> <affiliation>"
     help = "Create a user"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('--active',
-            action='store_true',
-            dest='active',
-            default=False,
-            help="Activate user"),
+                    action='store_true',
+                    dest='active',
+                    default=False,
+                    help="Activate user"),
         make_option('--admin',
-            action='store_true',
-            dest='admin',
-            default=False,
-            help="Give user admin rights"),
+                    action='store_true',
+                    dest='admin',
+                    default=False,
+                    help="Give user admin rights"),
         make_option('--password',
-            dest='password',
-            metavar='PASSWORD',
-            help="Set user's password"),
+                    dest='password',
+                    metavar='PASSWORD',
+                    help="Set user's password"),
         make_option('--add-group',
-            dest='add-group',
-            help="Add user group"),
+                    dest='add-group',
+                    help="Add user group"),
         make_option('--add-permission',
-            dest='add-permission',
-            help="Add user permission")
-        )
-    
+                    dest='add-permission',
+                    help="Add user permission")
+    )
+
     def handle(self, *args, **options):
         if len(args) != 4:
             raise CommandError("Invalid number of arguments")
-        
+
         args = [a.decode('utf8') for a in args]
         email, first, last, affiliation = args
-        
+
         try:
-            validate_email( email )
+            validate_email(email)
         except ValidationError:
             raise CommandError("Invalid email")
-        
-        username =  uuid4().hex[:30]
+
+        username = uuid4().hex[:30]
         password = options.get('password')
         if password is None:
             password = AstakosUser.objects.make_random_password()
-        
+
         if reserved_email(email):
             raise CommandError("A user with this email already exists")
-        
+
         user = AstakosUser(username=username, first_name=first, last_name=last,
                            email=email, affiliation=affiliation,
                            provider='local')
         user.set_password(password)
         user.renew_token()
-        
+
         if options['active']:
             user.is_active = True
         if options['admin']:
             user.is_superuser = True
-        
+
         try:
             user.save()
         except socket.error, e:
@@ -115,25 +116,31 @@ class Command(BaseCommand):
             if options['password'] is None:
                 msg += " with password '%s'" % (password,)
             self.stdout.write(msg + '\n')
-            
+
             groupname = options.get('add-group')
             if groupname is not None:
                 try:
                     group = AstakosGroup.objects.get(name=groupname)
-                    Membership(group=group, person=user, date_joined=datetime.now()).save()
-                    self.stdout.write('Group: %s added successfully\n' % groupname)
+                    Membership(group=group,
+                               person=user, date_joined=datetime.now()).save()
+                    self.stdout.write(
+                        'Group: %s added successfully\n' % groupname)
                 except AstakosGroup.DoesNotExist, e:
-                    self.stdout.write('Group named %s does not exist\n' % groupname)
-            
+                    self.stdout.write(
+                        'Group named %s does not exist\n' % groupname)
+
             pname = options.get('add-permission')
             if pname is not None:
                 try:
                     r, created = add_user_permission(user, pname)
                     if created:
-                        self.stdout.write('Permission: %s created successfully\n' % pname)
+                        self.stdout.write(
+                            'Permission: %s created successfully\n' % pname)
                     if r > 0:
-                        self.stdout.write('Permission: %s added successfully\n' % pname)
-                    elif r==0:
-                        self.stdout.write('User has already permission: %s\n' % pname)
+                        self.stdout.write(
+                            'Permission: %s added successfully\n' % pname)
+                    elif r == 0:
+                        self.stdout.write(
+                            'User has already permission: %s\n' % pname)
                 except Exception, e:
                     raise CommandError(e)

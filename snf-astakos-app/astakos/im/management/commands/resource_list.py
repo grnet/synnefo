@@ -37,15 +37,16 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Resource
 
+
 class Command(BaseCommand):
     help = "List resources"
 
     option_list = BaseCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
     )
 
     def handle(self, *args, **options):

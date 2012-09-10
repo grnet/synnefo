@@ -37,13 +37,15 @@ Django settings metadata. To be used in setup.py snf-webproject entry points.
 """
 
 installed_apps = [
-        {'before': 'django.contrib.admin',
-         'insert': 'astakos.im',},
-        'django.contrib.auth',
-        'django.contrib.contenttypes',
-        'django.contrib.sessions',
-        'django.contrib.messages',
-        'djcelery',
+    {'before': 'django.contrib.admin',
+     'insert': 'astakos.im', },
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'djcelery',
+    'django_extensions',
+    'debug_toolbar',
 ]
 
 context_processors = [
@@ -70,17 +72,17 @@ middlware_classes = [
 ]
 
 loggers = {
-        'astakos': {
-            'handlers': ['console'],
-            'level': 'INFO'
-        }
+    'astakos': {
+        'handlers': ['console'],
+        'level': 'INFO'
+    }
 }
 
 static_files = {'astakos.im': ''}
 
 # The following settings will replace the default django settings
 AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',
-                            'astakos.im.auth_backends.TokenBackend')
+                           'astakos.im.auth_backends.TokenBackend')
 LOGIN_URL = '/im'
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'

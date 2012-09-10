@@ -2,19 +2,18 @@
 from south.db import db
 from south.v2 import SchemaMigration
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding unique constraint on 'Invitation', fields ['username']
         db.create_unique('im_invitation', ['username'])
 
-
     def backwards(self, orm):
-        
+
         # Removing unique constraint on 'Invitation', fields ['username']
         db.delete_unique('im_invitation', ['username'])
-
 
     models = {
         'auth.group': {

@@ -37,11 +37,12 @@ from django.utils import simplejson as json
 
 from astakos.im.settings import AQUARIUM_URL
 
+
 class AquariumClient():
     def get_billing(self, user, start, end):
         if not AQUARIUM_URL:
             return
-        
+
         url = AQUARIUM_URL.rstrip('/')
         url = '%s/%s/bill/%d/%d' % (url, user, start, end)
         r = requests.get(url)

@@ -35,19 +35,21 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Service
 
+
 class Command(BaseCommand):
     args = "<name> <url> [<icon>]"
     help = "Register a service"
-    
+
     def handle(self, *args, **options):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
-        
+
         service = Service(name=args[0], url=args[1])
         if len(args) == 3:
             service.icon = args[2]
         try:
             service.save()
-            self.stdout.write('Service created with token: %s\n' % service.auth_token)
+            self.stdout.write(
+                'Service created with token: %s\n' % service.auth_token)
         except Exception, e:
             raise CommandError(e)

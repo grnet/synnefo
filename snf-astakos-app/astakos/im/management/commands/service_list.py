@@ -37,15 +37,16 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Service
 
+
 class Command(BaseCommand):
     help = "List services"
 
     option_list = BaseCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
     )
 
     def handle(self, *args, **options):
@@ -62,8 +63,8 @@ class Command(BaseCommand):
 
         for service in services:
             fields = (str(service.id), service.name, service.url,
-                    service.auth_token,
-                    service.icon)
+                      service.auth_token,
+                      service.icon)
 
             if options['csv']:
                 line = '|'.join(fields)

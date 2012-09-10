@@ -47,6 +47,7 @@ from astakos.im.functions import send_feedback as send_feedback_func
 
 logger = logging.getLogger(__name__)
 
+
 def api_method(http_method=None, token_required=False):
     """Decorator function for views that implement an API method."""
     def decorator(func):
@@ -61,7 +62,7 @@ def api_method(http_method=None, token_required=False):
                         raise Unauthorized('Access denied')
                     try:
                         service = Service.objects.get(auth_token=x_auth_token)
-                        
+
                         # Check if the token has expired.
                         if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
                             raise Unauthorized('Authentication expired')
@@ -78,6 +79,7 @@ def api_method(http_method=None, token_required=False):
         return wrapper
     return decorator
 
+
 @api_method(http_method='GET', token_required=True)
 def get_user_by_email(request, user=None):
     # Normal Response Codes: 200
@@ -89,6 +91,7 @@ def get_user_by_email(request, user=None):
     email = request.GET.get('name')
     return _get_user_by_email(email)
 
+
 @api_method(http_method='GET', token_required=True)
 def get_user_by_username(request, user_id, user=None):
     # Normal Response Codes: 200
@@ -98,6 +101,7 @@ def get_user_by_username(request, user_id, user=None):
     #                       forbidden (403)
     #                       itemNotFound (404)
     return _get_user_by_username(user_id)
+
 
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)
@@ -109,20 +113,20 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     auth_token = request.POST.get('auth', '')
     if not auth_token:
         raise BadRequest('Missing user authentication')
-    
-    user  = None
+
+    user = None
     try:
         user = AstakosUser.objects.get(auth_token=auth_token)
     except:
         pass
-    
+
     if not user:
         raise BadRequest('Invalid user authentication')
-    
+
     form = FeedbackForm(request.POST)
     if not form.is_valid():
         raise BadRequest('Invalid data')
-    
+
     msg = form.cleaned_data['feedback_msg']
     data = form.cleaned_data['feedback_data']
     send_feedback_func(msg, data, user, email_template_name)

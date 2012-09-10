@@ -48,6 +48,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def login(request):
     """
     If there is no ``next`` request parameter redirects to astakos index page
@@ -75,10 +76,10 @@ def login(request):
             # delete force parameter
             parts[3] = urlencode(params)
             next = urlunsplit(parts)
-            
+
             # build url location
             parts[2] = reverse('latest_terms')
-            params = {'next':next}
+            params = {'next': next}
             parts[3] = urlencode(params)
             url = urlunsplit(parts)
             response['Location'] = url
@@ -93,23 +94,23 @@ def login(request):
                 return HttpResponseBadRequest(e)
             # authenticate before login
             user = authenticate(email=request.user.email,
-                auth_token=request.user.auth_token
-            )
+                                auth_token=request.user.auth_token
+                                )
             auth_login(request, user)
             set_cookie(response, user)
             logger.info('Token reset for %s' % request.user.email)
         parts = list(urlsplit(next))
         parts[3] = urlencode({'user': request.user.email,
-            'token': request.user.auth_token
-            }
-        )
+                              'token': request.user.auth_token
+                              }
+                             )
         url = urlunsplit(parts)
         response['Location'] = url
         response.status_code = 302
         return response
     else:
         # redirect to login with next the request path
-        
+
         # first build next parameter
         parts = list(urlsplit(request.build_absolute_uri()))
         params = dict(parse_qsl(parts[3], keep_blank_values=True))
@@ -118,10 +119,10 @@ def login(request):
             del params['force']
         parts[3] = urlencode(params)
         next = urlunsplit(parts)
-        
+
         # build url location
         parts[2] = reverse('index')
-        params = {'next':next}
+        params = {'next': next}
         parts[3] = urlencode(params)
         url = urlunsplit(parts)
         response['Location'] = url

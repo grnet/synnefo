@@ -2,24 +2,26 @@
 from south.db import db
 from south.v2 import SchemaMigration
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'AdditionalMail'
         db.create_table('im_additionalmail', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
-            ('email', self.gf('django.db.models.fields.EmailField')(unique=True, max_length=75)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.AstakosUser'])),
+            ('email', self.gf('django.db.models.fields.EmailField')
+             (unique=True, max_length=75)),
         ))
         db.send_create_signal('im', ['AdditionalMail'])
 
-
     def backwards(self, orm):
-        
+
         # Deleting model 'AdditionalMail'
         db.delete_table('im_additionalmail')
-
 
     models = {
         'auth.group': {

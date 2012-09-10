@@ -40,6 +40,7 @@ logger = logging.getLogger('endpoint.aquarium')
 
 from astakos.im.models import AstakosUser
 
+
 def on_creditevent(msg):
     """
     Queue handler for updating AstakosUser has_credits

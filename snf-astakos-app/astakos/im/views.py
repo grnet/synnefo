@@ -53,28 +53,32 @@ from django.template import RequestContext, loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (create_object, delete_object,
-    get_model_and_form_class
-)
+                                                get_model_and_form_class
+                                                )
 from django.views.generic.list_detail import object_list, object_detail
 
-from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup, Resource,
+from astakos.im.models import (
+    AstakosUser, ApprovalTerms, AstakosGroup, Resource,
     EmailChange, GroupKind, Membership)
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
-from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm, FeedbackForm,
+from astakos.im.forms import (
+    LoginForm, InvitationForm, ProfileForm, FeedbackForm,
     SignApprovalTermsForm, ExtendedPasswordChangeForm, EmailChangeForm,
     AstakosGroupCreationForm, AstakosGroupSearchForm
 )
 from astakos.im.functions import (send_feedback, SendMailError,
-    invite as invite_func, logout as auth_logout, activate as activate_func,
-    switch_account_to_shibboleth, send_admin_notification, SendNotificationError
-)
-from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
+                                  invite as invite_func, logout as auth_logout, activate as activate_func,
+                                  switch_account_to_shibboleth, send_admin_notification, SendNotificationError
+                                  )
+from astakos.im.settings import (
+    COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
     LOGGING_LEVEL
 )
 from astakos.im.tasks import request_billing
 
 logger = logging.getLogger(__name__)
+
 
 def render_response(template, tab=None, status=200, reset_cookie=False, context_instance=None, **kwargs):
     """
@@ -85,7 +89,8 @@ def render_response(template, tab=None, status=200, reset_cookie=False, context_
     if tab is None:
         tab = template.partition('_')[0].partition('.html')[0]
     kwargs.setdefault('tab', tab)
-    html = loader.render_to_string(template, kwargs, context_instance=context_instance)
+    html = loader.render_to_string(
+        template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
     if reset_cookie:
         set_cookie(response, context_instance['request'].user)
@@ -106,6 +111,7 @@ def requires_anonymous(func):
         return func(request, *args)
     return wrapper
 
+
 def signed_terms_required(func):
     """
     Decorator checkes whether the request.user is Anonymous and in that case
@@ -115,11 +121,12 @@ def signed_terms_required(func):
     def wrapper(request, *args, **kwargs):
         if request.user.is_authenticated() and not request.user.signed_terms:
             params = urlencode({'next': request.build_absolute_uri(),
-                              'show_form':''})
+                                'show_form': ''})
             terms_uri = reverse('latest_terms') + '?' + params
             return HttpResponseRedirect(terms_uri)
         return func(request, *args, **kwargs)
     return wrapper
+
 
 @signed_terms_required
 def index(request, login_template_name='im/login.html', extra_context=None):
@@ -148,8 +155,9 @@ def index(request, login_template_name='im/login.html', extra_context=None):
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('edit_profile'))
     return render_response(template_name,
-                           login_form = LoginForm(request=request),
-                           context_instance = get_context(request, extra_context))
+                           login_form=LoginForm(request=request),
+                           context_instance=get_context(request, extra_context))
+
 
 @login_required
 @signed_terms_required
@@ -190,7 +198,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     status = None
     message = None
     form = InvitationForm()
-    
+
     inviter = request.user
     if request.method == 'POST':
         form = InvitationForm(request.POST)
@@ -219,13 +227,14 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     sent = [{'email': inv.username,
              'realname': inv.realname,
              'is_consumed': inv.is_consumed}
-             for inv in request.user.invitations_sent.all()]
+            for inv in request.user.invitations_sent.all()]
     kwargs = {'inviter': inviter,
-              'sent':sent}
+              'sent': sent}
     context = get_context(request, extra_context, **kwargs)
     return render_response(template_name,
-                           invitation_form = form,
-                           context_instance = context)
+                           invitation_form=form,
+                           context_instance=context)
+
 
 @login_required
 @signed_terms_required
@@ -282,10 +291,11 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
             request.user.is_verified = True
             request.user.save()
     return render_response(template_name,
-                           reset_cookie = reset_cookie,
-                           profile_form = form,
-                           context_instance = get_context(request,
-                                                          extra_context))
+                           reset_cookie=reset_cookie,
+                           profile_form=form,
+                           context_instance=get_context(request,
+                                                        extra_context))
+
 
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
@@ -298,14 +308,14 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     if present, otherwise to the ``astakos.im.activation_backends.InvitationBackend``
     if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.activation_backends.SimpleBackend`` if not
     (see activation_backends);
-    
+
     Upon successful user creation, if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
-    
+
     On unsuccessful creation, renders ``template_name`` with an error message.
-    
+
     **Arguments**
-    
+
     ``template_name``
         A custom template to render. This is optional;
         if not specified, this will default to ``im/signup.html``.
@@ -318,13 +328,13 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         An dictionary of variables to add to the template context.
 
     **Template:**
-    
+
     im/signup.html or ``template_name`` keyword argument.
-    im/signup_complete.html or ``on_success`` keyword argument. 
+    im/signup_complete.html or ``on_success`` keyword argument.
     """
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('edit_profile'))
-    
+
     provider = get_query(request).get('provider', 'local')
     try:
         if not backend:
@@ -345,7 +355,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     additional_email = form.cleaned_data['additional_email']
                     if additional_email != user.email:
                         user.additionalmail_set.create(email=additional_email)
-                        msg = 'Additional email: %s saved for user %s.' % (additional_email, user.email)
+                        msg = 'Additional email: %s saved for user %s.' % (
+                            additional_email, user.email)
                         logger.log(LOGGING_LEVEL, msg)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
@@ -361,9 +372,10 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 messages.error(request, message)
                 logger.exception(e)
     return render_response(template_name,
-                           signup_form = form,
-                           provider = provider,
+                           signup_form=form,
+                           provider=provider,
                            context_instance=get_context(request, extra_context))
+
 
 @login_required
 @signed_terms_required
@@ -412,8 +424,9 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                 message = _('Feedback successfully sent')
                 messages.success(request, message)
     return render_response(template_name,
-                           feedback_form = form,
-                           context_instance = get_context(request, extra_context))
+                           feedback_form=form,
+                           context_instance=get_context(request, extra_context))
+
 
 @signed_terms_required
 def logout(request, template='registration/logged_out.html', extra_context=None):
@@ -441,6 +454,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
     response.write(loader.render_to_string(template, context_instance=context))
     return response
 
+
 @transaction.commit_manually
 def activate(request, greeting_email_template_name='im/welcome_email.txt', helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
@@ -456,15 +470,15 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest(_('No such user'))
-    
+
     if user.is_active:
         message = _('Account already active.')
         messages.error(request, message)
         return index(request)
-        
+
     try:
         local_user = AstakosUser.objects.get(
-            ~Q(id = user.id),
+            ~Q(id=user.id),
             email=user.email,
             is_active=True
         )
@@ -512,6 +526,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
             transaction.rollback()
             return index(request)
 
+
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context=None):
     term = None
     terms = None
@@ -538,9 +553,9 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
         form = SignApprovalTermsForm(request.POST, instance=request.user)
         if not form.is_valid():
             return render_response(template_name,
-                           terms = terms,
-                           approval_terms_form = form,
-                           context_instance = get_context(request, extra_context))
+                                   terms=terms,
+                                   approval_terms_form=form,
+                                   context_instance=get_context(request, extra_context))
         user = form.save()
         return HttpResponseRedirect(next)
     else:
@@ -548,15 +563,17 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
         if request.user.is_authenticated() and not request.user.signed_terms:
             form = SignApprovalTermsForm(instance=request.user)
         return render_response(template_name,
-                               terms = terms,
-                               approval_terms_form = form,
-                               context_instance = get_context(request, extra_context))
+                               terms=terms,
+                               approval_terms_form=form,
+                               context_instance=get_context(request, extra_context))
+
 
 @signed_terms_required
 def change_password(request):
     return password_change(request,
-                            post_change_redirect=reverse('edit_profile'),
-                            password_change_form=ExtendedPasswordChangeForm)
+                           post_change_redirect=reverse('edit_profile'),
+                           password_change_form=ExtendedPasswordChangeForm)
+
 
 @signed_terms_required
 @login_required
@@ -579,10 +596,11 @@ def change_email(request, activation_key=None,
         except ValueError, e:
             messages.error(request, e)
         return render_response(confirm_template_name,
-                               modified_user = user if 'user' in locals() else None,
-                               context_instance = get_context(request,
-                                                              extra_context))
-    
+                               modified_user=user if 'user' in locals(
+                               ) else None,
+                               context_instance=get_context(request,
+                                                            extra_context))
+
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
         url = request.build_absolute_uri(reverse('index'))
@@ -604,35 +622,37 @@ def change_email(request, activation_key=None,
             messages.success(request, msg)
             transaction.commit()
     return render_response(form_template_name,
-                           form = form,
-                           context_instance = get_context(request,
-                                                          extra_context))
+                           form=form,
+                           context_instance=get_context(request,
+                                                        extra_context))
+
 
 @signed_terms_required
 @login_required
 def group_add(request, kind_name='default'):
     try:
-        kind = GroupKind.objects.get(name = kind_name)
+        kind = GroupKind.objects.get(name=kind_name)
     except:
         return HttpResponseBadRequest(_('No such group kind'))
-    
-    template_loader=loader
-    post_save_redirect='/im/group/%(id)s/'
-    context_processors=None
+
+    template_loader = loader
+    post_save_redirect = '/im/group/%(id)s/'
+    context_processors = None
     model, form_class = get_model_and_form_class(
         model=None,
         form_class=AstakosGroupCreationForm
     )
-    resources = dict( (str(r.id), r) for r in Resource.objects.select_related().all() )
+    resources = dict(
+        (str(r.id), r) for r in Resource.objects.select_related().all())
     policies = []
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES, resources=resources)
         if form.is_valid():
             new_object = form.save()
-            
+
             # save owner
             new_object.owners = [request.user]
-            
+
             # save quota policies
             for (rid, limit) in form.resources():
                 try:
@@ -643,22 +663,22 @@ def group_add(request, kind_name='default'):
                     continue
                 else:
                     new_object.astakosgroupquota_set.create(
-                        resource = r,
-                        limit = limit
+                        resource=r,
+                        limit=limit
                     )
                 policies.append('%s %d' % (r, limit))
             msg = _("The %(verbose_name)s was created successfully.") %\
-                                    {"verbose_name": model._meta.verbose_name}
+                {"verbose_name": model._meta.verbose_name}
             messages.success(request, msg, fail_silently=True)
-            
+
             # send notification
             try:
                 send_admin_notification(
                     template_name='im/group_creation_notification.txt',
                     dictionary={
-                        'group':new_object,
-                        'owner':request.user,
-                        'policies':policies,
+                        'group': new_object,
+                        'owner': request.user,
+                        'policies': policies,
                     },
                     subject='%s alpha2 testing group creation notification' % SITENAME
                 )
@@ -668,7 +688,7 @@ def group_add(request, kind_name='default'):
     else:
         now = datetime.now()
         data = {
-            'kind':kind
+            'kind': kind
         }
         form = form_class(data, resources=resources)
 
@@ -683,15 +703,17 @@ def group_add(request, kind_name='default'):
     }, context_processors)
     return HttpResponse(t.render(c))
 
+
 @signed_terms_required
 @login_required
 def group_list(request):
     list = request.user.astakos_groups.select_related().all()
     return object_list(request, queryset=list,
-                extra_context=dict(
-                    is_search=False
-                )
-    )
+                       extra_context=dict(
+                       is_search=False
+                       )
+                       )
+
 
 @signed_terms_required
 @login_required
@@ -701,15 +723,17 @@ def group_detail(request, group_id):
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
     return object_detail(request,
-         AstakosGroup.objects.all(),
-         object_id=group_id,
-         extra_context = {'quota':group.quota}
-    )
+                         AstakosGroup.objects.all(),
+                         object_id=group_id,
+                         extra_context={'quota': group.quota}
+                         )
+
 
 @signed_terms_required
 @login_required
 def group_approval_request(request, group_id):
     return HttpResponse()
+
 
 @signed_terms_required
 @login_required
@@ -720,7 +744,8 @@ def group_search(request, extra_context=None, **kwargs):
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            queryset = AstakosGroup.objects.select_related().filter(name__contains=q)
+            queryset = AstakosGroup.objects.select_related(
+            ).filter(name__contains=q)
             return object_list(
                 request,
                 queryset,
@@ -732,18 +757,19 @@ def group_search(request, extra_context=None, **kwargs):
             )
     return render_response(
         template='im/astakosgroup_list.html',
-        form = form,
+        form=form,
         context_instance=get_context(request, extra_context),
         is_search=False
-        )
+    )
+
 
 @signed_terms_required
 @login_required
 def group_join(request, group_id):
     m = Membership(group_id=group_id,
-        person=request.user,
-        date_requested=datetime.now()
-    )
+                   person=request.user,
+                   date_requested=datetime.now()
+                   )
     try:
         m.save()
         post_save_redirect = reverse(
@@ -756,6 +782,7 @@ def group_join(request, group_id):
         msg = _('Failed to join group.')
         messages.error(request, msg)
         return group_search(request)
+
 
 @signed_terms_required
 @login_required
@@ -772,13 +799,14 @@ def group_leave(request, group_id):
     return delete_object(
         request,
         model=Membership,
-        object_id = m.id,
+        object_id=m.id,
         template_name='im/astakosgroup_list.html',
-        post_delete_redirect = reverse(
+        post_delete_redirect=reverse(
             'group_detail',
             kwargs=dict(group_id=group_id)
         )
     )
+
 
 def handle_membership():
     def decorator(func):
@@ -804,6 +832,7 @@ def handle_membership():
         return wrapper
     return decorator
 
+
 @signed_terms_required
 @login_required
 @handle_membership()
@@ -817,7 +846,8 @@ def approve_member(request, membership):
         logger.exception(e)
         msg = _('Something went wrong during %s\'s approval.' % realname)
         messages.error(request, msg)
-    
+
+
 @signed_terms_required
 @login_required
 @handle_membership()
@@ -832,6 +862,7 @@ def disapprove_member(request, membership):
         msg = _('Something went wrong during %s\'s disapproval.' % realname)
         messages.error(request, msg)
 
+
 @signed_terms_required
 @login_required
 def resource_list(request):
@@ -840,12 +871,14 @@ def resource_list(request):
         context_instance=get_context(request),
         quota=request.user.quota
     )
-    
+
+
 def group_create_list(request):
     return render_response(
         template='im/astakosgroup_create_list.html',
         context_instance=get_context(request),
     )
+
 
 @signed_terms_required
 @login_required
@@ -855,9 +888,9 @@ def billing(request):
     start = datetime(today.year, today.month, 1).strftime("%s")
     end = datetime(today.year, today.month, month_last_day).strftime("%s")
     r = request_billing.apply(args=(request.user.email,
-        int(start) * 1000,
-        int(end) * 1000)
-    )
+                                    int(start) * 1000,
+                                    int(end) * 1000)
+                              )
     data = None
     try:
         status, data = r.result
@@ -868,5 +901,5 @@ def billing(request):
     return render_response(
         template='im/billing.html',
         context_instance=get_context(request),
-        data = data
+        data=data
     )

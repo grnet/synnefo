@@ -3,15 +3,18 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'ApprovalTerms'
         db.create_table('im_approvalterms', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
             ('date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 3, 20, 14, 24, 30, 616341), db_index=True)),
-            ('location', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('location', self.gf(
+                'django.db.models.fields.CharField')(max_length=255)),
         ))
         db.send_create_signal('im', ['ApprovalTerms'])
 
@@ -21,9 +24,8 @@ class Migration(SchemaMigration):
         # Adding field 'AstakosUser.date_signed_terms'
         db.add_column('im_astakosuser', 'date_signed_terms', self.gf('django.db.models.fields.DateTimeField')(null=True), keep_default=False)
 
-
     def backwards(self, orm):
-        
+
         # Deleting model 'ApprovalTerms'
         db.delete_table('im_approvalterms')
 
@@ -32,7 +34,6 @@ class Migration(SchemaMigration):
 
         # Deleting field 'AstakosUser.date_signed_terms'
         db.delete_column('im_astakosuser', 'date_signed_terms')
-
 
     models = {
         'auth.group': {

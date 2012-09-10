@@ -36,17 +36,18 @@ from django.db.utils import IntegrityError
 
 from astakos.im.models import Resource, Service
 
+
 class Command(BaseCommand):
     args = "<service> <resource> [<key>=<value>...]"
     help = "Add a resource"
-    
+
     def handle(self, *args, **options):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
-        
+
         service_name = args[0]
         resource_name = args[1]
-        
+
         try:
             service = Service.objects.get(name=service_name)
         except Service.DoesNotExist:

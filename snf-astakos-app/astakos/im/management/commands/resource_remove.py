@@ -36,20 +36,21 @@ from django.db.utils import IntegrityError
 
 from astakos.im.models import Resource
 
+
 class Command(BaseCommand):
     args = "<resource>"
     help = "Add a resource"
-    
+
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Invalid number of arguments")
-        
+
         kwargs = {}
         if args[0].isdigit():
-            kwargs['id']=args[0]
+            kwargs['id'] = args[0]
         else:
-            kwargs['name']=args[0]
-        
+            kwargs['name'] = args[0]
+
         try:
             r = Resource.objects.get(**kwargs)
         except Resource.DoesNotExist, e:

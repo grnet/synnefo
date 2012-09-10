@@ -4,45 +4,62 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'GroupKind'
         db.create_table('im_groupkind', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')
+             (unique=True, max_length=255, db_index=True)),
         ))
         db.send_create_signal('im', ['GroupKind'])
 
         # Adding model 'AstakosGroup'
         db.create_table('im_astakosgroup', (
             ('group_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['auth.Group'], unique=True, primary_key=True)),
-            ('kind', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.GroupKind'])),
+            ('kind', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.GroupKind'])),
             ('desc', self.gf('django.db.models.fields.TextField')(null=True)),
-            ('creation_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 8, 3, 11, 26, 47, 642626))),
-            ('issue_date', self.gf('django.db.models.fields.DateTimeField')(null=True)),
-            ('expiration_date', self.gf('django.db.models.fields.DateTimeField')(null=True)),
-            ('moderation_enabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('approval_date', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
-            ('estimated_participants', self.gf('django.db.models.fields.PositiveIntegerField')(null=True)),
+            ('creation_date', self.gf('django.db.models.fields.DateTimeField')
+             (default=datetime.datetime(2012, 8, 3, 11, 26, 47, 642626))),
+            ('issue_date', self.gf(
+                'django.db.models.fields.DateTimeField')(null=True)),
+            ('expiration_date', self.gf(
+                'django.db.models.fields.DateTimeField')(null=True)),
+            ('moderation_enabled', self.gf(
+                'django.db.models.fields.BooleanField')(default=False)),
+            ('approval_date', self.gf('django.db.models.fields.DateTimeField')
+             (null=True, blank=True)),
+            ('estimated_participants', self.gf(
+                'django.db.models.fields.PositiveIntegerField')(null=True)),
         ))
         db.send_create_signal('im', ['AstakosGroup'])
 
         # Adding model 'ResourceMetadata'
         db.create_table('im_resourcemetadata', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('key', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
-            ('value', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('key', self.gf('django.db.models.fields.CharField')
+             (unique=True, max_length=255, db_index=True)),
+            ('value', self.gf(
+                'django.db.models.fields.CharField')(max_length=255)),
         ))
         db.send_create_signal('im', ['ResourceMetadata'])
 
         # Adding model 'AstakosGroupQuota'
         db.create_table('im_astakosgroupquota', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('limit', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('resource', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Resource'])),
-            ('group', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosGroup'], blank=True)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('limit', self.gf(
+                'django.db.models.fields.PositiveIntegerField')()),
+            ('resource', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.Resource'])),
+            ('group', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.AstakosGroup'], blank=True)),
         ))
         db.send_create_signal('im', ['AstakosGroupQuota'])
 
@@ -51,27 +68,38 @@ class Migration(SchemaMigration):
 
         # Adding model 'Resource'
         db.create_table('im_resource', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
-            ('service', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Service'])),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')
+             (unique=True, max_length=255, db_index=True)),
+            ('service', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.Service'])),
         ))
         db.send_create_signal('im', ['Resource'])
 
         # Adding M2M table for field meta on 'Resource'
         db.create_table('im_resource_meta', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('id', models.AutoField(
+                verbose_name='ID', primary_key=True, auto_created=True)),
             ('resource', models.ForeignKey(orm['im.resource'], null=False)),
-            ('resourcemetadata', models.ForeignKey(orm['im.resourcemetadata'], null=False))
+            ('resourcemetadata', models.ForeignKey(orm[
+             'im.resourcemetadata'], null=False))
         ))
-        db.create_unique('im_resource_meta', ['resource_id', 'resourcemetadata_id'])
+        db.create_unique(
+            'im_resource_meta', ['resource_id', 'resourcemetadata_id'])
 
         # Adding model 'Membership'
         db.create_table('im_membership', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
-            ('group', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosGroup'])),
-            ('date_requested', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 8, 3, 11, 26, 47, 646518))),
-            ('date_joined', self.gf('django.db.models.fields.DateField')(null=True, db_index=True)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('person', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.AstakosUser'])),
+            ('group', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.AstakosGroup'])),
+            ('date_requested', self.gf('django.db.models.fields.DateField')
+             (default=datetime.datetime(2012, 8, 3, 11, 26, 47, 646518))),
+            ('date_joined', self.gf('django.db.models.fields.DateField')
+             (null=True, db_index=True)),
         ))
         db.send_create_signal('im', ['Membership'])
 
@@ -80,10 +108,14 @@ class Migration(SchemaMigration):
 
         # Adding model 'AstakosUserQuota'
         db.create_table('im_astakosuserquota', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('limit', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('resource', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Resource'])),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('limit', self.gf(
+                'django.db.models.fields.PositiveIntegerField')()),
+            ('resource', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.Resource'])),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')
+             (to=orm['im.AstakosUser'])),
         ))
         db.send_create_signal('im', ['AstakosUserQuota'])
 
@@ -95,15 +127,18 @@ class Migration(SchemaMigration):
 
         # Adding M2M table for field owner on 'AstakosUser'
         db.create_table('im_astakosuser_owner', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('astakosuser', models.ForeignKey(orm['im.astakosuser'], null=False)),
-            ('astakosgroup', models.ForeignKey(orm['im.astakosgroup'], null=False))
+            ('id', models.AutoField(
+                verbose_name='ID', primary_key=True, auto_created=True)),
+            ('astakosuser', models.ForeignKey(orm[
+             'im.astakosuser'], null=False)),
+            ('astakosgroup', models.ForeignKey(orm[
+             'im.astakosgroup'], null=False))
         ))
-        db.create_unique('im_astakosuser_owner', ['astakosuser_id', 'astakosgroup_id'])
-
+        db.create_unique(
+            'im_astakosuser_owner', ['astakosuser_id', 'astakosgroup_id'])
 
     def backwards(self, orm):
-        
+
         # Removing index on 'Service', fields ['name']
         db.delete_index('im_service', ['name'])
 
@@ -142,7 +177,6 @@ class Migration(SchemaMigration):
 
         # Removing M2M table for field owner on 'AstakosUser'
         db.delete_table('im_astakosuser_owner')
-
 
     models = {
         'auth.group': {

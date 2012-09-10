@@ -44,8 +44,9 @@ from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
 
 from ratelimit.decorators import ratelimit
 
-retries = RATELIMIT_RETRIES_ALLOWED-1
-rate = str(retries)+'/m'
+retries = RATELIMIT_RETRIES_ALLOWED - 1
+rate = str(retries) + '/m'
+
 
 @csrf_exempt
 @requires_anonymous
@@ -56,18 +57,18 @@ def login(request, on_failure='im/login.html'):
     """
     was_limited = getattr(request, 'limited', False)
     form = LoginForm(data=request.POST,
-        was_limited=was_limited,
-        request=request
-    )
+                     was_limited=was_limited,
+                     request=request
+                     )
     next = get_query(request).get('next', '')
     if not form.is_valid():
         return render_to_response(on_failure,
-                                  {'login_form':form,
-                                   'next':next},
+                                  {'login_form': form,
+                                   'next': next},
                                   context_instance=RequestContext(request))
     # get the user from the cash
     user = form.user_cache
-    
+
     message = None
     if not user:
         message = _('Cannot authenticate account')
@@ -76,7 +77,7 @@ def login(request, on_failure='im/login.html'):
     if message:
         messages.error(request, message)
         return render_to_response(on_failure,
-                                  {'form':form},
+                                  {'form': form},
                                   context_instance=RequestContext(request))
-    
+
     return prepare_response(request, user, next)

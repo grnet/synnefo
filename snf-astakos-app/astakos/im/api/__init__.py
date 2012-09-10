@@ -51,6 +51,7 @@ format = ('%a, %d %b %Y %H:%M:%S GMT')
 
 absolute = lambda request, url: request.build_absolute_uri(url)
 
+
 def render_fault(request, fault):
     if isinstance(fault, InternalServerError) and settings.DEBUG:
         fault.details = format_exc(fault)
@@ -62,6 +63,7 @@ def render_fault(request, fault):
     response = HttpResponse(data, status=fault.code)
     response['Content-Length'] = len(response.content)
     return response
+
 
 def api_method(http_method=None):
     """Decorator function for views that implement an API method."""
@@ -82,61 +84,65 @@ def api_method(http_method=None):
         return wrapper
     return decorator
 
+
 def _get_user_by_username(user_id):
     try:
-        user = AstakosUser.objects.get(username = user_id)
+        user = AstakosUser.objects.get(username=user_id)
     except AstakosUser.DoesNotExist:
         raise ItemNotFound('Invalid userid')
     else:
         response = HttpResponse()
-        response.status=200
-        user_info = {'id':user.id,
-                     'username':user.username,
-                     'email':[user.email],
-                     'name':user.realname,
-                     'auth_token_created':user.auth_token_created.strftime(format),
-                     'auth_token_expires':user.auth_token_expires.strftime(format),
-                     'has_credits':user.has_credits,
-                     'enabled':user.is_active,
-                     'groups':[g.name for g in user.groups.all()]}
+        response.status = 200
+        user_info = {'id': user.id,
+                     'username': user.username,
+                     'email': [user.email],
+                     'name': user.realname,
+                     'auth_token_created': user.auth_token_created.strftime(format),
+                     'auth_token_expires': user.auth_token_expires.strftime(format),
+                     'has_credits': user.has_credits,
+                     'enabled': user.is_active,
+                     'groups': [g.name for g in user.groups.all()]}
         response.content = json.dumps(user_info)
         response['Content-Type'] = 'application/json; charset=UTF-8'
         response['Content-Length'] = len(response.content)
         return response
+
 
 def _get_user_by_email(email):
     if not email:
         raise BadRequest('Email missing')
     try:
-        user = AstakosUser.objects.get(email = email)
+        user = AstakosUser.objects.get(email=email)
     except AstakosUser.DoesNotExist:
         raise ItemNotFound('Invalid email')
-    
+
     if not user.is_active:
         raise ItemNotFound('Inactive user')
     else:
         response = HttpResponse()
-        response.status=200
-        user_info = {'id':user.id,
-                     'username':user.username,
-                     'email':[user.email],
-                     'enabled':user.is_active,
-                     'name':user.realname,
-                     'auth_token_created':user.auth_token_created.strftime(format),
-                     'auth_token_expires':user.auth_token_expires.strftime(format),
-                     'has_credits':user.has_credits,
-                     'groups':[g.name for g in user.groups.all()],
-                     'user_permissions':[p.codename for p in user.user_permissions.all()]}
+        response.status = 200
+        user_info = {'id': user.id,
+                     'username': user.username,
+                     'email': [user.email],
+                     'enabled': user.is_active,
+                     'name': user.realname,
+                     'auth_token_created': user.auth_token_created.strftime(format),
+                     'auth_token_expires': user.auth_token_expires.strftime(format),
+                     'has_credits': user.has_credits,
+                     'groups': [g.name for g in user.groups.all()],
+                     'user_permissions': [p.codename for p in user.user_permissions.all()]}
         response.content = json.dumps(user_info)
         response['Content-Type'] = 'application/json; charset=UTF-8'
         response['Content-Length'] = len(response.content)
         return response
 
+
 @api_method(http_method='GET')
 def get_services(request):
     callback = request.GET.get('callback', None)
     services = Service.objects.all()
-    data = tuple({'id':s.pk, 'name':s.name, 'url':s.url, 'icon':s.icon} for s in services)
+    data = tuple({'id': s.pk, 'name': s.name, 'url': s.url, 'icon':
+                 s.icon} for s in services)
     data = json.dumps(data)
     mimetype = 'application/json'
 
@@ -145,6 +151,7 @@ def get_services(request):
         data = '%s(%s)' % (callback, data)
 
     return HttpResponse(content=data, mimetype=mimetype)
+
 
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
@@ -159,7 +166,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             pass
     if not isinstance(user, AstakosUser):
         index_url = reverse('index')
-        l = [{ 'url': absolute(request, index_url), 'name': "Sign in"}]
+        l = [{'url': absolute(request, index_url), 'name': "Sign in"}]
     else:
         l = []
         append = l.append
@@ -216,8 +223,8 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                         ),
                         item(
                             url=absolute(request,
-                                reverse('group_create_list')
-                            ),
+                                         reverse('group_create_list')
+                                         ),
                             name="Create"
                         ),
                         item(
@@ -246,7 +253,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                     name="Sign out"
                 )
             )
-    
+
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))
     mimetype = 'application/json'
@@ -257,19 +264,20 @@ def get_menu(request, with_extra_links=False, with_signout=True):
 
     return HttpResponse(content=data, mimetype=mimetype)
 
+
 class MenuItem(dict):
     current_path = ''
-    
+
     def __init__(self, *args, **kwargs):
         super(MenuItem, self).__init__(*args, **kwargs)
         if kwargs.get('url') or kwargs.get('submenu'):
             self.__set_is_active__()
-    
+
     def __setitem__(self, key, value):
         super(MenuItem, self).__setitem__(key, value)
         if key in ('url', 'submenu'):
             self.__set_is_active__()
-    
+
     def __set_is_active__(self):
         if self.get('is_active'):
             return
@@ -285,7 +293,7 @@ class MenuItem(dict):
                 self.__setitem__('is_active', True)
             except StopIteration:
                 return
-        
+
     def __setattribute__(self, name, value):
         super(MenuItem, self).__setattribute__(name, value)
         if name == 'current_path':

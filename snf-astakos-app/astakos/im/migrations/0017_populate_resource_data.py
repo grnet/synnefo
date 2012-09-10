@@ -3,46 +3,48 @@
 from south.v2 import DataMigration
 
 d = {
-        'cyclades' : { 'vm' : 2 },
-        'pithos+': {'diskspace' : 10  } 
-    }
+    'cyclades': {'vm': 2},
+    'pithos+': {'diskspace': 10}
+}
+
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        
+
         try:
             default = orm.AstakosGroup.objects.get(name='default')
         except orm.AstakosGroup.DoesNotExist:
             return
-        
+
         def create_policies(args):
             sn, policy = args
-            s, created = orm.Service.objects.get_or_create(name = sn)
-            
+            s, created = orm.Service.objects.get_or_create(name=sn)
+
             for rn, l in policy.iteritems():
                 try:
                     r, created = orm.Resource.objects.get_or_create(
-                        service = s,
-                        name = rn
+                        service=s,
+                        name=rn
                     )
                 except Exception, e:
                     print "Cannot create policy ", policy
                     continue
-                
+
                 q, created = orm.AstakosGroupQuota.objects.get_or_create(
-                    group = default,
-                    resource = r,
-                    limit = l
+                    group=default,
+                    resource=r,
+                    limit=l
                 )
         map(create_policies, d.iteritems())
-            
+
     def backwards(self, orm):
         try:
             default = orm.AstakosGroup.objects.get(name='default')
         except orm.AstakosGroup.DoesNotExist:
             return
-        
+
         def destroy_policies(args):
             sn, policy = args
             for rn, l in policy.iteritems():
@@ -54,10 +56,10 @@ class Migration(DataMigration):
                     if q.limit == l:
                         q.delete()
                 except orm.AstakosGroupQuota.DoesNotExist:
-                    return
-                
+                    continue
+
         map(destroy_policies, d.iteritems())
-    
+
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},

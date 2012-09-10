@@ -35,19 +35,23 @@ from django import template
 
 register = template.Library()
 
+
 @register.filter
 def lookup(d, key):
     return d.get(key)
 
+
 @register.filter
 def dkeys(d):
     return d.keys()
+
 
 @register.filter
 def enabled(object_list, is_search):
     if not is_search:
         return object_list
     return [g for g in object_list if g.is_enabled]
+
 
 @register.filter
 def split(object_list, user):
@@ -57,4 +61,4 @@ def split(object_list, user):
         d['other'] = list(set(object_list) - set(d['own']))
         return d
     except:
-        return {'own':object_list, 'other':()}
+        return {'own': object_list, 'other': ()}

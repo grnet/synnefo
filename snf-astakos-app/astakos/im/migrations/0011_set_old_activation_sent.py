@@ -2,6 +2,7 @@
 import datetime
 from south.v2 import DataMigration
 
+
 class Migration(DataMigration):
 
     def forwards(self, orm):

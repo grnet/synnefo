@@ -40,25 +40,26 @@ from astakos.im.settings import QUEUE_CONNECTION
 
 if QUEUE_CONNECTION:
     from synnefo.lib.queue import (exchange_connect, exchange_send,
-            exchange_close, UserEvent, Receipt
-    )
+                                   exchange_close, UserEvent, Receipt
+                                   )
 
-QUEUE_CLIENT_ID = '3' # Astakos.
+QUEUE_CLIENT_ID = '3'  # Astakos.
 INSTANCE_ID = '1'
 RESOURCE = 'addcredits'
 DEFAULT_CREDITS = 1000
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-)
+                    datefmt='%Y-%m-%d %H:%M:%S'
+                    )
 logger = logging.getLogger('endpoint.aquarium')
+
 
 def wrapper(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not QUEUE_CONNECTION:
             return
-        
+
         try:
             body, key = func(*args, **kwargs)
             conn = exchange_connect(QUEUE_CONNECTION)
@@ -71,21 +72,24 @@ def wrapper(func):
             logger.exception(e)
     return wrapper
 
+
 @wrapper
 def report_user_event(user, create=False):
     eventType = 'create' if not create else 'modify'
     body = UserEvent(QUEUE_CLIENT_ID, user.email, user.is_active, eventType, {}
-    ).format()
+                     ).format()
     routing_key = '%s.user'
     return body, routing_key
+
 
 @wrapper
 def report_user_credits_event(user):
     body = Receipt(QUEUE_CLIENT_ID, user.email, INSTANCE_ID, RESOURCE,
-        DEFAULT_CREDITS, details={}
-    ).format()
+                   DEFAULT_CREDITS, details={}
+                   ).format()
     routing_key = '%s.resource'
     return body, routing_key
+
 
 def report_credits_event():
     # better approach?

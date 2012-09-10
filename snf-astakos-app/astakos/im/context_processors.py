@@ -32,40 +32,47 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES, \
-        GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
+    LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES, \
+    GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
 from astakos.im.api import get_menu
 from astakos.im.util import get_query
 from astakos.im.models import GroupKind
 
 from django.utils import simplejson as json
 
+
 def im_modules(request):
     return {'im_modules': IM_MODULES}
 
+
 def next(request):
-    return {'next' : get_query(request).get('next', '')}
+    return {'next': get_query(request).get('next', '')}
+
 
 def code(request):
-    return {'code' : request.GET.get('code', '')}
+    return {'code': request.GET.get('code', '')}
+
 
 def invitations(request):
-    return {'invitations_enabled' :INVITATIONS_ENABLED}
+    return {'invitations_enabled': INVITATIONS_ENABLED}
+
 
 def media(request):
-    return {'IM_STATIC_URL' : IM_STATIC_URL}
+    return {'IM_STATIC_URL': IM_STATIC_URL}
+
 
 def custom_messages(request):
-    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or \
-            LOGIN_MESSAGES or PROFILE_MESSAGES)
+    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or
+                              LOGIN_MESSAGES or PROFILE_MESSAGES)
     return {
-            'GLOBAL_MESSAGES' : GLOBAL_MESSAGES,
-            'SIGNUP_MESSAGES' : SIGNUP_MESSAGES,
-            'LOGIN_MESSAGES' : LOGIN_MESSAGES,
-            'PROFILE_MESSAGES' : PROFILE_MESSAGES,
-            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS,
-            'EXTRA_MESSAGES_SET' : EXTRA_MESSAGES_SET
-           }
+        'GLOBAL_MESSAGES': GLOBAL_MESSAGES,
+        'SIGNUP_MESSAGES': SIGNUP_MESSAGES,
+        'LOGIN_MESSAGES': LOGIN_MESSAGES,
+        'PROFILE_MESSAGES': PROFILE_MESSAGES,
+        'PROFILE_EXTRA_LINKS': PROFILE_EXTRA_LINKS,
+        'EXTRA_MESSAGES_SET': EXTRA_MESSAGES_SET
+    }
+
 
 def menu(request):
     try:
@@ -74,10 +81,11 @@ def menu(request):
     except Exception, e:
         return {}
     else:
-        return {'menu':menu_items}
+        return {'menu': menu_items}
+
 
 def group_kinds(request):
-    return {'group_kinds':GroupKind.objects.exclude(
+    return {'group_kinds': GroupKind.objects.exclude(
             name='default'
-        ).values_list('name', flat=True)
-    }
+            ).values_list('name', flat=True)
+            }

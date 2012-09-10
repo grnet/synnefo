@@ -2,49 +2,65 @@
 from south.db import db
 from south.v2 import SchemaMigration
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'AstakosUser'
         db.create_table('im_astakosuser', (
             ('user_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['auth.User'], unique=True, primary_key=True)),
-            ('affiliation', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
-            ('provider', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
-            ('level', self.gf('django.db.models.fields.IntegerField')(default=4)),
-            ('invitations', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('auth_token', self.gf('django.db.models.fields.CharField')(max_length=32, null=True, blank=True)),
-            ('auth_token_created', self.gf('django.db.models.fields.DateTimeField')(null=True)),
-            ('auth_token_expires', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('affiliation', self.gf('django.db.models.fields.CharField')
+             (default='', max_length=255)),
+            ('provider', self.gf('django.db.models.fields.CharField')
+             (default='', max_length=255)),
+            ('level', self.gf(
+                'django.db.models.fields.IntegerField')(default=4)),
+            ('invitations', self.gf(
+                'django.db.models.fields.IntegerField')(default=0)),
+            ('auth_token', self.gf('django.db.models.fields.CharField')
+             (max_length=32, null=True, blank=True)),
+            ('auth_token_created', self.gf(
+                'django.db.models.fields.DateTimeField')(null=True)),
+            ('auth_token_expires', self.gf(
+                'django.db.models.fields.DateTimeField')(null=True)),
             ('updated', self.gf('django.db.models.fields.DateTimeField')()),
-            ('is_verified', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('is_verified', self.gf(
+                'django.db.models.fields.BooleanField')(default=False)),
         ))
         db.send_create_signal('im', ['AstakosUser'])
 
         # Adding model 'Invitation'
         db.create_table('im_invitation', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
             ('inviter', self.gf('django.db.models.fields.related.ForeignKey')(related_name='invitations_sent', null=True, to=orm['im.AstakosUser'])),
-            ('realname', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('username', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('code', self.gf('django.db.models.fields.BigIntegerField')(db_index=True)),
-            ('is_accepted', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('is_consumed', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('accepted', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
-            ('consumed', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('realname', self.gf(
+                'django.db.models.fields.CharField')(max_length=255)),
+            ('username', self.gf(
+                'django.db.models.fields.CharField')(max_length=255)),
+            ('code', self.gf(
+                'django.db.models.fields.BigIntegerField')(db_index=True)),
+            ('is_accepted', self.gf(
+                'django.db.models.fields.BooleanField')(default=False)),
+            ('is_consumed', self.gf(
+                'django.db.models.fields.BooleanField')(default=False)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')
+             (auto_now_add=True, blank=True)),
+            ('accepted', self.gf('django.db.models.fields.DateTimeField')
+             (null=True, blank=True)),
+            ('consumed', self.gf('django.db.models.fields.DateTimeField')
+             (null=True, blank=True)),
         ))
         db.send_create_signal('im', ['Invitation'])
 
-
     def backwards(self, orm):
-        
+
         # Deleting model 'AstakosUser'
         db.delete_table('im_astakosuser')
 
         # Deleting model 'Invitation'
         db.delete_table('im_invitation')
-
 
     models = {
         'auth.group': {

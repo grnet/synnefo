@@ -3,71 +3,78 @@ import datetime
 from south.v2 import DataMigration
 from django.db.models import Count
 
+
 class Migration(DataMigration):
     def forwards(self, orm):
-        
+
         def _create_groupkind(name):
             try:
                 orm.GroupKind(name=name).save()
             except:
                 pass
-                                        
+
         t = ('default', 'course', 'project', 'laboratory', 'organization')
         map(_create_groupkind, t)
-        
+
         default = orm.GroupKind.objects.get(name='default')
-        
+
         groups = {}
+
         def _create_astakogroup(name):
             try:
                 groups[name] = orm.AstakosGroup.objects.get(name=name)
             except orm.AstakosGroup.DoesNotExist:
                 try:
                     g = orm['auth.Group'].objects.get(name=name)
-                    groups[name] = extended = orm.AstakosGroup(group_ptr_id=g.pk)
+                    groups[
+                        name] = extended = orm.AstakosGroup(group_ptr_id=g.pk)
                     extended.__dict__.update(g.__dict__)
                     extended.kind = default
                     extended.approval_date = datetime.datetime.now()
                     extended.issue_date = datetime.datetime.now()
                     extended.moderation_enabled = False
                     extended.save()
-                    map(lambda u:orm.Membership(    group=extended,
-                                                    person=orm.AstakosUser.objects.get(id=u.id),
-                                                    date_joined=datetime.datetime.now()
-                                                ).save(),
+                    map(lambda u: orm.Membership(group=extended,
+                                                 person=orm.AstakosUser.objects.get(id=u.id),
+                                                 date_joined=datetime.datetime.now()
+                                                 ).save(),
                         g.user_set.all())
                 except orm['auth.Group'].DoesNotExist:
-                    groups[name] = orm.AstakosGroup(    name=name,
-                                                        kind=default,
-                                                        approval_date=datetime.datetime.now(),
-                                                        issue_date=datetime.datetime.now(),
-                                                        moderation_enabled=False
+                    groups[name] = orm.AstakosGroup(name=name,
+                                                    kind=default,
+                                                    approval_date=datetime.datetime.now(),
+                                                    issue_date=datetime.datetime.now(),
+                                                    moderation_enabled=False
                                                     )
                     groups[name].save()
-        
-        # catch integrate 
-        t = ('default', 'shibboleth', 'helpdesk', 'faculty', 'ugrad', 'grad', 'researcher', 'associate')
+
+        # catch integrate
+        t = ('default', 'shibboleth', 'helpdesk', 'faculty',
+             'ugrad', 'grad', 'researcher', 'associate')
         map(_create_astakogroup, t)
-        
-        orphans = orm.AstakosUser.objects.annotate(num_groups=Count('astakos_groups')).filter(num_groups = 0)
-        map ( lambda u: orm.Membership(group=groups['default'], person=u, date_joined=datetime.datetime.now()).save(), orphans )
-        
+
+        orphans = orm.AstakosUser.objects.annotate(
+            num_groups=Count('astakos_groups')).filter(num_groups=0)
+        map(lambda u: orm.Membership(group=groups['default'],
+                                     person=u, date_joined=datetime.datetime.now()).save(), orphans)
+
     def backwards(self, orm):
         def _delete_groupkind(name):
             try:
                 orm.GroupKind.objects.get(name=name).delete()
             except orm.GroupKind.DoesNotExist:
                 pass
-        
+
         def _delete_astakosgroup(name):
             try:
                 orm.AstakosGroup.objects.get(name=name).delete()
             except orm.AstakosGroup.DoesNotExist:
                 pass
-        
-        t = ('default', 'shibboleth', 'helpdesk', 'faculty', 'ugrad', 'grad', 'researcher', 'associate')
+
+        t = ('default', 'shibboleth', 'helpdesk', 'faculty',
+             'ugrad', 'grad', 'researcher', 'associate')
         map(_delete_astakosgroup, t)
-        
+
         t = ('default', 'course', 'project', 'laboratory', 'organization')
         map(_delete_groupkind, t)
 

@@ -2,25 +2,26 @@
 from south.db import db
 from south.v2 import SchemaMigration
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding field 'AstakosUser.activation_sent'
         db.add_column('im_astakosuser', 'activation_sent', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True), keep_default=False)
 
         # Changing field 'Service.url'
-        db.alter_column('im_service', 'url', self.gf('django.db.models.fields.FilePathField')(max_length=100))
-
+        db.alter_column('im_service', 'url', self.gf(
+            'django.db.models.fields.FilePathField')(max_length=100))
 
     def backwards(self, orm):
-        
+
         # Deleting field 'AstakosUser.activation_sent'
         db.delete_column('im_astakosuser', 'activation_sent')
 
         # Changing field 'Service.url'
-        db.alter_column('im_service', 'url', self.gf('django.db.models.fields.URLField')(max_length=200))
-
+        db.alter_column('im_service', 'url', self.gf(
+            'django.db.models.fields.URLField')(max_length=200))
 
     models = {
         'auth.group': {

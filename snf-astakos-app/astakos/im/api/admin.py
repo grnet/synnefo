@@ -39,7 +39,8 @@ from time import time, mktime
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-from astakos.im.api.faults import (Fault, Unauthorized, InternalServerError, BadRequest,
+from astakos.im.api.faults import (
+    Fault, Unauthorized, InternalServerError, BadRequest,
     Forbidden)
 from astakos.im.api import render_fault, _get_user_by_email, _get_user_by_username
 from astakos.im.models import AstakosUser
@@ -47,6 +48,7 @@ from astakos.im.util import epoch
 
 logger = logging.getLogger(__name__)
 format = ('%a, %d %b %Y %H:%M:%S GMT')
+
 
 def api_method(http_method=None, token_required=False, perms=None):
     """Decorator function for views that implement an API method."""
@@ -81,6 +83,7 @@ def api_method(http_method=None, token_required=False, perms=None):
         return wrapper
     return decorator
 
+
 @api_method(http_method='GET', token_required=True)
 def authenticate_old(request, user=None):
     # Normal Response Codes: 204
@@ -102,19 +105,20 @@ def authenticate_old(request, user=None):
         raise Unauthorized('Pending approval terms')
 
     response = HttpResponse()
-    response.status=204
-    user_info = {'username':user.username,
-                 'uniq':user.email,
-                 'auth_token':user.auth_token,
-                 'auth_token_created':user.auth_token_created.isoformat(),
-                 'auth_token_expires':user.auth_token_expires.isoformat(),
-                 'has_credits':user.has_credits,
-                 'has_signed_terms':user.signed_terms,
-                 'groups':[g.name for g in user.groups.all()]}
+    response.status = 204
+    user_info = {'username': user.username,
+                 'uniq': user.email,
+                 'auth_token': user.auth_token,
+                 'auth_token_created': user.auth_token_created.isoformat(),
+                 'auth_token_expires': user.auth_token_expires.isoformat(),
+                 'has_credits': user.has_credits,
+                 'has_signed_terms': user.signed_terms,
+                 'groups': [g.name for g in user.groups.all()]}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
+
 
 @api_method(http_method='GET', token_required=True)
 def authenticate(request, user=None):
@@ -137,20 +141,21 @@ def authenticate(request, user=None):
         raise Unauthorized('Pending approval terms')
 
     response = HttpResponse()
-    response.status=204
-    user_info = {'userid':user.username,
-                 'email':[user.email],
-                 'name':user.realname,
-                 'auth_token':user.auth_token,
-                 'auth_token_created':epoch(user.auth_token_created),
-                 'auth_token_expires':epoch(user.auth_token_expires),
-                 'has_credits':user.has_credits,
-                 'is_active':user.is_active,
-                 'groups':[g.name for g in user.groups.all()]}
+    response.status = 204
+    user_info = {'userid': user.username,
+                 'email': [user.email],
+                 'name': user.realname,
+                 'auth_token': user.auth_token,
+                 'auth_token_created': epoch(user.auth_token_created),
+                 'auth_token_expires': epoch(user.auth_token_expires),
+                 'has_credits': user.has_credits,
+                 'is_active': user.is_active,
+                 'groups': [g.name for g in user.groups.all()]}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
+
 
 @api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
 def get_user_by_email(request, user=None):
@@ -162,6 +167,7 @@ def get_user_by_email(request, user=None):
     #                       itemNotFound (404)
     email = request.GET.get('name')
     return _get_user_by_email(email)
+
 
 @api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
 def get_user_by_username(request, user_id, user=None):

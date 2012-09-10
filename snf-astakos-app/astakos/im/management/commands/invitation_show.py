@@ -41,16 +41,16 @@ from ._common import format_bool, format_date
 class Command(BaseCommand):
     args = "<invitation ID>"
     help = "Show invitation info"
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide an invitation id")
-        
+
         try:
             invitation = Invitation.objects.get(id=int(args[0]))
         except Invitation.DoesNotExist:
             raise CommandError("Unknown invitation id '%s'" % (args[0],))
-        
+
         kv = {
             'id': invitation.id,
             'real name': invitation.realname,
@@ -62,7 +62,7 @@ class Command(BaseCommand):
             'inviter real name': invitation.inviter.realname,
             'invitater email': invitation.inviter.email,
         }
-        
+
         for key, val in sorted(kv.items()):
             line = '%s: %s\n' % (key.rjust(18), val)
             self.stdout.write(line.encode('utf8'))

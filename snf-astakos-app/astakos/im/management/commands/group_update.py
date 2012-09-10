@@ -38,33 +38,34 @@ from django.core.management.base import BaseCommand, CommandError
 from astakos.im.models import AstakosGroup
 from ._common import add_group_permission, remove_group_permission
 
+
 class Command(BaseCommand):
     args = "<groupname>"
     help = "Update group"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('--add-permission',
-            dest='add-permission',
-            help="Add user permission"),
+                    dest='add-permission',
+                    help="Add user permission"),
         make_option('--delete-permission',
-            dest='delete-permission',
-            help="Delete user permission"),
+                    dest='delete-permission',
+                    help="Delete user permission"),
         make_option('--enable',
-            action='store_true',
-            dest='enable',
-            default=False,
-            help="Enable group"),
+                    action='store_true',
+                    dest='enable',
+                    default=False,
+                    help="Enable group"),
         make_option('--disable',
-            action='store_true',
-            dest='disable',
-            default=False,
-            help="Disable group"),
+                    action='store_true',
+                    dest='disable',
+                    default=False,
+                    help="Disable group"),
     )
-    
+
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a group identifier")
-        
+
         group = None
         try:
             if args[0].isdigit():
@@ -73,32 +74,37 @@ class Command(BaseCommand):
                 group = AstakosGroup.objects.get(name=args[0])
         except AstakosGroup.DoesNotExist, e:
             raise CommandError("Invalid group")
-        
+
         try:
             pname = options.get('add-permission')
             if pname:
                 r, created = add_group_permission(group, pname)
                 if created:
-                    self.stdout.write('Permission: %s created successfully\n' % pname)
+                    self.stdout.write(
+                        'Permission: %s created successfully\n' % pname)
                 if r == 0:
-                    self.stdout.write('Group has already permission: %s\n' % pname)
+                    self.stdout.write(
+                        'Group has already permission: %s\n' % pname)
                 else:
-                    self.stdout.write('Permission: %s added successfully\n' % pname)
-            
+                    self.stdout.write(
+                        'Permission: %s added successfully\n' % pname)
+
             pname = options.get('delete-permission')
             if pname:
                 r = remove_group_permission(group, pname)
                 if r < 0:
-                    self.stdout.write('Invalid permission codename: %s\n' % pname)
+                    self.stdout.write(
+                        'Invalid permission codename: %s\n' % pname)
                 elif r == 0:
                     self.stdout.write('Group has not permission: %s\n' % pname)
                 elif r > 0:
-                    self.stdout.write('Permission: %s removed successfully\n' % pname)
-            
+                    self.stdout.write(
+                        'Permission: %s removed successfully\n' % pname)
+
             if options.get('enable'):
                 group.enable()
             elif options.get('disable'):
                 group.disable()
-        
+
         except Exception, e:
             raise CommandError(e)

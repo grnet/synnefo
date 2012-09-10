@@ -4,6 +4,7 @@
 
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
+    <h2>GROUPS</h2>
     {% if form %}
     <p>You can search for a group by name</p>
     <form action="{% url group_search %}" method="post" class="withlabels signup">{% csrf_token %}
@@ -20,13 +21,13 @@
 			<li>
 				<div>
 					<p>WELCOME!<br />Connect with a world of people who share your passions.<br />With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
-					<p class="btn"><a href="{% url group_create_list %}" class="submit">Create a group</a></p>
+					<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>
 				</div>
 			</li>
 			<li>
 				<div>
 					<p>LOOKING FOR A GROUP?</p><p>Well, this is the place to start!</br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br /><img alt="THINK ABOUT IT" src="/static/medialibrary/2012/06/behind_okeanos.png"></p>
-					<p class="btn"><a href="{% url group_search %}" class="submit">Join a group</a></p>
+					<p class="btn"><a href="{% url group_search %}" class="submit">JOIN</a></p>
 				</div>
 			</li>
 		</ul>
@@ -38,30 +39,34 @@
       	{% with d|lookup:'own' as mine %}
 	      	{% if mine %}	
 	      		<div class="full-dotted">
-					<table class="alt-style table_sorting" id="">
+					<table class="alt-style table_sorting complex" id="">
 			            <caption>MY GROUPS</caption>
 			            <thead>
 			              <tr>
 			                <th>Name</th>
 			                <th>Type</th>
-			                <th>Issue date</th>
-			                <th>Expiration date</th>
-			                <th>Participants</th>
-			                <th>Activation</th>
-			                <th>Moderation</th>
+			                <th>Issued</th>
+			                <th>Expires</th>
+			                <th>Enrolled</th>
+			                <th>Status</th>
+			                <th>Moderated</th>
+			                <th>&nbsp;</th>
 			              </tr>
 			            </thead>
 			            <tbody>
 			              {% for o in mine %}
-			              <tr>
-			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
+			              <tr class="{% cycle 'tr1' 'tr2' %}">
+			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name|cut:"http://"|cut:"/" }}</a></td>
 			                <td>{{o.kind|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-			                <td>{{ o.approved_members|length }}/{{ o.members|length }}</td>
+			                <td>{{ o.approved_members|length }}</td>
 			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
 			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-			                 
+			                <td><a href="#" class="more-info">[ + More Info ]</a></td> 
+			              </tr>
+			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
+			                <td colspan="8">{{o.desc}}</td>
 			              </tr>
 			              {% endfor %}
 			            </tbody>
@@ -74,51 +79,58 @@
 	      	{% if other %}	
 	      		<div class="full-dotted">
 					<table class="alt-style table_sorting">
-			            <caption>I PARTICIPATE IN</caption>
+			            <caption>
+			            	{% if is_search %}
+				            	SEARCH RESULTS
+				            {% else %}
+				            	I PARTICIPATE IN
+			            	{% endif %}
+			            </caption>
 			            <thead>
 			              <tr>
 			                <th>Name</th>
 			                <th>Type</th>
-			                <th>Issue date</th>
-			                <th>Expiration date</th>
+			                <th>Issued</th>
+			                <th>Expires</th>
 			                 
-			                <th>Participants</th>
-			                <th>Activation</th>
+			                <th>Enrolled</th>
+			               
 			                 
 			                <th>Enrollment status</th>
-			                <th>&nbsp;</th>
+			              
 			              </tr>
 			            </thead>
 			            <tbody>
 			              {% for o in other %}
 			              <tr>
-			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name}}</a></td>
+			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name|cut:"http://"|cut:"/" }}</a></td>
 			                <td>{{o.kind|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
 			                
 			                <td>{{ o.approved_members|length }}</td>
-			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
 			                
+			                <td>
 			                {% if user in o.approved_members %}
-			                    <td>
-			                    	Active
-			                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
-			                             <input type="submit"  value="LEAVE GROUP" />
-			                        </form>	
+			
+		                    	Registered
+		                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+		                             <input type="submit"  value="LEAVE GROUP" />
+		                        </form>	
 			                    
-			                    </td>    
+			                        
 			                {% else %}
 			                    {% if user in o.members %}
-			                        <td>Pending</td>
+			                        Pending
 			                    {% else %}
-			                        <td>Not member 
+			                        Not member 
 			                            <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
 			                                <input type="submit"   value="JOIN GROUP" />
 			                            </form>
-			                        </td>
+			                        
 			                    {% endif %}
 			                {% endif %}
+			                </td>
 			              </tr>
 			              {% endfor %}
 			            </tbody>
@@ -134,5 +146,6 @@
             {% endif %}
       {% endif %}
     {% endwith %}
+</div>
 </div>
 {% endblock %}

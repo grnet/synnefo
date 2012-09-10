@@ -203,6 +203,21 @@ $(document).ready(function() {
 	
 	
 	$(".table_sorting").tablesorter(); 
+	
+	$('table .more-info').click(function(e){
+		e.preventDefault();
+		$(this).toggleClass('open');
+		$(this).parents('tr').next('tr').toggle();
+		check_table_info();
+	})
+	
+	function check_table_info() {
+	   if ($('table .more-info').hasClass('open')){
+	   		$(this).text('[- Less Info]')
+	   } else {
+	   		$(this).text('[+ More Info]')
+	   }
+	}
 });
 
 $(window).resize(function() {

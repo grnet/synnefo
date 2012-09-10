@@ -30,8 +30,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.db.models import Network
-from synnefo.api.networks import delete_network as api_delete_network
-from synnefo.logic.backend import delete_network as backend_delete_network
+from synnefo.logic.backend import delete_network
 
 
 class Command(BaseCommand):
@@ -51,7 +50,7 @@ class Command(BaseCommand):
             network = Network.objects.get(id=network_id)
         except ValueError:
             raise CommandError("Invalid network ID")
-        except network.DoesNotExist:
+        except Network.DoesNotExist:
             raise CommandError("Network not found in DB")
 
         self.stdout.write('Trying to remove network: %s\n' % str(network))
@@ -59,10 +58,8 @@ class Command(BaseCommand):
         if network.machines.exists():
             raise CommandError('Network is not empty. Can not delete')
 
-        if network.public:
-            network.action = 'DESTROY'
-            backend_delete_network(network)
-        else:
-            api_delete_network(network)
+        network.action = 'DESTROY'
+        network.save()
+        delete_network(network)
 
         self.stdout.write('Successfully removed network.\n')

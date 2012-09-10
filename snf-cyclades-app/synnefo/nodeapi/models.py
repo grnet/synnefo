@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,17 +31,23 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.conf import settings
+from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^nodeapi/', include('synnefo.nodeapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
-)
+from synnefo.api.servers import server_created
+from synnefo.nodeapi import backend, get_key, get_uuid
+
+
+def create_server_params(sender, created_vm_params, **kwargs):
+    json_value = json.dumps(created_vm_params)
+    uuid = get_uuid()
+    key = get_key(uuid)
+    backend.set(key, json_value)
+
+    # inject sender (vm) with its parameters url
+    setattr(sender, 'params_url', reverse('nodeapi_server_params', args=[uuid]))
+    return uuid
+
+server_created.connect(create_server_params)
 

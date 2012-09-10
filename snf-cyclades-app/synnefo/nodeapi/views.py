@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,17 +31,22 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.http import Http404, HttpResponse
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^nodeapi/', include('synnefo.nodeapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
-)
+from synnefo.nodeapi import backend, get_key
+from synnefo.nodeapi.settings import RESET_PARAMS
+
+def server_params(request, uuid):
+    uuid = request.GET.get('uuid', None)
+    if not uuid:
+        raise Http404
+
+    params = backend.get(get_key(uuid))
+    if not params:
+        raise Http404
+
+    if RESET_PARAMS:
+        backend.set(uuid, None)
+
+    return HttpResponse(params, content_type="application/json")
 

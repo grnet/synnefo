@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,17 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from uuid import uuid4
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^nodeapi/', include('synnefo.nodeapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
-)
+from django.core.cache import get_cache
+from django.core import signals
+
+from synnefo.nodeapi.settings import CACHE_KEY_PREFIX, CACHE_BACKEND
+
+def get_uuid():
+    return str(uuid4())
+
+def get_key(*args):
+    args = map(str, filter(bool, list(args)))
+    args.insert(0, CACHE_KEY_PREFIX)
+    return "_".join(args)
+
+# initialize serverparams cache backend
+backend = get_cache(CACHE_BACKEND)
+
+# Some caches -- pythont-memcached in particular -- need to do a cleanup at the
+# end of a request cycle. If the cache provides a close() method, wire it up
+# here.
+if hasattr(backend, 'close'):
+    signals.request_finished.connect(backend.close)
 

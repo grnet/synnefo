@@ -33,6 +33,7 @@
 
 from base64 import b64decode
 
+from django import dispatch
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.db import transaction
@@ -50,6 +51,8 @@ from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
 from random import choice
 
+# server creation signal
+server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 from logging import getLogger
 log = getLogger('synnefo.api')
@@ -324,6 +327,15 @@ def create_server(request):
         raise
     else:
         transaction.commit()
+
+    # dispatch server created signal
+    server_created.send(sender=vm, created_vm_params={
+        'personality': personality,
+        'password': password
+    })
+
+    # TODO: if nodeapi app is enabled vm gets an extra attribute `params_url`
+    # we should provide that url to the create_instance method. How ????
 
     try:
         if settings.PUBLIC_USE_POOL:

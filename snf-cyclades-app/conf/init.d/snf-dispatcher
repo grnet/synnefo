@@ -54,7 +54,6 @@ dispatcher_start() {
 		log_end_msg 0
 	else
 		log_end_msg 1
-		rm -f $SNF_DSPTCH_PID_FILE
 	fi
 } # dispatcher_start
 
@@ -83,7 +82,6 @@ case "$1" in
 	log_daemon_msg "Stopping snf-dispatcher daemon" "snf-dispatcher"
 	start-stop-daemon --stop --quiet --oknodo --pidfile $SNF_DSPTCH_PID_FILE
 	log_end_msg $?
-	rm -f $SNF_DSPTCH_PID_FILE
 	;;
 
   restart)
@@ -95,7 +93,6 @@ case "$1" in
 		sleep 1
 		else
 		log_warning_msg "dispatcher daemon not running, attempting to start."
-			rm -f $SNF_DSPTCH_PID_FILE
 		fi
 			dispatcher_start
 		else

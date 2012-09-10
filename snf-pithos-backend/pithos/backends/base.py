@@ -35,7 +35,6 @@
 DEFAULT_QUOTA = 0  # No quota.
 DEFAULT_VERSIONING = 'auto'
 
-from synnefo.lib.singleton import ArgBasedSingleton
 
 
 class NotAllowedError(Exception):
@@ -68,7 +67,6 @@ class ItemNotExists(NameError):
 
 class VersionNotExists(IndexError):
     pass
-
 
 class BaseBackend(object):
     """Abstract backend class that serves as a reference for actual implementations.

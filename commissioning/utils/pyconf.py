@@ -1,9 +1,5 @@
-from os.path import exists
 
 def pyconf(filename, keys=None):
-    if not exists(filename):
-        return {}
-
     execfile(filename)
     opts = {}
     variables = locals()

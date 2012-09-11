@@ -323,3 +323,8 @@ table.alt-style tr.tr1 td,
 table.alt-style tr.tmore1 td					{ background:#F2F2F2 }
 table.alt-style tr.tr2 td,
 table.alt-style tr.tmore2 td					{ background:#fff }
+table.alt-style tr td.info-td					{ padding:5px; }
+table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
+table.alt-style tr td a.more-info				{ display:block; float:left; width:17px; height:16px; background:url(../images/plus-minus.png) no-repeat 0 0; margin-right:5px; }
+table.alt-style tr td a.more-info:hover			{ background-image:url(../images/plus-minus-hover.png); text-decoration:none;}
+table.alt-style tr td a.open					{ background-position:-16px 0} 

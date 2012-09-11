@@ -39,7 +39,7 @@
       	{% with d|lookup:'own' as mine %}
 	      	{% if mine %}	
 	      		<div class="full-dotted">
-					<table class="alt-style table_sorting complex" id="">
+					<table class="alt-style complex" id="">
 			            <caption>MY GROUPS</caption>
 			            <thead>
 			              <tr>
@@ -51,22 +51,33 @@
 			                <th>Status</th>
 			                <th>Moderated</th>
 			                <th>&nbsp;</th>
+			                
 			              </tr>
 			            </thead>
 			            <tbody>
 			              {% for o in mine %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name|cut:"http://"|cut:"/" }}</a></td>
+			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
 			                <td>{{o.kind|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
 			                <td>{{ o.approved_members|length }}</td>
 			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
 			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-			                <td><a href="#" class="more-info">[ + More Info ]</a></td> 
+			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-			                <td colspan="8">{{o.desc}}</td>
+			                <td colspan="8" class="info-td">
+			                	<div>
+			                		<p>{{o.desc}}</p>
+					                <p>{% if o.homepage%}
+							 			Vistit group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+							 		{% else %}
+							 			There is no homepage for this group yet.
+							 		{% endif %}
+							 		</p>
+			                	</div>	
+			                </td>
 			              </tr>
 			              {% endfor %}
 			            </tbody>
@@ -78,7 +89,7 @@
       	{% with d|lookup:'other' as other %}
 	      	{% if other %}	
 	      		<div class="full-dotted">
-					<table class="alt-style table_sorting">
+					<table class="alt-style complex">
 			            <caption>
 			            	{% if is_search %}
 				            	SEARCH RESULTS
@@ -97,13 +108,14 @@
 			               
 			                 
 			                <th>Enrollment status</th>
+			                <th>&nbsp;</th>
 			              
 			              </tr>
 			            </thead>
 			            <tbody>
 			              {% for o in other %}
-			              <tr>
-			                <td><a class="extra-link" href="{% url group_detail o.id %}">{{o.name|cut:"http://"|cut:"/" }}</a></td>
+			              <tr class="{% cycle 'tr1' 'tr2' %}">
+			                <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
 			                <td>{{o.kind|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
@@ -130,6 +142,20 @@
 			                        
 			                    {% endif %}
 			                {% endif %}
+			                </td>
+			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
+			              </tr>
+			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
+			                <td colspan="8" class="info-td">
+			                	<div>
+			                		<p>{{o.desc}}</p>
+					                <p>{% if o.homepage%}
+							 			Vistit group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+							 		{% else %}
+							 			There is no homepage for this group yet.
+							 		{% endif %}
+							 		</p>
+			                	</div>	
 			                </td>
 			              </tr>
 			              {% endfor %}

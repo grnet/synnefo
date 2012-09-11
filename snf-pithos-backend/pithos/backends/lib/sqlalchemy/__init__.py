@@ -37,4 +37,4 @@ from permissions import Permissions, READ, WRITE
 
 __all__ = ["DBWrapper",
            "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "TYPE", "MTIME", "MUSER", "UUID", "CHECKSUM", "CLUSTER", "MATCH_PREFIX", "MATCH_EXACT",
-           "Permissions", "READ", "WRITE"]
+           "Permissions", "READ", "WRITE", "Config", "QuotaholderSync"]

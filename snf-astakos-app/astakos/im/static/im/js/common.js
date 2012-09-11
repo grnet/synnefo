@@ -209,6 +209,13 @@ $(document).ready(function() {
 		$(this).toggleClass('open');
 		$(this).parents('tr').next('tr').toggle();
 		 
+	});
+	
+	$('.projects .details .edit').click( function(e){
+		e.preventDefault();
+		$(this).parents('.details').children('.data').hide();
+		$(this).parents('.details').children('.editable').show();
+		$(this).hide();
 	})
 	
 });

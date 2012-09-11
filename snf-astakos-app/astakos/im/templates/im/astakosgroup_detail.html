@@ -7,22 +7,65 @@
 	
 	<h2>
 	 	{% if request.user in object.members %}
-			<em>[ ENROLLED ]</em>		
+			<em>
+				{% if request.user in object.owner.all %}
+					[ADMINISTRATOR]
+				{%  else %}
+					[ ENROLLED ]
+				{% endif %}
+			</em>		
 		{% endif %}
 	 	<span>[ {{object.kind|upper}} ]</span>  
 	 </h2>
+	 
 	 <div class="details">
-	 	<p>{{ object.desc }}</p>
-	 	 <dl class="alt-style">
-		 	<dt>Homepage url</dt>
-		 	<dd>
-		 		{% if object.homepage%}
-		 			<a href="{{ object.homepage }}">{{ object.homepage }}</a>
-		 		{% else %}
-		 			Not set yet
-		 		{% endif %}
-		 	</dd>
-		 </dl>
+	 	{% if request.user in object.owner.all %}
+	 		<a href="#" class="edit">[ EDIT GROUP INFO ]</a>
+	 	{% endif %}
+	 	<div class="data">
+		 	<p>{{ object.desc }}</p>
+		 	<dl class="alt-style">
+			 	<dt>Homepage url</dt>
+			 	<dd>
+			 		{% if object.homepage%}
+			 			<a href="{{ object.homepage }}">{{ object.homepage }}</a>
+			 		{% else %}
+			 			Not set yet
+			 		{% endif %}
+			 	</dd>
+			 </dl>
+		</div>
+		<div class="editable" style="display:none;">
+			<!-- demo form-->
+			<form class="innerlabels" method="post" action=""><div style="display:none"><input type="hidden" value="d1d4677634f858843ca84e2cac5bbebc" name="csrfmiddlewaretoken" autocomplete="off"></div>
+	           
+	            <div class="form-errors all"></div>
+				<div class="form-row   ">
+				        
+				     <p class="clearfix ">
+				        <label for="id_homepage">Homepage</label>
+				        <input type="text" id="id_homepage" name="homepage" autocomplete="off" value="{{ object.homepage }}">
+				        <span class="extra-img">&nbsp;</span>
+				        
+				     </p>
+				</div>
+				
+				<div class="form-row   ">
+				        
+				     <p class="clearfix ">
+				        <label for="id_desc">Description</label>
+				        <textarea name="desc" cols="40" rows="10" id="id_desc">{{ object.desc }}</textarea>
+				        <span class="extra-img">&nbsp;</span>
+				        
+				     </p>
+				</div>
+				 
+				<div class="form-row submit">
+				     <input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
+				</div>
+				</form>
+			<!-- end of demo form-->
+		</div>
 	 </div>
 	 <div class="full-dotted">
 		 <h3>DETAILS:</h3>

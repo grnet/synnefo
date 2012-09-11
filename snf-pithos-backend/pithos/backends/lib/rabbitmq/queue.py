@@ -31,23 +31,32 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.lib.queue import exchange_connect, exchange_send, exchange_close, Receipt
+import json
 
+from synnefo.lib.amqp import AMQPClient
+from synnefo.lib.queue import Receipt
 
 class Queue(object):
     """Queue.
-       Required constructor parameters: exchange, client_id.
+       Required constructor parameters: hosts, exchange, client_id.
     """
 
     def __init__(self, **params):
-        exchange = params['exchange']
-        self.conn = exchange_connect(exchange)
+        hosts = params['hosts']
+        self.exchange = params['exchange']
         self.client_id = params['client_id']
 
-    def send(self, message_key, user, instance, resource, value, details):
-        body = Receipt(
-            self.client_id, user, instance, resource, value, details).format()
-        exchange_send(self.conn, message_key, body)
+        self.client = AMQPClient(hosts=hosts)
+        self.client.connect()
 
+        self.client.exchange_declare(exchange=self.exchange,
+                                     type='topic')
+
+    def send(self, message_key, user, instance, resource, value, details):
+        body = Receipt(self.client_id, user, instance, resource, value, details).format()
+        self.client.basic_publish(exchange=self.exchange,
+                                  routing_key=message_key,
+                                  body=json.dumps(body))
+    
     def close(self):
-        exchange_close(self.conn)
+        self.client.close()

@@ -59,7 +59,8 @@ from pithos.api.short_url import encode_url
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
-                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
+                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
+                                 BACKEND_QUEUE_EXCHANGE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  SERVICE_TOKEN, COOKIE_NAME)

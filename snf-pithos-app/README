@@ -38,7 +38,8 @@ PITHOS_BACKEND_BLOCK_MODULE      pithos.backends.lib.hashfiler
 PITHOS_BACKEND_BLOCK_PATH        /tmp/pithos-data/                                 Map and block storage path
 PITHOS_BACKEND_BLOCK_UMASK       0o022                                             Map and block storage umask
 PITHOS_BACKEND_QUEUE_MODULE      None                                              Use ``pithos.backends.lib.rabbitmq`` to enable
-PITHOS_BACKEND_QUEUE_CONNECTION  None                                              Format like ``rabbitmq://guest:guest@localhost:5672/pithos``
+PITHOS_BACKEND_QUEUE_HOSTS       None                                              Format like [``amqp://guest:guest@localhost:5672``
+PITHOS_BACKEND_QUEUE_EXCHANGE    pithos
 PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                            Default user quota
 PITHOS_BACKEND_VERSIONING        auto                                              Default versioning policy for containers
 PITHOS_UPDATE_MD5                True                                              Update object checksums when using hashmaps

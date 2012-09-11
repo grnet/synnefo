@@ -99,12 +99,16 @@ class Provision(Model):
 
 class ProvisionLog(Model):
 
-    serial      =   BigIntegerField(primary_key=True)
-    source      =   CharField(max_length=72)
-    target      =   CharField(max_length=72)
-    issue_time  =   CharField(max_length=24)
-    log_time    =   CharField(max_length=24)
-    resource    =   CharField(max_length=72)
-    quantity    =   BigIntegerField()
-    reason      =   CharField(max_length=8)
+    serial              =   BigIntegerField(primary_key=True)
+    source              =   CharField(max_length=72)
+    target              =   CharField(max_length=72)
+    issue_time          =   CharField(max_length=24)
+    log_time            =   CharField(max_length=24)
+    resource            =   CharField(max_length=72)
+    source_available    =   BigIntegerField()
+    source_allocated    =   BigIntegerField()
+    target_available    =   BigIntegerField()
+    target_allocated    =   BigIntegerField()
+    delta_quantity      =   BigIntegerField()
+    reason              =   CharField(max_length=128)
 

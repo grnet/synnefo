@@ -25,6 +25,7 @@ Nothing             =   Null(classname='Nothing')
 Entity              =   Name(classname='Entity')
 Owner               =   Name(classname='Owner')
 Key                 =   Name(classname='Key')
+NewKey              =   Name(classname='Newkey')
 OwnerKey            =   Name(classname='OwnerKey')
 Resource            =   Name(classname='Resource')
 Policy              =   Name(classname='Policy')
@@ -50,6 +51,15 @@ class QuotaholderAPI(Specificator):
                 self,
                 context         =   Context,
                 create_entity   =   ListOf(Entity, Owner, Key, OwnerKey, nonempty=1)
+        ):
+
+        rejected = ListOf(Entity)
+        return rejected
+
+    def set_entity_key	(
+                self,
+                context         =   Context,
+                set_entity_key  =   ListOf(Entity, Key, NewKey)
         ):
 
         rejected = ListOf(Entity)

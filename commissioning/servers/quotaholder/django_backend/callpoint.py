@@ -76,6 +76,21 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                                 key=key )
         return rejected
 
+    def set_entity_key(self, context={}, set_entity_key=()):
+        rejected = []
+        append = rejected.append
+
+        for entity, key, newkey in set_entity_key:
+            try:
+                e = Entity.objects.get(entity=entity, key=key)
+            except Entity.DoesNotExist:
+                append(entity)
+
+            e.key = newkey
+            e.save()
+
+        return rejected
+
     def list_entities(self, context={}, entity=None, key=None):
         try:
             e = Entity.objects.get(entity=entity, key=key)
@@ -365,6 +380,30 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return serial
 
+    def _log_provision(self, serial, s_holding, t_holding,
+                             provision, log_time, reason):
+
+        source_allocated = s_holding.exported - s_holding.regained
+        source_available = (+ s_holding.policy.quantity + s_holding.imported
+                            - s_holding.released - source_allocated)
+        target_allocated = t_holding.exported - t_holding.regained
+        target_available = (+ t_holding.policy.quantity + t_holding.imported
+                            - t_holding.released - target_allocated)
+
+        ProvisionLog.objects.create(
+                        serial              =   serial,
+                        source              =   s_holding.entity.entity,
+                        target              =   t_holding.entity.entity,
+                        resource            =   provision.resource,
+                        source_available    =   source_available,
+                        source_allocated    =   source_allocated,
+                        target_available    =   target_available,
+                        target_allocated    =   target_allocated,
+                        delta_quantity      =   provision.quantity,
+                        issue_time          =   provision.issue_time,
+                        log_time            =   log_time,
+                        reason              =   reason)
+
     def accept_commission(self, context={}, clientkey=None,
                                 serial=None, reason=''):
         try:
@@ -398,15 +437,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.exported += quantity
                 th.imported += quantity
 
-            reason = 'ACCEPT:' + reason[:121]
-            ProvisionLog.objects.create(serial      =   serial,
-                                        source      =   pv.entity.entity,
-                                        target      =   t,
-                                        resource    =   pv.resource,
-                                        quantity    =   quantity,
-                                        issue_time  =   pv.issue_time,
-                                        log_time    =   log_Time,
-                                        reason      =   reason)
+            reason = 'ACCEPT:' + reason[-121:]
+            self._log_provision(serial, h, th, pv, log_time, reason)
             h.save()
             th.save()
             pv.delete()
@@ -445,15 +477,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.exporting -= quantity
                 th.importing -= quantity
 
-            reason = 'ACCEPT:' + reason[:121]
-            ProvisionLog.objects.create(serial      =   serial,
-                                        source      =   pv.entity.entity,
-                                        target      =   t,
-                                        resource    =   pv.resource,
-                                        quantity    =   quantity,
-                                        issue_time  =   pv.issue_time,
-                                        log_time    =   log_Time,
-                                        reason      =   reason)
+            source_allocated = h.exported - h.regained
+            source_available = (+ h.policy.quantity + h.imported
+                                - h.released - source_allocated)
+            target_allocated = th.exported - th.regained
+            target_available = (+ th.policy.quantity + th.imported
+                                - th.released - target_allocated)
+
+            reason = 'REJECT:' + reason[-121:]
+            self._log_provision(serial, h, th, pv, log_time, reason)
             h.save()
             th.save()
             pv.delete()
@@ -521,13 +553,17 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         nr = 0
         timeline = []
         extend = timeline.extend
-        while 1:
-            filterlogs = ProvisionLog.objects.filter
+        filterlogs = ProvisionLog.objects.filter
+        if entity_set:
             q_entity = Q(source__in = entity_set) | Q(target__in = entity_set)
-            logs = filterlogs(  issue_time__gt      =   after,
+        else:
+            q_entity = Q()
+
+        while 1:
+            logs = filterlogs(  q_entity,
+                                issue_time__gt      =   after,
                                 issue_time__lte     =   before,
-                                reason__startswith  =   'ACCEPT:',
-                                q_entity                        )
+                                reason__startswith  =   'ACCEPT:'   )
 
             logs = logs.order_by('issue_time')
             logs = logs.values()

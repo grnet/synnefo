@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from httplib import HTTPConnection, HTTPException
+from synnefo.lib.pool.http import get_http_connection
 from urlparse import urlparse
 from commissioning import Callpoint
 from commissioning.utils.clijson import clijson
@@ -40,7 +40,7 @@ def init_logger_stderr(name, level='DEBUG'):
 def debug(fmt, *args):
     global _logger
     if _logger is None:
-	init_logger_stderr('logger')
+        init_logger_stderr('logger')
     _logger.debug(fmt % args)
 
 
@@ -61,65 +61,53 @@ class HTTP_API_Client(Callpoint):
     def do_make_call(self, api_call, data):
         url = urlparse(self.url)
         scheme = url.scheme
-        if scheme == 'http':
-            port = 80
-        elif scheme == 'https':
-            port = 443
-        else:
-            raise ValueError("Unsupported scheme %s" % (scheme,))
-
         path = url.path.strip('/')
         path = ('/' + path + '/' + api_call) if path else ('/' + api_call)
+        netloc = url.netloc
 
-        netloc = url.netloc.rsplit(':', 1)
-        netloclen = len(netloc)
-        if netloclen == 1:
-            host = netloc[0]
-        elif netloclen == 2:
-            host, port = netloc
-        else:
-            msg = "Unsupported network location type '%s'" % (netloc,)
-            raise ValueError(msg)
+        conn = None
+        try:
+            debug("Connecting to %s\n>>>", netloc)
+            conn = get_http_connection(netloc=netloc, scheme=scheme)
+            if (api_call.startswith('list') or
+                api_call.startswith('get') or
+                api_call.startswith('read')):
 
-        debug("Connecting to %s:%s\n>>>", host, port)
-        conn = HTTPConnection(host, port)
+                    method = 'GET'
+            else:
+                    method = 'POST'
 
-        if (api_call.startswith('list') or
-            api_call.startswith('get') or
-            api_call.startswith('read')):
+            json_data = self.json_dumps(data)
+            debug("%s %s\n%s\n<<<\n", method, path, json_data)
 
-                method = 'GET'
-        else:
-                method = 'POST'
+            req = conn.request(method, path, body=json_data)
+            resp = conn.getresponse()
+            debug(">>>\nStatus: %s", resp.status)
 
-        json_data = self.json_dumps(data)
-        debug("%s %s\n%s\n<<<\n", method, path, json_data)
+            for name, value in resp.getheaders():
+                debug("%s: %s", name, value)
 
-        req = conn.request(method, path, body=json_data)
-        resp = conn.getresponse()
-        debug(">>>\nStatus: %s", resp.status)
+            body = ''
+            while 1:
+                s = resp.read() 
+                if not s:
+                    break
+                body += s
 
-        for name, value in resp.getheaders():
-            debug("%s: %s", name, value)
+            debug("\n%r\n<<<\n", body)
 
-        body = ''
-        while 1:
-            s = resp.read() 
-            if not s:
-                break
-            body += s
+            status = int(resp.status)
+            if status == 200:
+                if body:
+                    body = json_loads(body)
+                return body
+            else:
+                return body
 
-        debug("\n%s\n<<<\n", body)
-
-        status = int(resp.status)
-        if status == 200:
-            if body:
-                body = json_loads(body)
-            return body
-        else:
-            return body
-
-        raise IOError("Call Failed", str(resp.status))
+            raise IOError("Call Failed", str(resp.status))
+        finally:
+            if conn is not None:
+                conn.close()
 
 API_Callpoint = HTTP_API_Client
 
@@ -133,7 +121,7 @@ def main():
     progname = basename(argv[0])
     h, s, t = progname.rpartition('.')
     if t == 'py':
-	progname = h
+        progname = h
 
     if progname == 'http':
         if len(argv) < 2:

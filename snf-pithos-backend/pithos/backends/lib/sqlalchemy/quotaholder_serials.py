@@ -42,7 +42,7 @@ def create_tables(engine):
     metadata = MetaData()
     columns = []
     columns.append(Column('serial', BigInteger, primary_key=True))
-    config = Table('qh_sync', metadata, *columns, mysql_engine='InnoDB')
+    config = Table('qh_serials', metadata, *columns, mysql_engine='InnoDB')
     
     metadata.create_all(engine)
     return metadata.sorted_tables
@@ -55,7 +55,7 @@ class QuotaholderSerial(DBWorker):
         DBWorker.__init__(self, **params)
         try:
             metadata = MetaData(self.engine)
-            self.qh_sync = Table('qh_sync', metadata, autoload=True)
+            self.qh_serials = Table('qh_serials', metadata, autoload=True)
         except NoSuchTableError:
             tables = create_tables(self.engine)
             map(lambda t: self.__setattr__(t.name, t), tables)
@@ -63,8 +63,8 @@ class QuotaholderSerial(DBWorker):
     def get_lower(self, serial):
         """Return entries lower than serial."""
 
-        s = select([self.qh_sync.c.serial])
-        s = s.where(self.qh_sync.c.serial < serial)
+        s = select([self.qh_serials.c.serial])
+        s = s.where(self.qh_serials.c.serial < serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
         r.close()
@@ -74,7 +74,7 @@ class QuotaholderSerial(DBWorker):
         """Insert a serial.
         """
 
-        s = self.qh_sync.insert()
+        s = self.qh_serials.insert()
         r = self.conn.execute(s, serial=serial)
         inserted_primary_key = r.inserted_primary_key[0]
         r.close()

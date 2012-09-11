@@ -41,13 +41,13 @@ class QuotaholderSerial(DBWorker):
         DBWorker.__init__(self, **params)
         execute = self.execute
 
-        execute(""" create table if not exists qh_sync
+        execute(""" create table if not exists qh_serials
                           ( serial bigint primary key) """)
     
     def get_lower(self, serial):
         """Return entries lower than serial."""
 
-        q = "select serial from qh_sync where serial < ?"
+        q = "select serial from qh_serials where serial < ?"
         self.execute(q, (serial,))
         return self.fetchall()
     
@@ -55,6 +55,6 @@ class QuotaholderSerial(DBWorker):
         """Insert a serial.
         """
 
-        q = "insert or ignore into qh_sync (serial) values (?)"
+        q = "insert or ignore into qh_serials (serial) values (?)"
         return self.execute(q, (serial,)).lastrowid
         

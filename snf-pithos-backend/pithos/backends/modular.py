@@ -154,7 +154,7 @@ class ModularBackend(BaseBackend):
         params = {'wrapper': self.wrapper}
         self.permissions = self.db_module.Permissions(**params)
         self.config = self.db_module.Config(**params)
-        self.quotaholder_sync = self.db_module.QuotaholderSync(**params)
+        self.quotaholder_serials = self.db_module.QuotaholderSerial(**params)
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)

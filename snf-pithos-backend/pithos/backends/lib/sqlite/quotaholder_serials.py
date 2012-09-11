@@ -31,51 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from sqlalchemy import Table, Column, MetaData
-from sqlalchemy.types import BigInteger
-from sqlalchemy.sql import select
-from sqlalchemy.exc import NoSuchTableError
-
 from dbworker import DBWorker
 
-def create_tables(engine):
-    metadata = MetaData()
-    columns = []
-    columns.append(Column('serial', BigInteger, primary_key=True))
-    config = Table('qh_sync', metadata, *columns, mysql_engine='InnoDB')
-    
-    metadata.create_all(engine)
-    return metadata.sorted_tables
-
-class QuotaholderSync(DBWorker):
-    """QuotaholderSync are entries for syncing with quota holder.
+class QuotaholderSerial(DBWorker):
+    """QuotaholderSerial keeps track of quota holder serials.
     """
 
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
-        try:
-            metadata = MetaData(self.engine)
-            self.qh_sync = Table('qh_sync', metadata, autoload=True)
-        except NoSuchTableError:
-            tables = create_tables(self.engine)
-            map(lambda t: self.__setattr__(t.name, t), tables)
+        execute = self.execute
 
+        execute(""" create table if not exists qh_sync
+                          ( serial bigint primary key) """)
+    
     def get_lower(self, serial):
         """Return entries lower than serial."""
 
-        s = select([self.qh_sync.c.serial])
-        s = s.where(self.qh_sync.c.serial < serial)
-        r = self.conn.execute(s)
-        rows = r.fetchall()
-        r.close()
-        return rows
+        q = "select serial from qh_sync where serial < ?"
+        self.execute(q, (serial,))
+        return self.fetchall()
     
     def insert_serial(self, serial):
         """Insert a serial.
         """
 
-        s = self.qh_sync.insert()
-        r = self.conn.execute(s, serial=serial)
-        inserted_primary_key = r.inserted_primary_key[0]
-        r.close()
-        return inserted_primary_key
+        q = "insert or ignore into qh_sync (serial) values (?)"
+        return self.execute(q, (serial,)).lastrowid
+        

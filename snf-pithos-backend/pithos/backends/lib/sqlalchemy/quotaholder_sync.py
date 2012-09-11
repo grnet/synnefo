@@ -31,10 +31,51 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from dbwrapper import DBWrapper
-from node import Node, ROOTNODE, SERIAL, HASH, SIZE, TYPE, MTIME, MUSER, UUID, CHECKSUM, CLUSTER, MATCH_PREFIX, MATCH_EXACT
-from permissions import Permissions, READ, WRITE
+from sqlalchemy import Table, Column, MetaData
+from sqlalchemy.types import BigInteger
+from sqlalchemy.sql import select
+from sqlalchemy.exc import NoSuchTableError
 
-__all__ = ["DBWrapper",
-           "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "TYPE", "MTIME", "MUSER", "UUID", "CHECKSUM", "CLUSTER", "MATCH_PREFIX", "MATCH_EXACT",
-           "Permissions", "READ", "WRITE", "Config", "QuotaholderSync"]
+from dbworker import DBWorker
+
+def create_tables(engine):
+    metadata = MetaData()
+    columns = []
+    columns.append(Column('serial', BigInteger, primary_key=True))
+    config = Table('qh_sync', metadata, *columns, mysql_engine='InnoDB')
+    
+    metadata.create_all(engine)
+    return metadata.sorted_tables
+
+class QuotaholderSync(DBWorker):
+    """QuotaholderSync are entries for syncing with quota holder.
+    """
+
+    def __init__(self, **params):
+        DBWorker.__init__(self, **params)
+        try:
+            metadata = MetaData(self.engine)
+            self.qh_sync = Table('qh_sync', metadata, autoload=True)
+        except NoSuchTableError:
+            tables = create_tables(self.engine)
+            map(lambda t: self.__setattr__(t.name, t), tables)
+
+    def get_lower(self, serial):
+        """Return entries lower than serial."""
+
+        s = select([self.qh_sync.c.serial])
+        s = s.where(self.qh_sync.c.serial < serial)
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return rows
+    
+    def insert_serial(self, serial):
+        """Insert a serial.
+        """
+
+        s = self.qh_sync.insert()
+        r = self.conn.execute(s, serial=serial)
+        inserted_primary_key = r.inserted_primary_key[0]
+        r.close()
+        return inserted_primary_key

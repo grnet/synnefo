@@ -59,7 +59,8 @@ from pithos.api.short_url import encode_url
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
-                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
+                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
+                                 BACKEND_QUEUE_EXCHANGE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  SERVICE_TOKEN, COOKIE_NAME)
@@ -856,7 +857,8 @@ def _get_backend():
                               block_path=BACKEND_BLOCK_PATH,
                               block_umask=BACKEND_BLOCK_UMASK,
                               queue_module=BACKEND_QUEUE_MODULE,
-                              queue_connection=BACKEND_QUEUE_CONNECTION)
+                              queue_hosts=BACKEND_QUEUE_HOSTS,
+                              queue_exchange=BACKEND_QUEUE_EXCHANGE)
     backend.default_policy['quota'] = BACKEND_QUOTA
     backend.default_policy['versioning'] = BACKEND_VERSIONING
     return backend

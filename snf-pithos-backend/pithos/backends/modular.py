@@ -79,7 +79,8 @@ DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_PATH = 'data/'
 DEFAULT_BLOCK_UMASK = 0o022
 #DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
-#DEFAULT_QUEUE_CONNECTION = 'rabbitmq://guest:guest@localhost:5672/pithos'
+#DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
+#DEFAULT_QUEUE_EXCHANGE = 'pithos'
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
@@ -127,15 +128,17 @@ class ModularBackend(BaseBackend):
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
-                 queue_module=None, queue_connection=None):
+                 queue_module=None, queue_hosts=None,
+                 queue_exchange=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
         block_path = block_path or DEFAULT_BLOCK_PATH
         block_umask = block_umask or DEFAULT_BLOCK_UMASK
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
-        #queue_connection = queue_connection or DEFAULT_QUEUE_CONNECTION
-
+        #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
+        #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
+		
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024  # 4MB
 
@@ -165,9 +168,10 @@ class ModularBackend(BaseBackend):
                   'umask': block_umask}
         self.store = self.block_module.Store(**params)
 
-        if queue_module and queue_connection:
+        if queue_module and queue_hosts:
             self.queue_module = load_module(queue_module)
-            params = {'exchange': queue_connection,
+            params = {'hosts': queue_hosts,
+            		  'exchange': queue_exchange,
                       'client_id': QUEUE_CLIENT_ID}
             self.queue = self.queue_module.Queue(**params)
         else:
@@ -1221,15 +1225,15 @@ class ModularBackend(BaseBackend):
         details.update({'user': user})
         logger.debug("_report_object_change: %s %s %s %s", user,
                      account, path, details)
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % (
-            'object',), account, QUEUE_INSTANCE_ID, 'object', path, details))
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',),
+        					  account, QUEUE_INSTANCE_ID, 'object', path, details))
 
     def _report_sharing_change(self, user, account, path, details={}):
         logger.debug("_report_permissions_change: %s %s %s %s",
                      user, account, path, details)
         details.update({'user': user})
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',), account,
-                             QUEUE_INSTANCE_ID, 'sharing', path, details))
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',),
+        					  account, QUEUE_INSTANCE_ID, 'sharing', path, details))
 
     # Policy functions.
 

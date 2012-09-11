@@ -38,7 +38,8 @@ from django.core.management.base import BaseCommand, CommandError
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
-                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
+                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
+                                 BACKEND_QUEUE_EXCHANGE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING)
 from pithos.backends import connect_backend
 
@@ -72,7 +73,8 @@ class Command(BaseCommand):
                                   block_path=BACKEND_BLOCK_PATH,
                                   block_umask=BACKEND_BLOCK_UMASK,
                                   queue_module=BACKEND_QUEUE_MODULE,
-                                  queue_connection=BACKEND_QUEUE_CONNECTION)
+                                  queue_connection=BACKEND_QUEUE_HOSTS,
+                                  queue_exchange=BACKEND_QUEUE_EXCHANGE)
         backend.default_policy['quota'] = BACKEND_QUOTA
         backend.default_policy['versioning'] = BACKEND_VERSIONING
         if quota is not None:

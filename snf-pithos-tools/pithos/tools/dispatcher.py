@@ -35,9 +35,9 @@
 
 import sys
 import logging
+import json
 
-from synnefo.lib.queue import (exchange_connect, exchange_close,
-                               exchange_send, exchange_route, queue_callback, queue_start)
+from synnefo.lib.amqp import AMQPClient
 
 from optparse import OptionParser
 
@@ -94,12 +94,21 @@ def main():
         level=logging.DEBUG if DEBUG else logging.INFO)
     logger = logging.getLogger('dispatcher')
 
-    exchange = 'rabbitmq://%s:%s@%s:%s/%s' % (
-        opts.user, opts.password, opts.host, opts.port, opts.exchange)
-    connection = exchange_connect(exchange)
+    host =  'amqp://%s:%s@%s:%s' % (opts.user, opts.password, opts.host, opts.port)
+    queue = opts.queue
+    key = opts.key
+    exchange = opts.exchange
+    
+    client = AMQPClient(hosts=[host])
+    client.connect()
+
     if opts.test:
-        exchange_send(connection, opts.key, {"test": "0123456789"})
-        exchange_close(connection)
+        client.exchange_declare(exchange=exchange,
+                                type='topic')
+        client.basic_publish(exchange=exchange,
+                             routing_key=key,
+                             body= json.dumps({"test": "0123456789"}))
+        client.close()
         sys.exit()
 
     callback = None
@@ -110,18 +119,26 @@ def main():
             cb_module = sys.modules[cb[0]]
             callback = getattr(cb_module, cb[1])
 
-    def handle_message(msg):
-        print msg
+    def handle_message(client, msg):
         logger.debug('%s', msg)
         if callback:
             callback(msg)
+        client.basic_ack(msg)
 
-    exchange_route(connection, opts.key, opts.queue)
-    queue_callback(connection, opts.queue, handle_message)
+    client.queue_declare(queue=queue)
+    client.queue_bind(queue=queue,
+                      exchange=exchange,
+                      routing_key=key)
+
+    client.basic_consume(queue=queue, callback=handle_message)
+
     try:
-        queue_start(connection)
+        while True:
+            client.basic_wait()
     except KeyboardInterrupt:
         pass
+    finally:
+        client.close()
 
 
 if __name__ == '__main__':

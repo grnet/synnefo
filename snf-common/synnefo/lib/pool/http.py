@@ -1,5 +1,6 @@
 
 from synnefo.lib.pool import ObjectPool
+from select import select
 
 from httplib import (
         HTTPConnection  as http_class,
@@ -16,8 +17,7 @@ _pools = {}
 pool_size = 8
 
 
-USAGE_LIMIT = 25
-RETRY_LIMIT = 100
+USAGE_LIMIT = 1000
 
 
 def init_http_pooling(size):
@@ -57,9 +57,18 @@ class HTTPConnectionPool(ObjectPool):
         conn._use_counter = USAGE_LIMIT
         conn._pool = self
         conn._real_close = conn.close
-        conn.close = instancemethod(put_http_connection,
-                                    conn, type(conn))
+        conn.close = instancemethod(put_http_connection, conn, type(conn))
         return conn
+
+    def _pool_verify(self, conn):
+	if conn is None:
+            return False
+	sock = conn.sock
+        if sock is None:
+            return True
+        if select((conn.sock,), (), (), 0)[0]:
+            return False
+        return True
 
     def _pool_cleanup(self, conn):
         # every connection can be used a finite number of times
@@ -76,18 +85,7 @@ class HTTPConnectionPool(ObjectPool):
         return True
 
 
-def _verify_connection(conn):
-    try:
-        conn.request("HEAD", "/")
-        conn.getresponse().read()
-    except HTTPException:
-        # The connection has died.
-        conn.close()
-        return False
-    return True
-
-
-def get_http_connection(netloc=None, scheme='http'):
+def get_http_connection(netloc=None, scheme='http', pool_size=pool_size):
     if netloc is None:
         m = "netloc cannot be None"
         raise ValueError(m)
@@ -96,21 +94,5 @@ def get_http_connection(netloc=None, scheme='http'):
         pool = HTTPConnectionPool(scheme, netloc, size=pool_size)
         _pools[netloc] = pool
 
-    pool = _pools[netloc]
-
-    conn = None
-    n = 0
-    while conn is None:
-        conn = pool.pool_get()
-        conn._pool = pool
-        if not _verify_connection(conn):
-            # The connection has died, e.g., Keepalive expired
-            conn = None
-            n += 1
-            if n > RETRY_LIMIT:
-                m = ("Could not get live HTTP conn from pool"
-                     "after %d retries." % RETRY_LIMIT)
-                raise RuntimeError(m)
-    
-    return conn
+    return _pools[netloc].pool_get()
 

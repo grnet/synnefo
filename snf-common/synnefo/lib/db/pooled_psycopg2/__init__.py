@@ -35,6 +35,7 @@
 import psycopg2
 from synnefo.lib.pool import ObjectPool
 
+from select import select
 import logging
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,21 @@ class Psycopg2ConnectionPool(ObjectPool):
         logger.info("CREATED: Got connection %s from psycopg2", conn)
         return PooledConnection(self, conn)
 
+    def _pool_verify_execute(pooledconn):
+        try:
+            cursor = pooledconn.cursor()
+            cursor.execute("SELECT 1")
+        except psycopg2.Error:
+            # The connection has died.
+            pooledconn.close()
+            return False
+        return True
+
+    def _pool_verify(self, conn):
+        if select((conn.fileno(),), (), (), 0)[0]:
+            return False
+        return True
+
     def _pool_cleanup(self, pooledconn):
         logger.debug("CLEANING, conn = %d", id(pooledconn))
         try:
@@ -154,17 +170,6 @@ def _get_pool(kw):
     return _pool
 
 
-def _verify_connection(pooledconn):
-    try:
-        cursor = pooledconn.cursor()
-        cursor.execute("SELECT 1")
-    except psycopg2.Error:
-        # The connection has died.
-        pooledconn.close()
-        return False
-    return True
-
-
 def _pooled_connect(**kw):
     poolsize = kw.get("synnefo_poolsize", 0)
     if not poolsize:
@@ -174,18 +179,7 @@ def _pooled_connect(**kw):
     pool = _get_pool(kw)
     logger.debug("GET: Pool: set: %d, semaphore: %d",
                  len(pool._set), pool._semaphore._Semaphore__value)
-    r = None
-    n = 0
-    while not r:
-        r = pool.pool_get()
-        if not _verify_connection(r):
-            logger.error("DEADCONNECTION: Got dead connection %d from pool",
-                         id(r))
-            r = None
-            n += 1
-            if n > RETRY_LIMIT:
-                raise RuntimeError(("Could not get live connection from pool"
-                                    "after %d retries." % RETRY_LIMIT))
+    r = pool.pool_get()
     logger.debug("GOT: Got connection %d from pool", id(r))
     return r
 

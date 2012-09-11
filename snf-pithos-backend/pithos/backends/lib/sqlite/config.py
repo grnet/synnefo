@@ -63,6 +63,6 @@ class Config(DBWorker):
         """Set configuration entry.
         """
 
-        q = "insert into config (key, value) values (?)"
+        q = "insert into config (key, value) values (?, ?)"
         id = self.execute(q, (key, value)).lastrowid
         return id

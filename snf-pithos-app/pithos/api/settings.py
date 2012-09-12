@@ -45,6 +45,10 @@ BACKEND_QUOTA = getattr(
     settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 
+PITHOS_QUOTAHOLDER_URL = getattr(settings,
+                                'PITHOS_QUOTAHOLDER_URL',
+                                'http://127.0.0.1/api/quotaholder/v')
+
 # Update object checksums when using hashmaps.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
 

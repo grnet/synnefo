@@ -61,6 +61,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_UMASK,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE,
+				 PITHOS_QUOTAHOLDER_URL,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  SERVICE_TOKEN, COOKIE_NAME)
@@ -858,7 +859,8 @@ def _get_backend():
                               block_umask=BACKEND_BLOCK_UMASK,
                               queue_module=BACKEND_QUEUE_MODULE,
                               queue_hosts=BACKEND_QUEUE_HOSTS,
-                              queue_exchange=BACKEND_QUEUE_EXCHANGE)
+                              queue_exchange=BACKEND_QUEUE_EXCHANGE,
+			      quotaholder_url=PITHOS_QUOTAHOLDER_URL)
     backend.default_policy['quota'] = BACKEND_QUOTA
     backend.default_policy['versioning'] = BACKEND_VERSIONING
     return backend

@@ -37,13 +37,14 @@ from select import select
 from httplib import (
         HTTPConnection  as http_class,
         HTTPSConnection as https_class,
-        HTTPException,
         ResponseNotReady
 )
 
-from urlparse import urlparse
 from new import instancemethod
 
+import logging
+
+log = logging.getLogger(__name__)
 
 _pools = {}
 pool_size = 8
@@ -59,7 +60,9 @@ def init_http_pooling(size):
 
 def put_http_connection(conn):
     pool = conn._pool
+    log.debug("HTTP-PUT-BEFORE: putting connection %r back to pool %r", conn, pool)
     if pool is None:
+        log.debug("HTTP-PUT: connection %r does not have a pool", conn)
         return
     # conn._pool = None
     pool.pool_put(conn)
@@ -73,6 +76,8 @@ class HTTPConnectionPool(ObjectPool):
     }
 
     def __init__(self, scheme, netloc, size=None):
+        log.debug("INIT-POOL: Initializing pool of size %d, scheme: %s, netloc: %s",
+                 size, scheme, netloc)
         ObjectPool.__init__(self, size=size)
 
         connection_class = self._scheme_to_class.get(scheme, None)
@@ -85,6 +90,7 @@ class HTTPConnectionPool(ObjectPool):
         self.netloc = netloc
 
     def _pool_create(self):
+        log.debug("CREATE-HTTP-BEFORE from pool %r", self)
         conn = self.connection_class(self.netloc)
         conn._use_counter = USAGE_LIMIT
         conn._pool = self
@@ -93,9 +99,10 @@ class HTTPConnectionPool(ObjectPool):
         return conn
 
     def _pool_verify(self, conn):
-	if conn is None:
+        log.debug("VERIFY-HTTP")
+        if conn is None:
             return False
-	sock = conn.sock
+        sock = conn.sock
         if sock is None:
             return True
         if select((conn.sock,), (), (), 0)[0]:
@@ -103,28 +110,34 @@ class HTTPConnectionPool(ObjectPool):
         return True
 
     def _pool_cleanup(self, conn):
+        log.debug("CLEANUP-HTTP")
         # every connection can be used a finite number of times
         conn._use_counter -= 1
 
         # see httplib source for connection states documentation
         if conn._use_counter > 0 and conn._HTTPConnection__state == 'Idle':
             try:
-                resp = conn.getresponse()
+                conn.getresponse()
             except ResponseNotReady:
-               return False
+                log.debug("CLEANUP-HTTP: Not closing connection. Will reuse.")
+                return False
 
+        log.debug("CLEANUP-HTTP: Closing connection. Will not reuse.")
         conn._real_close()
         return True
 
 
 def get_http_connection(netloc=None, scheme='http', pool_size=pool_size):
+    log.debug("HTTP-GET: Getting HTTP connection")
     if netloc is None:
         m = "netloc cannot be None"
         raise ValueError(m)
     # does the pool need to be created?
     if netloc not in _pools:
+        log.debug("HTTP-GET: Creating pool for netloc %s", netloc)
         pool = HTTPConnectionPool(scheme, netloc, size=pool_size)
         _pools[netloc] = pool
 
-    return _pools[netloc].pool_get()
-
+    obj = _pools[netloc].pool_get()
+    log.debug("HTTP-GET: Returning object %r", obj)
+    return obj

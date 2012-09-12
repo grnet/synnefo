@@ -56,7 +56,7 @@ from pithos.api.util import (
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
 from pithos.api.settings import UPDATE_MD5
 
-from pithos.backends.base import NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists, VersionNotExists
+from pithos.backends.base import NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists, VersionNotExists, ContainerExists
 
 from pithos.backends.filter import parse_filters
 
@@ -390,7 +390,7 @@ def container_create(request, v_account, v_container):
         raise Forbidden('Not allowed')
     except ValueError:
         raise BadRequest('Invalid policy header')
-    except NameError:
+    except ContainerExists:
         ret = 202
 
     if ret == 202 and policy:

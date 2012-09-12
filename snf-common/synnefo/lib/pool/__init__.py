@@ -52,6 +52,9 @@ from threading import Semaphore, Lock
 __all__ = [ 'ObjectPool', 'ObjectPoolError',
             'PoolLimitError', 'PoolVerificationError' ]
 
+import logging
+log = logging.getLogger(__name__)
+
 
 class ObjectPoolError(Exception):
     pass
@@ -113,6 +116,12 @@ class ObjectPool(object):
         self._semaphore = Semaphore(size)  # Pool grows up to size limit
         self._mutex = Lock()  # Protect shared _set oject
         self._set = set()
+        log.debug("Initialized pool %r", self)
+
+    def __repr__(self):
+        return ("<pool %d: size=%d, len(_set)=%d, semaphore=%d>" %
+                (id(self), self.size, len(self._set),
+                 self._semaphore._Semaphore__value))
 
     def pool_get(self, blocking=True, timeout=None, create=True, verify=True):
         """Get an object from the pool.
@@ -127,6 +136,7 @@ class ObjectPool(object):
         # timeout argument only supported by gevent and py3k variants
         # of Semaphore. acquire() will raise TypeError if timeout
         # is specified but not supported by the underlying implementation.
+        log.debug("GET: about to get object from pool %r", self)
         kw = {"blocking": blocking}
         if timeout is not None:
             kw["timeout"] = timeout
@@ -158,6 +168,7 @@ class ObjectPool(object):
             raise
 
         # We keep _semaphore acquired, put() will release it
+        log.debug("GOT: object %r from pool %r", obj, self)
         return obj
 
     def pool_put(self, obj):
@@ -169,10 +180,12 @@ class ObjectPool(object):
         but no object returned to the pool set
 
         """
+        log.debug("PUT-BEFORE: about to put object %r back to pool %r", obj, self)
         if obj is not None and not self._pool_cleanup(obj):
             with self._mutex:
                 self._set.add(obj)
         self._semaphore.release()
+        log.debug("PUT-AFTER: finished putting object %r back to pool %r", obj, self)
 
     def _pool_create(self):
         """Create a new object to be used with this pool.

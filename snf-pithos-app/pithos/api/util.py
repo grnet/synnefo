@@ -832,7 +832,7 @@ class PithosBackendPool(ObjectPool):
             return True
 
         backend._use_count = c
-        if backend.trans is not None:
+        if backend.wrapper.trans is not None:
             backend.wrapper.rollback()
         if backend.messages:
             backend.messages = []

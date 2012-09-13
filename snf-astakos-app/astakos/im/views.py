@@ -769,17 +769,26 @@ def group_search(request, extra_context=None, **kwargs):
                 request,
                 queryset,
                 template_name='im/astakosgroup_list.html',
-                extra_context=dict(
-                    form=form,
-                    is_search=True
-                )
-            )
+                extra_context=dict(form=form,
+                                   is_search=True))
     return render_response(
         template='im/astakosgroup_list.html',
         form=form,
         context_instance=get_context(request, extra_context),
         is_search=False
     )
+
+@signed_terms_required
+@login_required
+def group_all(request, extra_context=None, **kwargs):
+    if request.method != 'POST':
+        return HttpResponseBadRequest(_('Bad method'))
+    return object_list(
+                request,
+                AstakosGroup.objects.select_related().all(),
+                template_name='im/astakosgroup_list.html',
+                extra_context=dict(form=AstakosGroupSearchForm(),
+                                   is_search=True))
 
 
 @signed_terms_required

@@ -736,6 +736,8 @@ def group_detail(request, group_id):
                          )
 
 
+@signed_terms_required
+@login_required
 def group_update(request, group_id):
     if request.method != 'POST':
         return HttpResponseBadRequest('Method not allowed.')
@@ -746,7 +748,11 @@ def group_update(request, group_id):
     form = AstakosGroupUpdateForm(request.POST, instance=group)
     if form.is_valid():
         form.save()
-    return group_detail(request, group_id)
+    return object_detail(request,
+                         AstakosGroup.objects.all(),
+                         object_id=group_id,
+                         extra_context={'quota': group.quota,
+                                        'form': form})
 
 @signed_terms_required
 @login_required

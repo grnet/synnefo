@@ -37,7 +37,7 @@ def view(request, appname=None, version=None, callname=None):
             e = CallError.from_exception(e)
             status = 500
 
-        body = e.to_dict()
+        body = json.dumps(e.to_dict())
 
     return HttpResponse(status=status, content=body)
 

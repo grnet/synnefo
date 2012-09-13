@@ -163,7 +163,7 @@ class QuotaholderAPI(Specificator):
     def issue_commission    (
                 self,
                 context     =   Context,
-                entity      =   Entity,
+                target      =   Entity,
                 key         =   Key,
                 clientkey   =   ClientKey,
                 owner       =   Owner,

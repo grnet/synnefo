@@ -25,10 +25,10 @@ def alloc_serial(nr=1):
     try:
         holder = Holder.objects.get(attribute='serial')
     except Holder.DoesNotExist:
-        holder = Holder(attribute='serial', inval=1)
+        holder = Holder(attribute='serial', intval=1)
 
-    serial = holder.serial
-    holder.serial += nr
+    serial = holder.intval
+    holder.intval += nr
     holder.save()
 
     return serial

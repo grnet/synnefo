@@ -2,7 +2,7 @@
 
 from synnefo.lib.pool.http import get_http_connection
 from urlparse import urlparse
-from commissioning import Callpoint
+from commissioning import Callpoint, CallError
 from commissioning.utils.clijson import clijson
 
 import logging
@@ -41,7 +41,7 @@ def debug(fmt, *args):
     global _logger
     if _logger is None:
         init_logger_stderr('logger')
-        _logget.setLevel(logging.DEBUG)
+        _logger.setLevel(logging.DEBUG)
     _logger.debug(fmt % args)
 
 
@@ -103,8 +103,12 @@ class HTTP_API_Client(Callpoint):
                     body = json_loads(body)
                 return body
             else:
-                error = json_loads(body)
-		exc = CallError.from_dict(error)
+                try:
+                    error = json_loads(body)
+                except ValueError, e:
+                    exc = CallError(body, call_error='ValueError')
+                else:
+                    exc = CallError.from_dict(error)
                 raise exc
         finally:
             if conn is not None:

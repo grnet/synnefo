@@ -290,9 +290,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         try:
             t = Entity.objects.get(entity=target)
         except Entity.DoesNotExist:
-            create_entity = ((entity, owner, key, ownerkey),)
-            rejected = self.create_entity(  context=context,
-                                            create_entity=create_entity )
+            create_entity = ((target, owner, key, ownerkey),)
+            rejected = self.create_entity(context       =   context,
+                                          create_entity =   create_entity)
             if rejected:
                 raise NoEntityError("No target entity '%s'" % (target,))
 
@@ -302,14 +302,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 m = "Invalid key for target entity '%s'" % (target,)
                 raise InvalidKeyError(m)
 
-        commission = Commission.objects.create( entity=target,
-                                                clientkey=clientkey )
+        create = Commission.objects.create
+        commission = create(entity_id=target, clientkey=clientkey)
         serial = commission.serial
-        release = 0
-        if quantity < 0:
-            release = 1
 
         for entity, resource, quantity in provisions:
+            release = 0
+            if quantity < 0:
+                release = 1
+
             try:
                 h = Holding.objects.get(entity=entity, resource=resource)
             except Holding.DoesNotExist:

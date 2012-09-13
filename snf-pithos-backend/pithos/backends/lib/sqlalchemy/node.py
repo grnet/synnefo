@@ -330,10 +330,14 @@ class Node(DBWorker):
         self.statistics_update(parent, -nr, size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, size, mtime, cluster)
 
-        s = select([self.versions.c.hash])
+        s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
         r = self.conn.execute(s)
-        hashes = [row[0] for row in r.fetchall()]
+        hashes = []
+        serials = []
+        for row in r.fetchall():
+            hashes += [row[0]]
+            serials += [row[1]]
         r.close()
 
         #delete versions
@@ -352,7 +356,7 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
 
-        return hashes, size
+        return hashes, size, serials
 
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
@@ -378,10 +382,14 @@ class Node(DBWorker):
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
 
-        s = select([self.versions.c.hash])
+        s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
         r = self.conn.execute(s)
-        hashes = [r[0] for r in r.fetchall()]
+        hashes = []
+        serials = []
+        for row in r.fetchall():
+            hashes += [row[0]]
+            serials += [row[1]]
         r.close()
 
         #delete versions
@@ -400,7 +408,7 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
 
-        return hashes, size
+        return hashes, size, serials
 
     def node_remove(self, node):
         """Remove the node specified.

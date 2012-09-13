@@ -64,6 +64,8 @@ urlpatterns = patterns('astakos.im.views',
                            'group_list', {}, name='group_list'),
                        url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {},
                            name='group_detail'),
+                       url(r'^group/update/(?P<group_id>\d+)/?$',
+                           'group_update', {}, name='group_update'),
                        url(r'^group/search/?$',
                            'group_search', {}, name='group_search'),
                        url(

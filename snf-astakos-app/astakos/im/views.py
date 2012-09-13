@@ -56,21 +56,24 @@ from django.views.generic.create_update import (create_object, delete_object,
                                                 get_model_and_form_class
                                                 )
 from django.views.generic.list_detail import object_list, object_detail
+from django.http import HttpResponseBadRequest
 
 from astakos.im.models import (
     AstakosUser, ApprovalTerms, AstakosGroup, Resource,
     EmailChange, GroupKind, Membership)
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
-from astakos.im.forms import (
-    LoginForm, InvitationForm, ProfileForm, FeedbackForm,
-    SignApprovalTermsForm, ExtendedPasswordChangeForm, EmailChangeForm,
-    AstakosGroupCreationForm, AstakosGroupSearchForm
-)
+from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
+                              FeedbackForm, SignApprovalTermsForm,
+                              ExtendedPasswordChangeForm, EmailChangeForm,
+                              AstakosGroupCreationForm, AstakosGroupSearchForm,
+                              AstakosGroupUpdateForm)
 from astakos.im.functions import (send_feedback, SendMailError,
-                                  invite as invite_func, logout as auth_logout, activate as activate_func,
-                                  switch_account_to_shibboleth, send_admin_notification, SendNotificationError
-                                  )
+                                  invite as invite_func, logout as auth_logout,
+                                  activate as activate_func,
+                                  switch_account_to_shibboleth,
+                                  send_admin_notification,
+                                  SendNotificationError)
 from astakos.im.settings import (
     COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
     LOGGING_LEVEL
@@ -80,7 +83,8 @@ from astakos.im.tasks import request_billing
 logger = logging.getLogger(__name__)
 
 
-def render_response(template, tab=None, status=200, reset_cookie=False, context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, reset_cookie=False,
+                    context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
     keyword argument and returns an ``django.http.HttpResponse`` with the
@@ -723,13 +727,26 @@ def group_detail(request, group_id):
         group = AstakosGroup.objects.select_related().get(id=group_id)
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
+    form = AstakosGroupUpdateForm(instance=group)
     return object_detail(request,
                          AstakosGroup.objects.all(),
                          object_id=group_id,
-                         extra_context={'quota': group.quota}
+                         extra_context={'quota': group.quota,
+                                        'form': form}
                          )
 
 
+def group_update(request, group_id):
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Method not allowed.')
+    try:
+        group = AstakosGroup.objects.select_related().get(id=group_id)
+    except AstakosGroup.DoesNotExist:
+        return HttpResponseBadRequest(_('Invalid group.'))
+    form = AstakosGroupUpdateForm(request.POST, instance=group)
+    if form.is_valid():
+        form.save()
+    return group_detail(request, group_id)
 
 @signed_terms_required
 @login_required

@@ -36,35 +36,13 @@
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
-			<!-- demo form-->
-			<form class="innerlabels" method="post" action=""><div style="display:none"><input type="hidden" value="d1d4677634f858843ca84e2cac5bbebc" name="csrfmiddlewaretoken" autocomplete="off"></div>
-	           
-	            <div class="form-errors all"></div>
-				<div class="form-row   ">
-				        
-				     <p class="clearfix ">
-				        <label for="id_homepage">Homepage</label>
-				        <input type="text" id="id_homepage" name="homepage" autocomplete="off" value="{{ object.homepage }}">
-				        <span class="extra-img">&nbsp;</span>
-				        
-				     </p>
-				</div>
-				
-				<div class="form-row   ">
-				        
-				     <p class="clearfix ">
-				        <label for="id_desc">Description</label>
-				        <textarea name="desc" cols="40" rows="10" id="id_desc">{{ object.desc }}</textarea>
-				        <span class="extra-img">&nbsp;</span>
-				        
-				     </p>
-				</div>
-				 
-				<div class="form-row submit">
-				     <input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
-				</div>
-				</form>
-			<!-- end of demo form-->
+		<form action="{% url astakos.im.views.group_update object.id %}" method="post"
+	            class="withlabels">{% csrf_token %}
+	            {% include "im/form_render.html" %}
+	            <div class="form-row submit">
+	                <input type="submit" class="submit altcol" value="SUBMIT" />
+	            </div>
+	    </form>
 		</div>
 	 </div>
 	 <div class="full-dotted">
@@ -72,8 +50,6 @@
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
 		 	<dd>{{object.name}}&nbsp;</dd>
-		 	<dt>Homepage</dt>
-		 	<dd>{{object.homepage}}&nbsp;</dd>
 		 	<dt>Type</dt>
 		 	<dd>{{object.kind|capfirst}}&nbsp;</dd>
 		 	<dt>Issue date:</dt>

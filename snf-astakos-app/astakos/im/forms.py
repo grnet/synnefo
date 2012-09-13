@@ -567,6 +567,10 @@ class AstakosGroupCreationForm(forms.ModelForm):
                     continue
                 yield (suffix, value)
 
+class AstakosGroupUpdateForm(forms.ModelForm):
+    class Meta:
+        model = AstakosGroup
+        fields = ('homepage', 'desc')
 
 class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')

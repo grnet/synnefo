@@ -1,16 +1,5 @@
 {% extends 'im/base_two_cols.html' %}
 
-{% block extra_messages %}
-    {% if not messages %}
-        {% for msg_type, msg in GLOBAL_MESSAGES.items %}
-            <li class="{{ msg_type }}">{{ msg|safe }}</li>
-        {% endfor %}
-        {% for msg_type, msg in SIGNUP_MESSAGES.items %}
-            <li class="{{ msg_type }}">{{ msg|safe }}</li>
-        {% endfor %}
-    {% endif %}
-{% endblock %}
-
 {% block page.title %}
     Signup
 {% endblock %}

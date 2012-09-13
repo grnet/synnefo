@@ -62,8 +62,21 @@ def media(request):
 
 
 def custom_messages(request):
-    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or
-                              LOGIN_MESSAGES or PROFILE_MESSAGES)
+    global GLOBAL_MESSAGES, SIGNUP_MESSAGES, LOGIN_MESSAGES, PROFILE_MESSAGES
+
+    # keep backwards compatibility with dict settings
+    if type(GLOBAL_MESSAGES) == dict:
+        GLOBAL_MESSAGES = GLOBAL_MESSAGES.items()
+    if type(SIGNUP_MESSAGES) == dict:
+        SIGNUP_MESSAGES = SIGNUP_MESSAGES.items()
+    if type(LOGIN_MESSAGES) == dict:
+        LOGIN_MESSAGES = LOGIN_MESSAGES.items()
+    if type(PROFILE_MESSAGES) == dict:
+        PROFILE_MESSAGES = PROFILE_MESSAGES.items()
+
+    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or \
+            LOGIN_MESSAGES or PROFILE_MESSAGES)
+
     return {
         'GLOBAL_MESSAGES': GLOBAL_MESSAGES,
         'SIGNUP_MESSAGES': SIGNUP_MESSAGES,

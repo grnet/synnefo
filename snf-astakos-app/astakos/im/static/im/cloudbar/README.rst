@@ -48,11 +48,11 @@ Example
 
 .. codeblock:: javascript
     
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
     <script>
         var CLOUDBAR_COOKIE_NAME = '_pithos2_a';
         var CLOUDBAR_ACTIVE_SERVICE = 'cloud';
-        var CLOUDBAR_LOCATION = "http://accounts.cloud.grnet.gr/cloudbar/";
+        var CLOUDBAR_LOCATION = "https://accounts.cloud.grnet.gr/cloudbar/";
 
         $(document).ready(function(){
             $.getScript(CLOUDBAR_LOC + 'cloudbar.js');

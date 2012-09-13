@@ -116,34 +116,10 @@ $(document).ready(function() {
 	$('select').dropkick();
  
     
-    $('.top-msg .success').parents('.top-msg').css(
-    	{
-    		backgroundColor: '#77C596',
-    		color: '#fff'
-    	}
-    );
-    
-    $('.top-msg .error').parents('.top-msg').css(
-    	{
-    		backgroundColor: '#EF4F54',
-    		color: '#fff'
-    	}
-    );
-    
-    
-    $('.top-msg .warning').parents('.top-msg').css(
-    	{
-    		backgroundColor: '#F6921E',
-    		color: '#fff'
-    	}
-    );
-    
-    $('.top-msg .info').parents('.top-msg').css(
-    	{
-    		backgroundColor: '#C3C3B9',
-    		color: '#fff'
-    	}
-    );
+    $('.top-msg .success').parents('.top-msg').addClass('success');
+    $('.top-msg .error').parents('.top-msg').addClass('error');
+    $('.top-msg .warning').parents('.top-msg').addClass('warning');
+    $('.top-msg .info').parents('.top-msg').addClass('info');
     
     // clouds homepage animation
     $('#animation a').hover(
@@ -227,4 +203,4 @@ $(window).resize(function() {
 		$('.widjets  li div').equalHeights();
 	}
 
-}); 
+});

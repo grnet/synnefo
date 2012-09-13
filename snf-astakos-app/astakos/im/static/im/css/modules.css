@@ -30,6 +30,12 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg +.mainlogo                             { margin-top:-73px;}
 .top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em; font-weight:bold; border:0 none; color:#fff; text-decoration:none;}
 .top-msg .close:hover                           { color:#000;}
+.top-msg.success                             	{ background-color:#77C596; color: #fff}
+.top-msg.error                              	{ background-color:#EF4F54; color: #fff}
+.top-msg.warning                                { background-color:#F6921E; color: #fff}
+.top-msg.info                                 	{ background-color:#C3C3B9; color: #fff}
+.top-msg.warning a                              { color: #3582AC}
+.top-msg.info a                                 { color: #222}
 
 /* container */
 .container .wrapper                             { padding-bottom:100px;}
@@ -317,6 +323,7 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .billing .resource-cat-2.filter-item a:hover	{ color:#4085A5 }
 
 .table_sorting tr th							{ cursor:pointer; }
+
 .table_sorting tr th:hover						{ text-decoration:underline }
 
 table.alt-style tr.tr1 td,

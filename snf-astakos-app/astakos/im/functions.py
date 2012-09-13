@@ -195,7 +195,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
     Raises SMTPException, socket.error
     """
-    subject = _('Welcome to %s alpha2 testing' % SITENAME)
+    subject = _(GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                                'user': user,
                                'url': urljoin(BASEURL, reverse('index')),
@@ -214,7 +214,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
-    subject = _("Feedback from %s alpha2 testing" % SITENAME)
+    subject = _(FEEDBACK_EMAIL_SUBJECT)
     from_email = user.email
     recipient_list = [DEFAULT_CONTACT_EMAIL]
     content = render_to_string(email_template_name, {

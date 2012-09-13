@@ -55,6 +55,7 @@ from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
                                  RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL,
                                  LOGGING_LEVEL
                                  )
+
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -176,7 +177,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         ro = ('email', 'username',)
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
-
+    
     def save(self, commit=True):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
         level = user.invitation.inviter.level + 1
@@ -193,7 +194,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         model = AstakosUser
         fields = ("email", "first_name", "last_name",
                   "third_party_identifier", "has_signed_terms")
-
+    
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
@@ -218,7 +219,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
                 % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
                 mark_safe("I agree with %s" % terms_link_html)
-
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
@@ -273,7 +274,7 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
 class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
     additional_email = forms.CharField(
         widget=forms.HiddenInput(), label='', required=False)
-
+    
     def __init__(self, *args, **kwargs):
         super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder.append('additional_email')
@@ -282,7 +283,7 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         field = self.fields[name]
         self.initial['additional_email'] = self.initial.get(name,
                                                             field.initial)
-
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         for user in AstakosUser.objects.filter(email=email):
@@ -304,7 +305,7 @@ class LoginForm(AuthenticationForm):
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
     recaptcha_response_field = forms.CharField(
         widget=RecaptchaWidget, label='')
-
+    
     def __init__(self, *args, **kwargs):
         was_limited = kwargs.get('was_limited', False)
         request = kwargs.get('request', None)
@@ -322,7 +323,7 @@ class LoginForm(AuthenticationForm):
         if was_limited and RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
-
+    
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
             self.validate_captcha()
@@ -340,7 +341,7 @@ class LoginForm(AuthenticationForm):
         if not check.is_valid:
             raise forms.ValidationError(
                 _('You have not entered the correct words'))
-
+    
     def clean(self):
         super(LoginForm, self).clean()
         if self.user_cache and self.user_cache.provider not in ('local', ''):

@@ -69,19 +69,19 @@ RE_USER_EMAIL_PATTERNS = getattr(
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of login page'}
-LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', {})
+LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', [])
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of signup page'}
-SIGNUP_MESSAGES = getattr(settings, 'ASTAKOS_SIGNUP_MESSAGES', {})
+SIGNUP_MESSAGES = getattr(settings, 'ASTAKOS_SIGNUP_MESSAGES', [])
 
 # Messages to display on login page header
 # e.g. {'warning': 'This warning message will be displayed on the top of profile page'}
-PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', {})
+PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', [])
 
 # Messages to display on all pages
 # e.g. {'warning': 'This warning message will be displayed on the top of every page'}
-GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', {})
+GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', [])
 
 # messages to display as extra actions in account forms
 # e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
@@ -107,3 +107,21 @@ QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
 
 # Set the billing URI
 AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
+
+# Configurable email subjects
+INVITATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
+        'Invitation to %s alpha2 testing' % SITENAME)
+GREETING_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_GREETING_EMAIL_SUBJECT',
+        'Welcome to %s alpha2 testing' % SITENAME)
+FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
+        'Feedback from %s alpha2 testing' % SITENAME)
+VERIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
+        '%s alpha2 testing account activation is needed' % SITENAME)
+ADMIN_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT',
+        '%s alpha2 testing account created (%%(user)s)' % SITENAME)
+HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
+        '%s alpha2 testing account activated (%%(user)s)' % SITENAME)
+EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
+        'Email change on %s alpha2 testing' % SITENAME)
+PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
+        'Password reset on %s alpha2 testing' % SITENAME)

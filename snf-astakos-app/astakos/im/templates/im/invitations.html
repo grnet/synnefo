@@ -15,7 +15,7 @@
 	    {% endwith %}
 	
 	    <div class="form-row submit">
-	        <input type="submit" class="submit altcol" value="SEND" />
+	        <input type="submit" class="submit altcol" value="INVITE" />
 	    </div>
 	  </form>
 	  {% endif %}
@@ -26,7 +26,7 @@
 	    
 	    <h2>You have <em>{{ inviter.invitations }}</em> invitation{{ inviter.invitations|pluralize }} left.</h2>
 	    {% if sent|length %}
-	      <table class="zebra-striped id-sorted">
+	      <table class="alt-style">
 	        <thead>
 	          <tr>
 	            <th>Email</th>
@@ -50,14 +50,5 @@
 	</div>     
 
 
-<div class="rightcol">
- {% if inviter.invitations %}
-  <form action="{% url invite %}" method="post"
-    class="innerlabels">{% csrf_token %}
-    <h2>INVITE SOMEONE ELSE</h2>
-    {% with invitation_form as form %}
-    {% include "im/form_render.html" %}
-    {% endwith %}
- {% endif %}
-{% endblock %}
 
+{% endblock %}

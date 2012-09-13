@@ -699,7 +699,8 @@ def group_add(request, kind_name='default'):
     )
     t = template_loader.get_template(template_name)
     c = RequestContext(request, {
-        'form': form
+        'form': form,
+        'kind': kind,
     }, context_processors)
     return HttpResponse(t.render(c))
 

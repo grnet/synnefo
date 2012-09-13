@@ -225,7 +225,7 @@ table.alt-style tr td:first-child,
 table.alt-style tr th:first-child				{ padding-left:5px; }
 table.alt-style tr td a							{ margin:0 0 0 20px; }
 table.alt-style tr td:first-child a				{ margin:0; }
-.content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto;}
+.content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 }
 dl.alt-style  									{ width:500px; }
 dl.alt-style dt									{ width:50%; float:left; color:#3582AC; font-weight:normal;}
@@ -318,3 +318,16 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 
 .table_sorting tr th							{ cursor:pointer; }
 .table_sorting tr th:hover						{ text-decoration:underline }
+
+table.alt-style tr.tr1 td,
+table.alt-style tr.tmore1 td					{ background:#F2F2F2 }
+table.alt-style tr.tr2 td,
+table.alt-style tr.tmore2 td					{ background:#fff }
+table.alt-style tr td.info-td					{ padding:5px; }
+table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
+table.alt-style tr td a.more-info				{ display:block; float:left; width:17px; height:16px; background:url(../images/plus-minus.png) no-repeat 0 0; margin-right:5px; }
+table.alt-style tr td a.more-info:hover			{ background-image:url(../images/plus-minus-hover.png); text-decoration:none;}
+table.alt-style tr td a.open					{ background-position:-16px 0} 
+
+.projects .details a.edit						{ float:right; }
+.projects .editable form textarea				{ width:70%; height:50px; max-width:70%;}

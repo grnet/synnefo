@@ -2,9 +2,10 @@
 from django.http import HttpResponse
 from django.db import transaction 
 from django.conf import settings
-from commissioning import CommissionException, get_callpoint
+from commissioning import CallError, get_callpoint
 
 import json
+from traceback import format_exc
 
 def _get_body(request):
     body = request.raw_post_data
@@ -29,14 +30,14 @@ def view(request, appname=None, version=None, callname=None):
         if body is None:
             body = ''
         status = 200
-    except CommissionException, e:
-        if hasattr(callpoint, 'http_exception'):
-            status, body = callpoint.http_exception(e)
-        else:
-            from traceback import print_exc
-            print_exc()
-            raise e
-            status, body = 500, repr(e)
+    except Exception, e:
+        status = 450
+        if not isinstance(e, CallError):
+            e.args += (''.join(format_exc()),)
+            e = CallError.from_exception(e)
+            status = 500
+
+        body = e.to_dict()
 
     return HttpResponse(status=status, content=body)
 

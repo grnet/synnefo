@@ -47,15 +47,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return call_fn(**data)
 
-    @classmethod
-    def http_exception(cls, exc):
-        if not isinstance(exc, CommissionException):
-            raise exc
-
-        body = str(exc.args)
-        status = cls.http_exc_lookup.get(type(exc), 400)
-        return status, body
-
     def create_entity(self, context={}, create_entity=()):
         rejected = []
         append = rejected.append
@@ -161,7 +152,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             if h.entity.key != key:
                 continue
 
-            append((h.entity, h.resource, h.policy,
+            append((h.entity.entity, h.resource, h.policy,
                     h.imported, h.exported, h.flags))
 
         return holdings

@@ -41,6 +41,7 @@ def debug(fmt, *args):
     global _logger
     if _logger is None:
         init_logger_stderr('logger')
+        _logget.setLevel(logging.DEBUG)
     _logger.debug(fmt % args)
 
 
@@ -94,7 +95,7 @@ class HTTP_API_Client(Callpoint):
                     break
                 body += s
 
-            debug("\n%r\n<<<\n", body)
+            debug("\n%s\n<<<\n", body[:128])
 
             status = int(resp.status)
             if status == 200:
@@ -102,9 +103,9 @@ class HTTP_API_Client(Callpoint):
                     body = json_loads(body)
                 return body
             else:
-                return body
-
-            raise IOError("Call Failed", str(resp.status))
+                error = json_loads(body)
+		exc = CallError.from_dict(error)
+                raise exc
         finally:
             if conn is not None:
                 conn.close()

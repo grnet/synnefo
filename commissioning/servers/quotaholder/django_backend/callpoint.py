@@ -11,7 +11,7 @@ from commissioning.utils.newname import newname
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey, Q
 from django.db import transaction, IntegrityError
 from .models import (Holder, Entity, Policy, Holding,
-                     Commission, Provision, ProvisionLog)
+                     Commission, Provision, ProvisionLog, now)
 
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
@@ -397,90 +397,90 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                         reason              =   reason)
 
     def accept_commission(self, context={}, clientkey=None,
-                                serial=None, reason=''):
-        try:
-            c = Commission.objects.get(clientkey=clientkey, serial=serial)
-        except Commission.DoesNotExist:
-            return
-
-        t = c.entity
-        log_time = now()
-
-        provisions = Provision.objects.filter(  clientkey=clientkey,
-                                                serial=serial       )
-        for pv in provisions:
+                                serials=(), reason=''):
+        for serial in serials:
             try:
-                h = Holding.objects.get(entity=pv.entity.entity,
-                                        resource=pv.resource    )
-                th = Holding.objects.get(entity=t, resource=pv.resource)
-            except Holding.DoesNotExist:
-                m = "Corrupted provision"
-                raise CorruptedError(m)
+                c = Commission.objects.get(clientkey=clientkey, serial=serial)
+            except Commission.DoesNotExist:
+                return
 
-            quantity = pv.quantity
-            release = 0
-            if quantity < 0:
-                release = 1
+            t = c.entity
+            log_time = now()
 
-            if release:
-                h.regained -= quantity
-                th.released -= quantity
-            else:
-                h.exported += quantity
-                th.imported += quantity
+            provisions = Provision.objects.filter(serial=serial)
+            for pv in provisions:
+                try:
+                    h = Holding.objects.get(entity=pv.entity.entity,
+                                            resource=pv.resource    )
+                    th = Holding.objects.get(entity=t, resource=pv.resource)
+                except Holding.DoesNotExist:
+                    m = "Corrupted provision"
+                    raise CorruptedError(m)
 
-            reason = 'ACCEPT:' + reason[-121:]
-            self._log_provision(serial, h, th, pv, log_time, reason)
-            h.save()
-            th.save()
-            pv.delete()
+                quantity = pv.quantity
+                release = 0
+                if quantity < 0:
+                    release = 1
+
+                if release:
+                    h.regained -= quantity
+                    th.released -= quantity
+                else:
+                    h.exported += quantity
+                    th.imported += quantity
+
+                reason = 'ACCEPT:' + reason[-121:]
+                self._log_provision(serial, h, th, pv, log_time, reason)
+                h.save()
+                th.save()
+                pv.delete()
 
         return
 
     def reject_commission(self, context={}, clientkey=None,
-                                serial=None, reason=''):
-        try:
-            c = Commission.objects.get(clientkey=clientkey, serial=serial)
-        except Commission.DoesNotExist:
-            return
-
-        t = c.entity
-
-        provisions = Provision.objects.filter(  clientkey=clientkey,
-                                                serial=serial       )
-        for pv in provisions:
+                                serials=(), reason=''):
+        for serial in serials:
             try:
-                h = Holding.objects.get(entity=pv.entity.entity,
-                                        resource=pv.resource    )
-                th = Holding.objects.get(entity=t, resource=pv.resource)
-            except Holding.DoesNotExist:
-                m = "Corrupted provision"
-                raise CorruptedError(m)
+                c = Commission.objects.get(clientkey=clientkey, serial=serial)
+            except Commission.DoesNotExist:
+                return
 
-            quantity = pv.quantity
-            release = 0
-            if quantity < 0:
-                release = 1
+            t = c.entity
 
-            if release:
-                h.regaining += quantity
-                th.releasing += quantity
-            else:
-                h.exporting -= quantity
-                th.importing -= quantity
+            provisions = Provision.objects.filter(serial=serial)
+            for pv in provisions:
+                try:
+                    h = Holding.objects.get(entity=pv.entity.entity,
+                                            resource=pv.resource)
+                    th = Holding.objects.get(entity=t, resource=pv.resource)
+                except Holding.DoesNotExist:
+                    m = "Corrupted provision"
+                    raise CorruptedError(m)
 
-            source_allocated = h.exported - h.regained
-            source_available = (+ h.policy.quantity + h.imported
-                                - h.released - source_allocated)
-            target_allocated = th.exported - th.regained
-            target_available = (+ th.policy.quantity + th.imported
-                                - th.released - target_allocated)
+                quantity = pv.quantity
+                release = 0
+                if quantity < 0:
+                    release = 1
 
-            reason = 'REJECT:' + reason[-121:]
-            self._log_provision(serial, h, th, pv, log_time, reason)
-            h.save()
-            th.save()
-            pv.delete()
+                if release:
+                    h.regaining += quantity
+                    th.releasing += quantity
+                else:
+                    h.exporting -= quantity
+                    th.importing -= quantity
+
+                source_allocated = h.exported - h.regained
+                source_available = (+ h.policy.quantity + h.imported
+                        - h.released - source_allocated)
+                target_allocated = th.exported - th.regained
+                target_available = (+ th.policy.quantity + th.imported
+                        - th.released - target_allocated)
+
+                reason = 'REJECT:' + reason[-121:]
+                self._log_provision(serial, h, th, pv, log_time, reason)
+                h.save()
+                th.save()
+                pv.delete()
 
         return
 

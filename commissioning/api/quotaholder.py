@@ -177,7 +177,7 @@ class QuotaholderAPI(Specificator):
                 self,
                 context     =   Context,
                 clientkey   =   ClientKey,
-                serial      =   Serial
+                serials     =   ListOf(Serial)
         ):
 
         return Nothing
@@ -186,7 +186,7 @@ class QuotaholderAPI(Specificator):
                 self,
                 context     =   Context,
                 clientkey   =   ClientKey,
-                serial      =   Serial
+                serials     =   ListOf(Serial)
         ):
 
         return Nothing

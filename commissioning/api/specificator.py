@@ -144,6 +144,8 @@ class Integer(Canonical):
             except Exception:
                 m = "%s: cannot convert '%s' to long" % (self, shorts(item))
                 raise CanonifyException(m)
+        except TypeError, e:
+            m = "%s: cannot convert '%s' to long" % (self, shorts(item))
 
         optget = self.opts.get
         minimum = optget('minimum', None)
@@ -453,7 +455,7 @@ class Args(Canonical):
 
         try:
             for n, c in self.kw.items():
-		t = item[n] if n in item else None
+                t = item[n] if n in item else None
                 canonified[n] = c(t)
         except KeyError:
             m = ("%s: Argument '%s' not found in '%s'" 

@@ -75,7 +75,7 @@ class Holding(Model):
 from datetime import datetime
 
 def now():
-    return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')[:24]
+    return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:24]
 
 
 class Commission(Model):

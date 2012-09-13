@@ -39,11 +39,11 @@ import utils
 from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
-from synnefo.logic.ippool import IPPool
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
 from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
+from synnefo.db import pools
 
 BACKEND_CLIENTS = {}  # {hash:Backend client}
 BACKEND_HASHES = {}   # {Backend.id:hash}
@@ -537,10 +537,14 @@ class Network(models.Model):
             self.deleted = True
 
             if self.mac_prefix:
-                MacPrefixPool.set_available(self.mac_prefix)
+                mac_pool = MacPrefixPoolTable.get_pool()
+                mac_pool.put(self.mac_prefix)
+                mac_pool.save()
 
             if self.link and self.type == 'PRIVATE_VLAN':
-                BridgePool.set_available(self.link)
+                bridge_pool = BridgePoolTable.get_pool()
+                bridge_pool.put(self.link)
+                bridge_pool.save()
 
         self.save()
 
@@ -548,7 +552,9 @@ class Network(models.Model):
         super(Network, self).__init__(*args, **kwargs)
         if not self.mac_prefix:
             # Allocate a MAC prefix for just created Network instances
-            mac_prefix = MacPrefixPool.get_available().value
+            mac_pool = MacPrefixPoolTable.get_pool()
+            mac_prefix = mac_pool.get()
+            mac_pool.save()
             self.mac_prefix = mac_prefix
 
     def create_backend_network(self, backend=None):
@@ -563,7 +569,7 @@ class Network(models.Model):
         if self.ip_pool:
             return self.ip_pool
         else:
-            self.ip_pool = IPPool(self)
+            self.ip_pool = pools.IPPool(self)
             return self.ip_pool
 
     def reserve_address(self, address, pool=None):
@@ -681,78 +687,35 @@ class NetworkInterface(models.Model):
         return '%s@%s' % (self.machine.name, self.network.name)
 
 
-class Pool(models.Model):
-    """ Abstract class modeling a generic pool of resources
+class PoolTable(models.Model):
+    available_map = models.TextField(default="", null=False)
+    reserved_map = models.TextField(default="", null=False)
+    size = models.IntegerField(null=False)
 
-        Subclasses must implement 'value_from_index' method which
-        converts and index(Integer) to an arbitrary Char value.
-
-        Methods of this class must be invoked inside a transaction
-        to ensure consistency of the pool.
-    """
-    available = models.BooleanField(default=True, null=False)
-    index = models.IntegerField(null=False, unique=True)
-    value = models.CharField(max_length=128, null=False, unique=True)
-    max_index = 0
+    # Optional Fields
+    base = models.CharField(null=True, max_length=32)
+    offset = models.IntegerField(null=True)
 
     objects = ForUpdateManager()
 
     class Meta:
         abstract = True
-        ordering = ['index']
 
     @classmethod
-    def get_available(cls):
+    def get_pool(cls):
         try:
-            entry = cls.objects.select_for_update().filter(available=True)[0]
-            entry.available = False
-            entry.save()
-            return entry
+            pool_row = cls.objects.select_for_update().all()[0]
+            return pool_row.pool
         except IndexError:
-            return cls.generate_new()
+            raise pools.EmptyPool
 
-    @classmethod
-    def generate_new(cls):
-        try:
-            last = cls.objects.order_by('-index')[0]
-            index = last.index + 1
-        except IndexError:
-            index = 1
-
-        if index <= cls.max_index:
-            return cls.objects.create(index=index,
-                                      value=cls.value_from_index(index),
-                                      available=False)
-
-        raise Pool.PoolExhausted()
-
-    @classmethod
-    def set_available(cls, value):
-        entry = cls.objects.select_for_update().get(value=value)
-        entry.available = True
-        entry.save()
-
-    class PoolExhausted(Exception):
-        pass
+    @property
+    def pool(self):
+        return self.manager(self)
 
 
-class BridgePool(Pool):
-    max_index = snf_settings.PRIVATE_PHYSICAL_VLAN_MAX_NUMBER
+class BridgePoolTable(PoolTable):
+    manager = pools.BridgePool
 
-    @staticmethod
-    def value_from_index(index):
-        return snf_settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + str(index)
-
-
-class MacPrefixPool(Pool):
-    max_index = snf_settings.MAC_POOL_LIMIT
-
-    @staticmethod
-    def value_from_index(index):
-        """Convert number to mac prefix
-
-        """
-        base = snf_settings.MAC_POOL_BASE
-        a = hex(int(base.replace(":", ""), 16) + index).replace("0x", '')
-        mac_prefix = ":".join([a[x:x + 2] for x in xrange(0, len(a), 2)])
-        return mac_prefix
+class MacPrefixPoolTable(PoolTable):
+    manager = pools.MacPrefixPool

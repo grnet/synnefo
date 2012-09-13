@@ -46,7 +46,8 @@ from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import (BadRequest, Unauthorized,
                                 NetworkInUse, OverLimit)
-from synnefo.db.models import Network, Pool
+from synnefo.db.models import Network
+from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
 
 
@@ -198,7 +199,7 @@ def create_network(request):
                 link=link,
                 action='CREATE',
                 state='PENDING')
-    except Pool.PoolExhausted:
+    except EmptyPool:
         raise OverLimit('Network count limit exceeded.')
 
     # Create BackendNetwork entries for each Backend

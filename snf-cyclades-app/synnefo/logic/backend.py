@@ -40,7 +40,8 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
-from synnefo.logic import utils, ippool
+from synnefo.logic import utils
+from synnefo.db.pools import IPPool
 from synnefo.api.faults import OverLimit
 from synnefo.api.util import backend_public_networks, get_network_free_address
 from synnefo.util.rapi import GanetiRapiClient
@@ -366,7 +367,7 @@ def allocate_public_address(vm):
         try:
             address = get_network_free_address(network)
             return (network, address)
-        except ippool.IPPool.IPPoolExhausted:
+        except IPPool.IPPoolExhausted:
             pass
     return (None, None)
 

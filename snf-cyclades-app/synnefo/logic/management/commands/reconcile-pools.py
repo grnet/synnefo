@@ -30,7 +30,7 @@
 from django.core.management.base import BaseCommand
 
 from synnefo.db.models import (Network, BackendNetwork,
-                               BridgePool, MacPrefixPool)
+                               BridgePoolTable, MacPrefixPoolTable)
 
 
 class Command(BaseCommand):
@@ -48,11 +48,14 @@ class Command(BaseCommand):
         write("Checking consistency of the Bridge Pool\n")
         write("---------------------------------------\n")
 
-        pool_bridges = BridgePool.objects.filter(available=False)\
-                                         .values_list('value', flat=True)
+        bridge_pool = BridgePoolTable.get_pool()
+        bridges = []
+        for i in xrange(0, bridge_pool.size()):
+            if not bridge_pool.is_available(i, index=True) and \
+               not bridge_pool.is_reserved(i, index=True):
+                bridges.append(bridge_pool.index_to_value(i))
 
-        write("Used bridges from Pool: %d\n" %
-                          len(pool_bridges))
+        write("Used bridges from Pool: %d\n" % len(bridges))
 
         network_bridges = Network.objects.filter(type='PRIVATE_PHYSICAL_VLAN',
                                                 deleted=False)\
@@ -81,11 +84,14 @@ class Command(BaseCommand):
         write("Checking consistency of the MAC Prefix Pool\n")
         write("---------------------------------------\n")
 
-        pool_mac_prefixes = MacPrefixPool.objects.filter(available=False)\
-                                         .values_list('value', flat=True)
+        macp_pool = MacPrefixPoolTable.get_pool()
+        macs = []
+        for i in xrange(0, macp_pool.size()):
+            if not macp_pool.is_available(i, index=True) and \
+               not macp_pool.is_reserved(i, index=True):
+                macs.append(macp_pool.index_to_value(i))
 
-        write("Used MAC prefixes from Pool: %d\n" %
-                          len(pool_mac_prefixes))
+        write("Used MAC prefixes from Pool: %d\n" % len(macs))
 
         network_mac_prefixes = Network.objects.filter(deleted=False)\
                                          .values_list('mac_prefix', flat=True)
@@ -101,7 +107,8 @@ class Command(BaseCommand):
             for mac_prefix in set(duplicates):
                 write("Duplicated mac_prefix: %s. " % mac_prefix)
                 write("Used by the following Networks:\n")
-                nets = Network.objects.filter(deleted=False, mac_prefix=mac_prefix)
+                nets = Network.objects.filter(deleted=False,
+                                              mac_prefix=mac_prefix)
                 write("  " + "\n  ".join([str(net.id) for net in nets])\
                                   + "\n")
 
@@ -124,6 +131,7 @@ class Command(BaseCommand):
             for mac_prefix in set(duplicates):
                 write("Duplicated mac_prefix: %s. " % mac_prefix)
                 write("Used by the following BackendNetworks:\n")
-                nets = BackendNetwork.objects.filter(deleted=False, mac_prefix=mac_prefix)
+                nets = BackendNetwork.objects.filter(deleted=False,
+                                                     mac_prefix=mac_prefix)
                 write("  " + "\n  ".join([str(net.id) for net in nets])\
                                   + "\n")

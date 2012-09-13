@@ -59,11 +59,11 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 BadMediaType)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
-                               BridgePool)
+                               BridgePoolTable)
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
-from synnefo.logic import ippool
+from synnefo.db.pools import IPPool
 from synnefo.settings import MAX_CIDR_BLOCK
 
 
@@ -231,14 +231,14 @@ def backend_public_networks(backend):
 def get_network_free_address(network):
     """Reserve an IP address from the IP Pool of the network.
 
-    Raises Network.DoesNotExist , ippool.IPPool.IPPoolExhausted
+    Raises Network.DoesNotExist , IPPool.IPPoolExhausted
 
     """
 
     # Get the Network object in exclusive mode in order to
     # safely (isolated) reserve an IP address
     network = Network.objects.select_for_update().get(id=network.id)
-    pool = ippool.IPPool(network)
+    pool = IPPool(network)
     address = pool.get_free_address()
     pool.save()
     return address
@@ -399,7 +399,9 @@ def network_link_from_type(network_type):
     if network_type == 'PRIVATE_MAC_FILTERED':
         link = settings.PRIVATE_MAC_FILTERED_BRIDGE
     elif network_type == 'PRIVATE_PHYSICAL_VLAN':
-        link = BridgePool.get_available().value
+        pool = BridgePoolTable.get_pool()
+        link = pool.get()
+        pool.save()
     elif network_type == 'CUSTOM_ROUTED':
         link = settings.CUSTOM_ROUTED_ROUTING_TABLE
     elif network_type == 'CUSTOM_BRIDGED':

@@ -44,7 +44,8 @@ from synnefo.api.faults import (BadRequest, ServiceUnavailable,
                                 ItemNotFound, BuildInProgress)
 from synnefo.api.util import random_password, get_vm, get_nic_from_index
 from synnefo.db.models import NetworkInterface, Network
-from synnefo.logic import backend, ippool
+from synnefo.db.pools import IPPool
+from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
 
 
@@ -313,10 +314,10 @@ def add(request, net, args):
         raise ServiceUnavailable('Network not active yet')
 
     # Get a free IP from the address pool.
-    pool = ippool.IPPool(net)
+    pool = IPPool(net)
     try:
         address = pool.get_free_address()
-    except ippool.IPPool.IPPoolExhausted:
+    except IPPool.IPPoolExhausted:
         raise ServiceUnavailable('Network is full')
     pool.save()
 

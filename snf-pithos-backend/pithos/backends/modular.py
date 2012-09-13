@@ -483,26 +483,29 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_container(account, container)
 
         if until is not None:
-            hashes, size = self.node.node_purge_children(
+            hashes, size, serials = self.node.node_purge_children(
                 node, until, CLUSTER_HISTORY)
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
-            self._report_size_change(user, account, -size, {'action':
-                                     'container purge', 'path': path})
+            self._report_size_change(user, account, -size,
+            						 {'action':'container purge', 'path': path,
+            						  'versions': serials})
             return
 
         if not delimiter:
             if self._get_statistics(node)[0] > 0:
                 raise ContainerNotEmpty('Container is not empty')
-            hashes, size = self.node.node_purge_children(
+            hashes, size, serials = self.node.node_purge_children(
                 node, inf, CLUSTER_HISTORY)
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge_children(node, inf, CLUSTER_DELETED)
             self.node.node_remove(node)
-            self._report_size_change(user, account, -size, {'action':
-                                     'container delete', 'path': path})
+            self._report_size_change(user, account, -size,
+            						 {'action': 'container delete',
+            						  'path': path,
+            						  'versions': serials})
         else:
                 # remove only contents
             src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
@@ -514,7 +517,9 @@ class ModularBackend(BaseBackend):
                 del_size = self._apply_versioning(
                     account, container, src_version_id)
                 if del_size:
-                    self._report_size_change(user, account, -del_size, {'action': 'object delete', 'path': path})
+                    self._report_size_change(user, account, -del_size,
+                    						 {'action': 'object delete',
+                    						  'path': path, 'versions': [dest_version_id]})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
@@ -804,8 +809,9 @@ class ModularBackend(BaseBackend):
                (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
                 # This must be executed in a transaction, so the version is never created if it fails.
                 raise QuotaError
-        self._report_size_change(user, account, size_delta, {
-                                 'action': 'object update', 'path': path})
+        self._report_size_change(user, account, size_delta,
+        						 {'action': 'object update', 'path': path,
+        						  'versions': [dest_version_id]})
 
         if permissions is not None:
             self.permissions.access_set(path, permissions)
@@ -919,12 +925,15 @@ class ModularBackend(BaseBackend):
                 return
             hashes = []
             size = 0
-            h, s = self.node.node_purge(node, until, CLUSTER_NORMAL)
+            serials = []
+            h, s, v = self.node.node_purge(node, until, CLUSTER_NORMAL)
             hashes += h
             size += s
-            h, s = self.node.node_purge(node, until, CLUSTER_HISTORY)
+            serials += v
+            h, s, v = self.node.node_purge(node, until, CLUSTER_HISTORY)
             hashes += h
             size += s
+            serials += v
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge(node, until, CLUSTER_DELETED)
@@ -932,16 +941,18 @@ class ModularBackend(BaseBackend):
                 props = self._get_version(node)
             except NameError:
                 self.permissions.access_clear(path)
-            self._report_size_change(user, account, -size, {
-                                     'action': 'object purge', 'path': path})
+            self._report_size_change(user, account, -size,
+            						{'action': 'object purge', 'path': path,
+            						 'versions': serials})
             return
 
         path, node = self._lookup_object(account, container, name)
         src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
         del_size = self._apply_versioning(account, container, src_version_id)
         if del_size:
-            self._report_size_change(user, account, -del_size, {
-                                     'action': 'object delete', 'path': path})
+            self._report_size_change(user, account, -del_size,
+            						 {'action': 'object delete', 'path': path,
+            						  'versions': [dest_version_id]})
         self._report_object_change(
             user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
@@ -957,7 +968,10 @@ class ModularBackend(BaseBackend):
                 del_size = self._apply_versioning(
                     account, container, src_version_id)
                 if del_size:
-                    self._report_size_change(user, account, -del_size, {'action': 'object delete', 'path': path})
+                    self._report_size_change(user, account, -del_size,
+                    						 {'action': 'object delete',
+                    						  'path': path,
+                    						  'versions': [dest_version_id]})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
@@ -1215,11 +1229,8 @@ class ModularBackend(BaseBackend):
         logger.debug(
             "_report_size_change: %s %s %s %s", user, account, size, details)
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',), 
-        					  account,
-        					  QUEUE_INSTANCE_ID,
-        					  'diskspace',
-        					  float(size),
-        					  details))
+        					  account, QUEUE_INSTANCE_ID, 'diskspace',
+        					  float(size), details))
 
     def _report_object_change(self, user, account, path, details={}):
         details.update({'user': user})

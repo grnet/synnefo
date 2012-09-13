@@ -114,9 +114,19 @@ def backend_method(func=None, autocommit=1):
             ret = func(self, *args, **kw)
             for m in self.messages:
                 self.queue.send(*m)
+            serials = self.serials
+            if serials:
+                self.quotaholder.accept_commission(
+                            context     =   {},
+                            clientkey   =   'pithos',
+                            serials     =   serials)
             self.wrapper.commit()
             return ret
         except:
+            self.quotaholder.reject_commission(
+                        context     =   {},
+                        clientkey   =   'pithos',
+                        serials     =   serials)
             self.wrapper.rollback()
             raise
     return fn

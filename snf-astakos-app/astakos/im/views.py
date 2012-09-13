@@ -730,11 +730,6 @@ def group_detail(request, group_id):
                          )
 
 
-@signed_terms_required
-@login_required
-def group_approval_request(request, group_id):
-    return HttpResponse()
-
 
 @signed_terms_required
 @login_required

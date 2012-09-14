@@ -49,6 +49,7 @@ NETWORK_TYPES = ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
 
 class Command(BaseCommand):
     can_import_settings = True
+    output_transaction = True
 
     help = "Create a new network"
 
@@ -114,6 +115,8 @@ class Command(BaseCommand):
             raise CommandError("Subnet is required")
         if public and not backend_id:
             raise CommandError("backend-id is required")
+        if public and not typ=='PUBLIC_ROUTED':
+            raise CommandError("Invalid type for public network")
         if backend_id and not public:
             raise CommandError("Private networks must be created to"
                                " all backends")

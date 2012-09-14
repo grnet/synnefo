@@ -584,7 +584,7 @@ class AddGroupMembersForm(forms.Form):
         unknown = list(set(users) - set(u.email for u in db_entries))
         if unknown:
             raise forms.ValidationError(
-                _('Unknown users: %s' % unknown))
+                _('Unknown users: %s' % ','.join(unknown)))
         self.valid_users = db_entries
         return self.cleaned_data
     

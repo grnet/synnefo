@@ -109,12 +109,12 @@ def backend_method(func=None, autocommit=1):
 
     def fn(self, *args, **kw):
         self.wrapper.execute()
+        serials = self.serials
+        self.messages = []
         try:
-            self.messages = []
             ret = func(self, *args, **kw)
             for m in self.messages:
                 self.queue.send(*m)
-            serials = self.serials
             if serials:
                 self.quotaholder.accept_commission(
                             context     =   {},
@@ -1254,7 +1254,7 @@ class ModularBackend(BaseBackend):
                 key         =   '1',
                 clientkey   =   'pithos',
                 ownerkey    =   '',
-                provisions  =   ()
+                provisions  =   (('pithos+', 'diskspace', size),)
         )
         self.serials.append(serial)
 

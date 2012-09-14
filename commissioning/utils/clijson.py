@@ -4,47 +4,63 @@ from re import split as re_split
 
 keywords = set(['true', 'false', 'null'])
 
+
+def quote(token, is_dict):
+    if not token[0].isalpha():
+        return token
+
+    k, sep, v = token.partition('=')
+    if not sep or not v.strip('='):
+        k, sep, v = token.partition(':')
+    if not k:
+        k = '""'
+
+    if not sep:
+        if token not in keywords and token[0] not in '{["\'':
+            return '"' + token + '"'
+        return token
+
+    k = '"' + k + '"'
+    is_dict.add(1)
+
+    if not v:
+        v = '""'
+
+    return k + ':' + quote(v, is_dict)
+
+
 def clijson(argv):
     s = ','.join(argv)
-    tokens = re_split('([^\w@_.-]+)', s)
+    tokens = re_split('([^\w @_.-]+)', s)
+    tokens = argv
+    is_dict = set()
 
-    strlist = ['{']
+    strlist = []
     append = strlist.append
-    quoting = 0
+    dictionary = 0
+    token_join = None
 
     for t in tokens:
         t = t.strip()
         if not t:
             continue
 
-        if quoting:
-            append(t)
-            continue
+        if token_join:
+            t = token_join + t
+            token_join = None
 
-        count = t.count('"')
-        quoting = (quoting + count) & 1
-
-        if t.startswith('"'):
-            continue
-
-        if not t[0].isalpha():
-            if '=' in t:
-                t = t.replace('=', ':')
-                quote = 1
-        elif t not in keywords:
-            t = '"' + t + '"'
-
+        t = quote(t, is_dict)
         append(t)
 
-    append('}')
-    z = len(strlist)
-    if z <= 2:
-        strlist = ['null']
-    elif len(argv) < 2 and strlist[1][0] in '{[' or strlist[1] in keywords:
-        strlist[0] = ''
-        strlist[-1] = ''
+    if not strlist:
+        s = 'null'
+    elif strlist[0][0] not in '{[':
+        if is_dict:
+            s = '{' + ','.join(strlist) + '}'
+        else:
+            s = '[' + ','.join(strlist) + ']'
 
-    return ''.join(strlist)
+    return s
 
 
 if __name__ == '__main__':

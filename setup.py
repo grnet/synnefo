@@ -33,6 +33,7 @@ setup   (
 
     scripts         =   [
             'commissioning/servers/quotaholder/quotaholder_django/quotaholder-manage',
+            'commissioning/clients/quotaholder',
             'commissioning/servers/fscrud/fscrud_django/fscrud-manage',
     ]
 )

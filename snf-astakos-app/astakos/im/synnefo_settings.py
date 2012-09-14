@@ -43,9 +43,7 @@ installed_apps = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'djcelery',
-    'django_extensions',
-]
+    'djcelery',]
 
 context_processors = [
     'django.core.context_processors.media',

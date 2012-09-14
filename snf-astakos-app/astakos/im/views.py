@@ -67,7 +67,7 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               FeedbackForm, SignApprovalTermsForm,
                               ExtendedPasswordChangeForm, EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
-                              AstakosGroupUpdateForm)
+                              AstakosGroupUpdateForm, AddGroupMembersForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   invite as invite_func, logout as auth_logout,
                                   activate as activate_func,
@@ -733,11 +733,13 @@ def group_detail(request, group_id):
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
     form = AstakosGroupUpdateForm(instance=group)
+    search_form = AddGroupMembersForm()
     return object_detail(request,
                          AstakosGroup.objects.all(),
                          object_id=group_id,
                          extra_context={'quota': group.quota,
-                                        'form': form}
+                                        'form': form,
+                                        'search_form': search_form}
                          )
 
 
@@ -753,11 +755,13 @@ def group_update(request, group_id):
     form = AstakosGroupUpdateForm(request.POST, instance=group)
     if form.is_valid():
         form.save()
+    search_form = AddGroupMembersForm()
     return object_detail(request,
                          AstakosGroup.objects.all(),
                          object_id=group_id,
                          extra_context={'quota': group.quota,
-                                        'form': form})
+                                        'form': form,
+                                        'search_form': search_form})
 
 @signed_terms_required
 @login_required
@@ -894,6 +898,32 @@ def disapprove_member(request, membership):
         logger.exception(e)
         msg = _('Something went wrong during %s\'s disapproval.' % realname)
         messages.error(request, msg)
+
+
+
+
+@signed_terms_required
+@login_required
+def add_members(request, group_id):
+    if request.method != 'POST':
+        return HttpResponseBadRequest(_('Bad method'))
+    try:
+        group = AstakosGroup.objects.select_related().get(id=group_id)
+    except AstakosGroup.DoesNotExist:
+        return HttpResponseBadRequest(_('Invalid group.'))
+    search_form = AddGroupMembersForm(request.POST)
+    if search_form.is_valid():
+        users = search_form.get_valid_users()
+        map(group.approve_member, users)
+        search_form = AddGroupMembersForm()
+    form = AstakosGroupUpdateForm(instance=group)
+    return object_detail(request,
+                         AstakosGroup.objects.all(),
+                         object_id=group_id,
+                         extra_context={'quota': group.quota,
+                                        'form': form,
+                                        'search_form' : search_form}
+                         )
 
 
 @signed_terms_required

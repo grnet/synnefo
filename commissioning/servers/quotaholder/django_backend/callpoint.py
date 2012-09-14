@@ -153,7 +153,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             append((h.entity.entity, h.resource, h.policy,
-                    h.imported, h.exported, h.flags))
+                    h.imported, h.exported,
+                    h.regained, h.released, h.flags))
 
         return holdings
 
@@ -221,7 +222,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             append((h.entity.entity, h.resource, p.quantity, p.capacity,
                     p.import_limit, p.export_limit,
-                    h.imported, h.exported, h.flags))
+                    h.imported, h.exported,
+                    h.regained, h.released,
+                    h.flags))
 
         return quotas
 
@@ -355,8 +358,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                          "to allocate into in %s.%s" % (target, resource))
                     raise NoCapacityError(m)
 
-            Provision.objects.create(   serial=serial,
-                                        entity=entity,
+            Provision.objects.create(   serial=commission,
+                                        entity=t,
                                         resource=resource,
                                         quantity=quantity   )
 
@@ -372,7 +375,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return serial
 
-    def _log_provision(self, serial, s_holding, t_holding,
+    def _log_provision(self, commission, s_holding, t_holding,
                              provision, log_time, reason):
 
         source_allocated = s_holding.exported - s_holding.regained
@@ -383,7 +386,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                             - t_holding.released - target_allocated)
 
         ProvisionLog.objects.create(
-                        serial              =   serial,
+                        serial              =   commission.serial,
                         source              =   s_holding.entity.entity,
                         target              =   t_holding.entity.entity,
                         resource            =   provision.resource,
@@ -392,12 +395,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                         target_available    =   target_available,
                         target_allocated    =   target_allocated,
                         delta_quantity      =   provision.quantity,
-                        issue_time          =   provision.issue_time,
+                        issue_time          =   commission.issue_time,
                         log_time            =   log_time,
                         reason              =   reason)
 
     def accept_commission(self, context={}, clientkey=None,
                                 serials=(), reason=''):
+        log_time = now()
+
         for serial in serials:
             try:
                 c = Commission.objects.get(clientkey=clientkey, serial=serial)
@@ -405,7 +410,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 return
 
             t = c.entity
-            log_time = now()
 
             provisions = Provision.objects.filter(serial=serial)
             for pv in provisions:
@@ -430,7 +434,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     th.imported += quantity
 
                 reason = 'ACCEPT:' + reason[-121:]
-                self._log_provision(serial, h, th, pv, log_time, reason)
+                self._log_provision(c, h, th, pv, log_time, reason)
                 h.save()
                 th.save()
                 pv.delete()
@@ -439,6 +443,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
     def reject_commission(self, context={}, clientkey=None,
                                 serials=(), reason=''):
+        log_time = now()
+
         for serial in serials:
             try:
                 c = Commission.objects.get(clientkey=clientkey, serial=serial)
@@ -477,7 +483,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                         - th.released - target_allocated)
 
                 reason = 'REJECT:' + reason[-121:]
-                self._log_provision(serial, h, th, pv, log_time, reason)
+                self._log_provision(c, h, th, pv, log_time, reason)
                 h.save()
                 th.save()
                 pv.delete()

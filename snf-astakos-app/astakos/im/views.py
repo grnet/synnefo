@@ -301,6 +301,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                                                         extra_context))
 
 
+@transaction.commit_manually
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
@@ -371,10 +372,14 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
             except SendMailError, e:
                 message = e.message
                 messages.error(request, message)
+                transaction.rollback()
             except BaseException, e:
                 message = _('Something went wrong.')
                 messages.error(request, message)
                 logger.exception(e)
+                transaction.rollback()
+            else:
+                transaction.commit()
     return render_response(template_name,
                            signup_form=form,
                            provider=provider,

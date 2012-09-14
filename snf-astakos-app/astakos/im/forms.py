@@ -572,5 +572,30 @@ class AstakosGroupUpdateForm(forms.ModelForm):
         model = AstakosGroup
         fields = ('homepage', 'desc')
 
+class AddGroupMembersForm(forms.Form):
+    q = forms.CharField(max_length=800, widget=forms.Textarea, label=_('Search users'),
+                        help_text=_('Add comma separated user emails'),
+                        required=True)
+    
+    def clean(self):
+        q = self.cleaned_data.get('q') or ''
+        users = q.split(',')
+        users = list(u.strip() for u in users if u)
+        db_entries = AstakosUser.objects.filter(email__in=users)
+        unknown = list(set(users) - set(u.email for u in db_entries))
+        if unknown:
+            raise forms.ValidationError(
+                _('Unknown users: %s' % unknown))
+        self.valid_users = db_entries
+        return self.cleaned_data
+    
+    def get_valid_users(self):
+        """Should be called after form cleaning"""
+        try:
+            return self.valid_users
+        except:
+            return ()
+
+
 class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')

@@ -129,13 +129,15 @@
 	 </div>
      
      
-    {% if user in object.owner.all and more_policies %}
+    {% if user in object.owner.all %}
     <div class="full-dotted">
-        <form action="{% url group_policies_add object.id %}" method="post" class="withlabels">{% csrf_token %}
-            <h2>NEW POLICY</h2>
-                {% include "im/form_render.html" %}
+        <form action="{% url add_members object.id %}" method="post" class="withlabels">{% csrf_token %}
+            <h2>Enroll more members</h2>
+                {% with search_form as form %}
+                    {% include "im/form_render.html" %}
+                {% endwith %}
                 <div class="form-row submit">
-                    <input type="submit" class="submit altcol" value="ADD POLICY" />
+                    <input type="submit" class="submit altcol" value="ADD MEMBERS" />
                 </div>
         </form>
     </div>

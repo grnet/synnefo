@@ -1254,7 +1254,7 @@ class ModularBackend(BaseBackend):
                 key         =   '1',
                 clientkey   =   'pithos',
                 ownerkey    =   '',
-                provisions  =   (('pithos+', 'diskspace', size),)
+                provisions  =   (('pithos+', 'pithos+ : diskspace', size),)
         )
         self.serials.append(serial)
 

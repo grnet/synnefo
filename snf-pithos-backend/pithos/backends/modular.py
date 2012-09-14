@@ -490,7 +490,7 @@ class ModularBackend(BaseBackend):
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             self._report_size_change(user, account, -size,
             						 {'action':'container purge', 'path': path,
-            						  'versions': serials})
+            						  'versions': ','.join(str(i) for i in serials)})
             return
 
         if not delimiter:
@@ -505,7 +505,7 @@ class ModularBackend(BaseBackend):
             self._report_size_change(user, account, -size,
             						 {'action': 'container delete',
             						  'path': path,
-            						  'versions': serials})
+            						  'versions': ','.join(str(i) for i in serials)})
         else:
                 # remove only contents
             src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
@@ -519,7 +519,8 @@ class ModularBackend(BaseBackend):
                 if del_size:
                     self._report_size_change(user, account, -del_size,
                     						 {'action': 'object delete',
-                    						  'path': path, 'versions': [dest_version_id]})
+                    						  'path': path,
+                    						  'versions': ','.join([str(dest_version_id)])})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
@@ -811,7 +812,7 @@ class ModularBackend(BaseBackend):
                 raise QuotaError
         self._report_size_change(user, account, size_delta,
         						 {'action': 'object update', 'path': path,
-        						  'versions': [dest_version_id]})
+        						  'versions': ','.join([str(dest_version_id)])})
 
         if permissions is not None:
             self.permissions.access_set(path, permissions)
@@ -943,7 +944,7 @@ class ModularBackend(BaseBackend):
                 self.permissions.access_clear(path)
             self._report_size_change(user, account, -size,
             						{'action': 'object purge', 'path': path,
-            						 'versions': serials})
+            						 'versions': ','.join(str(i) for i in serials)})
             return
 
         path, node = self._lookup_object(account, container, name)
@@ -952,7 +953,7 @@ class ModularBackend(BaseBackend):
         if del_size:
             self._report_size_change(user, account, -del_size,
             						 {'action': 'object delete', 'path': path,
-            						  'versions': [dest_version_id]})
+            						  'versions': ','.join([str(dest_version_id)])})
         self._report_object_change(
             user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
@@ -971,7 +972,7 @@ class ModularBackend(BaseBackend):
                     self._report_size_change(user, account, -del_size,
                     						 {'action': 'object delete',
                     						  'path': path,
-                    						  'versions': [dest_version_id]})
+                    						  'versions': ','.join([str(dest_version_id)])})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)

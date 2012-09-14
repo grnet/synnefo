@@ -115,8 +115,8 @@ class GroupKind(models.Model):
 
 class AstakosGroup(Group):
     kind = models.ForeignKey(GroupKind)
-    homepage = models.CharField(
-        'Homepage', max_length=255, null=True, blank=True)
+    homepage = models.URLField(
+        'Homepage Url', max_length=255, null=True, blank=True)
     desc = models.TextField('Description', null=True)
     policy = models.ManyToManyField(Resource, null=True, blank=True,
                                     through='AstakosGroupQuota'

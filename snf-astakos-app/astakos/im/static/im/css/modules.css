@@ -336,5 +336,6 @@ table.alt-style tr td a.more-info				{ display:block; float:left; width:17px; he
 table.alt-style tr td a.more-info:hover			{ background-image:url(../images/plus-minus-hover.png); text-decoration:none;}
 table.alt-style tr td a.open					{ background-position:-16px 0} 
 
-.projects .details a.edit						{ float:right; }
-.projects .editable form textarea				{ width:70%; height:50px; max-width:70%;}
+.projects .details a.edit						{ float:right; margin-left:20px;  }
+.projects .details .data						{ overflow:hidden; }
+.projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}

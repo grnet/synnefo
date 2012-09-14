@@ -13,9 +13,8 @@
                 <input type="submit" class="submit altcol" value="SEARCH" />
             </div>
     </form>
-    
-	<!-- <p><a href="">Show all groups</a></p> -->
-    <form action="{% url group_all %}" method="post" class="withlabels signup">{% csrf_token %}
+     
+    <form action="{% url group_all %}" method="post" class="link-like">{% csrf_token %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="Show all groups" />
             </div>

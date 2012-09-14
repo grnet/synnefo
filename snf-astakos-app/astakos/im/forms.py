@@ -533,7 +533,6 @@ class AstakosGroupCreationForm(forms.ModelForm):
         widget=forms.HiddenInput()
     )
     name = forms.URLField()
-    homepage = forms.URLField()
     moderation_enabled = forms.BooleanField(
         help_text="Check if you want to approve members participation manually",
         required=False   

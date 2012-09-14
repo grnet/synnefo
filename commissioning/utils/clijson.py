@@ -1,37 +1,49 @@
 #!/usr/bin/env python
 
-from re import split as re_split
+import re
 
 keywords = set(['true', 'false', 'null'])
+unquoted = set('{}[]"\'0123456789')
+name_matcher = re.compile('^[\w @_.+-]+$', re.UNICODE)
 
+def is_name(token):
+    if name_matcher.match(token):
+        return 1
+    return 0
 
 def quote(token, is_dict):
-    if not token[0].isalpha():
-        return token
+    if not token:
+        return '""'
+
+    if not is_name(token[0]):
+        comma = ', ' if token[-1] not in '{[' else ''
+        return token + comma
 
     k, sep, v = token.partition('=')
     if not sep or not v.strip('='):
         k, sep, v = token.partition(':')
-    if not k:
-        k = '""'
 
     if not sep:
-        if token not in keywords and token[0] not in '{["\'':
-            return '"' + token + '"'
-        return token
+        if is_name(token) and token not in keywords:
+            token = '"' + token + '"'
+
+        comma = ', ' if token[-1] not in '{[' else ''
+        return token + comma
 
     k = '"' + k + '"'
     is_dict.add(1)
 
     if not v:
         v = '""'
+    else:
+        if v.isalnum() and not v.isdigit() and v not in keywords:
+            v = '"' + v + '"'
 
-    return k + ':' + quote(v, is_dict)
+    comma = ', ' if v[-1] not in '{[' else ''
+    return k + ':' + v + comma
 
 
 def clijson(argv):
-    s = ','.join(argv)
-    tokens = re_split('([^\w @_.-]+)', s)
     tokens = argv
     is_dict = set()
 
@@ -42,25 +54,31 @@ def clijson(argv):
 
     for t in tokens:
         t = t.strip()
-        if not t:
-            continue
+
+        if strlist and t and t in '}]':
+            strlist[-1] = strlist[-1].rstrip(', ')
 
         if token_join:
             t = token_join + t
             token_join = None
+        elif t.endswith(':'):
+            token_join = t
+            continue
 
         t = quote(t, is_dict)
         append(t)
 
     if not strlist:
-        s = 'null'
-    elif strlist[0][0] not in '{[':
-        if is_dict:
-            s = '{' + ','.join(strlist) + '}'
-        else:
-            s = '[' + ','.join(strlist) + ']'
+        return 'null'
 
-    return s
+    if strlist[0][0] not in '{[':
+        strlist[-1] = strlist[-1].rstrip(', ')
+        o, e = '{}' if is_dict else '[]'
+        strlist = [o] + strlist + [e]
+
+    if strlist[-1][-1] in ']}':
+        strlist[-1] = strlist[-1].rstrip(',')
+    return ''.join(strlist)
 
 
 if __name__ == '__main__':

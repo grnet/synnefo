@@ -146,6 +146,7 @@ class Integer(Canonical):
                 raise CanonifyException(m)
         except TypeError, e:
             m = "%s: cannot convert '%s' to long" % (self, shorts(item))
+	    raise CanonifyException(m)
 
         optget = self.opts.get
         minimum = optget('minimum', None)

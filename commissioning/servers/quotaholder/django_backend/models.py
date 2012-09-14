@@ -46,9 +46,9 @@ class Policy(Model):
 
     policy          =   CharField(max_length=72, primary_key=True)
     quantity        =   BigIntegerField(null=False, default=0)
-    capacity        =   BigIntegerField(null=False, default=0)
-    import_limit    =   BigIntegerField(null=False, default=0)
-    export_limit    =   BigIntegerField(null=False, default=0)
+    capacity        =   BigIntegerField(null=True,  default=None)
+    import_limit    =   BigIntegerField(null=True,  default=None)
+    export_limit    =   BigIntegerField(null=True,  default=None)
 
 
 class Holding(Model):

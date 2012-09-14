@@ -45,7 +45,6 @@ installed_apps = [
     'django.contrib.messages',
     'djcelery',
     'django_extensions',
-    'debug_toolbar',
 ]
 
 context_processors = [

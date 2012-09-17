@@ -45,7 +45,7 @@ class Entity(Model):
 class Policy(Model):
 
     policy          =   CharField(max_length=72, primary_key=True)
-    quantity        =   BigIntegerField(null=False, default=0)
+    quantity        =   BigIntegerField(null=True, default=None)
     capacity        =   BigIntegerField(null=True,  default=None)
     import_limit    =   BigIntegerField(null=True,  default=None)
     export_limit    =   BigIntegerField(null=True,  default=None)

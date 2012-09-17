@@ -30,7 +30,7 @@ OwnerKey            =   Name(classname='OwnerKey')
 Resource            =   Name(classname='Resource')
 Policy              =   Name(classname='Policy')
 
-Quantity            =   Integer(classname='Quantity')
+Quantity            =   Integer(classname='Quantity', null=True)
 Capacity            =   Nonnegative(classname='Capacity', null=True)
 ImportLimit         =   Nonnegative(classname='ImportLimit', null=True)
 ExportLimit         =   Nonnegative(classname='ExportLimit', null=True)

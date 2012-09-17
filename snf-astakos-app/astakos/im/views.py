@@ -844,34 +844,32 @@ def group_leave(request, group_id):
     )
 
 
-def handle_membership():
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, group_id, user_id):
-            try:
-                m = Membership.objects.select_related().get(
-                    group__id=group_id,
-                    person__id=user_id
-                )
-            except Membership.DoesNotExist:
-                return HttpResponseBadRequest(_('Invalid membership.'))
-            else:
-                if request.user not in m.group.owner.all():
-                    return HttpResponseForbidden(_('User is not a group owner.'))
-                func(request, m)
-                return render_response(
-                    template='im/astakosgroup_detail.html',
-                    context_instance=get_context(request),
-                    object=m.group,
-                    quota=m.group.quota
-                )
-        return wrapper
-    return decorator
+def handle_membership(func):
+    @wraps(func)
+    def wrapper(request, group_id, user_id):
+        try:
+            m = Membership.objects.select_related().get(
+                group__id=group_id,
+                person__id=user_id
+            )
+        except Membership.DoesNotExist:
+            return HttpResponseBadRequest(_('Invalid membership.'))
+        else:
+            if request.user not in m.group.owner.all():
+                return HttpResponseForbidden(_('User is not a group owner.'))
+            func(request, m)
+            return render_response(
+                template='im/astakosgroup_detail.html',
+                context_instance=get_context(request),
+                object=m.group,
+                quota=m.group.quota
+            )
+    return wrapper
 
 
 @signed_terms_required
 @login_required
-@handle_membership()
+@handle_membership
 def approve_member(request, membership):
     try:
         membership.approve()
@@ -886,7 +884,7 @@ def approve_member(request, membership):
 
 @signed_terms_required
 @login_required
-@handle_membership()
+@handle_membership
 def disapprove_member(request, membership):
     try:
         membership.disapprove()

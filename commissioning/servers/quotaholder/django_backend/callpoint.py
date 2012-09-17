@@ -328,13 +328,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     m = ("Export limit reached for %s.%s" % (entity, resource))
                     raise ExportLimitError(m)
 
-            available = (+ hp.quantity + h.imported + h.regained
-                         - h.exporting - h.releasing)
+            if hp.quantity is not None:
+                available = (+ hp.quantity + h.imported + h.regained
+                             - h.exporting - h.releasing)
 
-            if available - quantity < 0:
-                m = ("There is not enough quantity "
-                     "to allocate from in %s.%s" % (entity, resource))
-                raise NoQuantityError(m)
+                if available - quantity < 0:
+                    m = ("There is not enough quantity "
+                         "to allocate from in %s.%s" % (entity, resource))
+                    raise NoQuantityError(m)
 
             try:
                 th = Holding.objects.get(entity=target, resource=resource)
@@ -350,19 +351,19 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     m = ("Import limit reached for %s.%s" % (target, resource))
                     raise ImportLimitError(m)
 
-            capacity = (+ tp.capacity + th.exported + th.released
-                        - th.importing - th.regaining)
+            if tp.capacity is not None:
+                capacity = (+ tp.capacity + th.exported + th.released
+                            - th.importing - th.regaining)
 
-            if capacity - quantity < 0:
-                    m = ("There is not enough capacity "
-                         "to allocate into in %s.%s" % (target, resource))
-                    raise NoCapacityError(m)
+                if capacity - quantity < 0:
+                        m = ("There is not enough capacity "
+                             "to allocate into in %s.%s" % (target, resource))
+                        raise NoCapacityError(m)
 
             Provision.objects.create(   serial=commission,
                                         entity=t,
                                         resource=resource,
                                         quantity=quantity   )
-
             if release:
                 h.regaining -= quantity
                 th.releasing -= quantity

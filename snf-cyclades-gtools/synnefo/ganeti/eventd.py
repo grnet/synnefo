@@ -87,8 +87,11 @@ def get_time_from_status(op, job):
     if status == constants.JOB_STATUS_RUNNING:
         return op.exec_timestamp
     if status in constants.JOBS_FINALIZED:
-        # success, canceled, error
-        return op.end_timestamp
+        if op.end_timestamp:
+            return op.end_timestamp
+        else:
+            # Error opcodes do not always have end timestamp
+            return job.end_timestamp
 
     raise InvalidBackendStatus(status, job)
 

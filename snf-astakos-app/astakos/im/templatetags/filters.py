@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 from django import template
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 register = template.Library()
 
@@ -62,3 +64,12 @@ def split(object_list, user):
         return d
     except:
         return {'own': object_list, 'other': ()}
+
+
+@register.filter
+def months_since(start_date, end_date=datetime.now()):
+    delta = relativedelta(months=+1)
+    d = start_date
+    while d < end_date:
+        d += delta
+        yield d

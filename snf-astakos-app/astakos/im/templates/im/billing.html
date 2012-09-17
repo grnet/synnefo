@@ -6,4 +6,10 @@
     {% if data %}
         {{ data }}
     {% endif %}
+    
+   <form action="{% url astakos.im.views.billing %}">{% csrf_token %}
+        {% for m in user.date_joined|months_since %}
+            {{ m|date:"M Y" }}
+        {% endfor %}
+    </form>
 {% endblock %}

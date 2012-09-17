@@ -53,8 +53,7 @@ from django.template import RequestContext, loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (create_object, delete_object,
-                                                get_model_and_form_class
-                                                )
+                                                get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.http import HttpResponseBadRequest
 
@@ -946,10 +945,13 @@ def group_create_list(request):
 @signed_terms_required
 @login_required
 def billing(request):
-    today = datetime.today()
-    month_last_day = calendar.monthrange(today.year, today.month)[1]
-    start = datetime(today.year, today.month, 1).strftime("%s")
-    end = datetime(today.year, today.month, month_last_day).strftime("%s")
+    since = None
+    if request.method == 'POST':
+        since = request.POST.get('since')
+    since = since or datetime.today()
+    start = datetime(since.year, since.month, 1).strftime("%s")
+    month_last_day = calendar.monthrange(since.year, since.month)[1]
+    end = datetime(since.year, since.month, month_last_day).strftime("%s")
     r = request_billing.apply(args=(request.user.email,
                                     int(start) * 1000,
                                     int(end) * 1000)

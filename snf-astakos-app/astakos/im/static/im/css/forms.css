@@ -149,7 +149,7 @@ form+p:first-child, form legend + p				{ margin-bottom:2em; }
 .form-row .dk_options a:hover, 
 .form-row .dk_option_current a					{ text-shadow:none; background-color: #E7E7E3; text-decoration:none;}
 
-form.link-like									{ display:inline-block; margin:0 5px; }
+form.link-like									{ display:inline-block; margin:0 5px; float:right;}
 form.link-like input[type="submit"]				{ margin:0; padding:0 5px; background:transparent; color:#F89A1C; cursor:pointer; height:auto;  }
 form.link-like input[type="submit"]:hover		{ text-decoration:underline;  }
 .projects form.withlabels .checkbox-widget		{ margin-top:5px; }

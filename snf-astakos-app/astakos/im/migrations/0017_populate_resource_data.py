@@ -4,7 +4,7 @@ from south.v2 import DataMigration
 
 d = {
     'cyclades': {'vm': 2},
-    'pithos+': {'diskspace': 10}
+    'pithos+': {'diskspace': 50 * 1024 * 1024 * 1024} # 5 GB
 }
 
 

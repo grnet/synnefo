@@ -51,9 +51,10 @@ from django.dispatch import Signal
 from django.db.models import Q
 
 from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
-                                 AUTH_TOKEN_DURATION, BILLING_FIELDS, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
-                                 )
-from astakos.im.endpoints.quotaholder import register_users, send_quota
+                                 AUTH_TOKEN_DURATION, BILLING_FIELDS,
+                                 EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL)
+from astakos.im.endpoints.quotaholder import (register_users, send_quota,
+                                              register_resources)
 from astakos.im.endpoints.aquarium.producer import report_user_event
 
 from astakos.im.tasks import propagate_groupmembers_quota
@@ -616,6 +617,12 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     register_users((instance,))
 
 
+def resource_post_save(sender, instance, created, **kwargs):
+    if not created:
+        return
+    register_resources((instance,))
+
+
 def send_quota_disturbed(sender, instance, **kwargs):
     users = []
     extend = users.extend
@@ -645,6 +652,7 @@ post_syncdb.connect(fix_superusers)
 post_save.connect(user_post_save, sender=User)
 pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
+post_save.connect(resource_post_save, sender=Resource)
 
 quota_disturbed = Signal(providing_args=["users"])
 quota_disturbed.connect(on_quota_disturbed)

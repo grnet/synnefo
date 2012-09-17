@@ -34,8 +34,8 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 
-from astakos.im.models import AstakosUser
-from astakos.im.endpoints.quotaholder import register_users
+from astakos.im.models import AstakosUser, Resource
+from astakos.im.endpoints.quotaholder import register_users, register_resources
 
 
 class Command(BaseCommand):
@@ -43,8 +43,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            r = register_users(AstakosUser.objects.all())
-            self.stdout.write("Rejected: %s\n" % r)
+            register_resources(Resource.objects.all())
+            register_users(AstakosUser.objects.all())
         except BaseException, e:
-            print e
             raise CommandError("Bootstrap failed.")

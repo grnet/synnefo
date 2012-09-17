@@ -33,6 +33,10 @@
 
 import socket
 import logging
+import itertools
+
+from functools import wraps
+from itertools import tee
 
 from django.utils.translation import ugettext as _
 
@@ -46,82 +50,72 @@ ENTITY_KEY = '1'
 logger = logging.getLogger(__name__)
 
 
-def register_users(users, client=None):
-    if not users:
-        return
+def call(func_name):
+    """Decorator function for QuotaholderHTTP client calls."""
+    def decorator(payload_func):
+        @wraps(payload_func)
+        def wrapper(entities=(), client=None, **kwargs):
+            if not entities:
+                return ()
+        
+            if not QUOTA_HOLDER_URL:
+                return ()
+        
+            c = client or QuotaholderHTTP(QUOTA_HOLDER_URL)
+            func = c.__dict__.get(func_name)
+            if not func:
+                return c,
+            
+            data = payload_func(entities, client, **kwargs)
+            if not data:
+                return c,
+            
+            funcname = func.__name__
+            kwargs = {'context': {}, funcname: data}
+            rejected = func(**kwargs)
+            msg = _('%s: %s - Rejected: %s' % (funcname, data, rejected,))
+            logger.log(LOGGING_LEVEL, msg)
+            return c, rejected
+        return wrapper
+    return decorator
 
-    if not QUOTA_HOLDER_URL:
-        return
-
-    c = client or QuotaholderHTTP(QUOTA_HOLDER_URL)
-    data = []
-    append = data.append
-    for user in users:
-        try:
-            entity = user.email
-        except AttributeError:
-            continue
-        else:
-            args = entity, owner, key, ownerkey = (
-                entity, 'system', ENTITY_KEY, ''
-            )
-            append(args)
-
-    if not data:
-        return
-
-    rejected = c.create_entity(
-        context={},
-        create_entity=data,
-    )
-    msg = _('Create entities: %s - Rejected: %s' % (data, rejected,))
-    logger.log(LOGGING_LEVEL, msg)
-
-    created = filter(lambda u: unicode(u.email) not in rejected, users)
-    send_quota(created, c)
-    return rejected
-
-
+@call('set_quota')
 def send_quota(users, client=None):
-    if not users:
-        return
-
-    if not QUOTA_HOLDER_URL:
-        return
-
-    c = client or QuotaholderHTTP(QUOTA_HOLDER_URL)
     data = []
     append = data.append
     for user in users:
-        try:
-            entity = user.email
-        except AttributeError:
-            continue
-        else:
-            for resource, limit in user.quota.iteritems():
-                args = entity, resource, key, quantity, capacity, import_limit, \
-                    export_limit, flags = (
-                        entity, resource, ENTITY_KEY, '0', str(limit), 0, 0, 0
-                    )
-                append(args)
-
-    if not data:
-        return
-
-    rejected = c.set_quota(context={}, set_quota=data)
-    msg = _('Set quota: %s - Rejected: %s' % (data, rejected,))
-    logger.log(LOGGING_LEVEL, msg)
-    return rejected
+        for resource, limit in user.quota.iteritems():
+            key = ENTITY_KEY
+            quantity = None
+            capacity = limit
+            import_limit = None
+            export_limit = None
+            flags = 0
+            args = (user.email, resource, key, quantity, capacity, import_limit,
+                    export_limit, flags)
+            append(args)
+    return data
 
 
+@call('set_quota')
+def send_resource_quantities(resources, client=None):
+    data = []
+    append = data.append
+    for resource in resources:
+        key = ENTITY_KEY
+        quantity = resource.meta.filter(key='quantity') or None
+        capacity = None
+        import_limit = None
+        export_limit = None
+        flags = 0
+        args = (resource.service, resource, key, quantity, capacity,
+                import_limit, export_limit, flags)
+        append(args)
+    return data
+
+
+@call('get_quota')
 def get_quota(users, client=None):
-    if not users:
-        return
-
-    if not QUOTA_HOLDER_URL:
-        return
-
-    c = client or QuotaholderHTTP(QUOTA_HOLDER_URL)
     data = []
     append = data.append
     for user in users:
@@ -131,13 +125,41 @@ def get_quota(users, client=None):
             continue
         else:
             for r in user.quota.keys():
-                args = entity, resource, key = entity, r, ENTITY_KEY
+                args = entity, r, ENTITY_KEY
                 append(args)
+    return data
 
-    if not data:
-        return
 
-    r = c.get_quota(context={}, get_quota=data)
-    msg = _('Get quota: %s' % data)
-    logger.log(LOGGING_LEVEL, msg)
-    return r
+@call('create_entity')
+def create_entities(entities, client=None, field=''):
+    data = []
+    append = data.append
+    for entity in entities:
+        try:
+            entity = entity.__getattribute__(field)
+        except AttributeError:
+            continue
+        owner = 'system'
+        key = ENTITY_KEY
+        ownerkey = ''
+        args = entity, owner, key, ownerkey
+        append(args)
+    return data
+
+
+def register_users(users, client=None):
+    users, copy = itertools.tee(users)
+    client, rejected = create_entities(entities=users,
+                                       client=client,
+                                       field='email')
+    created = (e for e in copy if unicode(e) not in rejected)
+    return send_quota(created, client)
+
+
+def register_resources(resources, client=None):
+    resources, copy = itertools.tee(resources)
+    client, rejected = create_entities(entities=resources,
+                                       client=client,
+                                       field='service')
+    created = (e for e in copy if unicode(e) not in rejected)
+    return send_resource_quantities(created, client)

@@ -53,8 +53,7 @@ from django.template import RequestContext, loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (create_object, delete_object,
-                                                get_model_and_form_class
-                                                )
+                                                get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.http import HttpResponseBadRequest
 
@@ -845,34 +844,32 @@ def group_leave(request, group_id):
     )
 
 
-def handle_membership():
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, group_id, user_id):
-            try:
-                m = Membership.objects.select_related().get(
-                    group__id=group_id,
-                    person__id=user_id
-                )
-            except Membership.DoesNotExist:
-                return HttpResponseBadRequest(_('Invalid membership.'))
-            else:
-                if request.user not in m.group.owner.all():
-                    return HttpResponseForbidden(_('User is not a group owner.'))
-                func(request, m)
-                return render_response(
-                    template='im/astakosgroup_detail.html',
-                    context_instance=get_context(request),
-                    object=m.group,
-                    quota=m.group.quota
-                )
-        return wrapper
-    return decorator
+def handle_membership(func):
+    @wraps(func)
+    def wrapper(request, group_id, user_id):
+        try:
+            m = Membership.objects.select_related().get(
+                group__id=group_id,
+                person__id=user_id
+            )
+        except Membership.DoesNotExist:
+            return HttpResponseBadRequest(_('Invalid membership.'))
+        else:
+            if request.user not in m.group.owner.all():
+                return HttpResponseForbidden(_('User is not a group owner.'))
+            func(request, m)
+            return render_response(
+                template='im/astakosgroup_detail.html',
+                context_instance=get_context(request),
+                object=m.group,
+                quota=m.group.quota
+            )
+    return wrapper
 
 
 @signed_terms_required
 @login_required
-@handle_membership()
+@handle_membership
 def approve_member(request, membership):
     try:
         membership.approve()
@@ -887,7 +884,7 @@ def approve_member(request, membership):
 
 @signed_terms_required
 @login_required
-@handle_membership()
+@handle_membership
 def disapprove_member(request, membership):
     try:
         membership.disapprove()

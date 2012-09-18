@@ -884,6 +884,9 @@ class PithosBackendPool(ObjectPool):
         backend._use_count = USAGE_LIMIT
         return backend
 
+    def _pool_verify(self, backend):
+        return 1
+
     def _pool_cleanup(self, backend):
         c = backend._use_count - 1
         if c < 0:
@@ -891,6 +894,10 @@ class PithosBackendPool(ObjectPool):
             return True
 
         backend._use_count = c
+        if backend.wrapper.trans is not None:
+            backend.wrapper.rollback()
+        if backend.messages:
+            backend.messages = []
         return False
 
 _pithos_backend_pool = PithosBackendPool(size=POOL_SIZE)

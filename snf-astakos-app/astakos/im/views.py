@@ -365,8 +365,10 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                         logger.log(LOGGING_LEVEL, msg)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
+		    transaction.commit()
                     return prepare_response(request, user, next=next)
                 messages.add_message(request, status, message)
+		transaction.commit()
                 return render_response(on_success,
                                        context_instance=get_context(request, extra_context))
             except SendMailError, e:
@@ -378,8 +380,6 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 messages.error(request, message)
                 logger.exception(e)
                 transaction.rollback()
-            else:
-                transaction.commit()
     return render_response(template_name,
                            signup_form=form,
                            provider=provider,

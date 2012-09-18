@@ -119,8 +119,7 @@ class Psycopg2ConnectionPool(ObjectPool):
         try:
             # Reset this connection before putting it back
             # into the pool
-            cursor = pooledconn.cursor()
-            cursor.execute("ABORT; RESET ALL")
+            pooledconn.rollback()
         except psycopg2.Error:
             # Since we're not going to be putting the psycopg2 connection
             # back into the pool, close it uncoditionally.

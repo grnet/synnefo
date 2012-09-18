@@ -58,7 +58,7 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('--jobs', action='store_true',
-                    dest='jobs', default='False',
+                    dest='jobs', default=False,
                     help="Show non-archived jobs concerning server."
             ),
     )

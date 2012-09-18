@@ -197,7 +197,7 @@ class AstakosGroup(Group):
     def quota(self):
         d = defaultdict(int)
         for q in self.astakosgroupquota_set.all():
-            d[q.resource] += q.limit
+            d[q.resource] += q.uplimit
         return d
 
     @property
@@ -296,15 +296,15 @@ class AstakosUser(User):
     def quota(self):
         d = defaultdict(int)
         for q in self.astakosuserquota_set.all():
-            d[q.resource.name] += q.limit
+            d[q.resource.name] += q.uplimit
         for m in self.membership_set.all():
             if not m.is_approved:
                 continue
             g = m.group
             if not g.is_enabled:
                 continue
-            for r, limit in g.quota.iteritems():
-                d[r] += limit
+            for r, uplimit in g.quota.iteritems():
+                d[r] += uplimit
         # TODO set default for remaining
         return d
 
@@ -417,7 +417,8 @@ class Membership(models.Model):
 
 
 class AstakosGroupQuota(models.Model):
-    limit = models.PositiveIntegerField('Limit')
+    limit = models.PositiveIntegerField('Limit')    # obsolete field
+    uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
     group = models.ForeignKey(AstakosGroup, blank=True)
 
@@ -426,7 +427,8 @@ class AstakosGroupQuota(models.Model):
 
 
 class AstakosUserQuota(models.Model):
-    limit = models.PositiveIntegerField('Limit')
+    limit = models.PositiveIntegerField('Limit')    # obsolete field
+    uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 

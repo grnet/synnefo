@@ -2,15 +2,63 @@
 
 from south.v2 import DataMigration
 
+from astakos.im.settings import SERVICES
+
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        "Obsolete migration."
-        return
-    
+        "Write your forwards methods here."
+
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
+
+        def create_policies(args):
+            sn, dict = args
+            url = dict.get('url') 
+            policy = dict.get('quota') or ()
+            s, created = orm.Service.objects.get_or_create(name=sn, url=url)
+            if not created and not s.url:
+                s.url = url
+                s.save()
+
+            for rn, l in policy.iteritems():
+                try:
+                    r, created = orm.Resource.objects.get_or_create(
+                        service=s,
+                        name=rn)
+                except Exception, e:
+                    print "Cannot create policy ", policy
+                    continue
+
+                q, created = orm.AstakosGroupQuota.objects.get_or_create(
+                    group=default,
+                    resource=r,
+                    uplimit=l)
+        map(create_policies, SERVICES.iteritems())
+
     def backwards(self, orm):
-        "Obsolete migration."
-        return
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
+
+        def destroy_policies(args):
+            sn, dict = args
+            url = dict.get('url') 
+            policy = dict.get('quota') or ()
+            for rn, l in policy.iteritems():
+                try:
+                    q = orm.AstakosGroupQuota.objects.get(
+                        group=default,
+                        resource__name=rn)
+                    q.delete()
+                except orm.AstakosGroupQuota.DoesNotExist:
+                    continue
+        
+        map(destroy_policies, SERVICES.iteritems())
     
     models = {
         'auth.group': {
@@ -79,7 +127,8 @@ class Migration(DataMigration):
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']", 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'limit': ('django.db.models.fields.PositiveIntegerField', [], {}),
-            'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
+            'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
+            'uplimit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'})
         },
         'im.astakosuser': {
             'Meta': {'unique_together': "(('provider', 'third_party_identifier'),)", 'object_name': 'AstakosUser', '_ormbases': ['auth.User']},
@@ -108,6 +157,7 @@ class Migration(DataMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'limit': ('django.db.models.fields.PositiveIntegerField', [], {}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
+            'uplimit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
         },
         'im.emailchange': {

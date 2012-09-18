@@ -105,6 +105,13 @@ LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 # Set the quota holder component URI
 QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
 
+# Set the cloud service properties
+SERVICES = getattr(settings, 'ASTAKOS_SERVICES',
+                   {'cyclades': {'url':'https://node1.example.com/ui/',
+                                 'quota': {'vm': 2}},
+                    'pithos+':  {'url':'https://node2.example.com/ui/',
+                                 'quota': {'diskspace': 50 * 1024 * 1024 * 1024}}})
+
 # Set the billing URI
 AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
 
@@ -125,3 +132,4 @@ EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJE
         'Email change on %s alpha2 testing' % SITENAME)
 PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
         'Password reset on %s alpha2 testing' % SITENAME)
+

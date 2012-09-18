@@ -84,10 +84,10 @@ def send_quota(users, client=None):
     data = []
     append = data.append
     for user in users:
-        for resource, limit in user.quota.iteritems():
+        for resource, uplimit in user.quota.iteritems():
             key = ENTITY_KEY
             quantity = None
-            capacity = limit
+            capacity = uplimit
             import_limit = None
             export_limit = None
             flags = 0

@@ -81,6 +81,9 @@ ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS 10                                          
 ASTAKOS_LOGGING_LEVEL               INFO                                                                            Message logging severity
 ASTAKOS_QUOTA_HOLDER_URL            ''                                                                              The quota holder URI
                                                                                                                     e.g. ``http://localhost:8080/api/quotaholder/v``
+ASTAKOS_SERVICES                    {'cyclades': {'url':'https://node1.example.com/ui/', 'quota': {'vm': 2}},       Cloud service default url and quota      
+                                    'pithos+':  {'url':'https://node2.example.com/ui/', 'quota': {                  
+                                    'diskspace': 50 * 1024 * 1024 * 1024}}})                                        
 AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
                                                                                                                     e.g. ``http://localhost:8888/user``
 =================================== =============================================================================   ===========================================================================================

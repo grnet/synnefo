@@ -662,7 +662,7 @@ def group_add(request, kind_name='default'):
             new_object.owners = [request.user]
 
             # save quota policies
-            for (rid, limit) in form.resources():
+            for (rid, uplimit) in form.resources():
                 try:
                     r = resources[rid]
                 except KeyError, e:
@@ -672,9 +672,9 @@ def group_add(request, kind_name='default'):
                 else:
                     new_object.astakosgroupquota_set.create(
                         resource=r,
-                        limit=limit
+                        uplimit=uplimit
                     )
-                policies.append('%s %d' % (r, limit))
+                policies.append('%s %d' % (r, uplimit))
             msg = _("The %(verbose_name)s was created successfully.") %\
                 {"verbose_name": model._meta.verbose_name}
             messages.success(request, msg, fail_silently=True)

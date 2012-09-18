@@ -62,8 +62,9 @@ class Command(BaseCommand):
             self.stdout.write(sep + '\n')
 
         for service in services:
-            fields = (str(service.id), service.name, service.url,
-                      service.auth_token,
+            fields = (str(service.id), service.name,
+                      service.url,
+                      service.auth_token or '',
                       service.icon)
 
             if options['csv']:

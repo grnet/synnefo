@@ -296,7 +296,7 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .alt-style .table-div							{ border:1px dashed #000; }
 .billing table.complex tr:nth-child(2n) td 		{ background:transparent; }
 .billing table.alt-style tr.zebra td			{ background:#F2F2F2; }
-.billing .highlight								{ text-align:center; padding:10px; border:1px dashed #000; font-size:1.231em; margin:0 0 2em;}
+.billing .highlight								{ text-align:center; padding:10px; border:1px dashed #000; font-size:1.231em; margin:0 0 2em; position:relative;}
 .billing .highlight em							{ color:#3582AC; font-style:normal; font-weight:bold; }
 .billing table.marginless						{ margin-bottom:0; }
 .billing .sum									{ background:#5A97B8; padding:5px 5px 5px 10px; color:#fff; }
@@ -321,6 +321,16 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .billing .resource-cat-1.filter-item a:hover	{ color:#ff6f00 }
 .billing .resource-cat-2.filter-item a,
 .billing .resource-cat-2.filter-item a:hover	{ color:#4085A5 }
+.billing span.info								{ position:absolute;z-index:10; bottom:32px; right:40px; }
+.billing span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-110px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
+.billing span.info:hover em 					{ background-position:-4px -3px; }
+.billing span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 12px ; min-height:50px; display:none; font-size:12px;}
+.billing span.info:hover span 					{ display:block; }
+.billing span.info.foo span						{ padding:0; background:transparent; left:-48px; top:22px; font-size:12px;}
+.billing .highlight a 							{ float:right; }
+.billing .highlight .popup						{ position:absolute;right:20px; top:40px; width: 100px;  border:1px solid #000; }
+.billing table.alt-style tr td					{ border-top:10px solid #fff; }
+.billing table.alt-style .last					{ text-align:right; }
 
 .table_sorting tr th							{ cursor:pointer; }
 
@@ -332,7 +342,7 @@ table.alt-style tr.tr2 td,
 table.alt-style tr.tmore2 td					{ background:#fff }
 table.alt-style tr td.info-td					{ padding:5px; }
 table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
-table.alt-style tr td a.more-info				{ display:block; float:left; width:17px; height:16px; background:url(../images/plus-minus.png) no-repeat 0 0; margin-right:5px; }
+table.alt-style tr td a.more-info				{ display:inline-block;  width:17px; height:16px; background:url(../images/plus-minus.png) no-repeat 0 0; margin-left:10px; }
 table.alt-style tr td a.more-info:hover			{ background-image:url(../images/plus-minus-hover.png); text-decoration:none;}
 table.alt-style tr td a.open					{ background-position:-16px 0} 
 

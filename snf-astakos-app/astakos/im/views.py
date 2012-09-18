@@ -53,8 +53,7 @@ from django.template import RequestContext, loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (create_object, delete_object,
-                                                get_model_and_form_class
-                                                )
+                                                get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.http import HttpResponseBadRequest
 
@@ -845,34 +844,32 @@ def group_leave(request, group_id):
     )
 
 
-def handle_membership():
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, group_id, user_id):
-            try:
-                m = Membership.objects.select_related().get(
-                    group__id=group_id,
-                    person__id=user_id
-                )
-            except Membership.DoesNotExist:
-                return HttpResponseBadRequest(_('Invalid membership.'))
-            else:
-                if request.user not in m.group.owner.all():
-                    return HttpResponseForbidden(_('User is not a group owner.'))
-                func(request, m)
-                return render_response(
-                    template='im/astakosgroup_detail.html',
-                    context_instance=get_context(request),
-                    object=m.group,
-                    quota=m.group.quota
-                )
-        return wrapper
-    return decorator
+def handle_membership(func):
+    @wraps(func)
+    def wrapper(request, group_id, user_id):
+        try:
+            m = Membership.objects.select_related().get(
+                group__id=group_id,
+                person__id=user_id
+            )
+        except Membership.DoesNotExist:
+            return HttpResponseBadRequest(_('Invalid membership.'))
+        else:
+            if request.user not in m.group.owner.all():
+                return HttpResponseForbidden(_('User is not a group owner.'))
+            func(request, m)
+            return render_response(
+                template='im/astakosgroup_detail.html',
+                context_instance=get_context(request),
+                object=m.group,
+                quota=m.group.quota
+            )
+    return wrapper
 
 
 @signed_terms_required
 @login_required
-@handle_membership()
+@handle_membership
 def approve_member(request, membership):
     try:
         membership.approve()
@@ -887,7 +884,7 @@ def approve_member(request, membership):
 
 @signed_terms_required
 @login_required
-@handle_membership()
+@handle_membership
 def disapprove_member(request, membership):
     try:
         membership.disapprove()
@@ -946,23 +943,59 @@ def group_create_list(request):
 @signed_terms_required
 @login_required
 def billing(request):
+    
     today = datetime.today()
-    month_last_day = calendar.monthrange(today.year, today.month)[1]
+    month_last_day= calendar.monthrange(today.year, today.month)[1]
+    
+    start = request.POST.get('datefrom', None)
+    if start:
+        today = datetime.fromtimestamp(int(start))
+        month_last_day= calendar.monthrange(today.year, today.month)[1]
+    
     start = datetime(today.year, today.month, 1).strftime("%s")
     end = datetime(today.year, today.month, month_last_day).strftime("%s")
     r = request_billing.apply(args=(request.user.email,
                                     int(start) * 1000,
-                                    int(end) * 1000)
-                              )
-    data = None
+                                    int(end) * 1000))
+    data = {}
+    
     try:
         status, data = r.result
+        data=clear_billing_data(data)
         if status != 200:
             messages.error(request, _('Service response status: %d' % status))
     except:
         messages.error(request, r.result)
+    
+    print type(start)
+    
     return render_response(
         template='im/billing.html',
         context_instance=get_context(request),
-        data=data
-    )
+        data=data,
+        zerodate=datetime(month=1,year=1970, day=1),
+        today=today,
+        start=int(start),
+        month_last_day=month_last_day)  
+    
+def clear_billing_data(data):
+    
+    # remove addcredits entries
+    def isnotcredit(e):
+        return e['serviceName'] != "addcredits"
+    
+    
+    
+    # separate services    
+    def servicefilter(service_name):
+        service = service_name
+        def fltr(e):
+            return e['serviceName'] == service
+        return fltr
+        
+    
+    data['bill_nocredits'] = filter(isnotcredit, data['bill'])
+    data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
+    data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
+        
+    return data    

@@ -32,12 +32,36 @@
 # or implied, of GRNET S.A.
 
 from django import template
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
+import calendar
+import datetime
 
 register = template.Library()
 
-
+@register.filter
+def monthssince(joined_date):
+    now = datetime.datetime.now()
+    date = datetime.datetime(year=joined_date.year, month=joined_date.month, day=1)
+    months = []
+    
+    month = date.month
+    year = date.year
+    timestamp=calendar.timegm( date.utctimetuple() )
+    
+    while date < now:
+        months.append((year, month, timestamp))
+        
+        if date.month < 12:
+            month = date.month + 1
+            year = date.year
+        else:
+            month = 1
+            year = date.year + 1
+            
+        date = datetime.datetime(year=year, month=month, day=1)
+        timestamp=calendar.timegm( date.utctimetuple() )
+        
+    return months
+    
 @register.filter
 def lookup(d, key):
     return d.get(key)
@@ -67,9 +91,11 @@ def split(object_list, user):
 
 
 @register.filter
-def months_since(start_date, end_date=datetime.now()):
-    delta = relativedelta(months=+1)
-    d = start_date
-    while d < end_date:
-        d += delta
-        yield d
+def month_name(month_number):
+    return calendar.month_name[month_number]
+    
+
+@register.filter
+def todate(value, arg = ''):
+    secs = int(value) / 1000
+    return datetime.datetime.fromtimestamp(secs)

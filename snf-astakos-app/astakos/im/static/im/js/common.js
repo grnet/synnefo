@@ -113,7 +113,7 @@ $(document).ready(function() {
     
     
      
-	$('select').dropkick();
+	//$('select').dropkick();
  
     
     $('.top-msg .success').parents('.top-msg').addClass('success');

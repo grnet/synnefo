@@ -340,6 +340,8 @@ def remove(request, net, args):
     try:  # attachment string: nic-<vm-id>-<nic-index>
         server_id = args.get('attachment', None).split('-')[1]
         nic_index = args.get('attachment', None).split('-')[2]
+    except AttributeError:
+        raise BadRequest("Malformed Request")
     except IndexError:
         raise BadRequest('Malformed Network Interface Id')
 

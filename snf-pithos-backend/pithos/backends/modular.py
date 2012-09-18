@@ -109,7 +109,8 @@ def backend_method(func=None, autocommit=1):
 
     def fn(self, *args, **kw):
         self.wrapper.execute()
-        serials = self.serials
+        serials = []
+        self.serials = serials
         self.messages = []
         try:
             ret = func(self, *args, **kw)

@@ -63,8 +63,8 @@ class Holding(Model):
     importing   =   BigIntegerField(null=False, default=0)
     exported    =   BigIntegerField(null=False, default=0)
     exporting   =   BigIntegerField(null=False, default=0)
-    regained    =   BigIntegerField(null=False, default=0)
-    regaining   =   BigIntegerField(null=False, default=0)
+    returned    =   BigIntegerField(null=False, default=0)
+    returning   =   BigIntegerField(null=False, default=0)
     released    =   BigIntegerField(null=False, default=0)
     releasing   =   BigIntegerField(null=False, default=0)
 
@@ -82,6 +82,7 @@ class Commission(Model):
 
     serial      =   BigIntegerField(primary_key=True, default=alloc_serial)
     entity      =   ForeignKey(Entity, to_field='entity')
+    name        =   CharField(max_length=72, null=True)
     clientkey   =   CharField(max_length=72, null=False)
     issue_time  =   CharField(max_length=24, default=now)
 
@@ -102,13 +103,67 @@ class ProvisionLog(Model):
     serial              =   BigIntegerField(primary_key=True)
     source              =   CharField(max_length=72)
     target              =   CharField(max_length=72)
+    name                =   CharField(max_length=72)
     issue_time          =   CharField(max_length=24)
     log_time            =   CharField(max_length=24)
     resource            =   CharField(max_length=72)
-    source_available    =   BigIntegerField()
-    source_allocated    =   BigIntegerField()
-    target_available    =   BigIntegerField()
-    target_allocated    =   BigIntegerField()
-    delta_quantity      =   BigIntegerField()
+    source_quantity     =   BigIntegerField(null=True)
+    source_capacity     =   BigIntegerField(null=True)
+    source_import_limit =   BigIntegerField(null=True)
+    source_export_limit =   BigIntegerField(null=True)
+    source_imported     =   BigIntegerField(null=False)
+    source_exported     =   BigIntegerField(null=False)
+    source_returned     =   BigIntegerField(null=False)
+    source_released     =   BigIntegerField(null=False)
+    target_quantity     =   BigIntegerField(null=True)
+    target_capacity     =   BigIntegerField(null=True)
+    target_import_limit =   BigIntegerField(null=True)
+    target_export_limit =   BigIntegerField(null=True)
+    target_imported     =   BigIntegerField(null=False)
+    target_exported     =   BigIntegerField(null=False)
+    target_returned     =   BigIntegerField(null=False)
+    target_released     =   BigIntegerField(null=False)
+    delta_quantity      =   BigIntegerField(null=False)
     reason              =   CharField(max_length=128)
+
+
+    def source_allocated_through(self):
+        return self.source_imported - self.source_released
+
+    def source_allocated(self):
+        return (+ self.source_allocated_through()
+                - self.source_exported
+                + self.source_returned)
+
+    def source_inbound_through(self):
+        return self.source_imported
+
+    def source_inbound(self):
+        return self.source_inbound_through() + self.source_returned
+
+    def source_outbound_through(self):
+        return self.source_released
+
+    def source_outbound(self):
+        return self.source_outbound_through() + self.source_exported
+
+    def target_allocated_through(self):
+        return self.target_imported - self.target_released
+
+    def target_allocated(self):
+        return (+ self.target_allocated_through()
+                - self.target_exported
+                + self.target_returned)
+
+    def target_inbound_through(self):
+        return self.target_imported
+
+    def target_inbound(self):
+        return self.target_inbound_through() + self.target_returned
+
+    def target_outbound_through(self):
+        return self.target_released
+
+    def target_outbound(self):
+        return self.target_outbound_through() + self.target_exported
 

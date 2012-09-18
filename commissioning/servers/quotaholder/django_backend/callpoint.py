@@ -154,7 +154,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             append((h.entity.entity, h.resource, h.policy,
                     h.imported, h.exported,
-                    h.regained, h.released, h.flags))
+                    h.returned, h.released, h.flags))
 
         return holdings
 
@@ -223,7 +223,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             append((h.entity.entity, h.resource, p.quantity, p.capacity,
                     p.import_limit, p.export_limit,
                     h.imported, h.exported,
-                    h.regained, h.released,
+                    h.returned, h.released,
                     h.flags))
 
         return quotas
@@ -288,6 +288,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                 key         =   None,
                                 owner       =   None,
                                 ownerkey    =   None,
+                                name        =   None,
                                 provisions  =   ()  ):
 
         try:
@@ -306,7 +307,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 raise InvalidKeyError(m)
 
         create = Commission.objects.create
-        commission = create(entity_id=target, clientkey=clientkey)
+        commission = create(entity_id=target, clientkey=clientkey, name=name)
         serial = commission.serial
 
         for entity, resource, quantity in provisions:
@@ -329,7 +330,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     raise ExportLimitError(m)
 
             if hp.quantity is not None:
-                available = (+ hp.quantity + h.imported + h.regained
+                available = (+ hp.quantity + h.imported + h.returned
                              - h.exporting - h.releasing)
 
                 if available - quantity < 0:
@@ -353,19 +354,19 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             if tp.capacity is not None:
                 capacity = (+ tp.capacity + th.exported + th.released
-                            - th.importing - th.regaining)
+                            - th.importing - th.returning)
 
                 if capacity - quantity < 0:
                         m = ("There is not enough capacity "
                              "to allocate into in %s.%s" % (target, resource))
                         raise NoCapacityError(m)
 
-            Provision.objects.create(   serial=commission,
-                                        entity=t,
-                                        resource=resource,
-                                        quantity=quantity   )
+            Provision.objects.create(   serial      =   commission,
+                                        entity      =   t,
+                                        resource    =   resource,
+                                        quantity    =   quantity   )
             if release:
-                h.regaining -= quantity
+                h.returning -= quantity
                 th.releasing -= quantity
             else:
                 h.exporting += quantity
@@ -379,22 +380,32 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
     def _log_provision(self, commission, s_holding, t_holding,
                              provision, log_time, reason):
 
-        source_allocated = s_holding.exported - s_holding.regained
-        source_available = (+ s_holding.policy.quantity + s_holding.imported
-                            - s_holding.released - source_allocated)
-        target_allocated = t_holding.exported - t_holding.regained
-        target_available = (+ t_holding.policy.quantity + t_holding.imported
-                            - t_holding.released - target_allocated)
+        s_entity = s_holding.entity
+        s_policy = s_holding.policy
+        t_entity = t_holding.entity
+        t_policy = t_holding.policy
 
         ProvisionLog.objects.create(
                         serial              =   commission.serial,
-                        source              =   s_holding.entity.entity,
-                        target              =   t_holding.entity.entity,
+                        source              =   s_entity.entity,
+                        target              =   t_entity.entity,
                         resource            =   provision.resource,
-                        source_available    =   source_available,
-                        source_allocated    =   source_allocated,
-                        target_available    =   target_available,
-                        target_allocated    =   target_allocated,
+                        source_quantity     =   s_policy.quantity,
+                        source_capacity     =   s_policy.capacity,
+                        source_import_limit =   s_policy.import_limit,
+                        source_export_limit =   s_policy.export_limit,
+                        source_imported     =   s_holding.imported,
+                        source_exported     =   s_holding.exported,
+                        source_returned     =   s_holding.returned,
+                        source_released     =   s_holding.released,
+                        target_quantity     =   t_policy.quantity,
+                        target_capacity     =   t_policy.capacity,
+                        target_import_limit =   t_policy.import_limit,
+                        target_export_limit =   t_policy.export_limit,
+                        target_imported     =   t_holding.imported,
+                        target_exported     =   t_holding.exported,
+                        target_returned     =   t_holding.returned,
+                        target_released     =   t_holding.released,
                         delta_quantity      =   provision.quantity,
                         issue_time          =   commission.issue_time,
                         log_time            =   log_time,
@@ -428,7 +439,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     release = 1
 
                 if release:
-                    h.regained -= quantity
+                    h.returned -= quantity
                     th.released -= quantity
                 else:
                     h.exported += quantity
@@ -470,18 +481,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     release = 1
 
                 if release:
-                    h.regaining += quantity
+                    h.returning += quantity
                     th.releasing += quantity
                 else:
                     h.exporting -= quantity
                     th.importing -= quantity
-
-                source_allocated = h.exported - h.regained
-                source_available = (+ h.policy.quantity + h.imported
-                        - h.released - source_allocated)
-                target_allocated = th.exported - th.regained
-                target_available = (+ th.policy.quantity + th.imported
-                        - th.released - target_allocated)
 
                 reason = 'REJECT:' + reason[-121:]
                 self._log_provision(c, h, th, pv, log_time, reason)
@@ -551,7 +555,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         chunk_size = 65536
         nr = 0
         timeline = []
-        extend = timeline.extend
+	append = timeline.append
         filterlogs = ProvisionLog.objects.filter
         if entity_set:
             q_entity = Q(source__in = entity_set) | Q(target__in = entity_set)
@@ -565,13 +569,39 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                 reason__startswith  =   'ACCEPT:'   )
 
             logs = logs.order_by('issue_time')
-            logs = logs.values()
+            #logs = logs.values()
             logs = logs[:chunk_size]
             nr += len(logs)
             if not logs:
                 break
-            extend(logs)
-            after = logs[-1]['issue_time']
+	    for g in logs:
+                o = {
+                    'serial'                    :   g.serial,
+                    'source'                    :   g.source,
+                    'target'                    :   g.target,
+                    'resource'                  :   g.resource,
+                    'name'                      :   g.name,
+                    'quantity'                  :   g.delta_quantity,
+                    'source_allocated'          :   g.source_allocated(),
+                    'source_allocated_through'  :   g.source_allocated_through(),
+                    'source_inbound'            :   g.source_inbound(),
+                    'source_inbound_through'    :   g.source_inbound_through(),
+                    'source_outbound'           :   g.source_outbound(),
+                    'source_outbound_through'   :   g.source_outbound_through,
+                    'target_allocated'          :   g.target_allocated(),
+                    'target_allocated_through'  :   g.target_allocated_through(),
+                    'target_inbound'            :   g.target_inbound(),
+                    'target_inbound_through'    :   g.target_inbound_through(),
+                    'target_outbound'           :   g.target_outbound(),
+                    'target_outbound_through'   :   g.target_outbound_through(),
+                    'issue_time'                :   g.issue_time,
+                    'log_time'                  :   g.log_time,
+                    'reason'                    :   g.reason,
+                }
+                    
+	    	append(o)
+
+            after = g.issue_time
             if after >= before:
                 break
 

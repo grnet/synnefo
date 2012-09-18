@@ -36,7 +36,7 @@ ImportLimit         =   Nonnegative(classname='ImportLimit', null=True)
 ExportLimit         =   Nonnegative(classname='ExportLimit', null=True)
 Imported            =   Nonnegative(classname='Imported')
 Exported            =   Nonnegative(classname='Exported')
-Regained            =   Nonnegative(classname='Regained')
+Returned            =   Nonnegative(classname='Returned')
 Released            =   Nonnegative(classname='Released')
 Flags               =   Nonnegative(classname='Flags')
 
@@ -56,7 +56,7 @@ class QuotaholderAPI(Specificator):
         rejected = ListOf(Entity)
         return rejected
 
-    def set_entity_key	(
+    def set_entity_key  (
                 self,
                 context         =   Context,
                 set_entity_key  =   ListOf(Entity, Key, NewKey)
@@ -113,7 +113,7 @@ class QuotaholderAPI(Specificator):
         ):
 
         holdings = ListOf(  Entity, Resource, Policy,
-                            Imported, Exported, Regained, Released, Flags   )
+                            Imported, Exported, Returned, Released, Flags   )
         return holdings
 
     def set_holding (
@@ -145,7 +145,7 @@ class QuotaholderAPI(Specificator):
                         Quantity, Capacity,
                         ImportLimit, ExportLimit,
                         Imported, Exported,
-                        Regained, Released,
+                        Returned, Released,
                         Flags)
         return quotas
 
@@ -168,6 +168,7 @@ class QuotaholderAPI(Specificator):
                 clientkey   =   ClientKey,
                 owner       =   Owner,
                 ownerkey    =   OwnerKey,
+                name        =   Text(default=''),
                 provisions  =   ListOf(Entity, Resource, Quantity)
         ):
 
@@ -177,7 +178,8 @@ class QuotaholderAPI(Specificator):
                 self,
                 context     =   Context,
                 clientkey   =   ClientKey,
-                serials     =   ListOf(Serial)
+                serials     =   ListOf(Serial),
+                reason      =   Text(default='ACCEPT')
         ):
 
         return Nothing
@@ -186,7 +188,8 @@ class QuotaholderAPI(Specificator):
                 self,
                 context     =   Context,
                 clientkey   =   ClientKey,
-                serials     =   ListOf(Serial)
+                serials     =   ListOf(Serial),
+                reason      =   Text(default='REJECT')
         ):
 
         return Nothing
@@ -227,13 +230,27 @@ class QuotaholderAPI(Specificator):
                 entities        =   ListOf(Entity, Key)
         ):
 
-        timeline = ListOf(  Dict(   serial      =   Serial,
-                                    source      =   Entity,
-                                    target      =   Entity,
-                                    resource    =   Resource,
-                                    quantity    =   Quantity,
-                                    issue_time  =   Timepoint,
-                                    log_time    =   Timepoint,
-                                    reason      =   Reason      )   )
+        timeline = ListOf(Dict(
+                            serial                      =   Serial,
+                            source                      =   Entity,
+                            target                      =   Entity,
+                            resource                    =   Resource,
+                            name                        =   Name(),
+                            quantity                    =   Quantity,
+                            source_allocated            =   Nonnegative,
+                            source_allocated_through    =   Nonnegative,
+                            source_inbound              =   Nonnegative,
+                            source_inbound_through      =   Nonnegative,
+                            source_outbound             =   Nonnegative,
+                            source_outbound_through     =   Nonnegative,
+                            target_allocated            =   Nonnegative,
+                            target_allocated_through    =   Nonnegative,
+                            target_inbound              =   Nonnegative,
+                            target_inbound_through      =   Nonnegative,
+                            target_outbound             =   Nonnegative,
+                            target_outbound_through     =   Nonnegative,
+                            issue_time                  =   Timepoint,
+                            log_time                    =   Timepoint,
+                            reason                      =   Reason      ))
         return timeline
 

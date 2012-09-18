@@ -75,6 +75,6 @@ def backend_score(backend, flavor):
 def has_free_ip(backend):
     """Find if Backend has any free public IP."""
     for network in backend_public_networks(backend):
-        if not network.pool.is_full():
+        if not network.get_pool().empty():
             return True
     return False

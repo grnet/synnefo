@@ -63,7 +63,7 @@ class Command(BaseCommand):
                   str(net.subnet), str(net.gateway), str(net.mac_prefix),
                   str(net.link), str(net.public),  str(net.dhcp),
                   str(net.type), str(net.deleted), str(net.action),
-                  str(splitPoolMap(net.pool.get_map(), 64)))
+                  str(splitPoolMap(net.get_pool().to_map(), 64)))
 
         self.stdout.write(sep)
         self.stdout.write('State of Network in DB\n')

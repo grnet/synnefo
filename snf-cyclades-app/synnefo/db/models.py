@@ -467,9 +467,8 @@ class Network(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
 
-    reservations = models.TextField(default='')
-
-    ip_pool = None
+    pool = models.OneToOneField('IPPoolTable', related_name='network',
+                                null=True)
 
     objects = ForUpdateManager()
 
@@ -559,25 +558,23 @@ class Network(models.Model):
         for backend in backends:
             BackendNetwork.objects.create(backend=backend, network=self)
 
-    @property
-    def pool(self):
-        if self.ip_pool:
-            return self.ip_pool
-        else:
-            self.ip_pool = pools.IPPool(self)
-            return self.ip_pool
+    def get_pool(self):
+        if not self.pool_id:
+            self.pool = IPPoolTable.objects.create(available_map='',
+                                                   reserved_map='',
+                                                   size=0)
+            self.save()
+        return IPPoolTable.objects.select_for_update().get(id=self.pool_id).pool
 
-    def reserve_address(self, address, pool=None):
-        pool = pool or self.pool
+    def reserve_address(self, address):
+        pool = self.get_pool()
         pool.reserve(address)
-        pool._update_network()
-        self.save()
+        pool.save()
 
-    def release_address(self, address, pool=None):
-        pool = pool or self.pool
-        pool.release(address)
-        pool._update_network()
-        self.save()
+    def release_address(self, address):
+        pool = self.get_pool()
+        pool.put(address)
+        pool.save()
 
 
 class BackendNetwork(models.Model):
@@ -712,5 +709,10 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
+
+
+class IPPoolTable(PoolTable):
+    manager = pools.IPPool

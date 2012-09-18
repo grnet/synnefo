@@ -41,7 +41,7 @@ from datetime import datetime
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
 from synnefo.logic import utils
-from synnefo.db.pools import IPPool
+from synnefo.db.pools import EmptyPool
 from synnefo.api.faults import OverLimit
 from synnefo.api.util import backend_public_networks, get_network_free_address
 from synnefo.util.rapi import GanetiRapiClient
@@ -118,10 +118,7 @@ def process_net_status(vm, etime, nics):
     Update the state of the VM in the DB accordingly.
     """
 
-    # Release the ips of the old nics. Get back the networks as multiple
-    # changes in the same network, must happen in the same Network object,
-    # because transaction will be commited only on exit of the function.
-    networks = release_instance_nics(vm)
+    release_instance_nics(vm)
 
     new_nics = enumerate(nics)
     for i, new_nic in new_nics:
@@ -129,11 +126,7 @@ def process_net_status(vm, etime, nics):
         n = str(network)
         pk = utils.id_from_network_name(n)
 
-        # Get the cached Network or get it from DB
-        if pk in networks:
-            net = networks[pk]
-        else:
-            net = Network.objects.select_for_update().get(pk=pk)
+        net = Network.objects.get(pk=pk)
 
         # Get the new nic info
         mac = new_nic.get('mac', '')
@@ -162,22 +155,9 @@ def process_net_status(vm, etime, nics):
 
 
 def release_instance_nics(vm):
-    networks = {}
-
     for nic in vm.nics.all():
-        pk = nic.network.pk
-        # Get the cached Network or get it from DB
-        if pk in networks:
-            net = networks[pk]
-        else:
-            # Get the network object in exclusive mode in order
-            # to guarantee consistency of the address pool
-            net = Network.objects.select_for_update().get(pk=pk)
-        if nic.ipv4:
-            net.release_address(nic.ipv4)
+        nic.network.release_address(nic.ipv4)
         nic.delete()
-
-    return networks
 
 
 @transaction.commit_on_success
@@ -367,7 +347,7 @@ def allocate_public_address(vm):
         try:
             address = get_network_free_address(network)
             return (network, address)
-        except IPPool.IPPoolExhausted:
+        except EmptyPool:
             pass
     return (None, None)
 

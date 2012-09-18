@@ -42,9 +42,10 @@ from django.utils import simplejson as json
 
 from synnefo.api.faults import (BadRequest, ServiceUnavailable,
                                 ItemNotFound, BuildInProgress)
-from synnefo.api.util import random_password, get_vm, get_nic_from_index
+from synnefo.api.util import (random_password, get_vm, get_nic_from_index,
+                              get_network_free_address)
 from synnefo.db.models import NetworkInterface, Network
-from synnefo.db.pools import IPPool
+from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
 
@@ -314,12 +315,10 @@ def add(request, net, args):
         raise ServiceUnavailable('Network not active yet')
 
     # Get a free IP from the address pool.
-    pool = IPPool(net)
     try:
-        address = pool.get_free_address()
-    except IPPool.IPPoolExhausted:
+        address = get_network_free_address(net)
+    except EmptyPool:
         raise ServiceUnavailable('Network is full')
-    pool.save()
 
     backend.connect_to_network(vm, net, address)
     return HttpResponse(status=202)

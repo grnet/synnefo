@@ -63,7 +63,6 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
-from synnefo.db.pools import IPPool
 from synnefo.settings import MAX_CIDR_BLOCK
 
 
@@ -231,15 +230,12 @@ def backend_public_networks(backend):
 def get_network_free_address(network):
     """Reserve an IP address from the IP Pool of the network.
 
-    Raises Network.DoesNotExist , IPPool.IPPoolExhausted
+    Raises EmptyPool
 
     """
 
-    # Get the Network object in exclusive mode in order to
-    # safely (isolated) reserve an IP address
-    network = Network.objects.select_for_update().get(id=network.id)
-    pool = IPPool(network)
-    address = pool.get_free_address()
+    pool = network.get_pool()
+    address = pool.get()
     pool.save()
     return address
 

@@ -2,8 +2,144 @@
 
 {% load filters %}
 
+
+
 {% block page.body %}
-    {% if data %}
-        {{ data }}
-    {% endif %}
+<div class="billing list"> 
+	
+	<div class="highlight">
+		
+		<em>{{ data.remainingCredits|floatformat:2 }}</em> credits remaining
+		<span class="info foo"> 
+		    <em>more info</em>
+		    <span>|<br>Each month you are given 4.000 new credits.</span>
+	    </span>
+	</div>
+	
+	<h2><span>Billing statement for </span><em>[ {{ today.month|month_name|upper }} {{ today.year }} ]</em></h2>
+	{% if data.bill|length %}
+		<p>
+			<em>
+				This page shows billing report for the period 1 {{ today.month|month_name }} {{ today.year }}- {{ month_last_day }} {{ today.month|month_name }} {{ today.year }}
+			</em>
+		</p>
+	
+	 
+	
+		<br><br>
+		<table class="alt-style">
+		    <tr>
+		        <th>Service</th>
+		        <th>Monthly Usage</th>
+		        <th class="last">Charged Credits</th>
+		    </tr>
+		    <tr>
+		      	<td>Cyclades 
+		      		{% with data|lookup:'bill_vmtime' as bill_vmtime %}
+		      			
+						 {% if bill_vmtime.0.totalCredits != '0.0'  %}
+						 	<a href="" class="more-info">&nbsp;</a>
+						 {% endif%}
+					{% endwith %}
+		      	</td>
+		      	<td>
+					{% with data|lookup:'bill_vmtime' as bill_vmtime %}
+						 {{ bill_vmtime.0.totalUnits|floatformat:0}} Hr
+					{% endwith %}
+				</td>
+		      	<td  class="last">
+					{% with data|lookup:'bill_vmtime' as bill_vmtime %}
+						 {{ bill_vmtime.0.totalCredits|floatformat:2}}
+					{% endwith %}
+				
+				</td>
+		    </tr>
+		    <tr class="innertable" style="display:none">
+		      	<td colspan="3">
+		      		<div class="table-div">
+			      		<table class="alt-style">
+						    
+						    
+						    <tr>
+						        <th>VM</th>
+						        <th>Flavor</th>
+						        <th>Vmtime</th>
+						        <th class="last">Charged Credits</th>
+						    </tr>
+						    {% with data|lookup:'bill_vmtime' as bill_vmtime %}
+								{% for d in  bill_vmtime %}
+									{% for vm in  d.details %}
+										<tr>
+											<td>{{ vm.resourceName }}</td>
+											<td>flavor?</td>
+											<td>{{ vm.totalElapsedTime|todate|timeuntil:zerodate }}</td>
+											<td class="last">{{ vm.totalUnits }}</td>
+										</tr>
+										
+									{% endfor %}
+								{% endfor %}
+							{% endwith %} 
+						   
+						     
+						 </table>
+					 </div>
+		      	</td>
+		    </tr>
+		    <tr>
+		      	<td>Pithos +</td>
+		      	<td>
+					{% with data|lookup:'bill_diskspace' as bill_diskspace %}
+						{{ bill_diskspace.0.totalUnits|floatformat:0}} {{ bill_diskspace.0.unitName }}
+					{% endwith %}
+					
+				</td>
+		      	<td class="last">
+					{% with data|lookup:'bill_diskspace' as bill_diskspace %}
+						{{ bill_diskspace.0.totalCredits|floatformat:2}}
+					{% endwith %}
+				
+				</td>
+		    </tr>
+		    <tr>
+		      	<td>Total Credits</td>
+		      	<td>&nbsp;</td>
+		      	 
+		      	<td class="sum last">{{ data.deductedCredits|floatformat:2 }}</td>
+		    </tr>
+		</table>
+	{% else %}
+		<p>
+			<em>
+				There is no billing statement for this month.
+			</em>
+		</p>
+	{% endif %}
+	
+	
+	 <form action={% url astakos.im.views.billing %} class="withlabels"  method="POST">{% csrf_token %}
+		<div class="form-row">
+			<label for="month">Choose another month</label>
+			<select name="datefrom">
+				{% with user.date_joined|monthssince as periods %}
+					{% for period in periods %}
+						<option value="{{ period.2 }}" {% if period.2 == start  %}selected="selected"{% endif%}> 
+							
+							   {{ period.1|month_name }} {{period.0}} 
+						</option>
+					{% endfor %}
+				{% endwith %}
+			</select>
+		</div>
+		<div class="form-row submit">
+	        <input type="submit" value="VIEW">
+	    </div> 
+	</form>
+	
+	<br><br><br>
+	<p>You can download a detailed activity report in Comma Separated Value (CSV) format or as txt file for AUGUST 2012.<br />
+		<a href="#">Download CSV</a>, <a href="#">Download .txt</a>
+	</p>
+		 
+</div>
+ 
 {% endblock %}

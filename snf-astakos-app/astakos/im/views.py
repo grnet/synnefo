@@ -946,23 +946,59 @@ def group_create_list(request):
 @signed_terms_required
 @login_required
 def billing(request):
+    
     today = datetime.today()
-    month_last_day = calendar.monthrange(today.year, today.month)[1]
+    month_last_day= calendar.monthrange(today.year, today.month)[1]
+    
+    start = request.POST.get('datefrom', None)
+    if start:
+        today = datetime.fromtimestamp(int(start))
+        month_last_day= calendar.monthrange(today.year, today.month)[1]
+    
     start = datetime(today.year, today.month, 1).strftime("%s")
     end = datetime(today.year, today.month, month_last_day).strftime("%s")
     r = request_billing.apply(args=(request.user.email,
                                     int(start) * 1000,
-                                    int(end) * 1000)
-                              )
-    data = None
+                                    int(end) * 1000))
+    data = {}
+    
     try:
         status, data = r.result
+        data=clear_billing_data(data)
         if status != 200:
             messages.error(request, _('Service response status: %d' % status))
     except:
         messages.error(request, r.result)
+    
+    print type(start)
+    
     return render_response(
         template='im/billing.html',
         context_instance=get_context(request),
-        data=data
-    )
+        data=data,
+        zerodate=datetime(month=1,year=1970, day=1),
+        today=today,
+        start=int(start),
+        month_last_day=month_last_day)  
+    
+def clear_billing_data(data):
+    
+    # remove addcredits entries
+    def isnotcredit(e):
+        return e['serviceName'] != "addcredits"
+    
+    
+    
+    # separate services    
+    def servicefilter(service_name):
+        service = service_name
+        def fltr(e):
+            return e['serviceName'] == service
+        return fltr
+        
+    
+    data['bill_nocredits'] = filter(isnotcredit, data['bill'])
+    data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
+    data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
+        
+    return data    

@@ -48,6 +48,9 @@ from synnefo.db import pools
 BACKEND_CLIENTS = {}  # {hash:Backend client}
 BACKEND_HASHES = {}   # {Backend.id:hash}
 
+import logging
+log = logging.getLogger(__name__)
+
 
 def get_client(hash, backend):
     """Get a cached backend client or create a new one.
@@ -534,8 +537,9 @@ class Network(models.Model):
 
         # Release the resources on the deletion of the Network
         if old_state != 'DELETED' and self.state == 'DELETED':
+            log.info("Network %r deleted. Releasing link %r mac_prefix %r",
+                     self.id, self.mac_prefix, self.link)
             self.deleted = True
-
             if self.mac_prefix:
                 mac_pool = MacPrefixPoolTable.get_pool()
                 mac_pool.put(self.mac_prefix)

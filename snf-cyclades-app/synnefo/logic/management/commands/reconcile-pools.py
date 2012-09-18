@@ -31,6 +31,7 @@ from django.core.management.base import BaseCommand
 
 from synnefo.db.models import (Network, BackendNetwork,
                                BridgePoolTable, MacPrefixPoolTable)
+from synnefo.settings import MAC_POOL_BASE
 
 
 class Command(BaseCommand):
@@ -89,12 +90,16 @@ class Command(BaseCommand):
         for i in xrange(0, macp_pool.size()):
             if not macp_pool.is_available(i, index=True) and \
                not macp_pool.is_reserved(i, index=True):
-                macs.append(macp_pool.index_to_value(i))
+                value = macp_pool.index_to_value(i)
+                if value != MAC_POOL_BASE:
+                    macs.append(macp_pool.index_to_value(i))
 
         write("Used MAC prefixes from Pool: %d\n" % len(macs))
 
-        network_mac_prefixes = Network.objects.filter(deleted=False)\
-                                         .values_list('mac_prefix', flat=True)
+        network_mac_prefixes = \
+            Network.objects.filter(deleted=False)\
+                            .exclude(mac_prefix=MAC_POOL_BASE) \
+                            .values_list('mac_prefix', flat=True)
         write("Used MAC prefixes from Networks: %d\n" %
                           len(network_mac_prefixes))
 
@@ -121,7 +126,8 @@ class Command(BaseCommand):
 
         mac_prefixes = BackendNetwork.objects.filter(deleted=False)\
                                       .values_list('mac_prefix', flat=True)
-
+        mac_prefixes = filter(lambda x: not x.startswith(MAC_POOL_BASE),
+                              mac_prefixes)
         set_mac_prefixes = set(mac_prefixes)
         if len(mac_prefixes) > len(set_mac_prefixes):
             write("Found duplicated mac_prefixes:\n")

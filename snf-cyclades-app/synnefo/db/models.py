@@ -548,15 +548,6 @@ class Network(models.Model):
 
         self.save()
 
-    def __init__(self, *args, **kwargs):
-        super(Network, self).__init__(*args, **kwargs)
-        if not self.mac_prefix:
-            # Allocate a MAC prefix for just created Network instances
-            mac_pool = MacPrefixPoolTable.get_pool()
-            mac_prefix = mac_pool.get()
-            mac_pool.save()
-            self.mac_prefix = mac_prefix
-
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""
 

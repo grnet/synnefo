@@ -59,7 +59,7 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 BadMediaType)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable)
+                               BridgePoolTable, MacPrefixPoolTable)
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
@@ -395,20 +395,24 @@ def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
 
-def network_link_from_type(network_type):
-    if network_type == 'PRIVATE_MAC_FILTERED':
+def net_resources(net_type):
+    mac_prefix = settings.MAC_POOL_BASE
+    if net_type == 'PRIVATE_MAC_FILTERED':
         link = settings.PRIVATE_MAC_FILTERED_BRIDGE
-    elif network_type == 'PRIVATE_PHYSICAL_VLAN':
+        mac_pool = MacPrefixPoolTable.get_pool()
+        mac_prefix = mac_pool.get()
+        mac_pool.save()
+    elif net_type == 'PRIVATE_PHYSICAL_VLAN':
         pool = BridgePoolTable.get_pool()
         link = pool.get()
         pool.save()
-    elif network_type == 'CUSTOM_ROUTED':
+    elif net_type == 'CUSTOM_ROUTED':
         link = settings.CUSTOM_ROUTED_ROUTING_TABLE
-    elif network_type == 'CUSTOM_BRIDGED':
+    elif net_type == 'CUSTOM_BRIDGED':
         link = settings.CUSTOM_BRIDGED_BRIDGE
-    elif network_type == 'PUBLIC_ROUTED':
+    elif net_type == 'PUBLIC_ROUTED':
         link = settings.PUBLIC_ROUTED_ROUTING_TABLE
     else:
-        raise BadRequest('Unknown network network_type')
+        raise BadRequest('Unknown network type')
 
-    return link
+    return link, mac_prefix

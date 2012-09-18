@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Network, Backend
-from synnefo.api.util import network_link_from_type, validate_network_size
+from synnefo.api.util import net_resources, validate_network_size
 from synnefo.logic.backend import create_network
 from synnefo import settings
 
@@ -105,7 +105,7 @@ class Command(BaseCommand):
 
         name = options['name']
         subnet = options['subnet']
-        typ = options['type']
+        net_type = options['type']
         backend_id = options['backend_id']
         public = options['public']
 
@@ -115,7 +115,7 @@ class Command(BaseCommand):
             raise CommandError("Subnet is required")
         if public and not backend_id:
             raise CommandError("backend-id is required")
-        if public and not typ=='PUBLIC_ROUTED':
+        if public and not net_type == 'PUBLIC_ROUTED':
             raise CommandError("Invalid type for public network")
         if backend_id and not public:
             raise CommandError("Private networks must be created to"
@@ -130,7 +130,7 @@ class Command(BaseCommand):
             except Backend.DoesNotExist:
                 raise CommandError("Backend not found in DB")
 
-        link = network_link_from_type(typ)
+        link, mac_prefix = net_resources(net_type)
 
         subnet, gateway, subnet6, gateway6 = validate_network_info(options)
 
@@ -143,9 +143,10 @@ class Command(BaseCommand):
                 subnet=subnet,
                 gateway=gateway,
                 dhcp=options['dhcp'],
-                type=options['type'],
+                type=net_type,
                 public=public,
                 link=link,
+                mac_prefix=mac_prefix,
                 gateway6=gateway6,
                 subnet6=subnet6,
                 state='PENDING')

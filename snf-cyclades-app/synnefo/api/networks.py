@@ -165,12 +165,12 @@ def create_network(request):
         subnet6 = d.get('cidr6', None)
         gateway = d.get('gateway', None)
         gateway6 = d.get('gateway6', None)
-        typ = d.get('type', 'PRIVATE_MAC_FILTERED')
+        net_type = d.get('type', 'PRIVATE_MAC_FILTERED')
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    if typ == 'PUBLIC_ROUTED':
+    if net_type == 'PUBLIC_ROUTED':
         raise Unauthorized('Can not create a public network.')
 
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
@@ -183,7 +183,7 @@ def create_network(request):
         raise OverLimit("Unsupported network size.")
 
     try:
-        link = util.network_link_from_type(typ)
+        link, mac_prefix = util.net_resources(net_type)
         if not link:
             raise Exception("Can not create network. No connectivity link.")
 
@@ -195,8 +195,9 @@ def create_network(request):
                 gateway=gateway,
                 gateway6=gateway6,
                 dhcp=dhcp,
-                type=typ,
+                type=net_type,
                 link=link,
+                mac_prefix=mac_prefix,
                 action='CREATE',
                 state='PENDING')
     except EmptyPool:

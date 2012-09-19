@@ -587,7 +587,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     'source_inbound'            :   g.source_inbound(),
                     'source_inbound_through'    :   g.source_inbound_through(),
                     'source_outbound'           :   g.source_outbound(),
-                    'source_outbound_through'   :   g.source_outbound_through,
+                    'source_outbound_through'   :   g.source_outbound_through(),
                     'target_allocated'          :   g.target_allocated(),
                     'target_allocated_through'  :   g.target_allocated_through(),
                     'target_inbound'            :   g.target_inbound(),

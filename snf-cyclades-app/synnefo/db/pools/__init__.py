@@ -217,9 +217,10 @@ class IPPool(PoolManager):
         gateway = network.gateway
         self.gateway = gateway and ipaddr.IPAddress(gateway) or None
         if do_init:
-            self._reserve(0)
-            self.reserve(gateway)
-            self._reserve(self.size() - 1)
+            self._reserve(0, external=True)
+            if gateway:
+                self.reserve(gateway, external=True)
+            self._reserve(self.size() - 1, external=True)
 
     def value_to_index(self, value):
         addr = ipaddr.IPAddress(value)

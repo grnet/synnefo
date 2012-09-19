@@ -251,6 +251,8 @@ class QuotaholderAPI(Specificator):
                             target_outbound_through     =   Nonnegative,
                             issue_time                  =   Timepoint,
                             log_time                    =   Timepoint,
-                            reason                      =   Reason      ))
+                            reason                      =   Reason,
+
+			    strict  =   True))
         return timeline
 

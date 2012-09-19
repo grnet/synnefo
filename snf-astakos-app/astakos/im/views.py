@@ -954,7 +954,7 @@ def billing(request):
     
     start = datetime(today.year, today.month, 1).strftime("%s")
     end = datetime(today.year, today.month, month_last_day).strftime("%s")
-    r = request_billing.apply(args=(request.user.email,
+    r = request_billing.apply(args=('pgerakios@grnet.gr',
                                     int(start) * 1000,
                                     int(end) * 1000))
     data = {}
@@ -997,5 +997,6 @@ def clear_billing_data(data):
     data['bill_nocredits'] = filter(isnotcredit, data['bill'])
     data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
     data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
+    data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
     return data    

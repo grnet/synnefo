@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*- 
 from random import random, choice, randint
 from math import log
+from inspect import isclass
 
 def shorts(s):
     if not isinstance(s, unicode):
@@ -33,6 +34,11 @@ class Canonical(object):
         opts = {}
         for k, v in kw.items():
             if not isinstance(v, Canonical):
+                if isclass(v) and issubclass(v, Canonical):
+                    m = ("argument '%s': value '%s' is a Canonical _class_. "
+                         "Perhaps you meant to specify a Canonical _instance_"
+                         % (k, v))
+                    raise SpecifyException(m)
                 opts[k] = v
                 del kw[k]
 
@@ -146,7 +152,7 @@ class Integer(Canonical):
                 raise CanonifyException(m)
         except TypeError, e:
             m = "%s: cannot convert '%s' to long" % (self, shorts(item))
-	    raise CanonifyException(m)
+            raise CanonifyException(m)
 
         optget = self.opts.get
         minimum = optget('minimum', None)

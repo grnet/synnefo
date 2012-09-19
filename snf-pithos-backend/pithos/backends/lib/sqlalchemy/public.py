@@ -87,6 +87,8 @@ class Public(DBWorker):
         r.close()
 
     def public_unset_bulk(self, paths):
+        if not paths:
+            return
         s = self.public.update()
         s = s.where(self.public.c.path.in_(paths))
         s = s.values(active=False)

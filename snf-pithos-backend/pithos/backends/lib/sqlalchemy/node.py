@@ -245,6 +245,8 @@ class Node(DBWorker):
            Return () if the path is not found.
         """
 
+        if not paths:
+            return ()
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
         s = select([self.nodes.c.node], self.nodes.c.path.in_(paths))
         r = self.conn.execute(s)
@@ -353,8 +355,9 @@ class Node(DBWorker):
         rp = self.conn.execute(s)
         nodes = [r[0] for r in rp.fetchall()]
         rp.close()
-        s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
-        self.conn.execute(s).close()
+        if nodes:
+            s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
+            self.conn.execute(s).close()
 
         return hashes, size, serials
 
@@ -405,8 +408,9 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         nodes = r.fetchall()
         r.close()
-        s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
-        self.conn.execute(s).close()
+        if nodes:
+            s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
+            self.conn.execute(s).close()
 
         return hashes, size, serials
 

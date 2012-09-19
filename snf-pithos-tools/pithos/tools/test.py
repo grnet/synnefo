@@ -1858,7 +1858,7 @@ class ListSharing(BaseTestCase):
         for i in range(2):
             self.upload_random_data('c1', 'o%s' %i)
         if not OTHER_ACCOUNTS:
-            raise Warning('No other accounts avalaible to run this test.')
+            raise Warning('No other accounts avalaible for running this test.')
         for token, account in OTHER_ACCOUNTS.items():
             self.o1_sharing = token, account
             self.client.share_object('c1', 'o1', (account,), read=True)
@@ -2172,7 +2172,7 @@ class TestPermissions(BaseTestCase):
         BaseTestCase.setUp(self)
         
         if not OTHER_ACCOUNTS:
-            raise Warning('No other accounts avalaible to run this test.')
+            raise Warning('No other accounts avalaible for running this test.')
         
         #create a group
         self.authorized = ['chazapis', 'verigak', 'gtsouk']

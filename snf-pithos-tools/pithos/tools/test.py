@@ -62,7 +62,10 @@ DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
 from pithos.api.settings import AUTHENTICATION_USERS
 AUTHENTICATION_USERS = AUTHENTICATION_USERS or {}
 OTHER_ACCOUNTS = AUTHENTICATION_USERS.copy()
-OTHER_ACCOUNTS.pop(get_auth())
+try:
+    OTHER_ACCOUNTS.pop(get_auth())
+except:
+    pass
 
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
@@ -1854,14 +1857,13 @@ class ListSharing(BaseTestCase):
         self.client.create_container('c')
         for i in range(2):
             self.upload_random_data('c1', 'o%s' %i)
-        accounts = OTHER_ACCOUNTS.copy()
-        self.o1_sharing = accounts.popitem()
-        self.client.share_object('c1', 'o1', (self.o1_sharing[1],), read=True)
+        if not OTHER_ACCOUNTS:
+            raise Warning('No other accounts avalaible to run this test.')
+        for token, account in OTHER_ACCOUNTS.items():
+            self.o1_sharing = token, account
+            self.client.share_object('c1', 'o1', (account,), read=True)
+            break
         
-        l = []
-        for i in range(len(OTHER_ACCOUNTS) - 1):
-            l.append(accounts.popitem())
-    
     def tearDown(self):
         pass
     
@@ -1976,7 +1978,7 @@ class List(BaseTestCase):
         self.assertEqual(l, '')
         self.assertEqual([], func(*args, format='json', **kwargs))
 
-class TestGreek(BaseTestCase):
+class TestUTF8(BaseTestCase):
     def test_create_container(self):
         self.client.create_container('φάκελος')
         self.assert_container_exists('φάκελος')
@@ -2104,16 +2106,18 @@ class TestGreek(BaseTestCase):
 
     def test_groups(self):
         #create a group
-        groups = {'σεφς':'chazapis,διογένης'}
+        groups = {'γκρουπ':'chazapis,διογένης'}
         self.client.set_account_groups(**groups)
         groups.update(self.initial_groups)
-        self.assertEqual(groups['σεφς'],
-                         self.client.retrieve_account_groups()['σεφς'])
+        self.assertEqual(groups['γκρουπ'],
+                         self.client.retrieve_account_groups()['γκρουπ'])
 
         #check read access
         self.client.create_container('φάκελος')
         o = self.upload_random_data('φάκελος', 'ο1')
-        self.client.share_object('φάκελος', 'ο1', ['%s:σεφς' % get_user()])
+        self.client.share_object('φάκελος', 'ο1', ['%s:γκρουπ' % get_user()])
+        if 'διογένης' not in OTHER_ACCOUNTS.values():
+            raise Warning('No such an account exists for running this test.')
         chef = Pithos_Client(get_url(),
                             '0009',
                             'διογένης')
@@ -2166,7 +2170,10 @@ class TestGreek(BaseTestCase):
 class TestPermissions(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-
+        
+        if not OTHER_ACCOUNTS:
+            raise Warning('No other accounts avalaible to run this test.')
+        
         #create a group
         self.authorized = ['chazapis', 'verigak', 'gtsouk']
         groups = {'pithosdev':','.join(self.authorized)}

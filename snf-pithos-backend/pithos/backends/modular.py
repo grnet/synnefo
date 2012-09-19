@@ -200,6 +200,7 @@ class ModularBackend(BaseBackend):
         self.quotaholder_url = quotaholder_url
         self.quotaholder = QuotaholderHTTP(quotaholder_url)
         self.serials = []
+        self.messages = []
 
     def close(self):
         self.wrapper.close()

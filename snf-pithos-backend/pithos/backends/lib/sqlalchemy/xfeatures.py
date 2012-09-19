@@ -128,7 +128,9 @@ class XFeatures(DBWorker):
 
     def xfeature_destroy_bulk(self, paths):
         """Destroy features and all their key, value pairs."""
-
+        
+        if not paths:
+            return
         s = self.xfeatures.delete().where(self.xfeatures.c.path.in_(paths))
         r = self.conn.execute(s)
         r.close()

@@ -611,7 +611,7 @@ class TimelineForm(forms.Form):
         if 'resource' in d:
             d['resource'] = str(d['resource'])
         if 'start_date' in d:
-            d['start_date'] = d['start_date'].strftime("%Y-%m-%d %H:%M:%S")
+            d['start_date'] = d['start_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")
         if 'end_date' in d:
-            d['end_date'] = d['end_date'].strftime("%Y-%m-%d %H:%M:%S")
+            d['end_date'] = d['end_date'].strftime("%%Y-%m-%dT%H:%M:%S.%f")
         return d

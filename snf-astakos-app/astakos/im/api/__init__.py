@@ -172,87 +172,55 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         append = l.append
         item = MenuItem
         item.current_path = absolute(request, request.path)
-        append(
-            item(
+        append(item(
                 url=absolute(request, reverse('index')),
-                name=user.email
-            )
-        )
-        append(
-            item(
-                url=absolute(request, reverse('edit_profile')),
-                name="My account"
-            )
-        )
+                name=user.email))
+        append(item(url=absolute(request, reverse('edit_profile')),
+               name="My account"))
         if with_extra_links:
             if user.has_usable_password() and user.provider in ('local', ''):
-                append(
-                    item(
+                append(item(
                         url=absolute(request, reverse('password_change')),
-                        name="Change password"
-                    )
-                )
+                        name="Change password"))
             if EMAILCHANGE_ENABLED:
-                append(
-                    item(
+                append(item(
                         url=absolute(request, reverse('email_change')),
-                        name="Change email"
-                    )
-                )
+                        name="Change email"))
             if INVITATIONS_ENABLED:
-                append(
-                    item(
+                append(item(
                         url=absolute(request, reverse('invite')),
-                        name="Invitations"
-                    )
-                )
-            append(
-                item(
+                        name="Invitations"))
+            append(item(
                     url=absolute(request, reverse('feedback')),
-                    name="Feedback"
-                )
-            )
-            append(
-                item(
+                    name="Feedback"))
+            append(item(
                     url=absolute(request, reverse('group_list')),
                     name="Groups",
-                    submenu=(
-                        item(
-                            url=absolute(request, reverse('group_list')),
-                            name="Overview"
-                        ),
-                        item(
-                            url=absolute(request,
-                                         reverse('group_create_list')
-                                         ),
-                            name="Create"
-                        ),
-                        item(
-                            url=absolute(request, reverse('group_search')),
-                            name="Join"
-                        ),
-                    )
-                )
-            )
-            append(
-                item(
+                    submenu=(item(
+                                url=absolute(request,
+                                             reverse('group_list')),
+                                name="Overview"),
+                            item(
+                                url=absolute(request,
+                                             reverse('group_create_list')),
+                                name="Create"),
+                            item(
+                                url=absolute(request,
+                                             reverse('group_search')),
+                                name="Join"),)))
+            append(item(
                     url=absolute(request, reverse('resource_list')),
-                    name="Resources"
-                )
-            )
-            append(
-                item(
+                    name="Resources"))
+            append(item(
                     url=absolute(request, reverse('billing')),
-                    name="Billing"
-                )
-            )
+                    name="Billing"))
+            append(item(
+                    url=absolute(request, reverse('timeline')),
+                    name="Timeline"))
         if with_signout:
-            append(
-                item(
+            append(item(
                     url=absolute(request, reverse('logout')),
-                    name="Sign out"
-                )
-            )
+                    name="Sign out"))
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))

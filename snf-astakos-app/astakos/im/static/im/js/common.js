@@ -174,6 +174,19 @@ $(document).ready(function() {
 					$( "#id_issue_date" ).datepicker( "option", "maxDate", selectedDate );
 				}
 			});
+			$( "#id_start_date" ).datepicker({
+				dateFormat: "YYYY-mm-ddTHH:MM:SS.FFF",
+				onSelect: function( selectedDate ) {
+					$( "#id_start_date" ).datepicker( "option", "maxDate", selectedDate );
+				}
+			});
+			
+			$( "#id_end_date" ).datepicker({
+				dateFormat: "YYYY-mm-ddTHH:MM:SS.FFF",
+				onSelect: function( selectedDate ) {
+					$( "#id_end_date" ).datepicker( "option", "maxDate", selectedDate );
+				}
+			});
 		}
 	});
 	

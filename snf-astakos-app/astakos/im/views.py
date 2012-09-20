@@ -67,7 +67,8 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               FeedbackForm, SignApprovalTermsForm,
                               ExtendedPasswordChangeForm, EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
-                              AstakosGroupUpdateForm, AddGroupMembersForm)
+                              AstakosGroupUpdateForm, AddGroupMembersForm,
+                              TimelineForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   invite as invite_func, logout as auth_logout,
                                   activate as activate_func,
@@ -1019,3 +1020,30 @@ def clear_billing_data(data):
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
     return data    
+
+def timeline(request):
+    data = None
+    l = []
+    if request.method == 'POST':
+        data = request.POST
+        l =[(u'test/apples', u'2012-09-20T11:39:53.1797', 192172055040L, 25569215632749L),
+            (u'test/pears/kate.jpg', u'2012-09-20T11:45:14.1153', 381640896L, 25626036449581L),
+            (u'test/pears/kate_beckinsale.jpg', u'2012-09-20T11:45:14.5830', 0L, 25626036449581L),
+            (u'test/pears/How To Win Friends And Influence People.pdf', u'2012-09-20T11:45:15.0694', 0L, 25626036449581L),
+            (u'test/pears/moms_birthday.jpg', u'2012-09-20T11:45:15.5615', 0L, 25626036449581L),
+            (u'test/pears/poodle_strut.mov', u'2012-09-20T11:45:16.0290', 0L, 25626036449581L),
+            (u'test/pears/Disturbed - Down With The Sickness.mp3', u'2012-09-20T11:45:16.4950', 0L, 25626036449581L),
+            (u'test/pears/army_of_darkness.avi', u'2012-09-20T11:45:16.9844', 0L, 25626036449581L),
+            (u'test/pears/the_mad.avi', u'2012-09-20T11:45:17.4516', 0L, 25626036449581L),
+            (u'test/apples/photos/animals/dogs/poodle.jpg', u'2012-09-20T11:45:17.9281', 0L, 25626036449581L),
+            (u'test/apples/photos/animals/dogs/terrier.jpg', u'2012-09-20T11:45:18.3918', 0L, 25626036449581L),
+            (u'test/apples/photos/animals/cats/persian.jpg', u'2012-09-20T11:45:18.8626', 0L, 25626036449581L),
+            (u'test/apples/photos/animals/cats/siamese.jpg', u'2012-09-20T11:45:19.3686', 0L, 25626036449581L),
+            (u'test/apples/photos/plants/fern.jpg', u'2012-09-20T11:45:19.8464', 0L, 25626036449581L),
+            (u'test/apples/photos/plants/rose.jpg', u'2012-09-20T11:45:20.7334', 0L, 25626036449581L)]
+    
+    form = TimelineForm(data)
+    return render_response(template='im/timeline.html',
+                           context_instance=get_context(request),
+                           form=form,
+                           l=l)

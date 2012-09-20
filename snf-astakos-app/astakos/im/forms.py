@@ -47,14 +47,12 @@ from django.utils.encoding import smart_str
 from django.forms.extras.widgets import SelectDateWidget
 from django.conf import settings
 
-from astakos.im.models import (
-    AstakosUser, EmailChange, AstakosGroup, Invitation,
-    Membership, GroupKind, get_latest_terms
-)
+from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup,
+                               Invitation, Membership, GroupKind, Resource,
+                               get_latest_terms)
 from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
-                                 RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL,
-                                 LOGGING_LEVEL
-                                 )
+                                 RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED,
+                                 DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL)
 
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
@@ -525,8 +523,6 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 
 
 class AstakosGroupCreationForm(forms.ModelForm):
-#     issue_date = forms.DateField(widget=SelectDateWidget())
-#     expiration_date = forms.DateField(widget=SelectDateWidget())
     kind = forms.ModelChoiceField(
         queryset=GroupKind.objects.all(),
         label="",
@@ -598,3 +594,16 @@ class AddGroupMembersForm(forms.Form):
 
 class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')
+
+class TimelineForm(forms.Form):
+    entity = forms.ModelChoiceField(
+        queryset=AstakosUser.objects.none(),
+        label="",
+        widget=forms.HiddenInput()
+    )
+    resource = forms.ModelChoiceField(
+        queryset=Resource.objects.all(),
+    )
+    start_date = forms.DateTimeField()
+    end_date = forms.DateTimeField()
+    action = forms.ChoiceField(choices=())

@@ -56,6 +56,7 @@ from django.views.generic.create_update import (create_object, delete_object,
                                                 get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.http import HttpResponseBadRequest
+from django.core.paginator import Paginator, InvalidPage
 
 from astakos.im.models import (
     AstakosUser, ApprovalTerms, AstakosGroup, Resource,
@@ -75,8 +76,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
                                   SendNotificationError)
 from astakos.im.settings import (
     COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
-    LOGGING_LEVEL
-)
+    LOGGING_LEVEL, PAGINATE_BY)
 from astakos.im.tasks import request_billing
 
 logger = logging.getLogger(__name__)
@@ -716,12 +716,30 @@ def group_add(request, kind_name='default'):
 @signed_terms_required
 @login_required
 def group_list(request):
+    q = request.user.astakos_groups.none()
     list = request.user.astakos_groups.select_related().all()
-    return object_list(request, queryset=list,
-                       extra_context=dict(
-                       is_search=False
-                       )
-                       )
+    d = {}
+    d['own'] = [g for g in list if request.user in g.owner.all()]
+    d['other'] = list.exclude(id__in=(g.id for g in d['own']))
+    for k, queryset in d.iteritems():
+        paginator = Paginator(queryset, PAGINATE_BY)
+        page = request.GET.get('%s_page' % k, 1)
+        try:
+            page_number = int(page)
+        except ValueError:
+            if page == 'last':
+                page_number = paginator.num_pages
+            else:
+                # Page is not 'last', nor can it be converted to an int.
+                raise Http404
+        try:
+            page_obj = locals()['%s_page_obj' % k] = paginator.page(page_number)
+        except InvalidPage:
+            raise Http404
+    return object_list(request, queryset=q,
+                       extra_context={'is_search':False,
+                                      'mine': locals()['own_page_obj'],
+                                      'other': locals()['other_page_obj']})
 
 
 @signed_terms_required
@@ -765,35 +783,36 @@ def group_update(request, group_id):
 @signed_terms_required
 @login_required
 def group_search(request, extra_context=None, **kwargs):
+    q = request.GET.get('q')
     if request.method == 'GET':
-        form = AstakosGroupSearchForm()
+        form = AstakosGroupSearchForm({'q': q} if q else None)
     else:
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            queryset = AstakosGroup.objects.select_related(
-            ).filter(name__contains=q)
-            return object_list(
-                request,
-                queryset,
-                template_name='im/astakosgroup_list.html',
-                extra_context=dict(form=form,
-                                   is_search=True))
-    return render_response(
-        template='im/astakosgroup_list.html',
-        form=form,
-        context_instance=get_context(request, extra_context),
-        is_search=False
-    )
+    if q:
+        queryset = AstakosGroup.objects.select_related(
+        ).filter(name__contains=q)
+    else:
+        queryset = AstakosGroup.objects.none()
+    return object_list(
+        request,
+        queryset,
+        paginate_by=PAGINATE_BY,
+        page=request.GET.get('page') or 1,
+        template_name='im/astakosgroup_list.html',
+        extra_context=dict(form=form,
+                           is_search=True,
+                           q=q))
 
 @signed_terms_required
 @login_required
 def group_all(request, extra_context=None, **kwargs):
-    if request.method != 'POST':
-        return HttpResponseBadRequest(_('Bad method'))
     return object_list(
                 request,
                 AstakosGroup.objects.select_related().all(),
+                paginate_by=PAGINATE_BY,
+                page=request.GET.get('page') or 1,
                 template_name='im/astakosgroup_list.html',
                 extra_context=dict(form=AstakosGroupSearchForm(),
                                    is_search=True))

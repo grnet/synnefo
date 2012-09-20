@@ -84,8 +84,9 @@ ASTAKOS_QUOTA_HOLDER_URL            ''                                          
 ASTAKOS_SERVICES                    {'cyclades': {'url':'https://node1.example.com/ui/', 'quota': {'vm': 2}},       Cloud service default url and quota      
                                     'pithos+':  {'url':'https://node2.example.com/ui/', 'quota': {                  
                                     'diskspace': 50 * 1024 * 1024 * 1024}}})                                        
-AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
+ASTAKOS_AQUARIUM_URL                ''                                                                              The billing (aquarium) URI
                                                                                                                     e.g. ``http://localhost:8888/user``
+ASTAKOS_PAGINATE_BY                 10                                                                              Number of object to be displayed per page
 =================================== =============================================================================   ===========================================================================================
 
 Administrator functions

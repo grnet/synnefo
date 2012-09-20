@@ -31,9 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django import template
 import calendar
 import datetime
+
+from django import template
+
+from astakos.im.settings import PAGINATE_BY
 
 register = template.Library()
 
@@ -77,17 +80,6 @@ def enabled(object_list, is_search):
     if not is_search:
         return object_list
     return [g for g in object_list if g.is_enabled]
-
-
-@register.filter
-def split(object_list, user):
-    try:
-        d = {}
-        d['own'] = [g for g in object_list if user in g.owner.all()]
-        d['other'] = list(set(object_list) - set(d['own']))
-        return d
-    except:
-        return {'own': object_list, 'other': ()}
 
 
 @register.filter

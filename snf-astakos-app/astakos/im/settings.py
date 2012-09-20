@@ -133,3 +133,5 @@ EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJE
 PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
         'Password reset on %s alpha2 testing' % SITENAME)
 
+# Set how many objects should be displayed per page
+PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 10)

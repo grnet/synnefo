@@ -39,12 +39,101 @@
 		</ul>
         
     {% endif %}
-    {% with object_list|enabled:is_search as object_list %}
+    {% with page_obj.object_list|enabled:is_search as object_list %}
     {% if object_list %}
-      {% with object_list|split:user as d %}
-      	{% with d|lookup:'own' as mine %}
-	      	{% if mine %}	
-	      		<div class="full-dotted">
+        <div class="full-dotted">
+            <table class="alt-style complex">
+                <caption>
+                    {% if is_search %}
+                        SEARCH RESULTS
+                    {% else %}
+                        I PARTICIPATE IN
+                    {% endif %}
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Issued</th>
+                    <th>Expires</th>
+                     
+                    <th>Enrolled</th>
+                   
+                     
+                    <th>Enrollment status</th>
+                    <th>&nbsp;</th>
+                  
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for o in object_list %}
+                  <tr class="{% cycle 'tr1' 'tr2' %}">
+                    <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
+                    <td>{{o.kind|capfirst}}</td>
+                    <td>{{o.issue_date|date:"d/m/Y"}}</td>
+                    <td>{{o.expiration_date|date:"d/m/Y"}}</td>
+                    
+                    <td>{{ o.approved_members|length }}</td>
+                    
+                    <td>
+                    {% if user in o.approved_members %}
+    
+                        Registered
+                        <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+                             <input type="submit"  value="LEAVE GROUP" />
+                        </form>	
+                        
+                            
+                    {% else %}
+                        {% if user in o.members %}
+                            Pending
+                        {% else %}
+                            Not member 
+                                <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
+                                    <input type="submit"   value="JOIN GROUP" />
+                                </form>
+                            
+                        {% endif %}
+                    {% endif %}
+                    </td>
+                    <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
+                  </tr>
+                  <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
+                    <td colspan="8" class="info-td">
+                        <div>
+                            <p>{{o.desc}}</p>
+                            <p>{% if o.homepage%}
+                                Visit it group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+                            {% else %}
+                                There is no homepage for this group yet.
+                            {% endif %}
+                            </p>
+                        </div>	
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+            </table>
+           
+        </div>
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}">previous</a>
+            {% endif %}
+    
+            <span class="current">
+                Page {{ page_obj.number }} of {{ paginator.num_pages }}.
+            </span>
+    
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}">next</a>
+            {% endif %}
+        </span>
+    </div>
+      {% else %}
+	      	{% if mine %}
+	      	    <div class="full-dotted">
 					<table class="alt-style complex" id="">
 			            <caption>MY GROUPS</caption>
 			            <thead>
@@ -61,7 +150,7 @@
 			              </tr>
 			            </thead>
 			            <tbody>
-			              {% for o in mine %}
+			              {% for o in mine.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
 			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
 			                <td>{{o.kind|capfirst}}</td>
@@ -77,7 +166,7 @@
 			                	<div>
 			                		<p>{{o.desc}}</p>
 					                <p>{% if o.homepage%}
-							 			Vistit group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+							 			Visit it group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
 							 		{% else %}
 							 			There is no homepage for this group yet.
 							 		{% endif %}
@@ -88,13 +177,25 @@
 			              {% endfor %}
 			            </tbody>
 			        </table>
-			       
 				</div>
+				<div class="pagination">
+                    <span class="step-links">
+                        {% if mine.has_previous %}
+                            <a href="?own_page={{ mine.previous_page_number }}">previous</a>
+                        {% endif %}
+                
+                        <span class="current">
+                            Page {{ mine.number }} of {{ mine.paginator.num_pages }}.
+                        </span>
+                
+                        {% if mine.has_next %}
+                            <a href="?own_page={{ mine.next_page_number }}">next</a>
+                        {% endif %}
+                    </span>
+                </div>
       		{% endif %}
-      	{% endwith %}
-      	{% with d|lookup:'other' as other %}
 	      	{% if other %}	
-	      		<div class="full-dotted">
+ 	      		<div class="full-dotted">
 					<table class="alt-style complex">
 			            <caption>
 			            	{% if is_search %}
@@ -119,7 +220,7 @@
 			              </tr>
 			            </thead>
 			            <tbody>
-			              {% for o in other %}
+			              {% for o in other.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
 			                <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
 			                <td>{{o.kind|capfirst}}</td>
@@ -156,7 +257,7 @@
 			                	<div>
 			                		<p>{{o.desc}}</p>
 					                <p>{% if o.homepage%}
-							 			Vistit group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+							 			Visit it group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
 							 		{% else %}
 							 			There is no homepage for this group yet.
 							 		{% endif %}
@@ -169,11 +270,23 @@
 			        </table>
 			       
 				</div>
+				<div class="pagination">
+                    <span class="step-links">
+                        {% if other.has_previous %}
+                            <a href="?other_page={{ other.previous_page_number }}">previous</a>
+                        {% endif %}
+                
+                        <span class="current">
+                            Page {{ other.number }} of {{ other.paginator.num_pages }}.
+                        </span>
+                
+                        {% if other.has_next %}
+                            <a href="?other_page={{ other.next_page_number }}">next</a>
+                        {% endif %}
+                    </span>
+                </div>
 			{% endif %}
-      	{% endwith %}
-      {% endwith %}
-      {% else %}
-            {% if is_search %}
+            {% if q %}
                 <h2>No groups found!</h2>
             {% endif %}
       {% endif %}

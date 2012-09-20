@@ -227,7 +227,7 @@ class QuotaholderAPI(Specificator):
                 context         =   Context,
                 after           =   Timepoint,
                 before          =   Timepoint,
-                entities        =   ListOf(Entity, Key)
+                get_timeline    =   ListOf(Entity, Resource, Key)
         ):
 
         timeline = ListOf(Dict(
@@ -253,6 +253,6 @@ class QuotaholderAPI(Specificator):
                             log_time                    =   Timepoint,
                             reason                      =   Reason,
 
-			    strict  =   True))
+                            strict  =   True))
         return timeline
 

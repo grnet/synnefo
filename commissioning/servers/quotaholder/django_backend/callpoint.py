@@ -387,6 +387,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         ProvisionLog.objects.create(
                         serial              =   commission.serial,
+                        name                =   commission.name,
                         source              =   s_entity.entity,
                         target              =   t_entity.entity,
                         resource            =   provision.resource,
@@ -541,21 +542,26 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return rejected
 
-    def get_timeline(self, context={}, after="", before="Z", entities=()):
+    def get_timeline(self, context={}, after="", before="Z", get_timeline=()):
         entity_set = set()
-        add = entity_set.add
+        e_add = entity_set.add
+        resource_set = set()
+        r_add = resource_set.add
 
-        for entity, key in entities:
-            try:
-                e = Entity.objects.get(entity=entity, key=key)
-                add(entity)
-            except Entity.DoesNotExist:
-                continue
+        for entity, resource, key in get_timeline:
+            if entity not in entity_set:
+                try:
+                    e = Entity.objects.get(entity=entity, key=key)
+                    e_add(entity)
+                except Entity.DoesNotExist:
+                    continue
+
+            r_add((entity, resource))
 
         chunk_size = 65536
         nr = 0
         timeline = []
-	append = timeline.append
+        append = timeline.append
         filterlogs = ProvisionLog.objects.filter
         if entity_set:
             q_entity = Q(source__in = entity_set) | Q(target__in = entity_set)
@@ -574,7 +580,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             nr += len(logs)
             if not logs:
                 break
-	    for g in logs:
+            for g in logs:
+                if ((g.source, g.resource) not in resource_set
+                    or (g.target, g.resource) not in resource_set):
+                        continue
+
                 o = {
                     'serial'                    :   g.serial,
                     'source'                    :   g.source,
@@ -599,7 +609,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     'reason'                    :   g.reason,
                 }
                     
-	    	append(o)
+                append(o)
 
             after = g.issue_time
             if after >= before:

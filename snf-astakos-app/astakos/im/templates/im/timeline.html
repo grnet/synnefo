@@ -12,10 +12,20 @@
 	    </form>
 	</div>
 </div>
-{% for o in l %}
-    {% for i in o %}
-        {{i}}
+<div class="timeline">
+<table>
+    <tr style="color:black; font-weight:bold;">
+    {% for i in timeline_header %}
+        <td>{{i}}</td>
     {% endfor %}
-    <br>
+    </tr>
+{% for o in timeline_body %}
+    <tr style="color:black">
+    {% for i in o %}
+        <td>{{i}}</td>
+    {% endfor %}
+    </tr>
 {% endfor %}
+</table>
+</div>
 {% endblock %}

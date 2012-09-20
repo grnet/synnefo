@@ -102,7 +102,7 @@ class LocalUserCreationForm(UserCreationForm):
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
         if get_latest_terms():
-            self.fields.keyOrder.append('has_signed_terms')
+		self.fields.keyOrder.append('has_signed_terms')
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
@@ -603,15 +603,20 @@ class TimelineForm(forms.Form):
     )
     start_date = forms.DateTimeField()
     end_date = forms.DateTimeField()
-    action = forms.ChoiceField(choices=(), required=False)
-    
+    details = forms.BooleanField(required=False, label="detailed listing?")
+    operation = forms.ChoiceField(choices = (
+                        ('',                '[Choose Charging Method]'),
+                        ('charge_usage',    'Charge Usage'),
+                        ('charge_traffic',  'Charge Traffic')
+                ))
     def clean(self):
         super(TimelineForm, self).clean()
         d = self.cleaned_data
         if 'resource' in d:
             d['resource'] = str(d['resource'])
         if 'start_date' in d:
-            d['start_date'] = d['start_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")
+            d['start_date'] = d['start_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
         if 'end_date' in d:
-            d['end_date'] = d['end_date'].strftime("%%Y-%m-%dT%H:%M:%S.%f")
+            d['end_date'] = d['end_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
         return d
+

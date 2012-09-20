@@ -163,3 +163,86 @@ def register_resources(resources, client=None):
                                        field='service')
     created = (e for e in copy if unicode(e) not in rejected)
     return send_resource_quantities(created, client)
+
+
+from datetime import datetime
+
+strptime = datetime.strptime
+timefmt = '%Y-%m-%dT%H:%M:%S.%f'
+
+def total_seconds(timedelta_object):
+    return timedelta_object.seconds + timedelta_object.days * 86400
+
+def _usage_units(timeline, details=0):
+    t0 = None
+    uu_total = 0
+    t_total = 0
+    target = None
+    issue_time = None
+
+    for point in timeline:
+        issue_time = point['issue_time']
+        t = strptime(issue_time, timefmt)
+        u = point['target_allocated_through']
+
+        if t0 is None:
+            t0 = t
+            u0 = u
+            target = point['target']
+            continue
+
+        t_diff = int(total_seconds(t - t0) * 1)
+        t_total += t_diff
+        t0 = t
+        uu_cost = u0 * t_diff
+        uu_total += uu_cost
+        u0 = u
+
+        if details:
+            yield  (target,
+                    point['resource'],
+                    point['name'],
+                    issue_time,
+                    uu_cost,
+                    uu_total)
+
+    if not t_total:
+        return
+
+    yield  (target,
+            'total',
+            point['resource'],
+            issue_time,
+            uu_total/t_total,
+            uu_total)
+
+
+def usage_units(timeline, details=0):
+    if details:
+        return list(_usage_units(timeline, details=1))
+    else:
+        return _usage_units(timeline, details=0)[0]
+
+
+def traffic_units(timeline, details=0):
+    pass
+
+
+def timeline_charge(entity, resource, after, before, details, charge_type):
+    key = '1'
+    if charge_type == 'charge_usage':
+        charge_units = usage_units
+    elif charge_type == 'charge_traffic':
+        charge_units = traffic_units
+    else:
+        m = 'charge type %s not supported' % charge_type
+        raise ValueError(m)
+
+    quotaholder = QuotaholderHTTP(QUOTA_HOLDER_URL)
+    timeline = quotaholder.get_timeline(
+                            context         =   {},
+                            after           =   after,
+                            before          =   before,
+                            get_timeline    =   [[entity, resource, key]])
+    return charge_units(timeline, details=details)
+

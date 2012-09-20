@@ -12,7 +12,11 @@
 		<em>{{ data.remainingCredits|floatformat:2 }}</em> credits remaining
 		<span class="info foo"> 
 		    <em>more info</em>
-		    <span>|<br>Each month you are given 4.000 new credits.</span>
+		    <span>|<br>This month you are given
+		    	 {% with data|lookup:'bill_addcredits' as bill_addcredits %}
+						 {{ bill_addcredits.0.totalCredits|floatformat:0}} 
+					{% endwith %} new credits.
+			</span>
 	    </span>
 	</div>
 	

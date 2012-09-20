@@ -1022,7 +1022,7 @@ def clear_billing_data(data):
     return data    
 
 def timeline(request):
-    data = None
+    data = {'entity':request.user.email}
     l = []
     if request.method == 'POST':
         data = request.POST
@@ -1043,6 +1043,8 @@ def timeline(request):
             (u'test/apples/photos/plants/rose.jpg', u'2012-09-20T11:45:20.7334', 0L, 25626036449581L)]
     
     form = TimelineForm(data)
+    if form.is_valid():
+        print '>>>', form.cleaned_data
     return render_response(template='im/timeline.html',
                            context_instance=get_context(request),
                            form=form,

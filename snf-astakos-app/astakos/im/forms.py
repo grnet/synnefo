@@ -596,14 +596,22 @@ class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')
 
 class TimelineForm(forms.Form):
-    entity = forms.ModelChoiceField(
-        queryset=AstakosUser.objects.none(),
-        label="",
-        widget=forms.HiddenInput()
-    )
+    entity = forms.CharField(
+        widget=forms.HiddenInput(), label='')
     resource = forms.ModelChoiceField(
-        queryset=Resource.objects.all(),
+        queryset=Resource.objects.all()
     )
     start_date = forms.DateTimeField()
     end_date = forms.DateTimeField()
-    action = forms.ChoiceField(choices=())
+    action = forms.ChoiceField(choices=(), required=False)
+    
+    def clean(self):
+        super(TimelineForm, self).clean()
+        d = self.cleaned_data
+        if 'resource' in d:
+            d['resource'] = str(d['resource'])
+        if 'start_date' in d:
+            d['start_date'] = d['start_date'].strftime("%Y-%m-%d %H:%M:%S")
+        if 'end_date' in d:
+            d['end_date'] = d['end_date'].strftime("%Y-%m-%d %H:%M:%S")
+        return d

@@ -36,7 +36,8 @@ class Migration(DataMigration):
                 q, created = orm.AstakosGroupQuota.objects.get_or_create(
                     group=default,
                     resource=r,
-                    uplimit=l)
+                    uplimit=l,
+                    limit=0)
         map(create_policies, SERVICES.iteritems())
 
     def backwards(self, orm):

@@ -31,6 +31,7 @@ from django.core.management.base import BaseCommand
 
 from synnefo.db.models import (Network, BackendNetwork,
                                BridgePoolTable, MacPrefixPoolTable)
+from synnefo.db.pools import EmptyPool
 from synnefo.settings import MAC_POOL_BASE
 
 
@@ -49,7 +50,11 @@ class Command(BaseCommand):
         write("Checking consistency of the Bridge Pool\n")
         write("---------------------------------------\n")
 
-        bridge_pool = BridgePoolTable.get_pool()
+        try:
+            bridge_pool = BridgePoolTable.get_pool()
+        except EmptyPool:
+            write("No Bridge Pool\n")
+            return
         bridges = []
         for i in xrange(0, bridge_pool.size()):
             if not bridge_pool.is_available(i, index=True) and \
@@ -85,7 +90,12 @@ class Command(BaseCommand):
         write("Checking consistency of the MAC Prefix Pool\n")
         write("---------------------------------------\n")
 
-        macp_pool = MacPrefixPoolTable.get_pool()
+        try:
+            macp_pool = MacPrefixPoolTable.get_pool()
+        except EmptyPool:
+            write("No mac-prefix pool\n")
+            return
+
         macs = []
         for i in xrange(0, macp_pool.size()):
             if not macp_pool.is_available(i, index=True) and \

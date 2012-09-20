@@ -531,7 +531,7 @@ class Dict(Canonical):
                 raise CanonifyException(m)
             canonified[n] = c(item[n])   
 
-        strict = self.opts.get('strict', False)
+        strict = self.opts.get('strict', True)
         if strict and len(item) != len(canonical):
             for k in sorted(item.keys()):
                 if k not in canonical:

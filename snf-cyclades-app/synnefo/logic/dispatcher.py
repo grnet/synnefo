@@ -43,18 +43,15 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-
 from synnefo import settings
 setup_environ(settings)
 
 import logging
 import time
 
+import daemon
 import daemon.runner
-import daemon.daemon
 from lockfile import LockTimeout
-from signal import signal, SIGINT, SIGTERM
-
 # Take care of differences between python-daemon versions.
 try:
     from daemon import pidfile as pidlockfile
@@ -63,11 +60,10 @@ except:
 
 from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
+
 from synnefo.util.dictconfig import dictConfig
-
-
+dictConfig(settings.DISPATCHER_LOGGING)
 log = logging.getLogger()
-
 
 # Queue names
 QUEUES = []
@@ -181,35 +177,11 @@ def _init_queues():
         QUEUES += (QUEUE_DEBUG,)
 
 
-def _exit_handler(signum, frame):
-    """"Catch exit signal in children processes"""
-    log.info("Caught signal %d, will raise SystemExit", signum)
-    raise SystemExit
-
-
-def _parent_handler(signum, frame):
-    """"Catch exit signal in parent process and forward it to children."""
-    global children
-    log.info("Caught signal %d, sending SIGTERM to children %s",
-             signum, children)
-    [os.kill(pid, SIGTERM) for pid in children]
-
-
-def child(cmdline):
-    """The context of the child process"""
-
-    # Cmd line argument parsing
-    (opts, args) = parse_arguments(cmdline)
-    disp = Dispatcher(debug=opts.debug)
-
-    # Start the event loop
-    disp.wait()
-
-
 def parse_arguments(args):
     from optparse import OptionParser
 
-    default_pid_file = os.path.join("var", "run", "synnefo", "dispatcher.pid")
+    default_pid_file = \
+        os.path.join(".", "var", "run", "synnefo", "dispatcher.pid")[1:]
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
@@ -289,19 +261,11 @@ def drain_queue(queue):
     client = AMQPClient()
     client.connect()
 
-    # Register a temporary queue binding
-    for binding in BINDINGS:
-        if binding[0] == queue:
-            exch = binding[1]
-
     tag = client.basic_consume(queue=queue, callback=callbacks.dummy_proc)
 
     print "Queue draining about to start, hit Ctrl+c when done"
     time.sleep(2)
     print "Queue draining starting"
-
-    signal(SIGTERM, _exit_handler)
-    signal(SIGINT, _exit_handler)
 
     num_processed = 0
     while True:
@@ -311,7 +275,6 @@ def drain_queue(queue):
 
     client.basic_cancel(tag)
     client.close()
-
 
 
 def get_user_confirmation():
@@ -326,69 +289,16 @@ def get_user_confirmation():
 
 def debug_mode():
     disp = Dispatcher(debug=True)
-    signal(SIGINT, _exit_handler)
-    signal(SIGTERM, _exit_handler)
-
     disp.wait()
 
 
 def daemon_mode(opts):
-    global children
-
-    # Create pidfile,
-    pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
-
-    if daemon.runner.is_pidfile_stale(pidf):
-        log.warning("Removing stale PID lock file %s", pidf.path)
-        pidf.break_lock()
-
-    try:
-        pidf.acquire()
-    except (pidlockfile.AlreadyLocked, LockTimeout):
-        log.critical("Failed to lock pidfile %s, another instance running?",
-                     pidf.path)
-        sys.exit(1)
-
-    log.info("Became a daemon")
-
-    # Fork workers
-    children = []
-
-    i = 0
-    while i < opts.workers:
-        newpid = os.fork()
-
-        if newpid == 0:
-            signal(SIGINT, _exit_handler)
-            signal(SIGTERM, _exit_handler)
-            child(sys.argv[1:])
-            sys.exit(1)
-        else:
-            log.debug("%d, forked child: %d", os.getpid(), newpid)
-            children.append(newpid)
-        i += 1
-
-    # Catch signals to ensure graceful shutdown
-    signal(SIGINT, _parent_handler)
-    signal(SIGTERM, _parent_handler)
-
-    # Wait for all children processes to die, one by one
-    try:
-        for pid in children:
-            try:
-                os.waitpid(pid, 0)
-            except Exception:
-                pass
-    finally:
-        pidf.release()
+    disp = Dispatcher(debug=False)
+    disp.wait()
 
 
 def main():
     (opts, args) = parse_arguments(sys.argv[1:])
-
-    dictConfig(settings.DISPATCHER_LOGGING)
-
-    global log
 
     # Init the global variables containing the queues
     _init_queues()
@@ -407,10 +317,17 @@ def main():
         drain_queue(opts.drain_queue)
         return
 
-    # Debug mode, process messages without spawning workers
+    # Debug mode, process messages without daemonizing
     if opts.debug:
         debug_mode()
         return
+
+    # Create pidfile,
+    pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+
+    if daemon.runner.is_pidfile_stale(pidf):
+        log.warning("Removing stale PID lock file %s", pidf.path)
+        pidf.break_lock()
 
     files_preserve = []
     for handler in log.handlers:
@@ -418,11 +335,35 @@ def main():
         if stream and hasattr(stream, 'fileno'):
             files_preserve.append(handler.stream)
 
-    daemon_context = daemon.daemon.DaemonContext(
-        files_preserve=files_preserve,
-        umask=022)
+    stderr_stream = None
+    for handler in log.handlers:
+        stream = getattr(handler, 'stream')
+        if stream and hasattr(handler, 'baseFilename'):
+            stderr_stream = stream
+            break
 
-    daemon_context.open()
+    daemon_context = daemon.DaemonContext(
+        pidfile=pidf,
+        umask=0022,
+        stdout=stderr_stream,
+        stderr=stderr_stream,
+        files_preserve=files_preserve)
+
+    try:
+        daemon_context.open()
+    except (pidlockfile.AlreadyLocked, LockTimeout):
+        log.critical("Failed to lock pidfile %s, another instance running?",
+                     pidf.path)
+        sys.exit(1)
+
+    log.info("Became a daemon")
+
+    if 'gevent' in sys.modules:
+        # A fork() has occured while daemonizing. If running in
+        # gevent context we *must* reinit gevent
+        log.debug("gevent imported. Reinitializing gevent")
+        import gevent
+        gevent.reinit()
 
     # Catch every exception, make sure it gets logged properly
     try:
@@ -430,7 +371,6 @@ def main():
     except Exception:
         log.exception("Unknown error")
         raise
-
 
 if __name__ == "__main__":
     sys.exit(main())

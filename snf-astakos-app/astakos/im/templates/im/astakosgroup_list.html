@@ -116,24 +116,35 @@
             </table>
            
         </div>
+        
+     
     <div class="pagination">
-        <span class="step-links">
-            {% if page_obj.has_previous %}
+		<p class="next-prev">
+	        {% if page_obj.has_previous %}
                 <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}">previous</a>
             {% endif %}
-    
-            <span class="current">
-                Page {{ page_obj.number }} of {{ paginator.num_pages }}.
-            </span>
-    
             {% if page_obj.has_next %}
                 <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}">next</a>
             {% endif %}
-        </span>
-    </div>
+    	</p>
+		<p class="nums">
+			<span class="current">
+                Page {{ page_obj.number }} of {{ paginator.num_pages }}
+            </span>
+		</p>
+   </div>
       {% else %}
 	      	{% if mine %}
 	      	    <div class="full-dotted">
+					<form method="POST" class="minimal" action="/im/billing" 
+						<div class="form-row">
+							<label for="month">Sort by</label>
+							<select name="sorting">
+							    <option value="name">Name</option>
+					            <option value="name">Type</option>				
+							</select>
+						</div>
+					</form>
 					<table class="alt-style complex" id="">
 			            <caption>MY GROUPS</caption>
 			            <thead>
@@ -179,24 +190,25 @@
 			        </table>
 				</div>
 				<div class="pagination">
-                    <span class="step-links">
-                        {% if mine.has_previous %}
+					<p class="next-prev">
+				        {% if mine.has_previous %}
                             <a href="?own_page={{ mine.previous_page_number }}">previous</a>
                         {% endif %}
-                
-                        <span class="current">
-                            Page {{ mine.number }} of {{ mine.paginator.num_pages }}.
-                        </span>
-                
-                        {% if mine.has_next %}
+			            {% if mine.has_next %}
                             <a href="?own_page={{ mine.next_page_number }}">next</a>
                         {% endif %}
-                    </span>
-                </div>
+			    	</p>
+					<p class="nums">
+						<span class="current">
+                            Page {{ mine.number }} of {{ mine.paginator.num_pages }}
+                        </span>
+					</p>
+			   </div>
+				 
       		{% endif %}
 	      	{% if other %}	
  	      		<div class="full-dotted">
-					<table class="alt-style complex">
+					<table class="alt-style complex table_sorting">
 			            <caption>
 			            	{% if is_search %}
 				            	SEARCH RESULTS
@@ -271,20 +283,21 @@
 			       
 				</div>
 				<div class="pagination">
-                    <span class="step-links">
-                        {% if other.has_previous %}
+					<p class="next-prev">
+				        {% if other.has_previous %}
                             <a href="?other_page={{ other.previous_page_number }}">previous</a>
                         {% endif %}
-                
-                        <span class="current">
-                            Page {{ other.number }} of {{ other.paginator.num_pages }}.
-                        </span>
-                
-                        {% if other.has_next %}
-                            <a href="?other_page={{ other.next_page_number }}">next</a>
+			            {% if other.has_previous %}
+                            <a href="?other_page={{ other.previous_page_number }}">previous</a>
                         {% endif %}
-                    </span>
-                </div>
+			    	</p>
+					<p class="nums">
+						<span class="current">
+                            Page {{ other.number }} of {{ other.paginator.num_pages }}
+                        </span>
+					</p>
+			   </div>
+				 
 			{% endif %}
             {% if q %}
                 <h2>No groups found!</h2>

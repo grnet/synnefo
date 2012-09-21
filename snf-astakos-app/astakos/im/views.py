@@ -1021,6 +1021,8 @@ def clear_billing_data(data):
         
     return data    
 
+@signed_terms_required
+@login_required
 def timeline(request):
     data = {'entity':request.user.email}
     l = []

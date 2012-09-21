@@ -716,11 +716,21 @@ def group_add(request, kind_name='default'):
 @signed_terms_required
 @login_required
 def group_list(request):
+    
+    own_sorting = request.POST.get('own_sorting', None)
+    other_sorting = request.POST.get('other_sorting', None)
+    
     q = request.user.astakos_groups.none()
     list = request.user.astakos_groups.select_related().all()
     d = {}
     d['own'] = [g for g in list if request.user in g.owner.all()]
-    d['other'] = list.exclude(id__in=(g.id for g in d['own']))
+    d['other'] = list.exclude(id__in=(g.id for g in d['own'])) 
+    print '>>>', d['own']
+    if own_sorting:
+        sorted(d['own'], key=lambda g: g.__getattribute__(own_sorting))
+    print '<<<', d['own']
+    if other_sorting:
+        d['other'] = list.exclude(id__in=(g.id for g in d['own'])).order_by(other_sorting) 
     for k, queryset in d.iteritems():
         paginator = Paginator(queryset, PAGINATE_BY)
         page = request.GET.get('%s_page' % k, 1)
@@ -739,7 +749,9 @@ def group_list(request):
     return object_list(request, queryset=q,
                        extra_context={'is_search':False,
                                       'mine': locals()['own_page_obj'],
-                                      'other': locals()['other_page_obj']})
+                                      'other': locals()['other_page_obj'],
+                                      'own_sorting': own_sorting,
+                                      'other_sorting': other_sorting})
 
 
 @signed_terms_required

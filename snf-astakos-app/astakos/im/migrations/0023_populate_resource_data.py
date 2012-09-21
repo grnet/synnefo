@@ -19,7 +19,8 @@ class Migration(DataMigration):
             sn, dict = args
             url = dict.get('url') 
             policy = dict.get('quota') or ()
-            s, created = orm.Service.objects.get_or_create(name=sn, url=url)
+            s, created = orm.Service.objects.get_or_create(name=sn,
+                                                           defaults={'url': url})
             if not created and not s.url:
                 s.url = url
                 s.save()

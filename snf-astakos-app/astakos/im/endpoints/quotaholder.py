@@ -218,14 +218,37 @@ def _usage_units(timeline, details=0):
 
 
 def usage_units(timeline, details=0):
-    if details:
-        return list(_usage_units(timeline, details=1))
-    else:
-        return _usage_units(timeline, details=0)[0]
+    return list(_usage_units(timeline, details=details))
 
 
 def traffic_units(timeline, details=0):
-    pass
+    tu_total = 0
+    target = None
+    issue_time = None
+
+    for point in timeline:
+        target = point['target']
+        issue_time = point['issue_time']
+        tu = point['target_allocated_through']
+        tu_total += tu
+
+        if details:
+            yield  (target,
+                    point['resource'],
+                    point['name'],
+                    issue_time,
+                    tu,
+                    tu_total)
+
+    if not tu_total:
+        return
+
+    yield  (target,
+            'total',
+            point['resource'],
+            issue_time,
+            tu_total//len(timeline),
+            tu_total)
 
 
 def timeline_charge(entity, resource, after, before, details, charge_type):
@@ -244,5 +267,6 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
                             after           =   after,
                             before          =   before,
                             get_timeline    =   [[entity, resource, key]])
-    return charge_units(timeline, details=details)
+    cu = charge_units(timeline, details=details)
+    return cu
 

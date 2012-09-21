@@ -102,7 +102,7 @@ class LocalUserCreationForm(UserCreationForm):
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
         if get_latest_terms():
-		self.fields.keyOrder.append('has_signed_terms')
+                self.fields.keyOrder.append('has_signed_terms')
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
@@ -603,12 +603,13 @@ class TimelineForm(forms.Form):
     )
     start_date = forms.DateTimeField()
     end_date = forms.DateTimeField()
-    details = forms.BooleanField(required=False, label="detailed listing?")
-    operation = forms.ChoiceField(choices = (
-                        ('',                '[Choose Charging Method]'),
-                        ('charge_usage',    'Charge Usage'),
-                        ('charge_traffic',  'Charge Traffic')
-                ))
+    details = forms.BooleanField(required=False, label="Detailed Listing")
+    operation = forms.ChoiceField(
+                        label   = 'Charge Method',
+                        choices = ( ('',                '-------------'),
+                                    ('charge_usage',    'Charge Usage'),
+                                    ('charge_traffic',  'Charge Traffic'), )
+                )
     def clean(self):
         super(TimelineForm, self).clean()
         d = self.cleaned_data

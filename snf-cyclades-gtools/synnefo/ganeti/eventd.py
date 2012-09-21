@@ -54,6 +54,7 @@ import daemon.pidlockfile
 import daemon.runner
 from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
+import setproctitle
 
 from ganeti import utils
 from ganeti import jqueue
@@ -319,6 +320,12 @@ def main():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     handler_logger = logger
+
+    # Rename this process so 'ps' output looks like this is a native
+    # executable.  Can not seperate command-line arguments from actual name of
+    # the executable by NUL bytes, so only show the name of the executable
+    # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
+    setproctitle.setproctitle(sys.argv[0])
 
     # Create pidfile
     pidf = daemon.pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)

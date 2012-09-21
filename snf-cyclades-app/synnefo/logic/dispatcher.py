@@ -57,6 +57,7 @@ try:
     from daemon import pidfile as pidlockfile
 except:
     from daemon import pidlockfile
+import setproctitle
 
 from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
@@ -299,6 +300,12 @@ def daemon_mode(opts):
 
 def main():
     (opts, args) = parse_arguments(sys.argv[1:])
+
+    # Rename this process so 'ps' output looks like this is a native
+    # executable.  Can not seperate command-line arguments from actual name of
+    # the executable by NUL bytes, so only show the name of the executable
+    # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
+    setproctitle.setproctitle(sys.argv[0])
 
     # Init the global variables containing the queues
     _init_queues()

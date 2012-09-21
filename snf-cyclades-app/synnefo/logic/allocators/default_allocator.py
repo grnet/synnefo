@@ -32,7 +32,10 @@
 # or implied, of GRNET S.A.
 
 from __future__ import division
+import logging
 from synnefo.api.util import backend_public_networks
+
+log = logging.getLogger(__name__)
 
 
 def allocate(backends, vm):
@@ -43,6 +46,8 @@ def allocate(backends, vm):
     capable_backends = [backend for backend in backends
                         if vm_fits_in_backend(backend, vm)]
 
+    log.debug("Capable backends for VM %s: %s", vm, capable_backends)
+
     # Since we are conservatively updating backend resources on each
     # allocation, a backend may actually be able to host a vm (despite
     # the state of the backend in db)
@@ -52,6 +57,8 @@ def allocate(backends, vm):
     # Compute the scores for each backend
     backend_scores = [(backend, backend_score(backend, vm))
                       for backend in capable_backends]
+
+    log.debug("Backend scores %s", backend_scores)
 
     # Pick out the best
     result = min(backend_scores, key=lambda (b, b_score): b_score)

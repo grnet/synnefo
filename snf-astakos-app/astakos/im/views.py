@@ -1028,7 +1028,7 @@ def timeline(request):
     data = {'entity':request.user.email}
     timeline_body = ()
     timeline_header = ()
-    form = None
+    form = TimelineForm(data)
     if request.method == 'POST':
         data = request.POST
         form = TimelineForm(data)

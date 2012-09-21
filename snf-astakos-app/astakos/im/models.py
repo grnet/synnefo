@@ -104,7 +104,7 @@ class Resource(models.Model):
     service = models.ForeignKey(Service)
 
     def __str__(self):
-        return '%s : %s' % (self.service, self.name)
+        return '%s.%s' % (self.service, self.name)
 
 
 class GroupKind(models.Model):

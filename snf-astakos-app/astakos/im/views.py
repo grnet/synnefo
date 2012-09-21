@@ -792,7 +792,7 @@ def group_search(request, extra_context=None, **kwargs):
             q = form.cleaned_data['q'].strip()
     if q:
         queryset = AstakosGroup.objects.select_related(
-        ).filter(name__contains=q)
+        ).filter(name__contains=q).filter(approval_date__isnull=False)
     else:
         queryset = AstakosGroup.objects.none()
     return object_list(
@@ -810,7 +810,8 @@ def group_search(request, extra_context=None, **kwargs):
 def group_all(request, extra_context=None, **kwargs):
     return object_list(
                 request,
-                AstakosGroup.objects.select_related().all(),
+                AstakosGroup.objects.select_related().filter(
+                    approval_date__isnull=False),
                 paginate_by=PAGINATE_BY,
                 page=request.GET.get('page') or 1,
                 template_name='im/astakosgroup_list.html',

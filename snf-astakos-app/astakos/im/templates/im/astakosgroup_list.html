@@ -39,7 +39,7 @@
 		</ul>
         
     {% endif %}
-    {% with page_obj.object_list|enabled:is_search as object_list %}
+    {% with page_obj.object_list as object_list %}
     {% if object_list %}
         <div class="full-dotted">
             <table class="alt-style complex">

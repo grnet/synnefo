@@ -76,13 +76,6 @@ def dkeys(d):
 
 
 @register.filter
-def enabled(object_list, is_search):
-    if not is_search:
-        return object_list
-    return [g for g in object_list if g.is_enabled]
-
-
-@register.filter
 def month_name(month_number):
     return calendar.month_name[month_number]
     

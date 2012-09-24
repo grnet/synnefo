@@ -79,7 +79,7 @@ class Command(BaseCommand):
             line = '%s: %s\n' % (key.rjust(16), val)
             self.stdout.write(line.encode('utf8'))
 
-        step = type_=='bridge' and 64 or 80
+        step = (type_ == 'bridge') and 64 or 80
         print_map('Pool', pool.to_map(), step, self.stdout)
         print_map('Reserved', bitarray_to_map(pool.reserved), step, self.stdout)
 
@@ -89,8 +89,9 @@ def print_map(name, pool_map, step, out):
     out.write(sep + "\n")
     out.write("%s: \n" % name)
     out.write(sep + "\n")
-    i = 0
-    for p in pool_map_chunks(pool_map, step):
-        out.write(("%d " % i).rjust(4))
-        out.write(("|" + p + " |%d\n") % ( i + step - 1))
-        i += step
+    count = 0
+    for chunk in pool_map_chunks(pool_map, step):
+        chunk_len = len(chunk)
+        out.write(("%s" % count).rjust(4))
+        out.write((chunk + " %d\n") % (count + chunk_len - 1))
+        count += chunk_len

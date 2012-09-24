@@ -163,12 +163,14 @@ def reconcile_networks(out, fix, conflicting_ips):
                     backend.process_network_status(back_network, etime,
                                         0, 'OP_NETWORK_CONNECT', 'success',
                                         'Reconciliation simulated event.')
+                    network = Network.objects.get(id=network.id)
 
             if uses_pool:
                 # Reconcile IP Pools
                 gnet = ganeti_networks[b][net_id]
                 converter = IPPool(Foo(gnet['network']))
                 a_map = bitarray_from_map(gnet['map'])
+                a_map.invert()
                 reserved = gnet['external_reservations']
                 r_map = a_map.copy()
                 r_map.setall(True)
@@ -181,7 +183,6 @@ def reconcile_networks(out, fix, conflicting_ips):
 
         if uses_pool and (ip_available_maps or ip_reserved_maps):
             available_map = reduce(lambda x, y: x | y, ip_available_maps)
-            available_map.invert()
             reserved_map = reduce(lambda x, y: x | y, ip_reserved_maps)
 
             pool = network.get_pool()
@@ -203,6 +204,7 @@ def reconcile_networks(out, fix, conflicting_ips):
                 if fix:
                     out.write("Synchronized pools for network %r.\n" % network.id)
             pool.save()
+
 
         # Detect conflicting IPs: Detect NIC's that have the same IP
         # in the same network.
@@ -243,11 +245,6 @@ def reconcile_networks(out, fix, conflicting_ips):
 def bitarray_from_map(bitmap):
     return bitarray.bitarray(bitmap.replace("X", "1").replace(".", "0"))
 
-
-@transaction.commit_on_success
-def update_network_reservations(network, reservations):
-    network.pool.reservations = reservations
-    network.pool.save()
 
 
 class Foo():

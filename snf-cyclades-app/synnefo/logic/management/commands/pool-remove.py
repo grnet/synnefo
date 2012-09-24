@@ -31,18 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 
 from util import pool_table_from_type
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
+
 class Command(BaseCommand):
-    help = "List available pools"
+    help = "Remove a pool."
+    args = "<pool ID>"
     output_transaction = True
     option_list = BaseCommand.option_list + (
-        make_option('--type', dest='type',
+        make_option("--type", dest="type",
                     choices=POOL_CHOICES,
                     help="Type of pool"
                     ),
@@ -51,32 +53,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         type_ = options['type']
 
-        if type_:
-            pool_tables = [pool_table_from_type(type_)]
-        else:
-            pool_tables = [pool_table_from_type(x) for x in POOL_CHOICES]
+        if not type_:
+            raise CommandError("Type of pool is mandatory")
 
-        for pool_table in pool_tables:
-            self.stdout.write("-" * 80 + '\n')
-            pl = pool_table.__name__.replace("Table", "")
-            self.stdout.write(pl + '\n')
-            self.stdout.write("-" * 80 + '\n')
-            keys = ["id", "size", "base", "offset", "available", "reserved"]
-            for key in keys:
-                self.stdout.write(("%s" % key).rjust(12))
-            self.stdout.write("\n")
-            for pool_table_row in pool_table.objects.all():
-                pool = pool_table_row.pool
+        pool_table = pool_table_from_type(type_)
 
-                kv = {
-                    'id': pool_table_row.id,
-                    'offset': pool_table_row.offset,
-                    'base': pool_table_row.base,
-                    'size': pool_table_row.size,
-                    'available': pool.count_available(),
-                    'reserved': pool.count_reserved(),
-                }
+        try:
+            pool_id = int(args[0])
+            pool = pool_table.objects.get(id=pool_id)
+        except (ValueError, pool_table.DoesNotExist):
+            raise CommandError("Invalid pool ID")
 
-                for key in keys:
-                    self.stdout.write(("%s" % kv[key]).rjust(12))
-                self.stdout.write("\n")
+        pool.delete()

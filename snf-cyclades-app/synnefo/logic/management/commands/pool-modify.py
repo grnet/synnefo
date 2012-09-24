@@ -42,6 +42,7 @@ POOL_CHOICES = ['bridge', 'mac-prefix']
 class Command(BaseCommand):
     args = "<pool ID>"
     help = "Moidfy a pool"
+    output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option('--type', dest='type',
                     choices=POOL_CHOICES,

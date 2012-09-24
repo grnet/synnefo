@@ -307,9 +307,7 @@ def add(request, net, args):
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
 
-    # Get the Network object in exclusive mode in order to
-    # guarantee consistency of the pool
-    net = Network.objects.select_for_update().get(id=net.id)
+    net = Network.objects.get(id=net.id)
 
     if net.state != 'ACTIVE':
         raise ServiceUnavailable('Network not active yet')

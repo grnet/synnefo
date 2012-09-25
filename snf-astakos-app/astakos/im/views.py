@@ -37,6 +37,7 @@ import calendar
 from urllib import quote
 from functools import wraps
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -47,7 +48,7 @@ from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.forms.fields import URLField
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
-    HttpResponseRedirect, HttpResponseBadRequest
+    HttpResponseRedirect, HttpResponseBadRequest, Http404
 from django.shortcuts import redirect
 from django.template import RequestContext, loader
 from django.utils.http import urlencode
@@ -68,7 +69,7 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               ExtendedPasswordChangeForm, EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
-                              TimelineForm)
+                              AstakosGroupSortForm, TimelineForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   invite as invite_func, logout as auth_logout,
                                   activate as activate_func,
@@ -83,6 +84,9 @@ from astakos.im.tasks import request_billing
 
 logger = logging.getLogger(__name__)
 
+
+DB_REPLACE_GROUP_SCHEME = """REPLACE(REPLACE("auth_group".name, 'http://', ''),
+                                     'https://', '')"""
 
 def render_response(template, tab=None, status=200, reset_cookie=False,
                     context_instance=None, **kwargs):
@@ -718,14 +722,47 @@ def group_add(request, kind_name='default'):
 @signed_terms_required
 @login_required
 def group_list(request):
-    q = request.user.astakos_groups.none()
-    list = request.user.astakos_groups.select_related().all()
-    d = {}
-    d['own'] = [g for g in list if request.user in g.owner.all()]
-    d['other'] = list.exclude(id__in=(g.id for g in d['own']))
-    for k, queryset in d.iteritems():
-        paginator = Paginator(queryset, PAGINATE_BY)
+    none = request.user.astakos_groups.none()
+    q = AstakosGroup.objects.raw("""
+        SELECT auth_group.id,
+        %s AS groupname,
+        im_groupkind.name AS kindname,
+        im_astakosgroup.*,
+        owner.email AS groupowner,
+        (SELECT COUNT(*) FROM im_membership
+            WHERE group_id = im_astakosgroup.group_ptr_id
+            AND date_joined IS NOT NULL) AS approved_members_num,
+        (SELECT date_joined FROM im_membership
+            WHERE group_id = im_astakosgroup.group_ptr_id
+            AND person_id = %s) AS membership_approval_date
+        FROM im_astakosgroup
+        INNER JOIN im_membership ON (
+            im_astakosgroup.group_ptr_id = im_membership.group_id)
+        INNER JOIN auth_group ON(im_astakosgroup.group_ptr_id = auth_group.id)
+        INNER JOIN im_groupkind ON (im_astakosgroup.kind_id = im_groupkind.id)
+        LEFT JOIN im_astakosuser_owner ON (
+            im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
+        LEFT JOIN auth_user as owner ON (
+            im_astakosuser_owner.astakosuser_id = owner.id)
+        WHERE im_membership.person_id = %s
+        """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id))
+    d = defaultdict(list)
+    for g in q:
+        if request.user.email == g.groupowner:
+            d['own'].append(g)
+        else:
+            d['other'].append(g)
+    
+    for k, l in d.iteritems():
         page = request.GET.get('%s_page' % k, 1)
+        sorting = globals()['%s_sorting' % k] = request.GET.get('%s_sorting' % k)
+        if sorting:
+            sort_form = AstakosGroupSortForm({'sort_by': sorting})
+            if sort_form.is_valid():
+                l.sort(key=lambda i: getattr(i, sorting))
+                globals()['%s_sorting' % k] = sorting
+        paginator = Paginator(l, PAGINATE_BY)
+        
         try:
             page_number = int(page)
         except ValueError:
@@ -735,13 +772,16 @@ def group_list(request):
                 # Page is not 'last', nor can it be converted to an int.
                 raise Http404
         try:
-            page_obj = locals()['%s_page_obj' % k] = paginator.page(page_number)
+            page_obj = globals()['%s_page_obj' % k] = paginator.page(page_number)
         except InvalidPage:
             raise Http404
-    return object_list(request, queryset=q,
+    return object_list(request, queryset=none,
                        extra_context={'is_search':False,
-                                      'mine': locals()['own_page_obj'],
-                                      'other': locals()['other_page_obj']})
+                                      'mine': own_page_obj,
+                                      'other': other_page_obj,
+                                      'own_sorting': own_sorting,
+                                      'other_sorting': other_sorting
+                                      })
 
 
 @signed_terms_required
@@ -793,8 +833,26 @@ def group_search(request, extra_context=None, **kwargs):
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
     if q:
-        queryset = AstakosGroup.objects.select_related(
-        ).filter(name__contains=q)
+        queryset = AstakosGroup.objects.select_related()
+        queryset = queryset.filter(name__contains=q)
+        queryset = queryset.filter(approval_date__isnull=False)
+        queryset = queryset.extra(select={
+                'groupname': DB_REPLACE_GROUP_SCHEME,
+                'kindname': "im_groupkind.name",
+                'approved_members_num': """
+                    SELECT COUNT(*) FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND date_joined IS NOT NULL""",
+                'membership_approval_date': """
+                    SELECT date_joined FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND person_id = %s""" % request.user.id,
+                'is_member': """
+                    SELECT CASE WHEN EXISTS(
+                    SELECT date_joined FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND person_id = %s)
+                    THEN 1 ELSE 0 END""" % request.user.id})
     else:
         queryset = AstakosGroup.objects.none()
     return object_list(
@@ -810,9 +868,28 @@ def group_search(request, extra_context=None, **kwargs):
 @signed_terms_required
 @login_required
 def group_all(request, extra_context=None, **kwargs):
+    q = AstakosGroup.objects.select_related()
+    q = q.filter(approval_date__isnull=False)
+    q = q.extra(select={
+                'groupname': DB_REPLACE_GROUP_SCHEME,
+                'kindname': "im_groupkind.name",
+                'approved_members_num': """
+                    SELECT COUNT(*) FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND date_joined IS NOT NULL""",
+                'membership_approval_date': """
+                    SELECT date_joined FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND person_id = %s""" % request.user.id,
+                'is_member': """
+                    SELECT CASE WHEN EXISTS(
+                    SELECT date_joined FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND person_id = %s)
+                    THEN 1 ELSE 0 END""" % request.user.id})
     return object_list(
                 request,
-                AstakosGroup.objects.select_related().all(),
+                q,
                 paginate_by=PAGINATE_BY,
                 page=request.GET.get('page') or 1,
                 template_name='im/astakosgroup_list.html',
@@ -825,14 +902,12 @@ def group_all(request, extra_context=None, **kwargs):
 def group_join(request, group_id):
     m = Membership(group_id=group_id,
                    person=request.user,
-                   date_requested=datetime.now()
-                   )
+                   date_requested=datetime.now())
     try:
         m.save()
         post_save_redirect = reverse(
             'group_detail',
-            kwargs=dict(group_id=group_id)
-        )
+            kwargs=dict(group_id=group_id))
         return HttpResponseRedirect(post_save_redirect)
     except IntegrityError, e:
         logger.exception(e)
@@ -940,8 +1015,7 @@ def add_members(request, group_id):
                          object_id=group_id,
                          extra_context={'quota': group.quota,
                                         'form': form,
-                                        'search_form' : search_form}
-                         )
+                                        'search_form' : search_form})
 
 
 @signed_terms_required
@@ -1047,3 +1121,4 @@ def timeline(request):
                            form=form,
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
+                           l=l)

@@ -51,8 +51,7 @@ from datetime import datetime
 from functools import wraps
 
 from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL,
-                                 LOGGING_LEVEL
-                                 )
+                                 LOGGING_LEVEL)
 from astakos.im.models import AstakosUser
 
 logger = logging.getLogger(__name__)

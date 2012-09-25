@@ -76,13 +76,6 @@ def dkeys(d):
 
 
 @register.filter
-def enabled(object_list, is_search):
-    if not is_search:
-        return object_list
-    return [g for g in object_list if g.is_enabled]
-
-
-@register.filter
 def month_name(month_number):
     return calendar.month_name[month_number]
     
@@ -91,3 +84,8 @@ def month_name(month_number):
 def todate(value, arg = ''):
     secs = int(value) / 1000
     return datetime.datetime.fromtimestamp(secs)
+
+
+@register.filter
+def rcut(value, chars = '/'):
+    return value.rstrip(chars)

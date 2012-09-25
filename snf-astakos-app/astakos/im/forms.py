@@ -615,3 +615,8 @@ class TimelineForm(forms.Form):
         if 'end_date' in d:
             d['end_date'] = d['end_date'].strftime("%%Y-%m-%dT%H:%M:%S.%f")
         return d
+
+class AstakosGroupSortForm(forms.Form):
+    sort_by = forms.ChoiceField(label='Sort by',
+                                choices=(('groupname', 'Name'), ('kindname', 'Type')),
+                                required=False)

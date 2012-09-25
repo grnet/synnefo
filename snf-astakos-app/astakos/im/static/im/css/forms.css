@@ -156,7 +156,9 @@ form.link-like input[type="submit"]:hover		{ text-decoration:underline;  }
 .projects form .with-checkbox					{ margin:20px 0; }
 .projects form .with-checkbox label				{ padding-top:7px; }
 .projects form .with-checkbox span.info			{ bottom:24px; }
-
+.projects .minimal								{ float:right; position:relative; margin-bottom:-20px;}
+.projects .minimal select						{ padding:3px; width:250px; }
+.projects .minimal label						{ position:absolute; right:290px; top:5px; white-space:nowrap}
 
 @media screen and (max-width : 630px) 		{ 
 	form.withlabels .extra-img	   				{ left:260px; }

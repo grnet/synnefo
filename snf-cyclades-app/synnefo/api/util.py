@@ -199,12 +199,15 @@ def get_flavor(flavor_id):
         raise ItemNotFound('Flavor not found.')
 
 
-def get_network(network_id, user_id):
+def get_network(network_id, user_id, for_update=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
         network_id = int(network_id)
-        return Network.objects.get(id=network_id, userid=user_id)
+        if for_update:
+            return Network.objects.select_for_update().get(id=network_id, userid=user_id)
+        else:
+            return Network.objects.get(id=network_id, userid=user_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
 

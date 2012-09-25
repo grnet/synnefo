@@ -268,7 +268,7 @@ def delete_network(request, network_id):
     #                       overLimit (413)
 
     log.debug('delete_network %s', network_id)
-    net = util.get_network(network_id, request.user_uniq)
+    net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
 

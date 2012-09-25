@@ -44,11 +44,7 @@
         <div class="full-dotted">
             <table class="alt-style complex">
                 <caption>
-                    {% if is_search %}
-                        SEARCH RESULTS
-                    {% else %}
-                        I PARTICIPATE IN
-                    {% endif %}
+                    SEARCH RESULTS
                 </caption>
                 <thead>
                   <tr>
@@ -67,16 +63,16 @@
                 </thead>
                 <tbody>
                   {% for o in object_list %}
-                  <tr class="{% cycle 'tr1' 'tr2' %}">
-                    <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
-                    <td>{{o.kind|capfirst}}</td>
+                    <tr class="{% cycle 'tr1' 'tr2' %}">
+                    <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"}}</a></td>
+                    <td>{{o.kindname|capfirst}}</td>
                     <td>{{o.issue_date|date:"d/m/Y"}}</td>
                     <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-                    
-                    <td>{{ o.approved_members|length }}</td>
+                    <td>{{o.approved_members_num}}</td>
                     
                     <td>
-                    {% if user in o.approved_members %}
+                    {% if o.is_member %}
+                        {% if o.membership_approval_date %}
     
                         Registered
                         <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
@@ -84,16 +80,16 @@
                         </form>	
                         
                             
-                    {% else %}
-                        {% if user in o.members %}
-                            Pending
+
                         {% else %}
+                            Pending
+                        {% endif %}
+                    {% else %}
                             Not member 
                                 <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
                                     <input type="submit"   value="JOIN GROUP" />
                                 </form>
                             
-                        {% endif %}
                     {% endif %}
                     </td>
                     <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
@@ -103,7 +99,7 @@
                         <div>
                             <p>{{o.desc}}</p>
                             <p>{% if o.homepage%}
-                                Visit it group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+                                Visit it group's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.homepage }}</a>
                             {% else %}
                                 There is no homepage for this group yet.
                             {% endif %}
@@ -136,13 +132,12 @@
       {% else %}
 	      	{% if mine %}
 	      	    <div class="full-dotted">
-					<form method="POST" class="minimal" action="{% url group_list  %}">{% csrf_token %} 
+					<form method="GET" class="minimal" action="">
 						<div class="form-row">
-							 
-							<select name="own_sorting" onchange="this.form.submit();">
-							    <option value="0">Sort by</option>
-							    <option value="name">Name</option>
-					            <option value="kind">Type</option>				
+						    <select name="own_sorting" onchange="this.form.submit();">
+							    <option value="">Sort by</option>
+							    <option value="groupname" {% if own_sorting == 'groupname' %}selected{% endif %}>Name</option>
+					            <option value="kindname" {% if own_sorting == 'kindname' %}selected{% endif %}>Type</option>				
 							</select>
 						</div>
 					</form>
@@ -164,11 +159,11 @@
 			            <tbody>
 			              {% for o in mine.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
-			                <td>{{o.kind|capfirst}}</td>
+			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a></td>
+			                <td>{{o.kindname|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-			                <td>{{ o.approved_members|length }}</td>
+			                <td>{{ o.approved_members_num }}</td>
 			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
 			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
 			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
@@ -193,10 +188,10 @@
 				<div class="pagination">
 					<p class="next-prev">
 				        {% if mine.has_previous %}
-                            <a href="?own_page={{ mine.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}">previous</a>
+                            <a href="?own_page={{ mine.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">previous</a>
                         {% endif %}
 			            {% if mine.has_next %}
-                            <a href="?own_page={{ mine.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}">next</a>
+                            <a href="?own_page={{ mine.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">next</a>
                         {% endif %}
 			    	</p>
 					<p class="nums">
@@ -209,22 +204,18 @@
       		{% endif %}
 	      	{% if other %}	
  	      		<div class="full-dotted">
- 	      			<form method="POST" class="minimal" action="{% url group_list  %}">{% csrf_token %} 
+ 	      			<form method="GET" class="minimal" action=""> 
 						<div class="form-row">
 							<select name="other_sorting" onchange="this.form.submit();">
-							    <option value="0">Sort by</option>
-							    <option value="name">Name</option>
-					            <option value="kind">Type</option>				
+							    <option value="">Sort by</option>
+							    <option value="groupname" {% if other_sorting == 'groupname' %}selected{% endif %}>Name</option>
+					            <option value="kindname" {% if other_sorting == 'kindname' %}selected{% endif %}>Type</option>			
 							</select>
 						</div>
 					</form>
 					<table class="alt-style complex">
 			            <caption>
-			            	{% if is_search %}
-				            	SEARCH RESULTS
-				            {% else %}
-				            	I PARTICIPATE IN
-			            	{% endif %}
+			            	I PARTICIPATE IN
 			            </caption>
 			            <thead>
 			              <tr>
@@ -244,15 +235,15 @@
 			            <tbody>
 			              {% for o in other.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.name|cut:"http://"|cut:"/" }}</a></td>
-			                <td>{{o.kind|capfirst}}</td>
+			                <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"}}</a></td>
+			                <td>{{o.kindname|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
 			                
-			                <td>{{ o.approved_members|length }}</td>
+			                <td>{{ o.approved_members_num }}</td>
 			                
 			                <td>
-			                {% if user in o.approved_members %}
+			                {% if o.membership_approval_date %}
 			
 		                    	Registered
 		                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
@@ -261,15 +252,7 @@
 			                    
 			                        
 			                {% else %}
-			                    {% if user in o.members %}
-			                        Pending
-			                    {% else %}
-			                        Not member 
-			                            <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
-			                                <input type="submit"   value="JOIN GROUP" />
-			                            </form>
-			                        
-			                    {% endif %}
+			                    Pending
 			                {% endif %}
 			                </td>
 			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
@@ -295,10 +278,10 @@
 				<div class="pagination">
 					<p class="next-prev">
 				        {% if other.has_previous %}
-                            <a href="?other_page={{ other.previous_page_number }}">previous</a>
+                            <a href="?other_page={{ other.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">previous</a>
                         {% endif %}
-			            {% if other.has_previous %}
-                            <a href="?other_page={{ other.previous_page_number }}">previous</a>
+			            {% if other.has_next %}
+                            <a href="?other_page={{ other.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">next</a>
                         {% endif %}
 			    	</p>
 					<p class="nums">

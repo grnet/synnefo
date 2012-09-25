@@ -598,3 +598,8 @@ class AddGroupMembersForm(forms.Form):
 
 class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')
+
+class AstakosGroupSortForm(forms.Form):
+    sort_by = forms.ChoiceField(label='Sort by',
+                                choices=(('groupname', 'Name'), ('kindname', 'Type')),
+                                required=False)

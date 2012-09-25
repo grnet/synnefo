@@ -84,3 +84,8 @@ def month_name(month_number):
 def todate(value, arg = ''):
     secs = int(value) / 1000
     return datetime.datetime.fromtimestamp(secs)
+
+
+@register.filter
+def rcut(value, chars = '/'):
+    return value.rstrip(chars)

@@ -752,7 +752,8 @@ def group_list(request):
             d['own'].append(g)
         else:
             d['other'].append(g)
-    
+    d.set_default('own', []) 
+    d.set_default('other', []) 
     for k, l in d.iteritems():
         page = request.GET.get('%s_page' % k, 1)
         sorting = globals()['%s_sorting' % k] = request.GET.get('%s_sorting' % k)

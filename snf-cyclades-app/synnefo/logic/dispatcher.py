@@ -305,6 +305,13 @@ def main():
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])
 
+    if opts.debug:
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(module)s %(levelname)s: %(message)s",
+                                      "%Y-%m-%d %H:%M:%S")
+        stream_handler.setFormatter(formatter)
+        log.addHandler(stream_handler)
+
     # Init the global variables containing the queues
     _init_queues()
 

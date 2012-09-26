@@ -7,8 +7,15 @@ DISPATCHER_LOGGING = {
     'disable_existing_loggers': True,
 
     'formatters': {
-        'verbose': {
+        'simple': {
             'format': '%(asctime)s [%(levelname)s] %(message)s'
+        },
+        'verbose': {
+            'format': '%(asctime)s [%(process)d] %(name)s %(module)s [%(levelname)s] %(message)s'
+        },
+        'django': {
+            'format': '[%(asctime)s] %(levelname)s %(message)s',
+            'datefmt': '%d/%b/%Y %H:%M:%S'
         },
     },
 
@@ -30,7 +37,7 @@ DISPATCHER_LOGGING = {
     },
 
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': ['file'],
         'level': 'DEBUG',
     }
 }

@@ -54,7 +54,7 @@ class Command(BaseCommand):
 
         backends = Backend.objects.order_by('id')
 
-        labels = ('id', 'clustername', 'port', 'username', "vm's", 'drained',
+        labels = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
                   'offline')
         columns = (3, 50, 5, 10, 4, 6, 6)
 

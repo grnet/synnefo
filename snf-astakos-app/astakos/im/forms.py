@@ -607,6 +607,7 @@ class AstakosGroupSortForm(forms.Form):
                                          ('expiration_date', 'Expiration Date'),
                                          ('approved_members_num', 'Participants'),
                                          ('is_enabled', 'Status'),
-                                         ('moderation_enabled', 'Moderation')
+                                         ('moderation_enabled', 'Moderation'),
+                                         ('membership_status','Enrollment Status')
                                          ),
                                 required=False)

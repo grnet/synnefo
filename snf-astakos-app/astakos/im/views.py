@@ -47,6 +47,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.forms.fields import URLField
+from django.db.models.fields import DateTimeField
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
     HttpResponseRedirect, HttpResponseBadRequest, Http404
 from django.shortcuts import redirect
@@ -731,9 +732,11 @@ def group_list(request):
         (SELECT COUNT(*) FROM im_membership
             WHERE group_id = im_astakosgroup.group_ptr_id
             AND date_joined IS NOT NULL) AS approved_members_num,
-        (SELECT date_joined FROM im_membership
-            WHERE group_id = im_astakosgroup.group_ptr_id
-            AND person_id = %s) AS membership_approval_date
+        (SELECT CASE WHEN(
+                    SELECT date_joined FROM im_membership
+                    WHERE group_id = im_astakosgroup.group_ptr_id
+                    AND person_id = %s) IS NULL
+                    THEN 'Pending' ELSE 'Registered' END) AS membership_status
         FROM im_astakosgroup
         INNER JOIN im_membership ON (
             im_astakosgroup.group_ptr_id = im_membership.group_id)
@@ -758,7 +761,9 @@ def group_list(request):
         if sorting:
             sort_form = AstakosGroupSortForm({'sort_by': sorting})
             if sort_form.is_valid():
-                l.sort(key=lambda i: getattr(i, sorting))
+                sort_field = q._model_fields.get(sorting)
+                default = datetime.utcfromtimestamp(0) if isinstance(sort_field, DateTimeField) else ''
+                l.sort(key=lambda i: getattr(i, sorting) if getattr(i, sorting) else default )
                 globals()['%s_sorting' % k] = sorting
         paginator = Paginator(l, PAGINATE_BY)
         
@@ -791,13 +796,35 @@ def group_detail(request, group_id):
     except AstakosGroup.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid group.'))
     form = AstakosGroupUpdateForm(instance=group)
-    search_form = AddGroupMembersForm()
+    add_members_form = AddGroupMembersForm()
+    
+    # build members
+    page = request.GET.get('page', 1)
+    sorting = request.GET.get('sorting')
+    if sorting:
+        group.members.sort(key=lambda i: getattr(i, sorting))
+    paginator = Paginator(group.members, PAGINATE_BY)
+    
+    try:
+        page_number = int(page)
+    except ValueError:
+        if page == 'last':
+            page_number = paginator.num_pages
+        else:
+            # Page is not 'last', nor can it be converted to an int.
+            raise Http404
+    try:
+        members_page = globals()['page'] = paginator.page(page_number)
+    except InvalidPage:
+        raise Http404
     return object_detail(request,
                          AstakosGroup.objects.all(),
                          object_id=group_id,
                          extra_context={'quota': group.quota,
                                         'form': form,
-                                        'search_form': search_form}
+                                        'search_form': add_members_form,
+                                        'members': members_page,
+                                        'sorting': sorting}
                          )
 
 
@@ -825,6 +852,7 @@ def group_update(request, group_id):
 @login_required
 def group_search(request, extra_context=None, **kwargs):
     q = request.GET.get('q')
+    sorting = request.GET.get('sorting')
     if request.method == 'GET':
         form = AstakosGroupSearchForm({'q': q} if q else None)
     else:
@@ -852,6 +880,9 @@ def group_search(request, extra_context=None, **kwargs):
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s)
                     THEN 1 ELSE 0 END""" % request.user.id})
+        if sorting:
+            # TODO check sorting value
+            queryset = queryset.order_by(sorting)
     else:
         queryset = AstakosGroup.objects.none()
     return object_list(
@@ -862,7 +893,8 @@ def group_search(request, extra_context=None, **kwargs):
         template_name='im/astakosgroup_list.html',
         extra_context=dict(form=form,
                            is_search=True,
-                           q=q))
+                           q=q,
+                           sorting=sorting))
 
 @signed_terms_required
 @login_required
@@ -886,6 +918,10 @@ def group_all(request, extra_context=None, **kwargs):
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s)
                     THEN 1 ELSE 0 END""" % request.user.id})
+    sorting = request.GET.get('sorting')
+    if sorting:
+        # TODO check sorting value
+        q = q.order_by(sorting)
     return object_list(
                 request,
                 q,
@@ -893,7 +929,8 @@ def group_all(request, extra_context=None, **kwargs):
                 page=request.GET.get('page') or 1,
                 template_name='im/astakosgroup_list.html',
                 extra_context=dict(form=AstakosGroupSearchForm(),
-                                   is_search=True))
+                                   is_search=True,
+                                   sorting=sorting))
 
 
 @signed_terms_required

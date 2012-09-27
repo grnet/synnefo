@@ -187,7 +187,11 @@ class AstakosGroup(Group):
 
     @property
     def members(self):
-        return [m.person for m in self.membership_set.all()]
+        l = []
+        for m in self.membership_set.all():
+            m.person.is_approved = m.is_approved
+            l.append(m.person)
+        return l
 
     @property
     def approved_members(self):

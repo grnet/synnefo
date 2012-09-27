@@ -55,6 +55,7 @@
 			            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
 			            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Participants</option> 
 					</select>
+					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
 			</form>
             <table class="alt-style complex">
@@ -131,10 +132,10 @@
     <div class="pagination">
 		<p class="next-prev">
 	        {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}">previous</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
             {% endif %}
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}">next</a>
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
             {% endif %}
     	</p>
 		<p class="nums">
@@ -156,7 +157,7 @@
 					            <option value="expiration_date" {% if own_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
 					            <option value="approved_members_num" {% if own_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
 					            <option value="is_enabled" {% if own_sorting == 'is_enabled' %}selected{% endif %}>Status</option>
-					            <option value="moderation_enabled" {% if own_sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>			
+					            <option value="moderation_enabled" {% if own_sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
 							</select>
 						</div>
 					</form>
@@ -230,6 +231,7 @@
 					            <option value="issue_date" {% if other_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
 					            <option value="expiration_date" {% if other_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
 					            <option value="approved_members_num" {% if other_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
+					            <option value="membership_status" {% if other_sorting == 'membership_status' %}selected{% endif %}>Enrollment Status</option>
 					             
 							</select>
 						</div>
@@ -264,16 +266,14 @@
 			                <td>{{ o.approved_members_num }}</td>
 			                
 			                <td>
-			                {% if o.membership_approval_date %}
+			                {{ o.membership_status }}
+			                {% if o.membership_status == 'Registered' %}
 			
-		                    	Registered
 		                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
 		                             <input type="submit"  value="LEAVE GROUP" />
 		                        </form>	
 			                    
 			                        
-			                {% else %}
-			                    Pending
 			                {% endif %}
 			                </td>
 			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>

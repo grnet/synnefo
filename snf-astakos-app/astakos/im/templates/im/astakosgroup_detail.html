@@ -91,6 +91,17 @@
 	 </div>
 	 <div class="full-dotted">
 	 	{% if object.members %}
+	 	<form method="GET" class="minimal" action=""> 
+			<div class="form-row">
+				<select name="sorting" onchange="this.form.submit();">
+				    <option value="">Sort by</option>
+				    <option value="email" {% if sorting == 'email' %}selected{% endif %}>User Id</option>
+		            <option value="realname" {% if sorting == 'realname' %}selected{% endif %}>Name</option>			
+		            <option value="is_approved" {% if sorting == 'is_approved' %}selected{% endif %}>Status</option>			
+				</select>
+				<input type="hidden" name="q" value="{{q}}"/>
+			</div>
+		</form>
 		 <table class="alt-style">
 		 	<caption>MEMBERS:</caption>
 		 	<thead>
@@ -101,18 +112,18 @@
 			 	</tr>
 		 	</thead>
 		 	<tbody>
-		 	{% for m in object.membership_set.all %}
+		 	{% for p in members.object_list %}
               <tr>
-                <td>{{m.person.email}}</td>
-                <td>{{m.person.realname}}</td>
-                {% if m.person in m.group.owner.all %}
+                <td>{{p.email}}</td>
+                <td>{{p.realname}}</td>
+                {% if p in object.owner.all %}
                 <td>Owner</td>
                 {% else %}
-                    {% if m.is_approved %}
+                    {% if p.is_approved %}
                     <td>Approved</td>
                     {% else %}
                     <td>Pending 
-                        {% if user in m.group.owner.all %}
+                        {% if user in object.owner.all %}
                             <a href="{% url approve_member m.group.id m.person.id %}">Accept</a>
                             <a href="{% url disapprove_member m.group.id m.person.id  %}">Reject</a>
                         {% endif %}
@@ -123,6 +134,21 @@
             {% endfor %}
             </tbody>
 		 </table>
+		 <div class="pagination">
+			<p class="next-prev">
+		        {% if members.has_previous %}
+	                <a href="?page={{ members.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+	            {% endif %}
+	            {% if members.has_next %}
+	                <a href="?page={{ members.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+	            {% endif %}
+	    	</p>
+			<p class="nums">
+				<span class="current">
+	                Page {{ members.number }} of {{ members.paginator.num_pages }}
+	            </span>
+			</p>
+	    </div>
 		 {% else %}
             <p>No members yet!</p>
         {% endif %}

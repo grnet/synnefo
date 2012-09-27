@@ -60,6 +60,7 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable)
+from synnefo.db.pools import EmptyPool
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
@@ -215,6 +216,17 @@ def get_network(network_id, user_id, for_update=False):
 def validate_network_size(cidr_block):
     """Return True if network size is allowed."""
     return cidr_block <= 29 and cidr_block > MAX_CIDR_BLOCK
+
+
+def allocate_public_address(backend):
+    """Allocate a public IP for a vm."""
+    for network in backend_public_networks(backend):
+        try:
+            address = get_network_free_address(network)
+            return (network, address)
+        except EmptyPool:
+            pass
+    return (None, None)
 
 
 def backend_public_networks(backend):

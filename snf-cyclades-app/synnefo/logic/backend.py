@@ -41,9 +41,6 @@ from datetime import datetime
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
 from synnefo.logic import utils
-from synnefo.db.pools import EmptyPool
-from synnefo.api.faults import OverLimit
-from synnefo.api.util import backend_public_networks, get_network_free_address
 from synnefo.util.rapi import GanetiRapiClient
 
 log = getLogger('synnefo.logic')
@@ -258,22 +255,12 @@ def start_action(vm, action):
     vm.save()
 
 
-@transaction.commit_on_success
-def create_instance(vm, flavor, image, password, personality):
+def create_instance(vm, public_nic, flavor, image, password, personality):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
         metadata value should be a dictionary.
     """
-
-    if settings.PUBLIC_ROUTED_USE_POOL:
-        (network, address) = allocate_public_address(vm)
-        if address is None:
-            raise OverLimit("Can not allocate IP for new machine."
-                            " Public networks are full.")
-        nic = {'ip': address, 'network': network.backend_id}
-    else:
-        nic = {'ip': 'pool', 'network': network.backend_id}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:
@@ -308,7 +295,7 @@ def create_instance(vm, flavor, image, password, personality):
     if provider:
         kw['disks'][0]['provider'] = provider
 
-    kw['nics'] = [nic]
+    kw['nics'] = [public_nic]
     if settings.GANETI_USE_HOTPLUG:
         kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
@@ -339,17 +326,6 @@ def create_instance(vm, flavor, image, password, personality):
     # kw['hvparams'] = dict(serial_console=False)
 
     return vm.client.CreateInstance(**kw)
-
-
-def allocate_public_address(vm):
-    """Allocate a public IP for a vm."""
-    for network in backend_public_networks(vm.backend):
-        try:
-            address = get_network_free_address(network)
-            return (network, address)
-        except EmptyPool:
-            pass
-    return (None, None)
 
 
 def delete_instance(vm):

@@ -186,7 +186,11 @@ def list_servers(request, detail=False):
 
 
 @util.api_method('POST')
-@transaction.commit_on_success
+# Use manual transactions. Backend and IP pool allocations need exclusive
+# access (SELECT..FOR UPDATE). Running create_server with commit_on_success
+# would result in backends and public networks to be locked until the job is
+# sent to the Ganeti backend.
+@transaction.commit_manually
 def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -255,8 +259,22 @@ def create_server(request):
 
     backend_allocator = BackendAllocator()
     backend = backend_allocator.allocate(flavor)
+
     if backend is None:
+        transaction.rollback()
         raise Exception
+    transaction.commit()
+
+    if settings.PUBLIC_ROUTED_USE_POOL:
+        (network, address) = util.allocate_public_address(backend)
+        if address is None:
+            transaction.rollback()
+            raise faults.OverLimit("Can not allocate IP for new machine."
+                                   " Public networks are full.")
+        transaction.commit()
+        nic = {'ip': address, 'network': network.backend_id}
+    else:
+        nic = {'ip': 'pool', 'network': network.backend_id}
 
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
@@ -268,7 +286,7 @@ def create_server(request):
         flavor=flavor)
 
     try:
-        jobID = create_instance(vm, flavor, image, password, personality)
+        jobID = create_instance(vm, nic, flavor, image, password, personality)
     except GanetiApiError:
         vm.delete()
         raise
@@ -288,7 +306,11 @@ def create_server(request):
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
     server['adminPass'] = password
-    return render_server(request, server, status=202)
+
+    respsone = render_server(request, server, status=202)
+    transaction.commit()
+
+    return respsone
 
 
 @util.api_method('GET')

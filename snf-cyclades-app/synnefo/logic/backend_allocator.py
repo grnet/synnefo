@@ -47,6 +47,13 @@ class BackendAllocator():
             importlib.import_module(settings.BACKEND_ALLOCATOR_MODULE)
 
     def allocate(self, flavor):
+        """Allocate a vm of the specified flavor to a backend.
+
+        Warning!!: An explicit commit is required after calling this function,
+        in order to release the locks acquired by the get_available_backends
+        function.
+
+        """
         # Get the size of the vm
         disk = flavor_disk(flavor)
         ram = flavor.ram
@@ -81,7 +88,8 @@ def get_available_backends():
     """Get available backends from db.
 
     """
-    return Backend.objects.filter(drained=False, offline=False)
+    return list(Backend.objects.select_for_update().filter(drained=False,
+                                                           offline=False))
 
 
 def flavor_disk(flavor):

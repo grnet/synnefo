@@ -200,8 +200,11 @@ class Command(BaseCommand):
                 "Issuing OP_INSTANCE_REMOVE for %d Ganeti instances:" % \
                 len(orphans)
             for id in orphans:
-                vm = VirtualMachine.objects.get(pk=id)
-                vm.client.DeleteInstance(utils.id_to_instance_name(id))
+                try:
+                    vm = VirtualMachine.objects.get(pk=id)
+                    vm.client.DeleteInstance(utils.id_to_instance_name(id))
+                except VirtualMachine.DoesNotExist:
+                    print >> sys.stderr, "No entry for VM %d in DB !!"
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced'] and len(unsynced) > 0:

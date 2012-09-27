@@ -51,7 +51,13 @@ from datetime import datetime
 from functools import wraps
 
 from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL,
-                                 LOGGING_LEVEL)
+                                 LOGGING_LEVEL, VERIFICATION_EMAIL_SUBJECT,
+                                 ADMIN_NOTIFICATION_EMAIL_SUBJECT,
+                                 HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
+                                 INVITATION_EMAIL_SUBJECT,
+                                 GREETING_EMAIL_SUBJECT,
+                                 FEEDBACK_EMAIL_SUBJECT,
+                                 EMAIL_CHANGE_EMAIL_SUBJECT)
 from astakos.im.models import AstakosUser
 
 logger = logging.getLogger(__name__)
@@ -95,8 +101,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'support': DEFAULT_CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
-        send_mail('%s alpha2 testing account activation is needed' %
-                  SITENAME, message, sender, [user.email])
+        send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendVerificationError()
@@ -126,7 +131,8 @@ def send_admin_notification(template_name,
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(subject, message, sender, [i[1] for i in settings.ADMINS])
+        send_mail(_(ADMIN_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+                  message, sender, [i[1] for i in settings.ADMINS])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -149,12 +155,8 @@ def send_helpdesk_notification(user, template_name='im/account_notification.txt'
     )
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(
-            '%s alpha2 testing account activated' % SITENAME,
-            message,
-            sender,
-            [DEFAULT_CONTACT_EMAIL]
-        )
+        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+                  message, sender, [DEFAULT_CONTACT_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -169,7 +171,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
 
     Raises SendInvitationError
     """
-    subject = _('Invitation to %s alpha2 testing' % SITENAME)
+    subject = _(INVITATION_EMAIL_SUBJECT)
     url = '%s?code=%d' % (urljoin(BASEURL, reverse('index')), invitation.code)
     message = render_to_string(template_name, {
                                'invitation': invitation,
@@ -238,8 +240,8 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME}
         from_email = settings.SERVER_EMAIL
-        send_mail(_("Email change on %s alpha2 testing") % SITENAME,
-                  t.render(Context(c)), from_email, [ec.new_email_address])
+        send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT),
+            t.render(Context(c)), from_email, [ec.new_email_address])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise ChangeEmailError()

@@ -52,7 +52,8 @@ from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup,
                                get_latest_terms)
 from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
                                  RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED,
-                                 DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL)
+                                 DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
+                                 PASSWORD_RESET_EMAIL_SUBJECT)
 
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
@@ -102,7 +103,7 @@ class LocalUserCreationForm(UserCreationForm):
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
         if get_latest_terms():
-                self.fields.keyOrder.append('has_signed_terms')
+            self.fields.keyOrder.append('has_signed_terms')
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
@@ -441,7 +442,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'support': DEFAULT_CONTACT_EMAIL
             }
             from_email = settings.SERVER_EMAIL
-            send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
+            send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
                       t.render(Context(c)), from_email, [user.email])
 
 

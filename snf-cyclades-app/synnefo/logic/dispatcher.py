@@ -46,6 +46,8 @@ sys.path.append(path)
 from synnefo import settings
 setup_environ(settings)
 
+from django.db import close_connection
+
 import logging
 import time
 
@@ -85,6 +87,12 @@ class Dispatcher:
         log.info("Waiting for messages..")
         while True:
             try:
+                # Close the Django DB connection before processing
+                # every incoming message. This plays nicely with
+                # DB connection pooling, if enabled and allows
+                # the dispatcher to recover from broken connections
+                # gracefully.
+                close_connection()
                 self.client.basic_wait()
             except SystemExit:
                 break

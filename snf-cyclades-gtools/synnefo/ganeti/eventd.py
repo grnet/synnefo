@@ -76,23 +76,21 @@ def get_time_from_status(op, job):
     """
     status = op.status
     if status == constants.JOB_STATUS_QUEUED:
-        return job.received_timestamp
+        time = job.received_timestamp
     try:  # Compatibility with Ganeti version
         if status == constants.JOB_STATUS_WAITLOCK:
-            return op.start_timestamp
+            time = op.start_timestamp
     except AttributeError:
         if status == constants.JOB_STATUS_WAITING:
-            return op.start_timestamp
+            time = op.start_timestamp
     if status == constants.JOB_STATUS_CANCELING:
-        return op.start_timestamp
+        time = op.start_timestamp
     if status == constants.JOB_STATUS_RUNNING:
-        return op.exec_timestamp
+        time = op.exec_timestamp
     if status in constants.JOBS_FINALIZED:
-        if op.end_timestamp:
-            return op.end_timestamp
-        else:
-            # Error opcodes do not always have end timestamp
-            return job.end_timestamp
+        time = op.end_timestamp
+
+    return time and time or job.end_timestamp
 
     raise InvalidBackendStatus(status, job)
 

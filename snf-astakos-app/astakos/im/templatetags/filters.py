@@ -35,10 +35,13 @@ import calendar
 import datetime
 
 from django import template
+from django.core.paginator import Paginator, InvalidPage
 
 from astakos.im.settings import PAGINATE_BY
 
 register = template.Library()
+
+DELIM = ','
 
 @register.filter
 def monthssince(joined_date):
@@ -89,3 +92,32 @@ def todate(value, arg = ''):
 @register.filter
 def rcut(value, chars = '/'):
     return value.rstrip(chars)
+
+@register.filter
+def paginate(l, args):
+    page, delim, sorting = args.partition(DELIM)
+    if sorting:
+        l.sort(key=lambda i: getattr(i, sorting))
+    paginator = Paginator(l, PAGINATE_BY)
+    
+    try:
+        page_number = int(page)
+    except ValueError:
+        if page == 'last':
+            page_number = paginator.num_pages
+        else:
+            page_number = 1
+    page = globals()['page'] = paginator.page(page_number)
+    return page
+
+@register.filter
+def concat(str1, str2):
+    if not str2:
+        return str(str1)
+    return '%s%s%s' % (str1, DELIM, str2)
+
+@register.filter
+def concat(str1, str2):
+    if not str2:
+        return str(str1)
+    return '%s%s%s' % (str1, DELIM, str2)

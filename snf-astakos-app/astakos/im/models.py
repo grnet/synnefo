@@ -120,22 +120,17 @@ class AstakosGroup(Group):
         'Homepage Url', max_length=255, null=True, blank=True)
     desc = models.TextField('Description', null=True)
     policy = models.ManyToManyField(Resource, null=True, blank=True,
-                                    through='AstakosGroupQuota'
-                                    )
+                                    through='AstakosGroupQuota')
     creation_date = models.DateTimeField('Creation date',
-                                         default=datetime.now()
-                                         )
+                                         default=datetime.now())
     issue_date = models.DateTimeField('Issue date', null=True)
     expiration_date = models.DateTimeField('Expiration date', null=True)
     moderation_enabled = models.BooleanField('Moderated membership?',
-                                             default=True
-                                             )
+                                             default=True)
     approval_date = models.DateTimeField('Activation date', null=True,
-                                         blank=True
-                                         )
+                                         blank=True)
     estimated_participants = models.PositiveIntegerField('Estimated #members',
-                                                         null=True
-                                                         )
+                                                         null=True)
 
     @property
     def is_disabled(self):

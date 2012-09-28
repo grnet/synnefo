@@ -611,3 +611,11 @@ class AstakosGroupSortForm(forms.Form):
                                          ('membership_status','Enrollment Status')
                                          ),
                                 required=False)
+
+class MembersSortForm(forms.Form):
+    sort_by = forms.ChoiceField(label='Sort by',
+                                choices=(('person__email', 'User Id'),
+                                         ('person__first_name', 'Name'),
+                                         ('date_joined', 'Status')
+                                         ),
+                                required=False)

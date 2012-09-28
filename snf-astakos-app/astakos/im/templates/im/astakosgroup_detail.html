@@ -103,7 +103,7 @@
                     <select name="sorting" onchange="this.form.submit();">
                         <option value="">Sort by</option>
                         <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>User Id</option>
-                        <option value="person__realname" {% if sorting == 'person__email' %}selected{% endif %}>Name</option>
+                        <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Name</option>
                         <option value="date_joined" {% if sorting == 'date_joined' %}selected{% endif %}>Status</option>
                     </select>
                 </div>

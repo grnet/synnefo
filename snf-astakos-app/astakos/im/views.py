@@ -69,7 +69,7 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               ExtendedPasswordChangeForm, EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
-                              AstakosGroupSortForm)
+                              AstakosGroupSortForm, MembersSortForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   invite as invite_func, logout as auth_logout,
                                   activate as activate_func,
@@ -751,14 +751,23 @@ def group_list(request):
             d['own'].append(g)
         else:
             d['other'].append(g)
+    
+    # validate sorting
+    fields = ('own', 'other')
+    for f in fields:
+        v = globals()['%s_sorting' % f] = request.GET.get('%s_sorting' % f)
+        if v:
+            form = AstakosGroupSortForm({'sort_by': v})
+            if not form.is_valid():
+                globals()['%s_sorting' % f] = form.cleaned_data.get('sort_by')
     return object_list(request, queryset=none,
                        extra_context={'is_search':False,
                                       'mine': d['own'],
                                       'other': d['other'],
-                                      'own_sorting': request.GET.get('own_sorting'),
+                                      'own_sorting': own_sorting,
+                                      'other_sorting': other_sorting,
                                       'own_page': request.GET.get('own_page', 1),
-                                      'other_sorting': request.GET.get('other_sorting'),
-                                      'other_page': request.GET.get('other_page', 1),
+                                      'other_page': request.GET.get('other_page', 1)
                                       })
 
 
@@ -814,10 +823,18 @@ def group_detail(request, group_id):
     c = RequestContext(request, {
         'object': obj,
     }, context_processors)
+    
+    # validate sorting
+    sorting= request.GET.get('sorting')
+    if sorting:
+        form = MembersSortForm({'sort_by': sorting})
+        if form.is_valid():
+            sorting = form.cleaned_data.get('sort_by')
+         
     extra_context = {'update_form': update_form,
                      'addmembers_form': addmembers_form,
                      'page': request.GET.get('page', 1),
-                     'sorting': request.GET.get('sorting')}
+                     'sorting': sorting}
     for key, value in extra_context.items():
         if callable(value):
             c[key] = value()

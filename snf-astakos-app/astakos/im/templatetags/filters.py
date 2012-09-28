@@ -35,7 +35,7 @@ import calendar
 import datetime
 
 from django import template
-from django.core.paginator import Paginator, InvalidPage
+from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
 from astakos.im.settings import PAGINATE_BY
@@ -116,7 +116,10 @@ def paginate(l, args):
             page_number = paginator.num_pages
         else:
             page_number = 1
-    page = globals()['page'] = paginator.page(page_number)
+    try:
+        page = paginator.page(page_number)
+    except EmptyPage:
+        page = paginator.page(1)
     return page
 
 @register.filter

@@ -466,7 +466,6 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         return response
     messages.success(request, _('You have successfully logged out.'))
     context = get_context(request, extra_context)
-    response.write(loader.render_to_string(template, context_instance=context))
     return response
 
 
@@ -650,7 +649,6 @@ def group_add(request, kind_name='default'):
     except:
         return HttpResponseBadRequest(_('No such group kind'))
 
-    template_loader = loader
     post_save_redirect = '/im/group/%(id)s/'
     context_processors = None
     model, form_class = get_model_and_form_class(
@@ -756,6 +754,8 @@ def group_list(request):
         else:
             d['other'].append(g)
     
+    d.setdefault('own', [])
+    d.setdefault('other', [])
     for k, l in d.iteritems():
         page = request.GET.get('%s_page' % k, 1)
         sorting = globals()['%s_sorting' % k] = request.GET.get('%s_sorting' % k)
@@ -999,11 +999,7 @@ def handle_membership(func):
             if request.user not in m.group.owner.all():
                 return HttpResponseForbidden(_('User is not a group owner.'))
             func(request, m)
-            return render_response(
-                template='im/astakosgroup_detail.html',
-                context_instance=get_context(request),
-                object=m.group,
-                quota=m.group.quota)
+            return group_detail(request, group_id)
     return wrapper
 
 
@@ -1018,6 +1014,7 @@ def approve_member(request, membership):
         messages.success(request, msg)
     except BaseException, e:
         logger.exception(e)
+        realname = membership.person.realname
         msg = _('Something went wrong during %s\'s approval.' % realname)
         messages.error(request, msg)
 

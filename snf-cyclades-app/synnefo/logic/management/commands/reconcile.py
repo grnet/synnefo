@@ -204,7 +204,7 @@ class Command(BaseCommand):
                     vm = VirtualMachine.objects.get(pk=id)
                     vm.client.DeleteInstance(utils.id_to_instance_name(id))
                 except VirtualMachine.DoesNotExist:
-                    print >> sys.stderr, "No entry for VM %d in DB !!"
+                    print >> sys.stderr, "No entry for VM %d in DB !!" % id
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced'] and len(unsynced) > 0:

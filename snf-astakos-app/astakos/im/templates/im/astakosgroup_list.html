@@ -91,9 +91,11 @@
                         {% if o.membership_approval_date %}
     
                         Registered
-                        <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
-                             <input type="submit"  value="LEAVE GROUP" />
-                        </form>	
+                        {% if not o.is_owner %}
+                            <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+                                 <input type="submit"  value="LEAVE GROUP" />
+                            </form>
+                        {% endif %}
                         
                             
 

@@ -885,6 +885,12 @@ def group_search(request, extra_context=None, **kwargs):
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s)
+                    THEN 1 ELSE 0 END""" % request.user.id,
+                'is_owner': """
+                    SELECT CASE WHEN EXISTS(
+                    SELECT id FROM im_astakosuser_owner
+                    WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
+                    AND astakosuser_id = %s)
                     THEN 1 ELSE 0 END""" % request.user.id})
         if sorting:
             # TODO check sorting value

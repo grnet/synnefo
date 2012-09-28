@@ -466,6 +466,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         return response
     messages.success(request, _('You have successfully logged out.'))
     context = get_context(request, extra_context)
+    response.write(template_loader.render_to_string(template, context_instance=context))
     return response
 
 

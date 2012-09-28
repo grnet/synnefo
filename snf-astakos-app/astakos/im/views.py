@@ -47,7 +47,6 @@ from django.db import transaction
 from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.forms.fields import URLField
-from django.db.models.fields import DateTimeField
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
     HttpResponseRedirect, HttpResponseBadRequest, Http404
 from django.shortcuts import redirect
@@ -58,7 +57,6 @@ from django.views.generic.create_update import (create_object, delete_object,
                                                 get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.http import HttpResponseBadRequest
-from django.core.paginator import Paginator, InvalidPage
 from django.core.xheaders import populate_xheaders
 
 from astakos.im.models import (
@@ -78,9 +76,8 @@ from astakos.im.functions import (send_feedback, SendMailError,
                                   switch_account_to_shibboleth,
                                   send_admin_notification,
                                   SendNotificationError)
-from astakos.im.settings import (
-    COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
-    LOGGING_LEVEL, PAGINATE_BY)
+from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, SITENAME,
+                                 LOGOUT_NEXT, LOGGING_LEVEL, PAGINATE_BY)
 from astakos.im.tasks import request_billing
 
 logger = logging.getLogger(__name__)
@@ -754,39 +751,14 @@ def group_list(request):
             d['own'].append(g)
         else:
             d['other'].append(g)
-    
-    d.setdefault('own', [])
-    d.setdefault('other', [])
-    for k, l in d.iteritems():
-        page = request.GET.get('%s_page' % k, 1)
-        sorting = globals()['%s_sorting' % k] = request.GET.get('%s_sorting' % k)
-        if sorting:
-            sort_form = AstakosGroupSortForm({'sort_by': sorting})
-            if sort_form.is_valid():
-                sort_field = q._model_fields.get(sorting)
-                default = _get_default(sort_field)
-                l.sort(key=lambda i: getattr(i, sorting) if getattr(i, sorting) else default)
-                globals()['%s_sorting' % k] = sorting
-        paginator = Paginator(l, PAGINATE_BY)
-        
-        try:
-            page_number = int(page)
-        except ValueError:
-            if page == 'last':
-                page_number = paginator.num_pages
-            else:
-                # Page is not 'last', nor can it be converted to an int.
-                raise Http404
-        try:
-            page_obj = globals()['%s_page_obj' % k] = paginator.page(page_number)
-        except InvalidPage:
-            raise Http404
     return object_list(request, queryset=none,
                        extra_context={'is_search':False,
-                                      'mine': own_page_obj,
-                                      'other': other_page_obj,
-                                      'own_sorting': own_sorting,
-                                      'other_sorting': other_sorting
+                                      'mine': d['own'],
+                                      'other': d['other'],
+                                      'own_sorting': request.GET.get('own_sorting'),
+                                      'own_page': request.GET.get('own_page', 1),
+                                      'other_sorting': request.GET.get('other_sorting'),
+                                      'other_page': request.GET.get('other_page', 1),
                                       })
 
 
@@ -1110,11 +1082,3 @@ def _clear_billing_data(data):
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
     return data
-
-
-def _get_default(field):
-    if isinstance(field, DateTimeField):
-        return datetime.utcfromtimestamp(0)
-    elif isinstance(field, int):
-        return 0
-    return ''

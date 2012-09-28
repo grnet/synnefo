@@ -43,6 +43,7 @@
         
     {% endif %}
     {% with page_obj.object_list as object_list %}
+    <!-- Search group -->
     {% if object_list %}
         <div class="full-dotted">
         	<form method="GET" class="minimal" action=""> 
@@ -146,7 +147,10 @@
             </span>
 		</p>
    </div>
-      {% else %}
+      <!-- Group listing -->
+        {% else %}
+            {% with own_page|concat:own_sorting as args %}
+            {% with mine|paginate:args as mine %}
 	      	{% if mine %}
 	      	    <div class="full-dotted">
 					<form method="GET" class="minimal" action="">
@@ -222,6 +226,11 @@
 			   </div>
 				 
       		{% endif %}
+      		{% endwith %}
+            {% endwith %}
+	      	
+	      	{% with other_page|concat:other_sorting as args %}
+            {% with other|paginate:args as other %}
 	      	{% if other %}	
  	      		<div class="full-dotted">
  	      			<form method="GET" class="minimal" action=""> 
@@ -316,6 +325,9 @@
 			   </div>
 				 
 			{% endif %}
+			{% endwith %}
+            {% endwith %}
+	      	
             {% if q %}
                 <h2>No groups found!</h2>
             {% endif %}

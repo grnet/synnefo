@@ -101,8 +101,12 @@ def paginate(l, args):
         if isinstance(l, QuerySet):
             l = l.order_by(sorting)
         elif isinstance(l, list):
-            l.sort(key=lambda i: getattr(i, sorting))
-        
+            default = ''
+            if sorting.endswith('_date'):
+                default = datetime.datetime.utcfromtimestamp(0)
+            l.sort(key=lambda i: getattr(i, sorting) \
+                        if getattr(i, sorting) else default)
+            
     paginator = Paginator(l, PAGINATE_BY)
     
     try:

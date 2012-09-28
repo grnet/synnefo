@@ -792,7 +792,7 @@ def group_list(request):
 @signed_terms_required
 @login_required
 def group_detail(request, group_id):
-    q = AstakosGroup.objects.filter(pk=group_id)
+    q = AstakosGroup.objects.select_related().filter(pk=group_id)
     q = q.extra(select={
         'is_member': """SELECT CASE WHEN EXISTS(
                             SELECT id FROM im_membership
@@ -800,9 +800,9 @@ def group_detail(request, group_id):
                             AND person_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,
         'is_owner': """SELECT CASE WHEN EXISTS(
-                            SELECT id FROM im_astakosuser_owner
-                            WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
-                            AND astakosuser_id = %s)
+                        SELECT id FROM im_astakosuser_owner
+                        WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
+                        AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,
         'kindname': """SELECT name FROM im_groupkind
                        WHERE id = im_astakosgroup.kind_id"""})
@@ -812,8 +812,9 @@ def group_detail(request, group_id):
     mimetype = None
     try:
         obj = q.get()
-    except ObjectDoesNotExist:
-        raise Http404("No %s found matching the query" % (model._meta.verbose_name))
+    except AstakosGroup.DoesNotExist:
+        raise Http404("No %s found matching the query" % (
+            model._meta.verbose_name))
     
     update_form = AstakosGroupUpdateForm(instance=obj)
     addmembers_form = AddGroupMembersForm()
@@ -970,8 +971,7 @@ def group_leave(request, group_id):
     try:
         m = Membership.objects.select_related().get(
             group__id=group_id,
-            person=request.user
-        )
+            person=request.user)
     except Membership.DoesNotExist:
         return HttpResponseBadRequest(_('Invalid membership.'))
     if request.user in m.group.owner.all():
@@ -983,9 +983,7 @@ def group_leave(request, group_id):
         template_name='im/astakosgroup_list.html',
         post_delete_redirect=reverse(
             'group_detail',
-            kwargs=dict(group_id=group_id)
-        )
-    )
+            kwargs=dict(group_id=group_id)))
 
 
 def handle_membership(func):
@@ -994,8 +992,7 @@ def handle_membership(func):
         try:
             m = Membership.objects.select_related().get(
                 group__id=group_id,
-                person__id=user_id
-            )
+                person__id=user_id)
         except Membership.DoesNotExist:
             return HttpResponseBadRequest(_('Invalid membership.'))
         else:
@@ -1006,8 +1003,7 @@ def handle_membership(func):
                 template='im/astakosgroup_detail.html',
                 context_instance=get_context(request),
                 object=m.group,
-                quota=m.group.quota
-            )
+                quota=m.group.quota)
     return wrapper
 
 
@@ -1047,15 +1043,13 @@ def resource_list(request):
     return render_response(
         template='im/astakosuserquota_list.html',
         context_instance=get_context(request),
-        quota=request.user.quota
-    )
+        quota=request.user.quota)
 
 
 def group_create_list(request):
     return render_response(
         template='im/astakosgroup_create_list.html',
-        context_instance=get_context(request),
-    )
+        context_instance=get_context(request),)
 
 
 @signed_terms_required

@@ -3,6 +3,8 @@
 {% load filters %}
 
 {% block page.body %}
+{% with object.owners as owners %}
+{% with object.quota as quota %}
 <div class="projects">
 	
 	<h2>
@@ -63,7 +65,8 @@
 		 	<dt>Activated</dt>
 		 	<dd>{% if object.is_enabled %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>
-		 	<dd>{% for o in object.owner.all %}
+		 	{{ o.owners }}
+		 	<dd>{% for o in owners %}
                     {% if user == o %}
                         Me
                     {% else%}
@@ -77,13 +80,13 @@
 	 
      <div class="full-dotted">
 		 <h3>RESOURCES:</h3>
-		 {% if object.quota %}
+		 {% if quota %}
 		 <dl class="alt-style">
 		 	 
-		 	{% for k in object.quota|dkeys %}
+		 	{% for k in quota|dkeys %}
                 
                 <dt>{{ k }}</dt>
-                <dd>{{ object.quota|lookup:k }}&nbsp;</dd>
+                <dd>{{ quota|lookup:k }}&nbsp;</dd>
                   
             {% endfor %}
 		</dl>
@@ -119,14 +122,14 @@
                   <tr>
                     <td>{{p.email}}</td>
                     <td>{{p.realname}}</td>
-                    {% if p in object.owner.all %}
+                    {% if p in owners %}
                     <td>Owner</td>
                     {% else %}
                         {% if p.is_approved %}
                         <td>Approved</td>
                         {% else %}
                         <td>Pending 
-                            {% if user in object.owner.all %}
+                            {% if o.is_owner %}
                                 <a href="{% url approve_member m.group.id m.person.id %}">Accept</a>
                                 <a href="{% url disapprove_member m.group.id m.person.id  %}">Reject</a>
                             {% endif %}
@@ -176,4 +179,6 @@
      
     
 </div>
+{% endwith %}
+{% endwith %}
 {% endblock %}

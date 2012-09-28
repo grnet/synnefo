@@ -115,9 +115,3 @@ def concat(str1, str2):
     if not str2:
         return str(str1)
     return '%s%s%s' % (str1, DELIM, str2)
-
-@register.filter
-def concat(str1, str2):
-    if not str2:
-        return str(str1)
-    return '%s%s%s' % (str1, DELIM, str2)

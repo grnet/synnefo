@@ -182,26 +182,29 @@ class AstakosGroup(Group):
 
     @property
     def members(self):
-        l = []
-        for m in self.membership_set.all():
-            m.person.is_approved = m.is_approved
-            l.append(m.person)
-        return l
+        q = self.membership_set.select_related().all()
+        return [m.person for m in q]
 
     @property
     def approved_members(self):
-        return [m.person for m in self.membership_set.all() if m.is_approved]
+        q = self.membership_set.select_related().all()
+        return [m.person for m in q if m.is_approved]
 
     @property
     def quota(self):
         d = defaultdict(int)
-        for q in self.astakosgroupquota_set.all():
+        query = self.astakosgroupquota_set.select_related().all()
+        for q in query:
             d[q.resource] += q.uplimit
         return d
 
     @property
     def owners(self):
         return self.owner.all()
+
+    @property
+    def owner_details(self):
+        return self.owner.select_related().all()
 
     @owners.setter
     def owners(self, l):

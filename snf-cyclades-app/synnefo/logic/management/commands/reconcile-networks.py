@@ -120,13 +120,14 @@ def reconcile_networks(out, fix, conflicting_ips):
             except KeyError:
                 # Stale network does not exist in backend
                 if destroying:
-                    out.write('D: Stale network %d in backend %s\n' % info)
-                    if fix:
-                        out.write("F: Issued OP_NETWORK_REMOVE'\n")
-                        etime = datetime.datetime.now()
-                        backend.process_network_status(back_network, etime,
-                                            0, 'OP_NETWORK_REMOVE', 'success',
-                                            'Reconciliation simulated event.')
+                    if back_network.operstate != "DELETED":
+                        out.write('D: Stale network %d in backend %s\n' % info)
+                        if fix:
+                            out.write("F: Issued OP_NETWORK_REMOVE'\n")
+                            etime = datetime.datetime.now()
+                            backend.process_network_status(back_network, etime,
+                                                0, 'OP_NETWORK_REMOVE', 'success',
+                                                'Reconciliation simulated event.')
                     continue
                 else:
                     # Pending network
@@ -182,8 +183,8 @@ def reconcile_networks(out, fix, conflicting_ips):
                 ip_reserved_maps.append(r_map)
 
         if uses_pool and (ip_available_maps or ip_reserved_maps):
-            available_map = reduce(lambda x, y: x | y, ip_available_maps)
-            reserved_map = reduce(lambda x, y: x | y, ip_reserved_maps)
+            available_map = reduce(lambda x, y: x & y, ip_available_maps)
+            reserved_map = reduce(lambda x, y: x & y, ip_reserved_maps)
 
             pool = network.get_pool()
             un_available = pool.available != available_map

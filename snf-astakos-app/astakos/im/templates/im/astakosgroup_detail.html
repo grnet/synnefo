@@ -67,7 +67,7 @@
 		 	<dt>Owner</dt>
 		 	{{ o.owners }}
 		 	<dd>{% for o in owners %}
-                    {% if user == o %}
+                    {% if object.is_owner %}
                         Me
                     {% else%}
                         {{o.realname}} ({{o.email}})
@@ -96,15 +96,15 @@
 	 </div>
 	 <div class="full-dotted">
 	    {% with page|concat:sorting as args %}
-	    {% with object.members|paginate:args as members%}
-            {% if members %}
+	    {% with object.membership_set.select_related.all|paginate:args as membership %}
+            {% if membership %}
             <form method="GET" class="minimal" action="">
                 <div class="form-row">
                     <select name="sorting" onchange="this.form.submit();">
                         <option value="">Sort by</option>
-                        <option value="email" {% if sorting == 'email' %}selected{% endif %}>User Id</option>
-                        <option value="realname" {% if sorting == 'realname' %}selected{% endif %}>Name</option>
-                        <option value="is_approved" {% if sorting == 'is_approved' %}selected{% endif %}>Status</option>
+                        <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>User Id</option>
+                        <option value="person__realname" {% if sorting == 'person__email' %}selected{% endif %}>Name</option>
+                        <option value="date_joined" {% if sorting == 'date_joined' %}selected{% endif %}>Status</option>
                     </select>
                 </div>
             </form>
@@ -118,20 +118,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% for p in members.object_list %}
+                {% for m in membership.object_list %}
                   <tr>
-                    <td>{{p.email}}</td>
-                    <td>{{p.realname}}</td>
-                    {% if p in owners %}
+                    <td>{{m.person.email}}</td>
+                    <td>{{m.person.realname}}</td>
+                    {% if m.person in owners %}
                     <td>Owner</td>
                     {% else %}
-                        {% if p.is_approved %}
+                        {% if m.is_approved %}
                         <td>Approved</td>
                         {% else %}
-                        <td>Pending 
-                            {% if o.is_owner %}
-                                <a href="{% url approve_member m.group.id m.person.id %}">Accept</a>
-                                <a href="{% url disapprove_member m.group.id m.person.id  %}">Reject</a>
+                        <td>Pending
+                            {% if object.is_owner %}
+                                <a href="{% url approve_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
+                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
                             {% endif %}
                         </td>    
                         {% endif %}
@@ -142,16 +142,16 @@
              </table>
              <div class="pagination">
                 <p class="next-prev">
-                    {% if members.has_previous %}
-                        <a href="?page={{ members.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+                    {% if membership.has_previous %}
+                        <a href="?page={{ membership.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
                     {% endif %}
-                    {% if members.has_next %}
-                        <a href="?page={{ members.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+                    {% if membership.has_next %}
+                        <a href="?page={{ membership.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
                     {% endif %}
                 </p>
                 <p class="nums">
                     <span class="current">
-                        Page {{ members.number }} of {{ members.paginator.num_pages }}
+                        Page {{ membership.number }} of {{ membership.paginator.num_pages }}
                     </span>
                 </p>
             </div>

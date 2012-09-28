@@ -36,6 +36,7 @@ import datetime
 
 from django import template
 from django.core.paginator import Paginator, InvalidPage
+from django.db.models.query import QuerySet
 
 from astakos.im.settings import PAGINATE_BY
 
@@ -97,7 +98,11 @@ def rcut(value, chars = '/'):
 def paginate(l, args):
     page, delim, sorting = args.partition(DELIM)
     if sorting:
-        l.sort(key=lambda i: getattr(i, sorting))
+        if isinstance(l, QuerySet):
+            l = l.order_by(sorting)
+        elif isinstance(l, list):
+            l.sort(key=lambda i: getattr(i, sorting))
+        
     paginator = Paginator(l, PAGINATE_BY)
     
     try:

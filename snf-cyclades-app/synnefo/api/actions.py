@@ -42,9 +42,11 @@ from django.utils import simplejson as json
 
 from synnefo.api.faults import (BadRequest, ServiceUnavailable,
                                 ItemNotFound, BuildInProgress)
-from synnefo.api.util import random_password, get_vm, get_nic_from_index
+from synnefo.api.util import (random_password, get_vm, get_nic_from_index,
+                              get_network_free_address)
 from synnefo.db.models import NetworkInterface, Network
-from synnefo.logic import backend, ippool
+from synnefo.db.pools import EmptyPool
+from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
 
 
@@ -305,16 +307,16 @@ def add(request, net, args):
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user_uniq)
 
-    # Get the Network object in exclusive mode in order to
-    # guarantee consistency of the pool
-    net = Network.objects.select_for_update().get(id=net.id)
+    net = Network.objects.get(id=net.id)
+
+    if net.state != 'ACTIVE':
+        raise ServiceUnavailable('Network not active yet')
+
     # Get a free IP from the address pool.
-    pool = ippool.IPPool(net)
     try:
-        address = pool.get_free_address()
-    except ippool.IPPool.IPPoolExhausted:
+        address = get_network_free_address(net)
+    except EmptyPool:
         raise ServiceUnavailable('Network is full')
-    pool.save()
 
     backend.connect_to_network(vm, net, address)
     return HttpResponse(status=202)
@@ -335,6 +337,8 @@ def remove(request, net, args):
     try:  # attachment string: nic-<vm-id>-<nic-index>
         server_id = args.get('attachment', None).split('-')[1]
         nic_index = args.get('attachment', None).split('-')[2]
+    except AttributeError:
+        raise BadRequest("Malformed Request")
     except IndexError:
         raise BadRequest('Malformed Network Interface Id')
 

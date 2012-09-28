@@ -40,8 +40,10 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES)
-from synnefo.logic import utils, ippool
+from synnefo.logic import utils
+from synnefo.db.pools import EmptyPool
 from synnefo.api.faults import OverLimit
+from synnefo.api.util import backend_public_networks, get_network_free_address
 from synnefo.util.rapi import GanetiRapiClient
 
 log = getLogger('synnefo.logic')
@@ -116,10 +118,7 @@ def process_net_status(vm, etime, nics):
     Update the state of the VM in the DB accordingly.
     """
 
-    # Release the ips of the old nics. Get back the networks as multiple
-    # changes in the same network, must happen in the same Network object,
-    # because transaction will be commited only on exit of the function.
-    networks = release_instance_nics(vm)
+    release_instance_nics(vm)
 
     new_nics = enumerate(nics)
     for i, new_nic in new_nics:
@@ -127,11 +126,7 @@ def process_net_status(vm, etime, nics):
         n = str(network)
         pk = utils.id_from_network_name(n)
 
-        # Get the cached Network or get it from DB
-        if pk in networks:
-            net = networks[pk]
-        else:
-            net = Network.objects.select_for_update().get(pk=pk)
+        net = Network.objects.get(pk=pk)
 
         # Get the new nic info
         mac = new_nic.get('mac', '')
@@ -160,22 +155,9 @@ def process_net_status(vm, etime, nics):
 
 
 def release_instance_nics(vm):
-    networks = {}
-
     for nic in vm.nics.all():
-        pk = nic.network.pk
-        # Get the cached Network or get it from DB
-        if pk in networks:
-            net = networks[pk]
-        else:
-            # Get the network object in exclusive mode in order
-            # to guarantee consistency of the address pool
-            net = Network.objects.select_for_update().get(pk=pk)
-        if nic.ipv4:
-            net.release_address(nic.ipv4)
+        nic.network.release_address(nic.ipv4)
         nic.delete()
-
-    return networks
 
 
 @transaction.commit_on_success
@@ -285,22 +267,13 @@ def create_instance(vm, flavor, image, password, personality):
     """
 
     if settings.PUBLIC_ROUTED_USE_POOL:
-        # Get the Network object in exclusive mode in order to
-        # safely (isolated) reserve an IP address
-        try:
-            network = Network.objects.select_for_update().get(public=True)
-        except Network.DoesNotExist:
-            raise Exception('No public network available')
-        pool = ippool.IPPool(network)
-        try:
-            address = pool.get_free_address()
-        except ippool.IPPool.IPPoolExhausted:
+        (network, address) = allocate_public_address(vm)
+        if address is None:
             raise OverLimit("Can not allocate IP for new machine."
-                            " Public network is full.")
-        pool.save()
-        nic = {'ip': address, 'network': settings.GANETI_PUBLIC_NETWORK}
+                            " Public networks are full.")
+        nic = {'ip': address, 'network': network.backend_id}
     else:
-        nic = {'ip': 'pool', 'network': settings.GANETI_PUBLIC_NETWORK}
+        nic = {'ip': 'pool', 'network': network.backend_id}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
         if image['backend_id'].find("windows") >= 0:
@@ -335,8 +308,9 @@ def create_instance(vm, flavor, image, password, personality):
     if provider:
         kw['disks'][0]['provider'] = provider
 
-
     kw['nics'] = [nic]
+    if settings.GANETI_USE_HOTPLUG:
+        kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False
@@ -365,6 +339,17 @@ def create_instance(vm, flavor, image, password, personality):
     # kw['hvparams'] = dict(serial_console=False)
 
     return vm.client.CreateInstance(**kw)
+
+
+def allocate_public_address(vm):
+    """Allocate a public IP for a vm."""
+    for network in backend_public_networks(vm.backend):
+        try:
+            address = get_network_free_address(network)
+            return (network, address)
+        except EmptyPool:
+            pass
+    return (None, None)
 
 
 def delete_instance(vm):

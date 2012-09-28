@@ -39,14 +39,17 @@ import utils
 from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
-from synnefo.logic.ippool import IPPool
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
 from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
+from synnefo.db import pools
 
 BACKEND_CLIENTS = {}  # {hash:Backend client}
 BACKEND_HASHES = {}   # {Backend.id:hash}
+
+import logging
+log = logging.getLogger(__name__)
 
 
 def get_client(hash, backend):
@@ -464,9 +467,8 @@ class Network(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
 
-    reservations = models.TextField(default='')
-
-    ip_pool = None
+    pool = models.OneToOneField('IPPoolTable', related_name='network',
+                                null=True)
 
     objects = ForUpdateManager()
 
@@ -534,51 +536,45 @@ class Network(models.Model):
 
         # Release the resources on the deletion of the Network
         if old_state != 'DELETED' and self.state == 'DELETED':
+            log.info("Network %r deleted. Releasing link %r mac_prefix %r",
+                     self.id, self.mac_prefix, self.link)
             self.deleted = True
-
             if self.mac_prefix:
-                MacPrefixPool.set_available(self.mac_prefix)
+                mac_pool = MacPrefixPoolTable.get_pool()
+                mac_pool.put(self.mac_prefix)
+                mac_pool.save()
 
             if self.link and self.type == 'PRIVATE_VLAN':
-                BridgePool.set_available(self.link)
+                bridge_pool = BridgePoolTable.get_pool()
+                bridge_pool.put(self.link)
+                bridge_pool.save()
 
         self.save()
 
-    def __init__(self, *args, **kwargs):
-        super(Network, self).__init__(*args, **kwargs)
-        if not self.mac_prefix:
-            # Allocate a MAC prefix for just created Network instances
-            mac_prefix = MacPrefixPool.get_available().value
-            self.mac_prefix = mac_prefix
+    def create_backend_network(self, backend=None):
+        """Create corresponding BackendNetwork entries."""
 
-    def save(self, *args, **kwargs):
-        pk = self.pk
-        super(Network, self).save(*args, **kwargs)
-        if not pk:
-            # In case of a new Network, corresponding BackendNetwork's must
-            # be created!
-            for back in Backend.objects.all():
-                BackendNetwork.objects.create(backend=back, network=self)
+        backends = [backend] if backend else Backend.objects.all()
+        for backend in backends:
+            BackendNetwork.objects.create(backend=backend, network=self)
 
-    @property
-    def pool(self):
-        if self.ip_pool:
-            return self.ip_pool
-        else:
-            self.ip_pool = IPPool(self)
-            return self.ip_pool
+    def get_pool(self):
+        if not self.pool_id:
+            self.pool = IPPoolTable.objects.create(available_map='',
+                                                   reserved_map='',
+                                                   size=0)
+            self.save()
+        return IPPoolTable.objects.select_for_update().get(id=self.pool_id).pool
 
-    def reserve_address(self, address, pool=None):
-        pool = pool or self.pool
+    def reserve_address(self, address):
+        pool = self.get_pool()
         pool.reserve(address)
-        pool._update_network()
-        self.save()
+        pool.save()
 
-    def release_address(self, address, pool=None):
-        pool = pool or self.pool
-        pool.release(address)
-        pool._update_network()
-        self.save()
+    def release_address(self, address):
+        pool = self.get_pool()
+        pool.put(address)
+        pool.save()
 
 
 class BackendNetwork(models.Model):
@@ -631,6 +627,10 @@ class BackendNetwork(models.Model):
     backendtime = models.DateTimeField(null=False,
                                        default=datetime.datetime.min)
 
+    class Meta:
+        # Ensure one entry for each network in each backend
+        unique_together = (("network", "backend"))
+
     def __init__(self, *args, **kwargs):
         """Initialize state for just created BackendNetwork instances."""
         super(BackendNetwork, self).__init__(*args, **kwargs)
@@ -679,78 +679,40 @@ class NetworkInterface(models.Model):
         return '%s@%s' % (self.machine.name, self.network.name)
 
 
-class Pool(models.Model):
-    """ Abstract class modeling a generic pool of resources
+class PoolTable(models.Model):
+    available_map = models.TextField(default="", null=False)
+    reserved_map = models.TextField(default="", null=False)
+    size = models.IntegerField(null=False)
 
-        Subclasses must implement 'value_from_index' method which
-        converts and index(Integer) to an arbitrary Char value.
-
-        Methods of this class must be invoked inside a transaction
-        to ensure consistency of the pool.
-    """
-    available = models.BooleanField(default=True, null=False)
-    index = models.IntegerField(null=False, unique=True)
-    value = models.CharField(max_length=128, null=False, unique=True)
-    max_index = 0
+    # Optional Fields
+    base = models.CharField(null=True, max_length=32)
+    offset = models.IntegerField(null=True)
 
     objects = ForUpdateManager()
 
     class Meta:
         abstract = True
-        ordering = ['index']
 
     @classmethod
-    def get_available(cls):
+    def get_pool(cls):
         try:
-            entry = cls.objects.select_for_update().filter(available=True)[0]
-            entry.available = False
-            entry.save()
-            return entry
+            pool_row = cls.objects.select_for_update().all()[0]
+            return pool_row.pool
         except IndexError:
-            return cls.generate_new()
+            raise pools.EmptyPool
 
-    @classmethod
-    def generate_new(cls):
-        try:
-            last = cls.objects.order_by('-index')[0]
-            index = last.index + 1
-        except IndexError:
-            index = 1
-
-        if index <= cls.max_index:
-            return cls.objects.create(index=index,
-                                      value=cls.value_from_index(index),
-                                      available=False)
-
-        raise Pool.PoolExhausted()
-
-    @classmethod
-    def set_available(cls, value):
-        entry = cls.objects.select_for_update().get(value=value)
-        entry.available = True
-        entry.save()
-
-    class PoolExhausted(Exception):
-        pass
+    @property
+    def pool(self):
+        return self.manager(self)
 
 
-class BridgePool(Pool):
-    max_index = snf_settings.PRIVATE_PHYSICAL_VLAN_MAX_NUMBER
-
-    @staticmethod
-    def value_from_index(index):
-        return snf_settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + str(index)
+class BridgePoolTable(PoolTable):
+    manager = pools.BridgePool
 
 
-class MacPrefixPool(Pool):
-    max_index = snf_settings.MAC_POOL_LIMIT
+class MacPrefixPoolTable(PoolTable):
+    manager = pools.MacPrefixPool
 
-    @staticmethod
-    def value_from_index(index):
-        """Convert number to mac prefix
 
-        """
-        base = snf_settings.MAC_POOL_BASE
-        a = hex(int(base.replace(":", ""), 16) + index).replace("0x", '')
-        mac_prefix = ":".join([a[x:x + 2] for x in xrange(0, len(a), 2)])
-        return mac_prefix
+class IPPoolTable(PoolTable):
+    manager = pools.IPPool

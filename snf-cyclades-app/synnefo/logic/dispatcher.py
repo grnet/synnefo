@@ -77,7 +77,6 @@ BINDINGS = []
 
 class Dispatcher:
     debug = False
-    client_promises = []
 
     def __init__(self, debug=False):
         self.debug = debug
@@ -132,12 +131,11 @@ class Dispatcher:
             self.client.queue_bind(queue=binding[0], exchange=binding[1],
                                    routing_key=binding[2])
 
-            consume_promise = self.client.basic_consume(queue=binding[0],
+            self.client.basic_consume(queue=binding[0],
                                                         callback=callback)
 
             log.debug("Binding %s(%s) to queue %s with handler %s",
                       binding[1], binding[2], binding[0], binding[3])
-            self.client_promises.append(consume_promise)
 
 
 def _init_queues():
@@ -314,6 +312,13 @@ def main():
     # the executable by NUL bytes, so only show the name of the executable
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])
+
+    if opts.debug:
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(module)s %(levelname)s: %(message)s",
+                                      "%Y-%m-%d %H:%M:%S")
+        stream_handler.setFormatter(formatter)
+        log.addHandler(stream_handler)
 
     # Init the global variables containing the queues
     _init_queues()

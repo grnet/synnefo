@@ -99,7 +99,7 @@ def network_from_msg(func):
     def wrapper(msg):
         try:
             network_id = utils.id_from_network_name(msg["network"])
-            network = Network.objects.get(id=network_id)
+            network = Network.objects.select_for_update().get(id=network_id)
             backend = Backend.objects.get(clustername=msg['cluster'])
             backend_network = BackendNetwork.objects.get(network=network,
                                                          backend=backend)

@@ -27,12 +27,15 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
+import logging
 import datetime
 from django.utils import importlib
 
 from synnefo import settings
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
+
+log = logging.getLogger(__name__)
 
 
 class BackendAllocator():
@@ -50,6 +53,8 @@ class BackendAllocator():
         cpu = flavor.cpu
         vm = {'ram': ram, 'disk': disk, 'cpu': cpu}
 
+        log.debug("Allocating VM: %r", vm)
+
         # Refresh backends, if needed
         refresh_backends_stats()
 
@@ -61,9 +66,10 @@ class BackendAllocator():
 
         # Find the best backend to host the vm, based on the allocation
         # strategy
-        backend_id = self.strategy_mod.allocate(available_backends, vm)
+        backend = self.strategy_mod.allocate(available_backends, vm)
 
-        backend = Backend.objects.get(id=backend_id)
+        log.info("Allocated VM %r, in backend %s", vm, backend)
+
         # Reduce the free resources of the selected backend by the size of
         # the vm
         reduce_backend_resources(backend, vm)
@@ -75,14 +81,7 @@ def get_available_backends():
     """Get available backends from db.
 
     """
-    attrs = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
-    backends = {}
-    for b in Backend.objects.filter(drained=False, offline=False):
-        backend = {}
-        for a in attrs:
-            backend[a] = getattr(b, a)
-        backends[b.id] = backend
-    return backends
+    return Backend.objects.filter(drained=False, offline=False)
 
 
 def flavor_disk(flavor):
@@ -124,4 +123,5 @@ def refresh_backends_stats():
     delta = datetime.timedelta(minutes=settings.BACKEND_REFRESH_MIN)
     for b in Backend.objects.filter(drained=False, offline=False):
         if now > b.updated + delta:
+            log.debug("Updating resources of backend %r", b)
             update_resources(b)

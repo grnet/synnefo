@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Backend, Network, BackendNetwork
 from synnefo.util.rapi import GanetiApiError
-
+from util import pool_map_chunks
 
 class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
@@ -63,7 +63,7 @@ class Command(BaseCommand):
                   str(net.subnet), str(net.gateway), str(net.mac_prefix),
                   str(net.link), str(net.public),  str(net.dhcp),
                   str(net.type), str(net.deleted), str(net.action),
-                  str(splitPoolMap(net.pool.get_map(), 64)))
+                  str(splitPoolMap(net.get_pool().to_map(), 64)))
 
         self.stdout.write(sep)
         self.stdout.write('State of Network in DB\n')
@@ -103,10 +103,12 @@ class Command(BaseCommand):
 
 
 def splitPoolMap(s, count):
-    splited = [''.join(x) for x in zip(*[list(s[z::count]) for z in
-                range(count)])]
+    chunks = pool_map_chunks(s, count)
     acc = []
-    for i in range(0, len(splited)):
-        acc.append(str(i * count).ljust(4) + ' ' + splited[i] + ' ' +
-                   str((i + 1) * count - 1).ljust(4))
+    count = 0
+    for chunk in chunks:
+        chunk_len = len(chunk)
+        acc.append(str(count).rjust(3) + ' ' + chunk + ' ' +
+                   str(count + chunk_len - 1).ljust(4))
+        count += chunk_len
     return '\n' + '\n'.join(acc)

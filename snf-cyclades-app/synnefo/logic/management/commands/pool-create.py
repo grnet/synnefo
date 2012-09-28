@@ -31,50 +31,48 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
+from optparse import make_option
 
-from synnefo.db.models import Backend
+from util import pool_table_from_type
+
+POOL_CHOICES = ['bridge', 'mac-prefix']
 
 
 class Command(BaseCommand):
-    help = "List backends"
-
+    help = "Create a new pool of resources."
+    output_transaction = True
     option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+        make_option("--type", dest="type",
+                    choices=POOL_CHOICES,
+                    help="Type of pool"
+                    ),
+        make_option("--size", dest="size",
+                    help="Size of the pool"),
+        make_option("--offset", dest="offset"),
+        make_option("--base", dest="base")
+    )
 
     def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+        type_ = options['type']
+        size = options['size']
+        offset = options['offset']
+        base = options['base']
 
-        backends = Backend.objects.order_by('id')
+        if not type_:
+            raise CommandError("Type of pool is mandatory")
+        if not size:
+            raise CommandError("Size of pool is mandatory")
 
-        labels = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                  'offline')
-        columns = (3, 50, 5, 10, 4, 6, 6)
+        try:
+            size = int(size)
+        except ValueError:
+            raise CommandError("Invalid size")
 
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-            self.stdout.write(line + '\n')
-            self.stdout.write(sep + '\n')
+        pool_table = pool_table_from_type(type_)
 
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+        pool_table.objects.create(available_map="",
+                                  reserved_map="",
+                                  size=size,
+                                  base=base,
+                                  offset=offset)

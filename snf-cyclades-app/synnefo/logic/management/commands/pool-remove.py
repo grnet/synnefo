@@ -31,50 +31,37 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
+from optparse import make_option
 
-from synnefo.db.models import Backend
+from util import pool_table_from_type
+
+POOL_CHOICES = ['bridge', 'mac-prefix']
 
 
 class Command(BaseCommand):
-    help = "List backends"
-
+    help = "Remove a pool."
+    args = "<pool ID>"
+    output_transaction = True
     option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+        make_option("--type", dest="type",
+                    choices=POOL_CHOICES,
+                    help="Type of pool"
+                    ),
+    )
 
     def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+        type_ = options['type']
 
-        backends = Backend.objects.order_by('id')
+        if not type_:
+            raise CommandError("Type of pool is mandatory")
 
-        labels = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                  'offline')
-        columns = (3, 50, 5, 10, 4, 6, 6)
+        pool_table = pool_table_from_type(type_)
 
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-            self.stdout.write(line + '\n')
-            self.stdout.write(sep + '\n')
+        try:
+            pool_id = int(args[0])
+            pool = pool_table.objects.get(id=pool_id)
+        except (ValueError, pool_table.DoesNotExist):
+            raise CommandError("Invalid pool ID")
 
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+        pool.delete()

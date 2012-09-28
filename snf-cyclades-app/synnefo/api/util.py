@@ -56,13 +56,14 @@ from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType, OverLimit)
+                                BadMediaType)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, NetworkInterface, BridgePool,
-                               MacPrefixPool, Pool)
+                               Network, BackendNetwork, NetworkInterface,
+                               BridgePoolTable, MacPrefixPoolTable)
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend
+from synnefo.settings import MAX_CIDR_BLOCK
 
 
 log = getLogger('synnefo.api')
@@ -198,17 +199,48 @@ def get_flavor(flavor_id):
         raise ItemNotFound('Flavor not found.')
 
 
-def get_network(network_id, user_id):
+def get_network(network_id, user_id, for_update=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
-        if network_id == 'public':
-            return Network.objects.get(public=True)
+        network_id = int(network_id)
+        if for_update:
+            return Network.objects.select_for_update().get(id=network_id, userid=user_id)
         else:
-            network_id = int(network_id)
             return Network.objects.get(id=network_id, userid=user_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
+
+
+def validate_network_size(cidr_block):
+    """Return True if network size is allowed."""
+    return cidr_block <= 29 and cidr_block > MAX_CIDR_BLOCK
+
+
+def backend_public_networks(backend):
+    """Return available public networks of the backend.
+
+    Iterator for non-deleted public networks that are available
+    to the specified backend.
+
+    """
+    for network in Network.objects.filter(public=True, deleted=False):
+        if BackendNetwork.objects.filter(network=network,
+                                         backend=backend).exists():
+            yield network
+
+
+def get_network_free_address(network):
+    """Reserve an IP address from the IP Pool of the network.
+
+    Raises EmptyPool
+
+    """
+
+    pool = network.get_pool()
+    address = pool.get()
+    pool.save()
+    return address
 
 
 def get_nic(machine, network):
@@ -216,6 +248,7 @@ def get_nic(machine, network):
         return NetworkInterface.objects.get(machine=machine, network=network)
     except NetworkInterface.DoesNotExist:
         raise ItemNotFound('Server not connected to this network.')
+
 
 def get_nic_from_index(vm, nic_index):
     """Returns the nic_index-th nic of a vm
@@ -229,6 +262,7 @@ def get_nic_from_index(vm, nic_index):
         raise BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
     return nic
+
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
@@ -336,7 +370,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-                
+
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
@@ -348,7 +382,7 @@ def api_method(http_method=None, atom_allowed=False):
                 return render_fault(request, fault)
             except Fault, fault:
                 return render_fault(request, fault)
-            except BaseException, e:
+            except BaseException:
                 log.exception('Unexpected error')
                 fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
@@ -360,18 +394,24 @@ def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
 
-def network_link_from_type(network_type):
-    if network_type == 'PRIVATE_MAC_FILTERED':
+def net_resources(net_type):
+    mac_prefix = settings.MAC_POOL_BASE
+    if net_type == 'PRIVATE_MAC_FILTERED':
         link = settings.PRIVATE_MAC_FILTERED_BRIDGE
-    elif network_type == 'PRIVATE_PHYSICAL_VLAN':
-        link = BridgePool.get_available().value
-    elif network_type == 'CUSTOM_ROUTED':
+        mac_pool = MacPrefixPoolTable.get_pool()
+        mac_prefix = mac_pool.get()
+        mac_pool.save()
+    elif net_type == 'PRIVATE_PHYSICAL_VLAN':
+        pool = BridgePoolTable.get_pool()
+        link = pool.get()
+        pool.save()
+    elif net_type == 'CUSTOM_ROUTED':
         link = settings.CUSTOM_ROUTED_ROUTING_TABLE
-    elif network_type == 'CUSTOM_BRIDGED':
+    elif net_type == 'CUSTOM_BRIDGED':
         link = settings.CUSTOM_BRIDGED_BRIDGE
-    elif network_type == 'PUBLIC_ROUTED':
+    elif net_type == 'PUBLIC_ROUTED':
         link = settings.PUBLIC_ROUTED_ROUTING_TABLE
     else:
-        raise BadRequest('Unknown network network_type')
+        raise BadRequest('Unknown network type')
 
-    return link
+    return link, mac_prefix

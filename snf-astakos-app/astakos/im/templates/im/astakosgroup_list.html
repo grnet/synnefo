@@ -246,6 +246,7 @@
 			                <th>Type</th>
 			                <th>Issued</th>
 			                <th>Expires</th>
+
 			                 
 			                <th>Enrolled</th>
 			               
@@ -266,14 +267,14 @@
 			                <td>{{ o.approved_members_num }}</td>
 			                
 			                <td>
-			                {{ o.membership_status }}
-			                {% if o.membership_status == 'Registered' %}
-			
+			                {% if o.membership_status %}
+			                    Registered
 		                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
 		                             <input type="submit"  value="LEAVE GROUP" />
 		                        </form>	
 			                    
-			                        
+			                {% else %}
+			                    Pending
 			                {% endif %}
 			                </td>
 			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>

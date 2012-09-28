@@ -737,7 +737,7 @@ def group_list(request):
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s) IS NULL
-                    THEN 'Pending' ELSE 'Registered' END) AS membership_status
+                    THEN 0 ELSE 1 END) AS membership_status
         FROM im_astakosgroup
         INNER JOIN im_membership ON (
             im_astakosgroup.group_ptr_id = im_membership.group_id)
@@ -763,8 +763,8 @@ def group_list(request):
             sort_form = AstakosGroupSortForm({'sort_by': sorting})
             if sort_form.is_valid():
                 sort_field = q._model_fields.get(sorting)
-                default = datetime.utcfromtimestamp(0) if isinstance(sort_field, DateTimeField) else ''
-                l.sort(key=lambda i: getattr(i, sorting) if getattr(i, sorting) else default )
+                default = _get_default(sort_field)
+                l.sort(key=lambda i: getattr(i, sorting) if getattr(i, sorting) else default)
                 globals()['%s_sorting' % k] = sorting
         paginator = Paginator(l, PAGINATE_BY)
         
@@ -1073,7 +1073,7 @@ def billing(request):
     
     try:
         status, data = r.result
-        data=clear_billing_data(data)
+        data=_clear_billing_data(data)
         if status != 200:
             messages.error(request, _('Service response status: %d' % status))
     except:
@@ -1090,7 +1090,7 @@ def billing(request):
         start=int(start),
         month_last_day=month_last_day)  
     
-def clear_billing_data(data):
+def _clear_billing_data(data):
     
     # remove addcredits entries
     def isnotcredit(e):
@@ -1111,4 +1111,12 @@ def clear_billing_data(data):
     data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
-    return data    
+    return data
+
+
+def _get_default(field):
+    if isinstance(field, DateTimeField):
+        return datetime.utcfromtimestamp(0)
+    elif isinstance(field, int):
+        return 0
+    return ''

@@ -5,26 +5,39 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="section">
-        {% if quota %}
-          <table class="zebra-striped id-sorted">
-            <thead>
-              <tr>
-                <th>Resource</th>
-                <th>Limit</th>
-              </tr>
-            </thead>
-            <tbody>
-            {% for k in quota|dkeys %}
-                <tr>
-                    <td>{{ k }}</td>
-                    <td>{{ quota|lookup:k }}</td>
-                  </tr>
+            {% for k, v in user.quota|items %}
+                <strong>{{k}}</strong>
+                <table class="zebra-striped id-sorted">
+<!-- 
+                    <thead>
+                      <tr>
+                        <th>Limit (Group)</th>
+                      </tr>
+                    </thead>
+ -->
+                    <tbody>
+                    {% for m in user.membership_set.select_related.all %}
+                        {% if m.group.is_enabled %}
+                            {% with m.group.quota as quota %}
+                            {% if  quota %}
+                                {% for kk, vv in quota|items %}
+                                    {% if k == kk %}
+                                    <tr>
+                                        <td>{{ vv }} ({{m.group.name}})</td>
+                                    </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                                    <tr>
+                                        <td><strong>{{ v }}</strong></td>
+                                    </tr>
+                                    <tr/>
+                    </tbody>
+                </table>
             {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <p>No policies</p>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

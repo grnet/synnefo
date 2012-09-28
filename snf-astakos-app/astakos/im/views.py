@@ -1029,8 +1029,7 @@ def disapprove_member(request, membership):
 def resource_list(request):
     return render_response(
         template='im/astakosuserquota_list.html',
-        context_instance=get_context(request),
-        quota=request.user.quota)
+        context_instance=get_context(request))
 
 
 def group_create_list(request):

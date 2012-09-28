@@ -193,8 +193,7 @@ class AstakosGroup(Group):
     @property
     def quota(self):
         d = defaultdict(int)
-        query = self.astakosgroupquota_set.select_related().all()
-        for q in query:
+        for q in self.astakosgroupquota_set.select_related().all():
             d[q.resource] += q.uplimit
         return d
 
@@ -297,9 +296,9 @@ class AstakosUser(User):
     @property
     def quota(self):
         d = defaultdict(int)
-        for q in self.astakosuserquota_set.all():
+        for q in self.astakosuserquota_set.select_related().all():
             d[q.resource.name] += q.uplimit
-        for m in self.membership_set.all():
+        for m in self.membership_set.select_related().all():
             if not m.is_approved:
                 continue
             g = m.group

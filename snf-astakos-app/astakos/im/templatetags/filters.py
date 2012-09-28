@@ -34,6 +34,8 @@
 import calendar
 import datetime
 
+from collections import defaultdict
+
 from django import template
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
@@ -127,3 +129,9 @@ def concat(str1, str2):
     if not str2:
         return str(str1)
     return '%s%s%s' % (str1, DELIM, str2)
+
+@register.filter
+def items(d):
+    if isinstance(d, defaultdict):
+        return d.iteritems()
+    return d

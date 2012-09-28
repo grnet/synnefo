@@ -149,9 +149,9 @@
    </div>
       <!-- Group listing -->
         {% else %}
+            {% if mine %}
             {% with own_page|concat:own_sorting as args %}
             {% with mine|paginate:args as mine %}
-	      	{% if mine %}
 	      	    <div class="full-dotted">
 					<form method="GET" class="minimal" action="">
 						<div class="form-row">
@@ -224,14 +224,14 @@
                         </span>
 					</p>
 			   </div>
-				 
-      		{% endif %}
+			
       		{% endwith %}
             {% endwith %}
+      		{% endif %}
 	      	
-	      	{% with other_page|concat:other_sorting as args %}
+	      	{% if other %}
+            {% with other_page|concat:other_sorting as args %}
             {% with other|paginate:args as other %}
-	      	{% if other %}	
  	      		<div class="full-dotted">
  	      			<form method="GET" class="minimal" action=""> 
 						<div class="form-row">
@@ -323,10 +323,10 @@
                         </span>
 					</p>
 			   </div>
-				 
-			{% endif %}
+		    
 			{% endwith %}
             {% endwith %}
+			{% endif %}
 	      	
             {% if q %}
                 <h2>No groups found!</h2>

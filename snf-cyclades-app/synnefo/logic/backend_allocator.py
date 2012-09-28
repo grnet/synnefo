@@ -34,6 +34,7 @@ from django.utils import importlib
 from synnefo import settings
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
+from synnefo.api.util import backend_public_networks
 
 log = logging.getLogger(__name__)
 
@@ -88,8 +89,17 @@ def get_available_backends():
     """Get available backends from db.
 
     """
-    return list(Backend.objects.select_for_update().filter(drained=False,
-                                                           offline=False))
+    backends = list(Backend.objects.select_for_update().filter(drained=False,
+                                                               offline=False))
+    return filter(lambda x: has_free_ip(x), backends)
+
+
+def has_free_ip(backend):
+    """Find if Backend has any free public IP."""
+    for network in backend_public_networks(backend):
+        if not network.get_pool().empty():
+            return True
+    return False
 
 
 def flavor_disk(flavor):

@@ -33,7 +33,7 @@
 
 from __future__ import division
 import logging
-from synnefo.api.util import backend_public_networks
+
 
 log = logging.getLogger(__name__)
 
@@ -68,8 +68,7 @@ def allocate(backends, vm):
 
 
 def vm_fits_in_backend(backend, vm):
-    return backend.dfree > vm['disk'] and backend.mfree > vm['ram'] and\
-           has_free_ip(backend)
+    return backend.dfree > vm['disk'] and backend.mfree > vm['ram']
 
 
 def backend_score(backend, flavor):
@@ -77,11 +76,3 @@ def backend_score(backend, flavor):
     dratio = 1 - (backend.dfree / backend.dtotal)
     cratio = (backend.pinst_cnt + 1) / (backend.ctotal * 4)
     return 0.7 * (mratio + dratio) * 0.3 * cratio
-
-
-def has_free_ip(backend):
-    """Find if Backend has any free public IP."""
-    for network in backend_public_networks(backend):
-        if not network.get_pool().empty():
-            return True
-    return False

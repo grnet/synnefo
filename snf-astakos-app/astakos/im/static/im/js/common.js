@@ -111,10 +111,8 @@ $(document).ready(function() {
         });
     });	
     
-    
      
 	//$('select').dropkick();
- 
     
     $('.top-msg .success').parents('.top-msg').addClass('success');
     $('.top-msg .error').parents('.top-msg').addClass('error');

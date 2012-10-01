@@ -92,6 +92,6 @@ def print_map(name, pool_map, step, out):
     count = 0
     for chunk in pool_map_chunks(pool_map, step):
         chunk_len = len(chunk)
-        out.write(("%s" % count).rjust(4))
+        out.write(("%s " % count).rjust(4))
         out.write((chunk + " %d\n") % (count + chunk_len - 1))
         count += chunk_len

@@ -596,8 +596,11 @@ class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')
 
 class TimelineForm(forms.Form):
-    entity = forms.CharField(
-        widget=forms.HiddenInput(), label='')
+#    entity = forms.CharField(
+#        widget=forms.HiddenInput(), label='')
+    entity = forms.ModelChoiceField(
+        queryset=AstakosUser.objects.filter(is_active = True)
+    )
     resource = forms.ModelChoiceField(
         queryset=Resource.objects.all()
     )
@@ -619,6 +622,8 @@ class TimelineForm(forms.Form):
             d['start_date'] = d['start_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
         if 'end_date' in d:
             d['end_date'] = d['end_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
+	if 'entity' in d:
+            d['entity'] = d['entity'].email 
         return d
 
 class AstakosGroupSortForm(forms.Form):

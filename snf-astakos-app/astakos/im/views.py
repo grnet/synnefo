@@ -752,8 +752,8 @@ def group_list(request):
             d['own'].append(g)
         else:
             d['other'].append(g)
-    d.set_default('own', []) 
-    d.set_default('other', []) 
+    d.setdefault('own', [])
+    d.setdefault('other', [])
     for k, l in d.iteritems():
         page = request.GET.get('%s_page' % k, 1)
         sorting = globals()['%s_sorting' % k] = request.GET.get('%s_sorting' % k)
@@ -1100,10 +1100,11 @@ def clear_billing_data(data):
 @signed_terms_required
 @login_required
 def timeline(request):
-    data = {'entity':request.user.email}
+#    data = {'entity':request.user.email}
     timeline_body = ()
     timeline_header = ()
-    form = TimelineForm(data)
+#    form = TimelineForm(data)
+    form = TimelineForm()
     if request.method == 'POST':
         data = request.POST
         form = TimelineForm(data)
@@ -1122,4 +1123,3 @@ def timeline(request):
                            form=form,
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
-                           l=l)

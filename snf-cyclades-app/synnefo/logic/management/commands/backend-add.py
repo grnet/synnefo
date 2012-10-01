@@ -114,7 +114,9 @@ class Command(BaseCommand):
         if not options['init']:
             return
 
-        networks = Network.objects.filter(deleted=False)
+        networks = Network.objects.filter(deleted=False, public=False)
+        if not networks:
+            return
 
         self.stdout.write('\nCreating the follow networks:\n')
         fields = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
@@ -125,6 +127,7 @@ class Command(BaseCommand):
         self.stdout.write(line + '\n')
         self.stdout.write(sep + '\n')
 
+
         for net in networks:
             fields = (net.backend_id, str(net.subnet), str(net.gateway),
                       str(net.mac_prefix), str(net.public))
@@ -133,9 +136,6 @@ class Command(BaseCommand):
         self.stdout.write(sep + '\n\n')
 
         for net in networks:
-            if net.public:
-                # Do not create public networks since are backend-specific
-                continue
             net.create_backend_network(backend)
             result = create_network_synced(net, backend)
             if result[0] != "success":

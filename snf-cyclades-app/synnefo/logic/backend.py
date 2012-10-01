@@ -295,6 +295,9 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
     if provider:
         kw['disks'][0]['provider'] = provider
 
+        if provider == 'vlmc':
+            kw['disks'][0]['origin'] = image['backend_id']
+
     kw['nics'] = [public_nic]
     if settings.GANETI_USE_HOTPLUG:
         kw['hotplug'] = True
@@ -319,6 +322,9 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
         'img_format': image['format']}
     if personality:
         kw['osparams']['img_personality'] = json.dumps(personality)
+
+    if provider != None and provider == 'vlmc':
+        kw['osparams']['img_id'] = 'null'
 
     kw['osparams']['img_properties'] = json.dumps(image['metadata'])
 

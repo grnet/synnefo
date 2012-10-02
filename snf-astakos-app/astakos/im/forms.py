@@ -624,5 +624,21 @@ class TimelineForm(forms.Form):
 
 class AstakosGroupSortForm(forms.Form):
     sort_by = forms.ChoiceField(label='Sort by',
-                                choices=(('groupname', 'Name'), ('kindname', 'Type')),
+                                choices=(('groupname', 'Name'),
+                                         ('kindname', 'Type'),
+                                         ('issue_date', 'Issue Date'),
+                                         ('expiration_date', 'Expiration Date'),
+                                         ('approved_members_num', 'Participants'),
+                                         ('is_enabled', 'Status'),
+                                         ('moderation_enabled', 'Moderation'),
+                                         ('membership_status','Enrollment Status')
+                                         ),
+                                required=False)
+
+class MembersSortForm(forms.Form):
+    sort_by = forms.ChoiceField(label='Sort by',
+                                choices=(('person__email', 'User Id'),
+                                         ('person__first_name', 'Name'),
+                                         ('date_joined', 'Status')
+                                         ),
                                 required=False)

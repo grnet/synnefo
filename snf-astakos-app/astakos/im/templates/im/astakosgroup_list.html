@@ -4,44 +4,61 @@
 
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
-    <h2>GROUPS</h2>
-    {% if form %}
-    <p>You can search for a group by name</p>
-    <form action="{% url group_search %}" method="post" class="withlabels signup">{% csrf_token %}
-            {% include "im/form_render.html" %}
-            <div class="form-row submit">
-                <input type="submit" class="submit altcol" value="SEARCH" />
-            </div>
-    </form>
-     
-    <form action="{% url group_all %}" method="post" class="link-like">{% csrf_token %}
-            <div class="form-row submit">
-                <input type="submit" class="submit altcol" value="Show all groups" />
-            </div>
-    </form>
-    {% else %}
     <div class="projects">
-		<!--<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. <br />You can <a href="{% url group_create_list %}">create a new group</a> or <a href="{% url group_search %}">join</a> to an existing one.</p>
-		 
-		<ul class="widjets clearfix">	
-			<li>
-				<div>
-					<p>WELCOME!<br />Connect with a world of people who share your passions.<br />With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
-					<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>
-				</div>
-			</li>
-			<li>
-				<div>
-					<p>LOOKING FOR A GROUP?</p><p>Well, this is the place to start!</br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br /><img alt="THINK ABOUT IT" src="/static/medialibrary/2012/06/behind_okeanos.png"></p>
-					<p class="btn"><a href="{% url group_search %}" class="submit">JOIN</a></p>
-				</div>
-			</li>
-		</ul>-->
+	    <h2>GROUPS</h2>
+	    {% if form %}
+	    <p>You can search for a group by name</p>
+	    <form action="{% url group_search %}" method="post" class="withlabels signup">{% csrf_token %}
+	            {% include "im/form_render.html" %}
+	            <div class="form-row submit">
+	                <input type="submit" class="submit altcol" value="SEARCH" />
+	            </div>
+	    </form>
+	     
+	    <form action="{% url group_all %}" method="post" class="link-like alone">{% csrf_token %}
+	        <div class="form-row submit">
+	            <input type="submit" class="submit altcol" value="Show all groups" />
+	        </div>
+	    </form>
+	    {% else %}
+    
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>You can <a href="{% url group_create_list %}">create a new group</a> or <a href="{% url group_search %}">join</a> to an existing one.</p>
+		<div class="widjets"> 
+			<a href="#" class="widjet-x" title="remove boxes">X</a>
+			<ul class="clearfix">	
+				<li>
+					<div>
+						<p>WELCOME!<br>Connect with a world of people who share your passions.<br>With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
+						<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>
+					</div>
+				</li>
+				<li>
+					<div>
+						<p>LOOKING FOR A GROUP?</p><p>Well, this is the place to start!<br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br><img alt="THINK ABOUT IT" src="/static/medialibrary/2012/06/behind_okeanos.png"></p>
+						<p class="btn"><a href="{% url group_search %}" class="submit">JOIN</a></p>
+					</div>
+				</li>
+			</ul>
+		</div>
         
     {% endif %}
     {% with page_obj.object_list as object_list %}
+    <!-- Search group -->
     {% if object_list %}
         <div class="full-dotted">
+        	<form method="GET" class="minimal" action=""> 
+				<div class="form-row">
+					<select name="sorting" onchange="this.form.submit();">
+					    <option value="">Sort by</option>
+					    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
+			            <option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>			
+			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
+			            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
+			            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Participants</option> 
+					</select>
+					<input type="hidden" name="q" value="{{q}}"/>
+				</div>
+			</form>
             <table class="alt-style complex">
                 <caption>
                     SEARCH RESULTS
@@ -75,9 +92,11 @@
                         {% if o.membership_approval_date %}
     
                         Registered
-                        <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
-                             <input type="submit"  value="LEAVE GROUP" />
-                        </form>	
+                        {% if not o.is_owner %}
+                            <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+                                 <input type="submit"  value="LEAVE GROUP" />
+                            </form>
+                        {% endif %}
                         
                             
 
@@ -95,13 +114,12 @@
                     <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-                    <td colspan="8" class="info-td">
+                    <td colspan="7" class="info-td">
                         <div>
                             <p>{{o.desc}}</p>
                             <p>{% if o.homepage%}
-                                Visit it group's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.homepage }}</a>
-                            {% else %}
-                                There is no homepage for this group yet.
+                                Group's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.homepage }}</a>
+                            
                             {% endif %}
                             </p>
                         </div>	
@@ -117,10 +135,10 @@
     <div class="pagination">
 		<p class="next-prev">
 	        {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}">previous</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
             {% endif %}
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}">next</a>
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
             {% endif %}
     	</p>
 		<p class="nums">
@@ -129,19 +147,27 @@
             </span>
 		</p>
    </div>
-      {% else %}
-	      	{% if mine %}
+      <!-- Group listing -->
+        {% else %}
+            {% if mine %}
+            {% with own_page|concat:own_sorting as args %}
+            {% with mine|paginate:args as mine %}
 	      	    <div class="full-dotted">
 					<form method="GET" class="minimal" action="">
 						<div class="form-row">
 						    <select name="own_sorting" onchange="this.form.submit();">
 							    <option value="">Sort by</option>
 							    <option value="groupname" {% if own_sorting == 'groupname' %}selected{% endif %}>Name</option>
-					            <option value="kindname" {% if own_sorting == 'kindname' %}selected{% endif %}>Type</option>				
+					            <option value="kindname" {% if own_sorting == 'kindname' %}selected{% endif %}>Type</option>			
+					            <option value="issue_date" {% if own_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
+					            <option value="expiration_date" {% if own_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
+					            <option value="approved_members_num" {% if own_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
+					            <option value="is_enabled" {% if own_sorting == 'is_enabled' %}selected{% endif %}>Status</option>
+					            <option value="moderation_enabled" {% if own_sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
 							</select>
 						</div>
 					</form>
-					<table class="alt-style complex" id="">
+					<table class="alt-style complex">
 			            <caption>MY GROUPS</caption>
 			            <thead>
 			              <tr>
@@ -173,9 +199,7 @@
 			                	<div>
 			                		<p>{{o.desc}}</p>
 					                <p>{% if o.homepage%}
-							 			Visit it group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
-							 		{% else %}
-							 			There is no homepage for this group yet.
+							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
 							 		{% endif %}
 							 		</p>
 			                	</div>	
@@ -200,9 +224,14 @@
                         </span>
 					</p>
 			   </div>
-				 
+			
+      		{% endwith %}
+            {% endwith %}
       		{% endif %}
-	      	{% if other %}	
+	      	
+	      	{% if other %}
+            {% with other_page|concat:other_sorting as args %}
+            {% with other|paginate:args as other %}
  	      		<div class="full-dotted">
  	      			<form method="GET" class="minimal" action="">
 						<div class="form-row">
@@ -210,6 +239,11 @@
 							    <option value="">Sort by</option>
 							    <option value="groupname" {% if other_sorting == 'groupname' %}selected{% endif %}>Name</option>
 					            <option value="kindname" {% if other_sorting == 'kindname' %}selected{% endif %}>Type</option>			
+					            <option value="issue_date" {% if other_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
+					            <option value="expiration_date" {% if other_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
+					            <option value="approved_members_num" {% if other_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
+					            <option value="membership_status" {% if other_sorting == 'membership_status' %}selected{% endif %}>Enrollment Status</option>
+					             
 							</select>
 						</div>
 					</form>
@@ -223,6 +257,7 @@
 			                <th>Type</th>
 			                <th>Issued</th>
 			                <th>Expires</th>
+
 			                 
 			                <th>Enrolled</th>
 			               
@@ -243,14 +278,12 @@
 			                <td>{{ o.approved_members_num }}</td>
 			                
 			                <td>
-			                {% if o.membership_approval_date %}
-			
-		                    	Registered
+			                {% if o.membership_status %}
+			                    Registered
 		                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
 		                             <input type="submit"  value="LEAVE GROUP" />
 		                        </form>	
 			                    
-			                        
 			                {% else %}
 			                    Pending
 			                {% endif %}
@@ -258,7 +291,7 @@
 			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-			                <td colspan="8" class="info-td">
+			                <td colspan="7" class="info-td">
 			                	<div>
 			                		<p>{{o.desc}}</p>
 					                <p>{% if o.homepage%}
@@ -290,8 +323,11 @@
                         </span>
 					</p>
 			   </div>
-				 
+		    
+			{% endwith %}
+            {% endwith %}
 			{% endif %}
+	      	
             {% if q %}
                 <h2>No groups found!</h2>
             {% endif %}

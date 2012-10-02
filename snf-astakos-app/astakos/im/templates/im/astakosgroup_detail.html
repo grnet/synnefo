@@ -3,23 +3,25 @@
 {% load filters %}
 
 {% block page.body %}
+{% with object.owners as owners %}
+{% with object.quota as quota %}
 <div class="projects">
 	
 	<h2>
-	 	{% if request.user in object.members %}
+	 	{% if object.is_member %}
 			<em>
-				{% if request.user in object.owner.all %}
+				{% if object.is_owner %}
 					[ADMINISTRATOR]
 				{%  else %}
 					[ ENROLLED ]
 				{% endif %}
 			</em>		
 		{% endif %}
-	 	<span>[ {{object.kind|upper}} ]</span>  
+	 	<span>[ {{object.kindname|upper}} ]</span>
 	 </h2>
 	 
 	 <div class="details">
-	 	{% if request.user in object.owner.all %}
+	 	{% if object.is_owner %}
 	 		<a href="#" class="edit">[ EDIT GROUP INFO ]</a>
 	 	{% endif %}
 	 	<div class="data">
@@ -36,12 +38,14 @@
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
-		<form action="{% url astakos.im.views.group_update object.id %}" method="post"
+		<form action="" method="post"
 	            class="withlabels">{% csrf_token %}
-	            {% include "im/form_render.html" %}
-	            <div class="form-row submit">
-	                <input type="submit" class="submit altcol" value="FINISHED EDITING" />
-	            </div>
+	            {% with update_form as form %}
+                    {% include "im/form_render.html" %}
+                    <div class="form-row submit">
+                        <input type="submit" class="submit altcol" value="FINISHED EDITING" />
+                    </div>
+	            {% endwith %}
 	    </form>
 		</div>
 	 </div>
@@ -51,7 +55,7 @@
 		 	<dt>Name</dt>
 		 	<dd>{{object.name}}&nbsp;</dd>
 		 	<dt>Type</dt>
-		 	<dd>{{object.kind|capfirst}}&nbsp;</dd>
+		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>
 		 	<dt>Issue date:</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Expiration Date</dt>
@@ -61,8 +65,9 @@
 		 	<dt>Activated</dt>
 		 	<dd>{% if object.is_enabled %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>
-		 	<dd>{% for o in object.owner.all %}
-                    {% if user == o %}
+		 	{{ o.owners }}
+		 	<dd>{% for o in owners %}
+                    {% if object.is_owner %}
                         Me
                     {% else%}
                         {{o.realname}} ({{o.email}})
@@ -90,50 +95,79 @@
         {% endif %} 
 	 </div>
 	 <div class="full-dotted">
-	 	{% if object.members %}
-		 <table class="alt-style table_sorting">
-		 	<caption>MEMBERS:</caption>
-		 	<thead>
-			 	<tr>
-			 		<th>User Id</th>
-			 		<th>Name</th>
-			 		<th>Status</th>
-			 	</tr>
-		 	</thead>
-		 	<tbody>
-		 	{% for m in object.membership_set.all %}
-              <tr>
-                <td>{{m.person.email}}</td>
-                <td>{{m.person.realname}}</td>
-                {% if m.person in m.group.owner.all %}
-                <td>Owner</td>
-                {% else %}
-                    {% if m.is_approved %}
-                    <td>Approved</td>
+	    {% with page|concat:sorting as args %}
+	    {% with object.membership_set.select_related.all|paginate:args as membership %}
+            {% if membership %}
+            <form method="GET" class="minimal" action="">
+                <div class="form-row">
+                    <select name="sorting" onchange="this.form.submit();">
+                        <option value="">Sort by</option>
+                        <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>User Id</option>
+                        <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Name</option>
+                        <option value="date_joined" {% if sorting == 'date_joined' %}selected{% endif %}>Status</option>
+                    </select>
+                </div>
+            </form>
+             <table class="alt-style">
+                <caption>MEMBERS:</caption>
+                <thead>
+                    <tr>
+                        <th>User Id</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for m in membership.object_list %}
+                  <tr>
+                    <td>{{m.person.email}}</td>
+                    <td>{{m.person.realname}}</td>
+                    {% if m.person in owners %}
+                    <td>Owner</td>
                     {% else %}
-                    <td>Pending 
-                        {% if user in m.group.owner.all %}
-                            <a href="{% url approve_member m.group.id m.person.id %}">Accept</a>
-                            <a href="{% url disapprove_member m.group.id m.person.id  %}">Reject</a>
+                        {% if m.is_approved %}
+                        <td>Approved</td>
+                        {% else %}
+                        <td>Pending
+                            {% if object.is_owner %}
+                                <a href="{% url approve_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
+                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
+                            {% endif %}
+                        </td>    
                         {% endif %}
-                    </td>    
                     {% endif %}
-                {% endif %}
-              </tr>
-            {% endfor %}
-            </tbody>
-		 </table>
-		 {% else %}
-            <p>No members yet!</p>
-        {% endif %}
+                  </tr>
+                {% endfor %}
+                </tbody>
+             </table>
+             <div class="pagination">
+                <p class="next-prev">
+                    {% if membership.has_previous %}
+                        <a href="?page={{ membership.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+                    {% endif %}
+                    {% if membership.has_next %}
+                        <a href="?page={{ membership.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+                    {% endif %}
+                </p>
+                <p class="nums">
+                    <span class="current">
+                        Page {{ membership.number }} of {{ membership.paginator.num_pages }}
+                    </span>
+                </p>
+            </div>
+             {% else %}
+                <p>No members yet!</p>
+            {% endif %}
+        {% endwith %}
+        {% endwith %}
 	 </div>
      
      
-    {% if user in object.owner.all %}
+    {% if object.is_owner %}
     <div class="full-dotted">
-        <form action="{% url add_members object.id %}" method="post" class="withlabels">{% csrf_token %}
+        <form action="" method="post" class="withlabels">{% csrf_token %}
             <h2>Enroll more members</h2>
-                {% with search_form as form %}
+                {% with addmembers_form as form %}
                     {% include "im/form_render.html" %}
                 {% endwith %}
                 <div class="form-row submit">
@@ -145,4 +179,6 @@
      
     
 </div>
+{% endwith %}
+{% endwith %}
 {% endblock %}

@@ -152,4 +152,4 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',
 AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
 
 # Set how many objects should be displayed per page
-PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 10)
+PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)

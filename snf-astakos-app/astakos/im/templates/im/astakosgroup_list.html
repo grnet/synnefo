@@ -46,7 +46,7 @@
     <!-- Search group -->
     {% if object_list %}
         <div class="full-dotted">
-        	<form method="GET" class="minimal" action=""> 
+        	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
 					<select name="sorting" onchange="this.form.submit();">
 					    <option value="">Sort by</option>
@@ -59,7 +59,7 @@
 					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
 			</form>
-            <table class="alt-style complex">
+            <table class="alt-style complex" id="searchResults">
                 <caption>
                     SEARCH RESULTS
                 </caption>
@@ -153,7 +153,7 @@
             {% with own_page|concat:own_sorting as args %}
             {% with mine|paginate:args as mine %}
 	      	    <div class="full-dotted">
-					<form method="GET" class="minimal" action="">
+					<form method="GET" class="minimal" action="#myGroups">
 						<div class="form-row">
 						    <select name="own_sorting" onchange="this.form.submit();">
 							    <option value="">Sort by</option>
@@ -167,7 +167,7 @@
 							</select>
 						</div>
 					</form>
-					<table class="alt-style complex">
+					<table class="alt-style complex" id="myGroups">
 			            <caption>MY GROUPS</caption>
 			            <thead>
 			              <tr>
@@ -233,7 +233,7 @@
             {% with other_page|concat:other_sorting as args %}
             {% with other|paginate:args as other %}
  	      		<div class="full-dotted">
- 	      			<form method="GET" class="minimal" action=""> 
+ 	      			<form method="GET" class="minimal" action="#iParticipateIn"> 
 						<div class="form-row">
 							<select name="other_sorting" onchange="this.form.submit();">
 							    <option value="">Sort by</option>
@@ -247,7 +247,7 @@
 							</select>
 						</div>
 					</form>
-					<table class="alt-style complex">
+					<table class="alt-style complex" id="iParticipateIn">
 			            <caption>
 			            	I PARTICIPATE IN
 			            </caption>

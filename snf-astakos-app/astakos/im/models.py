@@ -120,22 +120,17 @@ class AstakosGroup(Group):
         'Homepage Url', max_length=255, null=True, blank=True)
     desc = models.TextField('Description', null=True)
     policy = models.ManyToManyField(Resource, null=True, blank=True,
-                                    through='AstakosGroupQuota'
-                                    )
+                                    through='AstakosGroupQuota')
     creation_date = models.DateTimeField('Creation date',
-                                         default=datetime.now()
-                                         )
+                                         default=datetime.now())
     issue_date = models.DateTimeField('Issue date', null=True)
     expiration_date = models.DateTimeField('Expiration date', null=True)
     moderation_enabled = models.BooleanField('Moderated membership?',
-                                             default=True
-                                             )
+                                             default=True)
     approval_date = models.DateTimeField('Activation date', null=True,
-                                         blank=True
-                                         )
+                                         blank=True)
     estimated_participants = models.PositiveIntegerField('Estimated #members',
-                                                         null=True
-                                                         )
+                                                         null=True)
 
     @property
     def is_disabled(self):
@@ -187,22 +182,28 @@ class AstakosGroup(Group):
 
     @property
     def members(self):
-        return [m.person for m in self.membership_set.all()]
+        q = self.membership_set.select_related().all()
+        return [m.person for m in q]
 
     @property
     def approved_members(self):
-        return [m.person for m in self.membership_set.all() if m.is_approved]
+        q = self.membership_set.select_related().all()
+        return [m.person for m in q if m.is_approved]
 
     @property
     def quota(self):
         d = defaultdict(int)
-        for q in self.astakosgroupquota_set.all():
+        for q in self.astakosgroupquota_set.select_related().all():
             d[q.resource] += q.uplimit
         return d
 
     @property
     def owners(self):
         return self.owner.all()
+
+    @property
+    def owner_details(self):
+        return self.owner.select_related().all()
 
     @owners.setter
     def owners(self, l):
@@ -295,9 +296,9 @@ class AstakosUser(User):
     @property
     def quota(self):
         d = defaultdict(int)
-        for q in self.astakosuserquota_set.all():
+        for q in self.astakosuserquota_set.select_related().all():
             d[q.resource.name] += q.uplimit
-        for m in self.membership_set.all():
+        for m in self.membership_set.select_related().all():
             if not m.is_approved:
                 continue
             g = m.group

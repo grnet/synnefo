@@ -205,6 +205,13 @@ $(document).ready(function() {
 		$(this).hide();
 	})
 	
+	
+	$('.widjet-x').click(function(e){
+		e.preventDefault();
+		$(this).siblings('ul').hide('slow');
+		$(this).hide();
+	})
+	
 });
 
 $(window).resize(function() {

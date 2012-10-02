@@ -418,7 +418,7 @@ class Membership(models.Model):
 
 
 class AstakosGroupQuota(models.Model):
-    limit = models.PositiveIntegerField('Limit')    # obsolete field
+    limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
     uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
     group = models.ForeignKey(AstakosGroup, blank=True)
@@ -428,7 +428,7 @@ class AstakosGroupQuota(models.Model):
 
 
 class AstakosUserQuota(models.Model):
-    limit = models.PositiveIntegerField('Limit')    # obsolete field
+    limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
     uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)

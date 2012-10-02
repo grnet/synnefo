@@ -1324,7 +1324,7 @@ def _spawn_network_test_case(**kwargs):
     return cls
 
 
-def cleanup_servers(delete_stale=False):
+def cleanup_servers(timeout, query_interval, delete_stale=False):
 
     c = ComputeClient(API, TOKEN)
 
@@ -1340,14 +1340,35 @@ def cleanup_servers(delete_stale=False):
 
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale servers:" % len(stale)
-        for server in stale:
-            c.delete_server(server["id"])
-        print >> sys.stderr, green + "    ...done" + normal
+
+        fail_tmout = time.time() + timeout
+
+
+        for s in stale:
+            c.delete_server(s["id"])
+
+        
+        while True:
+            servers = c.list_servers()
+            stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
+            for s in stale:
+                c.delete_server(s["id"])
+
+            if len(stale)==0:
+                print >> sys.stderr, green + "    ...done" + normal
+                break
+
+            elif time.time() > fail_tmout:
+                print >> sys.stderr, red + "Not all stale servers deleted. Action timed out." + normal
+                return 
+            else:
+                time.sleep(query_interval)
+                
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
 
-def cleanup_networks(delete_stale=False):
+def cleanup_networks(timeout, query_interval, delete_stale=False):
 
     c = CycladesClient(API, TOKEN)
 
@@ -1363,9 +1384,27 @@ def cleanup_networks(delete_stale=False):
 
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
-        for network in stale:
-            c.delete_network(network["id"])
-        print >> sys.stderr, green + "    ...done" + normal
+
+        fail_tmout = time.time() + timeout
+        
+        for n in stale:
+            c.delete_network(n["id"])
+
+
+        while True:
+            networks = c.list_networks()
+            stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
+
+            if len(stale)==0:
+                print >> sys.stderr, green + "    ...done" + normal
+                break
+
+            elif time.time() > fail_tmout:
+                print >> sys.stderr, red + "Not all stale networks deleted. Action timed out." + normal
+                return 
+            else:
+                time.sleep(query_interval)
+
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
@@ -1547,8 +1586,8 @@ def main():
 
     # Cleanup stale servers from previous runs
     if opts.show_stale:
-        cleanup_servers(delete_stale=opts.delete_stale)
-        cleanup_networks(delete_stale=opts.delete_stale)
+        cleanup_servers(delete_stale=opts.delete_stale, timeout=opts.action_timeout, query_interval=opts.query_interval)
+        cleanup_networks(delete_stale=opts.delete_stale, timeout=opts.action_timeout, query_interval=opts.query_interval)
         return 0
 
     # Initialize a kamaki instance, get flavors, images

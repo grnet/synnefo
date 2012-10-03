@@ -217,6 +217,8 @@ def process_create_progress(vm, etime, rprogress, wprogress):
 
 def start_action(vm, action):
     """Update the state of a VM when a new action is initiated."""
+    log.debug("Applying action %s to VM %s", action, vm)
+
     if not action in [x[0] for x in VirtualMachine.ACTIONS]:
         raise VirtualMachine.InvalidActionError(action)
 
@@ -326,6 +328,7 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
+    log.debug("Creating instance %s", kw)
     with pooled_rapi_client(vm) as client:
         return client.CreateInstance(**kw)
 
@@ -339,7 +342,8 @@ def delete_instance(vm):
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
     with pooled_rapi_client(vm) as client:
-        return client.RebootInstance(vm.backend_vm_id, reboot_type, dry_run=settings.TEST)
+        return client.RebootInstance(vm.backend_vm_id, reboot_type,
+                                     dry_run=settings.TEST)
 
 
 def startup_instance(vm):
@@ -366,6 +370,8 @@ def get_instance_console(vm):
     #          the instance's primary node, and is probably
     #          hypervisor-specific.
     #
+    log.debug("Getting console for vm %s", vm)
+
     console = {}
     console['kind'] = 'vnc'
 
@@ -389,6 +395,8 @@ def create_network(network, backends=None, connect=True):
     """Create and connect a network."""
     if not backends:
         backends = Backend.objects.exclude(offline=True)
+
+    log.debug("Creating network %s in backends %s", network, backends)
 
     for backend in backends:
         create_jobID = _create_network(network, backend)
@@ -424,6 +432,8 @@ def _create_network(network, backend):
 
 def connect_network(network, backend, depend_job=None, group=None):
     """Connect a network to nodegroups."""
+    log.debug("Connecting network %s to backend %s", network, backend)
+
     mode = "routed" if "ROUTED" in network.type else "bridged"
 
     with pooled_rapi_client(backend) as client:
@@ -440,6 +450,8 @@ def delete_network(network, backends=None, disconnect=True):
     if not backends:
         backends = Backend.objects.exclude(offline=True)
 
+    log.debug("Deleting network %s from backends %s", network, backends)
+
     for backend in backends:
         disconnect_jobIDs = []
         if disconnect:
@@ -453,6 +465,8 @@ def _delete_network(network, backend, depend_jobs=[]):
 
 
 def disconnect_network(network, backend, group=None):
+    log.debug("Disconnecting network %s to backend %s", network, backend)
+
     with pooled_rapi_client(backend) as client:
         if group:
             return [client.DisconnectNetwork(network.backend_id, group)]
@@ -467,6 +481,8 @@ def disconnect_network(network, backend, group=None):
 def connect_to_network(vm, network, address):
     nic = {'ip': address, 'network': network.backend_id}
 
+    log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
+
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
                                      hotplug=settings.GANETI_USE_HOTPLUG,
@@ -475,6 +491,9 @@ def connect_to_network(vm, network, address):
 
 def disconnect_from_network(vm, nic):
     op = [('remove', nic.index, {})]
+
+    log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
+
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=op,
                                      hotplug=settings.GANETI_USE_HOTPLUG,
@@ -486,6 +505,8 @@ def set_firewall_profile(vm, profile):
         tag = _firewall_tags[profile]
     except KeyError:
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
+
+    log.debug("Setting tag of VM %s to %s", vm, profile)
 
     with pooled_rapi_client(vm) as client:
         # Delete all firewall tags

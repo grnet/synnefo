@@ -118,7 +118,7 @@ def list_networks(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    log.debug('list_networks detail=%s', detail)
+    log.info('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))
@@ -155,7 +155,7 @@ def create_network(request):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('create_network %s', req)
+    log.info('create_network %s', req)
 
     try:
         d = req['network']
@@ -223,7 +223,7 @@ def get_network_details(request, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    log.debug('get_network_details %s', network_id)
+    log.info('get_network_details %s', network_id)
     net = util.get_network(network_id, request.user_uniq)
     netdict = network_to_dict(net, request.user_uniq)
     return render_network(request, netdict)
@@ -241,7 +241,7 @@ def update_network_name(request, network_id):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('update_network_name %s', network_id)
+    log.info('update_network_name %s', network_id)
 
     try:
         name = req['network']['name']
@@ -267,7 +267,7 @@ def delete_network(request, network_id):
     #                       unauthorized (401),
     #                       overLimit (413)
 
-    log.debug('delete_network %s', network_id)
+    log.info('delete_network %s', network_id)
     net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
@@ -285,7 +285,7 @@ def delete_network(request, network_id):
 @util.api_method('POST')
 def network_action(request, network_id):
     req = util.get_request_dict(request)
-    log.debug('network_action %s %s', network_id, req)
+    log.info('network_action %s %s', network_id, req)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
 

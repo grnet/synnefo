@@ -113,7 +113,7 @@ def list_images(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    log.debug('list_images detail=%s', detail)
+    log.info('list_images detail=%s', detail)
     backend = ImageBackend(request.user_uniq)
     
     since = isoparse(request.GET.get('changes-since'))
@@ -167,7 +167,7 @@ def get_image_details(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    log.debug('get_image_details %s', image_id)
+    log.info('get_image_details %s', image_id)
     image = util.get_image(image_id, request.user_uniq)
     reply = image_to_dict(image)
     
@@ -188,7 +188,7 @@ def delete_image(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    log.debug('delete_image %s', image_id)
+    log.info('delete_image %s', image_id)
     backend = ImageBackend(request.user_uniq)
     backend.delete(image_id)
     backend.close()
@@ -205,7 +205,7 @@ def list_metadata(request, image_id):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    log.debug('list_image_metadata %s', image_id)
+    log.info('list_image_metadata %s', image_id)
     image = util.get_image(image_id, request.user_uniq)
     metadata = image['properties']
     return util.render_metadata(request, metadata, use_values=True, status=200)
@@ -223,7 +223,7 @@ def update_metadata(request, image_id):
     #                       overLimit (413)
     
     req = util.get_request_dict(request)
-    log.debug('update_image_metadata %s %s', image_id, req)
+    log.info('update_image_metadata %s %s', image_id, req)
     image = util.get_image(image_id, request.user_uniq)
     try:
         metadata = req['metadata']
@@ -251,7 +251,7 @@ def get_metadata_item(request, image_id, key):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    log.debug('get_image_metadata_item %s %s', image_id, key)
+    log.info('get_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user_uniq)
     val = image['properties'].get(key)
     if val is None:
@@ -272,7 +272,7 @@ def create_metadata_item(request, image_id, key):
     #                       overLimit (413)
     
     req = util.get_request_dict(request)
-    log.debug('create_image_metadata_item %s %s %s', image_id, key, req)
+    log.info('create_image_metadata_item %s %s %s', image_id, key, req)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -305,7 +305,7 @@ def delete_metadata_item(request, image_id, key):
     #                       badMediaType(415),
     #                       overLimit (413),
     
-    log.debug('delete_image_metadata_item %s %s', image_id, key)
+    log.info('delete_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user_uniq)
     properties = image['properties']
     properties.pop(key, None)

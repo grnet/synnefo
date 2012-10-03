@@ -106,7 +106,7 @@ class Backend(models.Model):
         ordering = ["clustername"]
 
     def __unicode__(self):
-        return self.clustername
+        return self.clustername + "(id=" + str(self.id) + ")"
 
     @property
     def backend_id(self):
@@ -358,7 +358,7 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return self.name
+        return self.name + "(id=" + str(self.id) + ")"
 
 
 class VirtualMachineMetadata(models.Model):
@@ -467,7 +467,7 @@ class Network(models.Model):
         return getattr(snf_settings, self.type + '_TAGS')
 
     def __unicode__(self):
-        return self.name
+        return self.name + "(id=" + str(self.id) + ")"
 
     @transaction.commit_on_success
     def update_state(self):

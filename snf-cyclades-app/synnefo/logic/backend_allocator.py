@@ -63,11 +63,11 @@ class BackendAllocator():
 
         log.debug("Allocating VM: %r", vm)
 
-        # Refresh backends, if needed
-        refresh_backends_stats()
-
         # Get available backends
         available_backends = get_available_backends()
+
+        # Refresh backends, if needed
+        refresh_backends_stats(available_backends)
 
         if not available_backends:
             return None
@@ -129,7 +129,7 @@ def reduce_backend_resources(backend, vm):
     backend.save()
 
 
-def refresh_backends_stats():
+def refresh_backends_stats(backends):
     """ Refresh the statistics of the backends.
 
     Set db backend state to the actual state of the backend, if
@@ -139,7 +139,8 @@ def refresh_backends_stats():
 
     now = datetime.datetime.now()
     delta = datetime.timedelta(minutes=settings.BACKEND_REFRESH_MIN)
-    for b in Backend.objects.filter(drained=False, offline=False):
+    for b in backends:
         if now > b.updated + delta:
-            log.debug("Updating resources of backend %r", b)
+            log.debug("Updating resources of backend %r. Last Updated %r",
+                      b, b.updated)
             update_resources(b)

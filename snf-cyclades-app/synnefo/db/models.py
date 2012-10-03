@@ -69,7 +69,7 @@ class Flavor(models.Model):
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
 
     def __unicode__(self):
-        return self.name
+        return str(self.id)
 
 
 class Backend(models.Model):
@@ -358,7 +358,7 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return self.name + "(id=" + str(self.id) + ")"
+        return str(self.id)
 
 
 class VirtualMachineMetadata(models.Model):
@@ -429,6 +429,9 @@ class Network(models.Model):
 
     objects = ForUpdateManager()
 
+    def __unicode__(self):
+        return str(self.id)
+
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
             self.value = value
@@ -465,9 +468,6 @@ class Network(models.Model):
 
         """
         return getattr(snf_settings, self.type + '_TAGS')
-
-    def __unicode__(self):
-        return self.name + "(id=" + str(self.id) + ")"
 
     @transaction.commit_on_success
     def update_state(self):

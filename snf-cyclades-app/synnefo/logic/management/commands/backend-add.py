@@ -31,14 +31,13 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Backend, Network, BackendNetwork
+from synnefo.db.models import Backend, Network
 from django.db.utils import IntegrityError
 from synnefo.logic.backend import (get_physical_resources,
                                    update_resources,
-                                   create_client,
                                    create_network_synced,
                                    connect_network_synced)
-from synnefo.util.rapi import GanetiApiError
+from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 
 
 class Command(BaseCommand):
@@ -77,7 +76,7 @@ class Command(BaseCommand):
         if options['check']:
             self.stdout.write('Checking connectivity and credentials.\n')
             try:
-                client = create_client(clustername, port, username, password)
+                client = GanetiRapiClient(clustername, port, username, password)
                 # This command will raise an exception if there is no
                 # write-access
                 client.ModifyCluster()
@@ -126,7 +125,6 @@ class Command(BaseCommand):
         self.stdout.write(sep + '\n')
         self.stdout.write(line + '\n')
         self.stdout.write(sep + '\n')
-
 
         for net in networks:
             fields = (net.backend_id, str(net.subnet), str(net.gateway),

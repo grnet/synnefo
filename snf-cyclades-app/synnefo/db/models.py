@@ -35,69 +35,20 @@ from django.db import IntegrityError
 from django.db import transaction
 
 import utils
-
+from contextlib import contextmanager
 from hashlib import sha1
 from synnefo.api.faults import ServiceUnavailable
-from synnefo.util.rapi import GanetiRapiClient
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
 from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
 from synnefo.db import pools
 
-BACKEND_CLIENTS = {}  # {hash:Backend client}
-BACKEND_HASHES = {}   # {Backend.id:hash}
+from synnefo.logic.rapi_pool import (get_rapi_client,
+                                     put_rapi_client)
 
 import logging
 log = logging.getLogger(__name__)
-
-
-def get_client(hash, backend):
-    """Get a cached backend client or create a new one.
-
-    @param hash: The hash of the backend
-    @param backend: Either a backend object or backend ID
-    """
-
-    if backend is None:
-        raise Exception("Backend is None. Cannot create a client.")
-
-    if hash in BACKEND_CLIENTS:
-        # Return cached client
-        return BACKEND_CLIENTS[hash]
-
-    # Always get a new instance to ensure latest credentials
-    if isinstance(backend, Backend):
-        backend = backend.id
-
-    backend = Backend.objects.get(id=backend)
-    hash = backend.hash
-    clustername = backend.clustername
-    port = backend.port
-    user = backend.username
-    password = backend.password
-
-    # Check client for updated hash
-    if hash in BACKEND_CLIENTS:
-        return BACKEND_CLIENTS[hash]
-
-    # Delete old version of the client
-    if backend in BACKEND_HASHES:
-        del BACKEND_CLIENTS[BACKEND_HASHES[backend]]
-
-    # Create the new client
-    client = GanetiRapiClient(clustername, port, user, password)
-
-    # Store the client and the hash
-    BACKEND_CLIENTS[hash] = client
-    BACKEND_HASHES[backend] = hash
-
-    return client
-
-
-def clear_client_cache():
-    BACKEND_CLIENTS.clear()
-    BACKEND_HASHES.clear()
 
 
 class Flavor(models.Model):
@@ -161,13 +112,17 @@ class Backend(models.Model):
     def backend_id(self):
         return self.id
 
-    @property
-    def client(self):
+    def get_client(self):
         """Get or create a client. """
-        if not self.offline:
-            return get_client(self.hash, self)
-        else:
+        if self.offline:
             raise ServiceUnavailable
+        return get_rapi_client(self.id, self.hash,
+                               self.username,
+                               self.password)
+
+    @staticmethod
+    def put_client(client):
+            put_rapi_client(client)
 
     def create_hash(self):
         """Create a hash for this backend. """
@@ -265,7 +220,6 @@ class VirtualMachine(models.Model):
         ('OP_INSTANCE_FAILOVER', 'Failover Instance')
     )
 
-
     # The operating state of a VM,
     # upon the successful completion of a backend operation.
     # IMPORTANT: Make sure all keys have a corresponding
@@ -333,12 +287,15 @@ class VirtualMachine(models.Model):
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
 
-    @property
-    def client(self):
-        if self.backend and not self.backend.offline:
-            return get_client(self.backend_hash, self.backend_id)
+    def get_client(self):
+        if self.backend:
+            return self.backend.get_rapi_client()
         else:
             raise ServiceUnavailable
+
+    @staticmethod
+    def put_client(client):
+            put_rapi_client(client)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -716,3 +673,20 @@ class MacPrefixPoolTable(PoolTable):
 
 class IPPoolTable(PoolTable):
     manager = pools.IPPool
+
+
+@contextmanager
+def pooled_rapi_client(obj):
+        if isinstance(obj, VirtualMachine):
+            backend = obj.backend
+        else:
+            backend = obj
+
+        if backend.offline:
+            raise ServiceUnavailable
+
+        b = backend
+        client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
+                                 b.username, b.password)
+        yield client
+        put_rapi_client(client)

@@ -35,9 +35,11 @@ import json
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Backend, Network, BackendNetwork
-from synnefo.util.rapi import GanetiApiError
+from synnefo.db.models import (Backend, Network, BackendNetwork,
+                               pooled_rapi_client)
+from synnefo.logic.rapi import GanetiApiError
 from util import pool_map_chunks
+
 
 class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
@@ -88,18 +90,18 @@ class Command(BaseCommand):
         self.stdout.write(sep)
 
         for backend in Backend.objects.exclude(offline=True):
-            client = backend.client
-            try:
-                g_net = client.GetNetwork(net.backend_id)
-                self.stdout.write("Backend: %s\n" % backend.clustername)
-                print json.dumps(g_net, indent=2)
-                self.stdout.write(sep)
-            except GanetiApiError as e:
-                if e.code == 404:
-                    self.stdout.write('Network does not exist in backend %s\n' %
-                                      backend.clustername)
-                else:
-                    raise e
+            with pooled_rapi_client(backend) as client:
+                try:
+                    g_net = client.GetNetwork(net.backend_id)
+                    self.stdout.write("Backend: %s\n" % backend.clustername)
+                    print json.dumps(g_net, indent=2)
+                    self.stdout.write(sep)
+                except GanetiApiError as e:
+                    if e.code == 404:
+                        self.stdout.write('Network does not exist in backend %s\n' %
+                                          backend.clustername)
+                    else:
+                        raise e
 
 
 def splitPoolMap(s, count):

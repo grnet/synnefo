@@ -39,7 +39,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.api.util import get_image
 from synnefo.lib.utils import merge_time
 from synnefo.db.models import VirtualMachine
-from synnefo.util.rapi import GanetiApiError
+from synnefo.logic.rapi import GanetiApiError
 
 
 # Fields to print from a gnt-instance info
@@ -101,7 +101,7 @@ class Command(BaseCommand):
             self.stdout.write("nic/%d: IPv4: %s, MAC: %s, IPv6:%s,  Network: %s\n"\
                               % (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network))
 
-        client = vm.backend.client
+        client = vm.get_client()
         try:
             g_vm = client.GetInstance(vm.backend_vm_id)
         except GanetiApiError as e:
@@ -148,3 +148,5 @@ class Command(BaseCommand):
                     except KeyError:
                         pass
                 self.stdout.write('\n' + sep)
+        # Return the RAPI client to pool
+        vm.put_client(client)

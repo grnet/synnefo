@@ -42,7 +42,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import VirtualMachine, Network
+from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
 from synnefo.logic import reconciliation, backend, utils
 
 
@@ -202,7 +202,8 @@ class Command(BaseCommand):
             for id in orphans:
                 try:
                     vm = VirtualMachine.objects.get(pk=id)
-                    vm.client.DeleteInstance(utils.id_to_instance_name(id))
+                    with pooled_rapi_client(vm) as client:
+                        client.DeleteInstance(utils.id_to_instance_name(id))
                 except VirtualMachine.DoesNotExist:
                     print >> sys.stderr, "No entry for VM %d in DB !!" % id
             print >> sys.stderr, "    ...done"

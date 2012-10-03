@@ -56,12 +56,14 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, For
                                 RangeNotSatisfiable, InternalServerError, NotImplemented)
 from pithos.api.short_url import encode_url
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
-                                    BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
-                                    BACKEND_BLOCK_UMASK,
-                                    BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
-                                    BACKEND_QUOTA, BACKEND_VERSIONING,
-                                    AUTHENTICATION_URL, AUTHENTICATION_USERS,
-                                    SERVICE_TOKEN, COOKIE_NAME)
+                                 BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
+                                 BACKEND_BLOCK_UMASK,
+                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
+                                 BACKEND_QUEUE_EXCHANGE,
+                                 PITHOS_QUOTAHOLDER_URL,
+                                 BACKEND_QUOTA, BACKEND_VERSIONING,
+                                 AUTHENTICATION_URL, AUTHENTICATION_USERS,
+                                 SERVICE_TOKEN, COOKIE_NAME)
 
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError, ItemNotExists, VersionNotExists
@@ -808,6 +810,8 @@ def _pooled_backend_close(backend):
 
 from synnefo.lib.pool import ObjectPool
 from new import instancemethod
+from select import select
+from traceback import print_exc
 
 USAGE_LIMIT = 500
 POOL_SIZE = 5
@@ -823,7 +827,26 @@ class PithosBackendPool(ObjectPool):
         return backend
 
     def _pool_verify(self, backend):
-        return 1
+        wrapper = backend.wrapper
+        conn = wrapper.conn
+        if conn.closed:
+            return False
+
+        if conn.in_transaction():
+            conn.close()
+            return False
+
+        try:
+            fd = conn.connection.connection.fileno()
+            r, w, x = select([fd], (), (), 0)
+            if r:
+                conn.close()
+                return False
+        except:
+            print_exc()
+            return False
+
+        return True
 
     def _pool_cleanup(self, backend):
         c = backend._use_count - 1
@@ -832,8 +855,13 @@ class PithosBackendPool(ObjectPool):
             return True
 
         backend._use_count = c
-        if backend.wrapper.trans is not None:
-            backend.wrapper.rollback()
+        wrapper = backend.wrapper
+        if wrapper.trans is not None:
+            conn = wrapper.conn
+            if conn.closed:
+                wrapper.trans = None
+            else:
+                wrapper.rollback()
         if backend.messages:
             backend.messages = []
         return False

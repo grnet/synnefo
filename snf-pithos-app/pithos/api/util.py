@@ -61,7 +61,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_UMASK,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE,
-				 PITHOS_QUOTAHOLDER_URL,
+                                 PITHOS_QUOTAHOLDER_URL,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  SERVICE_TOKEN, COOKIE_NAME)
@@ -860,7 +860,7 @@ def _get_backend():
                               queue_module=BACKEND_QUEUE_MODULE,
                               queue_hosts=BACKEND_QUEUE_HOSTS,
                               queue_exchange=BACKEND_QUEUE_EXCHANGE,
-			      quotaholder_url=PITHOS_QUOTAHOLDER_URL)
+                              quotaholder_url=PITHOS_QUOTAHOLDER_URL)
     backend.default_policy['quota'] = BACKEND_QUOTA
     backend.default_policy['versioning'] = BACKEND_VERSIONING
     return backend
@@ -872,6 +872,8 @@ def _pooled_backend_close(backend):
 
 from synnefo.lib.pool import ObjectPool
 from new import instancemethod
+from select import select
+from traceback import print_exc
 
 USAGE_LIMIT = 500
 POOL_SIZE = 5
@@ -887,7 +889,26 @@ class PithosBackendPool(ObjectPool):
         return backend
 
     def _pool_verify(self, backend):
-        return 1
+        wrapper = backend.wrapper
+        conn = wrapper.conn
+        if conn.closed:
+            return False
+
+        if conn.in_transaction():
+            conn.close()
+            return False
+
+        try:
+            fd = conn.connection.connection.fileno()
+            r, w, x = select([fd], (), (), 0)
+            if r:
+                conn.close()
+                return False
+        except:
+            print_exc()
+            return False
+
+        return True
 
     def _pool_cleanup(self, backend):
         c = backend._use_count - 1
@@ -896,8 +917,13 @@ class PithosBackendPool(ObjectPool):
             return True
 
         backend._use_count = c
-        if backend.wrapper.trans is not None:
-            backend.wrapper.rollback()
+        wrapper = backend.wrapper
+        if wrapper.trans is not None:
+            conn = wrapper.conn
+            if conn.closed:
+                wrapper.trans = None
+            else:
+                wrapper.rollback()
         if backend.messages:
             backend.messages = []
         return False

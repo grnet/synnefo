@@ -46,8 +46,9 @@ from synnefo.api.common import method_not_allowed
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
-from synnefo.util.rapi import GanetiApiError
+from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
+from random import choice
 
 
 from logging import getLogger
@@ -273,6 +274,7 @@ def create_server(request):
         transaction.commit()
         nic = {'ip': address, 'network': network.backend_id}
     else:
+        network = choice(list(util.backend_public_networks(backend)))
         nic = {'ip': 'pool', 'network': network.backend_id}
 
     # We must save the VM instance now, so that it gets a valid

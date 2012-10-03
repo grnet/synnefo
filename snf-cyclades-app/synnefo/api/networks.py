@@ -118,7 +118,7 @@ def list_networks(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    log.info('list_networks detail=%s', detail)
+    log.debug('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))
@@ -223,7 +223,7 @@ def get_network_details(request, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    log.info('get_network_details %s', network_id)
+    log.debug('get_network_details %s', network_id)
     net = util.get_network(network_id, request.user_uniq)
     netdict = network_to_dict(net, request.user_uniq)
     return render_network(request, netdict)
@@ -285,7 +285,7 @@ def delete_network(request, network_id):
 @util.api_method('POST')
 def network_action(request, network_id):
     req = util.get_request_dict(request)
-    log.info('network_action %s %s', network_id, req)
+    log.debug('network_action %s %s', network_id, req)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
 

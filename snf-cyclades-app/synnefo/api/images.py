@@ -113,7 +113,7 @@ def list_images(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    log.info('list_images detail=%s', detail)
+    log.debug('list_images detail=%s', detail)
     backend = ImageBackend(request.user_uniq)
     
     since = isoparse(request.GET.get('changes-since'))
@@ -167,7 +167,7 @@ def get_image_details(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    log.info('get_image_details %s', image_id)
+    log.debug('get_image_details %s', image_id)
     image = util.get_image(image_id, request.user_uniq)
     reply = image_to_dict(image)
     
@@ -205,7 +205,7 @@ def list_metadata(request, image_id):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    log.info('list_image_metadata %s', image_id)
+    log.debug('list_image_metadata %s', image_id)
     image = util.get_image(image_id, request.user_uniq)
     metadata = image['properties']
     return util.render_metadata(request, metadata, use_values=True, status=200)
@@ -251,7 +251,7 @@ def get_metadata_item(request, image_id, key):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    log.info('get_image_metadata_item %s %s', image_id, key)
+    log.debug('get_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user_uniq)
     val = image['properties'].get(key)
     if val is None:

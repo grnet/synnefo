@@ -328,7 +328,7 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
-    log.debug("Creating instance %s", kw)
+    log.debug("Creating instance %s", utils.hide_pass(kw))
     with pooled_rapi_client(vm) as client:
         return client.CreateInstance(**kw)
 

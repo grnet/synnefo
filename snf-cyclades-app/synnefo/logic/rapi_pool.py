@@ -38,6 +38,7 @@ from logging import getLogger
 log = getLogger(__name__)
 
 _pools = {}
+_hashes = {}
 pool_size = 8
 
 
@@ -80,7 +81,10 @@ def get_rapi_client(backend_id, backend_hash, host, port, user, passwd):
         log.debug("GET: No Pool. Creating new for host %s", host)
         pool = GanetiRapiClientPool(host, port, user, passwd, pool_size)
         _pools[backend_hash] = pool
-        # TODO: Delete Pool for old backend_hash
+        # Delete Pool for old backend_hash
+        if backend_id in _hashes:
+            del _pools[_hashes[backend_id]]
+        _hashes[backend_id] = backend_hash
 
     obj = _pools[backend_hash].pool_get()
     log.debug("GET: Got object %r from pool", obj)

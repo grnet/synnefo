@@ -8,7 +8,7 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        for u in orm.AstakosUser:
+        for u in orm.AstakosUser.objects.all():
             u.email = u.email.lower()
             u.save()
 

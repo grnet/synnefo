@@ -291,7 +291,7 @@ class VirtualMachine(models.Model):
 
     def get_client(self):
         if self.backend:
-            return self.backend.get_rapi_client()
+            return self.backend.get_client()
         else:
             raise ServiceUnavailable
 

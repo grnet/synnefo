@@ -76,7 +76,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     # Notifications of success change the operating state
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
-        utils.update_state(vm, state_for_success)
+        vm.operstate = state_for_success
         # Set the deleted flag explicitly, cater for admin-initiated removals
         if opcode == 'OP_INSTANCE_REMOVE':
             release_instance_nics(vm)
@@ -85,18 +85,26 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-        utils.update_state(vm, 'ERROR')
+        vm.operstate = 'ERROR'
+        vm.backendtime = etime
 
     # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
     # when no instance exists at the Ganeti backend.
     # See ticket #799 for all the details.
     #
-    if (status == 'error' and opcode == 'OP_INSTANCE_REMOVE'):
+    if (status == 'error' and vm.operstate == 'ERROR' and\
+        opcode == 'OP_INSTANCE_REMOVE'):
         vm.deleted = True
         vm.nics.all().delete()
+        vm.operstate = 'DESTROYED'
+        vm.backendtime = etime
 
-    vm.backendtime = etime
-    # Any other notification of failure leaves the operating state unchanged
+    # Update backendtime only for jobs that have been successfully completed,
+    # since only these jobs update the state of the VM. Else a "race condition"
+    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
+    # before an error job and messages arrive in reversed order.
+    if status == 'success':
+        vm.backendtime = etime
 
     vm.save()
 

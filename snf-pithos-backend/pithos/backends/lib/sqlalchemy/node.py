@@ -772,7 +772,7 @@ class Node(DBWorker):
 
         props = self.version_lookup(node, cluster=cluster, all_props=False)
         if props:
-            self.nodes_set_latest_version(v.node, serial)
+            self.nodes_set_latest_version(node, serial)
 
         return hash, size
 

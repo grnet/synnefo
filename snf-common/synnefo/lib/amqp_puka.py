@@ -182,7 +182,8 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def queue_declare(self, queue, exclusive=False,
-                      mirrored=True, mirrored_nodes='all'):
+                      mirrored=True, mirrored_nodes='all',
+                      dead_letter_exchange=None):
         """Declare a queue
 
         @type queue: string
@@ -212,6 +213,9 @@ class AMQPPukaClient(object):
         else:
             arguments = {}
 
+        if dead_letter_exchange:
+            arguments['x-dead-letter-exchange'] = dead_letter_exchange
+
         promise = self.client.queue_declare(queue=queue, durable=True,
                                             exclusive=exclusive,
                                             auto_delete=False,
@@ -226,9 +230,9 @@ class AMQPPukaClient(object):
         self.client.wait(promise)
 
     @reconnect_decorator
-    def basic_publish(self, exchange, routing_key, body):
+    def basic_publish(self, exchange, routing_key, body, headers={}):
         """Publish a message with a specific routing key """
-        self._publish(exchange, routing_key, body)
+        self._publish(exchange, routing_key, body, headers)
 
         self.flush_buffer()
 
@@ -249,9 +253,8 @@ class AMQPPukaClient(object):
         if self.confirms:
             self.get_confirms()
 
-    def _publish(self, exchange, routing_key, body):
+    def _publish(self, exchange, routing_key, body, headers={}):
         # Persisent messages by default!
-        headers = {}
         headers['delivery_mode'] = 2
         promise = self.client.basic_publish(exchange=exchange,
                                             routing_key=routing_key,

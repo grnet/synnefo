@@ -61,7 +61,7 @@ from django.core.xheaders import populate_xheaders
 
 from astakos.im.models import (
     AstakosUser, ApprovalTerms, AstakosGroup, Resource,
-    EmailChange, GroupKind, Membership)
+    EmailChange, GroupKind, Membership, AstakosGroupQuota)
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
@@ -70,7 +70,7 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
                               AstakosGroupSortForm, MembersSortForm,
-                              TimelineForm)
+                              TimelineForm, PickResourceForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   invite as invite_func, logout as auth_logout,
                                   activate as activate_func,
@@ -1031,12 +1031,26 @@ def disapprove_member(request, membership):
 @signed_terms_required
 @login_required
 def resource_list(request):
-    return render_response(
-        template='im/astakosuserquota_list.html',
-        context_instance=get_context(request))
+    if request.method == 'POST':
+        form = PickResourceForm(request.POST)
+        if form.is_valid():
+            r = form.cleaned_data.get('resource')
+            if r:
+                groups = request.user.membership_set.only('group').filter(
+                    date_joined__isnull=False)
+                groups = [g.group_id for g in groups]
+                q = AstakosGroupQuota.objects.select_related().filter(
+                    resource=r, group__in=groups)
+    else:
+        form = PickResourceForm()
+        q = AstakosGroupQuota.objects.none()
+    return object_list(request, q,
+                       template_name='im/astakosuserquota_list.html',
+                       extra_context={'form': form})
 
 
 def group_create_list(request):
+    form = PickResourceForm()
     return render_response(
         template='im/astakosgroup_create_list.html',
         context_instance=get_context(request),)

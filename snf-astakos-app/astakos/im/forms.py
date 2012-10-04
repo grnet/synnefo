@@ -647,3 +647,9 @@ class MembersSortForm(forms.Form):
                                          ('date_joined', 'Status')
                                          ),
                                 required=False)
+
+class PickResourceForm(forms.Form):
+    resource = forms.ModelChoiceField(
+        queryset=Resource.objects.select_related().all()
+    )
+    resource.widget.attrs["onchange"]="this.form.submit()"

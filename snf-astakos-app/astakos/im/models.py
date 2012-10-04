@@ -297,7 +297,7 @@ class AstakosUser(User):
     def quota(self):
         d = defaultdict(int)
         for q in self.astakosuserquota_set.select_related().all():
-            d[q.resource.name] += q.uplimit
+            d[q.resource] += q.uplimit
         for m in self.membership_set.select_related().all():
             if not m.is_approved:
                 continue
@@ -306,6 +306,7 @@ class AstakosUser(User):
                 continue
             for r, uplimit in g.quota.iteritems():
                 d[r] += uplimit
+        
         # TODO set default for remaining
         return d
 

@@ -117,6 +117,8 @@ class Backend(models.Model):
         if self.offline:
             raise ServiceUnavailable
         return get_rapi_client(self.id, self.hash,
+                               self.clustername,
+                               self.port,
                                self.username,
                                self.password)
 

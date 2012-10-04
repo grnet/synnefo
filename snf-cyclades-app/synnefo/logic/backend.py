@@ -432,7 +432,9 @@ def _create_network(network, backend):
     with pooled_rapi_client(backend) as client:
         return client.CreateNetwork(network_name=network.backend_id,
                                     network=network.subnet,
+                                    network6=network.subnet6,
                                     gateway=network.gateway,
+                                    gateway6=network.gateway6,
                                     network_type=network_type,
                                     mac_prefix=mac_prefix,
                                     tags=tags)

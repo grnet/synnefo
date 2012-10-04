@@ -31,7 +31,7 @@
 
 from synnefo.db.models import VirtualMachine, Network
 from django.conf import settings
-from copy import copy
+from copy import deepcopy
 
 def id_from_instance_name(name):
     """Returns VirtualMachine's Django id, given a ganeti machine name.
@@ -114,7 +114,7 @@ def update_state(vm, new_operstate):
 
 def hide_pass(kw):
     if 'osparams' in kw and 'img_passwd' in kw['osparams']:
-        kw1 = copy(kw)
+        kw1 = deepcopy(kw)
         kw1['osparams']['img_passwd'] = 'x' * 8
         return kw1
     else:

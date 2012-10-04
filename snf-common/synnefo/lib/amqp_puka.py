@@ -355,8 +355,17 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def basic_nack(self, message):
-        #TODO:
-        pass
+        self.client.basic_ack(message)
+
+    @reconnect_decorator
+    def basic_reject(self, message, requeue=False):
+        """Reject a message.
+
+        If requeue option is False and a dead letter exchange is associated
+        with the queue, the message will be routed to the dead letter exchange.
+
+        """
+        self.client.basic_reject(message, requeue=requeue)
 
     def close(self):
         """Check that messages have been send and close the connection."""

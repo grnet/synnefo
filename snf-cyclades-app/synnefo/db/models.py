@@ -690,5 +690,7 @@ def pooled_rapi_client(obj):
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
                                  b.username, b.password)
-        yield client
-        put_rapi_client(client)
+        try:
+            yield client
+        finally:
+            put_rapi_client(client)

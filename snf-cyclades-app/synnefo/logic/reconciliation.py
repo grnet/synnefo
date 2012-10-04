@@ -90,8 +90,8 @@ def stale_servers_in_db(D, G):
             vm = VirtualMachine.objects.get(id=i)
             # Check time to avoid many rapi calls
             if datetime.now() > vm.backendtime + timedelta(seconds=5):
-                try:
-                    with pooled_rapi_client(vm) as c:
+                with pooled_rapi_client(vm) as c:
+                    try:
                         job_status = c.GetJobStatus(vm.backendjobid)['status']
                         if job_status in ('queued', 'waiting', 'running'):
                             # Server is still building in Ganeti
@@ -100,8 +100,8 @@ def stale_servers_in_db(D, G):
                             c.GetInstance(utils.id_to_instance_name(i))
                             # Server has just been created in Ganeti
                             continue
-                except GanetiApiError:
-                    stale.add(i)
+                    except GanetiApiError:
+                        stale.add(i)
         else:
             stale.add(i)
 
@@ -128,13 +128,13 @@ def unsynced_operstate(D, G):
             vm = VirtualMachine.objects.get(id=i)
             # Check time to avoid many rapi calls
             if datetime.now() > vm.backendtime + timedelta(seconds=5):
-                try:
-                    with pooled_rapi_client(vm) as c:
+                with pooled_rapi_client(vm) as c:
+                    try:
                         job_info = c.GetJobStatus(job_id=vm.backendjobid)
                         if job_info['status'] == 'success':
                             unsynced.add((i, D[i], G[i]))
-                except GanetiApiError:
-                    pass
+                    except GanetiApiError:
+                        pass
 
     return unsynced
 
@@ -149,13 +149,13 @@ def instances_with_build_errors(D, G):
             vm = VirtualMachine.objects.get(id=i)
             # Check time to avoid many rapi calls
             if datetime.now() > vm.backendtime + timedelta(seconds=5):
-                try:
-                    with pooled_rapi_client(vm) as c:
+                with pooled_rapi_client(vm) as c:
+                    try:
                         job_info = c.GetJobStatus(job_id=vm.backendjobid)
                         if job_info['status'] == 'error':
                             failed.add(i)
-                except GanetiApiError:
-                    failed.add(i)
+                    except GanetiApiError:
+                        failed.add(i)
 
     return failed
 

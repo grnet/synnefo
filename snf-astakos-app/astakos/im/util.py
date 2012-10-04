@@ -172,7 +172,7 @@ def reverse_lazy(*args, **kwargs):
 
 
 def reserved_email(email):
-    return AstakosUser.objects.filter(email=email).count() != 0
+    return AstakosUser.objects.filter(email__iexact=email).count() != 0
 
 
 def get_query(request):

@@ -46,7 +46,8 @@ from django.contrib.auth.models import User, UserManager, Group
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models.signals import pre_save, post_save, post_syncdb, post_delete
+from django.db.models.signals import (pre_save, post_save, post_syncdb,
+                                      post_delete)
 from django.dispatch import Signal
 from django.db.models import Q
 
@@ -256,7 +257,9 @@ class AstakosUser(User):
 
     astakos_groups = models.ManyToManyField(
         AstakosGroup, verbose_name=_('agroups'), blank=True,
-        help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."),
+        help_text=_("""In addition to the permissions manually assigned, this
+                    user will also get all permissions granted to each group
+                    he/she is in."""),
         through='Membership')
 
     __has_signed_terms = False
@@ -330,6 +333,7 @@ class AstakosUser(User):
                     self.username = username
             if not self.provider:
                 self.provider = 'local'
+            self.email = self.email.lower()
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent
@@ -518,7 +522,8 @@ class EmailChangeManager(models.Manager):
 
 
 class EmailChange(models.Model):
-    new_email_address = models.EmailField(_(u'new e-mail address'), help_text=_(u'Your old email address will be used until you verify your new one.'))
+    new_email_address = models.EmailField(_(u'new e-mail address'),
+        help_text=_(u'Your old email address will be used until you verify your new one.'))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchange_user')
     requested_at = models.DateTimeField(default=datetime.now())

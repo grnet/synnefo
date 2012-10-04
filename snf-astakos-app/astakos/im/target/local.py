@@ -58,8 +58,7 @@ def login(request, on_failure='im/login.html'):
     was_limited = getattr(request, 'limited', False)
     form = LoginForm(data=request.POST,
                      was_limited=was_limited,
-                     request=request
-                     )
+                     request=request)
     next = get_query(request).get('next', '')
     if not form.is_valid():
         return render_to_response(on_failure,

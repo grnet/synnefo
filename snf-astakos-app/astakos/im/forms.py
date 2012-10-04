@@ -323,6 +323,10 @@ class LoginForm(AuthenticationForm):
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
     
+    def clean_username(self):
+        if 'username' in self.cleaned_data:
+            return self.cleaned_data['username'].lower()
+    
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
             self.validate_captcha()

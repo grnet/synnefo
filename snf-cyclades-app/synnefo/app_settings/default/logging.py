@@ -33,7 +33,10 @@ DISPATCHER_LOGGING = {
     },
 
     'loggers': {
-        'synnefo': {'propagate': 1}
+        'synnefo': {'propagate': 0,
+                    'handlers': ['file'],
+                    'level': 'INFO'
+                    }
     },
 
     'root': {

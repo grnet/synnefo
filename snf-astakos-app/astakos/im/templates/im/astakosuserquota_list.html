@@ -5,39 +5,35 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="section">
-            {% for k, v in user.quota|items %}
-                <strong>{{k}}</strong>
-                <table class="zebra-striped id-sorted">
-<!-- 
-                    <thead>
-                      <tr>
-                        <th>Limit (Group)</th>
-                      </tr>
-                    </thead>
- -->
-                    <tbody>
-                    {% for m in user.membership_set.select_related.all %}
-                        {% if m.group.is_enabled %}
-                            {% with m.group.quota as quota %}
-                            {% if  quota %}
-                                {% for kk, vv in quota|items %}
-                                    {% if k == kk %}
-                                    <tr>
-                                        <td>{{ vv }} ({{m.group.name}})</td>
-                                    </tr>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                            {% endwith %}
+        <form action="" method="post"
+	            class="withlabels">{% csrf_token %}
+	            {% include "im/form_render.html" %}
+	    </form>
+	    <table>
+	    {% for q in object_list %}
+	        {% if q.group.is_enabled %}
+	            <tr>
+	                <td>{{ q.uplimit }}</td><td>({{ q.group }})</td>
+	            </tr>
+	        {% endif %}
+	    {% endfor %}
+	    {% if form.cleaned_data %}
+            {% with form.cleaned_data|lookup:'resource' as resource %}
+                {% if resource %}
+                    {% for q in user.astakosuserquota_set.all %}
+                        {% if q.resource == resource %}
+                        <tr>
+                            <td>{{ q.uplimit }}</td><td>(assigned to me)</td>
+                        </tr>
                         {% endif %}
                     {% endfor %}
-                                    <tr>
-                                        <td><strong>{{ v }}</strong></td>
-                                    </tr>
-                                    <tr/>
-                    </tbody>
-                </table>
-            {% endfor %}
+                        <tr>
+                            <td>{{ user.quota|lookup:resource }}</td><td>(total)</td>
+                        </tr>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+	    </table>
     </div>
 </div>
 {% endblock %}

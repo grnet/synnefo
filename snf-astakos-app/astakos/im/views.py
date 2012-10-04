@@ -61,7 +61,7 @@ from django.core.xheaders import populate_xheaders
 
 from astakos.im.models import (
     AstakosUser, ApprovalTerms, AstakosGroup, Resource,
-    EmailChange, GroupKind, Membership)
+    EmailChange, GroupKind, Membership, AstakosGroupQuota)
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
@@ -69,15 +69,18 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               ExtendedPasswordChangeForm, EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
-                              AstakosGroupSortForm, MembersSortForm)
+                              AstakosGroupSortForm, MembersSortForm,
+                              TimelineForm, PickResourceForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   invite as invite_func, logout as auth_logout,
                                   activate as activate_func,
                                   switch_account_to_shibboleth,
                                   send_admin_notification,
                                   SendNotificationError)
-from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, SITENAME,
-                                 LOGOUT_NEXT, LOGGING_LEVEL, PAGINATE_BY)
+from astakos.im.endpoints.quotaholder import timeline_charge
+from astakos.im.settings import (
+    COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
+    LOGGING_LEVEL, PAGINATE_BY)
 from astakos.im.tasks import request_billing
 
 logger = logging.getLogger(__name__)
@@ -368,10 +371,10 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                         logger.log(LOGGING_LEVEL, msg)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
-		    transaction.commit()
+                    transaction.commit()
                     return prepare_response(request, user, next=next)
                 messages.add_message(request, status, message)
-		transaction.commit()
+                transaction.commit()
                 return render_response(on_success,
                                        context_instance=get_context(request, extra_context))
             except SendMailError, e:
@@ -468,7 +471,8 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
 
 
 @transaction.commit_manually
-def activate(request, greeting_email_template_name='im/welcome_email.txt', helpdesk_email_template_name='im/helpdesk_notification.txt'):
+def activate(request, greeting_email_template_name='im/welcome_email.txt',
+             helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
     Activates the user identified by the ``auth`` request parameter, sends a welcome email
     and renews the user token.
@@ -1027,12 +1031,26 @@ def disapprove_member(request, membership):
 @signed_terms_required
 @login_required
 def resource_list(request):
-    return render_response(
-        template='im/astakosuserquota_list.html',
-        context_instance=get_context(request))
+    if request.method == 'POST':
+        form = PickResourceForm(request.POST)
+        if form.is_valid():
+            r = form.cleaned_data.get('resource')
+            if r:
+                groups = request.user.membership_set.only('group').filter(
+                    date_joined__isnull=False)
+                groups = [g.group_id for g in groups]
+                q = AstakosGroupQuota.objects.select_related().filter(
+                    resource=r, group__in=groups)
+    else:
+        form = PickResourceForm()
+        q = AstakosGroupQuota.objects.none()
+    return object_list(request, q,
+                       template_name='im/astakosuserquota_list.html',
+                       extra_context={'form': form})
 
 
 def group_create_list(request):
+    form = PickResourceForm()
     return render_response(
         template='im/astakosgroup_create_list.html',
         context_instance=get_context(request),)
@@ -1097,4 +1115,32 @@ def _clear_billing_data(data):
     data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
+    return data    
+
+@signed_terms_required
+@login_required
+def timeline(request):
+#    data = {'entity':request.user.email}
+    timeline_body = ()
+    timeline_header = ()
+#    form = TimelineForm(data)
+    form = TimelineForm()
+    if request.method == 'POST':
+        data = request.POST
+        form = TimelineForm(data)
+        if form.is_valid():
+            data = form.cleaned_data
+            timeline_header = ('entity', 'resource',
+                               'event name', 'event date',
+                               'incremental cost', 'total cost')
+            timeline_body = timeline_charge(
+                                    data['entity'],     data['resource'],
+                                    data['start_date'], data['end_date'],
+                                    data['details'],    data['operation'])
+        
+    return render_response(template='im/timeline.html',
+                           context_instance=get_context(request),
+                           form=form,
+                           timeline_header=timeline_header,
+                           timeline_body=timeline_body)
     return data

@@ -47,14 +47,13 @@ from django.utils.encoding import smart_str
 from django.forms.extras.widgets import SelectDateWidget
 from django.conf import settings
 
-from astakos.im.models import (
-    AstakosUser, EmailChange, AstakosGroup, Invitation,
-    Membership, GroupKind, get_latest_terms
-)
+from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup,
+                               Invitation, Membership, GroupKind, Resource,
+                               get_latest_terms)
 from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
-                                 RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL,
-                                 LOGGING_LEVEL
-                                 )
+                                 RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED,
+                                 DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
+                                 PASSWORD_RESET_EMAIL_SUBJECT)
 
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
@@ -443,7 +442,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'support': DEFAULT_CONTACT_EMAIL
             }
             from_email = settings.SERVER_EMAIL
-            send_mail(_("Password reset on %s alpha2 testing") % SITENAME,
+            send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
                       t.render(Context(c)), from_email, [user.email])
 
 
@@ -525,8 +524,6 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 
 
 class AstakosGroupCreationForm(forms.ModelForm):
-#     issue_date = forms.DateField(widget=SelectDateWidget())
-#     expiration_date = forms.DateField(widget=SelectDateWidget())
     kind = forms.ModelChoiceField(
         queryset=GroupKind.objects.all(),
         label="",
@@ -599,11 +596,42 @@ class AddGroupMembersForm(forms.Form):
 class AstakosGroupSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search group')
 
+class TimelineForm(forms.Form):
+#    entity = forms.CharField(
+#        widget=forms.HiddenInput(), label='')
+    entity = forms.ModelChoiceField(
+        queryset=AstakosUser.objects.filter(is_active = True)
+    )
+    resource = forms.ModelChoiceField(
+        queryset=Resource.objects.all()
+    )
+    start_date = forms.DateTimeField()
+    end_date = forms.DateTimeField()
+    details = forms.BooleanField(required=False, label="Detailed Listing")
+    operation = forms.ChoiceField(
+                        label   = 'Charge Method',
+                        choices = ( ('',                '-------------'),
+                                    ('charge_usage',    'Charge Usage'),
+                                    ('charge_traffic',  'Charge Traffic'), )
+                )
+    def clean(self):
+        super(TimelineForm, self).clean()
+        d = self.cleaned_data
+        if 'resource' in d:
+            d['resource'] = str(d['resource'])
+        if 'start_date' in d:
+            d['start_date'] = d['start_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
+        if 'end_date' in d:
+            d['end_date'] = d['end_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
+	if 'entity' in d:
+            d['entity'] = d['entity'].email
+        return d
+
 class AstakosGroupSortForm(forms.Form):
     sort_by = forms.ChoiceField(label='Sort by',
-                                choices=(('groupname', 'Name'), 
-                                         ('kindname', 'Type'), 
-                                         ('issue_date', 'Issue Date'), 
+                                choices=(('groupname', 'Name'),
+                                         ('kindname', 'Type'),
+                                         ('issue_date', 'Issue Date'),
                                          ('expiration_date', 'Expiration Date'),
                                          ('approved_members_num', 'Participants'),
                                          ('is_enabled', 'Status'),
@@ -619,3 +647,9 @@ class MembersSortForm(forms.Form):
                                          ('date_joined', 'Status')
                                          ),
                                 required=False)
+
+class PickResourceForm(forms.Form):
+    resource = forms.ModelChoiceField(
+        queryset=Resource.objects.select_related().all()
+    )
+    resource.widget.attrs["onchange"]="this.form.submit()"

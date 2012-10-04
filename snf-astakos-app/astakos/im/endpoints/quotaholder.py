@@ -163,3 +163,125 @@ def register_resources(resources, client=None):
                                        field='service')
     created = (e for e in copy if unicode(e) not in rejected)
     return send_resource_quantities(created, client)
+
+
+from datetime import datetime
+
+strptime = datetime.strptime
+timefmt = '%Y-%m-%dT%H:%M:%S.%f'
+
+SECOND_RESOLUTION = 1
+
+def total_seconds(timedelta_object):
+    return timedelta_object.seconds + timedelta_object.days * 86400
+
+def iter_timeline(timeline, before):
+    if not timeline:
+        return
+
+    for t in timeline:
+        yield t
+
+    t = dict(t)
+    t['issue_time'] = before
+    yield t
+
+def _usage_units(timeline, after, before, details=0):
+
+    t_total = 0
+    uu_total = 0
+    t_after = strptime(after, timefmt)
+    t_before = strptime(before, timefmt)
+    t0 = t_after
+    u0 = 0
+
+    for point in iter_timeline(timeline, before):
+        issue_time = point['issue_time']
+
+        if issue_time <= after:
+            u0 = point['target_allocated_through']
+            continue
+
+        t = strptime(issue_time, timefmt) if issue_time <= before else t_before
+        t_diff = int(total_seconds(t - t0) * SECOND_RESOLUTION)
+        t_total += t_diff
+        uu_cost = u0 * t_diff
+        uu_total += uu_cost
+        t0 = t
+        u0 = point['target_allocated_through']
+
+        target = point['target']
+        if details:
+            yield  (target,
+                    point['resource'],
+                    point['name'],
+                    issue_time,
+                    uu_cost,
+                    uu_total)
+
+    if not t_total:
+        return
+
+    yield  (target,
+            'total',
+            point['resource'],
+            issue_time,
+            uu_total/t_total,
+            uu_total)
+
+def usage_units(timeline, after, before, details=0):
+    return list(_usage_units(timeline, after, before, details=details))
+
+def traffic_units(timeline, after, before, details=0):
+    tu_total = 0
+    target = None
+    issue_time = None
+
+    for point in timeline:
+        issue_time = point['issue_time']
+        if issue_time <= after:
+            continue
+        if issue_time > before:
+            break
+
+        target = point['target']
+        tu = point['target_allocated_through']
+        tu_total += tu
+
+        if details:
+            yield  (target,
+                    point['resource'],
+                    point['name'],
+                    issue_time,
+                    tu,
+                    tu_total)
+
+    if not tu_total:
+        return
+
+    yield  (target,
+            'total',
+            point['resource'],
+            issue_time,
+            tu_total//len(timeline),
+            tu_total)
+
+def timeline_charge(entity, resource, after, before, details, charge_type):
+    key = '1'
+    if charge_type == 'charge_usage':
+        charge_units = usage_units
+    elif charge_type == 'charge_traffic':
+        charge_units = traffic_units
+    else:
+        m = 'charge type %s not supported' % charge_type
+        raise ValueError(m)
+
+    quotaholder = QuotaholderHTTP(QUOTA_HOLDER_URL)
+    timeline = quotaholder.get_timeline(
+                            context         =   {},
+                            after           =   after,
+                            before          =   before,
+                            get_timeline    =   [[entity, resource, key]])
+    cu = charge_units(timeline, after, before, details=details)
+    return cu
+

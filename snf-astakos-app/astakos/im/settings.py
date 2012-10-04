@@ -102,18 +102,23 @@ EMAILCHANGE_ACTIVATION_DAYS = getattr(
 from logging import INFO
 LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 
-# Set the quota holder component URI
-QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
-
-# Set the cloud service properties
-SERVICES = getattr(settings, 'ASTAKOS_SERVICES',
-                   {'cyclades': {'url':'https://node1.example.com/ui/',
-                                 'quota': {'vm': 2}},
-                    'pithos+':  {'url':'https://node2.example.com/ui/',
-                                 'quota': {'diskspace': 50 * 1024 * 1024 * 1024}}})
-
-# Set the billing URI
-AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
+# Configurable email subjects
+INVITATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
+        'Invitation to %s alpha2 testing' % SITENAME)
+GREETING_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_GREETING_EMAIL_SUBJECT',
+        'Welcome to %s alpha2 testing' % SITENAME)
+FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
+        'Feedback from %s alpha2 testing' % SITENAME)
+VERIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
+        '%s alpha2 testing account activation is needed' % SITENAME)
+ADMIN_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT',
+        '%s alpha2 testing account created (%%(user)s)' % SITENAME)
+HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
+        '%s alpha2 testing account activated (%%(user)s)' % SITENAME)
+EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
+        'Email change on %s alpha2 testing' % SITENAME)
+PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
+        'Password reset on %s alpha2 testing' % SITENAME)
 
 # Configurable email subjects
 INVITATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
@@ -132,6 +137,19 @@ EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJE
         'Email change on %s alpha2 testing' % SITENAME)
 PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
         'Password reset on %s alpha2 testing' % SITENAME)
+
+# Set the quota holder component URI
+QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
+
+# Set the cloud service properties
+SERVICES = getattr(settings, 'ASTAKOS_SERVICES',
+                   {'cyclades': {'url':'https://node1.example.com/ui/',
+                                 'quota': {'vm': 2}},
+                    'pithos+':  {'url':'https://node2.example.com/ui/',
+                                 'quota': {'diskspace': 50 * 1024 * 1024 * 1024}}})
+
+# Set the billing URI
+AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
 
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)

@@ -27,6 +27,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.10 (Jul 18, 2012)        Support for bulk COPY/MOVE/DELETE
+\                          Optionally include public objects in listings.
 0.9 (Feb 17, 2012)         Change permissions model.
 \                          Do not include user-defined metadata in account/container/object listings.
 0.8 (Jan 24, 2012)         Update allowed versioning values.
@@ -272,6 +274,7 @@ limit                   The amount of results requested (default is 10000)
 marker                  Return containers with name lexicographically after marker
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 shared                  Show only shared containers (no value parameter)
+public                  Show only public containers (no value parameter)
 until                   Optional timestamp
 ======================  =========================
 
@@ -447,6 +450,7 @@ path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 meta                    Return objects that satisfy the key queries in the specified comma separated list (use ``<key>``, ``!<key>`` for existence queries, ``<key><op><value>`` for value queries, where ``<op>`` can be one of ``=``, ``!=``, ``<=``, ``>=``, ``<``, ``>``)
 shared                  Show only shared objects (no value parameter)
+public                  Show only public containers (no value parameter)
 until                   Optional timestamp
 ======================  ===================================
 
@@ -615,9 +619,10 @@ DELETE
 Request Parameter Name  Value
 ======================  ===================================
 until                   Optional timestamp
+delimiter               Optional delete objects starting with container name and delimiter
 ======================  ===================================
 
-If ``until`` is defined, the container is "purged" up to that time (the history of all objects up to then is deleted).
+If ``until`` is defined, the container is "purged" up to that time (the history of all objects up to then is deleted). If also ``delimiter`` is defined, purge is applied only on the container.
 
 No reply content/headers.
 
@@ -832,6 +837,7 @@ Request Parameter Name  Value
 ======================  ===================================
 format                  Optional extended request/conflict response type (can be ``json`` or ``xml``)
 hashmap                 Optional hashmap provided instead of data (no value parameter)
+delimiter               Optional copy/move objects starting with object's path and delimiter (to be used with X-Copy-From/X-Move-From)
 ======================  ===================================
 
 The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created. Otherwise the server returns Conflict (409) with the list of the missing parts (in simple text format, with one hash per line, or in JSON/XML - depending on the ``format`` parameter).
@@ -885,6 +891,7 @@ Request Parameter Name  Value
 ======================  ===================================
 format                  Optional conflict response type (can be ``json`` or ``xml``)
 ignore_content_type     Ignore the supplied Content-Type
+delimiter               Optional copy objects starting with object's path and delimiter
 ======================  ===================================
 
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
@@ -1016,9 +1023,10 @@ DELETE
 Request Parameter Name  Value
 ======================  ===================================
 until                   Optional timestamp
+delimiter               Optional delete also objects starting with object's path and delimiter
 ======================  ===================================
 
-If ``until`` is defined, the object is "purged" up to that time (the history up to then is deleted).
+If ``until`` is defined, the object is "purged" up to that time (the history up to then is deleted). If also ``delimiter`` is defined, purge is applied only on the object.
 
 No reply content/headers.
 

@@ -36,20 +36,22 @@ from logging import getLogger
 from django.conf.urls.defaults import patterns
 from django.conf import settings
 from django.db.models import Q
+from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import faults, util
+from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
-from synnefo.db.models import Network, NetworkLink
+from synnefo.api.faults import (BadRequest, Unauthorized,
+                                NetworkInUse, OverLimit)
+from synnefo.db.models import Network
+from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
 
 
 log = getLogger('synnefo.api')
-
 
 urlpatterns = patterns('synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
@@ -80,14 +82,22 @@ def network_demux(request, network_id):
 
 
 def network_to_dict(network, user_id, detail=True):
-    network_id = str(network.id) if not network.public else 'public'
-    d = {'id': network_id, 'name': network.name}
+    d = {'id': str(network.id), 'name': network.name}
     if detail:
+        d['cidr'] = network.subnet
+        d['cidr6'] = network.subnet6
+        d['gateway'] = network.gateway
+        d['gateway6'] = network.gateway6
+        d['dhcp'] = network.dhcp
+        d['type'] = network.type
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
-        servers = [vm.id for vm in network.machines.filter(userid=user_id)]
-        d['servers'] = {'values': servers}
+        d['public'] = network.public
+
+        attachments = [util.construct_nic_id(nic)
+                       for nic in network.nics.filter(machine__userid=user_id)]
+        d['attachments'] = {'values': attachments}
     return d
 
 
@@ -110,15 +120,15 @@ def list_networks(request, detail=False):
 
     log.debug('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
-    user_networks = Network.objects.filter(
-                                Q(userid=request.user_uniq) | Q(public=True))
+    user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
+                                           Q(public=True))
 
     if since:
         user_networks = user_networks.filter(updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
     else:
-        user_networks = user_networks.filter(state='ACTIVE')
+        user_networks = user_networks.filter(deleted=False)
 
     networks = [network_to_dict(network, request.user_uniq, detail)
                 for network in user_networks]
@@ -134,6 +144,7 @@ def list_networks(request, detail=False):
 
 
 @util.api_method('POST')
+@transaction.commit_on_success
 def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -144,29 +155,59 @@ def create_network(request):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('create_network %s', req)
+    log.info('create_network %s', req)
 
     try:
         d = req['network']
         name = d['name']
+        # TODO: Fix this temp values:
+        subnet = d.get('cidr', '192.168.1.0/24')
+        subnet6 = d.get('cidr6', None)
+        gateway = d.get('gateway', None)
+        gateway6 = d.get('gateway6', None)
+        net_type = d.get('type', 'PRIVATE_MAC_FILTERED')
+        dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    count = Network.objects.filter(userid=request.user_uniq,
-                                          state='ACTIVE').count()
+    if net_type == 'PUBLIC_ROUTED':
+        raise Unauthorized('Can not create a public network.')
 
-    # get user limit
-    networks_limit_for_user = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_NETWORKS_PER_USER)
+    user_networks = len(Network.objects.filter(userid=request.user_uniq,
+                                               deleted=False))
+    if user_networks == settings.MAX_NETWORKS_PER_USER:
+        raise OverLimit('Network count limit exceeded for your account.')
 
-    if count >= networks_limit_for_user:
-        raise faults.OverLimit("Network count limit exceeded for your account.")
+    cidr_block = int(subnet.split('/')[1])
+    if not util.validate_network_size(cidr_block):
+        raise OverLimit("Unsupported network size.")
 
     try:
-        network = backend.create_network(name, request.user_uniq)
-    except NetworkLink.NotAvailable:
-        raise faults.OverLimit('No networks available.')
+        link, mac_prefix = util.net_resources(net_type)
+        if not link:
+            raise Exception("Can not create network. No connectivity link.")
+
+        network = Network.objects.create(
+                name=name,
+                userid=request.user_uniq,
+                subnet=subnet,
+                subnet6=subnet6,
+                gateway=gateway,
+                gateway6=gateway6,
+                dhcp=dhcp,
+                type=net_type,
+                link=link,
+                mac_prefix=mac_prefix,
+                action='CREATE',
+                state='PENDING')
+    except EmptyPool:
+        raise OverLimit('Network count limit exceeded.')
+
+    # Create BackendNetwork entries for each Backend
+    network.create_backend_network()
+
+    # Create the network in the actual backends
+    backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
     return render_network(request, networkdict, status=202)
@@ -200,7 +241,7 @@ def update_network_name(request, network_id):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('update_network_name %s', network_id)
+    log.info('update_network_name %s', network_id)
 
     try:
         name = req['network']['name']
@@ -216,6 +257,7 @@ def update_network_name(request, network_id):
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_network(request, network_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -225,10 +267,17 @@ def delete_network(request, network_id):
     #                       unauthorized (401),
     #                       overLimit (413)
 
-    log.debug('delete_network %s', network_id)
-    net = util.get_network(network_id, request.user_uniq)
+    log.info('delete_network %s', network_id)
+    net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
+
+    if net.machines.all():  # Nics attached on network
+        raise NetworkInUse('Machines are connected to network.')
+
+    net.action = 'DESTROY'
+    net.save()
+
     backend.delete_network(net)
     return HttpResponse(status=204)
 

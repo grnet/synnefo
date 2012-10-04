@@ -33,38 +33,36 @@
 
 from time import time, mktime
 from urlparse import urlparse
-from httplib import HTTPConnection, HTTPSConnection
 from urllib import quote, unquote
 
 from django.conf import settings
 from django.utils import simplejson as json
 
+from synnefo.lib.pool.http import get_http_connection
+
 
 def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
     p = urlparse(authentication_url)
-    if p.scheme == 'http':
-        conn = HTTPConnection(p.netloc)
-    elif p.scheme == 'https':
-        conn = HTTPSConnection(p.netloc)
-    else:
-        raise Exception('Unknown URL scheme')
-    
+
     kwargs = {}
     kwargs['headers'] = {}
     kwargs['headers']['X-Auth-Token'] = token
     kwargs['headers']['Content-Length'] = 0
-    
-    conn.request('GET', p.path, **kwargs)
-    response = conn.getresponse()
-    
-    headers = response.getheaders()
-    headers = dict((unquote(h), unquote(v)) for h,v in headers)
-    length = response.getheader('content-length', None)
-    data = response.read(length)
-    status = int(response.status)
-    
+
+    conn = get_http_connection(p.netloc, p.scheme)
+    try:
+        conn.request('GET', p.path, **kwargs)
+        response = conn.getresponse()
+        headers = response.getheaders()
+        headers = dict((unquote(h), unquote(v)) for h,v in headers)
+        length = response.getheader('content-length', None)
+        data = response.read(length)
+        status = int(response.status)
+    finally:
+        conn.close()
+
     if status < 200 or status >= 300:
-        raise Exception(data, int(response.status))
+        raise Exception(data, status)
     
     return json.loads(data)
 

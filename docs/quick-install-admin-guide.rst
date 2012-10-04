@@ -529,6 +529,20 @@ domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
+Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
+
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+
+Those settings have to do with the black cloudbar endpoints and will be described
+in more detail later on in this guide. For now, just edit the domain to point at
+node1 which is where we have installed Astakos.
+
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 
@@ -876,7 +890,12 @@ node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-image-host
+   # apt-get install snf-image-host snf-pithos-backend python-psycopg2
+
+snf-image also needs the `snf-pithos-backend <snf-pithos-backend>`, to be able to
+handle image files stored on Pithos+. It also needs `python-psycopg2` to be able
+to access the Pithos+ database. This is why, we also install them on *all*
+VM-capable Ganeti nodes.
 
 Now, you need to download and save the corresponding helper package. Please see
 `here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
@@ -1380,8 +1399,6 @@ This will install the following:
  * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
  * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
  * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
- * ``kvm-vif-bridge`` (installed under ``/etc/ganeti`` to connect Ganeti with
-   NFDHCPD)
 
 Configure ``snf-cyclades-gtools``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1392,9 +1409,7 @@ that need it:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above variables should reflect your :ref:`Message Queue setup
 <rabbitmq-setup>`. This file should be editted in all Ganeti nodes.
@@ -1479,36 +1494,13 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   GANETI_MAX_LINK_NUMBER = 20
    ASTAKOS_URL = 'https://node1.example.com/im/authenticate'
-
-The ``GANETI_MAX_LINK_NUMBER`` is used to construct the names of the bridges
-already pre-provisioned for the Private Networks. Thus we set it to ``20``, to
-reflect our :ref:`Private Networks setup in the host machines
-<private-networks-setup>`. These numbers will suffix the
-``GANETI_LINK_PREFIX``, which is already set to ``prv`` and doesn't need to be
-changed. With those two variables Cyclades will construct the names of the
-available bridges ``prv1`` to ``prv20``, which are the real pre-provisioned
-bridges in the backend.
 
 The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
 to point to Astakos (this should have the same value with Pithos+'s
 ``PITHOS_AUTHENTICATION_URL``, setup :ref:`previously <conf-pithos>`).
 
-Edit ``/etc/synnefo/20-snf-cyclades-app-backend.conf``:
-
-.. code-block:: console
-
-   GANETI_MASTER_IP = "ganeti.node1.example.com"
-   GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "cyclades", "example_rapi_passw0rd")
-
-``GANETI_MASTER_IP`` denotes the Ganeti-master's floating IP. We provide the
-corresponding domain that resolves to that IP, than the IP itself, to ensure
-Cyclades can talk to Ganeti even after a Ganeti master-failover.
-
-``GANETI_CLUSTER_INFO`` is a tuple containing the ``GANETI_MASTER_IP``, the RAPI
-port, the RAPI user's username and the RAPI user's password. We set the above to
-reflect our :ref:`RAPI User setup <rapi-user>`.
+TODO: Document the Network Options here
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
@@ -1554,9 +1546,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above settings denote the Message Queue. Those settings should have the same
 values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and
@@ -1566,17 +1556,20 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
 
 .. code-block:: console
 
-   UI_MEDIA_URL = '/static/ui/static/snf/'
    UI_LOGIN_URL = "https://node1.example.com/im/login"
    UI_LOGOUT_URL = "https://node1.example.com/im/logout"
-
-``UI_MEDIA_URL`` denotes the location of the UI's static files.
 
 The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
 if they are not logged in. We point that to Astakos.
 
 The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
 user when he/she logs out. We point that to Astakos, too.
+
+Edit ``/etc/default/vncauthproxy``:
+
+.. code-block:: console
+
+   CHUID="www-data:nogroup"
 
 We have now finished with the basic Cyclades and Plankton configuration.
 
@@ -1598,10 +1591,92 @@ and load the initial server flavors:
 
 If everything returns successfully, our database is ready.
 
+Add the Ganeti backend
+----------------------
+
+In our installation we assume that we only have one Ganeti cluster. Cyclades can
+manage multiple Ganeti backends, but for the purpose of this guide, we won't get
+into more detail regarding mulitple backends.
+
+By default, when you install Cyclades, it sets up a dummy first backend. You can
+see it by running:
+
+.. code-block:: console
+
+   $ snf-manage backend-list
+
+We modify this backend to reflect our already setup Ganeti cluster:
+
+.. code-block:: console
+
+   $ snf-manage backend-modify --clustername "ganeti.node1.example.com"
+                               --username=cyclades
+                               --password=example_rapi_passw0rd
+                               1
+
+``clustername`` denotes the Ganeti-cluster's name. We provide the corresponding
+domain that resolves to the master IP, than the IP itself, to ensure Cyclades
+can talk to Ganeti even after a Ganeti master-failover.
+
+``username`` and ``password`` denote the RAPI user's username and the RAPI
+user's password. We set the above to reflect our :ref:`RAPI User setup
+<rapi-user>`. The port is already set to the default RAPI port; you need to
+change it, only if you have changed it in your Ganeti cluster setup.
+
+Once we setup the first backend to point at our Ganeti cluster, we update the
+Cyclades backends status by running:
+
+.. code-block:: console
+
+   $ snf-manage backend-update-status
+
+Add the Public Network
+----------------------
+
+After connecting Cyclades with our Ganeti cluster, we need to setup the Public
+Network:
+
+.. code-block:: console
+
+   $ snf-manage network-create --subnet=5.6.7.0/27
+                               --gateway=5.6.7.1
+                               --subnet6=2001:648:2FFC:1322::/64
+                               --gateway6=2001:648:2FFC:1322::1
+                               --public --dhcp --type=PUBLIC_ROUTED
+                               --name=public_network
+
+This will create the Public Network on both Cyclades and the Ganeti backend. To
+make sure everything was setup correctly, also run:
+
+.. code-block:: console
+
+   $ snf-manage reconcile-networks
+   $ snf-manage reconcile-pools
+
+You can see all available networks by running:
+
+.. code-block:: console
+
+   $ snf-manage listnetworks
+
+and inspect each network's state by running:
+
+.. code-block:: console
+
+   $ snf-manage network-inspect <net_id>
+
+Finally, you can see the networks from the Ganeti perspective by running on the
+Ganeti MASTER:
+
+.. code-block:: console
+
+   $ gnt-network list
+   $ gnt-network info <network_name>
+
 Servers restart
 ---------------
 
-We also need to restart gunicorn on node1:
+Restart gunicorn on node1:
 
 .. code-block:: console
 

@@ -3,16 +3,16 @@
 # Logging configuration
 ##################################
 
-LOGGING = {
+LOGGING_SETUP = {
     'version': 1,
     'disable_existing_loggers': True,
 
     'formatters': {
         'simple': {
-            'format': '%(message)s'
+            'format': '%(asctime)s [%(levelname)s] %(message)s'
         },
         'verbose': {
-            'format': '%(asctime)s [%(levelname)s] %(message)s'
+            'format': '%(asctime)s %(name)s %(module)s [%(levelname)s] %(message)s'
         },
         'django': {
             'format': '[%(asctime)s] %(levelname)s %(message)s',
@@ -26,7 +26,7 @@ LOGGING = {
         },
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'django'
+            'formatter': 'simple'
         },
         'syslog': {
             'class': 'logging.handlers.SysLogHandler',
@@ -39,9 +39,14 @@ LOGGING = {
     },
 
     'loggers': {
-        'synnefo': {
-            'handlers': ['syslog'],
+        '': {
+            'handlers': ['console'],
             'level': 'INFO'
+        },
+        'synnefo': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': 0
         },
         'synnefo.admin': {
             'level': 'INFO',
@@ -61,4 +66,3 @@ LOGGING = {
         },
     }
 }
-

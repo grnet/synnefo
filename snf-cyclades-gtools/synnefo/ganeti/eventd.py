@@ -54,14 +54,17 @@ import daemon.pidlockfile
 import daemon.runner
 from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
+import setproctitle
 
 from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
+from ganeti.cli import GetClient
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
+
 
 def get_time_from_status(op, job):
     """Generate a unique message identifier for a ganeti job.
@@ -73,22 +76,23 @@ def get_time_from_status(op, job):
     """
     status = op.status
     if status == constants.JOB_STATUS_QUEUED:
-        return job.received_timestamp
-    try: # Compatibility with Ganeti version
+        time = job.received_timestamp
+    try:  # Compatibility with Ganeti version
         if status == constants.JOB_STATUS_WAITLOCK:
-            return op.start_timestamp
+            time = op.start_timestamp
     except AttributeError:
         if status == constants.JOB_STATUS_WAITING:
-            return op.start_timestamp
+            time = op.start_timestamp
     if status == constants.JOB_STATUS_CANCELING:
-        return op.start_timestamp
+        time = op.start_timestamp
     if status == constants.JOB_STATUS_RUNNING:
-        return op.exec_timestamp
+        time = op.exec_timestamp
     if status in constants.JOBS_FINALIZED:
-        # success, canceled, error
-        return op.end_timestamp
+        time = op.end_timestamp
 
-    raise InvalidBackendState(status, job)
+    return time and time or job.end_timestamp
+
+    raise InvalidBackendStatus(status, job)
 
 
 class InvalidBackendStatus(Exception):
@@ -99,6 +103,7 @@ class InvalidBackendStatus(Exception):
     def __str__(self):
         return repr("Invalid backend status: %s in job %s"
                     % (self.status, self.job))
+
 
 def prefix_from_name(name):
     return name.split('-')[0]
@@ -112,14 +117,18 @@ def get_field(from_, field):
 
 
 class JobFileHandler(pyinotify.ProcessEvent):
-    def __init__(self, logger):
+    def __init__(self, logger, cluster_name):
         pyinotify.ProcessEvent.__init__(self)
         self.logger = logger
-        self.client = AMQPClient(confirm_buffer=25)
+        self.cluster_name = cluster_name
+
+        self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25)
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
+
         self.client.connect()
-        self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
         handler_logger.info("Connected succesfully")
+
+        self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
                             "NETWORK": self.process_network_op}
@@ -140,7 +149,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        try: # Compatibility with Ganeti version
+        try:  # Compatibility with Ganeti version
             job = jqueue._QueuedJob.Restore(None, data, False)
         except TypeError:
             job = jqueue._QueuedJob.Restore(None, data)
@@ -174,6 +183,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             msg.update({"event_time": event_time,
                         "operation": op_id,
                         "status": op.status,
+                        "cluster": self.cluster_name,
                         "logmsg": logmsg,
                         "jobId": job_id})
 
@@ -253,7 +263,16 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
 
 
+def find_cluster_name():
+    global handler_logger
+    try:
+        cl = GetClient()
+        name = cl.QueryClusterInfo()['name']
+    except Exception as e:
+        handler_logger.error('Can not get the name of the Cluster: %s' % e)
+        raise e
 
+    return name
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):
@@ -300,6 +319,12 @@ def main():
     logger.addHandler(handler)
     handler_logger = logger
 
+    # Rename this process so 'ps' output looks like this is a native
+    # executable.  Can not seperate command-line arguments from actual name of
+    # the executable by NUL bytes, so only show the name of the executable
+    # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
+    setproctitle.setproctitle(sys.argv[0])
+
     # Create pidfile
     pidf = daemon.pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
 
@@ -335,7 +360,10 @@ def main():
     wm = pyinotify.WatchManager()
     mask = pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] | \
            pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
-    handler = JobFileHandler(logger)
+
+    cluster_name = find_cluster_name()
+
+    handler = JobFileHandler(logger, cluster_name)
     notifier = pyinotify.Notifier(wm, handler)
 
     try:
@@ -344,7 +372,8 @@ def main():
         if res[constants.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s" % constants.QUEUE_DIR)
+        logger.info("Now watching %s of %s" % (constants.QUEUE_DIR,
+                cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

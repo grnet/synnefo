@@ -66,14 +66,16 @@ if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
                  {'document_root': static_root,
                   'show_indexes': getattr(settings,
                       'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+
         else:
             # app contains static files in <appname>/static/<appname>
             for fpath in os.listdir(static_root):
                 urlns = ns + fpath
-                urlpatterns += patterns('', url(r'^%s%s/(?P<path>.*)$' % \
-                     (settings.MEDIA_URL.lstrip("/"), urlns),
+                url_r = r'^%s%s/(?P<path>.*)$' % (settings.MEDIA_URL.lstrip("/"), urlns)
+                static_root = os.path.join(static_root, urlns)
+                urlpatterns += patterns('',  url(url_r,
                      'django.views.static.serve',
-                     {'document_root': os.path.join(static_root, urlns),
+                     {'document_root': static_root,
                       'show_indexes': getattr(settings,
                           'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
 

@@ -1,0 +1,47 @@
+README
+=======
+
+snf-burnin is an integration testing tool for a running Synnefo deployment. 
+It runs test scenarios from the following categories:
+
+- Authentication
+- Images
+- Flavors
+- Servers
+- Networking
+
+======
+Usage
+======
+
+Example:
+--------
+snf-burnin --api=API_URL --token=TOKEN --image-id=IMAGE-ID --log-folder=LOG_FOLDER
+
+
+For more options:
+------------------
+snf-burnin --help
+
+==========
+Log files
+==========
+
+In each run, snf-burnin stores log files in the folder defined in the --log-folder parameter (default is /var/log/burnin) under the folder with the timestamp of the snf-burnin-run and the image used for it. The name prefixes of the log files are:
+
+- details: Showing the complete log of snf-burnin run.
+- error: Showing the testcases that encountered a runtime error.
+- failed: Showing the testcases that encountered a failure.
+
+
+Example scripts
+-----------------
+Under /snf-tools/conf/ you can find example scripts for automating snf-burnin testing using cron.
+
+- **snf-burnin-run.sh** runs snf-burnin with the given parameters, deletes stale instances (servers, networks) from old runs and delete logs older than a week. It aborts if snf-burnin runs for longer than expected. 
+  
+  - **Usage**: ./snf-burnin-run.sh TOKEN IMAGE-ID LOG_FOLDER
+
+- **snf-burnin-output.sh** checks for failed snf-burnin tests the last 30 minutes in a given log folder. Exit status is 0 if no failures where encountered, else exit status is 1.
+  
+  - **Usage**: ./snf-burnin-output.sh LOG_FOLDER

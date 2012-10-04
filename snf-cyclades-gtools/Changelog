@@ -1,7 +1,13 @@
 Changelog
 ---------
 
-dev
-***
+v0.11.0
+*******
+  * Remove setting PUBLIC_IPV6_PREFIX(obsolete)
+
+v0.10.0
+*******
+
+* Improve eventd stale pid lockfile handling
 * Setting for RabbitMQ endpoints (``AMQP_HOSTS``)
 * Event timestamp in messages

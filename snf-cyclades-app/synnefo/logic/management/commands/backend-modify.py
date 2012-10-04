@@ -32,62 +32,66 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.api.util import get_image
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import Backend
 
 
 class Command(BaseCommand):
-    help = "List servers"
-    
+    args = "<backend ID>"
+    help = "Modify a backend"
+
     option_list = BaseCommand.option_list + (
-        make_option('-c',
+        make_option('--clustername',
+            dest='clustername',
+            help="Set backend's clustername"),
+        make_option('--port',
+            dest='port',
+            help="Set backend's port"),
+        make_option('--username',
+            dest='username',
+            help="Set backend'username"),
+        make_option('--password',
+            dest='password',
+            help="Set backend's password"),
+        make_option('--drained',
+            dest='drained',
             action='store_true',
-            dest='csv',
             default=False,
-            help="Use pipes to separate values"),
-        make_option('--build',
+            help="Set the backend as drained to exclude from allocation "\
+                 "operations"),
+        make_option('--no-drained',
+            dest='drained',
+            action='store_false'),
+        make_option('--offline',
+            dest='offline',
             action='store_true',
-            dest='build',
             default=False,
-            help="List only servers in the building state"),
+            help="Set the backend as offline to not communicate in order "\
+                 "to avoid delays"),
+        make_option('--no-offline',
+            dest='offline',
+            action='store_false')
         )
-    
+
     def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-        
-        servers = VirtualMachine.objects.all()
-        if options['build']:
-            servers = servers.filter(operstate='BUILD')
-        
-        labels = ('id', 'name', 'owner', 'flavor', 'image', 'state')
-        columns = (3, 12, 20, 11, 12, 9)
-        
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-        
-        for server in servers:
-            id = str(server.id)
-            try:
-                name = server.name.decode('utf8')
-            except UnicodeEncodeError:
-                name = server.name
-            flavor = server.flavor.name
-            try:
-                image = get_image(server.imageid, server.userid)['name']
-            except:
-                image = server.imageid
-            fields = (id, name, server.userid, flavor, image, server.operstate)
-            
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
-            self.stdout.write(line.encode('utf8') + '\n')
+        if len(args) != 1:
+            raise CommandError("Please provide a backend ID")
+
+        try:
+            backend_id = int(args[0])
+            backend = Backend.objects.get(id=backend_id)
+        except ValueError:
+            raise CommandError("Invalid backend ID")
+        except Backend.DoesNotExist:
+            raise CommandError("Backend not found in DB")
+
+        # Ensure fields correspondence with options and Backend model
+        fields = ('clustername', 'port', 'username', 'password', 'drained',
+                  'offline')
+        for field in fields:
+            value = options.get(field)
+            if value is not None:
+                backend.__setattr__(field, value)
+
+        backend.save()

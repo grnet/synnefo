@@ -1658,8 +1658,8 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              None, None)
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
-                    gateway6=None, mac_prefix=None, network_type="private",
-                    reserved_ips=None, dry_run=False):
+                    gateway6=None, mac_prefix=None, network_type=None,
+                    tags=None, dry_run=False):
     """Creates a new network.
 
     @type name: str
@@ -1674,6 +1674,9 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
 
+    if tags:
+      tags = tags.split(',')
+
     body = {
       "network_name": network_name,
       "gateway": gateway,
@@ -1682,7 +1685,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "network6": network6,
       "mac_prefix": mac_prefix,
       "network_type": network_type,
-      "reserved_ips": reserved_ips
+      "tags": tags
       }
 
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
@@ -1725,37 +1728,6 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              ("/%s/networks/%s/disconnect" %
                              (GANETI_RAPI_VERSION, network_name)), None, body)
 
-  def ConnectNetworkAll(self, network_name, mode, link, depends=None):
-    """Connects a Network to a NodeGroup with the given netparams
-
-    """
-    body = {
-      "network_mode": mode,
-      "network_link": link
-      }
-
-    if depends:
-      body['depends'] = []
-      for d in depends:
-        body['depends'].append([d, ["success"]])
-
-    return self._SendRequest(HTTP_PUT,
-                             ("/%s/networks/%s/connectall" %
-                             (GANETI_RAPI_VERSION, network_name)), None, body)
-
-  def DisconnectNetworkAll(self, network_name, depends=None):
-    """Connects a Network to a NodeGroup with the given netparams
-
-    """
-    body = {}
-    if depends:
-      body['depends'] = []
-      for d in depends:
-        body['depends'].append([d, ["success"]])
-
-    return self._SendRequest(HTTP_PUT,
-                             ("/%s/networks/%s/disconnectall" %
-                             (GANETI_RAPI_VERSION, network_name)), None, body)
 
   def DeleteNetwork(self, network, depends=None):
     """Deletes a network.

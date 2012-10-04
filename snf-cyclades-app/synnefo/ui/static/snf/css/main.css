@@ -21,6 +21,7 @@ body {
     text-align:center;
     font-size: 16px;
     background-position: 0px 35px; 
+    overflow-y: scroll;
 }
 
 a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
@@ -598,9 +599,51 @@ div#footer-text{
     width: 140px;
 }
 
-.overlay-networks-create .form-actions {
-    float: right;
-    margin-top: -26px !important;
+.overlay-networks-create .form-action {
+  float: left;
+}
+
+.overlay-networks-create .fixpos {
+  margin-top: 3px;
+}
+
+.overlay-networks-create .col-fields.bordered {
+  border-bottom: 1px solid #CCC;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.overlay-networks-create .col-fields {
+  margin-bottom: 10px;
+}
+
+form .fields-desc {
+  font-size: 0.8em !important; 
+  margin: 5px 0;
+  padding-bottom: 0 !important;
+}
+
+.overlay-networks-create form select {
+  padding: 1px;
+}
+
+.overlay-networks-create #network-create-subnet-custom {
+  width: 125px;
+}
+
+.overlay-networks-create .col-fields .form-field {
+  float: left;
+  margin-right: 20px;
+}
+
+.overlay-networks-create .col-fields .right-field {
+  float: right;
+  width: 210px;
+  margin-right: 0px;
+}
+
+.overlay-networks-create .use-dhcp {
+  width: auto;
 }
 
 #wizard #start:hover, #networks-wizard .create:hover {
@@ -1095,7 +1138,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .error-state .indicator1, .error-state .indicator2, .error-state .indicator3, .error-state .indicator4 {
-    background-color: #ff0000;
+    background-color: #ff0000 !important;
 }
 
 .terminated-state .indicator1, .terminated-state .indicator2, .terminated-state .indicator3, .terminated-state .indicator4 {
@@ -2191,7 +2234,7 @@ div#user .langmenu .sep {
 }
 
 .network-machine h5 {
-    margin-bottom: 26px;
+    margin-bottom: 20px;
     margin-top:0px;
 }
 
@@ -2552,6 +2595,18 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     display:none;
 }
 
+div.network-cont.disable-destroy .actions .destroy {
+    display: none !important;
+}
+
+div.network-cont.pending .actions .action-add {
+    display: none;
+}
+
+div.network-cont.in-error .actions .action-add {
+    display: none;
+}
+
 div.network a.action-network-add {
     display: none;
 }
@@ -2752,6 +2807,10 @@ div.network .net-vm-actions .confirm_single {
     position: absolute !important;
     top: 7px;
     right:0;
+}
+
+div.network .nic-ip {
+  font-size: 0.8em;
 }
 
 div.network div.display a {
@@ -3030,6 +3089,7 @@ div.network-add-machine {
 h5.machine-connect {
     font-size: 75%;
     margin-bottom: 3px;
+    height: 23px;
 }
 
 .machine-connect span {
@@ -3695,6 +3755,7 @@ div.single div.column3 div.server-name:hover {
     background: transparent;
     margin-bottom: 10px;
     overflow: visible;
+    overflow: hidden;
     width: 700px;
     background: #EFF7FA repeat scroll 0 0;
 }

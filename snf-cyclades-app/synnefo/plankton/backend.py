@@ -58,7 +58,6 @@ from time import gmtime, strftime, time
 
 from django.conf import settings
 
-from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError
 
 
@@ -75,6 +74,7 @@ def get_location(account, container, object):
     assert '/' not in container, "Invalid container"
     return 'pithos://%s/%s/%s' % (account, container, object)
 
+
 def split_location(location):
     """Returns (accout, container, object) from a location string"""
     t = location.split('/', 4)
@@ -86,20 +86,29 @@ class BackendException(Exception):
     pass
 
 
+from pithos.backends.util import PithosBackendPool
+POOL_SIZE = 8
+_pithos_backend_pool = \
+        PithosBackendPool(POOL_SIZE,
+                         db_connection=settings.BACKEND_DB_CONNECTION,
+                         block_path=settings.BACKEND_BLOCK_PATH)
+
+
+def get_pithos_backend():
+    return _pithos_backend_pool.pool_get()
+
+
 class ImageBackend(object):
     """A wrapper arround the pithos backend to simplify image handling."""
     
     def __init__(self, user):
         self.user = user
-        
+
         original_filters = warnings.filters
         warnings.simplefilter('ignore')         # Suppress SQLAlchemy warnings
-        db_connection = settings.BACKEND_DB_CONNECTION
-        block_path = settings.BACKEND_BLOCK_PATH
-        self.backend = connect_backend(db_connection=db_connection,
-                                       block_path=block_path)
+        self.backend = get_pithos_backend()
         warnings.filters = original_filters     # Restore warnings
-    
+
     def _get_image(self, location):
         def format_timestamp(t):
             return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))

@@ -53,10 +53,10 @@ class Command(BaseCommand):
             dest='build',
             default=False,
             help="List only servers in the building state"),
-        make_option('--non-deleted', action='store_true', dest='non_deleted',
+        make_option('--deleted', action='store_true', dest='deleted',
                     default=False,
-                    help="List only non-deleted servers"),
-        make_option('--backend_id', dest='backend_id',
+                    help="List deleted servers"),
+        make_option('--backend-id', dest='backend_id',
                     help="List only servers of the specified backend")
         )
 
@@ -70,10 +70,10 @@ class Command(BaseCommand):
         else:
             servers = VirtualMachine.objects
 
-        if options['non_deleted']:
-            servers = servers.filter(deleted=False)
-        else:
+        if options['deleted']:
             servers = servers.all()
+        else:
+            servers = servers.filter(deleted=False)
 
         if options['build']:
             servers = servers.filter(operstate='BUILD')

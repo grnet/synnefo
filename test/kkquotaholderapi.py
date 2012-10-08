@@ -1,16 +1,12 @@
-#!/usr/bin/python
-from commissioning.clients.http import main, HTTP_API_Client
-from commissioning import QuotaholderAPI
-import unittest
 
-QH_URL = "http://localhost:8008/api/quotaholder/v"
+# We import our own unittest :)
+from kkconfig import unittest
+from kkconfig import new_quota_holder_client
 
-class QuotaholderHTTP(HTTP_API_Client):
-    api_spec = QuotaholderAPI()
 
-class QuotaHolderAPITest(unittest.TestCase):
+class KKQuotaHolderAPITest(unittest.TestCase):
     def setUp(self):
-        self.qh = QuotaholderHTTP(QH_URL)
+        self.qh = new_quota_holder_client()
 
     def tearDown(self):
         del self.qh
@@ -68,7 +64,6 @@ class QuotaHolderAPITest(unittest.TestCase):
 
     def test_018_get_timeline(self):
         pass
-
 
 
 if __name__ == "__main__":

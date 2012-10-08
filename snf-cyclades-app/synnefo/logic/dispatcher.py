@@ -215,7 +215,7 @@ def purge_queues():
         Delete declared queues from RabbitMQ. Use with care!
     """
     global QUEUES, BINDINGS
-    client = AMQPClient()
+    client = AMQPClient(max_retries=120)
     client.connect()
 
     print "Queues to be deleted: ", QUEUES

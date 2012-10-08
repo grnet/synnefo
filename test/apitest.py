@@ -10,8 +10,13 @@ class QuotaholderHTTP(HTTP_API_Client):
 
 class Config():
     def __init__(self):
-        self.config = ConfigParser.RawConfigParser()
-        self.cp.read_file("test.cfg")
+        config = ConfigParser.RawConfigParser()
+        read_ok = config.read("apitest.cfg")
+        if not read_ok:
+            pass # raise something?
+        self.qh_url = config.get('global', 'QH_URL')
+        self.qh = QuotaholderHTTP(self.qh_url)
+
 
     def module_config(mod):
         '''Loads the config residing next to the module.'''
@@ -23,14 +28,17 @@ class Config():
 
 class SimpleAPICall(unittest.TestCase):
     def setUp(self):
-        print 'In setUp()'
-        self.fixture = range(1, 10)
-        QH_URL='http://localhost:8008/api/quotaholder/v'
-        self.conf = module_config(__name__ + ".cfg")
-        self.qh = QuotaholderHTTP(QH_URL)
+#        print 'In setUp()'
+#        self.fixture = range(1, 10)
+#        QH_URL='http://localhost:8008/api/quotaholder/v'
+#        self.conf = module_config(__name__ + ".cfg")
+#        self.qh = QuotaholderHTTP(QH_URL)
+        config = Config()
+        self.qh = config.qh
+        print self.qh
 
     def tearDown(self):
-        print 'In tearDown()'
+#        print 'In tearDown()'
         del self.qh
 
     def testCreate(self):

@@ -384,5 +384,5 @@ class AMQPPukaClient(object):
                 self.client.basic_cancel(promise)
 
 
-class AMQPConnectionError():
+class AMQPConnectionError(Exception):
     pass

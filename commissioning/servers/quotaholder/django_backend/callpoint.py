@@ -130,12 +130,20 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         for (   policy, quantity, capacity,
                 import_limit, export_limit  ) in set_limits:
 
-                #XXX: create or replace?
-                Policy.objects.create(  policy=policy,
-                                        quantity=quantity,
-                                        capacity=capacity,
-                                        import_limit=import_limit,
-                                        export_limit=export_limit   )
+                try:
+                    policy = Policy.objects.get(policy=policy)
+                except Policy.DoesNotExist:
+                    Policy.objects.create(  policy=policy,
+                                            quantity=quantity,
+                                            capacity=capacity,
+                                            import_limit=import_limit,
+                                            export_limit=export_limit   )
+                else:
+                    policy.quantity = quantity
+                    policy.capacity = capacity
+                    policy.export_limit = export_limit
+                    policy.import_limit = import_limit
+                    policy.save()
 
         return ()
 
@@ -192,7 +200,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
     def list_resources(self, context={}, entity=None, key=None):
         try:
-            e = Entity.objects.get()
+            e = Entity.objects.get(entity=entity)
         except Entity.DoesNotExist:
             m = "No such entity '%s'" % (entity,)
             raise NoEntityError(m)

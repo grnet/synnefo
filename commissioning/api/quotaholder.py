@@ -87,23 +87,22 @@ class QuotaholderAPI(Specificator):
     def get_limits  (
                 self,
                 context     =   Context,
-                get_limits  =   ListOf(Entity, Resource, Key, nonempty=1)
+                get_limits  =   ListOf(Policy, nonempty=1)
         ):
 
-        limits = ListOf(Entity, Resource, Quantity, Capacity,
-                        ImportLimit, ExportLimit, Flags)
+        limits = ListOf(Policy, Quantity, Capacity,
+                        ImportLimit, ExportLimit)
         return limits
 
     def set_limits  (
                 self,
                 context     =   Context,
-                set_limits  =   ListOf( Entity, Resource, Key,
-                                        Quantity, Capacity,
-                                        ImportLimit, ExportLimit, Flags,
+                set_limits  =   ListOf( Policy, Quantity, Capacity,
+                                        ImportLimit, ExportLimit,
                                         nonempty=1 )
         ):
 
-        rejected = ListOf(Entity, Resource)
+        rejected = ListOf(Policy)
         return rejected
 
     def get_holding (

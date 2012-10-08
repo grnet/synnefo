@@ -66,16 +66,14 @@ for e in qh.list_entities(context={},entity="system",key=""):
 for e in qh.get_entity(context={},get_entity=[("pgerakios","key1")]):
     print "Eeee "  + e[0]
 
-#BUG
-#for e in qh.list_resources(context={},entity="pgerakios",key="key1"):
-#    print "Entity " + e
+for e in qh.list_resources(context={},entity="pgerakios",key="key1"):
+    print "Entity " + e
 
 for e,r in qh.set_quota(context={},set_limits=[("pgerakios","resource1","key1",1,100,10,10,0)]):
     print "set_quota: rejected Entity " + e +  " resource " + r
 
-#BUG
-#for e,r in qh.set_limits(context={},set_limits=[("pgerakios","resource1","key1",1,100,10,10,0)]):
-#    print "Entity " + e +  " resource " + r
+for p in qh.set_limits(context={},set_limits=[("pgerakios_resource1",1,100,10,10)]):
+    print "Policy " + p
 
 #set_holding =   ListOf(Entity, Resource, Key, Policy, Flags)
 

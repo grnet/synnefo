@@ -27,12 +27,16 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
+import logging
 import datetime
 from django.utils import importlib
 
 from synnefo import settings
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
+from synnefo.api.util import backend_public_networks
+
+log = logging.getLogger(__name__)
 
 
 class BackendAllocator():
@@ -44,26 +48,36 @@ class BackendAllocator():
             importlib.import_module(settings.BACKEND_ALLOCATOR_MODULE)
 
     def allocate(self, flavor):
+        """Allocate a vm of the specified flavor to a backend.
+
+        Warning!!: An explicit commit is required after calling this function,
+        in order to release the locks acquired by the get_available_backends
+        function.
+
+        """
         # Get the size of the vm
         disk = flavor_disk(flavor)
         ram = flavor.ram
         cpu = flavor.cpu
         vm = {'ram': ram, 'disk': disk, 'cpu': cpu}
 
-        # Refresh backends, if needed
-        refresh_backends_stats()
+        log.debug("Allocating VM: %r", vm)
 
         # Get available backends
         available_backends = get_available_backends()
+
+        # Refresh backends, if needed
+        refresh_backends_stats(available_backends)
 
         if not available_backends:
             return None
 
         # Find the best backend to host the vm, based on the allocation
         # strategy
-        backend_id = self.strategy_mod.allocate(available_backends, vm)
+        backend = self.strategy_mod.allocate(available_backends, vm)
 
-        backend = Backend.objects.get(id=backend_id)
+        log.info("Allocated VM %r, in backend %s", vm, backend)
+
         # Reduce the free resources of the selected backend by the size of
         # the vm
         reduce_backend_resources(backend, vm)
@@ -75,14 +89,17 @@ def get_available_backends():
     """Get available backends from db.
 
     """
-    attrs = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
-    backends = {}
-    for b in Backend.objects.filter(drained=False, offline=False):
-        backend = {}
-        for a in attrs:
-            backend[a] = getattr(b, a)
-        backends[b.id] = backend
-    return backends
+    backends = list(Backend.objects.select_for_update().filter(drained=False,
+                                                               offline=False))
+    return filter(lambda x: has_free_ip(x), backends)
+
+
+def has_free_ip(backend):
+    """Find if Backend has any free public IP."""
+    for network in backend_public_networks(backend):
+        if not network.get_pool().empty():
+            return True
+    return False
 
 
 def flavor_disk(flavor):
@@ -112,7 +129,7 @@ def reduce_backend_resources(backend, vm):
     backend.save()
 
 
-def refresh_backends_stats():
+def refresh_backends_stats(backends):
     """ Refresh the statistics of the backends.
 
     Set db backend state to the actual state of the backend, if
@@ -122,6 +139,8 @@ def refresh_backends_stats():
 
     now = datetime.datetime.now()
     delta = datetime.timedelta(minutes=settings.BACKEND_REFRESH_MIN)
-    for b in Backend.objects.filter(drained=False, offline=False):
+    for b in backends:
         if now > b.updated + delta:
+            log.debug("Updating resources of backend %r. Last Updated %r",
+                      b, b.updated)
             update_resources(b)

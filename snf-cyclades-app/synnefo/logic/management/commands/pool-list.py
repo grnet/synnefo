@@ -31,50 +31,52 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.core.management.base import BaseCommand
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Backend
+from util import pool_table_from_type
 
+POOL_CHOICES = ['bridge', 'mac-prefix']
 
 class Command(BaseCommand):
-    help = "List backends"
-
+    help = "List available pools"
+    output_transaction = True
     option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+        make_option('--type', dest='type',
+                    choices=POOL_CHOICES,
+                    help="Type of pool"
+                    ),
+    )
 
     def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+        type_ = options['type']
 
-        backends = Backend.objects.order_by('id')
+        if type_:
+            pool_tables = [pool_table_from_type(type_)]
+        else:
+            pool_tables = [pool_table_from_type(x) for x in POOL_CHOICES]
 
-        labels = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                  'offline')
-        columns = (3, 50, 5, 10, 4, 6, 6)
+        for pool_table in pool_tables:
+            self.stdout.write("-" * 80 + '\n')
+            pl = pool_table.__name__.replace("Table", "")
+            self.stdout.write(pl + '\n')
+            self.stdout.write("-" * 80 + '\n')
+            keys = ["id", "size", "base", "offset", "available", "reserved"]
+            for key in keys:
+                self.stdout.write(("%s" % key).rjust(12))
+            self.stdout.write("\n")
+            for pool_table_row in pool_table.objects.all():
+                pool = pool_table_row.pool
 
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-            self.stdout.write(line + '\n')
-            self.stdout.write(sep + '\n')
+                kv = {
+                    'id': pool_table_row.id,
+                    'offset': pool_table_row.offset,
+                    'base': pool_table_row.base,
+                    'size': pool_table_row.size,
+                    'available': pool.count_available(),
+                    'reserved': pool.count_reserved(),
+                }
 
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+                for key in keys:
+                    self.stdout.write(("%s" % kv[key]).rjust(12))
+                self.stdout.write("\n")

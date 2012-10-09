@@ -518,7 +518,7 @@
         },
 
         is_public: function() {
-            return this.id === "public";
+            return this.get("public");
         },
 
         decrease_connecting: function() {
@@ -1237,7 +1237,7 @@
         },
 
         get_public_nic: function() {
-            return this.get_nics(function(n){ return n.get_network().is_public() })[0];
+            return this.get_nics(function(n){ return n.get_network().is_public() === true })[0];
         },
 
         get_nic: function(net_id) {

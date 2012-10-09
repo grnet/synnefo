@@ -54,6 +54,7 @@ import daemon.pidlockfile
 import daemon.runner
 from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
+import setproctitle
 
 from ganeti import utils
 from ganeti import jqueue
@@ -75,20 +76,21 @@ def get_time_from_status(op, job):
     """
     status = op.status
     if status == constants.JOB_STATUS_QUEUED:
-        return job.received_timestamp
+        time = job.received_timestamp
     try:  # Compatibility with Ganeti version
         if status == constants.JOB_STATUS_WAITLOCK:
-            return op.start_timestamp
+            time = op.start_timestamp
     except AttributeError:
         if status == constants.JOB_STATUS_WAITING:
-            return op.start_timestamp
+            time = op.start_timestamp
     if status == constants.JOB_STATUS_CANCELING:
-        return op.start_timestamp
+        time = op.start_timestamp
     if status == constants.JOB_STATUS_RUNNING:
-        return op.exec_timestamp
+        time = op.exec_timestamp
     if status in constants.JOBS_FINALIZED:
-        # success, canceled, error
-        return op.end_timestamp
+        time = op.end_timestamp
+
+    return time and time or job.end_timestamp
 
     raise InvalidBackendStatus(status, job)
 
@@ -120,7 +122,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger = logger
         self.cluster_name = cluster_name
 
-        self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25)
+        # Set max_retries to 0 for unlimited retries.
+        self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25,
+                                 max_retries=0)
+
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
 
         self.client.connect()
@@ -316,6 +321,12 @@ def main():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     handler_logger = logger
+
+    # Rename this process so 'ps' output looks like this is a native
+    # executable.  Can not seperate command-line arguments from actual name of
+    # the executable by NUL bytes, so only show the name of the executable
+    # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
+    setproctitle.setproctitle(sys.argv[0])
 
     # Create pidfile
     pidf = daemon.pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)

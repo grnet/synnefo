@@ -44,6 +44,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from synnefo.db.models import Backend, Network, BackendNetwork
+from synnefo.db.pools import IPPool
 from synnefo.logic import reconciliation, backend, utils
 
 
@@ -88,10 +89,16 @@ def reconcile_networks(out, fix, conflicting_ips):
         destroying = network.action == 'DESTROY'
         uses_pool = not (network.type == 'PUBLIC_ROUTED' and (not
                         PUBLIC_ROUTED_USE_POOL))
-        ip_address_maps = []
+        ip_available_maps = []
+        ip_reserved_maps = []
 
         # Perform reconcilliation for each backend
         for b in backends:
+            if network.public and not \
+                BackendNetwork.objects.filter(network=network,
+                                              backend=b).exists():
+                    continue
+
             info = (net_id, b.clustername)
             back_network = None
 
@@ -113,13 +120,14 @@ def reconcile_networks(out, fix, conflicting_ips):
             except KeyError:
                 # Stale network does not exist in backend
                 if destroying:
-                    out.write('D: Stale network %d in backend %s\n' % info)
-                    if fix:
-                        out.write("F: Issued OP_NETWORK_REMOVE'\n")
-                        etime = datetime.datetime.now()
-                        backend.process_network_status(back_network, etime,
-                                            0, 'OP_NETWORK_REMOVE', 'success',
-                                            'Reconciliation simulated event.')
+                    if back_network.operstate != "DELETED":
+                        out.write('D: Stale network %d in backend %s\n' % info)
+                        if fix:
+                            out.write("F: Issued OP_NETWORK_REMOVE'\n")
+                            etime = datetime.datetime.now()
+                            backend.process_network_status(back_network, etime,
+                                                0, 'OP_NETWORK_REMOVE', 'success',
+                                                'Reconciliation simulated event.')
                     continue
                 else:
                     # Pending network
@@ -156,21 +164,48 @@ def reconcile_networks(out, fix, conflicting_ips):
                     backend.process_network_status(back_network, etime,
                                         0, 'OP_NETWORK_CONNECT', 'success',
                                         'Reconciliation simulated event.')
+                    network = Network.objects.get(id=network.id)
 
             if uses_pool:
                 # Reconcile IP Pools
-                ip_map = ganeti_networks[b][net_id]['map']
-                ip_address_maps.append(bitarray_from_o1(ip_map))
+                gnet = ganeti_networks[b][net_id]
+                converter = IPPool(Foo(gnet['network']))
+                a_map = bitarray_from_map(gnet['map'])
+                a_map.invert()
+                reserved = gnet['external_reservations']
+                r_map = a_map.copy()
+                r_map.setall(True)
+                for address in reserved.split(','):
+                    index = converter.value_to_index(address)
+                    a_map[index] = True
+                    r_map[index] = False
+                ip_available_maps.append(a_map)
+                ip_reserved_maps.append(r_map)
 
-        if ip_address_maps and uses_pool:
-            network_bitarray = reduce(lambda x, y: x | y, ip_address_maps)
-            if not network.pool.reservations == network_bitarray:
-                out.write('D: Unsynced pool of network %d\n' % net_id)
-                out.write('\t DB:\t%s\n' % network.pool.reservations.to01())
-                out.write('\t Ganeti:%s\n' % network_bitarray.to01())
+        if uses_pool and (ip_available_maps or ip_reserved_maps):
+            available_map = reduce(lambda x, y: x & y, ip_available_maps)
+            reserved_map = reduce(lambda x, y: x & y, ip_reserved_maps)
+
+            pool = network.get_pool()
+            un_available = pool.available != available_map
+            un_reserved = pool.reserved != reserved_map
+            if un_available or un_reserved:
+                out.write("Detected unsynchronized pool for network %r:\n" %
+                          network.id)
+                if un_available:
+                    out.write("Available:\n\tDB: %r\n\tGB: %r\n" %
+                             (pool.available.to01(), available_map.to01()))
+                    if fix:
+                        pool.available = available_map
+                if un_reserved:
+                    out.write("Reserved:\n\tDB: %r\n\tGB: %r\n" %
+                             (pool.reserved.to01(), reserved_map.to01()))
+                    if fix:
+                        pool.reserved = reserved_map
                 if fix:
-                    update_network_reservations(network, network_bitarray)
-                    out.write('F: Synchronized network pools\n')
+                    out.write("Synchronized pools for network %r.\n" % network.id)
+            pool.save()
+
 
         # Detect conflicting IPs: Detect NIC's that have the same IP
         # in the same network.
@@ -201,22 +236,26 @@ def reconcile_networks(out, fix, conflicting_ips):
         if len(orphans) > 0:
             out.write('D: Orphan Networks in backend %s:\n' % back_end.clustername)
             out.write('-  ' + '\n-  '.join([str(o) for o in orphans]) + '\n')
-            client = back_end.client
             if fix:
-                #XXX:Move this to backend
-                for id in orphans:
-                    out.write('Disconnecting and deleting network %d\n' % id)
-                    network = utils.id_to_network_name(id)
-                    for group in client.GetGroups():
-                        client.DisconnectNetwork(network, group)
-                        client.DeleteNetwork(network)
+                for net_id in orphans:
+                    out.write('Disconnecting and deleting network %d\n' % net_id)
+                    network = Network.objects.get(id=net_id)
+                    backend.delete_network(network, backends=[back_end])
 
 
-def bitarray_from_o1(bitmap):
+def bitarray_from_map(bitmap):
     return bitarray.bitarray(bitmap.replace("X", "1").replace(".", "0"))
 
 
-@transaction.commit_on_success
-def update_network_reservations(network, reservations):
-    network.pool.reservations = reservations
-    network.pool.save()
+
+class Foo():
+    def __init__(self, subnet):
+        self.available_map = ''
+        self.reserved_map = ''
+        self.size = 0
+        self.network = Foo.Foo1(subnet)
+
+    class Foo1():
+        def __init__(self, subnet):
+            self.subnet = subnet
+            self.gateway = None

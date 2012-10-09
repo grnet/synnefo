@@ -35,21 +35,10 @@
 import psycopg2
 from synnefo.lib.pool import ObjectPool
 
+from select import select
 import logging
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
-
-# Quick-n-dirty logging setup to stderr
-
-#LOG_FORMAT = "%(asctime)-15s %(levelname)-6s %(message)s"
-#handler = logging.StreamHandler()
-#handler = logging.FileHandler("/tmp/aa1")
-#handler.setFormatter(logging.Formatter(LOG_FORMAT))
-#logger.addHandler(handler)
-#logger.setLevel(logging.DEBUG)
-#logger.fatal("kalhmera1")
-#import sys
-#print >>sys.stderr, "logger is %d" % id(logger)
 
 _pool_kwargs = None
 _pool = None
@@ -67,20 +56,19 @@ class PooledConnection(object):
 
     """
     def __init__(self, pool, conn):
-        #print >>sys.stderr,"LOGGER is %d" % id(logger)
-        logger.fatal("INIT POOLED CONN: pool = %s, conn = %s", pool, conn)
+        log.debug("INIT-POOLED: pool = %s, conn = %s", pool, conn)
         self._pool = pool
         self._conn = conn
 
     def close(self):
-        logger.debug("CLOSE POOLED CONN: self._pool = %s", self._pool)
+        log.debug("CLOSE-POOLED: self._pool = %s", self._pool)
         if not self._pool:
             return
 
         pool = self._pool
-        logger.debug("PUT POOLED CONN: About to return %s to the pool", self)
+        log.debug("PUT-POOLED-BEFORE: about to return %s to the pool", self)
         pool.pool_put(self)
-        logger.debug("FINISHED PUT POOLED CONN: Returned %s to the pool", self)
+        log.debug("PUT-POOLED-AFTER: returned %s to the pool", self)
 
     def __getattr__(self, attr):
         """Proxy every other call to the real connection"""
@@ -90,10 +78,6 @@ class PooledConnection(object):
         if attr not in ("_pool", "_conn"):
             setattr(self._conn, attr, val)
         object.__setattr__(self, attr, val)
-
-    #def __del__(self):
-    #    pass
-    #    print >>sys.stderr, "DELETED"
 
 
 class Psycopg2ConnectionPool(ObjectPool):
@@ -110,23 +94,37 @@ class Psycopg2ConnectionPool(ObjectPool):
         self._connection_args = kw
 
     def _pool_create(self):
-        logger.info("CREATE: About to get a new connection from psycopg2")
+        log.info("CREATE: about to get a new connection from psycopg2")
         conn = psycopg2._original_connect(**self._connection_args)
-        logger.info("CREATED: Got connection %s from psycopg2", conn)
+        log.info("CREATED: got connection %s from psycopg2", conn)
         return PooledConnection(self, conn)
 
+    def _pool_verify_execute(pooledconn):
+        try:
+            cursor = pooledconn.cursor()
+            cursor.execute("SELECT 1")
+        except psycopg2.Error:
+            # The connection has died.
+            pooledconn.close()
+            return False
+        return True
+
+    def _pool_verify(self, conn):
+        if select((conn.fileno(),), (), (), 0)[0]:
+            return False
+        return True
+
     def _pool_cleanup(self, pooledconn):
-        logger.debug("CLEANING, conn = %d", id(pooledconn))
+        log.debug("CLEANING, conn = %d", id(pooledconn))
         try:
             # Reset this connection before putting it back
             # into the pool
-            cursor = pooledconn.cursor()
-            cursor.execute("ABORT; RESET ALL")
+            pooledconn.rollback()
         except psycopg2.Error:
             # Since we're not going to be putting the psycopg2 connection
             # back into the pool, close it uncoditionally.
-            logger.error("DEAD connection, conn = %d, %s",
-                         id(pooledconn), pooledconn)
+            log.error("Detected dead connection, conn = %d, %s",
+                      id(pooledconn), pooledconn)
             try:
                 pooledconn._conn.close()
             except:
@@ -145,24 +143,13 @@ def _init_pool(kw):
 
 def _get_pool(kw):
     if not _pool:
-        logger.debug("POOLINIT: Initializing DB connection pool")
+        log.debug("INIT-POOL: Initializing DB connection pool")
         _init_pool(kw)
 
     if _pool_kwargs != kw:
         raise NotImplementedError(("Requested pooled psycopg2 connection with "
                                    "args %s != %s." % (kw, _pool_kwargs)))
     return _pool
-
-
-def _verify_connection(pooledconn):
-    try:
-        cursor = pooledconn.cursor()
-        cursor.execute("SELECT 1")
-    except psycopg2.Error:
-        # The connection has died.
-        pooledconn.close()
-        return False
-    return True
 
 
 def _pooled_connect(**kw):
@@ -172,21 +159,9 @@ def _pooled_connect(**kw):
         return psycopg2._original_connect(**kw)
 
     pool = _get_pool(kw)
-    logger.debug("GET: Pool: set: %d, semaphore: %d",
-                 len(pool._set), pool._semaphore._Semaphore__value)
-    r = None
-    n = 0
-    while not r:
-        r = pool.pool_get()
-        if not _verify_connection(r):
-            logger.error("DEADCONNECTION: Got dead connection %d from pool",
-                         id(r))
-            r = None
-            n += 1
-            if n > RETRY_LIMIT:
-                raise RuntimeError(("Could not get live connection from pool"
-                                    "after %d retries." % RETRY_LIMIT))
-    logger.debug("GOT: Got connection %d from pool", id(r))
+    log.debug("GET-POOL: Pool: %r", pool)
+    r = pool.pool_get()
+    log.debug("GOT-POOL: Got connection %d from pool %r", id(r), pool)
     return r
 
 

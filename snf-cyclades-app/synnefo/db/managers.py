@@ -97,7 +97,7 @@ def for_update(query):
                                             params)
 
 
-class ProtectedDeleteManager(Manager):
+class ProtectedDeleteManager(ForUpdateManager):
     """ Manager for protecting Backend deletion.
 
         Call Backend delete() method in order to prevent deletion

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,50 +30,49 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-import os
+from django.core.management.base import BaseCommand, CommandError
+from optparse import make_option
 
-from setuptools import setup
+from util import pool_table_from_type
 
-HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+POOL_CHOICES = ['bridge', 'mac-prefix']
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo.versions', 'ganeti', HERE)
-except ImportError:
-    pass
 
-from synnefo.versions.ganeti import __version__
+class Command(BaseCommand):
+    help = "Create a new pool of resources."
+    output_transaction = True
+    option_list = BaseCommand.option_list + (
+        make_option("--type", dest="type",
+                    choices=POOL_CHOICES,
+                    help="Type of pool"
+                    ),
+        make_option("--size", dest="size",
+                    help="Size of the pool"),
+        make_option("--offset", dest="offset"),
+        make_option("--base", dest="base")
+    )
 
-setup(
-    name="snf-cyclades-gtools",
-    version=__version__,
-    description="Synnefo Ganeti supplementary tools",
-    author="Synnefo Development Team",
-    author_email="synnefo@lists.grnet.gr",
-    license="BSD",
-    url="http://code.grnet.gr/projects/synnefo",
-    namespace_packages=["synnefo", "synnefo.versions"],
-    packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
-    install_requires=[
-        'snf-common>0.9.14',
-        'python-daemon>=1.5.5',
-        'pyinotify>=0.8.9',
-        'puka',
-        'python-prctl>=1.1.1',
-        'setproctitle>=1.0.1'
-    ],
-    entry_points = {
-     'console_scripts': [
-         'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
-         'snf-ganeti-hook = synnefo.ganeti.hook:main',
-         'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
-         ],
-     'synnefo': [
-            'default_settings = synnefo.ganeti.settings'
-         ]
-     },
-)
+    def handle(self, *args, **options):
+        type_ = options['type']
+        size = options['size']
+        offset = options['offset']
+        base = options['base']
+
+        if not type_:
+            raise CommandError("Type of pool is mandatory")
+        if not size:
+            raise CommandError("Size of pool is mandatory")
+
+        try:
+            size = int(size)
+        except ValueError:
+            raise CommandError("Invalid size")
+
+        pool_table = pool_table_from_type(type_)
+
+        pool_table.objects.create(available_map="",
+                                  reserved_map="",
+                                  size=size,
+                                  base=base,
+                                  offset=offset)

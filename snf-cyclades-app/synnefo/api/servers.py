@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from base64 import b64decode
-from logging import getLogger
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns
@@ -44,16 +43,15 @@ from django.utils import simplejson as json
 from synnefo.api import faults, util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.db.models import Backend, VirtualMachine, VirtualMachineMetadata
+from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
-from synnefo.util.rapi import GanetiApiError
+from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
-
-from django.utils import importlib
-
+from random import choice
 
 
+from logging import getLogger
 log = getLogger('synnefo.api')
 
 urlpatterns = patterns('synnefo.api.servers',
@@ -109,13 +107,14 @@ def metadata_item_demux(request, server_id, key):
     else:
         return method_not_allowed(request)
 
-def nic_to_dict(nic):
-    network = nic.network
-    network_id = str(network.id) if not network.public else 'public'
-    ipv4 = nic.ipv4 if nic.ipv4 else None
-    ipv6 = nic.ipv6 if nic.ipv6 else None
 
-    d = {'id': util.construct_nic_id(nic), 'network_id': network_id, 'mac_address': nic.mac, 'ipv4': ipv4, 'ipv6': ipv6}
+def nic_to_dict(nic):
+    d = {'id': util.construct_nic_id(nic),
+         'network_id': str(nic.network.id),
+         'mac_address': nic.mac,
+         'ipv4': nic.ipv4 if nic.ipv4 else None,
+         'ipv6': nic.ipv6 if nic.ipv6 else None}
+
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
     return d
@@ -239,7 +238,11 @@ def list_servers(request, detail=False):
 
 
 @util.api_method('POST')
-@transaction.commit_on_success
+# Use manual transactions. Backend and IP pool allocations need exclusive
+# access (SELECT..FOR UPDATE). Running create_server with commit_on_success
+# would result in backends and public networks to be locked until the job is
+# sent to the Ganeti backend.
+@transaction.commit_manually
 def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -251,7 +254,7 @@ def create_server(request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
     req = util.get_request_dict(request)
-    log.debug('create_server %s', req)
+    log.info('create_server %s', req)
 
     try:
         server = req['server']
@@ -308,8 +311,25 @@ def create_server(request):
 
     backend_allocator = BackendAllocator()
     backend = backend_allocator.allocate(flavor)
+
     if backend is None:
+        transaction.rollback()
+        log.error("No available backends for VM with flavor %s", flavor)
         raise Exception
+    transaction.commit()
+
+    if settings.PUBLIC_ROUTED_USE_POOL:
+        (network, address) = util.allocate_public_address(backend)
+        if address is None:
+            transaction.rollback()
+            log.error("Public networks of backend %s are full", backend)
+            raise faults.OverLimit("Can not allocate IP for new machine."
+                                   " Public networks are full.")
+        transaction.commit()
+        nic = {'ip': address, 'network': network.backend_id}
+    else:
+        network = choice(list(util.backend_public_networks(backend)))
+        nic = {'ip': 'pool', 'network': network.backend_id}
 
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
@@ -321,10 +341,13 @@ def create_server(request):
         flavor=flavor)
 
     try:
-        jobID = create_instance(vm, flavor, image, password, personality)
+        jobID = create_instance(vm, nic, flavor, image, password, personality)
     except GanetiApiError:
         vm.delete()
         raise
+
+    log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
+            request.user_uniq, vm, nic, backend, str(jobID))
 
     vm.backendjobid = jobID
     vm.save()
@@ -335,13 +358,14 @@ def create_server(request):
             meta_value=val,
             vm=vm)
 
-    log.info('User %s created vm with %s cpus, %s ram and %s storage',
-             request.user_uniq, flavor.cpu, flavor.ram, flavor.disk)
-
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
     server['adminPass'] = password
-    return render_server(request, server, status=202)
+
+    respsone = render_server(request, server, status=202)
+    transaction.commit()
+
+    return respsone
 
 
 @util.api_method('GET')
@@ -373,7 +397,7 @@ def update_server_name(request, server_id):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('update_server_name %s %s', server_id, req)
+    log.info('update_server_name %s %s', server_id, req)
 
     try:
         name = req['server']['name']
@@ -399,7 +423,7 @@ def delete_server(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.debug('delete_server %s', server_id)
+    log.info('delete_server %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     delete_instance(vm)
     return HttpResponse(status=204)
@@ -497,7 +521,7 @@ def update_metadata(request, server_id):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('update_server_metadata %s %s', server_id, req)
+    log.info('update_server_metadata %s %s', server_id, req)
     vm = util.get_vm(server_id, request.user_uniq)
     try:
         metadata = req['metadata']
@@ -546,7 +570,7 @@ def create_metadata_item(request, server_id, key):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('create_server_metadata_item %s %s %s', server_id, key, req)
+    log.info('create_server_metadata_item %s %s %s', server_id, key, req)
     vm = util.get_vm(server_id, request.user_uniq)
     try:
         metadict = req['meta']
@@ -580,7 +604,7 @@ def delete_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413),
 
-    log.debug('delete_server_metadata_item %s %s', server_id, key)
+    log.info('delete_server_metadata_item %s %s', server_id, key)
     vm = util.get_vm(server_id, request.user_uniq)
     meta = util.get_vm_meta(vm, key)
     meta.delete()

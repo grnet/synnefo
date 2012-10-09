@@ -71,9 +71,8 @@ setup_environ(settings)
 
 from datetime import datetime, timedelta
 
-from synnefo.db.models import VirtualMachine, Network, BackendNetwork
-from synnefo.util.dictconfig import dictConfig
-from synnefo.util.rapi import GanetiApiError
+from synnefo.db.models import (VirtualMachine, pooled_rapi_client)
+from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend import get_ganeti_instances
 from synnefo.logic import utils
 
@@ -91,17 +90,18 @@ def stale_servers_in_db(D, G):
             vm = VirtualMachine.objects.get(id=i)
             # Check time to avoid many rapi calls
             if datetime.now() > vm.backendtime + timedelta(seconds=5):
-                try:
-                    job_status = vm.client.GetJobStatus(vm.backendjobid)['status']
-                    if job_status in ('queued', 'waiting', 'running'):
-                        # Server is still building in Ganeti
-                        continue
-                    else:
-                        new_vm = vm.client.GetInstance(utils.id_to_instance_name(i))
-                        # Server has just been created in Ganeti
-                        continue
-                except GanetiApiError:
-                    stale.add(i)
+                with pooled_rapi_client(vm) as c:
+                    try:
+                        job_status = c.GetJobStatus(vm.backendjobid)['status']
+                        if job_status in ('queued', 'waiting', 'running'):
+                            # Server is still building in Ganeti
+                            continue
+                        else:
+                            c.GetInstance(utils.id_to_instance_name(i))
+                            # Server has just been created in Ganeti
+                            continue
+                    except GanetiApiError:
+                        stale.add(i)
         else:
             stale.add(i)
 
@@ -128,12 +128,13 @@ def unsynced_operstate(D, G):
             vm = VirtualMachine.objects.get(id=i)
             # Check time to avoid many rapi calls
             if datetime.now() > vm.backendtime + timedelta(seconds=5):
-                try:
-                    job_info = vm.client.GetJobStatus(job_id = vm.backendjobid)
-                    if job_info['status'] == 'success':
-                        unsynced.add((i, D[i], G[i]))
-                except GanetiApiError:
-                    pass
+                with pooled_rapi_client(vm) as c:
+                    try:
+                        job_info = c.GetJobStatus(job_id=vm.backendjobid)
+                        if job_info['status'] == 'success':
+                            unsynced.add((i, D[i], G[i]))
+                    except GanetiApiError:
+                        pass
 
     return unsynced
 
@@ -148,15 +149,15 @@ def instances_with_build_errors(D, G):
             vm = VirtualMachine.objects.get(id=i)
             # Check time to avoid many rapi calls
             if datetime.now() > vm.backendtime + timedelta(seconds=5):
-                try:
-                    job_info = vm.client.GetJobStatus(job_id = vm.backendjobid)
-                    if job_info['status'] == 'error':
+                with pooled_rapi_client(vm) as c:
+                    try:
+                        job_info = c.GetJobStatus(job_id=vm.backendjobid)
+                        if job_info['status'] == 'error':
+                            failed.add(i)
+                    except GanetiApiError:
                         failed.add(i)
-                except GanetiApiError:
-                    failed.add(i)
 
     return failed
-
 
 
 def get_servers_from_db():
@@ -268,22 +269,25 @@ def unsynced_nics(DBNics, GNics):
             if nicD['ipv4'] != nicG['ipv4'] or \
                nicD['mac'] != nicG['mac'] or \
                nicD['network'] != nicG['network']:
-                   unsynced[i] = (nicsD, nicsG)
-                   break
+                unsynced[i] = (nicsD, nicsG)
+                break
 
     return unsynced
 
 #
 # Networks
 #
+
+
 def get_networks_from_ganeti(backend):
     prefix = settings.BACKEND_PREFIX_ID + 'net-'
 
     networks = {}
-    for net in backend.client.GetNetworks(bulk=True):
-        if net['name'].startswith(prefix):
-            id = utils.id_from_network_name(net['name'])
-            networks[id] = net
+    with pooled_rapi_client(backend) as c:
+        for net in c.GetNetworks(bulk=True):
+            if net['name'].startswith(prefix):
+                id = utils.id_from_network_name(net['name'])
+                networks[id] = net
 
     return networks
 
@@ -299,7 +303,8 @@ def hanging_networks(backend, GNets):
             groups.add(g_name)
         return groups
 
-    groups = set(backend.client.GetGroups())
+    with pooled_rapi_client(backend) as c:
+        groups = set(c.GetGroups())
 
     hanging = {}
     for id, info in GNets.items():

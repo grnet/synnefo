@@ -97,7 +97,7 @@ def network_from_msg(func):
     def wrapper(msg):
         try:
             network_id = utils.id_from_network_name(msg["network"])
-            network = Network.objects.get(id=network_id)
+            network = Network.objects.select_for_update().get(id=network_id)
             backend = Backend.objects.get(clustername=msg['cluster'])
             backend_network = BackendNetwork.objects.get(network=network,
                                                          backend=backend)
@@ -129,7 +129,13 @@ def if_update_required(func):
     """
     @wraps(func)
     def wrapper(target, msg):
-        event_time = merge_time(msg['event_time'])
+        try:
+            event_time = merge_time(msg['event_time'])
+        except:
+            log.error("Received message with malformed time: %s",
+                      msg['event_time'])
+            raise KeyError
+
         db_time = target.backendtime
 
         if db_time and event_time <= db_time:

@@ -42,7 +42,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import VirtualMachine, Network
+from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
 from synnefo.logic import reconciliation, backend, utils
 
 
@@ -170,7 +170,7 @@ class Command(BaseCommand):
 
             unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
             if len(unsynced_nics) > 0:
-                print >> sys.stderr, "The nics of servers with the folloing ID's "\
+                print >> sys.stderr, "The NICs of servers with the folloing IDs "\
                                      "are unsynced:"
                 for id, nics in unsynced_nics.items():
                     print ''.ljust(2) + '%6d:' % id
@@ -200,8 +200,12 @@ class Command(BaseCommand):
                 "Issuing OP_INSTANCE_REMOVE for %d Ganeti instances:" % \
                 len(orphans)
             for id in orphans:
-                vm = VirtualMachine.objects.get(pk=id)
-                vm.client.DeleteInstance(utils.id_to_instance_name(id))
+                try:
+                    vm = VirtualMachine.objects.get(pk=id)
+                    with pooled_rapi_client(vm) as client:
+                        client.DeleteInstance(utils.id_to_instance_name(id))
+                except VirtualMachine.DoesNotExist:
+                    print >> sys.stderr, "No entry for VM %d in DB !!" % id
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced'] and len(unsynced) > 0:

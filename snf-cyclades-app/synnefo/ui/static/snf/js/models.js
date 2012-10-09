@@ -1980,9 +1980,9 @@
                 nic.get_network().update_state();
             });
             this.get_vm().bind("remove", function(){
-              try {
-                this.collection.remove(this);
-              } catch (err) {};
+                try {
+                    this.collection.remove(this);
+                } catch (err) {};
             }, this);
             this.get_network().bind("remove", function(){
                 try {

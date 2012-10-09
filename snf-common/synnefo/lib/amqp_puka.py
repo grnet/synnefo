@@ -80,7 +80,11 @@ class AMQPPukaClient(object):
     """
     def __init__(self, hosts=settings.AMQP_HOSTS, max_retries=30,
                  confirms=True, confirm_buffer=100):
-        """Format hosts as "amqp://username:pass@host:port" """
+        """
+        Format hosts as "amqp://username:pass@host:port"
+        max_retries=0 defaults to unlimited retries
+
+        """
 
         self.hosts = hosts
         shuffle(self.hosts)
@@ -98,10 +102,10 @@ class AMQPPukaClient(object):
         self.exchanges = []
 
     def connect(self, retries=0):
-        if retries > self.max_retries:
-            logger.error("Aborting after %s retries", retries - 1)
+        if self.max_retries and retries >= self.max_retries:
+            logger.error("Aborting after %d retries", retries)
             raise AMQPConnectionError('Aborting after %d connection failures.'\
-                                      % (retries - 1))
+                                      % retries)
             return
 
         # Pick up a host
@@ -117,8 +121,10 @@ class AMQPPukaClient(object):
             promise = self.client.connect()
             self.client.wait(promise)
         except socket_error as e:
-            logger.error('Cannot connect to host %s: %s', host, e)
-            if retries > 2 * len(self.hosts):
+            if retries < len(self.hosts):
+                logger.warning('Cannot connect to host %s: %s', host, e)
+            else:
+                logger.error('Cannot connect to host %s: %s', host, e)
                 sleep(1)
             return self.connect(retries + 1)
 
@@ -384,5 +390,5 @@ class AMQPPukaClient(object):
                 self.client.basic_cancel(promise)
 
 
-class AMQPConnectionError():
+class AMQPConnectionError(Exception):
     pass

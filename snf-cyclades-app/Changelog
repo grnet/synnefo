@@ -1,6 +1,39 @@
 Changelog
 ---------
 
+v0.11.0
+*******
+
+FIXES:
+  LOGIC:
+	* Fix bugs concerning reconcilliation of building vms (#2288, #2289)
+	* Fix bug in dispatcher default file
+
+NEW FEATURES:
+  LOGIC:
+	* Support multiple Ganeti backends and correlated management commands:
+	  snf-manage [backend-add, backend-list, backend-modify, backend-remove]
+	* Support for different types of networks (public routed, physical vlan,
+	  MAC filtered)
+	* IP Pool management
+	* Enhance reconcile management command, to reconcile instance NICS
+	* Management commands for reconciliation of networks and pools:
+	  snf-manage [reconcile-networks, reconcile-pools]
+	* New management commands for inspecting the state of network and server in
+	  DB and all backends: snf-manage [network-inspect, server-inspect]
+	* New management command for creating a network: snf-manage
+	  network-create
+	* New synnefo.db schema and data migrations
+	* New settings for MAC-prefix pool: MAC_POOL_BASE, MAC_POOL_LIMIT
+	* Replaced GANETI_NULL_LINK with PUBLIC_ROUTED_ROUTING_TABLE
+	* Replaced GANETI_LINK_PREFIX with PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX
+	* Replaced GANETI_MAX_LINK_NUMBER with PRIVATE_PHYSICAL_VLAN_MAX_NUMBER
+	* Replaced PRIVATE_MAC_FILTERED_BRIDGE
+	* Add setting ENABLED_NETWORKS
+	* Add setting SECRET_ENCRYPTION_KEY
+	* Add settings for configuring each network type
+
+
 v0.10.0
 *******
 

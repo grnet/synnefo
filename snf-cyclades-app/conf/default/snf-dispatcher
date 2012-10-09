@@ -12,7 +12,4 @@ SNF_DSPTCH_ENABLE=false
 # User to run the dispatcher as
 SNF_USER="www-data"
 
-# How many workers, default 2
-WORKERS=2
-
-SNF_DPTCH_OPTS="--workers=2"
+SNF_DSPTCH_OPTS="--workers=2"

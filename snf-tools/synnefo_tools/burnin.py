@@ -51,6 +51,7 @@ from base64 import b64encode
 from IPy import IP
 from multiprocessing import Process, Queue
 from random import choice
+from optparse import OptionParser, OptionValueError
 
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.cyclades import CycladesClient
@@ -70,6 +71,56 @@ except ImportError:
     import unittest
 
 
+class BurninTestResult(unittest.TextTestResult):
+    def addSuccess(self, test):
+        super(BurninTestResult, self).addSuccess(test)
+        if self.showAll:
+            if test.result_dict:
+                run_details = test.result_dict
+
+                self.stream.write("\n")
+                for i in run_details:
+                    self.stream.write("%s : %s \n" % (i, run_details[i]))
+                self.stream.write("\n")
+
+        elif self.dots:
+            self.stream.write('.')
+            self.stream.flush() 
+            
+    def addError(self, test, err):
+        super(BurninTestResult, self).addError(test, err)
+        if self.showAll:
+            self.stream.writeln("ERROR")
+
+            run_details = test.result_dict
+
+            self.stream.write("\n")
+            for i in run_details:
+                self.stream.write("%s : %s \n" % (i, run_details[i]))
+            self.stream.write("\n")
+
+        elif self.dots:
+            self.stream.write('E')
+            self.stream.flush()
+
+    def addFailure(self, test, err):
+        super(BurninTestResult, self).addFailure(test, err)
+        if self.showAll:
+            self.stream.writeln("FAIL")
+
+            run_details = test.result_dict
+
+            self.stream.write("\n")
+            for i in run_details:
+                self.stream.write("%s : %s \n" % (i, run_details[i]))
+            self.stream.write("\n")
+
+        elif self.dots:
+            self.stream.write('F')
+            self.stream.flush()
+
+
+
 API = None
 TOKEN = None
 DEFAULT_API = "https://cyclades.okeanos.grnet.gr/api/v1.1"
@@ -81,13 +132,54 @@ TEST_RUN_ID = datetime.datetime.strftime(datetime.datetime.now(),
                                          "%Y%m%d%H%M%S")
 SNF_TEST_PREFIX = "snf-test-"
 
-# Setup logging (FIXME - verigak)
-logging.basicConfig(format="%(message)s")
+red = '\x1b[31m'
+yellow = '\x1b[33m'
+green = '\x1b[32m'
+normal = '\x1b[0m'
+
+
+class burninFormatter(logging.Formatter):
+
+    err_fmt = red + "ERROR: %(msg)s" + normal
+    dbg_fmt = green + "* %(msg)s" + normal
+    info_fmt = "%(msg)s"
+
+    def __init__(self, fmt="%(levelno)s: %(msg)s"):
+        logging.Formatter.__init__(self, fmt)
+
+    def format(self, record):
+
+        format_orig = self._fmt
+
+        # Replace the original format with one customized by logging level
+        if record.levelno == 10:    # DEBUG
+            self._fmt = burninFormatter.dbg_fmt
+
+        elif record.levelno == 20:  # INFO
+            self._fmt = burninFormatter.info_fmt
+
+        elif record.levelno == 40:  # ERROR
+            self._fmt = burninFormatter.err_fmt
+
+        result = logging.Formatter.format(self, record)
+        self._fmt = format_orig
+
+        return result
+
+
 log = logging.getLogger("burnin")
-log.setLevel(logging.INFO)
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setFormatter(burninFormatter())
+log.addHandler(handler)
 
 
 class UnauthorizedTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result_dict = dict()
+
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         log.info("Authentication test")
@@ -107,9 +199,11 @@ class ImagesTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
 
+        cls.client = ComputeClient(API, TOKEN)
         cls.plankton = ImageClient(PLANKTON, TOKEN)
         cls.images = cls.plankton.list_public()
         cls.dimages = cls.plankton.list_public(detail=True)
+        cls.result_dict = dict()
 
     def test_001_list_images(self):
         """Test image list actually returns images"""
@@ -134,8 +228,9 @@ class ImagesTestCase(unittest.TestCase):
 
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
-        keys = frozenset(["os", "description", "size"])
-        for i in self.dimages:
+        keys = frozenset(["osfamily", "root_partition"])
+        details = self.client.list_images(detail=True)
+        for i in details:
             self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
 
 
@@ -149,6 +244,7 @@ class FlavorsTestCase(unittest.TestCase):
         cls.client = ComputeClient(API, TOKEN)
         cls.flavors = cls.client.list_flavors()
         cls.dflavors = cls.client.list_flavors(detail=True)
+        cls.result_dict = dict()
 
     def test_001_list_flavors(self):
         """Test flavor list actually returns flavors"""
@@ -191,6 +287,7 @@ class ServersTestCase(unittest.TestCase):
         cls.client = ComputeClient(API, TOKEN)
         cls.servers = cls.client.list_servers()
         cls.dservers = cls.client.list_servers(detail=True)
+        cls.result_dict = dict()
 
     # def test_001_list_servers(self):
     #     """Test server list actually returns servers"""
@@ -214,10 +311,10 @@ class SpawnServerTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Initialize a kamaki instance"""
-        log.info("Spawning server for image `%s'", cls.imagename)
-
+        log.info("Spawning server for image `%s'" %cls.imagename)
         cls.client = ComputeClient(API, TOKEN)
         cls.cyclades = CycladesClient(API, TOKEN)
+        cls.result_dict = dict()
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
@@ -402,9 +499,14 @@ class SpawnServerTestCase(unittest.TestCase):
         cls.username = None
         cls.passwd = server["adminPass"]
 
+        self.result_dict["Server ID"] = str(server["id"])
+        self.result_dict["Password"] = str(server["adminPass"])
+
     def test_002a_server_is_building_in_list(self):
         """Test server is in BUILD state, in server list"""
         log.info("Server in BUILD state in server list")
+
+        self.result_dict.clear()
 
         servers = self.client.list_servers(detail=True)
         servers = filter(lambda x: x["name"] == self.servername, servers)
@@ -434,7 +536,7 @@ class SpawnServerTestCase(unittest.TestCase):
         os = image["metadata"]["values"]["os"]
         users = image["metadata"]["values"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os)
-        
+
         userlist = users.split()
 
         # Determine the username to use for future connections
@@ -511,8 +613,13 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Validate server's IPv4")
 
+
         server = self.client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
+
+        self.result_dict.clear()
+        self.result_dict["IPv4"] = str(ipv4)
+
         self.assertEquals(IP(ipv4).version(), 4)
 
     def test_005_server_has_ipv6(self):
@@ -523,12 +630,17 @@ class SpawnServerTestCase(unittest.TestCase):
 
         server = self.client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
+
+        self.result_dict.clear()
+        self.result_dict["IPv6"] = str(ipv6)
+
         self.assertEquals(IP(ipv6).version(), 6)
 
     def test_006_server_responds_to_ping_IPv4(self):
         """Test server responds to ping on IPv4 address"""
 
         log.info("Testing if server responds to pings in IPv4")
+        self.result_dict.clear()
 
         server = self.client.get_server_details(self.serverid)
         ip = self._get_ipv4(server)
@@ -690,7 +802,9 @@ class NetworkTestCase(unittest.TestCase):
         cls.serverid = dict()
         cls.username = dict()
         cls.password = dict()
-        cls.is_windows = imagename.lower().find("windows") >= 0
+        cls.is_windows = cls.imagename.lower().find("windows") >= 0
+
+        cls.result_dict = dict()
 
     def _skipIf(self, condition, msg):
         if condition:
@@ -748,10 +862,14 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Server A id:" + str(serverA["id"]))
         log.info("Server password " + (self.password['A']))
 
+        self.result_dict["Server A ID"] = str(serverA["id"])
+        self.result_dict["Server A password"] = serverA["adminPass"]
+        
     def test_00001b_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         log.info("Waiting until test server A becomes ACTIVE")
+        self.result_dict.clear()
 
         fail_tmout = time.time() + self.action_timeout
         while True:
@@ -771,7 +889,7 @@ class NetworkTestCase(unittest.TestCase):
         """Test submit create server request"""
 
         log.info("Creating test server B")
-
+        
         serverB = self.client.create_server(self.servername, self.flavorid,
                                             self.imageid, personality=None)
 
@@ -788,10 +906,15 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Server B id: " + str(serverB["id"]))
         log.info("Password " + (self.password['B']))
 
+        self.result_dict.clear()
+        self.result_dict["Server B ID"] = str(serverB["id"])
+        self.result_dict["Server B password"] = serverB["adminPass"]
+
     def test_00002b_serverB_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         log.info("Waiting until test server B becomes ACTIVE")
+        self.result_dict.clear()
 
         fail_tmout = time.time() + self.action_timeout
         while True:
@@ -811,7 +934,8 @@ class NetworkTestCase(unittest.TestCase):
         """Test submit create network request"""
 
         log.info("Submit new network request")
-
+        self.result_dict.clear()
+                
         name = SNF_TEST_PREFIX + TEST_RUN_ID
         previous_num = len(self.client.list_networks())
         network = self.client.create_network(name)
@@ -827,10 +951,13 @@ class NetworkTestCase(unittest.TestCase):
         #Test if new network is created
         self.assertTrue(len(networks) > previous_num)
 
+        self.result_dict["Private network ID"] = str(network['id'])
+
     def test_002_connect_to_network(self):
         """Test connect VMs to network"""
 
         log.info("Connect VMs to private network")
+        self.result_dict.clear()
 
         self.client.connect_server(self.serverid['A'], self.networkid)
         self.client.connect_server(self.serverid['B'], self.networkid)
@@ -886,9 +1013,10 @@ class NetworkTestCase(unittest.TestCase):
         self.assertTrue(active)
 
     def test_002b_ping_server_A(self):
-        "Test if server A is pingable"
+        "Test if server A responds to IPv4 pings"
 
-        log.info("Testing if server A is pingable")
+        log.info("Testing if server A responds to IPv4 pings ")
+        self.result_dict.clear()
 
         server = self.client.get_server_details(self.serverid['A'])
         ip = self._get_ipv4(server)
@@ -896,6 +1024,8 @@ class NetworkTestCase(unittest.TestCase):
         fail_tmout = time.time() + self.action_timeout
 
         s = False
+        
+        self.result_dict["Server A public IP"] = str(ip)
 
         while True:
 
@@ -915,6 +1045,7 @@ class NetworkTestCase(unittest.TestCase):
         """Reboot server B"""
 
         log.info("Rebooting server B")
+        self.result_dict.clear()
 
         self.client.shutdown_server(self.serverid['B'])
 
@@ -945,15 +1076,19 @@ class NetworkTestCase(unittest.TestCase):
         self.assertTrue(active)
 
     def test_002d_ping_server_B(self):
-        """Test if server B is pingable"""
+        """Test if server B responds to IPv4 pings"""
 
-        log.info("Testing if server B is pingable")
+        log.info("Testing if server B responds to IPv4 pings")
+        self.result_dict.clear()
+        
         server = self.client.get_server_details(self.serverid['B'])
         ip = self._get_ipv4(server)
 
         fail_tmout = time.time() + self.action_timeout
 
         s = False
+
+        self.result_dict["Server B public IP"] = str(ip)
 
         while True:
             if self._ping_once(ip):
@@ -974,6 +1109,7 @@ class NetworkTestCase(unittest.TestCase):
         self._skipIf(self.is_windows, "only valid for Linux servers")
 
         log.info("Setting up interface eth1 for server A")
+        self.result_dict.clear()
 
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
@@ -1114,7 +1250,6 @@ class NetworkTestCase(unittest.TestCase):
             exists = True
 
         self.assertTrue(exists)
-
 
     def test_004_disconnect_from_network(self):
         "Disconnecting server A and B from network"
@@ -1287,7 +1422,7 @@ def _spawn_network_test_case(**kwargs):
     return cls
 
 
-def cleanup_servers(delete_stale=False):
+def cleanup_servers(timeout, query_interval, delete_stale=False):
 
     c = ComputeClient(API, TOKEN)
 
@@ -1297,20 +1432,41 @@ def cleanup_servers(delete_stale=False):
     if len(stale) == 0:
         return
 
-    print >> sys.stderr, "Found these stale servers from previous runs:"
+    print >> sys.stderr, yellow + "Found these stale servers from previous runs:" + normal
     print "    " + \
           "\n    ".join(["%d: %s" % (s["id"], s["name"]) for s in stale])
 
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale servers:" % len(stale)
-        for server in stale:
-            c.delete_server(server["id"])
-        print >> sys.stderr, "    ...done"
+
+        fail_tmout = time.time() + timeout
+
+
+        for s in stale:
+            c.delete_server(s["id"])
+
+        
+        while True:
+            servers = c.list_servers()
+            stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
+            for s in stale:
+                c.delete_server(s["id"])
+
+            if len(stale)==0:
+                print >> sys.stderr, green + "    ...done" + normal
+                break
+
+            elif time.time() > fail_tmout:
+                print >> sys.stderr, red + "Not all stale servers deleted. Action timed out." + normal
+                return 
+            else:
+                time.sleep(query_interval)
+                
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
 
-def cleanup_networks(delete_stale=False):
+def cleanup_networks(timeout, query_interval, delete_stale=False):
 
     c = CycladesClient(API, TOKEN)
 
@@ -1320,21 +1476,49 @@ def cleanup_networks(delete_stale=False):
     if len(stale) == 0:
         return
 
-    print >> sys.stderr, "Found these stale networks from previous runs:"
+    print >> sys.stderr, yellow + "Found these stale networks from previous runs:" + normal
     print "    " + \
           "\n    ".join(["%s: %s" % (str(n["id"]), n["name"]) for n in stale])
 
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
-        for network in stale:
-            c.delete_network(network["id"])
-        print >> sys.stderr, "    ...done"
+
+        fail_tmout = time.time() + timeout
+        
+        for n in stale:
+            c.delete_network(n["id"])
+
+
+        while True:
+            networks = c.list_networks()
+            stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
+
+            if len(stale)==0:
+                print >> sys.stderr, green + "    ...done" + normal
+                break
+
+            elif time.time() > fail_tmout:
+                print >> sys.stderr, red + "Not all stale networks deleted. Action timed out." + normal
+                return 
+            else:
+                time.sleep(query_interval)
+
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
 
+def parse_comma(option, opt, value, parser):
+    tests = set(['all', 'auth', 'images', 'flavors',
+               'servers', 'server_spawn', 'network_spawn'])
+    parse_input = value.split(',')
+
+    if not (set(parse_input)).issubset(tests):
+        raise OptionValueError("The selected set of tests is invalid")
+
+    setattr(parser.values, option.dest, value.split(','))
+
+
 def parse_arguments(args):
-    from optparse import OptionParser
 
     kw = {}
     kw["usage"] = "%prog [options]"
@@ -1344,6 +1528,7 @@ def parse_arguments(args):
 
     parser = OptionParser(**kw)
     parser.disable_interspersed_args()
+
     parser.add_option("--api",
                       action="store", type="string", dest="api",
                       help="The API URI to use to reach the Synnefo API",
@@ -1432,6 +1617,17 @@ def parse_arguments(args):
                       help="Define the absolute path where the output \
                             log is stored. ",
                       default="/var/log/burnin/")
+    parser.add_option("--set-tests",
+                      action="callback",
+                      dest="tests",
+                      type="string",
+                      help='Set comma seperated tests for this run. \
+                            Available tests: auth, images, flavors, \
+                                             servers, server_spawn, \
+                                             network_spawn. \
+                            Default = all',
+                      default='all',
+                      callback=parse_comma)
 
     # FIXME: Change the default for build-fanout to 10
     # FIXME: Allow the user to specify a specific set of Images to test
@@ -1444,7 +1640,14 @@ def parse_arguments(args):
 
     if not opts.show_stale:
         if not opts.force_imageid:
-            print >>sys.stderr, "The --image-id argument is mandatory."
+            print >>sys.stderr, red + "The --image-id argument " \
+                                       "is mandatory.\n" + normal
+            parser.print_help()
+            sys.exit(1)
+
+        if not opts.token:
+            print >>sys.stderr, red + "The --token argument is " \
+                                      "mandatory.\n" + normal
             parser.print_help()
             sys.exit(1)
 
@@ -1452,8 +1655,8 @@ def parse_arguments(args):
             try:
                 opts.force_imageid = str(opts.force_imageid)
             except ValueError:
-                print >>sys.stderr, "Invalid value specified for --image-id." \
-                                    "Use a valid id, or `all'."
+                print >>sys.stderr, red + "Invalid value specified for" \
+                    "--image-id. Use a valid id, or `all'." + normal
                 sys.exit(1)
 
     return (opts, args)
@@ -1481,12 +1684,11 @@ def main():
 
     # Cleanup stale servers from previous runs
     if opts.show_stale:
-        cleanup_servers(delete_stale=opts.delete_stale)
-        cleanup_networks(delete_stale=opts.delete_stale)
+        cleanup_servers(delete_stale=opts.delete_stale, timeout=opts.action_timeout, query_interval=opts.query_interval)
+        cleanup_networks(delete_stale=opts.delete_stale, timeout=opts.action_timeout, query_interval=opts.query_interval)
         return 0
 
     # Initialize a kamaki instance, get flavors, images
-
     c = ComputeClient(API, TOKEN)
 
     DIMAGES = c.list_images(detail=True)
@@ -1502,7 +1704,6 @@ def main():
         test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
 
     #New folder for log per image
-
     if not os.path.exists(opts.log_folder):
         os.mkdir(opts.log_folder)
 
@@ -1560,14 +1761,31 @@ def main():
             query_interval=opts.query_interval,
             )
 
-        seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase,
-                     ServersTestCase, ServerTestCase, NetworkTestCase]
+        test_dict = {'auth': UnauthorizedTestCase,
+                     'images': ImagesTestCase,
+                     'flavors': FlavorsTestCase,
+                     'servers': ServersTestCase,
+                     'server_spawn': ServerTestCase,
+                     'network_spawn': NetworkTestCase}
+
+        seq_cases = []
+        if 'all' in opts.tests:
+            seq_cases = [UnauthorizedTestCase, ImagesTestCase, FlavorsTestCase,
+                         ServersTestCase, ServerTestCase, NetworkTestCase]
+        else:
+            for test in opts.tests:
+                seq_cases.append(test_dict[test])
 
         #folder for each image
         image_folder = os.path.join(test_folder, imageid)
         os.mkdir(image_folder)
 
         for case in seq_cases:
+
+            test = (key for key, value in test_dict.items()
+                    if value == case).next()
+
+            log.info(yellow + '* Starting testcase: %s' %test + normal)
             log_file = os.path.join(image_folder, 'details_' +
                                     (case.__name__) + "_" +
                                     TEST_RUN_ID + '.log')
@@ -1583,20 +1801,28 @@ def main():
             error = open(error_file, "w")
 
             suite = unittest.TestLoader().loadTestsFromTestCase(case)
-            runner = unittest.TextTestRunner(f, verbosity=2, failfast=True)
+            runner = unittest.TextTestRunner(f, verbosity=2, failfast=True, resultclass=BurninTestResult)
             result = runner.run(suite)
 
             for res in result.errors:
+                log.error("snf-burnin encountered an error in " \
+                              "testcase: %s" %test)
+                log.error("See log for details")
                 error.write(str(res[0]) + '\n')
                 error.write(str(res[0].shortDescription()) + '\n')
                 error.write('\n')
 
             for res in result.failures:
+                log.error("snf-burnin failed in testcase: %s" %test)
+                log.error("See log for details")
                 fail.write(str(res[0]) + '\n')
                 fail.write(str(res[0].shortDescription()) + '\n')
                 fail.write('\n')
                 if opts.nofailfast == False:
                     sys.exit()
+
+            if (len(result.failures) == 0) and (len(result.errors) == 0):
+                log.debug("Passed testcase: %s" %test)
 
 if __name__ == "__main__":
     sys.exit(main())

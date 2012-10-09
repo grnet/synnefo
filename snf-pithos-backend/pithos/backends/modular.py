@@ -1196,6 +1196,7 @@ class ModularBackend(BaseBackend):
         formatted = []
         for p in paths:
             node = self.node.node_lookup(p)
+            props = None
             if node is not None:
                 props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is not None:

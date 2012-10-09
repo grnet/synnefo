@@ -49,8 +49,8 @@ creation, destruction, allocation and release of their specific objects.
 from threading import Semaphore, Lock
 
 
-__all__ = [ 'ObjectPool', 'ObjectPoolError',
-            'PoolLimitError', 'PoolVerificationError' ]
+__all__ = ['ObjectPool', 'ObjectPoolError',
+           'PoolLimitError', 'PoolVerificationError']
 
 import logging
 log = logging.getLogger(__name__)
@@ -59,8 +59,10 @@ log = logging.getLogger(__name__)
 class ObjectPoolError(Exception):
     pass
 
+
 class PoolLimitError(ObjectPoolError):
     pass
+
 
 class PoolVerificationError(ObjectPoolError):
     pass
@@ -79,7 +81,7 @@ class ObjectPool(object):
 
     Subclasses must implement these thread-safe hooks:
     _pool_create()
-            is used as a subclass hook to auto-create new objects in pool_get().
+            used as a subclass hook to auto-create new objects in pool_get().
     _pool_verify()
             verifies objects before they are returned by pool_get()
     _pool_cleanup()
@@ -88,7 +90,9 @@ class ObjectPool(object):
     While allocations are strictly accounted for and limited by
     the semaphore, objects are expendable:
 
-    The hook provider and the caller are solely responsible for object handling.
+    The hook provider and the caller are solely responsible for object
+    handling.
+
     pool_get() may create an object if there is none in the pool set.
     pool_get() may return no object, leaving object creation to the caller.
     pool_put() may return no object to the pool set.
@@ -180,12 +184,17 @@ class ObjectPool(object):
         but no object returned to the pool set
 
         """
-        log.debug("PUT-BEFORE: about to put object %r back to pool %r", obj, self)
+        log.debug("PUT-BEFORE: about to put object %r back to pool %r",
+                  obj, self)
         if obj is not None and not self._pool_cleanup(obj):
             with self._mutex:
+                if obj in self._set:
+                    log.warning("Object %r already in _set of pool %r",
+                                obj, self)
                 self._set.add(obj)
         self._semaphore.release()
-        log.debug("PUT-AFTER: finished putting object %r back to pool %r", obj, self)
+        log.debug("PUT-AFTER: finished putting object %r back to pool %r",
+                  obj, self)
 
     def _pool_create(self):
         """Create a new object to be used with this pool.

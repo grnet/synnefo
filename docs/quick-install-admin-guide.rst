@@ -52,6 +52,13 @@ lines in your ``/etc/apt/sources.list`` file:
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
 
+Also add the following line to enable the ``squeeze-backports`` repository,
+which may provide more recent versions of certain packages. The repository
+is deactivated by default and must be specified expicitly in ``apt-get``
+operations:
+
+| ``deb http://backports.debian.org/debian-backports squeeze-backports main``
+
 You also need a shared directory visible by both nodes. Pithos+ will save all
 data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this
@@ -579,9 +586,9 @@ to point to our future services:
 
 .. code-block:: console
 
-   # snf-manage registerservice "~okeanos home" https://node1.example.com/im/ home-icon.png
-   # snf-manage registerservice "cyclades" https://node1.example.com/ui/
-   # snf-manage registerservice "pithos+" https://node2.example.com/ui/
+   # snf-manage service_add "~okeanos home" https://node1.example.com/im/ home-icon.png
+   # snf-manage service_add "cyclades" https://node1.example.com/ui/
+   # snf-manage service_add "pithos+" https://node2.example.com/ui/
 
 Servers Initialization
 ----------------------
@@ -616,7 +623,7 @@ Now we need to activate that user. Return to a command prompt at node1 and run:
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage listusers
+   root@node1:~ # snf-manage user_list
 
 This command should show you a list with only one user; the one we just created.
 This user should have an id with a value of ``1``. It should also have an
@@ -624,7 +631,7 @@ This user should have an id with a value of ``1``. It should also have an
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage modifyuser --set-active 1
+   root@node1:~ # snf-manage user_update --set-active 1
 
 This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
@@ -715,7 +722,7 @@ the Astakos node (node1 in our case):
 
 .. code-block:: console
 
-   # snf-manage listservices
+   # snf-manage service_list
 
 The token has been generated automatically during the :ref:`Pithos+ service
 registration <services-reg>`.
@@ -752,7 +759,7 @@ running on the Astakos node (node1):
 
 .. code-block:: console
 
-   # snf-manage listservices
+   # snf-manage service_list
 
 The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service's
 ``id`` as shown by the above command, in our case ``3``.
@@ -1459,7 +1466,7 @@ on the Astakos node (node1):
 
 .. code-block:: console
 
-   # snf-manage listservices
+   # snf-manage service_list
 
 The value of ``CLOUDBAR_ACTIVE_SERVICE`` should be the cyclades service's
 ``id`` as shown by the above command, in our case ``2``.

@@ -33,3 +33,12 @@ GANETI_CREATEINSTANCE_KWARGS = {
     'os': 'snf-image+default',
     'hvparams': {'serial_console': False},
     'wait_for_sync': False}
+
+# If True, qemu-kvm will hotplug a NIC when connecting a vm to
+# a network. This requires qemu-kvm=1.0.
+GANETI_USE_HOTPLUG = False
+
+# This module implements the strategy for allocating a vm to a backend
+BACKEND_ALLOCATOR_MODULE = "synnefo.logic.allocators.default_allocator"
+# Refresh backend statistics timeout, in minutes, used in backend allocation
+BACKEND_REFRESH_MIN = 15

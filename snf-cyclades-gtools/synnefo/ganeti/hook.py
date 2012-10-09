@@ -76,27 +76,33 @@ def ganeti_net_status(logger, environ):
     """
     nics = {}
 
-    key_to_attr = { 'IP': 'ip', 'MAC': 'mac', 'BRIDGE': 'link' }
+    key_to_attr = {'IP': 'ip',
+                   'MAC': 'mac',
+                   'BRIDGE': 'link',
+                   'NETWORK': 'network'}
 
     for env in environ.keys():
         if env.startswith("GANETI_INSTANCE_NIC"):
             s = env.replace("GANETI_INSTANCE_NIC", "").split('_', 1)
-            if len(s) == 2 and s[0].isdigit() and s[1] in ('MAC', 'IP', 'BRIDGE'):
+            if len(s) == 2 and s[0].isdigit() and\
+               s[1] in ('MAC', 'IP', 'BRIDGE', 'NETWORK'):
                 index = int(s[0])
                 key = key_to_attr[s[1]]
 
-                if nics.has_key(index):
+                if index in nics:
                     nics[index][key] = environ[env]
                 else:
-                    nics[index] = { key: environ[env] }
+                    nics[index] = {key: environ[env]}
 
                 # IPv6 support:
                 #
-                # The IPv6 of NIC with index 0 [the public NIC]
-                # is derived using an EUI64 scheme.
-                if index == 0 and key == 'mac':
-                    nics[0]['ipv6'] = mac2eui64(nics[0]['mac'],
-                                                settings.PUBLIC_IPV6_PREFIX)
+                # The IPv6 is derived using an EUI64 scheme.
+                if key == 'mac':
+                    subnet6 = environ.get("GANETI_INSTANCE_NIC" + s[0] +
+                                          "_NETWORK_SUBNET6", None)
+                    if subnet6:
+                        nics[index]['ipv6'] = mac2eui64(nics[index]['mac'],
+                                                        subnet6)
 
     # Amend notification with firewall settings
     tags = environ.get('GANETI_INSTANCE_TAGS', '')
@@ -176,6 +182,7 @@ class GanetiHook():
                                       routing_key=routekey,
                                       body=msg)
         self.client.close()
+
 
 class PostStartHook(GanetiHook):
     """Post-instance-startup Ganeti Hook.

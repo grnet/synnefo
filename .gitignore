@@ -1,6 +1,7 @@
 *.db
 *.pyc
 *~
+*.*.swp
 bin/
 share/
 build/

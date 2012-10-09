@@ -58,6 +58,8 @@ import threading
 from collections import defaultdict
 
 from synnefo.lib.pool import ObjectPool, PoolLimitError, PoolVerificationError
+from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import _pools as _http_pools
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -71,6 +73,7 @@ except ImportError:
 from threading import Lock
 
 mutex = Lock()
+
 
 class NumbersPool(ObjectPool):
     max = 0
@@ -252,7 +255,8 @@ class NumbersPoolTestCase(unittest.TestCase):
         self.numbers._pool_verify = false
         self.assertRaises(PoolVerificationError, numbers.pool_get)
 
-class ThreadSafetyTest(unittest.TestCase):
+
+class ThreadSafetyTestCase(unittest.TestCase):
 
     pool_class = NumbersPool
 
@@ -285,6 +289,27 @@ class ThreadSafetyTest(unittest.TestCase):
             #print mults
             raise AssertionError("_pool_create() is not thread safe")
 
+
+class TestHTTPConnectionTestCase(unittest.TestCase):
+    def test_double_close(self):
+        conn = get_http_connection("127.0.0.1", "http")
+        self.assertEqual(conn._pool, _http_pools[("http", "127.0.0.1")])
+        conn.close()
+        self.assertIsNone(conn._pool)
+        # This call does nothing, because conn._pool is already None
+        conn.close()
+        self.assertIsNone(conn._pool)
+
+    def test_distinct_pools_per_scheme(self):
+        conn = get_http_connection("127.0.0.1", "http")
+        pool = conn._pool
+        self.assertTrue(pool is _http_pools[("http", "127.0.0.1")])
+        conn.close()
+        conn2 = get_http_connection("127.0.0.1", "https")
+        self.assertTrue(conn is not conn2)
+        self.assertNotEqual(pool, conn2._pool)
+        self.assertTrue(conn2._pool is _http_pools[("https", "127.0.0.1")])
+        conn2.close()
 
 if __name__ == '__main__':
     unittest.main()

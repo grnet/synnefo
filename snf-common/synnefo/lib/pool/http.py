@@ -60,24 +60,25 @@ def init_http_pooling(size):
 
 def put_http_connection(conn):
     pool = conn._pool
-    log.debug("HTTP-PUT-BEFORE: putting connection %r back to pool %r", conn, pool)
+    log.debug("HTTP-PUT-BEFORE: putting connection %r back to pool %r",
+              conn, pool)
     if pool is None:
         log.debug("HTTP-PUT: connection %r does not have a pool", conn)
         return
-    # conn._pool = None
+    conn._pool = None
     pool.pool_put(conn)
 
 
 class HTTPConnectionPool(ObjectPool):
 
     _scheme_to_class = {
-            'http'  :   http_class,
-            'https' :   https_class,
+            'http': http_class,
+            'https': https_class,
     }
 
     def __init__(self, scheme, netloc, size=None):
-        log.debug("INIT-POOL: Initializing pool of size %d, scheme: %s, netloc: %s",
-                 size, scheme, netloc)
+        log.debug("INIT-POOL: Initializing pool of size %d, scheme: %s, " \
+                  "netloc: %s", size, scheme, netloc)
         ObjectPool.__init__(self, size=size)
 
         connection_class = self._scheme_to_class.get(scheme, None)
@@ -100,6 +101,13 @@ class HTTPConnectionPool(ObjectPool):
 
     def _pool_verify(self, conn):
         log.debug("VERIFY-HTTP")
+        # _pool verify is called at every pool_get().
+        # Make sure this connection obj is associated with the proper pool.
+        # The association is broken by put_http_connection(), to prevent
+        # a connection object from being returned to the pool twice,
+        # on duplicate invocations of conn.close().
+        if not conn._pool:
+            conn._pool = self
         if conn is None:
             return False
         sock = conn.sock
@@ -133,11 +141,13 @@ def get_http_connection(netloc=None, scheme='http', pool_size=pool_size):
         m = "netloc cannot be None"
         raise ValueError(m)
     # does the pool need to be created?
-    if netloc not in _pools:
-        log.debug("HTTP-GET: Creating pool for netloc %s", netloc)
+    # ensure distinct pools are created for every (scheme, netloc) combination
+    key = (scheme, netloc)
+    if key not in _pools:
+        log.debug("HTTP-GET: Creating pool for key %s", key)
         pool = HTTPConnectionPool(scheme, netloc, size=pool_size)
-        _pools[netloc] = pool
+        _pools[key] = pool
 
-    obj = _pools[netloc].pool_get()
+    obj = _pools[key].pool_get()
     log.debug("HTTP-GET: Returning object %r", obj)
     return obj

@@ -13,6 +13,7 @@ except ImportError:
 
 from commissioning.clients.http import HTTP_API_Client
 from commissioning import QuotaholderAPI
+import random 
 
 ### DEFS ###
 def new_quota_holder_client():
@@ -24,6 +25,15 @@ def new_quota_holder_client():
 
     global QH_URL
     return QuotaholderHTTP(QH_URL)
+
+def rand_string():
+   alphabet = 'abcdefghijklmnopqrstuvwxyz'
+   min = 5
+   max = 15
+   string=''
+   for x in random.sample(alphabet,random.randint(min,max)):
+    string += x
+   return string
 
 ### CLASSES ###
 class QHTestCase(unittest.TestCase):

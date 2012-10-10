@@ -51,8 +51,6 @@ from functools import wraps
 from ordereddict import OrderedDict
 from synnefo import settings
 
-logging.basicConfig(level=logging.DEBUG,
-                    format="[%(levelname)s %(asctime)s] %(message)s")
 logger = logging.getLogger()
 
 

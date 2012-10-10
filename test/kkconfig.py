@@ -25,5 +25,14 @@ def new_quota_holder_client():
     global QH_URL
     return QuotaholderHTTP(QH_URL)
 
+### CLASSES ###
+class QHTestCase(unittest.TestCase):
+    def setUp(self):
+        self.qh = new_quota_holder_client()
+
+    def tearDown(self):
+        del self.qh
+
+
 ### VARS ###
 QH_URL = "http://localhost:8008/api/quotaholder/v"

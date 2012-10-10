@@ -157,7 +157,8 @@ def process_net_status(vm, etime, nics):
 
 def release_instance_nics(vm):
     for nic in vm.nics.all():
-        nic.network.release_address(nic.ipv4)
+        if nic.ipv4:
+            nic.network.release_address(nic.ipv4)
         nic.delete()
 
 

@@ -1,6 +1,7 @@
 import os
 import sys
 from kkquotaholderapi import KKQuotaHolderAPITest
+from limits import LimitsTest
 
 # The following trick is from from snf-tools/synnefo_tools/burnin.py:
 # Use backported unittest functionality if Python < 2.7
@@ -19,7 +20,8 @@ HERE = os.path.dirname(__file__)
 # to run them all
 
 all_cases = [
-    KKQuotaHolderAPITest
+    KKQuotaHolderAPITest,
+    LimitsTest
 ]
 
 if __name__ == "__main__":

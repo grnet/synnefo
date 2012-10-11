@@ -18,7 +18,6 @@ all_cases = [
     LimitsTest
 ]
 
-if __name__ == "__main__":
-    print("Running tests from {0}".format(HERE))
-    print("All tests are: {0}".format(all_cases))
-    run_test_cases(all_cases)
+print("Running tests from {0}".format(HERE))
+print("All tests are: {0}".format(all_cases))
+run_test_cases(all_cases)

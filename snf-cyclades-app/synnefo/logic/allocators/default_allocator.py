@@ -68,11 +68,17 @@ def allocate(backends, vm):
 
 
 def vm_fits_in_backend(backend, vm):
-    return backend.dfree > vm['disk'] and backend.mfree > vm['ram']
+    has_disk = backend.dfree > vm['disk']
+    has_mem = backend.mfree > vm['ram']
+    # Consider each VM having 4 Virtual CPUs
+    vcpu_ratio = ((backend.pinst_cnt + 1) * 4) / backend.ctotal
+    # Consider max vcpu/cpu ratio 3
+    has_cpu = vcpu_ratio < 3
+    return has_cpu and has_disk and has_mem
 
 
 def backend_score(backend, flavor):
-    mratio = 1 - (backend.mfree / backend.mtotal)
-    dratio = 1 - (backend.dfree / backend.dtotal)
-    cratio = (backend.pinst_cnt + 1) / (backend.ctotal * 4)
-    return 0.7 * (mratio + dratio) * 0.3 * cratio
+    mem_ratio = 1 - (backend.mfree / backend.mtotal)
+    disk_ratio = 1 - (backend.dfree / backend.dtotal)
+    cpu_ratio = ((backend.pinst_cnt + 1) * 4) / (backend.ctotal * 3)
+    return 0.5 * cpu_ratio + 0.5 * (mem_ratio + disk_ratio)

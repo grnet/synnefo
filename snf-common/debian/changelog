@@ -1,3 +1,9 @@
+snf-common (0.11.0~rc16-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Thu, 11 Oct 2012 19:01:10 +0300
+
 snf-common (0.11.0~rc15-1) stable; urgency=low
 
   * New upstream version 

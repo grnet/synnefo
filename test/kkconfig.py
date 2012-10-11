@@ -26,6 +26,22 @@ def new_quota_holder_client():
     global QH_URL
     return QuotaholderHTTP(QH_URL)
 
+def run_test_case(test_case):
+    """
+    Runs the test_case and returns the result
+    """
+    # Again from snf-tools/synnefo_tools/burnin.py
+    # Thank you John Giannelos <johngian@grnet.gr>
+    print("Running {0}".format(test_case))
+    import sys
+    suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
+    runner = unittest.TextTestRunner(stream = sys.stderr, verbosity = 2, failfast = True, buffer = False)
+    return runner.run(suite)
+
+def run_test_cases(test_cases):
+    for test_case in test_cases:
+        run_test_case(test_case)
+
 def rand_string():
    alphabet = 'abcdefghijklmnopqrstuvwxyz'
    min = 5

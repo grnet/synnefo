@@ -85,11 +85,11 @@ SNF_MANAGE_LOGGING_SETUP = {
     'loggers': {
         '': {
             'handlers': ['console'],
-            'level': 'INFO'
+            'level': 'WARNING'
         },
         'synnefo': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'WARNING',
             'propagate': 0
         }
     }

@@ -28,4 +28,6 @@ class LimitsTest(QHTestCase):
         self.assertTrue(len(limits) > 1)
 
 if __name__ == "__main__":
+    import sys
+    print("Using {0}".format(sys.executable))
     run_test_case(LimitsTest)

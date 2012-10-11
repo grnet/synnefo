@@ -1,5 +1,5 @@
+from sys import argv,executable
 from os.path import dirname
-
 from kkconfig import run_test_cases
 from kkquotaholderapi import KKQuotaHolderAPITest
 from limits import LimitsTest
@@ -18,6 +18,13 @@ all_cases = [
     LimitsTest
 ]
 
+print("=======================================================")
+print("Using {0} {1}".format(executable, ' '.join(argv)))
 print("Running tests from {0}".format(HERE))
-print("All tests are: {0}".format(all_cases))
+print("=======================================================")
+print("All tests are:")
+for test_case in all_cases:
+    print("  {0}".format(test_case.__name__))
 run_test_cases(all_cases)
+print("=======================================================")
+print("")

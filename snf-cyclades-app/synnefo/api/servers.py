@@ -261,7 +261,7 @@ def create_server(request):
     if backend is None:
         transaction.rollback()
         log.error("No available backends for VM with flavor %s", flavor)
-        raise Exception
+        raise Exception("No available backends")
     transaction.commit()
 
     if settings.PUBLIC_ROUTED_USE_POOL:

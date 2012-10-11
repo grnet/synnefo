@@ -157,7 +157,8 @@ def process_net_status(vm, etime, nics):
 
 def release_instance_nics(vm):
     for nic in vm.nics.all():
-        nic.network.release_address(nic.ipv4)
+        if nic.ipv4:
+            nic.network.release_address(nic.ipv4)
         nic.delete()
 
 
@@ -636,8 +637,7 @@ def create_network_synced(network, backend):
 
 def _create_network_synced(network, backend):
     with pooled_rapi_client(backend) as client:
-        backend_jobs = _create_network(network, [backend])
-        (_, job) = backend_jobs[0]
+        job = _create_network(network, backend)
         result = wait_for_job(client, job)
     return result
 

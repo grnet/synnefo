@@ -48,7 +48,6 @@ setup_environ(settings)
 
 from django.db import close_connection
 
-import logging
 import time
 
 import daemon
@@ -64,8 +63,7 @@ import setproctitle
 from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
 
-from synnefo.util.dictconfig import dictConfig
-dictConfig(settings.DISPATCHER_LOGGING)
+import logging
 log = logging.getLogger()
 
 # Queue names
@@ -304,6 +302,23 @@ def daemon_mode(opts):
     disp.wait()
 
 
+def setup_logging(opts):
+    import logging
+    formatter = logging.Formatter("%(asctime)s %(name)s %(module)s [%(levelname)s] %(message)s")
+    if opts.debug:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        log.addHandler(stream_handler)
+    else:
+        import logging.handlers
+        log_file = "/var/log/synnefo/dispatcher.log"
+        file_handler = logging.handlers.WatchedFileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        log.addHandler(file_handler)
+
+    log.setLevel(logging.DEBUG)
+
+
 def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
@@ -312,13 +327,7 @@ def main():
     # the executable by NUL bytes, so only show the name of the executable
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])
-
-    if opts.debug:
-        stream_handler = logging.StreamHandler()
-        formatter = logging.Formatter("%(asctime)s %(module)s %(levelname)s: %(message)s",
-                                      "%Y-%m-%d %H:%M:%S")
-        stream_handler.setFormatter(formatter)
-        log.addHandler(stream_handler)
+    setup_logging(opts)
 
     # Init the global variables containing the queues
     _init_queues()

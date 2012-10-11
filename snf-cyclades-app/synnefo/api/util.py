@@ -393,6 +393,8 @@ def api_method(http_method=None, atom_allowed=False):
                 fault = BuildInProgress('Server is being built.')
                 return render_fault(request, fault)
             except Fault, fault:
+                if fault.code >= 500:
+                    log.exception('API fault')
                 return render_fault(request, fault)
             except BaseException:
                 log.exception('Unexpected error')

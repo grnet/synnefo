@@ -3,8 +3,6 @@
 # UI settings
 ###################
 
-from synnefo.settings.default.admins import *
-
 # API URL
 COMPUTE_API_URL = '/api/v1.1'
 
@@ -43,7 +41,7 @@ FEEDBACK_CONTACTS = (
 )
 
 # Email from which the feedback emails will be sent from
-FEEDBACK_EMAIL_FROM = DEFAULT_FROM_EMAIL
+FEEDBACK_EMAIL_FROM = "~okeanos <no-reply@grnet.gr>"
 
 # URL to redirect not authenticated users
 UI_LOGIN_URL = "/im/login"

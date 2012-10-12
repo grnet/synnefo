@@ -1,14 +1,14 @@
 ### IMPORTS ###
+import sys
+import os
 # The following import is copied from snf-tools/syneffo_tools/burnin.py
 # Thank you John Giannelos <johngian@grnet.gr>
 # Use backported unittest functionality if Python < 2.7
 try:
     import unittest2 as unittest
 except ImportError:
-    import sys
     if sys.version_info < (2, 7):
         raise Exception("The unittest2 package is required for Python < 2.7")
-    del sys
     import unittest
 
 from commissioning.clients.http import HTTP_API_Client
@@ -51,6 +51,15 @@ def rand_string():
     string += x
    return string
 
+def environ_get(key, default_value = ''):
+    if os.environ.has_key(key):
+        return (os.environ[key], True)
+    else:
+        return (default_value, False)
+
+def printf(fmt, *args):
+    print(fmt.format(*args))
+
 ### CLASSES ###
 class QHTestCase(unittest.TestCase):
     def setUp(self):
@@ -61,4 +70,15 @@ class QHTestCase(unittest.TestCase):
 
 
 ### VARS ###
-QH_URL = "http://localhost:8008/api/quotaholder/v"
+DefaultOrCustom = {
+    True: "default",
+    False: "custom"
+}
+
+QH_HOST, qh_using_default_host = environ_get("TEST_QH_HOST", "127.0.0.1")
+QH_PORT, qh_using_default_port = environ_get("TEST_QH_PORT", "35080")
+
+printf("Will connect to QH_HOST = {0} [{1}]", QH_HOST, DefaultOrCustom[qh_using_default_host])
+printf("            and QH_PORT = {0} [{1}]", QH_PORT, DefaultOrCustom[qh_using_default_port])
+
+QH_URL = "http://{0}:{1}/api/quotaholder/v".format(QH_HOST, QH_PORT)

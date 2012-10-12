@@ -1,16 +1,10 @@
-from kkconfig import unittest
-from kkconfig import new_quota_holder_client
+from kkconfig import QHTestCase
+from kkconfig import run_test_case
 from kkconfig import rand_string
 from kkconfig import printf
 import os
 
-class CreateReleaseListAPITest(unittest.TestCase):
-    def setUp(self):
-        self.qh = new_quota_holder_client()
-
-    def tearDown(self):
-        del self.qh
-
+class CreateReleaseListAPITest(QHTestCase):
     #BUG: empty entity worked ...
     #BUG: max empty name 
     def test_001(self):
@@ -30,4 +24,6 @@ class CreateReleaseListAPITest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    import sys
+    printf("Using {0}", sys.executable)
+    run_test_case(CreateReleaseListAPITest)

@@ -163,4 +163,7 @@ def reserved_email(email):
     return AstakosUser.objects.filter(email = email).count() != 0
 
 def get_query(request):
-    return request.__getattribute__(request.method)
+    try:
+        return request.__getattribute__(request.method)
+    except AttributeError:
+        return {}

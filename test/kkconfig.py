@@ -32,7 +32,7 @@ def run_test_case(test_case):
     """
     # Again from snf-tools/synnefo_tools/burnin.py
     # Thank you John Giannelos <johngian@grnet.gr>
-    print("Running {0}".format(test_case))
+    printf("Running {0}", test_case)
     import sys
     suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
     runner = unittest.TextTestRunner(stream = sys.stderr, verbosity = 2, failfast = True, buffer = False)

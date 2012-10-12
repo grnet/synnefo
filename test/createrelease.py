@@ -1,8 +1,7 @@
-
-
 from kkconfig import unittest
 from kkconfig import new_quota_holder_client
 from kkconfig import rand_string
+from kkconfig import printf
 import os
 
 class CreateReleaseListAPITest(unittest.TestCase):
@@ -20,11 +19,11 @@ class CreateReleaseListAPITest(unittest.TestCase):
         parentName = "system"
         entityKey = "key1" 
         parentKey = ""
-        print("Creating random string: {0}".format(entityName))
+        printf("Creating random string: {0}", entityName)
         rejected = self.qh.create_entity(context={},
                                         create_entity=[(entityName,parentName,entityKey,parentKey)])
         self.assertEqual(rejected,[])
-        print("Releasing random string: {0}".format(entityName))
+        printf("Releasing random string: {0}", entityName)
         rejected = self.qh.release_entity(context={},release_entity=[(entityName,entityKey)])
         self.assertEqual(rejected,[])
 

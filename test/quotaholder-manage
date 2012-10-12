@@ -1,0 +1,3 @@
+#!/bin/sh
+
+COMMISSIONING_CONF_DIR=`dirname $0` quotaholder-manage "$@"

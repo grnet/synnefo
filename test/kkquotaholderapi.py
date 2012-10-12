@@ -1,7 +1,7 @@
 
 # We import our own unittest :)
-from kkconfig import unittest
-from kkconfig import new_quota_holder_client
+from config import unittest
+from config import new_quota_holder_client
 
 
 class KKQuotaHolderAPITest(unittest.TestCase):

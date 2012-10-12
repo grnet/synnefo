@@ -1,6 +1,6 @@
-from kkconfig import QHTestCase
-from kkconfig import run_test_case
-from kkconfig import printf
+from config import QHTestCase
+from config import run_test_case
+from config import printf
 
 class LimitsTest(QHTestCase):
     def test_01_set_get(self):

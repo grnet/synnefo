@@ -1,7 +1,7 @@
-from kkconfig import QHTestCase
-from kkconfig import run_test_case
-from kkconfig import rand_string
-from kkconfig import printf
+from config import QHTestCase
+from config import run_test_case
+from config import rand_string
+from config import printf
 import os
 
 class CreateReleaseListAPITest(QHTestCase):

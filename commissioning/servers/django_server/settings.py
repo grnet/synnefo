@@ -35,7 +35,8 @@ DATABASES = {
 ROOT_URLCONF = 'commissioning.servers.django_server.urls'
 
 from commissioning.utils.pyconf import pyconf_vars
-conffile = '/etc/%s/django.conf' % (_appname,)
+confdir = environ['COMMISSIONING_CONF_DIR'] or '/etc/%s' % (_appname,)
+conffile = '%s/django.conf' % (confdir,)
 pyconf_vars(conffile, locals())
 COMMISSIONING_APP_NAME=_appname
 del _appname

@@ -2,7 +2,6 @@ from sys import argv,executable
 from os.path import dirname
 from config import run_test_cases
 from config import printf
-from kkquotaholderapi import KKQuotaHolderAPITest
 from limits import LimitsTest
 from createrelease import CreateReleaseListAPITest
 
@@ -15,7 +14,6 @@ HERE = dirname(__file__)
 
 all_cases = [
     CreateReleaseListAPITest,
-    KKQuotaHolderAPITest,
     LimitsTest
 ]
 

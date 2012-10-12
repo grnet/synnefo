@@ -184,6 +184,21 @@ BACKEND_STATUSES = (
 )
 
 
+class QuotaHolderSerial(models.Model):
+    serial = models.BigIntegerField(null=False, primary_key=True, db_index=True)
+    pending = models.BooleanField(default=True, db_index=True)
+    accepted = models.BooleanField(default=False)
+    rejected = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = u'Quota Serial'
+        ordering = ["serial"]
+
+    def save(self, *args, **kwargs):
+        self.pending = not (self.accepted or self.rejected)
+        super(QuotaHolderSerial, self).save(*args, **kwargs)
+
+
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
     ACTIONS = (

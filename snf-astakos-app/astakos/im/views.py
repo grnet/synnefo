@@ -53,6 +53,7 @@ from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.views.decorators.http import require_http_methods
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
@@ -109,6 +110,7 @@ def signed_terms_required(func):
         return func(request, *args, **kwargs)
     return wrapper
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context={}):
     """
@@ -139,6 +141,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
                            login_form = LoginForm(request=request),
                            context_instance = get_context(request, extra_context))
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 @transaction.commit_manually
@@ -217,6 +220,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
                            invitation_form = form,
                            context_instance = context)
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context={}):
@@ -275,6 +279,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                            context_instance = get_context(request,
                                                           extra_context))
 
+@require_http_methods(["GET", "POST"])
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
@@ -355,6 +360,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                            provider = provider,
                            context_instance=get_context(request, extra_context))
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
@@ -407,6 +413,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            feedback_form = form,
                            context_instance = get_context(request, extra_context))
 
+@require_http_methods(["GET", "POST"])
 def logout(request, template='registration/logged_out.html', extra_context={}):
     """
     Wraps `django.contrib.auth.logout` and delete the cookie.
@@ -432,6 +439,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     response.write(render_to_string(template, context_instance=context))
     return response
 
+@require_http_methods(["GET", "POST"])
 @transaction.commit_manually
 def activate(request, greeting_email_template_name='im/welcome_email.txt', helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
@@ -492,6 +500,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
             transaction.rollback()
             return index(request)
 
+@require_http_methods(["GET", "POST"])
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):
     term = None
     terms = None
@@ -532,12 +541,16 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
                                approval_terms_form = form,
                                context_instance = get_context(request, extra_context))
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def change_password(request):
     return password_change(request,
                             post_change_redirect=reverse('astakos.im.views.edit_profile'),
                             password_change_form=ExtendedPasswordChangeForm)
 
+@require_http_methods(["GET", "POST"])
+@login_required
+@signed_terms_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',

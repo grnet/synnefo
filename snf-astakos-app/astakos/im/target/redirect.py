@@ -39,6 +39,7 @@ from django.utils.http import urlencode
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.core.exceptions import ValidationError
+from django.views.decorators.http import require_http_methods
 
 from urllib import quote
 from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
@@ -51,6 +52,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+@require_http_methods(["GET", "POST"])
 def login(request):
     """
     If there is no ``next`` request parameter redirects to astakos index page

@@ -36,6 +36,7 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
 from django.forms.models import inlineformset_factory
+from django.views.decorators.http import require_http_methods
 
 from astakos.im.util import prepare_response, get_context, get_invitation
 from astakos.im.views import requires_anonymous, render_response
@@ -55,6 +56,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
+@require_http_methods(["GET", "POST"])
 @requires_anonymous
 def login(request,  backend=None, on_login_template='im/login.html', on_creation_template='im/third_party_registration.html', extra_context={}):
     tokens = request.META

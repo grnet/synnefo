@@ -35,7 +35,6 @@ from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
-from django.forms.models import inlineformset_factory
 from django.views.decorators.http import require_http_methods
 
 from astakos.im.util import prepare_response, get_context, get_invitation

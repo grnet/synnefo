@@ -196,7 +196,8 @@ def get_flavor(flavor_id):
 
     try:
         flavor_id = int(flavor_id)
-        return Flavor.objects.get(id=flavor_id)
+        # Ensure that request if for active flavor
+        return Flavor.objects.get(id=flavor_id, deleted=False)
     except (ValueError, Flavor.DoesNotExist):
         raise ItemNotFound('Flavor not found.')
 

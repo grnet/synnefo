@@ -538,7 +538,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 append(entity)
                 continue
 
-            if e.holdings.count() != 0:
+            if e.holding_set.count() != 0:
                 append(entity)
                 continue
 

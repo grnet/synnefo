@@ -78,7 +78,35 @@ class CreateReleaseListAPITest(QHTestCase):
         print("Releasing random string: {0}".format(entityName))
         rejected = self.qh.release_entity(context={},release_entity=[(entityName,entityKey)])
         self.assertEqual(rejected,[])
-        #
+
+    # test get_entity
+    def test_004(self):
+        entityName = rand_string()
+        entityKey = "key1" 
+        parentName = self.parentName 
+        parentKey =  self.parentKey
+
+        entityList = self.qh.get_entity(context={},get_entity=[(entityName,entityKey)])
+        printf("check 1: is entity name {0} in list {1} ? {2}",entityName,entityList,entityName in entityList)
+        self.assertEqual(entityList,[])
+
+        print("Creating random string: {0}".format(entityName))
+        rejected = self.qh.create_entity(context={},
+                                        create_entity=[(entityName,parentName,entityKey,parentKey)])
+        self.assertEqual(rejected,[])
+        
+        entityList = self.qh.get_entity(context={},get_entity=[(entityName,entityKey)])
+        printf("check 2: is entity name {0} in list [{1}] ? {2}",entityName,entityList,entityName in entityList)
+        self.assertTrue([(entityName,entityKey)] == entityList)
+
+
+        print("Releasing random string: {0}".format(entityName))
+        rejected = self.qh.release_entity(context={},release_entity=[(entityName,entityKey)])
+        self.assertEqual(rejected,[])
+
+        entityList = self.qh.get_entity(context={},get_entity=[(entityName,entityKey)])
+        printf("check 3: is entity name {0} in list [{1}] ? {2}",entityName,entityList,entityName in entityList)
+        self.assertEqual(entityList,[])
 
 if __name__ == "__main__":
     import sys

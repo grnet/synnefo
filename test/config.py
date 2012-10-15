@@ -76,7 +76,8 @@ DefaultOrCustom = {
 }
 
 QH_HOST, qh_using_default_host = environ_get("TEST_QH_HOST", "127.0.0.1")
-QH_PORT, qh_using_default_port = environ_get("TEST_QH_PORT", "35080")
+#QH_PORT, qh_using_default_port = environ_get("TEST_QH_PORT", "35080")
+QH_PORT, qh_using_default_port = environ_get("TEST_QH_PORT", "8008")
 
 printf("Will connect to QH_HOST = {0} [{1}]", QH_HOST, DefaultOrCustom[qh_using_default_host])
 printf("            and QH_PORT = {0} [{1}]", QH_PORT, DefaultOrCustom[qh_using_default_port])

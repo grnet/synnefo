@@ -449,14 +449,15 @@ def connect_network(network, backend, depend_job=None, group=None):
 
     mode = "routed" if "ROUTED" in network.type else "bridged"
 
+    depend_jobs = [depend_job] if depend_job else []
     with pooled_rapi_client(backend) as client:
         if group:
             client.ConnectNetwork(network.backend_id, group, mode,
-                                  network.link, [depend_job])
+                                  network.link, depend_jobs)
         else:
             for group in client.GetGroups():
                 client.ConnectNetwork(network.backend_id, group, mode,
-                                      network.link, [depend_job])
+                                      network.link, depend_jobs)
 
 
 def delete_network(network, backends=None, disconnect=True):

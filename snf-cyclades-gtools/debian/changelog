@@ -1,3 +1,9 @@
+snf-cyclades-gtools (0.10.0-2) stable; urgency=low
+
+  * Fix the permissions of the conf files/dir
+
+ -- Stratos Psomadakis <psomas@grnet.gr>  Mon, 15 Oct 2012 15:44:53 +0300
+
 snf-cyclades-gtools (0.10.0-1) stable; urgency=low
 
   * New upstream version 

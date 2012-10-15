@@ -29,3 +29,9 @@ override_dh_auto_install:
 	for py in $(shell pyversions -vr debian/control); do \
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
 	done
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0640 debian/$(package)/etc/synnefo/*
+	chmod 0750 debian/$(package)/etc/synnefo
+	chown -R root:www-data debian/$(package)/etc/synnefo

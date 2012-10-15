@@ -5,10 +5,8 @@ from config import printf
 import os
 
 class CreateReleaseListAPITest(QHTestCase):
-    #BUG: empty entity worked ...
-    #BUG: max empty name 
+    #BUG: max empty name <= 72 
     def test_001(self):
-        string_length = 10
         entityName = rand_string()
         parentName = "system"
         entityKey = "key1" 
@@ -21,6 +19,31 @@ class CreateReleaseListAPITest(QHTestCase):
         rejected = self.qh.release_entity(context={},release_entity=[(entityName,entityKey)])
         self.assertEqual(rejected,[])
 
+    def test_002(self):
+        entityName = rand_string()
+        parentName = "system"
+        entityKey = "key1" 
+        parentKey = ""
+
+        entityList = self.qh.list_entities(context={},entity=parentName,key=parentKey)
+        self.assertFalse(entityName in entityList)
+
+
+        print("Creating random string: {0}".format(entityName))
+        rejected = self.qh.create_entity(context={},
+                                        create_entity=[(entityName,parentName,entityKey,parentKey)])
+        self.assertEqual(rejected,[])
+
+        entityList = self.qh.list_entities(context={},entity=parentName,key=parentKey)
+        self.assertTrue(entityName in entityList)
+
+
+        print("Releasing random string: {0}".format(entityName))
+        rejected = self.qh.release_entity(context={},release_entity=[(entityName,entityKey)])
+        self.assertEqual(rejected,[])
+
+        entityList = self.qh.list_entities(context={},entity=parentName,key=parentKey)
+        self.assertFalse(entityName in entityList)
 
 
 if __name__ == "__main__":

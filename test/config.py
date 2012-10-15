@@ -53,9 +53,9 @@ def rand_string():
 
 def environ_get(key, default_value = ''):
     if os.environ.has_key(key):
-        return (os.environ[key], True)
+        return os.environ.get(key)
     else:
-        return (default_value, False)
+        return default_value
 
 def printf(fmt, *args):
     print(fmt.format(*args))
@@ -75,11 +75,14 @@ DefaultOrCustom = {
     False: "custom"
 }
 
-QH_HOST, qh_using_default_host = environ_get("TEST_QH_HOST", "127.0.0.1")
-#QH_PORT, qh_using_default_port = environ_get("TEST_QH_PORT", "35080")
-QH_PORT, qh_using_default_port = environ_get("TEST_QH_PORT", "8008")
+# Use environ vars [TEST_]QH_{HOST, PORT}
+QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", "127.0.0.1"))
+QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8008"))
 
-printf("Will connect to QH_HOST = {0} [{1}]", QH_HOST, DefaultOrCustom[qh_using_default_host])
-printf("            and QH_PORT = {0} [{1}]", QH_PORT, DefaultOrCustom[qh_using_default_port])
+assert QH_HOST != None
+assert QH_PORT != None
+
+printf("Will connect to QH_HOST = {0}", QH_HOST)
+printf("            and QH_PORT = {0}", QH_PORT)
 
 QH_URL = "http://{0}:{1}/api/quotaholder/v".format(QH_HOST, QH_PORT)

@@ -288,6 +288,8 @@ class VirtualMachine(models.Model):
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
+    serial = models.ForeignKey(QuotaHolderSerial,
+                              related_name='virtual_machine', null=True)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -460,6 +462,8 @@ class Network(models.Model):
                                                            reserved_map='',
                                                            size=0),
                 null=True)
+    serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
+                               null=True)
 
     objects = ForUpdateManager()
 

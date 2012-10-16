@@ -492,7 +492,7 @@ def disconnect_network(network, backend, group=None):
             return jobs
 
 
-def connect_to_network(vm, network, address):
+def connect_to_network(vm, network, address=None):
     nic = {'ip': address, 'network': network.backend_id}
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)

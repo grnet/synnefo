@@ -53,6 +53,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.cache import add_never_cache_headers
+from django.db.models import Q
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized,
@@ -195,7 +196,8 @@ def get_flavor(flavor_id):
 
     try:
         flavor_id = int(flavor_id)
-        return Flavor.objects.get(id=flavor_id)
+        # Ensure that request if for active flavor
+        return Flavor.objects.get(id=flavor_id, deleted=False)
     except (ValueError, Flavor.DoesNotExist):
         raise ItemNotFound('Flavor not found.')
 
@@ -205,10 +207,10 @@ def get_network(network_id, user_id, for_update=False):
 
     try:
         network_id = int(network_id)
+        objects = Network.objects
         if for_update:
-            return Network.objects.select_for_update().get(id=network_id, userid=user_id)
-        else:
-            return Network.objects.get(id=network_id, userid=user_id)
+            objects = objects.select_for_update()
+        return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
 

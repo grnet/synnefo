@@ -1,3 +1,15 @@
+snf-webproject (0.10.0-2) stable; urgency=low
+
+  * Fix the permissions of the conf files/dir
+
+ -- Stratos Psomadakis <psomas@grnet.gr>  Mon, 15 Oct 2012 15:45:32 +0300
+
+snf-webproject (0.10.0-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Wed, 18 Jul 2012 20:51:02 +0300
+
 snf-webproject (0.10.0~rc2-1) stable; urgency=low
 
   * New upstream version

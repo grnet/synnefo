@@ -10,7 +10,7 @@ COMPUTE_API_URL = '/api/v1.1'
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
-UI_MEDIA_URL = '/static/ui/snf/'
+UI_MEDIA_URL = '/static/ui/static/snf/'
 
 # UI requests to the API layer time out after that many milliseconds
 TIMEOUT = 10 * 1000
@@ -117,7 +117,8 @@ UI_SKIP_TIMEOUTS = 1
 UI_HANDLE_WINDOW_EXCEPTIONS = True
 
 # A list of os names that support ssh public key assignment
-UI_SUPPORT_SSH_OS_LIST = ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu', 'centos']
+UI_SUPPORT_SSH_OS_LIST = ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu',
+                          'centos', 'archlinux']
 
 # OS/username map to identify default user name for the specified os
 UI_OS_DEFAULT_USER_MAP = {
@@ -125,6 +126,26 @@ UI_OS_DEFAULT_USER_MAP = {
     'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root',
     'windows': 'Administrator'
 }
+
+##########################
+# UI NETWORK VIEW SETTINGS
+##########################
+
+# Available network types for use to choose when creating a private network
+# If only one set, no select options will be displayed
+UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'PRIVATE_FILTERED': 'mac-filtering'}
+
+# Suggested private networks to let the user choose from when creating a private
+# network with dhcp enabled
+UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.1/24', '192.168.1.1/24']
+
+# Whether to display already connected vm's to the network connect overlay
+UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False
+
+# Whether to display destroy action on private networks that contain vms. If
+# set to True, destroy action will only get displayed if user disconnect all
+# virtual machines from the network.
+UI_NETWORK_STRICT_DESTROY = False
 
 
 ###############

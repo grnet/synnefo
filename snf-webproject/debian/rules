@@ -7,10 +7,6 @@ package=snf-webproject
 default_settings_dir=synnefo/webproject/settings/default/
 config_lvl=10
 
-override_dh_install:
-	dh_install
-	chmod 644 debian/$(package)/etc/bash_completion.d/snf_manage_bash_completion
-
 override_dh_auto_install:
 	dh_auto_install
 	
@@ -24,3 +20,10 @@ override_dh_auto_install:
 			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
 	done;
 	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0644 debian/$(package)/etc/bash_completion.d/snf_manage_bash_completion
+	chmod 0640 debian/$(package)/etc/synnefo/*
+	chmod 0750 debian/$(package)/etc/synnefo
+	chown -R root:www-data debian/$(package)/etc/synnefo

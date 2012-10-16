@@ -29,9 +29,9 @@
 
 # Utility functions
 
-from synnefo.db.models import VirtualMachine
-
+from synnefo.db.models import VirtualMachine, Network
 from django.conf import settings
+from copy import deepcopy
 
 def id_from_instance_name(name):
     """Returns VirtualMachine's Django id, given a ganeti machine name.
@@ -47,6 +47,30 @@ def id_from_instance_name(name):
         raise VirtualMachine.InvalidBackendIdError(sname)
 
     return int(ns)
+
+
+def id_to_instance_name(id):
+    return "%s%s" % (settings.BACKEND_PREFIX_ID, str(id))
+
+
+def id_from_network_name(name):
+    """Returns Network's Django id, given a ganeti machine name.
+
+    Strips the ganeti prefix atm. Needs a better name!
+
+    """
+    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise Network.InvalidBackendIdError(str(name))
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
+    if not ns.isdigit():
+        raise Network.InvalidBackendIdError(str(name))
+
+    return int(ns)
+
+
+def id_to_network_name(id):
+    return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(id))
+
 
 def get_rsapi_state(vm):
     """Returns the API state for a virtual machine
@@ -81,7 +105,17 @@ def get_rsapi_state(vm):
         return "REBOOT"
     return r
 
+
 def update_state(vm, new_operstate):
     """Wrapper around updates of the VirtualMachine.operstate field"""
 
     vm.operstate = new_operstate
+
+
+def hide_pass(kw):
+    if 'osparams' in kw and 'img_passwd' in kw['osparams']:
+        kw1 = deepcopy(kw)
+        kw1['osparams']['img_passwd'] = 'x' * 8
+        return kw1
+    else:
+        return kw

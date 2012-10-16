@@ -36,15 +36,14 @@ logic/reconciliation.py for a description of reconciliation rules.
 """
 import sys
 import datetime
+import subprocess
 
 from optparse import make_option
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import VirtualMachine
-from synnefo.logic import reconciliation, backend
-from synnefo.util.rapi import GanetiRapiClient
+from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
+from synnefo.logic import reconciliation, backend, utils
 
 
 class Command(BaseCommand):
@@ -63,6 +62,12 @@ class Command(BaseCommand):
                     dest='detect_unsynced',
                     default=False, help='Detect unsynced operstate between ' +
                                         'DB and Ganeti'),
+        make_option('--detect-build-errors', action='store_true',
+                    dest='detect_build_errors', default=False,
+                    help='Detect instances with build error'),
+        make_option('--detect-unsynced-nics', action='store_true',
+                    dest='detect_unsynced_nics', default=False,
+                    help='Detect unsynced nics between DB and Ganeti'),
         make_option('--detect-all', action='store_true',
                     dest='detect_all',
                     default=False, help='Enable all --detect-* arguments'),
@@ -73,6 +78,12 @@ class Command(BaseCommand):
         make_option('--fix-unsynced', action='store_true', dest='fix_unsynced',
                     default=False, help='Fix server operstate in DB, set ' +
                                         'from Ganeti'),
+        make_option('--fix-build-errors', action='store_true',
+                    dest='fix_build_errors', default=False,
+                    help='Fix (remove) instances with build errors'),
+         make_option('--fix-unsynced-nics', action='store_true',
+                    dest='fix_unsynced_nics', default=False,
+                    help='Fix unsynced nics between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'))
 
@@ -104,6 +115,8 @@ class Command(BaseCommand):
         D = reconciliation.get_servers_from_db()
         G = reconciliation.get_instances_from_ganeti()
 
+        DBNics = reconciliation.get_nics_from_db()
+        GNics = reconciliation.get_nics_from_ganeti()
         #
         # Detect problems
         #
@@ -137,6 +150,37 @@ class Command(BaseCommand):
             elif verbosity == 2:
                 print >> sys.stderr, "The operstate of all servers is in sync."
 
+        if options['detect_build_errors']:
+            build_errors = reconciliation.instances_with_build_errors(D, G)
+            if len(build_errors) > 0:
+                print >> sys.stderr, "The os for the following server IDs was "\
+                                     "not build successfully:"
+                print "    " + "\n    ".join(
+                    ["%d" % x for x in build_errors])
+            elif verbosity == 2:
+                print >> sys.stderr, "Found no instances with build errors."
+
+        if options['detect_unsynced_nics']:
+            def pretty_print_nics(nics):
+                if not nics:
+                    print ''.ljust(18) + 'None'
+                for index, info in nics.items():
+                    print ''.ljust(18) + 'nic/' + str(index) + ': MAC: %s, IP: %s, Network: %s' % \
+                      (info['mac'], info['ipv4'], info['network'])
+
+            unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
+            if len(unsynced_nics) > 0:
+                print >> sys.stderr, "The NICs of servers with the folloing IDs "\
+                                     "are unsynced:"
+                for id, nics in unsynced_nics.items():
+                    print ''.ljust(2) + '%6d:' % id
+                    print ''.ljust(8) + '%8s:' % 'DB'
+                    pretty_print_nics(nics[0])
+                    print ''.ljust(8) + '%8s:' % 'Ganeti'
+                    pretty_print_nics(nics[1])
+            elif verbosity == 2:
+                print >> sys.stderr, "All instance nics are synced."
+
         #
         # Then fix them
         #
@@ -156,9 +200,12 @@ class Command(BaseCommand):
                 "Issuing OP_INSTANCE_REMOVE for %d Ganeti instances:" % \
                 len(orphans)
             for id in orphans:
-                rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
-                rapi.DeleteInstance('%s%s' %
-                                    (settings.BACKEND_PREFIX_ID, str(id)))
+                try:
+                    vm = VirtualMachine.objects.get(pk=id)
+                    with pooled_rapi_client(vm) as client:
+                        client.DeleteInstance(utils.id_to_instance_name(id))
+                except VirtualMachine.DoesNotExist:
+                    print >> sys.stderr, "No entry for VM %d in DB !!" % id
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced'] and len(unsynced) > 0:
@@ -169,7 +216,55 @@ class Command(BaseCommand):
                 opcode = "OP_INSTANCE_REBOOT" if ganeti_up \
                          else "OP_INSTANCE_SHUTDOWN"
                 event_time = datetime.datetime.now()
-                backend.process_op_status(vm=vm, etime=event_time ,jobid=-0,
+                backend.process_op_status(vm=vm, etime=event_time, jobid=-0,
                     opcode=opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
+
+        if options['fix_build_errors'] and len(build_errors) > 0:
+            print >> sys.stderr, "Setting the state of %d build-errors VMs:" % \
+                len(build_errors)
+            for id in build_errors:
+                vm = VirtualMachine.objects.get(pk=id)
+                event_time = datetime.datetime.now()
+                backend.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                    opcode="OP_INSTANCE_CREATE", status='error',
+                    logmsg='Reconciliation: simulated Ganeti event')
+            print >> sys.stderr, "    ...done"
+
+        if options['fix_unsynced_nics'] and len(unsynced_nics) > 0:
+            print >> sys.stderr, "Setting the nics of %d out-of-sync VMs:" % \
+                                  len(unsynced_nics)
+            for id, nics in unsynced_nics.items():
+                vm = VirtualMachine.objects.get(pk=id)
+                nics = nics[1]  # Ganeti nics
+                if nics == {}:  # No nics
+                    vm.nics.all.delete()
+                    continue
+                for index, nic in nics.items():
+                    net_id = utils.id_from_network_name(nic['network'])
+                    subnet6 = Network.objects.get(id=net_id).subnet6
+                    # Produce ipv6
+                    ipv6 = subnet6 and mac2eui64(nic['mac'], subnet6) or None
+                    nic['ipv6'] = ipv6
+                    # Rename ipv4 to ip
+                    nic['ip'] = nic['ipv4']
+                # Dict to sorted list
+                final_nics = []
+                nics_keys = nics.keys()
+                nics_keys.sort()
+                for i in nics_keys:
+                    if nics[i]['network']:
+                        final_nics.append(nics[i])
+                    else:
+                        print 'Network of nic %d of vm %s is None. ' \
+                              'Can not reconcile' % (i, vm.backend_vm_id)
+                event_time = datetime.datetime.now()
+                backend.process_net_status(vm=vm, etime=event_time, nics=final_nics)
+            print >> sys.stderr, "    ...done"
+
+
+def mac2eui64(mac, prefixstr):
+    process = subprocess.Popen(["mac2eui64", mac, prefixstr],
+                                stdout=subprocess.PIPE)
+    return process.stdout.read().rstrip()

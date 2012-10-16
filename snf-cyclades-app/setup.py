@@ -79,13 +79,15 @@ INSTALL_REQUIRES = [
     'vncauthproxy>=1.2',
     'south>=0.7, <=0.7.3',
     'snf-pithos-backend>=0.9.1',
-    'lockfile>=0.8, <0.9'
+    'lockfile>=0.8, <0.9',
+    'ipaddr',
+    'bitarray'
 ]
 
 EXTRAS_REQUIRES = {
-        'DISPATCHER': ['puka', 'python-daemon==1.5.5', 'lockfile==0.8'],
+        'DISPATCHER': ['puka', 'python-daemon==1.5.5', 'lockfile==0.8',
+                       'setproctitle>=1.0.1'],
         'SSH_KEYS': ['pycrypto==2.1.0'],
-        'BURNIN': ['unittest2==0.5.1', 'paramiko==1.7.6', 'python-prctl==1.3.0']
 }
 
 TESTS_REQUIRES = [
@@ -212,7 +214,6 @@ setup(
     entry_points = {
      'console_scripts': [
          'snf-dispatcher = synnefo.logic.dispatcher:main',
-         'snf-burnin = synnefo.tools.burnin:main',
          'snf-admin = synnefo.tools.admin:main',
          'snf-cloud = synnefo.tools.cloud:main',
          ],

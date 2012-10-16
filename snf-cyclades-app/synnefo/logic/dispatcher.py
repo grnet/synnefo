@@ -43,31 +43,28 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-
 from synnefo import settings
 setup_environ(settings)
 
-import logging
+from django.db import close_connection
+
 import time
 
+import daemon
 import daemon.runner
-import daemon.daemon
 from lockfile import LockTimeout
-from signal import signal, SIGINT, SIGTERM
-
 # Take care of differences between python-daemon versions.
 try:
     from daemon import pidfile as pidlockfile
 except:
     from daemon import pidlockfile
+import setproctitle
 
 from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
-from synnefo.util.dictconfig import dictConfig
 
-
+import logging
 log = logging.getLogger()
-
 
 # Queue names
 QUEUES = []
@@ -78,7 +75,6 @@ BINDINGS = []
 
 class Dispatcher:
     debug = False
-    client_promises = []
 
     def __init__(self, debug=False):
         self.debug = debug
@@ -88,6 +84,12 @@ class Dispatcher:
         log.info("Waiting for messages..")
         while True:
             try:
+                # Close the Django DB connection before processing
+                # every incoming message. This plays nicely with
+                # DB connection pooling, if enabled and allows
+                # the dispatcher to recover from broken connections
+                # gracefully.
+                close_connection()
                 self.client.basic_wait()
             except SystemExit:
                 break
@@ -127,12 +129,11 @@ class Dispatcher:
             self.client.queue_bind(queue=binding[0], exchange=binding[1],
                                    routing_key=binding[2])
 
-            consume_promise = self.client.basic_consume(queue=binding[0],
+            self.client.basic_consume(queue=binding[0],
                                                         callback=callback)
 
             log.debug("Binding %s(%s) to queue %s with handler %s",
                       binding[1], binding[2], binding[0], binding[3])
-            self.client_promises.append(consume_promise)
 
 
 def _init_queues():
@@ -142,17 +143,20 @@ def _init_queues():
     prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
 
     QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
+    QUEUE_GANETI_EVENTS_NETWORK = "%s-events-network" % prefix
     QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
     QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
     QUEUE_RECONC = "%s-reconciliation" % prefix
     if settings.DEBUG is True:
         QUEUE_DEBUG = "%s-debug" % prefix  # Debug queue, retrieves all messages
 
-    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
+    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NETWORK, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
               QUEUE_GANETI_BUILD_PROGR)
 
     # notifications of type "ganeti-op-status"
     DB_HANDLER_KEY_OP = 'ganeti.%s.event.op' % prefix
+    # notifications of type "ganeti-network-status"
+    DB_HANDLER_KEY_NETWORK = 'ganeti.%s.event.network' % prefix
     # notifications of type "ganeti-net-status"
     DB_HANDLER_KEY_NET = 'ganeti.%s.event.net' % prefix
     # notifications of type "ganeti-create-progress"
@@ -163,6 +167,7 @@ def _init_queues():
     BINDINGS = [
     # Queue                   # Exchange                # RouteKey              # Handler
     (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
+    (QUEUE_GANETI_EVENTS_NETWORK, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NETWORK, 'update_network'),
     (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
     (QUEUE_GANETI_BUILD_PROGR, settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
     ]
@@ -177,35 +182,11 @@ def _init_queues():
         QUEUES += (QUEUE_DEBUG,)
 
 
-def _exit_handler(signum, frame):
-    """"Catch exit signal in children processes"""
-    log.info("Caught signal %d, will raise SystemExit", signum)
-    raise SystemExit
-
-
-def _parent_handler(signum, frame):
-    """"Catch exit signal in parent process and forward it to children."""
-    global children
-    log.info("Caught signal %d, sending SIGTERM to children %s",
-             signum, children)
-    [os.kill(pid, SIGTERM) for pid in children]
-
-
-def child(cmdline):
-    """The context of the child process"""
-
-    # Cmd line argument parsing
-    (opts, args) = parse_arguments(cmdline)
-    disp = Dispatcher(debug=opts.debug)
-
-    # Start the event loop
-    disp.wait()
-
-
 def parse_arguments(args):
     from optparse import OptionParser
 
-    default_pid_file = os.path.join("var", "run", "synnefo", "dispatcher.pid")
+    default_pid_file = \
+        os.path.join(".", "var", "run", "synnefo", "dispatcher.pid")[1:]
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
@@ -232,7 +213,7 @@ def purge_queues():
         Delete declared queues from RabbitMQ. Use with care!
     """
     global QUEUES, BINDINGS
-    client = AMQPClient()
+    client = AMQPClient(max_retries=120)
     client.connect()
 
     print "Queues to be deleted: ", QUEUES
@@ -285,19 +266,11 @@ def drain_queue(queue):
     client = AMQPClient()
     client.connect()
 
-    # Register a temporary queue binding
-    for binding in BINDINGS:
-        if binding[0] == queue:
-            exch = binding[1]
-
     tag = client.basic_consume(queue=queue, callback=callbacks.dummy_proc)
 
     print "Queue draining about to start, hit Ctrl+c when done"
     time.sleep(2)
     print "Queue draining starting"
-
-    signal(SIGTERM, _exit_handler)
-    signal(SIGINT, _exit_handler)
 
     num_processed = 0
     while True:
@@ -307,7 +280,6 @@ def drain_queue(queue):
 
     client.basic_cancel(tag)
     client.close()
-
 
 
 def get_user_confirmation():
@@ -322,69 +294,40 @@ def get_user_confirmation():
 
 def debug_mode():
     disp = Dispatcher(debug=True)
-    signal(SIGINT, _exit_handler)
-    signal(SIGTERM, _exit_handler)
-
     disp.wait()
 
 
 def daemon_mode(opts):
-    global children
+    disp = Dispatcher(debug=False)
+    disp.wait()
 
-    # Create pidfile,
-    pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
 
-    if daemon.runner.is_pidfile_stale(pidf):
-        log.warning("Removing stale PID lock file %s", pidf.path)
-        pidf.break_lock()
+def setup_logging(opts):
+    import logging
+    formatter = logging.Formatter("%(asctime)s %(name)s %(module)s [%(levelname)s] %(message)s")
+    if opts.debug:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        log.addHandler(stream_handler)
+    else:
+        import logging.handlers
+        log_file = "/var/log/synnefo/dispatcher.log"
+        file_handler = logging.handlers.WatchedFileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        log.addHandler(file_handler)
 
-    try:
-        pidf.acquire()
-    except (pidlockfile.AlreadyLocked, LockTimeout):
-        log.critical("Failed to lock pidfile %s, another instance running?",
-                     pidf.path)
-        sys.exit(1)
-
-    log.info("Became a daemon")
-
-    # Fork workers
-    children = []
-
-    i = 0
-    while i < opts.workers:
-        newpid = os.fork()
-
-        if newpid == 0:
-            signal(SIGINT, _exit_handler)
-            signal(SIGTERM, _exit_handler)
-            child(sys.argv[1:])
-            sys.exit(1)
-        else:
-            log.debug("%d, forked child: %d", os.getpid(), newpid)
-            children.append(newpid)
-        i += 1
-
-    # Catch signals to ensure graceful shutdown
-    signal(SIGINT, _parent_handler)
-    signal(SIGTERM, _parent_handler)
-
-    # Wait for all children processes to die, one by one
-    try:
-        for pid in children:
-            try:
-                os.waitpid(pid, 0)
-            except Exception:
-                pass
-    finally:
-        pidf.release()
+    log.setLevel(logging.DEBUG)
 
 
 def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
-    dictConfig(settings.DISPATCHER_LOGGING)
-
-    global log
+    # Rename this process so 'ps' output looks like this is a native
+    # executable.  Can not seperate command-line arguments from actual name of
+    # the executable by NUL bytes, so only show the name of the executable
+    # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
+    setproctitle.setproctitle(sys.argv[0])
+    setup_logging(opts)
 
     # Init the global variables containing the queues
     _init_queues()
@@ -403,10 +346,17 @@ def main():
         drain_queue(opts.drain_queue)
         return
 
-    # Debug mode, process messages without spawning workers
+    # Debug mode, process messages without daemonizing
     if opts.debug:
         debug_mode()
         return
+
+    # Create pidfile,
+    pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+
+    if daemon.runner.is_pidfile_stale(pidf):
+        log.warning("Removing stale PID lock file %s", pidf.path)
+        pidf.break_lock()
 
     files_preserve = []
     for handler in log.handlers:
@@ -414,11 +364,35 @@ def main():
         if stream and hasattr(stream, 'fileno'):
             files_preserve.append(handler.stream)
 
-    daemon_context = daemon.daemon.DaemonContext(
-        files_preserve=files_preserve,
-        umask=022)
+    stderr_stream = None
+    for handler in log.handlers:
+        stream = getattr(handler, 'stream')
+        if stream and hasattr(handler, 'baseFilename'):
+            stderr_stream = stream
+            break
 
-    daemon_context.open()
+    daemon_context = daemon.DaemonContext(
+        pidfile=pidf,
+        umask=0022,
+        stdout=stderr_stream,
+        stderr=stderr_stream,
+        files_preserve=files_preserve)
+
+    try:
+        daemon_context.open()
+    except (pidlockfile.AlreadyLocked, LockTimeout):
+        log.critical("Failed to lock pidfile %s, another instance running?",
+                     pidf.path)
+        sys.exit(1)
+
+    log.info("Became a daemon")
+
+    if 'gevent' in sys.modules:
+        # A fork() has occured while daemonizing. If running in
+        # gevent context we *must* reinit gevent
+        log.debug("gevent imported. Reinitializing gevent")
+        import gevent
+        gevent.reinit()
 
     # Catch every exception, make sure it gets logged properly
     try:
@@ -426,7 +400,6 @@ def main():
     except Exception:
         log.exception("Unknown error")
         raise
-
 
 if __name__ == "__main__":
     sys.exit(main())

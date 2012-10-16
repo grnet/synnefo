@@ -52,6 +52,13 @@ lines in your ``/etc/apt/sources.list`` file:
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
 
+Also add the following line to enable the ``squeeze-backports`` repository,
+which may provide more recent versions of certain packages. The repository
+is deactivated by default and must be specified expicitly in ``apt-get``
+operations:
+
+| ``deb http://backports.debian.org/debian-backports squeeze-backports main``
+
 You also need a shared directory visible by both nodes. Pithos+ will save all
 data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this
@@ -529,6 +536,20 @@ domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
 For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
 go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
+Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
+
+.. code-block:: console
+
+   CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
+
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+
+Those settings have to do with the black cloudbar endpoints and will be described
+in more detail later on in this guide. For now, just edit the domain to point at
+node1 which is where we have installed Astakos.
+
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 
@@ -565,9 +586,9 @@ to point to our future services:
 
 .. code-block:: console
 
-   # snf-manage registerservice "~okeanos home" https://node1.example.com/im/ home-icon.png
-   # snf-manage registerservice "cyclades" https://node1.example.com/ui/
-   # snf-manage registerservice "pithos+" https://node2.example.com/ui/
+   # snf-manage service_add "~okeanos home" https://node1.example.com/im/ home-icon.png
+   # snf-manage service_add "cyclades" https://node1.example.com/ui/
+   # snf-manage service_add "pithos+" https://node2.example.com/ui/
 
 Servers Initialization
 ----------------------
@@ -602,7 +623,7 @@ Now we need to activate that user. Return to a command prompt at node1 and run:
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage listusers
+   root@node1:~ # snf-manage user_list
 
 This command should show you a list with only one user; the one we just created.
 This user should have an id with a value of ``1``. It should also have an
@@ -610,7 +631,7 @@ This user should have an id with a value of ``1``. It should also have an
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage modifyuser --set-active 1
+   root@node1:~ # snf-manage user_update --set-active 1
 
 This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
@@ -701,7 +722,7 @@ the Astakos node (node1 in our case):
 
 .. code-block:: console
 
-   # snf-manage listservices
+   # snf-manage service_list
 
 The token has been generated automatically during the :ref:`Pithos+ service
 registration <services-reg>`.
@@ -738,7 +759,7 @@ running on the Astakos node (node1):
 
 .. code-block:: console
 
-   # snf-manage listservices
+   # snf-manage service_list
 
 The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service's
 ``id`` as shown by the above command, in our case ``3``.
@@ -876,7 +897,12 @@ node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-image-host
+   # apt-get install snf-image-host snf-pithos-backend python-psycopg2
+
+snf-image also needs the `snf-pithos-backend <snf-pithos-backend>`, to be able to
+handle image files stored on Pithos+. It also needs `python-psycopg2` to be able
+to access the Pithos+ database. This is why, we also install them on *all*
+VM-capable Ganeti nodes.
 
 Now, you need to download and save the corresponding helper package. Please see
 `here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
@@ -1054,74 +1080,8 @@ Network setup overview
 This part is deployment-specific and must be customized based on the specific
 needs of the system administrator. However, to do so, the administrator needs
 to understand how each level handles Virtual Networks, to be able to setup the
-backend appropriately, before installing Cyclades.
-
-Network @ Cyclades level
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Cyclades understands two types of Virtual Networks:
-
-a) One common Public Network (Internet)
-b) One or more distinct Private Networks (L2)
-
-a) When a new VM is created, it instantly gets connected to the Public Network
-   (Internet). This means it gets a public IPv4 and IPv6 and has access to the
-   public Internet.
-
-b) Then each user, is able to create one or more Private Networks manually and
-   add VMs inside those Private Networks. Private Networks provide Layer 2
-   connectivity. All VMs inside a Private Network are completely isolated.
-
-From the VM perspective, every Network corresponds to a distinct NIC. So, the
-above are translated as follows:
-
-a) Every newly created VM, needs at least one NIC. This NIC, connects the VM
-   to the Public Network and thus should get a public IPv4 and IPv6.
-
-b) For every Private Network, the VM gets a new NIC, which is added during the
-   connection of the VM to the Private Network (without an IP). This NIC should
-   have L2 connectivity with all other NICs connected to this Private Network.
-
-To achieve the above, first of all, we need Network and IP Pool management support
-at Ganeti level, for Cyclades to be able to issue the corresponding commands.
-
-Network @ Ganeti level
-~~~~~~~~~~~~~~~~~~~~~~
-
-Currently, Ganeti does not support IP Pool management. However, we've been
-actively in touch with the official Ganeti team, who are reviewing a relatively
-big patchset that implements this functionality (you can find it at the
-ganeti-devel mailing list). We hope that the functionality will be merged to
-the Ganeti master branch soon and appear on Ganeti 2.7.
-
-Furthermore, currently the `~okeanos service <http://okeanos.grnet.gr>`_ uses
-the same patchset with slight differencies on top of Ganeti 2.4.5. Cyclades
-0.9 are compatible with this old patchset and we do not guarantee that will
-work with the updated patchset sent to ganeti-devel.
-
-We do *NOT* recommend you to apply the patchset yourself on the current Ganeti
-master, unless you are an experienced Cyclades and Ganeti integrator and you
-really know what you are doing.
-
-Instead, be a little patient and we hope that everything will work out of the
-box, once the patchset makes it into the Ganeti master. When so, Cyclades will
-get updated to become compatible with that Ganeti version.
-
-Network @ Physical host level
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-We talked about the two types of Network from the Cyclades perspective, from the
-VMs perspective and from Ganeti's perspective. Finally, we need to talk about
-the Networks from the physical (VM container) host's perspective.
-
-If your version of Ganeti supports IP pool management, then you need to setup
-your physical hosts for the two types of Networks. For the second type
-(Private Networks), our reference installation uses a number of pre-provisioned
-bridges (one for each Network), which are connected to the corresponding number
-of pre-provisioned vlans on each physical host (node1 and node2). For the first
-type (Public Network), our reference installation uses routing over one
-preprovisioned vlan on each host (node1 and node2). It also uses the `NFDHCPD`
-package for dynamically serving specific public IPs managed by Ganeti.
+backend appropriately, before installing Cyclades. To do so, please read the
+:ref:`Network <networks>` section before proceeding.
 
 Public Network setup
 --------------------
@@ -1380,8 +1340,6 @@ This will install the following:
  * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
  * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
  * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
- * ``kvm-vif-bridge`` (installed under ``/etc/ganeti`` to connect Ganeti with
-   NFDHCPD)
 
 Configure ``snf-cyclades-gtools``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1392,9 +1350,7 @@ that need it:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above variables should reflect your :ref:`Message Queue setup
 <rabbitmq-setup>`. This file should be editted in all Ganeti nodes.
@@ -1479,36 +1435,13 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   GANETI_MAX_LINK_NUMBER = 20
    ASTAKOS_URL = 'https://node1.example.com/im/authenticate'
-
-The ``GANETI_MAX_LINK_NUMBER`` is used to construct the names of the bridges
-already pre-provisioned for the Private Networks. Thus we set it to ``20``, to
-reflect our :ref:`Private Networks setup in the host machines
-<private-networks-setup>`. These numbers will suffix the
-``GANETI_LINK_PREFIX``, which is already set to ``prv`` and doesn't need to be
-changed. With those two variables Cyclades will construct the names of the
-available bridges ``prv1`` to ``prv20``, which are the real pre-provisioned
-bridges in the backend.
 
 The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
 to point to Astakos (this should have the same value with Pithos+'s
 ``PITHOS_AUTHENTICATION_URL``, setup :ref:`previously <conf-pithos>`).
 
-Edit ``/etc/synnefo/20-snf-cyclades-app-backend.conf``:
-
-.. code-block:: console
-
-   GANETI_MASTER_IP = "ganeti.node1.example.com"
-   GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "cyclades", "example_rapi_passw0rd")
-
-``GANETI_MASTER_IP`` denotes the Ganeti-master's floating IP. We provide the
-corresponding domain that resolves to that IP, than the IP itself, to ensure
-Cyclades can talk to Ganeti even after a Ganeti master-failover.
-
-``GANETI_CLUSTER_INFO`` is a tuple containing the ``GANETI_MASTER_IP``, the RAPI
-port, the RAPI user's username and the RAPI user's password. We set the above to
-reflect our :ref:`RAPI User setup <rapi-user>`.
+TODO: Document the Network Options here
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
@@ -1533,7 +1466,7 @@ on the Astakos node (node1):
 
 .. code-block:: console
 
-   # snf-manage listservices
+   # snf-manage service_list
 
 The value of ``CLOUDBAR_ACTIVE_SERVICE`` should be the cyclades service's
 ``id`` as shown by the above command, in our case ``2``.
@@ -1554,9 +1487,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
 
 .. code-block:: console
 
-   RABBIT_HOST = "node1.example.com:5672"
-   RABBIT_USERNAME = "synnefo"
-   RABBIT_PASSWORD = "example_rabbitmq_passw0rd"
+   AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above settings denote the Message Queue. Those settings should have the same
 values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and
@@ -1566,17 +1497,20 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
 
 .. code-block:: console
 
-   UI_MEDIA_URL = '/static/ui/static/snf/'
    UI_LOGIN_URL = "https://node1.example.com/im/login"
    UI_LOGOUT_URL = "https://node1.example.com/im/logout"
-
-``UI_MEDIA_URL`` denotes the location of the UI's static files.
 
 The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
 if they are not logged in. We point that to Astakos.
 
 The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
 user when he/she logs out. We point that to Astakos, too.
+
+Edit ``/etc/default/vncauthproxy``:
+
+.. code-block:: console
+
+   CHUID="www-data:nogroup"
 
 We have now finished with the basic Cyclades and Plankton configuration.
 
@@ -1598,10 +1532,92 @@ and load the initial server flavors:
 
 If everything returns successfully, our database is ready.
 
+Add the Ganeti backend
+----------------------
+
+In our installation we assume that we only have one Ganeti cluster. Cyclades can
+manage multiple Ganeti backends, but for the purpose of this guide, we won't get
+into more detail regarding mulitple backends.
+
+By default, when you install Cyclades, it sets up a dummy first backend. You can
+see it by running:
+
+.. code-block:: console
+
+   $ snf-manage backend-list
+
+We modify this backend to reflect our already setup Ganeti cluster:
+
+.. code-block:: console
+
+   $ snf-manage backend-modify --clustername "ganeti.node1.example.com"
+                               --username=cyclades
+                               --password=example_rapi_passw0rd
+                               1
+
+``clustername`` denotes the Ganeti-cluster's name. We provide the corresponding
+domain that resolves to the master IP, than the IP itself, to ensure Cyclades
+can talk to Ganeti even after a Ganeti master-failover.
+
+``username`` and ``password`` denote the RAPI user's username and the RAPI
+user's password. We set the above to reflect our :ref:`RAPI User setup
+<rapi-user>`. The port is already set to the default RAPI port; you need to
+change it, only if you have changed it in your Ganeti cluster setup.
+
+Once we setup the first backend to point at our Ganeti cluster, we update the
+Cyclades backends status by running:
+
+.. code-block:: console
+
+   $ snf-manage backend-update-status
+
+Add the Public Network
+----------------------
+
+After connecting Cyclades with our Ganeti cluster, we need to setup the Public
+Network:
+
+.. code-block:: console
+
+   $ snf-manage network-create --subnet=5.6.7.0/27
+                               --gateway=5.6.7.1
+                               --subnet6=2001:648:2FFC:1322::/64
+                               --gateway6=2001:648:2FFC:1322::1
+                               --public --dhcp --type=PUBLIC_ROUTED
+                               --name=public_network
+
+This will create the Public Network on both Cyclades and the Ganeti backend. To
+make sure everything was setup correctly, also run:
+
+.. code-block:: console
+
+   $ snf-manage reconcile-networks
+   $ snf-manage reconcile-pools
+
+You can see all available networks by running:
+
+.. code-block:: console
+
+   $ snf-manage listnetworks
+
+and inspect each network's state by running:
+
+.. code-block:: console
+
+   $ snf-manage network-inspect <net_id>
+
+Finally, you can see the networks from the Ganeti perspective by running on the
+Ganeti MASTER:
+
+.. code-block:: console
+
+   $ gnt-network list
+   $ gnt-network info <network_name>
+
 Servers restart
 ---------------
 
-We also need to restart gunicorn on node1:
+Restart gunicorn on node1:
 
 .. code-block:: console
 

@@ -35,66 +35,76 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Network
-
-from ._common import format_bool
+from synnefo.api.util import get_image
+from synnefo.db.models import VirtualMachine, Backend
 
 
 class Command(BaseCommand):
-    help = "List networks"
-
+    help = "List servers"
+    
     option_list = BaseCommand.option_list + (
         make_option('-c',
             action='store_true',
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
-        make_option('--deleted',
+        make_option('--build',
             action='store_true',
-            dest='deleted',
+            dest='build',
             default=False,
-            help="List only deleted networks"),
-        make_option('--public',
-            action='store_true',
-            dest='public',
-            default=False,
-            help="List only public networks"),
+            help="List only servers in the building state"),
+        make_option('--non-deleted', action='store_true', dest='non_deleted',
+                    default=False,
+                    help="List only non-deleted servers"),
+        make_option('--backend_id', dest='backend_id',
+                    help="List only servers of the specified backend")
         )
-
+    
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        networks = Network.objects.all()
-        if options['deleted']:
-            networks = networks.filter(state='DELETED')
+        if options['backend_id']:
+            servers = \
+            Backend.objects.get(id=options['backend_id']).virtual_machines
         else:
-            networks = networks.exclude(state='DELETED')
+            servers = VirtualMachine.objects
 
-        if options['public']:
-            networks = networks.filter(public=True)
+        if options['non_deleted']:
+            servers = servers.filter(deleted=False)
+        else:
+            servers = servers.all()
 
-        labels = ('id', 'name', 'owner', 'state', 'link', 'vms', 'public')
-        columns = (3, 12, 20, 7, 14, 4, 6)
-
+        if options['build']:
+            servers = servers.filter(operstate='BUILD')
+        
+        labels = ('id', 'name', 'owner', 'flavor', 'image', 'state',
+                  'backend')
+        columns = (3, 12, 20, 11, 12, 9, 40)
+        
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-
-        for network in networks:
-            fields = (str(network.id),
-                      network.name,
-                      network.userid or '',
-                      network.state,
-                      network.link.name,
-                      str(network.machines.count()),
-                      format_bool(network.public))
-
+        
+        for server in servers:
+            id = str(server.id)
+            try:
+                name = server.name.decode('utf8')
+            except UnicodeEncodeError:
+                name = server.name
+            flavor = server.flavor.name
+            try:
+                image = get_image(server.imageid, server.userid)['name']
+            except:
+                image = server.imageid
+            fields = (id, name, server.userid, flavor, image, server.operstate,
+                      str(server.backend))
+            
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
+            
             self.stdout.write(line.encode('utf8') + '\n')

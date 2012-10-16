@@ -3,30 +3,32 @@
 # Logging configuration
 ##################################
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
 
-    'formatters': {
+FORMATTERS = {
         'simple': {
-            'format': '%(message)s'
+            'format': '%(asctime)s [%(levelname)s] %(message)s'
         },
         'verbose': {
-            'format': '%(asctime)s [%(levelname)s] %(message)s'
+            'format': '%(asctime)s [%(process)d] %(name)s %(module)s [%(levelname)s] %(message)s'
         },
         'django': {
             'format': '[%(asctime)s] %(levelname)s %(message)s',
             'datefmt': '%d/%b/%Y %H:%M:%S'
         },
-    },
+}
 
+LOGGING_SETUP = {
+    'version': 1,
+    'disable_existing_loggers': True,
+
+    'formatters':  FORMATTERS,
     'handlers': {
         'null': {
             'class': 'logging.NullHandler',
         },
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'django'
+            'formatter': 'verbose'
         },
         'syslog': {
             'class': 'logging.handlers.SysLogHandler',
@@ -39,9 +41,14 @@ LOGGING = {
     },
 
     'loggers': {
-        'synnefo': {
-            'handlers': ['syslog'],
+        '': {
+            'handlers': ['console'],
             'level': 'INFO'
+        },
+        'synnefo': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': 0
         },
         'synnefo.admin': {
             'level': 'INFO',
@@ -62,3 +69,28 @@ LOGGING = {
     }
 }
 
+SNF_MANAGE_LOGGING_SETUP = {
+    'version': 1,
+    'disable_existing_loggers': True,
+
+    'formatters': FORMATTERS,
+
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+    },
+
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'WARNING'
+        },
+        'synnefo': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': 0
+        }
+    }
+}

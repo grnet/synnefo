@@ -31,56 +31,52 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from util import pool_table_from_type
 
-from synnefo.db.models import Network
-
+POOL_CHOICES = ['bridge', 'mac-prefix']
 
 class Command(BaseCommand):
-    args = "<network id>"
-    help = "Modify a network"
-
+    help = "List available pools"
+    output_transaction = True
     option_list = BaseCommand.option_list + (
-        make_option('--name',
-            dest='name',
-            metavar='NAME',
-            help="Set network's name"),
-        make_option('--owner',
-            dest='owner',
-            metavar='USER_ID',
-            help="Set network's owner"),
-        make_option('--state',
-            dest='state',
-            metavar='STATE',
-            help="Set network's state")
+        make_option('--type', dest='type',
+                    choices=POOL_CHOICES,
+                    help="Type of pool"
+                    ),
     )
 
     def handle(self, *args, **options):
-        if len(args) != 1:
-            raise CommandError("Please provide a server ID")
+        type_ = options['type']
 
-        try:
-            network_id = int(args[0])
-            network = Network.objects.get(id=network_id)
-        except (ValueError, Network.DoesNotExist):
-            raise CommandError("Invalid network id")
+        if type_:
+            pool_tables = [pool_table_from_type(type_)]
+        else:
+            pool_tables = [pool_table_from_type(x) for x in POOL_CHOICES]
 
-        name = options.get('name')
-        if name is not None:
-            network.name = name
+        for pool_table in pool_tables:
+            self.stdout.write("-" * 80 + '\n')
+            pl = pool_table.__name__.replace("Table", "")
+            self.stdout.write(pl + '\n')
+            self.stdout.write("-" * 80 + '\n')
+            keys = ["id", "size", "base", "offset", "available", "reserved"]
+            for key in keys:
+                self.stdout.write(("%s" % key).rjust(12))
+            self.stdout.write("\n")
+            for pool_table_row in pool_table.objects.all():
+                pool = pool_table_row.pool
 
-        owner = options.get('owner')
-        if owner is not None:
-            network.userid = owner
+                kv = {
+                    'id': pool_table_row.id,
+                    'offset': pool_table_row.offset,
+                    'base': pool_table_row.base,
+                    'size': pool_table_row.size,
+                    'available': pool.count_available(),
+                    'reserved': pool.count_reserved(),
+                }
 
-        state = options.get('state')
-        if state is not None:
-            allowed = [x[0] for x in Network.NETWORK_STATES]
-            if state not in allowed:
-                msg = "Invalid state, must be one of %s" % ', '.join(allowed)
-                raise CommandError(msg)
-            network.state = state
-
-        network.save()
+                for key in keys:
+                    self.stdout.write(("%s" % kv[key]).rjust(12))
+                self.stdout.write("\n")

@@ -51,7 +51,7 @@ from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailCh
 from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
     BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
     RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT, \
-    ENFORCE_TOKEN_RENEWAL
+    NEWPASSWD_INVALIDATE_TOKEN
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -475,7 +475,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     Extends PasswordChangeForm by enabling user
     to optionally renew also the token.
     """
-    if not ENFORCE_TOKEN_RENEWAL:
+    if not NEWPASSWD_INVALIDATE_TOKEN:
         renew = forms.BooleanField(label='Renew token', required=False,
                                    initial=True,
                                    help_text='Unsetting this may result in security risk.')
@@ -485,7 +485,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 
     def save(self, commit=True):
         user = super(ExtendedPasswordChangeForm, self).save(commit=False)
-        if ENFORCE_TOKEN_RENEWAL or self.cleaned_data.get('renew'):
+        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
             user.renew_token()
         if commit:
             user.save()
@@ -496,7 +496,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     Extends SetPasswordForm by enabling user
     to optionally renew also the token.
     """
-    if not ENFORCE_TOKEN_RENEWAL:
+    if not NEWPASSWD_INVALIDATE_TOKEN:
         renew = forms.BooleanField(label='Renew token', required=False,
                                    initial=True,
                                    help_text='Unsetting this may result in security risk.')
@@ -506,7 +506,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     
     def save(self, commit=True):
         user = super(ExtendedSetPasswordForm, self).save(commit=False)
-        if ENFORCE_TOKEN_RENEWAL or self.cleaned_data.get('renew'):
+        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
             try:
                 user = AstakosUser.objects.get(id=user.id)
             except AstakosUser.DoesNotExist:

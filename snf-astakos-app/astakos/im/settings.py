@@ -119,4 +119,4 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_S
         'Password reset on %s alpha2 testing' % SITENAME)
 
 # Enforce token renewal on password change/reset
-ENFORCE_TOKEN_RENEWAL = getattr(settings, 'ASTAKOS_ENFORCE_TOKEN_RENEWAL', True)
+NEWPASSWD_INVALIDATE_TOKEN = getattr(settings, 'ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN', True)

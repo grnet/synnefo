@@ -576,43 +576,43 @@ class SpawnServerTestCase(unittest.TestCase):
         self._insist_on_status_transition("BUILD", "ACTIVE",
                                          self.build_fail, self.build_warning)
 
-    # def test_003a_get_server_oob_console(self):
-    #     """Test getting OOB server console over VNC
+    def test_003a_get_server_oob_console(self):
+        """Test getting OOB server console over VNC
 
-    #     Implementation of RFB protocol follows
-    #     http://www.realvnc.com/docs/rfbproto.pdf.
+        Implementation of RFB protocol follows
+        http://www.realvnc.com/docs/rfbproto.pdf.
 
-    #     """
-    #     console = self.cyclades.get_server_console(self.serverid)
-    #     self.assertEquals(console['type'], "vnc")
-    #     sock = self._insist_on_tcp_connection(socket.AF_INET,
-    #                                     console["host"], console["port"])
+        """
+        console = self.cyclades.get_server_console(self.serverid)
+        self.assertEquals(console['type'], "vnc")
+        sock = self._insist_on_tcp_connection(socket.AF_INET,
+                                        console["host"], console["port"])
 
-    #     # Step 1. ProtocolVersion message (par. 6.1.1)
-    #     version = sock.recv(1024)
-    #     self.assertEquals(version, 'RFB 003.008\n')
-    #     sock.send(version)
+        # Step 1. ProtocolVersion message (par. 6.1.1)
+        version = sock.recv(1024)
+        self.assertEquals(version, 'RFB 003.008\n')
+        sock.send(version)
 
-    #     # Step 2. Security (par 6.1.2): Only VNC Authentication supported
-    #     sec = sock.recv(1024)
-    #     self.assertEquals(list(sec), ['\x01', '\x02'])
+        # Step 2. Security (par 6.1.2): Only VNC Authentication supported
+        sec = sock.recv(1024)
+        self.assertEquals(list(sec), ['\x01', '\x02'])
 
-    #     # Step 3. Request VNC Authentication (par 6.1.2)
-    #     sock.send('\x02')
+        # Step 3. Request VNC Authentication (par 6.1.2)
+        sock.send('\x02')
 
-    #     # Step 4. Receive Challenge (par 6.2.2)
-    #     challenge = sock.recv(1024)
-    #     self.assertEquals(len(challenge), 16)
+        # Step 4. Receive Challenge (par 6.2.2)
+        challenge = sock.recv(1024)
+        self.assertEquals(len(challenge), 16)
 
-    #     # Step 5. DES-Encrypt challenge, use password as key (par 6.2.2)
-    #     response = d3des_generate_response(
-    #         (console["password"] + '\0' * 8)[:8], challenge)
-    #     sock.send(response)
+        # Step 5. DES-Encrypt challenge, use password as key (par 6.2.2)
+        response = d3des_generate_response(
+            (console["password"] + '\0' * 8)[:8], challenge)
+        sock.send(response)
 
-    #     # Step 6. SecurityResult (par 6.1.3)
-    #     result = sock.recv(4)
-    #     self.assertEquals(list(result), ['\x00', '\x00', '\x00', '\x00'])
-    #     sock.close()
+        # Step 6. SecurityResult (par 6.1.3)
+        result = sock.recv(4)
+        self.assertEquals(list(result), ['\x00', '\x00', '\x00', '\x00'])
+        sock.close()
 
     def test_004_server_has_ipv4(self):
         """Test active server has a valid IPv4 address"""
@@ -1438,7 +1438,7 @@ class TestRunnerProcess(Process):
 
                 log.info(yellow + '* Starting testcase: %s' % msg + normal)
 
-                runner = unittest.TextTestRunner(f, verbosity=2, failfast = True)
+                runner = unittest.TextTestRunner(f, verbosity=2, failfast = True, resultclass=BurninTestResult)
                 suite = unittest.TestLoader().loadTestsFromTestCase(msg)
                 result = runner.run(suite)
 
@@ -1587,8 +1587,6 @@ def cleanup_servers(timeout, query_interval, delete_stale=False):
         while True:
             servers = c.list_servers()
             stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
-            for s in stale:
-                c.delete_server(s["id"])
 
             if len(stale)==0:
                 print >> sys.stderr, green + "    ...done" + normal
@@ -1604,7 +1602,7 @@ def cleanup_servers(timeout, query_interval, delete_stale=False):
         print >> sys.stderr, "Use --delete-stale to delete them."
 
 
-def cleanup_networks(timeout, query_interval, delete_stale=False):
+def cleanup_networks(action_timeout, query_interval, delete_stale=False):
 
     c = CycladesClient(API, TOKEN)
 
@@ -1633,7 +1631,7 @@ def cleanup_networks(timeout, query_interval, delete_stale=False):
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
 
-        fail_tmout = time.time() + timeout
+        fail_tmout = time.time() + action_timeout
         
         for n in stale:
             c.delete_network(n["id"])
@@ -1837,7 +1835,7 @@ def main():
 
     # Cleanup stale servers from previous runs
     if opts.show_stale:
-        cleanup_servers(delete_stale=opts.delete_stale)
+        cleanup_servers(opts.action_timeout, opts.query_interval, delete_stale=opts.delete_stale)
         cleanup_networks(opts.action_timeout, opts.query_interval, delete_stale=opts.delete_stale)
 
         return 0
@@ -1934,8 +1932,6 @@ def main():
         #folder for each image
         image_folder = os.path.join(test_folder, imageid)
         os.mkdir(image_folder)
-
-        log.info('Parallel spawn:')
 
         _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
 

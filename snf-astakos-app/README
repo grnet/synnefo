@@ -89,6 +89,8 @@ ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT    '%s alpha2 testing account created (
 ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT '%s alpha2 testing account activated (%%(user)s)' % SITENAME                    Account activation helpdesk notification email subject
 ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT          'Email change on %s alpha2 testing' % SITENAME                                  Email change subject               
 ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT        'Password reset on %s alpha2 testing' % SITENAME                                Password change email subject
+ASTAKOS_ENFORCE_TOKEN_RENEWAL               True                                                                            Enforce token renewal on password change/reset. If set to False, user can optionally decide
+                                                                                                                            whether to renew the token or not.
 =========================================== =============================================================================   ===========================================================================================
 
 Administrator functions

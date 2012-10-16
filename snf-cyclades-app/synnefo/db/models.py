@@ -312,36 +312,6 @@ class VirtualMachine(models.Model):
     def put_client(client):
             put_rapi_client(client)
 
-    # Error classes
-    class InvalidBackendIdError(Exception):
-        def __init__(self, value):
-            self.value = value
-
-        def __str__(self):
-            return repr(self.value)
-
-    class InvalidBackendMsgError(Exception):
-        def __init__(self, opcode, status):
-            self.opcode = opcode
-            self.status = status
-
-        def __str__(self):
-            return repr('<opcode: %s, status: %s>' % (self.opcode,
-                        self.status))
-
-    class InvalidActionError(Exception):
-        def __init__(self, action):
-            self._action = action
-
-        def __str__(self):
-            return repr(str(self._action))
-
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
-
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)
@@ -374,6 +344,36 @@ class VirtualMachine(models.Model):
 
     def __unicode__(self):
         return str(self.id)
+
+    # Error classes
+    class InvalidBackendIdError(Exception):
+        def __init__(self, value):
+            self.value = value
+
+        def __str__(self):
+            return repr(self.value)
+
+    class InvalidBackendMsgError(Exception):
+        def __init__(self, opcode, status):
+            self.opcode = opcode
+            self.status = status
+
+        def __str__(self):
+            return repr('<opcode: %s, status: %s>' % (self.opcode,
+                        self.status))
+
+    class InvalidActionError(Exception):
+        def __init__(self, action):
+            self._action = action
+
+        def __str__(self):
+            return repr(str(self._action))
+
+    class DeletedError(Exception):
+        pass
+
+    class BuildingError(Exception):
+        pass
 
 
 class VirtualMachineMetadata(models.Model):
@@ -451,32 +451,6 @@ class Network(models.Model):
     def __unicode__(self):
         return str(self.id)
 
-    class InvalidBackendIdError(Exception):
-        def __init__(self, value):
-            self.value = value
-
-        def __str__(self):
-            return repr(self.value)
-
-    class InvalidBackendMsgError(Exception):
-        def __init__(self, opcode, status):
-            self.opcode = opcode
-            self.status = status
-
-        def __str__(self):
-            return repr('<opcode: %s, status: %s>' % (self.opcode,
-                    self.status))
-
-    class InvalidActionError(Exception):
-        def __init__(self, action):
-            self._action = action
-
-        def __str__(self):
-            return repr(str(self._action))
-
-    class DeletedError(Exception):
-        pass
-
     @property
     def backend_id(self):
         """Return the backend id by prepending backend-prefix."""
@@ -504,7 +478,8 @@ class Network(models.Model):
                                                    reserved_map='',
                                                    size=0)
             self.save()
-        return IPPoolTable.objects.select_for_update().get(id=self.pool_id).pool
+        return IPPoolTable.objects.select_for_update().get(id=self.pool_id)\
+                                                      .pool
 
     def reserve_address(self, address):
         pool = self.get_pool()
@@ -515,6 +490,29 @@ class Network(models.Model):
         pool = self.get_pool()
         pool.put(address)
         pool.save()
+
+    class InvalidBackendIdError(Exception):
+        def __init__(self, value):
+            self.value = value
+
+        def __str__(self):
+            return repr(self.value)
+
+    class InvalidBackendMsgError(Exception):
+        def __init__(self, opcode, status):
+            self.opcode = opcode
+            self.status = status
+
+        def __str__(self):
+            return repr('<opcode: %s, status: %s>' % (self.opcode,
+                    self.status))
+
+    class InvalidActionError(Exception):
+        def __init__(self, action):
+            self._action = action
+
+        def __str__(self):
+            return repr(str(self._action))
 
 
 class BackendNetwork(models.Model):
@@ -718,4 +716,3 @@ class VirtualMachineDiagnostic(models.Model):
 
     class Meta:
         ordering = ['-created']
-

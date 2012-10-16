@@ -71,6 +71,56 @@ except ImportError:
     import unittest
 
 
+class BurninTestResult(unittest.TextTestResult):
+    def addSuccess(self, test):
+        super(BurninTestResult, self).addSuccess(test)
+        if self.showAll:
+            if test.result_dict:
+                run_details = test.result_dict
+
+                self.stream.write("\n")
+                for i in run_details:
+                    self.stream.write("%s : %s \n" % (i, run_details[i]))
+                self.stream.write("\n")
+
+        elif self.dots:
+            self.stream.write('.')
+            self.stream.flush() 
+            
+    def addError(self, test, err):
+        super(BurninTestResult, self).addError(test, err)
+        if self.showAll:
+            self.stream.writeln("ERROR")
+
+            run_details = test.result_dict
+
+            self.stream.write("\n")
+            for i in run_details:
+                self.stream.write("%s : %s \n" % (i, run_details[i]))
+            self.stream.write("\n")
+
+        elif self.dots:
+            self.stream.write('E')
+            self.stream.flush()
+
+    def addFailure(self, test, err):
+        super(BurninTestResult, self).addFailure(test, err)
+        if self.showAll:
+            self.stream.writeln("FAIL")
+
+            run_details = test.result_dict
+
+            self.stream.write("\n")
+            for i in run_details:
+                self.stream.write("%s : %s \n" % (i, run_details[i]))
+            self.stream.write("\n")
+
+        elif self.dots:
+            self.stream.write('F')
+            self.stream.flush()
+
+
+
 API = None
 TOKEN = None
 DEFAULT_API = "https://cyclades.okeanos.grnet.gr/api/v1.1"
@@ -123,6 +173,11 @@ log.addHandler(handler)
 
 
 class UnauthorizedTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result_dict = dict()
+
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         log.info("Authentication test")
@@ -146,6 +201,7 @@ class ImagesTestCase(unittest.TestCase):
         cls.plankton = ImageClient(PLANKTON, TOKEN)
         cls.images = cls.plankton.list_public()
         cls.dimages = cls.plankton.list_public(detail=True)
+        cls.result_dict = dict()
 
     def test_001_list_images(self):
         """Test image list actually returns images"""
@@ -186,6 +242,7 @@ class FlavorsTestCase(unittest.TestCase):
         cls.client = ComputeClient(API, TOKEN)
         cls.flavors = cls.client.list_flavors()
         cls.dflavors = cls.client.list_flavors(detail=True)
+        cls.result_dict = dict()
 
     def test_001_list_flavors(self):
         """Test flavor list actually returns flavors"""
@@ -228,6 +285,7 @@ class ServersTestCase(unittest.TestCase):
         cls.client = ComputeClient(API, TOKEN)
         cls.servers = cls.client.list_servers()
         cls.dservers = cls.client.list_servers(detail=True)
+        cls.result_dict = dict()
 
     # def test_001_list_servers(self):
     #     """Test server list actually returns servers"""
@@ -254,6 +312,7 @@ class SpawnServerTestCase(unittest.TestCase):
         log.info("Spawning server for image `%s'" %cls.imagename)
         cls.client = ComputeClient(API, TOKEN)
         cls.cyclades = CycladesClient(API, TOKEN)
+        cls.result_dict = dict()
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
@@ -446,9 +505,14 @@ class SpawnServerTestCase(unittest.TestCase):
         cls.username = None
         cls.passwd = server["adminPass"]
 
+        self.result_dict["Server ID"] = str(server["id"])
+        self.result_dict["Password"] = str(server["adminPass"])
+
     def test_002a_server_is_building_in_list(self):
         """Test server is in BUILD state, in server list"""
         log.info("Server in BUILD state in server list")
+
+        self.result_dict.clear()
 
         servers = self.client.list_servers(detail=True)
         servers = filter(lambda x: x["name"] == self.servername, servers)
@@ -555,8 +619,13 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Validate server's IPv4")
 
+
         server = self.client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
+
+        self.result_dict.clear()
+        self.result_dict["IPv4"] = str(ipv4)
+
         self.assertEquals(IP(ipv4).version(), 4)
 
     def test_005_server_has_ipv6(self):
@@ -567,12 +636,17 @@ class SpawnServerTestCase(unittest.TestCase):
 
         server = self.client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
+
+        self.result_dict.clear()
+        self.result_dict["IPv6"] = str(ipv6)
+
         self.assertEquals(IP(ipv6).version(), 6)
 
     def test_006_server_responds_to_ping_IPv4(self):
         """Test server responds to ping on IPv4 address"""
 
         log.info("Testing if server responds to pings in IPv4")
+        self.result_dict.clear()
 
         server = self.client.get_server_details(self.serverid)
         ip = self._get_ipv4(server)
@@ -736,6 +810,8 @@ class NetworkTestCase(unittest.TestCase):
         cls.password = dict()
         cls.is_windows = cls.imagename.lower().find("windows") >= 0
 
+        cls.result_dict = dict()
+
     def _skipIf(self, condition, msg):
         if condition:
             self.skipTest(msg)
@@ -796,10 +872,14 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Server A id:" + str(serverA["id"]))
         log.info("Server password " + (self.password['A']))
 
+        self.result_dict["Server A ID"] = str(serverA["id"])
+        self.result_dict["Server A password"] = serverA["adminPass"]
+        
     def test_00001b_serverA_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         log.info("Waiting until test server A becomes ACTIVE")
+        self.result_dict.clear()
 
         fail_tmout = time.time() + self.action_timeout
         while True:
@@ -819,7 +899,7 @@ class NetworkTestCase(unittest.TestCase):
         """Test submit create server request"""
 
         log.info("Creating test server B")
-
+        
         serverB = self.client.create_server(self.servername, self.flavorid,
                                             self.imageid, personality=None)
 
@@ -836,10 +916,15 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Server B id: " + str(serverB["id"]))
         log.info("Password " + (self.password['B']))
 
+        self.result_dict.clear()
+        self.result_dict["Server B ID"] = str(serverB["id"])
+        self.result_dict["Server B password"] = serverB["adminPass"]
+
     def test_00002b_serverB_becomes_active(self):
         """Test server becomes ACTIVE"""
 
         log.info("Waiting until test server B becomes ACTIVE")
+        self.result_dict.clear()
 
         fail_tmout = time.time() + self.action_timeout
         while True:
@@ -859,7 +944,8 @@ class NetworkTestCase(unittest.TestCase):
         """Test submit create network request"""
 
         log.info("Submit new network request")
-
+        self.result_dict.clear()
+                
         name = SNF_TEST_PREFIX + TEST_RUN_ID
         previous_num = len(self.client.list_networks())
         network = self.client.create_network(name,cidr='10.0.0.1/28')
@@ -888,10 +974,13 @@ class NetworkTestCase(unittest.TestCase):
 
         self.assertTrue(connected)
 
+        self.result_dict["Private network ID"] = str(network['id'])
+
     def test_002_connect_to_network(self):
         """Test connect VMs to network"""
 
         log.info("Connect VMs to private network")
+        self.result_dict.clear()
 
         self.client.connect_server(self.serverid['A'], self.networkid)
         self.client.connect_server(self.serverid['B'], self.networkid)
@@ -967,6 +1056,7 @@ class NetworkTestCase(unittest.TestCase):
         "Test if server A responds to IPv4 pings"
 
         log.info("Testing if server A responds to IPv4 pings ")
+        self.result_dict.clear()
 
         server = self.client.get_server_details(self.serverid['A'])
         ip = self._get_ipv4(server)
@@ -974,6 +1064,8 @@ class NetworkTestCase(unittest.TestCase):
         fail_tmout = time.time() + self.action_timeout
 
         s = False
+        
+        self.result_dict["Server A public IP"] = str(ip)
 
         while True:
 
@@ -993,6 +1085,7 @@ class NetworkTestCase(unittest.TestCase):
         """Reboot server B"""
 
         log.info("Rebooting server B")
+        self.result_dict.clear()
 
         self.client.shutdown_server(self.serverid['B'])
 
@@ -1026,12 +1119,16 @@ class NetworkTestCase(unittest.TestCase):
         """Test if server B responds to IPv4 pings"""
 
         log.info("Testing if server B responds to IPv4 pings")
+        self.result_dict.clear()
+        
         server = self.client.get_server_details(self.serverid['B'])
         ip = self._get_ipv4(server)
 
         fail_tmout = time.time() + self.action_timeout
 
         s = False
+
+        self.result_dict["Server B public IP"] = str(ip)
 
         while True:
             if self._ping_once(ip):
@@ -1052,6 +1149,7 @@ class NetworkTestCase(unittest.TestCase):
         self._skipIf(self.is_windows, "only valid for Linux servers")
 
         log.info("Setting up interface eth1 for server A")
+        self.result_dict.clear()
 
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
@@ -1462,7 +1560,7 @@ def _spawn_network_test_case(**kwargs):
     return cls
 
 
-def cleanup_servers(delete_stale=False):
+def cleanup_servers(timeout, query_interval, delete_stale=False):
 
     c = ComputeClient(API, TOKEN)
 
@@ -1478,19 +1576,35 @@ def cleanup_servers(delete_stale=False):
 
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale servers:" % len(stale)
-        for server in stale:
-            c.delete_server(server["id"])
-        print >> sys.stderr, green + "    ...done" + normal
+
+        fail_tmout = time.time() + timeout
+
+
+        for s in stale:
+            c.delete_server(s["id"])
+
+        
+        while True:
+            servers = c.list_servers()
+            stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
+            for s in stale:
+                c.delete_server(s["id"])
+
+            if len(stale)==0:
+                print >> sys.stderr, green + "    ...done" + normal
+                break
+
+            elif time.time() > fail_tmout:
+                print >> sys.stderr, red + "Not all stale servers deleted. Action timed out." + normal
+                return 
+            else:
+                time.sleep(query_interval)
+                
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
 
-def cleanup_networks(action_timeout, query_interval,delete_stale=False):
-    def isSnfTest(s):
-        if s.find(SNF_TEST_PREFIX) == -1:
-            return False
-        else:
-            return True
+def cleanup_networks(timeout, query_interval, delete_stale=False):
 
     c = CycladesClient(API, TOKEN)
 
@@ -1518,9 +1632,27 @@ def cleanup_networks(action_timeout, query_interval,delete_stale=False):
 
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
-        for network in stale:
-            c.delete_network(network["id"])
-        print >> sys.stderr, green + "    ...done" + normal
+
+        fail_tmout = time.time() + timeout
+        
+        for n in stale:
+            c.delete_network(n["id"])
+
+
+        while True:
+            networks = c.list_networks()
+            stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
+
+            if len(stale)==0:
+                print >> sys.stderr, green + "    ...done" + normal
+                break
+
+            elif time.time() > fail_tmout:
+                print >> sys.stderr, red + "Not all stale networks deleted. Action timed out." + normal
+                return 
+            else:
+                time.sleep(query_interval)
+
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
@@ -1707,6 +1839,7 @@ def main():
     if opts.show_stale:
         cleanup_servers(delete_stale=opts.delete_stale)
         cleanup_networks(opts.action_timeout, opts.query_interval, delete_stale=opts.delete_stale)
+
         return 0
 
     # Initialize a kamaki instance, get flavors, images

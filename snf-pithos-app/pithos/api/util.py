@@ -807,6 +807,7 @@ def get_backend():
     backend = _pithos_backend_pool.pool_get()
     backend.default_policy['quota'] = BACKEND_QUOTA
     backend.default_policy['versioning'] = BACKEND_VERSIONING
+    backend.messages = []
     return backend
 
 

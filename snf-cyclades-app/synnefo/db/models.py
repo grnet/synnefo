@@ -32,7 +32,6 @@ import datetime
 from django.conf import settings
 from django.db import models
 from django.db import IntegrityError
-from django.db import transaction
 
 import utils
 from contextlib import contextmanager
@@ -492,45 +491,6 @@ class Network(models.Model):
         """
         return getattr(snf_settings, self.type + '_TAGS')
 
-    @transaction.commit_on_success
-    def update_state(self):
-        """Update state of the Network.
-
-        Update the state of the Network depending on the related
-        backend_networks. When backend networks do not have the same operstate,
-        the Network's state is PENDING. Otherwise it is the same with
-        the BackendNetworks operstate.
-
-        """
-
-        old_state = self.state
-
-        backend_states = [s.operstate for s in self.backend_networks.all()]
-        if not backend_states:
-            self.state = 'PENDING'
-            self.save()
-            return
-
-        all_equal = len(set(backend_states)) <= 1
-        self.state = all_equal and backend_states[0] or 'PENDING'
-
-        # Release the resources on the deletion of the Network
-        if old_state != 'DELETED' and self.state == 'DELETED':
-            log.info("Network %r deleted. Releasing link %r mac_prefix %r",
-                     self.id, self.mac_prefix, self.link)
-            self.deleted = True
-            if self.mac_prefix and self.type == 'PRIVATE_MAC_FILTERED':
-                mac_pool = MacPrefixPoolTable.get_pool()
-                mac_pool.put(self.mac_prefix)
-                mac_pool.save()
-
-            if self.link and self.type == 'PRIVATE_PHYSICAL_VLAN':
-                bridge_pool = BridgePoolTable.get_pool()
-                bridge_pool.put(self.link)
-                bridge_pool.save()
-
-        self.save()
-
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""
 
@@ -626,14 +586,6 @@ class BackendNetwork(models.Model):
                 raise utils.InvalidMacAddress("Invalid MAC prefix '%s'" % \
                                                mac_prefix)
             self.mac_prefix = mac_prefix
-
-    def save(self, *args, **kwargs):
-        super(BackendNetwork, self).save(*args, **kwargs)
-        self.network.update_state()
-
-    def delete(self, *args, **kwargs):
-        super(BackendNetwork, self).delete(*args, **kwargs)
-        self.network.update_state()
 
 
 class NetworkInterface(models.Model):

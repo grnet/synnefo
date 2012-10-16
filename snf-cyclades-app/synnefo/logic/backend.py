@@ -39,7 +39,8 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, VirtualMachineDiagnostic)
+                               pooled_rapi_client, BridgePoolTable,
+                               MacPrefixPoolTable, VirtualMachineDiagnostic)
 from synnefo.logic import utils
 
 from logging import getLogger
@@ -225,6 +226,8 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     if status == 'success':
         back_network.backendtime = etime
     back_network.save()
+    # Also you must update the state of the Network!!
+    update_network_state(back_network.network)
 
 
 @transaction.commit_on_success

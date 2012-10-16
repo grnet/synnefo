@@ -427,7 +427,10 @@ class Network(models.Model):
                               default=None)
 
     pool = models.OneToOneField('IPPoolTable', related_name='network',
-                                null=True)
+                default=lambda: IPPoolTable.objects.create(available_map='',
+                                                           reserved_map='',
+                                                           size=0),
+                null=True)
 
     objects = ForUpdateManager()
 
@@ -518,11 +521,6 @@ class Network(models.Model):
             BackendNetwork.objects.create(backend=backend, network=self)
 
     def get_pool(self):
-        if not self.pool_id:
-            self.pool = IPPoolTable.objects.create(available_map='',
-                                                   reserved_map='',
-                                                   size=0)
-            self.save()
         return IPPoolTable.objects.select_for_update().get(id=self.pool_id).pool
 
     def reserve_address(self, address):

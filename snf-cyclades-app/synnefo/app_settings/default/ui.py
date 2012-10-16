@@ -135,7 +135,7 @@ UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'PRIVATE_FILTERED': 'mac-filtering'}
 
 # Suggested private networks to let the user choose from when creating a private
 # network with dhcp enabled
-UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.1/24', '192.168.1.1/24']
+UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.0/24', '192.168.0.0/24']
 
 # Whether to display already connected vm's to the network connect overlay
 UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False

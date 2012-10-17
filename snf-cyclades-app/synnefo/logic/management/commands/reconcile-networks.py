@@ -113,6 +113,8 @@ def reconcile_networks(out, fix, conflicting_ips):
                     back_network = \
                         BackendNetwork.objects.create(network=network,
                                                       backend=b)
+                else:
+                    continue
 
             try:
                 # Get the info from backend

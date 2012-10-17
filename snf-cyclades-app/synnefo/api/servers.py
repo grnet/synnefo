@@ -199,117 +199,130 @@ def create_server(request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
-    req = util.get_request_dict(request)
-    log.info('create_server %s', req)
-
     try:
-        server = req['server']
-        name = server['name']
-        metadata = server.get('metadata', {})
-        assert isinstance(metadata, dict)
-        image_id = server['imageRef']
-        flavor_id = server['flavorRef']
-        personality = server.get('personality', [])
-        assert isinstance(personality, list)
-    except (KeyError, AssertionError):
-        raise faults.BadRequest("Malformed request")
+        req = util.get_request_dict(request)
+        log.info('create_server %s', req)
 
-    if len(personality) > settings.MAX_PERSONALITY:
-        raise faults.OverLimit("Maximum number of personalities exceeded")
-
-    for p in personality:
-        # Verify that personalities are well-formed
         try:
-            assert isinstance(p, dict)
-            keys = set(p.keys())
-            allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
-            assert keys.issubset(allowed)
-            contents = p['contents']
-            if len(contents) > settings.MAX_PERSONALITY_SIZE:
-                # No need to decode if contents already exceed limit
-                raise faults.OverLimit("Maximum size of personality exceeded")
-            if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
-                raise faults.OverLimit("Maximum size of personality exceeded")
-        except AssertionError:
-            raise faults.BadRequest("Malformed personality in request")
+            server = req['server']
+            name = server['name']
+            metadata = server.get('metadata', {})
+            assert isinstance(metadata, dict)
+            image_id = server['imageRef']
+            flavor_id = server['flavorRef']
+            personality = server.get('personality', [])
+            assert isinstance(personality, list)
+        except (KeyError, AssertionError):
+            raise faults.BadRequest("Malformed request")
 
-    image = {}
-    img = util.get_image(image_id, request.user_uniq)
-    properties = img.get('properties', {})
-    image['backend_id'] = img['location']
-    image['format'] = img['disk_format']
-    image['metadata'] = dict((key.upper(), val) \
-                             for key, val in properties.items())
+        if len(personality) > settings.MAX_PERSONALITY:
+            raise faults.OverLimit("Maximum number of personalities exceeded")
 
-    flavor = util.get_flavor(flavor_id)
-    password = util.random_password()
+        for p in personality:
+            # Verify that personalities are well-formed
+            try:
+                assert isinstance(p, dict)
+                keys = set(p.keys())
+                allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
+                assert keys.issubset(allowed)
+                contents = p['contents']
+                if len(contents) > settings.MAX_PERSONALITY_SIZE:
+                    # No need to decode if contents already exceed limit
+                    raise faults.OverLimit("Maximum size of personality exceeded")
+                if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
+                    raise faults.OverLimit("Maximum size of personality exceeded")
+            except AssertionError:
+                raise faults.BadRequest("Malformed personality in request")
 
-    count = VirtualMachine.objects.filter(userid=request.user_uniq,
-                                          deleted=False).count()
+        image = {}
+        img = util.get_image(image_id, request.user_uniq)
+        properties = img.get('properties', {})
+        image['backend_id'] = img['location']
+        image['format'] = img['disk_format']
+        image['metadata'] = dict((key.upper(), val) \
+                                 for key, val in properties.items())
 
-    # get user limit
-    vms_limit_for_user = \
-        settings.VMS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_VMS_PER_USER)
+        flavor = util.get_flavor(flavor_id)
+        password = util.random_password()
 
-    if count >= vms_limit_for_user:
-        raise faults.OverLimit("Server count limit exceeded for your account.")
+        count = VirtualMachine.objects.filter(userid=request.user_uniq,
+                                              deleted=False).count()
 
-    backend_allocator = BackendAllocator()
-    backend = backend_allocator.allocate(flavor)
+        # get user limit
+        vms_limit_for_user = \
+            settings.VMS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_VMS_PER_USER)
 
-    if backend is None:
+        if count >= vms_limit_for_user:
+            raise faults.OverLimit("Server count limit exceeded for your account.")
+
+        backend_allocator = BackendAllocator()
+        backend = backend_allocator.allocate(flavor)
+
+        if backend is None:
+            log.error("No available backends for VM with flavor %s", flavor)
+            raise Exception("No available backends")
+    except:
         transaction.rollback()
-        log.error("No available backends for VM with flavor %s", flavor)
-        raise Exception("No available backends")
-    transaction.commit()
-
-    if settings.PUBLIC_ROUTED_USE_POOL:
-        (network, address) = util.allocate_public_address(backend)
-        if address is None:
-            transaction.rollback()
-            log.error("Public networks of backend %s are full", backend)
-            raise faults.OverLimit("Can not allocate IP for new machine."
-                                   " Public networks are full.")
-        transaction.commit()
-        nic = {'ip': address, 'network': network.backend_id}
+        raise
     else:
-        network = choice(list(util.backend_public_networks(backend)))
-        nic = {'ip': 'pool', 'network': network.backend_id}
-
-    # We must save the VM instance now, so that it gets a valid
-    # vm.backend_vm_id.
-    vm = VirtualMachine.objects.create(
-        name=name,
-        backend=backend,
-        userid=request.user_uniq,
-        imageid=image_id,
-        flavor=flavor)
+        transaction.commit()
 
     try:
-        jobID = create_instance(vm, nic, flavor, image, password, personality)
-    except GanetiApiError:
-        vm.delete()
+        if settings.PUBLIC_ROUTED_USE_POOL:
+            (network, address) = util.allocate_public_address(backend)
+            if address is None:
+                log.error("Public networks of backend %s are full", backend)
+                raise faults.OverLimit("Can not allocate IP for new machine."
+                                       " Public networks are full.")
+            nic = {'ip': address, 'network': network.backend_id}
+        else:
+            network = choice(list(util.backend_public_networks(backend)))
+            nic = {'ip': 'pool', 'network': network.backend_id}
+    except:
+        transaction.rollback()
         raise
+    else:
+        transaction.commit()
 
-    log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-            request.user_uniq, vm, nic, backend, str(jobID))
+    try:
+        # We must save the VM instance now, so that it gets a valid
+        # vm.backend_vm_id.
+        vm = VirtualMachine.objects.create(
+            name=name,
+            backend=backend,
+            userid=request.user_uniq,
+            imageid=image_id,
+            flavor=flavor)
 
-    vm.backendjobid = jobID
-    vm.save()
+        try:
+            jobID = create_instance(vm, nic, flavor, image, password, personality)
+        except GanetiApiError:
+            vm.delete()
+            raise
 
-    for key, val in metadata.items():
-        VirtualMachineMetadata.objects.create(
-            meta_key=key,
-            meta_value=val,
-            vm=vm)
+        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
+                request.user_uniq, vm, nic, backend, str(jobID))
 
-    server = vm_to_dict(vm, detail=True)
-    server['status'] = 'BUILD'
-    server['adminPass'] = password
+        vm.backendjobid = jobID
+        vm.save()
 
-    respsone = render_server(request, server, status=202)
-    transaction.commit()
+        for key, val in metadata.items():
+            VirtualMachineMetadata.objects.create(
+                meta_key=key,
+                meta_value=val,
+                vm=vm)
+
+        server = vm_to_dict(vm, detail=True)
+        server['status'] = 'BUILD'
+        server['adminPass'] = password
+
+        respsone = render_server(request, server, status=202)
+    except:
+        transaction.rollback()
+        raise
+    else:
+        transaction.commit()
 
     return respsone
 

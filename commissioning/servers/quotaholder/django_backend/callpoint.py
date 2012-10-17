@@ -76,6 +76,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 e = Entity.objects.get(entity=entity, key=key)
             except Entity.DoesNotExist:
                 append(entity)
+                continue
 
             e.key = newkey
             e.save()

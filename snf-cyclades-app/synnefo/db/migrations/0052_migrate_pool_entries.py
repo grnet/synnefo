@@ -51,7 +51,8 @@ class Migration(DataMigration):
 
             for bridge in bridges:
                 if not bridge.available:
-                    available[bridge.index] = False
+                    # Bridge indexes in old BridgePool
+                    available[bridge.index - 1] = False
             available_map = bitarray_to_string(available)
             reserved_map = bitarray_to_string(reserved)
 
@@ -80,7 +81,7 @@ class Migration(DataMigration):
 
             for macp in mac_prefixes:
                 if not macp.available:
-                    available[macp.index] = False
+                    available[macp.index - 1] = False
 
             for index in range(0, macp_length):
                 mac = mac_from_index(macp_base, index)

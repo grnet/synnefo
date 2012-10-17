@@ -171,10 +171,11 @@ def _bitarray_to_string(bitarray_):
 
 class BridgePool(PoolManager):
     def index_to_value(self, index):
-        return self.pool_table.base + str(index)
+        # Bridge indexes should start from 1
+        return self.pool_table.base + str(index + 1)
 
     def value_to_index(self, value):
-        return int(value.replace(self.pool_table.base, ""))
+        return int(value.replace(self.pool_table.base, "")) - 1
 
 
 class MacPrefixPool(PoolManager):

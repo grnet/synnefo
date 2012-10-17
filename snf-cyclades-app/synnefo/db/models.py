@@ -427,7 +427,10 @@ class Network(models.Model):
                               default=None)
 
     pool = models.OneToOneField('IPPoolTable', related_name='network',
-                                null=True)
+                default=lambda: IPPoolTable.objects.create(available_map='',
+                                                           reserved_map='',
+                                                           size=0),
+                null=True)
 
     objects = ForUpdateManager()
 
@@ -503,7 +506,7 @@ class Network(models.Model):
                 mac_pool.put(self.mac_prefix)
                 mac_pool.save()
 
-            if self.link and self.type == 'PRIVATE_VLAN':
+            if self.link and self.type == 'PRIVATE_PHYSICAL_VLAN':
                 bridge_pool = BridgePoolTable.get_pool()
                 bridge_pool.put(self.link)
                 bridge_pool.save()

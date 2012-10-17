@@ -8,6 +8,9 @@ FIXES:
   LOGIC:
 	* Fix bugs concerning reconcilliation of building vms (#2288, #2289)
 	* Fix bug in dispatcher default file
+  UI:
+        * Fixed default UI settings importing synnefo settings:
+	  Admin must set FEEDBACK_EMAIL_FROM explicitly.
 
 NEW FEATURES:
   LOGIC:

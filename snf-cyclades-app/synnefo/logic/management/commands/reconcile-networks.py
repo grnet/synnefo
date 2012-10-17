@@ -113,6 +113,8 @@ def reconcile_networks(out, fix, conflicting_ips):
                     back_network = \
                         BackendNetwork.objects.create(network=network,
                                                       backend=b)
+                else:
+                    continue
 
             try:
                 # Get the info from backend
@@ -154,7 +156,7 @@ def reconcile_networks(out, fix, conflicting_ips):
                     for group in hanging_groups:
                         out.write('F: Connecting network %d to nodegroup %s\n'
                                   % (net_id, group))
-                        backend.connect_network_group(b, network, group)
+                        backend.connect_network(network, b, group=group)
             elif back_network and back_network.operstate != 'ACTIVE':
                 # Network is active
                 out.write('D: Unsynced network %d in backend %s\n' % info)

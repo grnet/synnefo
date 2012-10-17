@@ -59,7 +59,7 @@ class Command(BaseCommand):
 
         sep = '-' * 80 + '\n'
         labels = ('name', 'backend-name', 'state', 'owner', 'subnet', 'gateway',
-                  'max_prefix', 'link', 'public', 'dhcp', 'type', 'deleted',
+                  'mac_prefix', 'link', 'public', 'dhcp', 'type', 'deleted',
                   'action', 'pool')
         fields = (net.name, net.backend_id, net.state, str(net.userid),
                   str(net.subnet), str(net.gateway), str(net.mac_prefix),

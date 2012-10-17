@@ -15,10 +15,13 @@ class Migration(DataMigration):
         print "Use `snf-manage network-modify` to change them." + '\033[0m'
 
         create_bridge = orm.BridgePool.objects.create
-        for link in orm.NetworkLink.objects.all():
-            create_bridge(index=link.index,
-                          value=link.name,
-                          available=link.available)
+        for link in orm.NetworkLink.objects.order_by('id').all():
+            # Do not create bridge for public network
+            if not link.id == 1:
+                # Create bridges
+                create_bridge(index=link.index,
+                              value=link.name,
+                              available=link.available)
 
         for network in orm.Network.objects.all():
             if network.state == 'DELETED':

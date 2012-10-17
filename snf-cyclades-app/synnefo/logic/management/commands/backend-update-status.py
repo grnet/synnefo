@@ -44,9 +44,9 @@ class Command(BaseCommand):
     output_transaction = True  # The management command runs inside
                                # an SQL transaction
     option_list = BaseCommand.option_list + (
-        make_option('--backend_id', dest='backend_id',
+        make_option('--backend-id', dest='backend_id',
                    help="Update statistics of only this backend"),
-        make_option('--older_than', dest='older_than', metavar="MINUTES",
+        make_option('--older-than', dest='older_than', metavar="MINUTES",
                    help="Update only backends that have not been updated for\
                    MINUTES. Set to 0 to force update.")
         )

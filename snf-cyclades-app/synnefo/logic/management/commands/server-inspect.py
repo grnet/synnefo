@@ -130,7 +130,7 @@ class Command(BaseCommand):
 
         self.stdout.write('\n')
         self.stdout.write(sep)
-        self.stdout.write('Non-archived jobs concering Server in Ganeti\n')
+        self.stdout.write('Non-archived jobs concerning Server in Ganeti\n')
         self.stdout.write(sep)
         jobs = client.GetJobs()
         for j in jobs:

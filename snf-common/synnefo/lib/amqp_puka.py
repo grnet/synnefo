@@ -44,6 +44,7 @@ import logging
 
 from puka import Client
 from puka import spec_exceptions
+import socket
 from socket import error as socket_error
 from time import sleep
 from random import shuffle
@@ -127,6 +128,15 @@ class AMQPPukaClient(object):
             return self.connect(retries + 1)
 
         logger.info('Successfully connected to host: %s', host)
+
+        # Setup TCP keepalive option
+        self.client.sd.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        # Keepalive time
+        self.client.sd.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 20)
+        # Keepalive interval
+        self.client.sd.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 2)
+        # Keepalive retry
+        self.client.sd.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 10)
 
         logger.info('Creating channel')
 

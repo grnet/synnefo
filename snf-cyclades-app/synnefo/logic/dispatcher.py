@@ -130,7 +130,8 @@ class Dispatcher:
                                    routing_key=binding[2])
 
             self.client.basic_consume(queue=binding[0],
-                                                        callback=callback)
+                                      callback=callback,
+                                      prefetch_count=5)
 
             log.debug("Binding %s(%s) to queue %s with handler %s",
                       binding[1], binding[2], binding[0], binding[3])

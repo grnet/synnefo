@@ -10,9 +10,10 @@ import os
 #def get_entity         OK 
 #def get_limits         LOVERDOS
 #def set_limits         LOVERDOS
+#def release_entity     OK
 #def get_holding
 #def set_holding
-#def list_resources     BUG
+#def list_resources     
 #def get_quota
 #def set_quota
 #def issue_commission
@@ -20,7 +21,6 @@ import os
 #def reject_commission
 #def get_pending_commissions
 #def resolve_pending_commissions
-#def release_entity
 #def get_timeline
 
 class Context(object): 

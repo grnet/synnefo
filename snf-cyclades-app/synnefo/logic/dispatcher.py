@@ -82,6 +82,7 @@ class Dispatcher:
 
     def wait(self):
         log.info("Waiting for messages..")
+        timeout = 600
         while True:
             try:
                 # Close the Django DB connection before processing
@@ -90,7 +91,12 @@ class Dispatcher:
                 # the dispatcher to recover from broken connections
                 # gracefully.
                 close_connection()
-                self.client.basic_wait()
+                msg = self.client.basic_wait(timeout=timeout)
+                if not msg:
+                    log.warning("Idle connection for %d seconds. Will connect"
+                                " to a different host. Verify that"
+                                " snf-ganeti-eventd is running!!", timeout)
+                    self.client.reconnect()
             except SystemExit:
                 break
             except Exception as e:

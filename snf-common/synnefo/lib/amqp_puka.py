@@ -66,7 +66,6 @@ def reconnect_decorator(func):
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             logger.error('Connection Closed while in %s: %s', func.__name__, e)
-            self.consume_promises = []
             self.connect()
 
     return wrapper
@@ -140,6 +139,10 @@ class AMQPPukaClient(object):
 
         logger.info('Creating channel')
 
+        # Clear consume_promises each time connecting, since they are related
+        # to the connection object
+        self.consume_promises = []
+
         if self.unacked:
             self._resend_unacked_messages()
 
@@ -155,6 +158,11 @@ class AMQPPukaClient(object):
             self.exchanges = []
             for exchange, type in exchanges:
                 self.exchange_declare(exchange, type)
+
+    @reconnect_decorator
+    def reconnect(self):
+        self.close()
+        self.connect()
 
     def exchange_declare(self, exchange, type='direct'):
         """Declare an exchange
@@ -321,9 +329,9 @@ class AMQPPukaClient(object):
 
         """
         if promise is not None:
-            self.client.wait(promise, timeout)
+            return self.client.wait(promise, timeout)
         else:
-            self.client.wait(self.consume_promises)
+            return self.client.wait(self.consume_promises, timeout)
 
     @reconnect_decorator
     def basic_get(self, queue):
@@ -352,6 +360,7 @@ class AMQPPukaClient(object):
 
     def close(self):
         """Check that messages have been send and close the connection."""
+        logger.debug("Closing connection to %s", self.client.host)
         try:
             if self.confirms:
                 self.get_confirms()

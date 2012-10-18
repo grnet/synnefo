@@ -12,7 +12,12 @@ class Data:
         self.quantity = kwd.get('quantity', parent.quantity)
         self.import_limit = kwd.get('import_limit', parent.import_limit)
         self.export_limit = kwd.get('export_limit', parent.export_limit)
-        self.should_have_rejected = kwd.get('should_have_rejected', False)
+        # set_limits_has_rejected indicates whether the test expects a non-empty rejected list
+        # after calling set_limits
+        self.set_limits_has_rejected = kwd.get('set_limits_has_rejected', False)
+        # get_limits_expected_length indicates the exact length of the limits list
+        # returned by get_limits
+        self.get_limits_expected_length = kwd.get('get_limits_expected_length', 1)
 
 class LimitsTest(QHTestCase):
     context = {}
@@ -32,23 +37,31 @@ class LimitsTest(QHTestCase):
     export_limit = export_limit_half_capacity
 
     def helper_set_limits(self, **kwd):
+        """
+        Calls set_limits and returns the rejected list (from the original API).
+        """
         data = Data(self, **kwd)
         rejected = self.qh.set_limits(
             context = data.context,
             set_limits = [
-                (data.policy, data.quantity, data.capacity,
-                 data.import_limit, data.export_limit)
+                (data.policy,
+                 data.quantity,
+                 data.capacity,
+                 data.import_limit,
+                 data.export_limit)
             ]
         )
 
-        if data.should_have_rejected:
+        if data.set_limits_has_rejected:
             self.assertTrue(len(rejected) > 1)
         else:
             self.assertTrue(len(rejected) == 0)
 
+        return rejected
+
     def helper_get_limits(self, **kwd):
         """
-        Returns the limits
+        Calls get_limits and returns the limits list (from the original API)..
         """
         data = Data(self, **kwd)
         limits = self.qh.get_limits(
@@ -56,40 +69,21 @@ class LimitsTest(QHTestCase):
             get_limits = [data.policy]
         )
 
+        self.assertEqual(len(limits), data.get_limits_expected_length)
+
         return limits
 
     def test_01_set_get(self):
         self.helper_set_limits(should_have_rejected = False)
-        limits = self.helper_get_limits()
-        self.assertTrue(len(limits) == 1)
+        self.helper_get_limits(get_limits_expected_length = 1)
+
 
     def test_02_set_get_empty_policy_name(self):
         """
         Tests empty policy name
         """
-        policy = ''
-        quantity = 0
-        capacity = 100
-        importLimit = 10
-        exportLimit = 10
-
-        # SET
-        rejected = self.qh.set_limits(
-            context = {},
-            set_limits = [
-                (policy, quantity, capacity, importLimit, exportLimit)
-            ]
-        )
-
-        self.assertEqual([], rejected)
-
-        # GET
-        limits = self.qh.get_limits(
-            context = {},
-            get_limits = [policy] # or is it just policy, i.e. no
-        )
-
-        self.assertTrue(len(limits) == 1)
+        self.helper_set_limits(policy = '', set_limits_has_rejected = False)
+        self.helper_get_limits(policy='', get_limits_expected_length = 1)
 
     def test_02_set_get_bad_quantity(self):
         """

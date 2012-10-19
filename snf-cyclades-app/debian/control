@@ -11,6 +11,7 @@ Package: snf-cyclades-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, snf-common (> 0.9.14), python-django-south (>= 0.7)
 Provides: ${python:Provides}
+Replaces: snf-network
 Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}
 Description: Synnefo cyclades package

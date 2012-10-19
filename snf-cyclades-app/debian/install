@@ -1,2 +1,4 @@
 conf/default/snf-dispatcher /etc/default
 conf/init.d/snf-dispatcher /etc/init.d
+
+synnefo/logic/mac2eui64 /usr/sbin/

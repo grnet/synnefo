@@ -586,9 +586,9 @@ to point to our future services:
 
 .. code-block:: console
 
-   # snf-manage service_add "~okeanos home" https://node1.example.com/im/ home-icon.png
-   # snf-manage service_add "cyclades" https://node1.example.com/ui/
-   # snf-manage service_add "pithos+" https://node2.example.com/ui/
+   # snf-manage service-add "~okeanos home" https://node1.example.com/im/ home-icon.png
+   # snf-manage service-add "cyclades" https://node1.example.com/ui/
+   # snf-manage service-add "pithos+" https://node2.example.com/ui/
 
 Servers Initialization
 ----------------------
@@ -623,7 +623,7 @@ Now we need to activate that user. Return to a command prompt at node1 and run:
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage user_list
+   root@node1:~ # snf-manage user-list
 
 This command should show you a list with only one user; the one we just created.
 This user should have an id with a value of ``1``. It should also have an
@@ -631,7 +631,7 @@ This user should have an id with a value of ``1``. It should also have an
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage user_update --set-active 1
+   root@node1:~ # snf-manage user-modify --set-active 1
 
 This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
@@ -722,7 +722,7 @@ the Astakos node (node1 in our case):
 
 .. code-block:: console
 
-   # snf-manage service_list
+   # snf-manage service-list
 
 The token has been generated automatically during the :ref:`Pithos+ service
 registration <services-reg>`.
@@ -759,7 +759,7 @@ running on the Astakos node (node1):
 
 .. code-block:: console
 
-   # snf-manage service_list
+   # snf-manage service-list
 
 The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service's
 ``id`` as shown by the above command, in our case ``3``.
@@ -906,13 +906,13 @@ VM-capable Ganeti nodes.
 
 Now, you need to download and save the corresponding helper package. Please see
 `here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
-assume that you installed snf-image-host version 0.3.5-1. Then, you need
-snf-image-helper v0.3.5-1 on *both* nodes:
+assume that you installed snf-image-host version 0.4.4-1. Then, you need
+snf-image-helper v0.4.4-1 on *both* nodes:
 
 .. code-block:: console
 
    # cd /var/lib/snf-image/helper/
-   # wget https://code.grnet.gr/attachments/download/1058/snf-image-helper_0.3.5-1_all.deb
+   # wget https://code.grnet.gr/attachments/download/1058/snf-image-helper_0.4.4-1_all.deb
 
 .. warning:: Be careful: Do NOT install the snf-image-helper debian package.
              Just put it under /var/lib/snf-image/helper/
@@ -922,7 +922,7 @@ running on *both* nodes:
 
 .. code-block:: console
 
-   # ln -s snf-image-helper_0.3.5-1_all.deb snf-image-helper.deb
+   # ln -s snf-image-helper_0.4.4-1_all.deb snf-image-helper.deb
    # snf-image-update-helper
 
 This will create all the needed files under ``/var/lib/snf-image/helper/`` for
@@ -1466,7 +1466,7 @@ on the Astakos node (node1):
 
 .. code-block:: console
 
-   # snf-manage service_list
+   # snf-manage service-list
 
 The value of ``CLOUDBAR_ACTIVE_SERVICE`` should be the cyclades service's
 ``id`` as shown by the above command, in our case ``2``.

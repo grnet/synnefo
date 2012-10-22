@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from base64 import b64decode
-
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.db import transaction
@@ -48,7 +46,6 @@ from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
-from random import choice
 
 
 from logging import getLogger
@@ -258,6 +255,7 @@ def create_server(request):
     try:
         req = util.get_request_dict(request)
         log.info('create_server %s', req)
+        user_id = request.user_uniq
 
         try:
             server = req['server']
@@ -274,40 +272,17 @@ def create_server(request):
         if len(personality) > settings.MAX_PERSONALITY:
             raise faults.OverLimit("Maximum number of personalities exceeded")
 
-        for p in personality:
-            # Verify that personalities are well-formed
-            try:
-                assert isinstance(p, dict)
-                keys = set(p.keys())
-                allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
-                assert keys.issubset(allowed)
-                contents = p['contents']
-                if len(contents) > settings.MAX_PERSONALITY_SIZE:
-                    # No need to decode if contents already exceed limit
-                    raise faults.OverLimit("Maximum size of personality exceeded")
-                if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
-                    raise faults.OverLimit("Maximum size of personality exceeded")
-            except AssertionError:
-                raise faults.BadRequest("Malformed personality in request")
-
-        image = {}
-        img = util.get_image(image_id, request.user_uniq)
-        properties = img.get('properties', {})
-        image['backend_id'] = img['location']
-        image['format'] = img['disk_format']
-        image['metadata'] = dict((key.upper(), val) \
-                                 for key, val in properties.items())
-
-        # Ensure that request if for active flavor
-        flavor = util.get_flavor(flavor_id, include_deleted=False)
+        util.verify_personality(personality)
+        image = util.get_image_dict(image_id, user_id)
+        flavor = util.get_flavor(flavor_id)
         password = util.random_password()
 
-        count = VirtualMachine.objects.filter(userid=request.user_uniq,
+        count = VirtualMachine.objects.filter(userid=user_id,
                                               deleted=False).count()
 
         # get user limit
         vms_limit_for_user = \
-            settings.VMS_USER_QUOTA.get(request.user_uniq,
+            settings.VMS_USER_QUOTA.get(user_id,
                     settings.MAX_VMS_PER_USER)
 
         if count >= vms_limit_for_user:
@@ -326,19 +301,10 @@ def create_server(request):
         transaction.commit()
 
     try:
-        if settings.PUBLIC_USE_POOL:
-            (network, address) = util.allocate_public_address(backend)
-            if address is None:
-                log.error("Public networks of backend %s are full", backend)
-                msg = "Failed to allocate public IP for new VM"
-                raise faults.ServiceUnavailable(msg)
-            nic = {'ip': address, 'network': network.backend_id}
-        else:
-            network = choice(list(util.backend_public_networks(backend)))
-            nic = {'ip': 'pool', 'network': network.backend_id}
+        (network, address) = util.get_public_ip(backend)
+        nic = {'ip': address, 'network': network.backend_id}
     except:
         transaction.rollback()
-        raise
     else:
         transaction.commit()
 
@@ -348,19 +314,20 @@ def create_server(request):
         vm = VirtualMachine.objects.create(
             name=name,
             backend=backend,
-            userid=request.user_uniq,
+            userid=user_id,
             imageid=image_id,
             flavor=flavor,
             action="CREATE")
 
         try:
-            jobID = create_instance(vm, nic, flavor, image, password, personality)
+            jobID = create_instance(vm, nic, flavor, image, password,
+                                    personality)
         except GanetiApiError:
             vm.delete()
             raise
 
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                request.user_uniq, vm, nic, backend, str(jobID))
+                user_id, vm, nic, backend, str(jobID))
 
         vm.backendjobid = jobID
         vm.save()

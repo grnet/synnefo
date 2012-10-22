@@ -33,7 +33,7 @@
 
 import datetime
 
-from base64 import b64encode
+from base64 import b64encode, b64decode
 from datetime import timedelta, tzinfo
 from functools import wraps
 from hashlib import sha256
@@ -57,7 +57,7 @@ from django.db.models import Q
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType, Forbidden)
+                                BadMediaType, Forbidden, OverLimit)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable)
@@ -200,6 +200,17 @@ def get_image(image_id, user_id):
         backend.close()
 
 
+def get_image_dict(image_id, user_id):
+    image = {}
+    img = get_image(image_id, user_id)
+    properties = img.get('properties', {})
+    image['backend_id'] = img['location']
+    image['format'] = img['disk_format']
+    image['metadata'] = dict((key.upper(), val) \
+                             for key, val in properties.items())
+    return image
+
+
 def get_flavor(flavor_id, include_deleted=False):
     """Return a Flavor instance or raise ItemNotFound."""
 
@@ -240,6 +251,29 @@ def allocate_public_address(backend):
         except EmptyPool:
             pass
     return (None, None)
+
+
+def get_public_ip(backend):
+    """Reserve an IP from a public network.
+
+    This method should run inside a transaction.
+
+    """
+    address = None
+    if settings.PUBLIC_ROUTED_USE_POOL:
+        (network, address) = allocate_public_address(backend)
+    else:
+        for net in list(backend_public_networks(backend)):
+            pool = net.get_pool()
+            if not pool.empty():
+                address = 'pool'
+                network = net
+                break
+    if address is None:
+        log.error("Public networks of backend %s are full", backend)
+        raise OverLimit("Can not allocate IP for new machine."
+                        " Public networks are full.")
+    return (network, address)
 
 
 def backend_public_networks(backend):
@@ -445,3 +479,21 @@ def net_resources(net_type):
         raise BadRequest('Unknown network type')
 
     return link, mac_prefix
+
+
+def verify_personality(personality):
+    for p in personality:
+        # Verify that personalities are well-formed
+        try:
+            assert isinstance(p, dict)
+            keys = set(p.keys())
+            allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
+            assert keys.issubset(allowed)
+            contents = p['contents']
+            if len(contents) > settings.MAX_PERSONALITY_SIZE:
+                # No need to decode if contents already exceed limit
+                raise OverLimit("Maximum size of personality exceeded")
+            if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
+                raise OverLimit("Maximum size of personality exceeded")
+        except AssertionError:
+            raise BadRequest("Malformed personality in request")

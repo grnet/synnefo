@@ -90,7 +90,7 @@ class Entity(Config):
            e.setExists(True)
         for e in notok:
            e.setExists(False)
-        return r
+        return notok
 
      @staticmethod
      def releaseMany(entityList):        
@@ -102,21 +102,19 @@ class Entity(Config):
            e.setExists(False)
         for e in notok:
            e.setExists(True)
-        return r
+        return notok
 
     @staticmethod
     def checkMany(entityList):
         inputList = [(e.entityName,e.entityKey) for e in entityList]
         printf("Get entities: {0}", inputList)
         rejectedList = self.con().get_entity(context={},get_entity=inputList)
-        if(rejectedList != [])
-            printf("Could not find entities : {0}", rejectedList)
-        for e in entityList:
-           if(e not any(
-           if e.entityName in rejectedList: yield e           
-        return [for e in entityList:
-                    if e.entityName in rejectedList: yield e]
-
+        (ok,notok) = Entity.split(entityList,[e for e,k in rejectedList],"get_entity") 
+        for e in ok:
+           e.setExists(True)
+        for e in notok:
+           e.setExists(False)
+        return notok
 
     #release entity implies that each ENTITY in the system has a unique name
     #therefore we don't have to check for equality recursively but we do it anyway.
@@ -155,32 +153,35 @@ class Entity(Config):
          return self.state != EntityState.NOT_EXISTS
     
     def checkExists(self):
-       self.setExists(self.checkMany([self]) == [self])
+       self.checkMany([self])
        return self.exists()
 
     def mustExist(self):
-       if(not self.exists())
+       if(not self.checkExists())
          raise Exception("User {0} does not exist!".format(entityName))
 
     def mustNotExist(self):
-       if(self.exists())
+       if(self.checkExists())
          raise Exception("User {0} already exists!".format(entityName))
 
     def create(self):
-       if((not self.checkExists())):
-         self.setExists(self.createMany([self]) == [self])
-
-       self.setData(name,password,parent)
- 
+       if(not self.checkExists()):
+          self.createMany([self])
+       return self.exists()
 
     def release():
-       self.checkExists
+       if(self.checkExists()):
+          self.releaseMany([self])
 
 
 root = Entity.getRoot()
 pgerakios = new Entity()
 pgerakios.setData("pgerakios","key1",root)
+pgerakios.create()
 
-if(pgerakios.checkExists())
+e = new Entity()
+e.setDate(random_string(),"key1",pgerakios)
+e.create()
+e.release()
 
 

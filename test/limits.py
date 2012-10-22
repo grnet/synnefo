@@ -22,11 +22,12 @@ class Data:
 class LimitsTest(QHTestCase):
     context = {}
     policy = rand_string()
-    capacity = randint(10, 1000)
-    quantity_empty = 0
-    quantity_half_capacity = capacity / 2
-    quantity_twice_capacity = capacity * 2
-    quantity = quantity_half_capacity
+    capacity1 = 0
+    capacity2 = 100
+    capacity = capacity1
+    quantity1 = capacity2
+    quantity2 = capacity1
+    quantity = quantity1
     import_limit_empty = 0
     import_limit_full_capacity = capacity
     import_limit_half_capacity = capacity / 2
@@ -73,46 +74,26 @@ class LimitsTest(QHTestCase):
 
         return limits
 
-    def test_01_set_get(self):
-        self.helper_set_limits(should_have_rejected = False)
+    def test_010_set_get(self):
+        """
+        quantity = 0, capacity = 100
+        """
+        self.helper_set_limits(quantity = 0, capacity = 100, should_have_rejected = False)
         self.helper_get_limits(get_limits_expected_length = 1)
 
+    def test_011_set_get(self):
+        """
+        quantity = 100, capacity = 0
+        """
+        self.helper_set_limits(quantity = 100, capacity = 0, should_have_rejected = False)
+        self.helper_get_limits(get_limits_expected_length = 1)
 
-    def test_02_set_get_empty_policy_name(self):
+    def test_020_set_get_empty_policy_name(self):
         """
         Tests empty policy name
         """
         self.helper_set_limits(policy = '', set_limits_has_rejected = False)
         self.helper_get_limits(policy='', get_limits_expected_length = 1)
-
-    def test_02_set_get_bad_quantity(self):
-        """
-        Test quantity that exceeds capacity.
-        QUESTION: Should this fail?
-        """
-        policy = ''
-        capacity = 100
-        quantity = capacity * 2
-        importLimit = 10
-        exportLimit = 10
-
-        # SET
-        rejected = self.qh.set_limits(
-            context = {},
-            set_limits = [
-                (policy, quantity, capacity, importLimit, exportLimit)
-            ]
-        )
-
-        self.assertEqual([], rejected)
-
-        # GET
-        limits = self.qh.get_limits(
-            context = {},
-            get_limits = [policy] # or is it just policy, i.e. no
-        )
-
-        self.assertTrue(len(limits) == 1)
 
 
 if __name__ == "__main__":

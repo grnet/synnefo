@@ -106,7 +106,9 @@ class CreateReleaseListAPITest(QHTestCase):
         self.assertEqual(tail,[])
         self.assertEqual((self.entityName,r,q,c,i,e,f),
                          (e0,r1,q1,c1,i1,e1,f1))
-                                    
+
+        #    def issueCommission(self):
+#        self.qh.issue_commission
     def setUp(self):
         super(CreateReleaseListAPITest,self).setUp()
         self.parentName = "pgerakios"

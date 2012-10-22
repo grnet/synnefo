@@ -45,6 +45,7 @@ from django.contrib.auth.views import password_change
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
+<<<<<<< HEAD
 from django.db.utils import IntegrityError
 from django.forms.fields import URLField
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
@@ -62,6 +63,8 @@ from django.core.xheaders import populate_xheaders
 from astakos.im.models import (
     AstakosUser, ApprovalTerms, AstakosGroup, Resource,
     EmailChange, GroupKind, Membership, AstakosGroupQuota)
+from django.views.decorators.http import require_http_methods
+
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
@@ -138,6 +141,7 @@ def signed_terms_required(func):
     return wrapper
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def index(request, login_template_name='im/login.html', extra_context=None):
     """
@@ -169,6 +173,7 @@ def index(request, login_template_name='im/login.html', extra_context=None):
                            context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 @transaction.commit_manually
@@ -246,6 +251,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
                            context_instance=context)
 
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
@@ -308,6 +314,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 
 @transaction.commit_manually
+@require_http_methods(["GET", "POST"])
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
@@ -392,6 +399,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                            context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
@@ -443,6 +451,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def logout(request, template='registration/logged_out.html', extra_context=None):
     """
@@ -470,6 +479,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
     return response
 
 
+@require_http_methods(["GET", "POST"])
 @transaction.commit_manually
 def activate(request, greeting_email_template_name='im/welcome_email.txt',
              helpdesk_email_template_name='im/helpdesk_notification.txt'):
@@ -543,6 +553,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
             return index(request)
 
 
+@require_http_methods(["GET", "POST"])
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context=None):
     term = None
     terms = None
@@ -584,15 +595,16 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
                                context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def change_password(request):
     return password_change(request,
                            post_change_redirect=reverse('edit_profile'),
                            password_change_form=ExtendedPasswordChangeForm)
 
-
-@signed_terms_required
+@require_http_methods(["GET", "POST"])
 @login_required
+@signed_terms_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',

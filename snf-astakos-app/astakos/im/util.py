@@ -179,4 +179,4 @@ def get_query(request):
     try:
         return request.__getattribute__(request.method)
     except AttributeError:
-        return request.GET
+        return {}

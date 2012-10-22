@@ -35,6 +35,7 @@ from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
+from django.views.decorators.http import require_http_methods
 
 from astakos.im.util import prepare_response, get_context
 from astakos.im.views import requires_anonymous, render_response
@@ -55,6 +56,7 @@ class Tokens:
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
 
+@require_http_methods(["GET", "POST"])
 @requires_anonymous
 def login(request, backend=None, on_login_template='im/login.html',
           on_creation_template='im/third_party_registration.html',
@@ -81,8 +83,7 @@ def login(request, backend=None, on_login_template='im/login.html',
 
     try:
         user = AstakosUser.objects.get(provider='shibboleth',
-                                       third_party_identifier=eppn
-                                       )
+                                       third_party_identifier=eppn)
         if user.is_active:
             return prepare_response(request,
                                     user,
@@ -106,14 +107,10 @@ def login(request, backend=None, on_login_template='im/login.html',
         except Exception, e:
             form = SimpleBackend(request).get_signup_form(
                 provider='shibboleth',
-                instance=user
-            )
+                instance=user)
             messages.error(request, e)
         return render_response(on_creation_template,
                                signup_form=form,
                                provider='shibboleth',
-                               context_instance=get_context(
-                               request,
-                               extra_context
-                               )
-                               )
+                               context_instance=get_context(request,
+                                                            extra_context))

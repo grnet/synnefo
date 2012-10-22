@@ -36,6 +36,7 @@ from django.template import RequestContext
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 from astakos.im.util import prepare_response, get_query
 from astakos.im.views import requires_anonymous
@@ -48,6 +49,7 @@ retries = RATELIMIT_RETRIES_ALLOWED - 1
 rate = str(retries) + '/m'
 
 
+@require_http_methods(["GET", "POST"])
 @csrf_exempt
 @requires_anonymous
 @ratelimit(field='username', method='POST', rate=rate)

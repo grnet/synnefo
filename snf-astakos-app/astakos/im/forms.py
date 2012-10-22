@@ -35,8 +35,8 @@ from urlparse import urljoin
 from django import forms
 from django.utils.translation import ugettext as _
 from django.contrib.auth.forms import (UserCreationForm, AuthenticationForm,
-                                       PasswordResetForm, PasswordChangeForm
-                                       )
+                                       PasswordResetForm, PasswordChangeForm,
+                                       SetPasswordForm)
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
@@ -53,8 +53,8 @@ from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup,
 from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
                                  RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED,
                                  DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
-                                 PASSWORD_RESET_EMAIL_SUBJECT)
-
+                                 PASSWORD_RESET_EMAIL_SUBJECT, 
+                                 NEWPASSWD_INVALIDATE_TOKEN)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -513,14 +513,17 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     Extends PasswordChangeForm by enabling user
     to optionally renew also the token.
     """
-    renew = forms.BooleanField(label='Renew token', required=False)
+    if not NEWPASSWD_INVALIDATE_TOKEN:
+        renew = forms.BooleanField(label='Renew token', required=False,
+                                   initial=True,
+                                   help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
 
     def save(self, commit=True):
         user = super(ExtendedPasswordChangeForm, self).save(commit=False)
-        if self.cleaned_data.get('renew'):
+        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
             user.renew_token()
         if commit:
             user.save()
@@ -657,3 +660,29 @@ class PickResourceForm(forms.Form):
         queryset=Resource.objects.select_related().all()
     )
     resource.widget.attrs["onchange"]="this.form.submit()"
+
+class ExtendedSetPasswordForm(SetPasswordForm):
+    """
+    Extends SetPasswordForm by enabling user
+    to optionally renew also the token.
+    """
+    if not NEWPASSWD_INVALIDATE_TOKEN:
+        renew = forms.BooleanField(label='Renew token', required=False,
+                                   initial=True,
+                                   help_text='Unsetting this may result in security risk.')
+    
+    def __init__(self, user, *args, **kwargs):
+        super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
+    
+    def save(self, commit=True):
+        user = super(ExtendedSetPasswordForm, self).save(commit=False)
+        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+            try:
+                user = AstakosUser.objects.get(id=user.id)
+            except AstakosUser.DoesNotExist:
+                pass
+            else:
+                user.renew_token()
+        if commit:
+            user.save()
+        return user

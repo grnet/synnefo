@@ -33,7 +33,9 @@
 
 from django.conf.urls.defaults import patterns, url
 
-from astakos.im.forms import ExtendedPasswordResetForm, ExtendedPasswordChangeForm, LoginForm
+from astakos.im.forms import (ExtendedPasswordResetForm,
+                              ExtendedPasswordChangeForm,
+                              ExtendedSetPasswordForm, LoginForm)
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 
 urlpatterns = patterns('astakos.im.views',
@@ -101,20 +103,16 @@ if 'local' in IM_MODULES:
                             url(r'^local/?$', 'local.login')
                             )
     urlpatterns += patterns('django.contrib.auth.views',
-                            url(r'^local/password_reset/?$', 'password_reset',
-                                {'email_template_name': 'registration/password_email.txt',
-                                 'password_reset_form': ExtendedPasswordResetForm}),
-                            url(r'^local/password_reset_done/?$',
-                                'password_reset_done'),
-                            url(
-                                r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
-                            'password_reset_confirm'),
-                            url(r'^local/password/reset/complete/?$',
-                                'password_reset_complete'),
-                            url(
-                            r'^password_change/?$', 'password_change', {'post_change_redirect': 'profile',
-                                                                        'password_change_form': ExtendedPasswordChangeForm})
-                            )
+        url(r'^local/password_reset/?$', 'password_reset',
+         {'email_template_name':'registration/password_email.txt',
+          'password_reset_form':ExtendedPasswordResetForm}),
+        url(r'^local/password_reset_done/?$', 'password_reset_done'),
+        url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
+         'password_reset_confirm', {'set_password_form':ExtendedSetPasswordForm}),
+        url(r'^local/password/reset/complete/?$', 'password_reset_complete'),
+        url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile',
+            'password_change_form':ExtendedPasswordChangeForm})
+    )
 
 if INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',

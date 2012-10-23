@@ -175,7 +175,8 @@ def create_network(request):
 
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
                                                deleted=False))
-    if user_networks == settings.MAX_NETWORKS_PER_USER:
+
+    if user_networks >= settings.MAX_NETWORKS_PER_USER:
         raise OverLimit('Network count limit exceeded for your account.')
 
     cidr_block = int(subnet.split('/')[1])

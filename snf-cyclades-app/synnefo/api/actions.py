@@ -330,11 +330,13 @@ def add(request, net, args):
     if net.state != 'ACTIVE':
         raise ServiceUnavailable('Network not active yet')
 
-    # Get a free IP from the address pool.
-    try:
-        address = get_network_free_address(net)
-    except EmptyPool:
-        raise ServiceUnavailable('Network is full')
+    address = None
+    if net.dhcp:
+        # Get a free IP from the address pool.
+        try:
+            address = get_network_free_address(net)
+        except EmptyPool:
+            raise ServiceUnavailable('Network is full')
 
     log.info("Connecting VM %s to Network %s(%s)", vm, net, address)
 

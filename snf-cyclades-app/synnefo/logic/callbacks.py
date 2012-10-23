@@ -56,13 +56,14 @@ def handle_message_delivery(func):
             client.basic_ack(message)
         except ValueError as e:
             log.error("Incoming message not in JSON format %s: %s", e, message)
-            client.basic_ack(message)
+            client.basic_nack(message)
         except KeyError as e:
             log.error("Malformed incoming JSON, missing attribute %s: %s",
                       e, message)
-            client.basic_ack(message)
+            client.basic_nack(message)
         except Exception as e:
             log.exception("Unexpected error: %s, msg: %s", e, msg)
+            client.basic_reject(message)
 
     return wrapper
 

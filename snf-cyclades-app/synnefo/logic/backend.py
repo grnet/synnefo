@@ -77,11 +77,6 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
-        # Set the deleted flag explicitly, cater for admin-initiated removals
-        if opcode == 'OP_INSTANCE_REMOVE':
-            release_instance_nics(vm)
-            vm.deleted = True
-            vm.nics.all().delete()
 
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
@@ -89,16 +84,19 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
 
-    # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
-    # when no instance exists at the Ganeti backend.
-    # See ticket #799 for all the details.
-    #
-    if (status == 'error' and vm.operstate == 'ERROR' and\
-        opcode == 'OP_INSTANCE_REMOVE'):
-        vm.deleted = True
-        vm.nics.all().delete()
-        vm.operstate = 'DESTROYED'
-        vm.backendtime = etime
+    if opcode == 'OP_INSTANCE_REMOVE':
+        # Set the deleted flag explicitly, cater for admin-initiated removals
+        # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
+        # when no instance exists at the Ganeti backend.
+        # See ticket #799 for all the details.
+        #
+        if status == 'success' or (status == 'error' and
+                                   vm.operstate == 'ERROR'):
+            release_instance_nics(vm)
+            vm.nics.all().delete()
+            vm.deleted = True
+            vm.operstate = state_for_success
+            vm.backendtime = etime
 
     # Update backendtime only for jobs that have been successfully completed,
     # since only these jobs update the state of the VM. Else a "race condition"
@@ -158,7 +156,8 @@ def process_net_status(vm, etime, nics):
 
 def release_instance_nics(vm):
     for nic in vm.nics.all():
-        nic.network.release_address(nic.ipv4)
+        if nic.ipv4:
+            nic.network.release_address(nic.ipv4)
         nic.delete()
 
 
@@ -177,16 +176,20 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     state_for_success = BackendNetwork.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
         back_network.operstate = state_for_success
-        if opcode == 'OP_NETWORK_REMOVE':
-            back_network.deleted = True
 
     if status in ('canceled', 'error') and opcode == 'OP_NETWORK_CREATE':
         utils.update_state(back_network, 'ERROR')
+        back_network.backendtime = etime
 
-    if (status == 'error' and opcode == 'OP_NETWORK_REMOVE'):
-        back_network.deleted = True
-        back_network.operstate = 'DELETED'
+    if opcode == 'OP_NETWORK_REMOVE':
+        if status == 'success' or (status == 'error' and
+                                   back_network.operstate == 'ERROR'):
+            back_network.operstate = state_for_success
+            back_network.deleted = True
+            back_network.backendtime = etime
 
+    if status == 'success':
+        back_network.backendtime = etime
     back_network.save()
 
 
@@ -461,14 +464,15 @@ def connect_network(network, backend, depend_job=None, group=None):
 
     mode = "routed" if "ROUTED" in network.type else "bridged"
 
+    depend_jobs = [depend_job] if depend_job else []
     with pooled_rapi_client(backend) as client:
         if group:
             client.ConnectNetwork(network.backend_id, group, mode,
-                                  network.link, [depend_job])
+                                  network.link, depend_jobs)
         else:
             for group in client.GetGroups():
                 client.ConnectNetwork(network.backend_id, group, mode,
-                                      network.link, [depend_job])
+                                      network.link, depend_jobs)
 
 
 def delete_network(network, backends=None, disconnect=True):
@@ -503,7 +507,7 @@ def disconnect_network(network, backend, group=None):
             return jobs
 
 
-def connect_to_network(vm, network, address):
+def connect_to_network(vm, network, address=None):
     nic = {'ip': address, 'network': network.backend_id}
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
@@ -651,8 +655,7 @@ def create_network_synced(network, backend):
 
 def _create_network_synced(network, backend):
     with pooled_rapi_client(backend) as client:
-        backend_jobs = _create_network(network, [backend])
-        (_, job) = backend_jobs[0]
+        job = _create_network(network, backend)
         result = wait_for_job(client, job)
     return result
 

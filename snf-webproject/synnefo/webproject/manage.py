@@ -56,12 +56,14 @@ from django.core import management
 from django.utils.importlib import import_module
 from optparse import Option, make_option
 from synnefo.util.version import get_component_version
+from synnefo.lib.dictconfig import dictConfig
 
 import sys
 import os
 import imp
 
 _commands = None
+
 
 def find_modules(name, path=None):
     """Find all modules with name 'name'
@@ -296,11 +298,24 @@ class SynnefoManagementUtility(ManagementUtility):
             klass = load_command_class(app_name, subcommand)
         return klass
 
+
+def configure_logging():
+    try:
+        from synnefo.settings import SNF_MANAGE_LOGGING_SETUP
+        dictConfig(SNF_MANAGE_LOGGING_SETUP)
+    except ImportError:
+        import logging
+        logging.basicConfig()
+        log = logging.getLogger()
+        log.warning("SNF_MANAGE_LOGGING_SETUP setting missing.")
+
+
 def main():
     # no need to run setup_environ
     # we already know our project
     os.environ['DJANGO_SETTINGS_MODULE'] = os.environ.get('DJANGO_SETTINGS_MODULE',
                                                           'synnefo.settings')
+    configure_logging()
     mu = SynnefoManagementUtility(sys.argv)
     mu.execute()
 

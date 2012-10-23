@@ -5,70 +5,51 @@ from south.v2 import DataMigration
 from django.db import models
 from synnefo import settings
 
-def get_available_bridge(orm):
-    try:
-        entry = orm.BridgePool.objects.filter(available=True)[0]
-        entry.available = False
-        entry.save()
-        return entry
-    except IndexError:
-        try:
-            last = orm.BridgePool.objects.order_by('-index')[0]
-            index = last.index + 1
-        except IndexError:
-            index = 1
-
-        if index <= settings.PRIVATE_PHYSICAL_VLAN_MAX_NUMBER:
-            create_bridge = orm.BridgePool.objects.create
-            return create_bridge(index=index,
-                                 value=value_from_index(index),
-                                 available=False)
-        raise Exception('Pool of bridges exhausted. Can not'
-                        ' allocate bridge')
-
-def value_from_index(index):
-    return settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + str(index)
-
 class Migration(DataMigration):
-    
+
     def forwards(self, orm):
         "Write your forwards methods here."
 
         print '\033[91m' + 'Subnet of all networks is set to 10.0.0.0/24.'
         print 'Gateway of all networks is set to null.'
-        print "Use `snf-manage modifynetwork` to change them." + '\033[0m'
+        print "Use `snf-manage network-modify` to change them." + '\033[0m'
+
+        create_bridge = orm.BridgePool.objects.create
+        for link in orm.NetworkLink.objects.order_by('id').all():
+            # Do not create bridge for public network
+            if not link.id == 1:
+                # Create bridges
+                create_bridge(index=link.index,
+                              value=link.name,
+                              available=link.available)
 
         for network in orm.Network.objects.all():
             if network.state == 'DELETED':
                 network.deleted = True
 
+            network.netlink = network.link.name
+            try:
+                base = settings.MAC_POOL_BASE
+                assert(len(base) == 7)
+                network.mac_prefix = base
+            except AttributeError:
+                network.mac_prefix = 'aa:00:0'
+
             if network.public == True:
                 # Public Network
-                network.netlink = network.link.name
                 network.dhcp = True
                 network.type = 'PUBLIC_ROUTED'
             else:
                 network.dhcp = False
                 network.type = 'PRIVATE_PHYSICAL_VLAN'
-                if network.deleted:
-                    try:
-                        link = settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX + '0'
-                    except AttributeError:
-                        link = 'prv0'
-                    network.netlink = link
-                else:
-                    # Non-deleted Network. Allocate A Bridge
-                    entry = get_available_bridge(orm)
-                    bridge = entry
-                    network.netlink = bridge.value
 
             network.save()
-    
-    
+
+
     def backwards(self, orm):
         "Write your backwards methods here."
         pass
-    
+
     models = {
         'db.backend': {
             'Meta': {'object_name': 'Backend'},

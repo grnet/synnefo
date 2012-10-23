@@ -37,6 +37,10 @@ UI_UPDATE_INTERVAL_MAX = UI_UPDATE_INTERVAL * 3
 # Fast update interval
 UI_UPDATE_INTERVAL_FAST = UI_UPDATE_INTERVAL / 2
 
+# Miliseconds to remove from the previous server response time used in
+# consecutive API calls (aligning changes-since attribute).
+UI_CHANGES_SINCE_ALIGNMENT = 0
+
 # List of emails used for sending the feedback messages to (following the ADMINS format)
 FEEDBACK_CONTACTS = (
     # ('Contact Name', 'contact_email@domain.com'),

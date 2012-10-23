@@ -1535,7 +1535,6 @@
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             if (!resp) { return []};
-               
             var data = _.map(resp.networks.values, _.bind(this.parse_net_api_data, this));
             return data;
         },
@@ -1611,6 +1610,10 @@
             }
             
             return this.api_call(this.path, "create", params, callback);
+        },
+
+        get_public: function(){
+          return this.filter(function(n){return n.get('public')});
         }
     })
 
@@ -1674,7 +1677,6 @@
         },
 
         parse: function (resp, xhr) {
-            // FIXME: depricated global var
             var data = _.map(resp.images.values, _.bind(this.parse_meta, this));
             return resp.images.values;
         },
@@ -1760,7 +1762,6 @@
         },
 
         parse: function (resp, xhr) {
-            // FIXME: depricated global var
             return _.map(resp.flavors.values, function(o) { o.disk_template = o['SNF:disk_template']; return o});
         },
 
@@ -1830,7 +1831,6 @@
         copy_image_meta: true,
 
         parse: function (resp, xhr) {
-            // FIXME: depricated after refactoring
             var data = resp;
             if (!resp) { return [] };
             data = _.filter(_.map(resp.servers.values, _.bind(this.parse_vm_api_data, this)), function(v){return v});
@@ -1950,7 +1950,6 @@
                 if (synnefo.config.vm_image_common_metadata) {
                     _.each(synnefo.config.vm_image_common_metadata, 
                         function(key){
-                            console.log(key, image.get(key), "image key");
                             if (image.get_meta(key)) {
                                 meta[key] = image.get_meta(key);
                             }

@@ -1136,7 +1136,9 @@ div.connect-border:hover {
 
 div.indicators {
     margin-right: 2px !important;
+    cursor: pointer;
 }
+
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #63cf1c;
     width:10px;

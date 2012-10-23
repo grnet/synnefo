@@ -59,6 +59,7 @@ COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
+CHANGES_SINCE_ALIGNMENT = getattr(settings, "UI_CHANGES_SINCE_ALIGNMENT", 0)
 UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE", 500)
 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
                                 "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT",
@@ -165,6 +166,7 @@ def home(request):
                'update_interval_increase_after_calls': UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
+               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,

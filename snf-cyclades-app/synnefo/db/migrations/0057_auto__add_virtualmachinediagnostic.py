@@ -49,7 +49,7 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'})
         },
         'db.backendnetwork': {
-            'Meta': {'object_name': 'BackendNetwork'},
+            'Meta': {'unique_together': "(('network', 'backend'),)", 'object_name': 'BackendNetwork'},
             'backend': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'networks'", 'to': "orm['db.Backend']"}),
             'backendjobid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'backendjobstatus': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
@@ -64,12 +64,14 @@ class Migration(SchemaMigration):
             'operstate': ('django.db.models.fields.CharField', [], {'default': "'PENDING'", 'max_length': '30'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
-        'db.bridgepool': {
-            'Meta': {'ordering': "['index']", 'object_name': 'BridgePool'},
-            'available': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+        'db.bridgepooltable': {
+            'Meta': {'object_name': 'BridgePoolTable'},
+            'available_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'base': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'index': ('django.db.models.fields.IntegerField', [], {'unique': 'True'}),
-            'value': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '128'})
+            'offset': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'reserved_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'size': ('django.db.models.fields.IntegerField', [], {})
         },
         'db.flavor': {
             'Meta': {'unique_together': "(('cpu', 'ram', 'disk', 'disk_template'),)", 'object_name': 'Flavor'},
@@ -80,12 +82,23 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ram': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
-        'db.macprefixpool': {
-            'Meta': {'ordering': "['index']", 'object_name': 'MacPrefixPool'},
-            'available': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+        'db.ippooltable': {
+            'Meta': {'object_name': 'IPPoolTable'},
+            'available_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'base': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'index': ('django.db.models.fields.IntegerField', [], {'unique': 'True'}),
-            'value': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '128'})
+            'offset': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'reserved_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'size': ('django.db.models.fields.IntegerField', [], {})
+        },
+        'db.macprefixpooltable': {
+            'Meta': {'object_name': 'MacPrefixPoolTable'},
+            'available_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'base': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'offset': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'reserved_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'size': ('django.db.models.fields.IntegerField', [], {})
         },
         'db.network': {
             'Meta': {'object_name': 'Network'},
@@ -100,8 +113,8 @@ class Migration(SchemaMigration):
             'mac_prefix': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'through': "orm['db.NetworkInterface']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'pool': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'network'", 'unique': 'True', 'null': 'True', 'to': "orm['db.IPPoolTable']"}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'reservations': ('django.db.models.fields.TextField', [], {'default': "''"}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'PENDING'", 'max_length': '32'}),
             'subnet': ('django.db.models.fields.CharField', [], {'default': "'10.0.0.0/24'", 'max_length': '32'}),
             'subnet6': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),

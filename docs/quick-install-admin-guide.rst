@@ -52,6 +52,10 @@ lines in your ``/etc/apt/sources.list`` file:
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
 
+and import the repo's GPG key:
+
+| ``curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -``
+
 Also add the following line to enable the ``squeeze-backports`` repository,
 which may provide more recent versions of certain packages. The repository
 is deactivated by default and must be specified expicitly in ``apt-get``

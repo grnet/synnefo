@@ -43,7 +43,9 @@ installed_apps = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'djcelery',]
+#    'djcelery',
+#    'debug_toolbar',
+]
 
 context_processors = [
     'django.core.context_processors.media',
@@ -66,6 +68,7 @@ middlware_classes = [
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.SecureMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+#    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 loggers = {
@@ -90,3 +93,5 @@ import djcelery
 djcelery.setup_loader()
 
 BROKER_URL = ''
+
+INTERNAL_IPS = ('127.0.0.1',)

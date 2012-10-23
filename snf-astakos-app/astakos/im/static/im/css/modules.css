@@ -351,6 +351,7 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 
 .projects .details a.edit						{ float:right; margin-left:20px;  }
 .projects .details .data						{ overflow:hidden; }
+<<<<<<< HEAD
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
 
 
@@ -398,3 +399,4 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .stats .red.disks .img-wrap						{ background-position: 15px -248px; }
 .stats .yellow.disks .img-wrap					{ background-position: -124px -248px; }
 .stats .green.disks .img-wrap					{ background-position: -263px -248px;}
+.projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}

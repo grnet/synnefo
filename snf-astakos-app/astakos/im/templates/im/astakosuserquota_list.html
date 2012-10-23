@@ -84,5 +84,35 @@
                 </table>
             {% endfor %}
     </div>-->
+        <form action="" method="post"
+	            class="withlabels">{% csrf_token %}
+	            {% include "im/form_render.html" %}
+	    </form>
+	    <table>
+	    {% for q in object_list %}
+	        {% if q.group.is_enabled %}
+	            <tr>
+	                <td>{{ q.uplimit }}</td><td>({{ q.group }})</td>
+	            </tr>
+	        {% endif %}
+	    {% endfor %}
+	    {% if form.cleaned_data %}
+            {% with form.cleaned_data|lookup:'resource' as resource %}
+                {% if resource %}
+                    {% for q in user.astakosuserquota_set.all %}
+                        {% if q.resource == resource %}
+                        <tr>
+                            <td>{{ q.uplimit }}</td><td>(assigned to me)</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                        <tr>
+                            <td>{{ user.quota|lookup:resource }}</td><td>(total)</td>
+                        </tr>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+	    </table>
+    </div>
 </div>
 {% endblock %}

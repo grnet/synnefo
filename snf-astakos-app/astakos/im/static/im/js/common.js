@@ -111,10 +111,8 @@ $(document).ready(function() {
         });
     });	
     
-    
      
 	//$('select').dropkick();
- 
     
     $('.top-msg .success').parents('.top-msg').addClass('success');
     $('.top-msg .error').parents('.top-msg').addClass('error');
@@ -192,6 +190,19 @@ $(document).ready(function() {
 				}
 			});
 		}
+		$( "#id_start_date" ).datepicker({
+            dateFormat: "yy-mm-dd",
+            onSelect: function( selectedDate ) {
+                $( "#id_start_date" ).datepicker( "option", "maxDate", selectedDate );
+            }
+        });
+        
+        $( "#id_end_date" ).datepicker({
+            dateFormat: "yy-mm-dd",
+            onSelect: function( selectedDate ) {
+                $( "#id_end_date" ).datepicker( "option", "maxDate", selectedDate );
+            }
+        });
 	});
 	
 	

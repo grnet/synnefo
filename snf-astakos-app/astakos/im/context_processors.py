@@ -99,6 +99,4 @@ def menu(request):
 
 def group_kinds(request):
     return {'group_kinds': GroupKind.objects.exclude(
-            name='default'
-            ).values_list('name', flat=True)
-            }
+        name='default').values_list('name', flat=True)}

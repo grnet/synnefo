@@ -1,67 +1,29 @@
 # encoding: utf-8
+import datetime
+from south.db import db
+from south.v2 import SchemaMigration
+from django.db import models
 
-from south.v2 import DataMigration
-
-from astakos.im.settings import SERVICES
-
-
-class Migration(DataMigration):
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "Write your forwards methods here."
+        
+        # Changing field 'AstakosGroupQuota.limit'
+        db.alter_column('im_astakosgroupquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(null=True))
 
-        try:
-            default = orm.AstakosGroup.objects.get(name='default')
-        except orm.AstakosGroup.DoesNotExist:
-            return
+        # Changing field 'AstakosUserQuota.limit'
+        db.alter_column('im_astakosuserquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(null=True))
 
-        def create_policies(args):
-            sn, dict = args
-            url = dict.get('url') 
-            policy = dict.get('quota') or ()
-            s, created = orm.Service.objects.get_or_create(name=sn,
-                                                           defaults={'url': url})
-            if not created and not s.url:
-                s.url = url
-                s.save()
-
-            for rn, l in policy.iteritems():
-                try:
-                    r, created = orm.Resource.objects.get_or_create(
-                        service=s,
-                        name=rn)
-                except Exception, e:
-                    print "Cannot create policy ", policy
-                    continue
-
-                q, created = orm.AstakosGroupQuota.objects.get_or_create(
-                    group=default,
-                    resource=r,
-                    uplimit=l,
-                    limit=0)
-        map(create_policies, SERVICES.iteritems())
 
     def backwards(self, orm):
-        try:
-            default = orm.AstakosGroup.objects.get(name='default')
-        except orm.AstakosGroup.DoesNotExist:
-            return
-
-        def destroy_policies(args):
-            sn, dict = args
-            url = dict.get('url') 
-            policy = dict.get('quota') or ()
-            for rn, l in policy.iteritems():
-                try:
-                    q = orm.AstakosGroupQuota.objects.get(
-                        group=default,
-                        resource__name=rn)
-                    q.delete()
-                except orm.AstakosGroupQuota.DoesNotExist:
-                    continue
         
-        map(destroy_policies, SERVICES.iteritems())
-    
+        # Changing field 'AstakosGroupQuota.limit'
+        db.alter_column('im_astakosgroupquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(default=None))
+
+        # Changing field 'AstakosUserQuota.limit'
+        db.alter_column('im_astakosuserquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(default=None))
+
+
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},
@@ -107,18 +69,19 @@ class Migration(DataMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 289091)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 2, 10, 33, 53, 42109)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'im.astakosgroup': {
             'Meta': {'object_name': 'AstakosGroup', '_ormbases': ['auth.Group']},
             'approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 283154)'}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 2, 10, 33, 53, 36319)'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'estimated_participants': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'expiration_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'group_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.Group']", 'unique': 'True', 'primary_key': 'True'}),
+            'homepage': ('django.db.models.fields.URLField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'issue_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'kind': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.GroupKind']"}),
             'moderation_enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
@@ -128,7 +91,7 @@ class Migration(DataMigration):
             'Meta': {'unique_together': "(('resource', 'group'),)", 'object_name': 'AstakosGroupQuota'},
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']", 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'limit': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'limit': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
             'uplimit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'})
         },
@@ -144,9 +107,9 @@ class Migration(DataMigration):
             'email_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_credits': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_signed_terms': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'invitations': ('django.db.models.fields.IntegerField', [], {'default': '100'}),
+            'invitations': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'is_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'level': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'level': ('django.db.models.fields.IntegerField', [], {'default': '4'}),
             'owner': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'owner'", 'null': 'True', 'to': "orm['im.AstakosGroup']"}),
             'policy': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.Resource']", 'null': 'True', 'through': "orm['im.AstakosUserQuota']", 'symmetrical': 'False'}),
             'provider': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
@@ -157,7 +120,7 @@ class Migration(DataMigration):
         'im.astakosuserquota': {
             'Meta': {'unique_together': "(('resource', 'user'),)", 'object_name': 'AstakosUserQuota'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'limit': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'limit': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
             'uplimit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
@@ -167,7 +130,7 @@ class Migration(DataMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 290713)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 2, 10, 33, 53, 43584)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.groupkind': {
@@ -189,7 +152,7 @@ class Migration(DataMigration):
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
-            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 8, 9, 11, 14, 9, 286925)', 'blank': 'True'}),
+            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 10, 2, 10, 33, 53, 40054)', 'blank': 'True'}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})

@@ -40,54 +40,64 @@ Settings
 
 Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using snf-webproject.
 
-=================================== =============================================================================   ===========================================================================================
-Name                                Default value                                                                   Description
-=================================== =============================================================================   ===========================================================================================
-ASTAKOS_AUTH_TOKEN_DURATION         one month                                                                       Expiration time of newly created auth tokens
-ASTAKOS_DEFAULT_USER_LEVEL          4                                                                               Default (not-invited) user level
-ASTAKOS_INVITATIONS_PER_LEVEL       {0:100, 1:2, 2:0, 3:0, 4:0}                                                     Number of user invitations per user level
-ASTAKOS_DEFAULT_CONTACT_EMAIL       support\@cloud.grnet.gr                                                         Contact email
-ASTAKOS_IM_MODULES                  ['local', 'shibboleth']                                                         Signup modules
-ASTAKOS_FORCE_PROFILE_UPDATE        True                                                                            Force user profile verification
-ASTAKOS_INVITATIONS_ENABLED         True                                                                            Enable invitations
-ASTAKOS_COOKIE_NAME                 _pithos2_a                                                                      ``Key`` parameter passed in ``django.http.HttpResponse.set_cookie``
-ASTAKOS_COOKIE_DOMAIN               None                                                                            ``Domain`` parameter passed in ``django.http.HttpResponse.set_cookie``
-ASTAKOS_COOKIE_SECURE               True                                                                            ``Secure`` parameter passed in ``django.http.HttpResponse.set_cookie``
-ASTAKOS_IM_STATIC_URL               /static/im/                                                                     URL to use when referring to static files
-ASTAKOS_MODERATION_ENABLED          True                                                                            If False and invitations are not enabled newly created user will be automatically accepted
-ASTAKOS_BASEURL                     \http://pithos.dev.grnet.gr                                                     Astakos baseurl
-ASTAKOS_SITENAME                    GRNET Cloud                                                                     Service name that appears in emails
-ASTAKOS_RECAPTCHA_ENABLED           True                                                                            Enable recaptcha
-ASTAKOS_RECAPTCHA_PUBLIC_KEY                                                                                        Recaptcha public key obtained after registration here: http://recaptcha.net
-ASTAKOS_RECAPTCHA_PRIVATE_KEY                                                                                       Recaptcha private key obtained after registration here: http://recaptcha.net
-ASTAKOS_RECAPTCHA_OPTIONS           {'theme': 'white'}                                                              Options for customizing reCAPTCHA look and feel
-                                                                                                                    (see: http://code.google.com/intl/el-GR/apis/recaptcha/docs/customization.html)
-ASTAKOS_LOGOUT_NEXT                                                                                                 Where the user should be redirected after logout
-                                                                                                                    (if not set and no next parameter is defined it renders login page with message)
-ASTAKOS_BILLING_FIELDS              ['id', 'is_active', 'provider', 'third_party_identifier']                       AstakosUser fields to propagate in the billing system
-ASTAKOS_QUEUE_CONNECTION                                                                                            The queue connection ex. 'rabbitmq://guest:guest@localhost:5672/astakos'
-                                                                                                                    (if it is not set, it does not send messages)
-ASTAKOS_RE_USER_EMAIL_PATTERNS      []                                                                              Email patterns that are automatically activated ex. ['^[a-zA-Z0-9\._-]+@grnet\.gr$']
+=========================================== =============================================================================   ===========================================================================================
+Name                                        Default value                                                                   Description
+=========================================== =============================================================================   ===========================================================================================
+ASTAKOS_AUTH_TOKEN_DURATION                 one month                                                                       Expiration time of newly created auth tokens
+ASTAKOS_DEFAULT_USER_LEVEL                  4                                                                               Default (not-invited) user level
+ASTAKOS_INVITATIONS_PER_LEVEL               {0:100, 1:2, 2:0, 3:0, 4:0}                                                     Number of user invitations per user level
+ASTAKOS_DEFAULT_FROM_EMAIL                  GRNET Cloud <no-reply\@grnet.gr>                                                ``from`` parameter passed in ``django.core.mail.send_mail``
+ASTAKOS_DEFAULT_CONTACT_EMAIL               support\@cloud.grnet.gr                                                         Contact email
+ASTAKOS_DEFAULT_ADMIN_EMAIL                 support\@cloud.grnet.gr                                                         Administrator email to receive user creation notifications (if None disables notifications)
+ASTAKOS_IM_MODULES                          ['local', 'shibboleth']                                                         Signup modules
+ASTAKOS_FORCE_PROFILE_UPDATE                True                                                                            Force user profile verification
+ASTAKOS_INVITATIONS_ENABLED                 True                                                                            Enable invitations
+ASTAKOS_COOKIE_NAME                         _pithos2_a                                                                      ``Key`` parameter passed in ``django.http.HttpResponse.set_cookie``
+ASTAKOS_COOKIE_DOMAIN                       None                                                                            ``Domain`` parameter passed in ``django.http.HttpResponse.set_cookie``
+ASTAKOS_COOKIE_SECURE                       True                                                                            ``Secure`` parameter passed in ``django.http.HttpResponse.set_cookie``
+ASTAKOS_IM_STATIC_URL                       /static/im/                                                                     URL to use when referring to static files
+ASTAKOS_MODERATION_ENABLED                  True                                                                            If False and invitations are not enabled newly created user will be automatically accepted
+ASTAKOS_BASEURL                             \http://pithos.dev.grnet.gr                                                     Astakos baseurl
+ASTAKOS_SITENAME                            GRNET Cloud                                                                     Service name that appears in emails
+ASTAKOS_RECAPTCHA_ENABLED                   True                                                                            Enable recaptcha
+ASTAKOS_RECAPTCHA_PUBLIC_KEY                                                                                                Recaptcha public key obtained after registration here: http://recaptcha.net
+ASTAKOS_RECAPTCHA_PRIVATE_KEY                                                                                               Recaptcha private key obtained after registration here: http://recaptcha.net
+ASTAKOS_RECAPTCHA_OPTIONS                   {'theme': 'white'}                                                              Options for customizing reCAPTCHA look and feel
+                                                                                                                            (see: http://code.google.com/intl/el-GR/apis/recaptcha/docs/customization.html)
+ASTAKOS_LOGOUT_NEXT                                                                                                         Where the user should be redirected after logout
+                                                                                                                            (if not set and no next parameter is defined it renders login page with message)
+ASTAKOS_BILLING_FIELDS                      ['id', 'is_active', 'provider', 'third_party_identifier']                       AstakosUser fields to propagate in the billing system
+ASTAKOS_QUEUE_CONNECTION                                                                                                    The queue connection ex. 'rabbitmq://guest:guest@localhost:5672/astakos'
+                                                                                                                            (if it is not set, it does not send messages)
+ASTAKOS_RE_USER_EMAIL_PATTERNS              []                                                                              Email patterns that are automatically activated ex. ['^[a-zA-Z0-9\._-]+@grnet\.gr$']
 
-ASTAKOS_LOGIN_MESSAGES              {}                                                                              Notification messages to display on login page header
-                                                                                                                    e.g. {'warning': 'Warning message (can contain html)'}
-ASTAKOS_PROFILE_EXTRA_LINKS         {}                                                                              Messages to display as extra actions in account forms
-                                                                                                                    e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
-ASTAKOS_RATELIMIT_RETRIES_ALLOWED   3                                                                               Number of unsuccessful login requests per minute allowed for a specific account.
-                                                                                                                    When this number exceeds and ASTAKOS_RECAPTCHA_ENABLED is set the user has to solve a
-                                                                                                                    captcha challenge.
-ASTAKOS_EMAILCHANGE_ENABLED         False                                                                           Enable email change mechanism
-ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS 10                                                                              Number of days that email change requests remain active
-ASTAKOS_LOGGING_LEVEL               INFO                                                                            Message logging severity
-ASTAKOS_QUOTA_HOLDER_URL            ''                                                                              The quota holder URI
+ASTAKOS_LOGIN_MESSAGES                      {}                                                                              Notification messages to display on login page header
+                                                                                                                            e.g. {'warning': 'Warning message (can contain html)'}
+ASTAKOS_PROFILE_EXTRA_LINKS                 {}                                                                              Messages to display as extra actions in account forms
+                                                                                                                            e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
+ASTAKOS_RATELIMIT_RETRIES_ALLOWED           3                                                                               Number of unsuccessful login requests per minute allowed for a specific account.
+                                                                                                                            When this number exceeds and ASTAKOS_RECAPTCHA_ENABLED is set the user has to solve a
+                                                                                                                            captcha challenge.
+ASTAKOS_EMAILCHANGE_ENABLED                 False                                                                           Enable email change mechanism
+ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS         10                                                                              Number of days that email change requests remain active
+ASTAKOS_LOGGING_LEVEL                       INFO                                                                            Message logging severity
+ASTAKOS_INVITATION_EMAIL_SUBJECT            'Invitation to %s alpha2 testing' % SITENAME                                    Invitation email subject
+ASTAKOS_GREETING_EMAIL_SUBJECT              'Welcome to %s alpha2 testing' % SITENAME                                       Welcome email subject
+ASTAKOS_FEEDBACK_EMAIL_SUBJECT              'Feedback from %s alpha2 testing' % SITENAME                                    Feedback email subject
+ASTAKOS_VERIFICATION_EMAIL_SUBJECT          '%s alpha2 testing account activation is needed' % SITENAME                     Account activation email subject
+ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT    '%s alpha2 testing account created (%%(user)s)' % SITENAME                      Account creation admin notification email subject
+ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT '%s alpha2 testing account activated (%%(user)s)' % SITENAME                    Account activation helpdesk notification email subject
+ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT          'Email change on %s alpha2 testing' % SITENAME                                  Email change subject               
+ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT        'Password reset on %s alpha2 testing' % SITENAME                                Password change email subject
+ASTAKOS_QUOTA_HOLDER_URL                    ''                                                                              The quota holder URI
                                                                                                                     e.g. ``http://localhost:8080/api/quotaholder/v``
-ASTAKOS_SERVICES                    {'cyclades': {'url':'https://node1.example.com/ui/', 'quota': {'vm': 2}},       Cloud service default url and quota      
-                                    'pithos+':  {'url':'https://node2.example.com/ui/', 'quota': {                  
-                                    'diskspace': 50 * 1024 * 1024 * 1024}}})                                        
-ASTAKOS_AQUARIUM_URL                ''                                                                              The billing (aquarium) URI
+ASTAKOS_SERVICES                            {'cyclades': {'url':'https://node1.example.com/ui/', 'quota': {'vm': 2}},       Cloud service default url and quota      
+                                            'pithos+':  {'url':'https://node2.example.com/ui/', 'quota': {                  
+                                            'diskspace': 50 * 1024 * 1024 * 1024}}})                                        
+ASTAKOS_AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
                                                                                                                     e.g. ``http://localhost:8888/user``
-ASTAKOS_PAGINATE_BY                 10                                                                              Number of object to be displayed per page
-=================================== =============================================================================   ===========================================================================================
+ASTAKOS_PAGINATE_BY                         10                                                                              Number of object to be displayed per page
+=========================================== =============================================================================   ===========================================================================================
 
 Administrator functions
 -----------------------

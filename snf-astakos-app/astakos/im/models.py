@@ -104,7 +104,7 @@ class Resource(models.Model):
     service = models.ForeignKey(Service)
 
     def __str__(self):
-        return '%s : %s' % (self.service, self.name)
+        return '%s.%s' % (self.service, self.name)
 
 
 class GroupKind(models.Model):
@@ -297,7 +297,7 @@ class AstakosUser(User):
     def quota(self):
         d = defaultdict(int)
         for q in self.astakosuserquota_set.select_related().all():
-            d[q.resource.name] += q.uplimit
+            d[q.resource] += q.uplimit
         for m in self.membership_set.select_related().all():
             if not m.is_approved:
                 continue
@@ -306,6 +306,7 @@ class AstakosUser(User):
                 continue
             for r, uplimit in g.quota.iteritems():
                 d[r] += uplimit
+        
         # TODO set default for remaining
         return d
 
@@ -418,7 +419,7 @@ class Membership(models.Model):
 
 
 class AstakosGroupQuota(models.Model):
-    limit = models.PositiveIntegerField('Limit')    # obsolete field
+    limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
     uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
     group = models.ForeignKey(AstakosGroup, blank=True)
@@ -428,7 +429,7 @@ class AstakosGroupQuota(models.Model):
 
 
 class AstakosUserQuota(models.Model):
-    limit = models.PositiveIntegerField('Limit')    # obsolete field
+    limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
     uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)

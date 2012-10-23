@@ -81,10 +81,10 @@ class Command(BaseCommand):
         args = [a.decode('utf8') for a in args]
         email, first, last, affiliation = args
 
-        try:
-            validate_email(email)
-        except ValidationError:
-            raise CommandError("Invalid email")
+        #try:
+        #    validate_email(email)
+        #except ValidationError:
+        #    raise CommandError("Invalid email")
 
         username = uuid4().hex[:30]
         password = options.get('password')

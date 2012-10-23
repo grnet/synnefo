@@ -38,7 +38,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
-from astakos.im.models import AstakosUser, AstakosGroup, Membership
+from astakos.im.models import (AstakosUser, AstakosGroup, Membership, Resource,
+                               AstakosUserQuota)
 from astakos.im.endpoints.aquarium.producer import report_user_credits_event
 from ._common import remove_user_permission, add_user_permission
 
@@ -47,7 +48,7 @@ class Command(BaseCommand):
     args = "<user ID>"
     help = "Modify a user's attributes"
 
-    option_list = BaseCommand.option_list + (
+    option_list = list(BaseCommand.option_list) + [
         make_option('--invitations',
                     dest='invitations',
                     metavar='NUM',
@@ -111,8 +112,15 @@ class Command(BaseCommand):
                     dest='refill',
                     default=False,
                     help="Refill user credits"),
-    )
-
+    ]
+    resources = Resource.objects.select_related().all()
+    append = option_list.append
+    for r in resources:
+        append(make_option('--%s-set-quota' % r,
+                    dest='%s-set-quota' % r,
+                    metavar='QUANTITY',
+                    help="Set resource quota"))
+    
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID")
@@ -225,3 +233,16 @@ class Command(BaseCommand):
 
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
+        
+        for r in self.resources:
+            limit = options.get('%s-set-quota' % r)
+            if not limit:
+                continue
+            if not limit.isdigit():
+                raise CommandError('Invalid limit')
+            
+            q = AstakosUserQuota.objects
+            q, created = q.get_or_create(resource=r, user=user,
+                                         defaults={'uplimit': limit})
+            verb = 'set' if created else 'updated'
+            self.stdout.write('User\'s quota %s successfully\n' % verb)

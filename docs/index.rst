@@ -45,13 +45,28 @@ interconnected with each other, in large configurations.
 Synnefo Guides
 ==============
 
-There are 3 guides for Synnefo. The Administrator's Guide targets system
-administrators, who want to deploy Synnefo on small or large installations. The
-Developer's Guide targets developers, who want to build on top of Synnefo and so
-describes all the different types of interfaces Synnefo provides to the external
-world. The Integrator's Guide targets developers, who want to actually
-extend/modify/change Synnefo itself, so describes Synnefo's indepth architecture
-and the internals of Synnefo components.
+There are 4 guides for Synnefo.
+
+The quick installation guide describes how to install the whole synnefo stack
+in just two physical nodes, for testing purposes. This guide is useful to those
+interested in deploying synnefo in large scale, as a starting point that will
+help them get familiar with the synnefo components and overall architecture, as
+well as the interconnection between different services. Such an installation,
+also provides a quick preview of the basic synnefo features, although we would
+like to think that synnefo unveils its real power while scaling.
+
+The Administrator's Guide targets system administrators, who want to dive into
+more details and common tasks regarding Synnefo. The Developer's Guide targets
+developers, who want to build on top of Synnefo and so describes all the
+different types of interfaces Synnefo provides to the external world. The
+Integrator's Guide targets developers, who want to actually
+extend/modify/change Synnefo itself, so describes Synnefo's indepth
+architecture and the internals of Synnefo components.
+
+.. toctree::
+   :maxdepth: 1
+
+   Quick Installation Guide <quick-install-admin-guide>
 
 .. toctree::
    :maxdepth: 2

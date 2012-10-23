@@ -5,20 +5,6 @@ Synnefo Administrator's Guide
 
 This is the complete Synnefo Administrator's Guide.
 
-Quick Installation
-==================
-
-The quick installation guide describes how to install the whole synnefo stack
-in just two physical nodes, for testing purposes. This guide is useful to those
-interested in deploying synnefo in large scale, as a starting point that will
-help them get familiar with the synnefo components and overall architecture, as
-well as the interconnection between different services. Such an installation,
-also provides a quick preview of the basic synnefo features, although we would
-like to think that synnefo unveils its real power while scaling.
-
-| :ref:`Administrator's quick installation guide <quick-install-admin-guide>`
-| This guide will walk you through a complete installation using debian packages.
-
 Common administrative tasks
 ===========================
 
@@ -156,7 +142,7 @@ change the type of a user to ADMIN, snf-admin can be used:
 
 .. code-block:: console
 
-   $ snf-manage user modify 42 --type ADMIN
+   $ snf-manage user-modify 42 --type ADMIN
 
 
 Adding Astakos "Terms of Use"
@@ -176,7 +162,7 @@ Then, add those terms-of-use with the snf-manage command:
 
 .. code-block:: console
 
-   $ snf-manage addterms /usr/share/synnefo/sample-terms.html
+   $ snf-manage term-add /usr/share/synnefo/sample-terms.html
 
 Your terms have been successfully added and you will see the corresponding link
 appearing in the Astakos web pages' footer.

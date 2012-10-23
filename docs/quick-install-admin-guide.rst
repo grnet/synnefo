@@ -52,6 +52,10 @@ lines in your ``/etc/apt/sources.list`` file:
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
 
+and import the repo's GPG key:
+
+| ``curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -``
+
 Also add the following line to enable the ``squeeze-backports`` repository,
 which may provide more recent versions of certain packages. The repository
 is deactivated by default and must be specified expicitly in ``apt-get``
@@ -1535,34 +1539,34 @@ If everything returns successfully, our database is ready.
 Add the Ganeti backend
 ----------------------
 
-In our installation we assume that we only have one Ganeti cluster. Cyclades can
-manage multiple Ganeti backends, but for the purpose of this guide, we won't get
-into more detail regarding mulitple backends.
-
-By default, when you install Cyclades, it sets up a dummy first backend. You can
-see it by running:
+In our installation we assume that we only have one Ganeti cluster, the one we
+setup earlier in the ``/etc/synnefo/20-snf-cyclades-app-backend.conf`` file.
+Cyclades will set up this backend automatically by looking at the above
+configuration file. You can see everything has been setup correctly by running:
 
 .. code-block:: console
 
    $ snf-manage backend-list
 
-We modify this backend to reflect our already setup Ganeti cluster:
+If something is not set correctly, you can modify the backend with the
+``snf-manage backend-modify`` command. If something has gone wrong, you could
+modify the backend to reflect the Ganeti installation by running:
 
 .. code-block:: console
 
    $ snf-manage backend-modify --clustername "ganeti.node1.example.com"
-                               --username=cyclades
-                               --password=example_rapi_passw0rd
+                               --user=cyclades
+                               --pass=example_rapi_passw0rd
                                1
 
 ``clustername`` denotes the Ganeti-cluster's name. We provide the corresponding
 domain that resolves to the master IP, than the IP itself, to ensure Cyclades
 can talk to Ganeti even after a Ganeti master-failover.
 
-``username`` and ``password`` denote the RAPI user's username and the RAPI
-user's password. We set the above to reflect our :ref:`RAPI User setup
-<rapi-user>`. The port is already set to the default RAPI port; you need to
-change it, only if you have changed it in your Ganeti cluster setup.
+``user`` and ``pass`` denote the RAPI user's username and the RAPI user's
+password. We set the above to reflect our :ref:`RAPI User setup <rapi-user>`.
+The port is already set to the default RAPI port; you need to change it, only
+if you have changed it in your Ganeti cluster setup.
 
 Once we setup the first backend to point at our Ganeti cluster, we update the
 Cyclades backends status by running:
@@ -1571,11 +1575,16 @@ Cyclades backends status by running:
 
    $ snf-manage backend-update-status
 
-Add the Public Network
+Cyclades can manage multiple Ganeti backends, but for the purpose of this
+guide,we won't get into more detail regarding mulitple backends. If you want to
+learn more please see /*TODO*/.
+
+Add a Public Network
 ----------------------
 
+Cyclades supports different Public Networks on different Ganeti backends.
 After connecting Cyclades with our Ganeti cluster, we need to setup the Public
-Network:
+Network for this Ganeti backend (`id = 1`):
 
 .. code-block:: console
 
@@ -1585,6 +1594,7 @@ Network:
                                --gateway6=2001:648:2FFC:1322::1
                                --public --dhcp --type=PUBLIC_ROUTED
                                --name=public_network
+                               --backend-id=1
 
 This will create the Public Network on both Cyclades and the Ganeti backend. To
 make sure everything was setup correctly, also run:
@@ -1592,13 +1602,12 @@ make sure everything was setup correctly, also run:
 .. code-block:: console
 
    $ snf-manage reconcile-networks
-   $ snf-manage reconcile-pools
 
 You can see all available networks by running:
 
 .. code-block:: console
 
-   $ snf-manage listnetworks
+   $ snf-manage network-list
 
 and inspect each network's state by running:
 

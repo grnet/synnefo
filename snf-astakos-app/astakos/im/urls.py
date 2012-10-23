@@ -80,6 +80,8 @@ urlpatterns = patterns('astakos.im.views',
                            'disapprove_member', {}, name='disapprove_member'),
                        url(r'^group/create/?$', 'group_create_list', {},
                            name='group_create_list'),
+                       url(r'^group/create_demo/?$', 'group_create_demo', {},
+                           name='group_create_demo'),
                        )
 
 if EMAILCHANGE_ENABLED:

@@ -4,6 +4,50 @@
 
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="stats clearfix">
+    	<ul>
+    		<li class="clearfix red vm">
+    			<div class="img-wrap">&nbsp;</div>
+    			<div class="info">
+    				<h3>Number of Vms</h3>
+    				<p>
+    					XX% Used<br>
+    					That is XXX of your XXX MB of virtual RAM - Aouch!
+    				</p>
+    			</div>
+    			<div class="bar">
+    				<div><span style="width:89%;">89%&nbsp;</span></div>
+    			</div>
+    		</li>
+    		<li class="clearfix yellow ram">
+    			<div class="img-wrap">&nbsp;</div>
+    			<div class="info">
+    				<h3>Number of RAMs</h3>
+    				<p>
+    					XX% Used<br>
+    					That is XXX of your XXX MB of virtual RAM - Aouch!
+    				</p>
+    			</div>
+    			<div class="bar">
+    				<div><span style="width:30%;">30%&nbsp;</span></div>
+    			</div>
+    		</li>
+    		<li class="clearfix green disks">
+    			<div class="img-wrap">&nbsp;</div>
+    			<div class="info">
+    				<h3>Number of Vms</h3>
+    				<p>
+    					XX% Used<br>
+    					That is XXX of your XXX MB of virtual RAM - Aouch!
+    				</p>
+    			</div>
+    			<div class="bar">
+    				<div><span style="width:60%;">30%&nbsp;</span></div>
+    			</div>
+    		</li>
+    	</ul>
+    </div>    
+    <!--
     <div class="section">
             {% for k, v in user.quota|items %}
                 <strong>{{k}}</strong>
@@ -15,6 +59,7 @@
                       </tr>
                     </thead>
  -->
+ <!--
                     <tbody>
                     {% for m in user.membership_set.select_related.all %}
                         {% if m.group.is_enabled %}
@@ -38,6 +83,6 @@
                     </tbody>
                 </table>
             {% endfor %}
-    </div>
+    </div>-->
 </div>
 {% endblock %}

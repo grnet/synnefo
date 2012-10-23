@@ -1098,3 +1098,9 @@ def _clear_billing_data(data):
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
     return data
+
+def group_create_demo(request):
+    return render_response(
+        template='im/astakosgroup_form_demo.html',
+        context_instance=get_context(request))
+    

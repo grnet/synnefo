@@ -1,0 +1,171 @@
+{% extends "im/account_base.html" %}
+
+{% block page.body %}
+ 
+	 
+<form action="" method="post" class="withlabels quotas-form">{% csrf_token %}
+    <fieldset>
+    	<legend>1. CREATE GROUP</legend>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="id">ID</label>
+    			<input type="text" name="id">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    	<div class="form-row with-errors ">
+    		
+    		<p class="clearfix">
+    			<label for="name">Name</label>
+    			<input type="text" name="name">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    		<div class="form-error" style="left: 270.1px; top: 21.2px; width: 292px; margin-left: 224px; margin-bottom: 5px;">This field is required.<br></div>
+    	</div>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="description">Description</label>
+    			<textarea name="description"></textarea>
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="id_issue_date_demo">Issue Date</label>
+    			<input type="text" id="id_issue_date_demo" name="id_issue_date_demo" class="hasDatepicker">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    	
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="id_expiration_date_demo">Expiration Date</label>
+    			<input type="text" name="id_expiration_date_demo" id="id_expiration_date_demo" class="hasDatepicker">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    	<div class="form-row    with-checkbox">
+		     <p class="clearfix ">
+		        <a href="javascript:void(0)" class="checkbox-widget"></a><label for="id_moderation_enabled" class="checkbox-label">Moderation enabled</label>
+		        <input type="checkbox" id="id_moderation_enabled" name="moderation_enabled" autocomplete="off" style="display: none;">
+		        <span class="extra-img">&nbsp;</span>
+	          	<span class="info"> 
+				    <em>more info</em>
+				    <span>Check if you want to approve members participation manually</span>
+			    </span>
+		     </p>
+		</div>
+    </fieldset>       
+    <fieldset>
+    	<legend>2. CHOOSE RESOURCES</legend>
+    	<ul class="clearfix">
+    		<li><a href="#" id="vm">VM</a></li>
+    		<li><a href="#" id="storage">STORAGE</a></li>
+    		<li class="rel"><a href="#" id="cpu">CPU</a></li>
+    		<li class="rel"><a href="#" id="ram">RAM</a></li>
+    		<li class="rel"><a href="#" id="diskspace">DISKSPACE</a></li>
+    	</ul>
+    	<p class="msg">if you choose CPU without selecting any VMs you must also select RAM and DISKSPACE</p>
+    </fieldset>   
+    <fieldset class="quota vm">
+    	<a href="#" class="delete"><strong>X</strong> remove resource</a>
+    	<legend>VM</legend>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="num_vms">Total VM</label>
+    			<input type="text" name="num_vms">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    </fieldset>
+    <fieldset class="quota storage">
+    	<a href="#" class="delete"><strong>X</strong> remove resource</a>
+    	<legend>STORAGE</legend>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="num_vms">Total storage</label>
+    			<input type="text" name="num_vms">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    </fieldset>
+    <fieldset class="quota cpu">
+    	<a href="#" class="delete"><strong>X</strong> remove resource</a>
+    	<legend>CPU</legend>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="num_vms">Total cpu</label>
+    			<input type="text" name="num_cpu">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    </fieldset>
+    <fieldset class="quota ram">
+    	<a href="#" class="delete"><strong>X</strong> remove resource</a>
+    	<legend>RAM</legend>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="num_ram">Total ram</label>
+    			<input type="text" name="num_ram">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    </fieldset>
+    <fieldset class="quota diskspace">
+    	<a href="#" class="delete"><strong>X</strong> remove resource</a>
+    	<legend>DISKSPACE</legend>
+    	<div class="form-row">
+    		<p class="clearfix">
+    			<label for="num_diskspace">Total diskspace</label>
+    			<input type="text" name="num_diskspace">
+    			<span class="extra-img">&nbsp;</span>
+         		<span class="info"> 
+			    	<em>more info</em>
+			    	<span>Help Text</span>
+		    	</span>
+    		</p>
+    	</div>
+    </fieldset>
+    <div class="form-row submit">
+	   <input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
+	</div>     
+</form>
+	 
+ 
+{% endblock %}

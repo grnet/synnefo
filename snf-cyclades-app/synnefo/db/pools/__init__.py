@@ -157,12 +157,12 @@ def bitarray_to_map(bitarray_):
 
 def _bitarray_from_string(bitarray_):
     ba = bitarray()
-    ba.fromstring(b64decode(bitarray_))
+    ba.frombytes(b64decode(bitarray_))
     return ba
 
 
 def _bitarray_to_string(bitarray_):
-    return b64encode(bitarray_.tostring())
+    return b64encode(bitarray_.tobytes())
 
 ##
 ## Custom pools

@@ -17,7 +17,7 @@ override_dh_auto_install:
 	
 	mkdir -p debian/$(package)/etc/synnefo
 	echo "# Place your custom configuration options here\n\n" > debian/$(package)/etc/synnefo/99-local.conf
-	for f in admins logging; do \
+	for f in admins; do \
 		cp synnefo/settings/default/$$f.py \
 			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
 	done;

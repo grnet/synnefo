@@ -26,6 +26,13 @@ def printf(fmt, *args):
        print(fmt.format(*args))
     return 0
 
+def exn(fmt, *args):
+   raise Exception(fmt.format(*args))
+
+def cexn(b,fmt,*args):
+    if(b):
+      raise Exception(fmt.format(*args))
+
 printf("Will connect to QH_HOST = {0}", QH_HOST)
 printf("            and QH_PORT = {0}", QH_PORT)
 
@@ -61,6 +68,17 @@ def find(f, seq):
             return item
     return None
 
+def split(f,seq):
+    a = []
+    b = []
+    for item in seq:
+        if f(item): 
+            a.append(item)
+        else:
+            b.append(item) 
+    return (a,b)
+
+
 class Client(object):
     
     qh = new_qh_client()
@@ -90,59 +108,33 @@ class Config(object):
     def con():
         return Client.get()
 
-    @staticmethod
-    def split(list1,f,list2,g,equalsLeft):
-        a = []
-        b = []
-        list2 = [g(e) for e in list2]
-        if(equalsLeft):
-            for e in list1:
-                if(f(e) in list2):
-                   a.append(e)
-                else:
-                   b.append(e)
-        else:                   
-            for e in list1:
-                if(f(e) in list2):
-                   b.append(e)
-                else:
-                   a.append(e)
-        return (a,b)           
-
-     @staticmethod
-     def splitRejected(list1,f,list2,g):
-        return Config.split(list1,f,list2,g,False)
-
-     @staticmethod
-     def splitAccepted(list1,f,list2,g):
-        return Config.split(list1,f,list2,g,True)
-
 
 
 class Policy(Config):
 
     PolicyState = enum('NOT_EXISTS','EXISTS','DUMMY')    
 
+    # Dummy policies are neither loaded nor saved.
     @staticmethod
-    def create(policy):
-       return Policy.createMany([policy])
+    def newDummy():
+       p = Policy()
+       p.exist = Policy.PolicyState.DUMMY
+       return p
 
     @staticmethod
     def splitRejected(policyList,rejectedList):
-        (a,b) =  Config.splitRejected(policyList,(lambda p: p.policyName),
-                                      rejectedList,(lambda x: x))
+        (a,b) = split((lambda p:p.policyName not in rejectedList),policyList)
         if(b != [])
             printf("Rejected entities (call to set_limits): {0}", rejectedList)
         return (a,b)
 
     @staticmethod
     def splitAccepted(policyList,acceptedList):
-        (a,b) =  Config.splitAccepted(policyList,(lambda p: p.policyName),
-                                      acceptedList,(lambda x: x[0]))
+        acceptedListNames =[x[0] for x in acceptedList]
+        (a,b) = split((lambda p:p.policyName in acceptedListNames),policyList)
         if(b != [])
             printf("Accepted entities (call to get_limits): {0}", acceptedList)
         return (a,b)
-
 
     @staticmethod
     def saveMany(policyList):
@@ -238,26 +230,37 @@ class Resource(Config):
       self.resourceName = name 
       self.entity = entity
       self.policy = None 
-      self.Imported = None
-      self.Exported = None
-      self.Returned = None
-      self.Released = None
-      self.Flags = None
+      self.imported = None
+      self.exported = None
+      self.returned = None
+      self.released = None
+      self.flags = None
 
-
-   # get_holding or get_quota (if dummy)
+    # get_holding is NOT USED!!! We update Policy data as well with get_quota
     @staticmethod 
     def loadMany(resourceList):
+       iList1 = [(r.entity.entityName,r.resourceName,r.entity.entityKey) for r in resourceList]
+       oList1 = Resource.con().get_quota(context=Resource.Context,get_quota=iList1)
+       for e,res,q,c,il,el,p,i,e,r1,r2,f in oList1:
+          res1 = find((lambda r: r.resourceName == res),resourceList)
+          res1.imported = i
+          res1.exported = e
+          res1.returned = r1
+          res1.released = r2
+          res1.flags = f
+          res1.policy.quantity = q
+          res1.policy.capacity = c
+          res1.policy.importLimit = il
+          res1.policy.exportLimit = el
 
-       resourceList1 = filter((lambda r: r.policy.exists()),resourceList)
-       resourceList2 = filter((lambda r: not r.policy.exists()),resourceList)
-       policies1 = [r.policy() for r in resourceList1]
-      # get_holding
-      pass
+        return []
 
    # set_holding or set_quota (if dummy)
    @staticmethod
    def saveMany(resourceList):
+      (rl1,rl2) = split((lambda r: not r.policy.isDummy()),resourceList)
+      #
+      #
       pass
 
     
@@ -275,28 +278,60 @@ class Resource(Config):
     def __ne__(self, other):
        return not (self.__eq__(other))
 
-    def name():
+    def name(self):
         return self.resourceName
         
-    def policy():
+    def policy(self,query=False):
+       if(query):
+          self.load()
         return self.policy
 
     def setPolicy(self,policy):
         self.policy = policy
 
+    def quantity(self,query=False):
+       if(query):
+          self.load()
+       #FIXME: Is this correct ?
+       return self.policy.quantity
+
+    def load(self):
+       return loadMany([self]) == []
 
 
 class Commission(Config):
 
-    CommissionState = enum('NOT_ISSUED','PENDING','ACCEPTED','REJECTED')    
+    CommissionState = enum('NOT_ISSUED','PENDING','ACCEPTED','REJECTED')   
+
+    @staticmethod
+    def saveAll(comList):
+        inputList = [c.serial for c if(c.isPending()) in comList]
+        rejectedList = Commission.con().accept_commission(context=Commission.context,
+                                                          clientkey=Commission.ClientKey,
+                                                          serials=inputList,reason='ACCEPT')
+        for c in inputList:
+           c.state = CommissionState.ACCEPTED
+      #TODO: not implemented yet because the API does not support this. 
+        return [c for c if(c not in inputList) in comList]
+
+
+   @staticmethod
+   def denyAll(comList):
+        inputList = [c.serial for c if(c.isPending()) in comList]
+        rejectedList = Commission.con().accept_commission(context=Commission.context,
+                                                          clientkey=Commission.ClientKey,
+                                                          serials=inputList,reason='REJECT')
+        for c in inputList:
+           c.state = CommissionState.REJECTED
+      #TODO: not implemented yet because the API does not support this. 
+        return [c for c if(c not in inputList) in comList]
+
 
     #Serial : Positive
     # ClientKey : Name
-    # 
-   def __init__(self,entity,target):
+   def __init__(self,target):
       self.clientKey = Client.clientKey
       self.serial = None
-      self.entity = entity
       self.state = CommissionState.NOT_ISSUED
       self.resources_quant = []
       self.target = target
@@ -312,46 +347,71 @@ class Commission(Config):
     def __ne__(self, other):
        return not (self.__eq__(other))
 
+    def canChange(self):
+       self.state == CommissionState.NOT_ISSUED
+
+    def isPending(self):
+       self.state == CommissionState.PENDING
+
     def issue(self):
-       pass
+        prov = [(r.entity.entityName,r.resourceName,q) for r,q in self.resources_quant]
+        self.serial = Commission.con().issue_commission(context=Commission.Context,
+                                                        target=self.target.entityName,
+                                                        clientkey=Client.ClientKey,
+                                                        owner=self.target.parent.entityName,
+                                                        ownerKey=self.target.parent.entityKey,
+                                                        provisions=prov)
+        self.state = CommissionState.PENDING
+        return True
 
     def accept(self):
-       pass
+       return Commission.saveAll[self]) == []
 
     def reject(self):
-       pass
+       return Commission.denyAll[self]) == []
 
     #TODO: assert that resource.entity is the same as self.entity !!
     def addResource(self,resource,quantity):
+        cexn(self.state != CommissionState.NOT_ISSUED,
+             "Attempted to add a resource to a commission that has been issued.")
+        cexn(resource in [r  for r,q in self.resources_quant],
+             "Resource {0} already exists in commission.",resource.resourceName)
+        cexn(resource.quantity() < quantity,
+             "Insufficient quantity: Resource {0} quantity is {1} but {2} is required.",
+             resource.resourceName,resource.quantity(),quantity)
        self.resources_quant.append((resource,quantity))
+       return True
 
 
 class Entity(Config):
     # static  field (in some sense --- if it is assigned it will create a new binding)
-    EntityState = enum('NOT_EXISTS','EXISTS')    
-    #state = EntityState.NOT_EXISTS
-    #parent = None 
-    #entityName = None
-    #entityKey = None
-    #context = {}
+    EntityState = enum('NOT_EXISTS','EXISTS')   
+
+    allEntities = {}
 
     @staticmethod
-    def getRoot():
-        e = Entity()
-        e.set("system","",None)
-        return e
+    def get(name="",key="",parent=None):
+        e = Entity.allEntities.get(name)
+        if(e == None):
+            e = Entity()
+            if(name == "system" or name == ""):
+                e.set("system","",None)
+            else:
+                cexn(parent == None,"Entity.get of a non-existent entity with name {0} and no parent.",name)
+                cexn(not isinstance(parent,Entity),"Entity.get parent of {0} is not an Entity!",name)
+                e.set(name,key,parent)
+            Entity.allEntities[name] = e
+       return e
+
+    @staticmethod
+    def list():
+       return [v for k,v in Entity.allEntities.iteritems()]
 
     @staticmethod
     def split(entityList,rejectedList,op):
-        a = []
-        b = []
-        for e in entityList:
-            if(e.entityName in rejectedList):
-                b.append(e)
-            else:
-                a.append(e)
-            if(rejectedList != []):
-                printf("Rejected entities (call to {0}): {1}",op, rejectedList)
+       (a,b) = split((lambda e: e.entityName not in rejectedList),entityList)
+       if(rejectedList != []):
+            printf("Rejected entities (call to {0}): {1}",op, rejectedList)
         return (a,b)            
 
     @staticmethod
@@ -375,9 +435,9 @@ class Entity(Config):
         (ok,notok) = Entity.split(entityList,rejectedList,"release") 
         printf("\n")
         for e in ok:
-           e.setExists(False)
+           e.state = Entity.EntityState.NOT_EXISTS
         for e in notok:
-           e.setExists(True)
+           e.state = Entity.EntityState.EXISTS
         return notok
 
     @staticmethod
@@ -389,9 +449,9 @@ class Entity(Config):
         (ok,notok) = Entity.split(entityList,rejectedList,"get_entity") 
         printf("\n")
         for e in ok:
-           e.setExists(True)
+           e.state = Entity.EntityState.EXISTS
         for e in notok:
-           e.setExists(False)
+           e.state = Entity.EntityState.NOT_EXISTS
         return notok
 
     #release entity implies that each ENTITY in the system has a unique name
@@ -410,6 +470,11 @@ class Entity(Config):
     def __init__(self):
        self.set(None,None,None)
        self.commissions = []
+       self.resources = []
+    
+    def _check(self):
+#       cexn(self != Entity.allEntities.get(self.entityName),"Entity {0} does not exist in global dict",self.entityName)
+        pass
 
     def reset(self):
        self.set(None,None,None)
@@ -420,67 +485,92 @@ class Entity(Config):
        self.parent = parent
        self.setExists(False)
 
-    def setExists(self,v): 
-       if(v == True): 
-         self.state = self.EntityState.EXISTS
-         return True
-       else:
-         self.state = self.EntityState.NOT_EXISTS
-         return False
-
-    def exists(self):
-         q.return self.state != self.EntityState.NOT_EXISTS
+    def exists(self,query=False):
+        self._check()
+        if(query):
+          self.checkMany([self])
+        return self.state != self.EntityState.NOT_EXISTS
     
-   # def mustExist(self):
-   #    if(not self.checkExists()):
-   #         raise Exception("User {0} does not exist!".format(entityName))
-
-   # def mustNotExist(self):
-   #    if(self.checkExists()):
-   #         raise Exception("User {0} already exists!".format(entityName))
-
-    def checkExists(self):
-       self.checkMany([self])
-       return self.exists()
-
-    def create(self):
-       if(not self.checkExists()):
+    def create(self,query=False):
+       self._check()
+       if(not self.exists(query)):
           self.saveMany([self])
        return self.exists()
 
-    def release(self):
-       if(self.checkExists()):
+    def release(self,query=False):
+       self._check()
+       if(self.exists(query)):
           self.deleteMany([self])
-       return self.exists()
+       return not self.exists()
 
     # list and load resources
-    def getResources(self):
-        resourceList = Entity.con().list_resources(Entity.Context,self.entityName,self.entityKey)
-        ret = []
-        for r in resourceList:
-           r1 = Resource()
-           r1.set(self,r)
-           ret.append(r1)
-        Resource.loadMany(ret)
-        return ret
+    def resources(self,query=False):
+        self._check()
+        if(query):
+            resourceList = Entity.con().list_resources(context=Entity.Context,
+                                                       entity=self.entityName,
+                                                       key=self.entityKey)
+            self.resources = []
+            for r in resourceList:
+                r1 = Resource()
+                r1.set(r,self)
+                self.resources.append(r1)
+            Resource.loadMany(self.resources)
 
-     def createCommission(self,targetEntity):
-        q = Commission(self,target,targetEntity)
+        return self.resources
+
+     # self = target Entity 
+     # 
+     def commission(self):
+        q = Commission(self)
         self.commissions.append(q)
         return q
 
-    def getCommissions(self):
+    def commissions(self):
         return self.commissions()
+
+    def issueAll(self):
+       valid = [c for c in self.commissions() if(c.canChange())]
+       for c in valid:
+          c.issue()
+       return valid
+
+    def commitAll(self,accept=True):
+       self.issueAll()
+       valid = [c for c in self.commissions() if(c.isPending())]
+       if(accept):
+          return Commissions.saveAll(valid) == []
+       else:
+          return Commissions.denyAll(valid) == []
+
+
     
 # Main program 
-root = Entity.getRoot()
-pgerakios = Entity()
-pgerakios.set("pgerakios","key1",root)
+root = Entity.get()
+pgerakios = Entity.get("pgerakios","key1",root)
 pgerakios.create()
 
-e = Entity()
-e.set(rand_string(),"key1",pgerakios)
+# Transfer resources
+e = Entity.get(rand_string(),"key1",pgerakios)
 e.create()
+
+q = e.commission()
+r = pgerakios.resources()
+q.addResource(r[0],10)
+q.addResource(r[5],20)
+
+e.commitAll(False)
+
+
+#
+
+
+
+
+
+
+
 e.release()
+
 
 

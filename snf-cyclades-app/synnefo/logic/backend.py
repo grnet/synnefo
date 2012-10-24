@@ -148,6 +148,9 @@ def process_net_status(vm, etime, nics):
             ipv6=ipv6,
             firewall_profile=firewall_profile,
             dirty=False)
+        # Dummy save the network, because UI uses changed-since for VMs
+        # and Networks in order to show the VM NICs
+        net.save()
 
     vm.backendtime = etime
     vm.save()
@@ -155,9 +158,11 @@ def process_net_status(vm, etime, nics):
 
 def release_instance_nics(vm):
     for nic in vm.nics.all():
+        net = nic.network
         if nic.ipv4:
-            nic.network.release_address(nic.ipv4)
+            net.release_address(nic.ipv4)
         nic.delete()
+        net.save()
 
 
 @transaction.commit_on_success

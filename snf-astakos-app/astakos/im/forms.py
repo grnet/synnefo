@@ -295,7 +295,8 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         return email
 
 
-class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm, InvitedThirdPartyUserCreationForm):
+class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
+                                        InvitedThirdPartyUserCreationForm):
     pass
 
 
@@ -355,10 +356,11 @@ class LoginForm(AuthenticationForm):
 class ProfileForm(forms.ModelForm):
     """
     Subclass of ``ModelForm`` for permiting user to edit his/her profile.
-    Most of the fields are readonly since the user is not allowed to change them.
+    Most of the fields are readonly since the user is not allowed to change
+    them.
 
-    The class defines a save method which sets ``is_verified`` to True so as the user
-    during the next login will not to be redirected to profile page.
+    The class defines a save method which sets ``is_verified`` to True so as the
+    user during the next login will not to be redirected to profile page.
     """
     renew = forms.BooleanField(label='Renew token', required=False)
 

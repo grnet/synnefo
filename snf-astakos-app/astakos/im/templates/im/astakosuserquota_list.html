@@ -5,46 +5,23 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="stats clearfix">
-    	<ul>
-    		<li class="clearfix red vm">
+		<ul>
+			{% for r in data.resources %}
+			 
+    		<li class="clearfix  {{ r.load_class }} {{ r.name}}">
     			<div class="img-wrap">&nbsp;</div>
     			<div class="info">
-    				<h3>Number of Vms</h3>
+    				<h3>{{ r.description }}</h3>
     				<p>
-    					XX% Used<br>
-    					That is XXX of your XXX MB of virtual RAM - Aouch!
+    					{{ r.ratio|floatformat }}% Used<br>
+    					You are using {{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }}{{ r.unit }} {{ r.plural|capfirst }} - Aouch!
     				</p>
     			</div>
     			<div class="bar">
-    				<div><span style="width:89%;">89%&nbsp;</span></div>
+    				<div><span style="width:{{ r.ratio|floatformat }}%;">{{ r.ratio|floatformat }}% &nbsp;&nbsp;</span></div>
     			</div>
     		</li>
-    		<li class="clearfix yellow ram">
-    			<div class="img-wrap">&nbsp;</div>
-    			<div class="info">
-    				<h3>Number of RAMs</h3>
-    				<p>
-    					XX% Used<br>
-    					That is XXX of your XXX MB of virtual RAM - Aouch!
-    				</p>
-    			</div>
-    			<div class="bar">
-    				<div><span style="width:30%;">30%&nbsp;</span></div>
-    			</div>
-    		</li>
-    		<li class="clearfix green disks">
-    			<div class="img-wrap">&nbsp;</div>
-    			<div class="info">
-    				<h3>Number of Vms</h3>
-    				<p>
-    					XX% Used<br>
-    					That is XXX of your XXX MB of virtual RAM - Aouch!
-    				</p>
-    			</div>
-    			<div class="bar">
-    				<div><span style="width:60%;">30%&nbsp;</span></div>
-    			</div>
-    		</li>
+    		{% endfor %}
     	</ul>
     </div>    
     <!--
@@ -83,7 +60,7 @@
                     </tbody>
                 </table>
             {% endfor %}
-    </div>-->
+    </div>
         <form action="" method="post"
 	            class="withlabels">{% csrf_token %}
 	            {% include "im/form_render.html" %}
@@ -112,7 +89,7 @@
                 {% endif %}
             {% endwith %}
         {% endif %}
-	    </table>
+	    </table>-->
     </div>
 </div>
 {% endblock %}

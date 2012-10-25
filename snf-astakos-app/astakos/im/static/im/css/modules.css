@@ -351,11 +351,11 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 
 .projects .details a.edit						{ float:right; margin-left:20px;  }
 .projects .details .data						{ overflow:hidden; }
-<<<<<<< HEAD
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
 
 
 /* quotas-form  */
+
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
 .quotas-form fieldset legend					{ color:#55B577; font-size:1.308em; margin-bottom:2em; }
 .quotas-form .with-checkbox .checkbox-widget	{ margin-top:14px; } 
@@ -366,16 +366,24 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .quotas-form input[type="submit"]:focus			{ border-color: #B3B3B3}
 .quotas-form input[type="submit"]:focus:hover	{ border-color: #55B577}
 .quotas-form fieldset ul						{ padding:0; margin:0 0 1em; }
-.quotas-form fieldset ul li						{ list-style:none outside none; float:left; padding:0 0 0 59px; margin:0; }
+.quotas-form fieldset ul li						{ list-style:none outside none; float:left; padding:0 0 0 60px; margin:0; }
 .quotas-form fieldset ul li:first-child			{ padding-left:0; }
-.quotas-form fieldset ul li a					{ display:block; border:1px solid #222; color:#222; padding:10px 20px; }
-.quotas-form fieldset ul li a:hover				{ text-decoration:none; border-color:#55B577; color:#55B577; }
-.quotas-form fieldset ul li a.selected			{ background:#55B577; color:#fff; border-color:#55B577; }
+.quotas-form fieldset ul li a					{ display:block; width:82px; height:82px; overflow:hidden; }
+.quotas-form fieldset ul li a:hover	img			{ margin-top:-151px; }
+.quotas-form fieldset ul li a.selected img		{ margin-top:-313px; }
 .quotas-form p.msg								{ color:#B3B3B3; }
 .quotas-form fieldset legend 					{ margin-bottom:1em; font-size:1.154em }
 .quotas-form a.delete							{ position:absolute; right:0; top:0; color:#B3B3B3; }
 .quotas-form .quota								{ display:none; }
 .quotas-form fieldset ul li.rel+li.rel			{ background:url(../images/quota-related-bg.png) no-repeat left center; }
+.quotas-form .quota	.with-checkbox input[type="text"] { width:100px; margin:10px 0 0; float:left;}
+.quotas-form .quota .with-checkbox label		{ position:absolute; left:0; top:0; }
+.quotas-form .quota .with-checkbox p			{ padding-left:224px; float:left; }
+.quotas-form .quota .double-checkbox			{ float:left; }
+.quotas-form .quota .double-checkbox + .double-checkbox label   { display:none; }
+.quotas-form .quota .double-checkbox + .double-checkbox p		{ padding-left:20px; }
+.quotas-form .quota .double-checkbox .checkbox-widget			{ position:static; }
+
 
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
@@ -389,14 +397,15 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .stats .img-wrap								{ float:left; width:100px; background:url(../images/statistics_icons.png) no-repeat center center; padding:30px 0; }
 .stats .info									{ margin:0 25px ; width:320px; float:left;  }
 .stats .info p									{ color:#999; margin:0; }
-.stats .info h3									{ font-size:1.231em; }
-.stats .red.vm .img-wrap						{ background-position: 15px 7px; }
-.stats .yellow.vm .img-wrap						{ background-position: -124px 7px; }
-.stats .green.vm .img-wrap						{ background-position: -263px 7px; }
-.stats .red.ram .img-wrap						{ background-position: 15px -125px; }
-.stats .yellow.ram .img-wrap					{ background-position: -124px -125px; }
-.stats .green.ram .img-wrap						{ background-position: -263px -125px;}
-.stats .red.disks .img-wrap						{ background-position: 15px -248px; }
-.stats .yellow.disks .img-wrap					{ background-position: -124px -248px; }
-.stats .green.disks .img-wrap					{ background-position: -263px -248px;}
+.stats .info h3									{ font-size:1.231em; color:#222222 }
+.stats .vm .img-wrap							{ background-image:url(../images/vm-stats.png) }
+.stats .ram .img-wrap							{ background-image:url(../images/ram-stats.png) }
+.stats .network .img-wrap						{ background-image:url(../images/network-stats.png) }
+.stats .disk .img-wrap							{ background-image:url(../images/disk-stats.png) }
+.stats .storage .img-wrap						{ background-image:url(../images/storage-stats.png) }
+.stats .bandwidth .img-wrap						{ background-image:url(../images/bandwidth-stats.png) }
+
+.stats .red .img-wrap							{ background-position: 15px 7px; }
+.stats .yellow .img-wrap						{ background-position: -124px 7px; }
+.stats .green .img-wrap							{ background-position: -263px 7px; }
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}

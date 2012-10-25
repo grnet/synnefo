@@ -1044,9 +1044,73 @@ def resource_list(request):
     else:
         form = PickResourceForm()
         q = AstakosGroupQuota.objects.none()
+        
+    data ={
+        'resources':[{
+            'name': 'vm',
+            'description': 'Number Of Vms',
+            'unit':'',
+            'maxValue':'100',
+            'currValue':'50'
+            },{
+            'name': 'ram',
+            'description':'Total Ram Usage',
+            'unit':'GB',
+            'maxValue':'4',
+            'currValue':'1' 
+            },{
+            'name': 'storage', 
+            'description':'Total Disk Space Used',
+            'unit':'GB',
+            'maxValue':'200',
+            'currValue':'180'             
+            },{
+            'name': 'disk', 
+            'description':'Disks Used',
+            'unit':'GB',
+            'maxValue':'16',
+            'currValue':'16'
+            },{
+            'name': 'network', 
+            'description':'Private Networks Used',
+            'unit':'',
+            'maxValue':'2',
+            'currValue':'1'
+            },{
+            'name': 'bandwidth', 
+            'description':'Bandwidth Monitoring Device',
+            'unit':'Gbps',
+            'maxValue':'200',
+            'currValue':'50'
+            }]              
+    } 
+    
+    def with_class(entry):
+        entry['load_class'] = 'red'
+        max_value = float(entry['maxValue'])
+        curr_value = float(entry['currValue'])
+        entry['ratio'] = (curr_value/max_value)*100
+        if entry['ratio'] < 66:
+            entry['load_class']='yellow'
+        if entry['ratio'] < 33:
+            entry['load_class']='green'
+        
+        return entry 
+    
+    def pluralize(entry):
+        if entry['unit'] == '':
+            entry['plural'] = entry['name']+'s'
+        else:
+            entry['plural'] = entry['name']
+        
+        return entry       
+
+    data['resources'] = map(with_class, data['resources']) 
+    data['resources'] = map(pluralize, data['resources'])        
+    
     return object_list(request, q,
                        template_name='im/astakosuserquota_list.html',
-                       extra_context={'form': form})
+                       extra_context={'form': form, 'data':data})
 
 
 def group_create_list(request):
@@ -1062,7 +1126,7 @@ def billing(request):
     
     today = datetime.today()
     month_last_day= calendar.monthrange(today.year, today.month)[1]
-    
+    data['resources'] = map(with_class,data['resources'])        
     start = request.POST.get('datefrom', None)
     if start:
         today = datetime.fromtimestamp(int(start))
@@ -1150,4 +1214,4 @@ def timeline(request):
                            form=form,
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
-    return data
+    return data 

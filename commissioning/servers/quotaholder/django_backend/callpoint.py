@@ -100,11 +100,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for entity, key in get_entity:
             try:
-                Entity.objects.get(entity=entity, key=key)
+                e = Entity.objects.get(entity=entity, key=key)
             except Entity.DoesNotExist:
                 continue
 
-            append((entity, key))
+            append((entity, e.owner.entity))
 
         return entities
 

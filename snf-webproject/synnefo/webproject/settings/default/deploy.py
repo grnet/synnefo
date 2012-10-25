@@ -17,6 +17,6 @@ SECRET_KEY = 'ly6)mw6a7x%n)-e#zzk4jo6f2=uqu!1o%)2-(7lo+f9yd^k^bg'
 # sets this header is in use.
 USE_X_FORWARDED_HOST = True
 
-# Settings / meta / cookies that should be 'cleansed'
-HIDDEN_SETTINGS = 'SECRET|PASSWORD|PROFANITIES_LIST|SIGNATURE|TOKEN|AMQP_HOSTS|PRIVATE_KEY|DB_CONNECTION'
-HIDDEN_META = HIDDEN_SETTINGS + '|_pithos2_a|token|sessionid|shibstate|shibsession|CSRF_COOKIE'
+# Settings / cookies that should be 'cleansed'
+HIDDEN_SETTINGS = 'SECRET|PASSWORD|PROFANITIES_LIST|SIGNATURE|AMQP_HOSTS|PRIVATE_KEY|DB_CONNECTION'
+HIDDEN_COOKIES  = '_pithos2_a|token|sessionid|shibstate|shibsession|CSRF_COOKIE'

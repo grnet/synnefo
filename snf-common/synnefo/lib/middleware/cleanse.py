@@ -45,9 +45,9 @@ def mail_admins_safe(subject, message, fail_silently=False, connection=None):
     sending it
     '''
 
-    # TODO
+    HIDDEN_ALL = settings.HIDDEN_SETTINGS + "|" + settings.HIDDEN_COOKIES
     message = re.sub("((\S+)?(%s)(\S+)?(:|\=)( )?)('|\"?)\S+('|\"?)" \
-                % settings.HIDDEN_META, r"\1*******", message)
+                % HIDDEN_ALL, r"\1*******", message)
 
     return mail.mail_admins_plain(subject, message, fail_silently, connection)
 

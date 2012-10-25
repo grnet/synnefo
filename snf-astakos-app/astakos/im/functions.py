@@ -116,7 +116,7 @@ def send_activation(user, template_name='im/activation_email.txt'):
     user.save()
 
 
-def send_admin_notification(template_name,
+def send_admin_notification(user, template_name,
                             dictionary=None,
                             subject='alpha2 testing notification',
                             ):

@@ -128,6 +128,7 @@ def send_admin_notification(template_name,
     if not settings.ADMINS:
         return
     dictionary = dictionary or {}
+    user = dictionary.get('user', '')
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
     try:

@@ -39,6 +39,7 @@ Exported            =   Nonnegative(classname='Exported')
 Returned            =   Nonnegative(classname='Returned')
 Released            =   Nonnegative(classname='Released')
 Flags               =   Nonnegative(classname='Flags')
+Index               =   Nonnegative(classname='Index')
 
 Timepoint           =   Text(classname='Timepoint', maxlen=24)
 Reason              =   Text(   classname   =   'Reason',
@@ -53,7 +54,7 @@ class QuotaholderAPI(Specificator):
                 create_entity   =   ListOf(Entity, Owner, Key, OwnerKey, nonempty=1)
         ):
 
-        rejected = ListOf(Entity)
+        rejected = ListOf(Index)
         return rejected
 
     def set_entity_key  (

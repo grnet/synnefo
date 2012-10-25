@@ -51,16 +51,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         rejected = []
         append = rejected.append
 
-        for entity, owner, key, ownerkey in create_entity:
+        for idx, (entity, owner, key, ownerkey) in enumerate(create_entity):
             try:
                 owner = Entity.objects.get(entity=owner, key=ownerkey)
             except Entity.DoesNotExist:
-                append(entity)
+                append(idx)
                 continue
 
             try:
-                e = Entity.objects.get(entity=entity, owner=owner)
-                append(entity)
+                e = Entity.objects.get(entity=entity)
+                append(idx)
             except Entity.DoesNotExist:
                 e = Entity.objects.create(entity=entity,
                                           owner=owner,

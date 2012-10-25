@@ -146,8 +146,7 @@ def set_cookie(response, user):
     cookie_value = quote(user.email + '|' + user.auth_token)
     response.set_cookie(COOKIE_NAME, value=cookie_value,
                         expires=expire_fmt, path='/',
-                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE
-                        )
+                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
     msg = 'Cookie [expiring %s] set for %s' % (
         user.auth_token_expires,
         user.email

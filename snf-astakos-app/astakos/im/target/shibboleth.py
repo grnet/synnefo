@@ -60,8 +60,7 @@ class Tokens:
 @requires_anonymous
 def login(request, backend=None, on_login_template='im/login.html',
           on_creation_template='im/third_party_registration.html',
-          extra_context=None
-          ):
+          extra_context=None):
     tokens = request.META
 
     try:

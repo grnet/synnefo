@@ -46,6 +46,7 @@ from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
                                 NetworkInUse, OverLimit)
+from synnefo import quotas
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
@@ -145,8 +146,9 @@ def list_networks(request, detail=False):
 
 
 @util.api_method('POST')
+@quotas.uses_commission
 @transaction.commit_on_success
-def create_network(request):
+def create_network(serials, request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -183,19 +185,17 @@ def create_network(request):
     if net_type not in settings.ENABLED_NETWORKS:
         raise Forbidden("Can not create %s network" % net_type)
 
-    networks_user_limit = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                                         settings.MAX_NETWORKS_PER_USER)
-
-    user_networks = len(Network.objects.filter(userid=request.user_uniq,
-                                               deleted=False))
-
-    if user_networks >= networks_user_limit:
-        raise OverLimit('Network count limit exceeded for your account.')
-
     cidr_block = int(subnet.split('/')[1])
     if not util.validate_network_size(cidr_block):
         raise OverLimit("Unsupported network size.")
+
+    user_id = request.user_uniq
+    serial = quotas.issue_network_commission(user_id)
+    serials.append(serial)
+    # Make the commission accepted, since in the end of this
+    # transaction the Network will have been created in the DB.
+    serial.accepted = True
+    serial.save()
 
     try:
         link, mac_prefix = util.net_resources(net_type)
@@ -204,7 +204,7 @@ def create_network(request):
 
         network = Network.objects.create(
                 name=name,
-                userid=request.user_uniq,
+                userid=user_id,
                 subnet=subnet,
                 subnet6=subnet6,
                 gateway=gateway,
@@ -214,7 +214,8 @@ def create_network(request):
                 link=link,
                 mac_prefix=mac_prefix,
                 action='CREATE',
-                state='PENDING')
+                state='PENDING',
+                serial=serial)
     except EmptyPool:
         log.error("Failed to allocate resources for network of type: %s",
                   net_type)
@@ -227,7 +228,9 @@ def create_network(request):
     backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
-    return render_network(request, networkdict, status=202)
+    response = render_network(request, networkdict, status=202)
+
+    return response
 
 
 @util.api_method('GET')

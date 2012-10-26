@@ -46,6 +46,7 @@ from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
+from synnefo import quotas
 
 
 from logging import getLogger
@@ -241,8 +242,9 @@ def list_servers(request, detail=False):
 # access (SELECT..FOR UPDATE). Running create_server with commit_on_success
 # would result in backends and public networks to be locked until the job is
 # sent to the Ganeti backend.
+@quotas.uses_commission
 @transaction.commit_manually
-def create_server(request):
+def create_server(serials, request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -277,17 +279,6 @@ def create_server(request):
         flavor = util.get_flavor(flavor_id)
         password = util.random_password()
 
-        count = VirtualMachine.objects.filter(userid=user_id,
-                                              deleted=False).count()
-
-        # get user limit
-        vms_limit_for_user = \
-            settings.VMS_USER_QUOTA.get(user_id,
-                    settings.MAX_VMS_PER_USER)
-
-        if count >= vms_limit_for_user:
-            raise faults.OverLimit("Server count limit exceeded for your account.")
-
         backend_allocator = BackendAllocator()
         backend = backend_allocator.allocate(request.user_uniq, flavor)
 
@@ -309,6 +300,14 @@ def create_server(request):
         transaction.commit()
 
     try:
+        # Issue commission
+        serial = quotas.issue_vm_commission(user_id, flavor)
+        serials.append(serial)
+        # Make the commission accepted, since in the end of this
+        # transaction the VM will have been created in the DB.
+        serial.accepted = True
+        serial.save()
+
         # We must save the VM instance now, so that it gets a valid
         # vm.backend_vm_id.
         vm = VirtualMachine.objects.create(
@@ -317,7 +316,8 @@ def create_server(request):
             userid=user_id,
             imageid=image_id,
             flavor=flavor,
-            action="CREATE")
+            action="CREATE",
+            serial=serial)
 
         try:
             jobID = create_instance(vm, nic, flavor, image, password,

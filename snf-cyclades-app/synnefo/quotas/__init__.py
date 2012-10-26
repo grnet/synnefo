@@ -35,8 +35,8 @@ from synnefo.db.models import QuotaHolderSerial
 from synnefo.api.faults import OverLimit
 
 from commissioning.clients.quotaholder import QuotaholderHTTP
-from commissioning.api.exception import (CommissionException, NoCapacityError,
-                                         NoQuantityError)
+from commissioning.api.exception import (NoCapacityError, NoQuantityError,
+                                         CallError)
 
 import logging
 log = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ def uses_commission(func):
             if serials:
                 accept_commission(serials)
             return ret
-        except CommissionException:
+        except CallError:
             log.exception("Unexpected error")
         except:
             if serials:
@@ -133,6 +133,9 @@ def issue_commission(**commission_info):
             serial = qh.issue_commission(**commission_info)
         except (NoCapacityError, NoQuantityError):
             raise OverLimit("Limit exceeded for your account")
+        except CallError as e:
+            if e.call_error in ["NoCapacityError", "NoQuantityError"]:
+                raise OverLimit("Limit exceeded for your account")
 
     db_serial = QuotaHolderSerial.objects.create(serial=serial)
     return db_serial

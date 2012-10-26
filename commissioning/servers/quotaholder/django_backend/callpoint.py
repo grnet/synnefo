@@ -460,6 +460,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.save()
                 th.save()
                 pv.delete()
+            c.delete()
 
         return
 
@@ -502,6 +503,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.save()
                 th.save()
                 pv.delete()
+            c.delete()
 
         return
 

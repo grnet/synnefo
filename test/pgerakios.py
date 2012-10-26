@@ -4,6 +4,7 @@ import os
 from commissioning.clients.http import HTTP_API_Client, init_logger_stderr
 from commissioning import QuotaholderAPI
 import random
+import inspect
 
 init_logger_stderr('mylogger', level='INFO')
 
@@ -191,6 +192,7 @@ class Policy(Config):
         self.exist = Policy.PolicyState.NOT_EXISTS
 
     def __init__(self, **kwargs):
+        self.policyName = None
         self.reset()
         self.__dict__.update(kwargs)
 
@@ -251,17 +253,6 @@ class Policy(Config):
 class Resource(Config):
 
     ResourceState = enum('DIRTY', 'LOADED')
-
-    def set(self, name, entity):
-        self.resourceName = name
-        self.entity = entity
-        self.policy = None
-        self.imported = 0
-        self.exported = 0
-        self.returned = 0
-        self.released = 0
-        self.flags = 0
-        self.state = Resource.ResourceState.DIRTY
 
     @staticmethod
     def allDirty(resourceList):
@@ -331,6 +322,15 @@ class Resource(Config):
                     r.policy.capacity,r.policy.importLimit,r.policy.ExportLimit,Resource.Flags) for r in rl1]
             ol1 = Resource.con().set_quota(context=Resource.Context,set_quota=il1)
 
+        if(rl2 == []):
+            ol2 = []
+        else:
+            il2 = [(r.entity.entityName,r.resourceName,r.entity.entityKey,r.policy.policyName) for r in rl2]
+            ol2 = Resource.con().set_holding(context=Resource.Context,set_holding=il2)
+            
+        rejectedList = []
+
+
         #TODO:
 
         # 1. set_holding
@@ -354,11 +354,21 @@ class Resource(Config):
         else:
             self.state = Resource.ResourceState.LOADED
 
+    def set(self,**kwargs):
+        self.__dict__.update(kwargs)
+        self.setDirty()
+
     def __init__(self,name,entity):
-        self.set(None, None, None)
         self.resourceName = name
         self.entity = entity
-        self.policy = Policy.newDummy()
+        self.policy = None
+        self.imported = 0
+        self.exported = 0
+        self.returned = 0
+        self.released = 0
+        self.flags = 0
+        self.state = Resource.ResourceState.DIRTY
+        self.setPolicy(Policy.newDummy())
 
     def __eq__(self, other):
         if isinstance(other, Resource):
@@ -384,7 +394,7 @@ class Resource(Config):
 
     def setPolicy(self, policy):
         self.policy = policy
-
+        self.setDirty(True)
 
     def quantity(self, query=False):
         if(query):
@@ -425,7 +435,7 @@ class Commission(Config):
             #TODO: not implemented yet because the API does not support this.
         return [c for c in comList if(c not in inputList)]
 
-     def __init__(self, target):
+    def __init__(self, target):
         self.clientKey = Client.clientKey
         self.serial = None
         self.state = Commission.CommissionState.NOT_ISSUED
@@ -551,6 +561,10 @@ class Entity(Config):
         rejectedList = [e.entityName for e in entityList if e.entityName not in [n for n, k in acceptedList]]
         (ok, notok) = Entity.split(entityList, rejectedList, "get_entity")
         printf("\n")
+        for name,parentName in acceptedList:
+            e = find((lambda e: e.entityName == name),entityList)
+            if(parentName !=  e.parent.entityName):
+                exn("Parent of {0} is {1} and not {2}.",e.entityName,parentName,e.parent.parentName)
         for e in ok:
             e.state = Entity.EntityState.EXISTS
         for e in notok:
@@ -608,7 +622,7 @@ class Entity(Config):
 
     def addResourceWith(self,name,**kwargs):
         p = Policy.newDummy(quantity=0,capacity=10)
-        return self.addResource(name,**kwargs)
+        return self.addResource(name,p)
 
     # Resource-related API
     def addResource(self,name,policy=None):
@@ -625,6 +639,9 @@ class Entity(Config):
     def saveResources(self,all=False):
         Resource.saveMany(self._resources,not all)
 
+    def getResource(self,name ,query=False):
+        r1 = self.getResources(query)
+        return find((lambda r: r.resourceName == name),r1)
 
     # list and load resources
     def getResources(self, query=False):
@@ -633,18 +650,17 @@ class Entity(Config):
             resourceList = Entity.con().list_resources(context=Entity.Context,
                 entity=self.entityName,
                 key=self.entityKey)
-            self._resources = []
+            ret = []
             for r in resourceList:
                 r1 = Resource(r,self)
-                self._resources.append(r1)
-            Resource.loadMany(self._resources)
+                ret.append(r1)
+            Resource.loadMany(ret)
+            self_resources = ret + [r for r in self._resources if(r not in ret)]
 
         return self._resources
 
-        # self = target Entity
-        #
-
     # Commission-related API
+    # self = target entity
     def addCommission(self):
         q = Commission(self)
         self._commissions.append(q)
@@ -685,16 +701,20 @@ try:
 
     r2 =e.addResourceWith("MEMORY",quantity=0,capacity=25)
     rl1 = e.getResources(False)
+    for r in rl1:
+        printf("Resources of e before : {0}", r.resourceName)
+
     e.saveResources()
     rl2 = e.getResources(True)
 
-    for r in rl1:
-        printf("Resources of e before : {0}", r.resourceName)
     for r in rl2:
+        printf("r is {0}",r)
+        printf("dict of r : {0}", r.__dict__)
         printf("Resources of e after : {0}", r.resourceName)
 
 
     e1 = Entity.get(rand_string(), "key1", pgerakios)
+    e1.create()
     rl3 = e1.getResources(True)
     q= e1.addCommission()
     q.addResource(r1,3)

@@ -506,7 +506,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         return
 
     def get_pending_commissions(self, context={}, clientkey=None):
-        pending = Commission.objects.filter(clientkey=clientkey)
+        pending = Commission.objects.filter(clientkey=clientkey)\
+                                    .values_list('serial', flat=True)
         return pending
 
     def resolve_pending_commissions(self,   context={}, clientkey=None,

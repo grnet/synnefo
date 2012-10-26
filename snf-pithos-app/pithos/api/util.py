@@ -807,6 +807,7 @@ def get_backend():
     backend = _pithos_backend_pool.pool_get()
     backend.default_policy['quota'] = BACKEND_QUOTA
     backend.default_policy['versioning'] = BACKEND_VERSIONING
+    backend.messages = []
     return backend
 
 
@@ -918,6 +919,8 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 update_response_headers(request, response)
                 return response
             except Fault, fault:
+                if fault.code >= 500:
+                    logger.exception("API Fault")
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)

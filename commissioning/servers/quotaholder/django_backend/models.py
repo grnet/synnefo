@@ -100,7 +100,7 @@ class Provision(Model):
 
 class ProvisionLog(Model):
 
-    serial              =   BigIntegerField(primary_key=True)
+    serial              =   BigIntegerField()
     source              =   CharField(max_length=72)
     target              =   CharField(max_length=72)
     name                =   CharField(max_length=72)

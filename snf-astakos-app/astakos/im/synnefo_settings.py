@@ -44,7 +44,8 @@ installed_apps = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'djcelery',
-    'debug_toolbar',]
+#     'debug_toolbar'
+    ]
 
 context_processors = [
     'django.core.context_processors.media',
@@ -67,7 +68,7 @@ middlware_classes = [
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.SecureMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+#     'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
 loggers = {

@@ -633,7 +633,7 @@ class TimelineForm(forms.Form):
         if 'end_date' in d:
             d['end_date'] = d['end_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
 	if 'entity' in d:
-            d['entity'] = d['entity'].email 
+            d['entity'] = d['entity'].email
         return d
 
 class AstakosGroupSortForm(forms.Form):

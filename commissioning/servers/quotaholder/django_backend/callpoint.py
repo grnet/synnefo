@@ -320,6 +320,12 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         serial = commission.serial
 
         for entity, resource, quantity in provisions:
+            try:
+                e = Entity.objects.get(entity=entity)
+            except Entity.DoesNotExist:
+                m = "No source entity '%s'" % (entity,)
+                raise NoEntityError(m)
+
             release = 0
             if quantity < 0:
                 release = 1
@@ -371,7 +377,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                         raise NoCapacityError(m)
 
             Provision.objects.create(   serial      =   commission,
-                                        entity      =   t,
+                                        entity      =   e,
                                         resource    =   resource,
                                         quantity    =   quantity   )
             if release:

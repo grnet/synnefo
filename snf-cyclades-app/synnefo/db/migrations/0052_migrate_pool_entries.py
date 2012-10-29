@@ -13,7 +13,7 @@ def create_empty_pool(size):
     return ba
 
 def bitarray_to_string(bitarray_):
-    return b64encode(bitarray_.tostring())
+    return b64encode(bitarray_.tobytes())
 
 def validate_mac(value):
     hex_ = value.replace(":", "")

@@ -39,11 +39,12 @@ from traceback import format_exc
 
 from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
-                         HttpResponseServerError)
+                         HttpResponseServerError, HttpResponseForbidden)
 
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import ImageBackend, BackendException
 
+from pithos.backends.base import NotAllowedError
 
 log = getLogger('synnefo.plankton')
 
@@ -63,6 +64,8 @@ def plankton_method(method):
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''
                 return HttpResponseBadRequest(message)
+            except NotAllowedError:
+                return HttpResponseForbidden()
             except Exception as e:
                 if settings.DEBUG:
                     message = format_exc(e)

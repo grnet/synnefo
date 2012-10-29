@@ -81,7 +81,8 @@ INSTALL_REQUIRES = [
     'snf-pithos-backend>=0.11',
     'lockfile>=0.8, <0.9',
     'ipaddr',
-    'bitarray'
+    'setproctitle>=1.0.1',
+    'bitarray>=0.8'
 ]
 
 EXTRAS_REQUIRES = {

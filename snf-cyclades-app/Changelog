@@ -1,6 +1,21 @@
 Changelog
 ---------
 
+v0.12.0
+*******
+
+FIXES:
+  UI:
+	* Fix unclosed DIV's and other minor html fixes.
+	* 
+
+NEW FEATURES:
+  UI:
+	* Optionally group public network interfaces in one network view in ui 
+	  Configurable by the UI_GROUP_PUBLIC_NETWORKS setting (defaults to True).
+	* New setting UI_CHANGES_SINCE_ALIGMENT to allow aligment of the date used
+	  by ui in api calls that support changes-since parameter.
+
 v0.11.0
 *******
 

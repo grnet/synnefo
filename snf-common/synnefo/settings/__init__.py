@@ -65,6 +65,6 @@ if os.path.exists(SYNNEFO_SETTINGS_DIR):
         try:
             execfile(os.path.abspath(f))
         except Exception as e:
-            print >>sys.stderr, "Failed to read settings file: %s [%s]" % \
+            print >>sys.stderr, "Failed to read settings file: %s [%r]" % \
                                 (os.path.abspath(f), e)
             raise SystemExit(1)

@@ -194,8 +194,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.flags = flags
                 h.save()
             except Holding.DoesNotExist:
-                h = Holding.objects.create( entity=entity, resource=resource,
-                                            policy=policy, flags=flags      )
+                h = Holding.objects.create( entity=e, resource=resource,
+                                            policy=p, flags=flags      )
 
         return rejected
 

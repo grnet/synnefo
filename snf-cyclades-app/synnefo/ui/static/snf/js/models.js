@@ -1754,7 +1754,7 @@
             var url = getUrl.call(this) + "/" + id;
             this.api_call(this.path + "/" + id, "read", {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {
-                this.add({id:id, cpu:"", ram:"", disk:"", name: "", status:"DELETED"})
+                this.add({id:id, cpu:"Unknown", ram:"Unknown", disk:"Unknown", name: "Unknown", status:"DELETED"})
             }, this), _.bind(function(flv) {
                 if (!flv.flavor.status) { flv.flavor.status = "DELETED" };
                 this.add(flv.flavor);

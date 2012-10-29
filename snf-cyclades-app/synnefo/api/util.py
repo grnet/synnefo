@@ -191,13 +191,15 @@ def get_image(image_id, user_id):
         backend.close()
 
 
-def get_flavor(flavor_id):
+def get_flavor(flavor_id, include_deleted=False):
     """Return a Flavor instance or raise ItemNotFound."""
 
     try:
         flavor_id = int(flavor_id)
-        # Ensure that request if for active flavor
-        return Flavor.objects.get(id=flavor_id, deleted=False)
+        if include_deleted:
+            return Flavor.objects.get(id=flavor_id)
+        else:
+            return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
     except (ValueError, Flavor.DoesNotExist):
         raise ItemNotFound('Flavor not found.')
 

@@ -95,7 +95,7 @@ def get_flavor_details(request, flavor_id):
     #                       overLimit (413)
     
     log.debug('get_flavor_details %s', flavor_id)
-    flavor = util.get_flavor(flavor_id)
+    flavor = util.get_flavor(flavor_id, include_deleted=True)
     flavordict = flavor_to_dict(flavor, detail=True)
 
     if request.serialization == 'xml':

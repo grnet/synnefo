@@ -242,7 +242,8 @@ def create_server(request):
         image['metadata'] = dict((key.upper(), val) \
                                  for key, val in properties.items())
 
-        flavor = util.get_flavor(flavor_id)
+        # Ensure that request if for active flavor
+        flavor = util.get_flavor(flavor_id, include_deleted=False)
         password = util.random_password()
 
         count = VirtualMachine.objects.filter(userid=request.user_uniq,

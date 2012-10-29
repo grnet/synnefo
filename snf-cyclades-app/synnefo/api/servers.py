@@ -261,7 +261,7 @@ def create_server(request):
 
         if backend is None:
             log.error("No available backends for VM with flavor %s", flavor)
-            raise Exception("No available backends")
+            raise faults.ServiceUnavailable("No available backends")
     except:
         transaction.rollback()
         raise
@@ -273,8 +273,8 @@ def create_server(request):
             (network, address) = util.allocate_public_address(backend)
             if address is None:
                 log.error("Public networks of backend %s are full", backend)
-                raise faults.OverLimit("Can not allocate IP for new machine."
-                                       " Public networks are full.")
+                msg = "Failed to allocate public IP for new VM"
+                raise faults.ServiceUnavailable(msg)
             nic = {'ip': address, 'network': network.backend_id}
         else:
             network = choice(list(util.backend_public_networks(backend)))

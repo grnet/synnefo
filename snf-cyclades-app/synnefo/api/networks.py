@@ -44,7 +44,7 @@ from django.utils import simplejson as json
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (BadRequest, Unauthorized,
+from synnefo.api.faults import (ServiceUnavailable, BadRequest, Unauthorized,
                                 NetworkInUse, OverLimit)
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
@@ -202,7 +202,9 @@ def create_network(request):
                 action='CREATE',
                 state='PENDING')
     except EmptyPool:
-        raise OverLimit('Network count limit exceeded.')
+        log.error("Failed to allocate resources for network of type: %s",
+                  net_type)
+        raise ServiceUnavailable("Failed to allocate resources for network")
 
     # Create BackendNetwork entries for each Backend
     network.create_backend_network()

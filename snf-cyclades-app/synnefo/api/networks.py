@@ -254,6 +254,8 @@ def update_network_name(request, network_id):
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not rename the public network.')
+    if net.deleted:
+        raise Network.DeletedError
     net.name = name
     net.save()
     return HttpResponse(status=204)
@@ -275,8 +277,12 @@ def delete_network(request, network_id):
     if net.public:
         raise Unauthorized('Can not delete the public network.')
 
+    if net.deleted:
+        raise Network.DeletedError
+
     if net.machines.all():  # Nics attached on network
         raise NetworkInUse('Machines are connected to network.')
+
 
     net.action = 'DESTROY'
     net.save()
@@ -295,6 +301,8 @@ def network_action(request, network_id):
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not modify the public network.')
+    if net.deleted:
+        raise Network.DeletedError
 
     key = req.keys()[0]
     val = req[key]

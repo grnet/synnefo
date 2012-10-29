@@ -393,6 +393,9 @@ def api_method(http_method=None, atom_allowed=False):
             except VirtualMachine.DeletedError:
                 fault = BadRequest('Server has been deleted.')
                 return render_fault(request, fault)
+            except Network.DeletedError:
+                fault = BadRequest('Network has been deleted.')
+                return render_fault(request, fault)
             except VirtualMachine.BuildingError:
                 fault = BuildInProgress('Server is being built.')
                 return render_fault(request, fault)

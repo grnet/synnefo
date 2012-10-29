@@ -463,37 +463,36 @@
         </div>
     </div>
     <div class="modal" id="feedback-form" class="feedback notification-box">
-        <h3 class="popup-header overlay-header">
-            <span class="header-box">{% trans "Send feedback" %}</span>
-        </h3>
-        <div class="popup-body">
-            <div class="popup-body-inner">
-                <div class="form-container">
-                <p class="feedback-intro">
-                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
-We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
-                <form id="feedback-form">
-                    <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
-                    <div class="description"></div>
-                    <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
-                    <textarea name="feedback-msg" class="feedback-text"></textarea>
+      <h3 class="popup-header overlay-header">
+        <span class="header-box">{% trans "Send feedback" %}</span>
+      </h3>
+      <div class="popup-body">
+        <div class="popup-body-inner">
+          <div class="form-container">
+            <p class="feedback-intro">
+            {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+            We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
+            <form id="feedback-form">
+              <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+              <div class="description"></div>
+              <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
+              <textarea name="feedback-msg" class="feedback-text"></textarea>
 
-                    <input type="checkbox" name="submit-submit-data" class='submit-data' />
-                    <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
-                    <textarea name="feedback-data" class="data-text"></textarea>
-                </form>
-            </div>
+              <input type="checkbox" name="submit-submit-data" class='submit-data' />
+              <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
+              <textarea name="feedback-data" class="data-text"></textarea>
+            </form>
+          </div>
 
-            <div class="message sending">{% trans "submiting your data....." %}</div>
-            <div class="message success">
-                {% trans "thank you for submiting your feedback" %}
-                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
-            <div class="message errormsg">
-                {% trans "some error occured submiting submiting your feedback, please try again later" %}
-                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
-            </div>
-            </div>
+          <div class="message sending">{% trans "submiting your data....." %}</div>
+          <div class="message success">
+            {% trans "thank you for submiting your feedback" %}
+            <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+          <div class="message errormsg">
+            {% trans "some error occured submiting submiting your feedback, please try again later" %}
+            <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
         </div>
+      </div>
     </div>
     
     <div id="details-overlay" class="overlay-content overlay-info hidden">

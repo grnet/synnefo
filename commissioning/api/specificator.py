@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*- 
+# -*- coding: utf-8 -*-
 from random import random, choice, randint
 from math import log
 from inspect import isclass

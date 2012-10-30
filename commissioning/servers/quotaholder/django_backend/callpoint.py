@@ -521,7 +521,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
     def resolve_pending_commissions(self,   context={}, clientkey=None,
                                             max_serial=None, accept_set=()  ):
         accept_set = set(accept_set)
-        pending = self.get_pending_commissions(clientkey=clientkey)
+        pending = self.get_pending_commissions(context=context, clientkey=clientkey)
         pending = sorted(pending)
 
         accept = self.accept_commission
@@ -532,9 +532,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 break
 
             if serial in accept_set:
-                accept(clientkey=clientkey, serial=serial)
+                accept(context=context, clientkey=clientkey, serials=[serial])
             else:
-                reject(clientkey=clientkey, serial=serial)
+                reject(context=context, clientkey=clientkey, serials=[serial])
 
         return
 

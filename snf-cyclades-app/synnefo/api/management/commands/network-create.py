@@ -96,7 +96,15 @@ class Command(BaseCommand):
             dest='backend_id',
             default=None,
             help='ID of the backend that the network will be created. Only for'
-                 ' public networks')
+                 ' public networks'),
+        make_option('--link',
+            dest='link',
+            default=None,
+            help="Connectivity link of the Network. None for default."),
+        make_option('--mac-prefix',
+            dest='mac_prefix',
+            default=None,
+            help="MAC prefix of the network. None for default")
         )
 
     def handle(self, *args, **options):
@@ -108,6 +116,8 @@ class Command(BaseCommand):
         net_type = options['type']
         backend_id = options['backend_id']
         public = options['public']
+        link = options['link']
+        mac_prefix = options['mac_prefix']
 
         if not name:
             raise CommandError("Name is required")
@@ -115,11 +125,14 @@ class Command(BaseCommand):
             raise CommandError("Subnet is required")
         if public and not backend_id:
             raise CommandError("backend-id is required")
-        if public and not net_type == 'PUBLIC_ROUTED':
-            raise CommandError("Invalid type for public network")
         if backend_id and not public:
             raise CommandError("Private networks must be created to"
                                " all backends")
+
+        if mac_prefix and net_type == "PRIVATE_MAC_FILTERED":
+            raise CommandError("Can not override MAC_FILTERED mac-prefix")
+        if link and net_type == "PRIVATE_PHYSICAL_VLAN":
+            raise CommandError("Can not override PHYSICAL_VLAN link")
 
         if backend_id:
             try:
@@ -130,7 +143,11 @@ class Command(BaseCommand):
             except Backend.DoesNotExist:
                 raise CommandError("Backend not found in DB")
 
-        link, mac_prefix = net_resources(net_type)
+        default_link, default_mac_prefix = net_resources(net_type)
+        if not link:
+            link = default_link
+        if not mac_prefix:
+            mac_prefix = default_mac_prefix
 
         subnet, gateway, subnet6, gateway6 = validate_network_info(options)
 

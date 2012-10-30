@@ -83,18 +83,17 @@ def uses_commission(func):
 
 
 ## FIXME: Wrap the following two functions inside transaction ?
-def accept_commission(serials):
+def accept_commission(serials, update_db=True):
     """Accept a list of pending commissions.
 
     @param serials: List of QuotaHolderSerial objects
 
     """
-    # Update the DB if needed
-    log.critical("Serials are %s", serials)
-    for s in serials:
-        if s.pending:
-            s.accepted = True
-            s.save()
+    if update_db:
+        for s in serials:
+            if s.pending:
+                s.accepted = True
+                s.save()
 
     with get_quota_holder() as qh:
         qh.accept_commission(context={},
@@ -102,17 +101,17 @@ def accept_commission(serials):
                              serials=[s.serial for s in serials])
 
 
-def reject_commission(serials):
+def reject_commission(serials, update_db=True):
     """Reject a list of pending commissions.
 
     @param serials: List of QuotaHolderSerial objects
 
     """
-    # Update the DB if needed
-    for s in serials:
-        if s.pending:
-            s.rejected = True
-            s.save()
+    if update_db:
+        for s in serials:
+            if s.pending:
+                s.rejected = True
+                s.save()
 
     with get_quota_holder() as qh:
         qh.reject_commission(context={},
@@ -192,3 +191,69 @@ def create_commission(user, resources, delete=False):
              "ownerkey":   "",
              "name":       "",
              "provisions": provisions}
+
+##
+## Reconcile pending commissions
+##
+
+
+def accept_commissions(accepted):
+    with get_quota_holder() as qh:
+        qh.accept_commission(context={},
+                             clientkey='cyclades',
+                             serials=accepted)
+
+
+def reject_commissions(rejected):
+    with get_quota_holder() as qh:
+            qh.reject_commission(context={},
+                                 clientkey='cyclades',
+                                 serials=rejected)
+
+
+def fix_pending_commissions():
+    (accepted, rejected) = resolve_pending_commissions()
+
+    with get_quota_holder() as qh:
+        if accepted:
+            qh.accept_commission(context={},
+                                 clientkey='cyclades',
+                                 serials=accepted)
+        if rejected:
+            qh.reject_commission(context={},
+                                 clientkey='cyclades',
+                                 serials=rejected)
+
+
+def resolve_pending_commissions():
+    """Resolve quotaholder pending commissions.
+
+    Get pending commissions from the quotaholder and resolve them
+    to accepted and rejected, according to the state of the
+    QuotaHolderSerial DB table. A pending commission in the quotaholder
+    can exist in the QuotaHolderSerial table and be either accepted or
+    rejected, or can not exist in this table, so it is rejected.
+
+    """
+
+    qh_pending = get_quotaholder_pending()
+    if not qh_pending:
+        return ([], [])
+
+    qh_pending.sort()
+    min_ = qh_pending[0]
+
+    serials = QuotaHolderSerial.objects.filter(serial__gte=min_, pending=False)
+    accepted = serials.filter(accepted=True).values_list('serial', flat=True)
+    accepted = filter(lambda x: x in qh_pending, accepted)
+
+    rejected = list(set(qh_pending) - set(accepted))
+
+    return (accepted, rejected)
+
+
+def get_quotaholder_pending():
+    with get_quota_holder() as qh:
+        pending_serials = qh.get_pending_commissions(context={},
+                                                     clientkey='cyclades')
+    return pending_serials

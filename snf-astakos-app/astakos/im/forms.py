@@ -484,12 +484,9 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
 
     def save(self, commit=True):
-        user = super(ExtendedPasswordChangeForm, self).save(commit=False)
         if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            user.renew_token()
-        if commit:
-            user.save()
-        return user
+            self.user.renew_token()
+        return super(ExtendedPasswordChangeForm, self).save(commit=commit)
 
 class ExtendedSetPasswordForm(SetPasswordForm):
     """
@@ -505,14 +502,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
     
     def save(self, commit=True):
-        user = super(ExtendedSetPasswordForm, self).save(commit=False)
         if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            try:
-                user = AstakosUser.objects.get(id=user.id)
-            except AstakosUser.DoesNotExist:
-                pass
-            else:
-                user.renew_token()
-        if commit:
-            user.save()
-        return user
+            if isinstance(self.user, AstakosUser):
+                self.user.renew_token()
+        return super(ExtendedSetPasswordForm, self).save(commit=commit)

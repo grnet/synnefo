@@ -37,6 +37,8 @@ class Migration(DataMigration):
         bridges = orm.BridgePool.objects.all()
         if bridges:
             try:
+                # Do NOT import external code as can be depricated when the
+                # migration will run
                 pool_prefix = settings.PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX
             except AttributeError:
                 pool_prefix = ''
@@ -65,6 +67,8 @@ class Migration(DataMigration):
         mac_prefixes = orm.MacPrefixPool.objects.all()
         if mac_prefixes:
             try:
+                # Do NOT import external code as can be depricated when the
+                # migration will run
                 macp_base = settings.MAC_POOL_BASE
             except AttributeError:
                 first = mac_prefixes[0]

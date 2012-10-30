@@ -10,9 +10,10 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
 
-        print '\033[91m' + 'Subnet of all networks is set to 10.0.0.0/24.'
-        print 'Gateway of all networks is set to null.'
-        print "Use `snf-manage network-modify` to change them." + '\033[0m'
+        if orm.Network.objects.exists():
+            print '\033[91m' + 'Subnet of all networks is set to 10.0.0.0/24.'
+            print 'Gateway of all networks is set to null.'
+            print "Use `snf-manage network-modify` to change them." + '\033[0m'
 
         create_bridge = orm.BridgePool.objects.create
         for link in orm.NetworkLink.objects.order_by('id').all():
@@ -29,6 +30,8 @@ class Migration(DataMigration):
 
             network.netlink = network.link.name
             try:
+               # Do NOT import external code as can be depricated when the
+               # migration will run
                 base = settings.MAC_POOL_BASE
                 assert(len(base) == 7)
                 network.mac_prefix = base

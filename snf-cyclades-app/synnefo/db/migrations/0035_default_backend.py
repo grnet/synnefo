@@ -11,9 +11,12 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         try:
+            # Do NOT import external code as can be depricated when the
+            # migration will run
             cluster_info = settings.GANETI_CLUSTER_INFO
-        except AttributeError:
-            raise AttributeError("Missing settings GANETI_CLUSTER_INFO")
+        except (AttributeError, ImportError):
+            return
+
         (ip, port, username, password) = cluster_info
         backend = orm.Backend.objects.create(clustername = ip,
                                              port = port,

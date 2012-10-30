@@ -5,6 +5,8 @@ from south.v2 import DataMigration
 from django.db import models
 
 try:
+    # Do NOT import external code as can be depricated when the
+    # migration will run
     from synnefo.db.aes_encrypt import encrypt_db_charfield as encrypt
     from synnefo.db.aes_encrypt import decrypt_db_charfield as decrypt
 except ImportError:

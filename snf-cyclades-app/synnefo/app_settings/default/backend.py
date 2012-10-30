@@ -3,11 +3,6 @@
 # Ganeti backend configuration
 ###################################
 
-# The RAPI endpoint and associated credentials to use
-# for talking to the Ganeti backend.
-GANETI_MASTER_IP = "10.0.0.1"
-GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "username", "password")
-
 # This prefix gets used when determining the instance names
 # of Synnefo VMs at the Ganeti backend.
 # The dash must always appear in the name!

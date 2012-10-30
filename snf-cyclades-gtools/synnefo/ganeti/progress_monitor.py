@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,175 +36,72 @@
 #
 """Utility to monitor the progress of image deployment
 
-A small utility to monitor the progress of image deployment
-by watching the contents of /proc/<pid>/io and producing
-notifications of type 'ganeti-create-progress' to the rest
-of the Synnefo infrastructure over AMQP.
-
+A small utility that collects various monitoring messages from snf-image and
+forwards them to the rest of the Synnefo infrastructure over AMQP.
 """
 
 import os
 import sys
 import time
 import json
-import prctl
-import signal
-import socket
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
 from synnefo.lib.utils import split_time
 
-
-def parse_arguments(args):
-    from optparse import OptionParser
-
-    kw = {}
-    kw['usage'] = "%prog [options] command [args...]"
-    kw['description'] = \
-        "%prog runs 'command' with the specified arguments, monitoring the " \
-        "number of bytes read and written by it. 'command' is assumed to be " \
-        "A program used to install the OS for a Ganeti instance. %prog " \
-        "periodically issues notifications of type 'ganeti-create-progress' " \
-        "to the rest of the Synnefo infrastructure over AMQP."
-
-    parser = OptionParser(**kw)
-    parser.disable_interspersed_args()
-    parser.add_option("-r", "--read-bytes",
-                      action="store", type="int", dest="read_bytes",
-                      metavar="BYTES_TO_READ",
-                      help="The expected number of bytes to be read, " \
-                           "used to compute input progress",
-                      default=0)
-    parser.add_option("-w", "--write-bytes",
-                      action="store", type="int", dest="write_bytes",
-                      metavar="BYTES_TO_WRITE",
-                      help="The expected number of bytes to be written, " \
-                           "used to compute output progress",
-                      default=0)
-    parser.add_option("-i", "--instance-name",
-                      dest="instance_name",
-                      metavar="GANETI_INSTANCE",
-                      help="The Ganeti instance name to be used in AMQP " \
-                           "notifications")
-
-    (opts, args) = parser.parse_args(args)
-
-    if opts.instance_name is None or (opts.read_bytes == 0 and
-                                      opts.write_bytes == 0):
-        sys.stderr.write("Fatal: Options '-i' and at least one of '-r' " \
-                         "or '-w' are mandatory.\n")
-        parser.print_help()
-        sys.exit(1)
-
-    if len(args) == 0:
-        sys.stderr.write("Fatal: You need to specify the command to run.\n")
-        parser.print_help()
-        sys.exit(1)
-
-    return (opts, args)
+PROGNAME = os.path.basename(sys.argv[0])
 
 
-def report_wait_status(pid, status):
-    if os.WIFEXITED(status):
-        sys.stderr.write("Child PID = %d exited, status = %d\n" %
-                         (pid, os.WEXITSTATUS(status)))
-    elif os.WIFSIGNALED(status):
-        sys.stderr.write("Child PID = %d died by signal, signal = %d\n" %
-                         (pid, os.WTERMSIG(status)))
-    elif os.WIFSTOPPED(status):
-        sys.stderr.write("Child PID = %d stopped by signal, signal = %d\n" %
-                         (pid, os.WSTOPSIG(status)))
-    else:
-        sys.stderr.write("Internal error: Unhandled case, " \
-                         "PID = %d, status = %d\n" % (pid, status))
-        sys.exit(1)
-    sys.stderr.flush()
+def jsonstream(file):
+    buf = ""
+    decoder = json.JSONDecoder()
+    while True:
+        new_data = os.read(file.fileno(), 512)
+        if not len(new_data):
+            break
+
+        buf += new_data.strip()
+        while 1:
+            try:
+                msg, idx = decoder.raw_decode(buf)
+            except ValueError:
+                break
+            yield msg
+            buf = buf[idx:].strip()
 
 
 def main():
-    (opts, args) = parse_arguments(sys.argv[1:])
+
+    usage = "Usage: %s <instance_name>\n" % PROGNAME
+
+    if len(sys.argv) != 2:
+        sys.stderr.write(usage)
+        return 1
+
+    instance_name = sys.argv[1]
 
     # WARNING: This assumes that instance names
     # are of the form prefix-id, and uses prefix to
     # determine the routekey for AMPQ
-    prefix = opts.instance_name.split('-')[0]
+    prefix = instance_name.split('-')[0]
     routekey = "ganeti.%s.event.progress" % prefix
-    amqp_client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=2)
+    amqp_client = AMQPClient(confirm_buffer=10)
     amqp_client.connect()
-    amqp_client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
+    amqp_client.exchange_declare(settings.EXCHANGE_GANETI, "topic")
 
-    pid = os.fork()
-    if pid == 0:
-        # In child process:
-
-        # Make sure we die with the parent and are not left behind
-        # WARNING: This uses the prctl(2) call and is Linux-specific.
-        prctl.set_pdeathsig(signal.SIGHUP)
-
-        # exec command specified in arguments,
-        # searching the $PATH, keeping all environment
-        os.execvpe(args[0], args, os.environ)
-        sys.stderr.write("execvpe failed, exiting with non-zero status")
-        os.exit(1)
-
-    # In parent process:
-    iofname = "/proc/%d/io" % pid
-    iof = open(iofname, "r", 0)   # 0: unbuffered open
-    sys.stderr.write("%s: created child PID = %d, monitoring file %s\n" %
-                     (sys.argv[0], pid, iofname))
-
-    while True:
-        # check if the child process is still alive
-        (wpid, status) = os.waitpid(pid, os.WNOHANG)
-        if wpid == pid:
-            report_wait_status(pid, status)
-            if (os.WIFEXITED(status) or os.WIFSIGNALED(status)):
-                if not (os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0):
-                    return 1
-                else:
-                    # send a final notification
-                    final_msg = dict(type="ganeti-create-progress",
-                                     instance=opts.instance_name)
-                    final_msg['event_time'] = split_time(time.time())
-                    if opts.read_bytes:
-                        final_msg['rprogress'] = float(100)
-                    if opts.write_bytes:
-                        final_msg['wprogress'] = float(100)
-                    amqp_client.basic_publish(exchange=settings.EXCHANGE_GANETI,
-                                              routing_key=routekey,
-                                              body=json.dumps(final_msg))
-                    return 0
-
-        # retrieve the current values of the read/write byte counters
-        iof.seek(0)
-        for l in iof.readlines():
-            if l.startswith("rchar:"):
-                rchar = int(l.split(': ')[1])
-            if l.startswith("wchar:"):
-                wchar = int(l.split(': ')[1])
-
-        # Construct notification of type 'ganeti-create-progress'
-        msg = dict(type="ganeti-create-progress",
-                   instance=opts.instance_name)
+    for msg in jsonstream(sys.stdin):
         msg['event_time'] = split_time(time.time())
-        if opts.read_bytes:
-            msg['rprogress'] = float("%2.2f" %
-                                     (rchar * 100.0 / opts.read_bytes))
-        if opts.write_bytes:
-            msg['wprogress'] = float("%2.2f" %
-                                     (wchar * 100.0 / opts.write_bytes))
+        msg['instance'] = instance_name
 
         # and send it over AMQP
         amqp_client.basic_publish(exchange=settings.EXCHANGE_GANETI,
                                   routing_key=routekey,
                                   body=json.dumps(msg))
 
-        # Sleep for a while
-        time.sleep(3)
-
     amqp_client.close()
-
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# vim: set sta sts=4 shiftwidth=4 sw=4 et ai :

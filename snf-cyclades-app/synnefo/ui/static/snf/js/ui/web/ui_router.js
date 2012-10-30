@@ -64,7 +64,9 @@
             "machines/single/":                 "vms_single_view",
 
             // network views
-            "networks/":                        "networks_view"
+            "networks/":                        "networks_view",
+            // network views
+            "disks/":                        	"disks_view"
         },
         
         show_welcome: function() {
@@ -123,6 +125,11 @@
         networks_view: function() {
             this.navigate("networks/");
             ui.main.show_view("networks");
+        },
+
+        disks_view: function() {
+            this.navigate("disks/");
+            ui.main.show_view("disks");
         }
 
     });

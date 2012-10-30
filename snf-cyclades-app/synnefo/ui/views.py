@@ -59,6 +59,7 @@ COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
+CHANGES_SINCE_ALIGNMENT = getattr(settings, "UI_CHANGES_SINCE_ALIGNMENT", 0)
 UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE", 500)
 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
                                 "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT",
@@ -67,7 +68,7 @@ UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
 
 # predefined values settings
-VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
+VM_IMAGE_COMMON_METADATA = getattr(settings, "UI_VM_IMAGE_COMMON_METADATA", ["OS", "users"])
 SUGGESTED_FLAVORS_DEFAULT = {}
 SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS",
                             SUGGESTED_FLAVORS_DEFAULT)
@@ -119,6 +120,8 @@ ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
+DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
+                'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
 # network settings
 DEFAULT_NETWORK_TYPES = {'PRIVATE_FILTERED': 'mac-filtering'}
@@ -133,6 +136,7 @@ NETWORK_STRICT_DESTROY = getattr(settings,
                     'UI_NETWORK_STRICT_DESTROY', False)
 NETWORK_ALLOW_MULTIPLE_DESTROY = getattr(settings,
                     'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
+GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -163,6 +167,7 @@ def home(request):
                'update_interval_increase_after_calls': UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
+               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
@@ -190,7 +195,9 @@ def home(request):
                'network_available_types': json.dumps(NETWORK_TYPES),
                'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
                'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
-               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY)
+               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
+               'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
+               'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL)
     }
     return template('home', request, context)
 

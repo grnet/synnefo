@@ -51,16 +51,18 @@
                   virtual machines. {% endblocktrans %}
             </p>
             </div>
-            <div class="form-field fixpos" id="network-create-dhcp-fields">
-              <label for="network-type">Network subnet:</label>
-              <select id="network-create-subnet">
-                <option selected class="auto" value="auto">Auto</option>
-                <option value="custom" class="manual">Manual...</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label class="hidden" for="network-custom-subnet">Custom subnet:</label>
-              <input type="text" id="network-create-subnet-custom"/>
+            <div id="network-create-dhcp-fields">
+              <div class="form-field fixpos">
+                <label for="network-type">Network subnet:</label>
+                <select id="network-create-subnet">
+                  <option selected class="auto" value="auto">Auto</option>
+                  <option value="custom" class="manual">Manual...</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="hidden" for="network-custom-subnet">Custom subnet:</label>
+                <input type="text" id="network-create-subnet-custom"/>
+              </div>
             </div>
           </div>
             <div class="form-actions plain clearfix">

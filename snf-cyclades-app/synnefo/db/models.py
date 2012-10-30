@@ -295,6 +295,12 @@ class VirtualMachine(models.Model):
         else:
             raise ServiceUnavailable
 
+    def get_last_diagnostic(self, **filters):
+        try:
+            return self.diagnostics.filter()[0]
+        except IndexError:
+            return None
+
     @staticmethod
     def put_client(client):
             put_rapi_client(client)
@@ -700,3 +706,55 @@ def pooled_rapi_client(obj):
             yield client
         finally:
             put_rapi_client(client)
+
+
+class VirtualMachineDiagnosticManager(models.Manager):
+    """
+    Custom manager for :class:`VirtualMachineDiagnostic` model.
+    """
+
+    # diagnostic creation helpers
+    def create_for_vm(self, vm, level, message, **kwargs):
+        attrs = {'machine': vm, 'level': level, 'message': message}
+        attrs.update(kwargs)
+        # update instance updated time
+        self.create(**attrs)
+        vm.save()
+
+    def create_error(self, vm, **kwargs):
+        self.create_for_vm(vm, 'ERROR', **kwargs)
+
+    def create_debug(self, vm, **kwargs):
+        self.create_for_vm(vm, 'DEBUG', **kwargs)
+
+    def since(self, vm, created_since, **kwargs):
+        return self.get_query_set().filter(vm=vm, created__gt=created_since,
+                **kwargs)
+
+
+class VirtualMachineDiagnostic(models.Model):
+    """
+    Model to store backend information messages that relate to the state of
+    the virtual machine.
+    """
+
+    TYPES = (
+        ('ERROR', 'Error'),
+        ('WARNING', 'Warning'),
+        ('INFO', 'Info'),
+        ('DEBUG', 'Debug'),
+    )
+
+    objects = VirtualMachineDiagnosticManager()
+
+    created = models.DateTimeField(auto_now_add=True)
+    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics")
+    level = models.CharField(max_length=20, choices=TYPES)
+    source = models.CharField(max_length=100)
+    source_date = models.DateTimeField(null=True)
+    message = models.CharField(max_length=255)
+    details = models.TextField(null=True)
+
+    class Meta:
+        ordering = ['-created']
+

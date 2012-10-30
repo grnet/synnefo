@@ -49,6 +49,41 @@
     var bb = root.Backbone;
     var util = snf.util;
     
+    // generic details overlay view.
+    views.DetailsView = views.Overlay.extend({
+        view_id: "details_view",
+        
+        content_selector: "#details-overlay",
+        css_class: 'overlay-api-info overlay-info',
+        overlay_id: "overlay-details",
+
+        subtitle: "",
+        title: "Details",
+        
+        show: function(title, msg, content) {
+            this.title = title;
+            this.msg = msg;
+            this.content = content;
+            views.DetailsView.__super__.show.apply(this);
+        },
+
+        beforeOpen: function() {
+            this.set_title(this.title);
+            if (!this.msg) { 
+                this.$(".description.intro").hide() 
+            } else {
+                this.$(".description.intro").html(this.msg).show();
+            }
+
+            if (!this.content) { 
+                this.$(".description.subinfo").hide() 
+            } else {
+                this.$(".description.subinfo").html(this.content).show(); 
+            };
+        }
+
+    });
+
     views.ApiInfoView = views.Overlay.extend({
         view_id: "api_info_view",
         
@@ -388,10 +423,10 @@
 
         // views classes registry
         views_classes: {'icon': views.IconView, 'single': views.SingleView, 
-            'list': views.ListView, 'networks': views.NetworksView},
+            'list': views.ListView, 'networks': views.NetworksView, 'disks': views.DisksView},
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3},
+        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'disks':4},
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
@@ -513,6 +548,7 @@
         init_overlays: function() {
             this.create_vm_view = new views.CreateVMView();
             this.api_info_view = new views.ApiInfoView();
+            this.details_view = new views.DetailsView();
             //this.notice_view = new views.NoticeView();
         },
         
@@ -663,7 +699,7 @@
         },
 
         update_status: function(msg) {
-            this.log.debug(msg)
+            //this.log.debug(msg)
             this.status = msg;
             $("#loading-view .info").removeClass("hidden")
             $("#loading-view .info").text(this.status);
@@ -679,6 +715,7 @@
             this.add_view("list");
             this.add_view("single");
             this.add_view("networks");
+            this.add_view("disks");
 
             this.init_menu();
         },

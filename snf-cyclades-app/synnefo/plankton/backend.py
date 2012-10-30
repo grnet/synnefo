@@ -98,7 +98,7 @@ def get_pithos_backend():
     return _pithos_backend_pool.pool_get()
 
 
-class ImageBackend(object):
+class PithosImageBackend(object):
     """A wrapper arround the pithos backend to simplify image handling."""
 
     def __init__(self, user):
@@ -440,3 +440,241 @@ class ImageBackend(object):
 
         self._update_meta(location, meta)
         return self.get_image(image_id)
+
+
+
+IMAGES = [
+{
+    "status": "available",
+    "name": "Local test image",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user",
+        "gui": "KDE 4.7.4",
+        "sortorder": "4",
+        "size": "2850",
+        "os": "kpap",
+        "root_partition": "1",
+        "description": "Kubuntu 11.10"
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "images@okeanos.grnet.gr",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b7e",
+    "size": 2985041920
+},
+{
+    "status": "available",
+    "name": "Local test image",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user",
+        "gui": "KDE 4.7.4",
+        "sortorder": "4",
+        "size": "2850",
+        "os": "kpap",
+        "root_partition": "1",
+        "description": "Kubuntu 11.10"
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "admin",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b74",
+    "size": 2985041920
+},
+{
+    "status": "available",
+    "name": "Test image (extra metadata)",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user takis",
+        "gui": "KDE 4.7.4",
+        "sortorder": "4",
+        "size": "2850",
+        "root_partition": "1",
+        "metadata_key": "lal alal",
+        "metadata_key2": "test llalalalala",
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "admin",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b72",
+    "size": 2985041920
+},
+{
+    "status": "available",
+    "name": "Test image (no os)",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user",
+        "gui": "KDE 4.7.4",
+        "sortorder": "4",
+        "size": "2850",
+        "root_partition": "1",
+        "description": "Kubuntu 11.10"
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "admin",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b71",
+    "size": 30000000000
+},
+{
+    "status": "available",
+    "name": "Test image (no os)",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user root",
+        "gui": "KDE 4.7.4",
+        "sortorder": "4",
+        "size": "2850",
+        "root_partition": "1",
+        "description": "Kubuntu 11.10"
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "admin@admin.com",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b55",
+    "size": 49850419200
+},
+{
+    "status": "available",
+    "name": "Test image (bad partition)",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848521",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user root",
+        "gui": "KDE 4.7.4",
+        "os": "ubuntu",
+        "sortorder": "4",
+        "size": "2850",
+        "root_partition": "12",
+        "description": "Kubuntu 11.10 <h1>TEST</h1>"
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "admin",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b7911",
+    "size": 4000000
+},
+{
+    "status": "available",
+    "name": "Test image (bad os)",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848521",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user root",
+        "gui": "KDE 4.7.4",
+        "os": "ubuntu",
+        "sortorder": "4",
+        "size": "2850",
+        "root_partition": "1",
+        "description": "Kubuntu 11.10 <h1>TEST</h1>"
+    },
+    "location": "debian_base-6.0-9-x86_64222",
+    "container_format": "bare",
+    "owner": "admin",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b7924",
+    "size": 4000000
+},
+{
+    "status": "available",
+    "name": "Test image",
+    "checksum": "a149289f512d70c8f9f6acb0636d2ea9a5b5c3ec0b83e4398aed4a5678da6848",
+    "created_at": "2012-03-28 15:05:52",
+    "disk_format": "diskdump",
+    "updated_at": "2012-03-28 16:56:31",
+    "properties": {
+        "kernel": "3.0.0",
+        "osfamily": "linux",
+        "users": "user root",
+        "gui": "KDE 4.7.4",
+        "os": "ubuntu",
+        "sortorder": "4",
+        "size": "2850",
+        "root_partition": "1",
+        "description": "Kubuntu 11.10 <h1>TEST</h1>"
+    },
+    "location": "debian_base-6.0-9-x86_64",
+    "container_format": "bare",
+    "owner": "admin",
+    "is_public": True,
+    "deleted_at": "",
+    "id": "79d24739-af8f-436b-8f6e-eb2d908e0b79",
+    "size": 49850419200
+},
+
+]
+
+class DummyImageBackend():
+
+    def __init__(self, user, images=None):
+        self.user = user
+        self.images = images or IMAGES
+
+
+    def iter(self):
+        return self.images
+
+    def get_image(self, image_id):
+        for i in self.images:
+            if i['id'] == image_id:
+                return i
+        return None
+
+    def close(self):
+        pass
+
+    def list_public(self, filters, params):
+        return self.images
+
+
+ImageBackend = PithosImageBackend
+ImageBackend = DummyImageBackend

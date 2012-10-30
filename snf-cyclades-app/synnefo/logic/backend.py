@@ -39,7 +39,7 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client)
+                               pooled_rapi_client, VirtualMachineDiagnostic)
 from synnefo.logic import utils
 
 from logging import getLogger
@@ -77,6 +77,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
+
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
@@ -198,15 +199,12 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 
 
 @transaction.commit_on_success
-def process_create_progress(vm, etime, rprogress, wprogress):
+def process_create_progress(vm, etime, progress):
 
-    # XXX: This only uses the read progress for now.
-    #      Explore whether it would make sense to use the value of wprogress
-    #      somewhere.
-    percentage = int(rprogress)
+    percentage = int(progress)
 
     # The percentage may exceed 100%, due to the way
-    # snf-progress-monitor tracks bytes read by image handling processes
+    # snf-image:copy-progress tracks bytes read by image handling processes
     percentage = 100 if percentage > 100 else percentage
     if percentage < 0:
         raise ValueError("Percentage cannot be negative")
@@ -266,7 +264,24 @@ def start_action(vm, action):
         vm.suspended = True
     elif action == "START":
         vm.suspended = False
+
     vm.save()
+
+
+def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
+    details=None):
+    """
+    Create virtual machine instance diagnostic entry.
+
+    :param vm: VirtualMachine instance to create diagnostic for.
+    :param message: Diagnostic message.
+    :param source: Diagnostic source identifier (e.g. image-helper).
+    :param level: Diagnostic level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+    :param etime: The time the message occured (if available).
+    :param details: Additional details or debug information.
+    """
+    VirtualMachineDiagnostic.objects.create_for_vm(vm, level, source=source,
+            source_date=etime, message=message, details=details)
 
 
 def create_instance(vm, public_nic, flavor, image, password, personality):
@@ -322,7 +337,7 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
     #
-    # kw['pnode']=rapi.GetNodes()[0]
+    #kw['pnode'] = rapi.GetNodes()[0]
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {

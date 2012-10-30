@@ -123,7 +123,19 @@
         changedKeys: function() {
             return _.keys(this.changedAttributes() || {});
         },
+            
+        // return list of changed attributes that included in passed list
+        // argument
+        getKeysChanged: function(keys) {
+            return _.intersection(keys, this.changedKeys());
+        },
+        
+        // boolean check of keys changed
+        keysChanged: function(keys) {
+            return this.getKeysChanged(keys).length > 0;
+        },
 
+        // check if any of the passed attribues has changed
         hasOnlyChange: function(keys) {
             var ret = false;
             _.each(keys, _.bind(function(key) {
@@ -223,11 +235,27 @@
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
 
+        get_description: function(escape) {
+            if (escape == undefined) { escape = true };
+            if (escape) { return this.escape('description') || "No description available"}
+            return this.get('description') || "No description available."
+        },
+
         get_meta: function(key) {
-            if (this.get('metadata') && this.get('metadata').values && this.get('metadata').values[key]) {
+            if (this.get('metadata') && this.get('metadata').values) {
+                if (!this.get('metadata').values[key]) { return null }
                 return _.escape(this.get('metadata').values[key]);
+            } else {
+                return null;
             }
-            return undefined;
+        },
+
+        get_meta_keys: function() {
+            if (this.get('metadata') && this.get('metadata').values) {
+                return _.keys(this.get('metadata').values);
+            } else {
+                return [];
+            }
         },
 
         get_owner: function() {
@@ -251,7 +279,7 @@
         },
 
         get_os: function() {
-            return this.get("OS");
+            return this.get_meta('OS');
         },
 
         get_gui: function() {
@@ -598,7 +626,7 @@
 
         get_connectable_vms: function() {
             return storage.vms.filter(function(vm){
-                return !vm.in_error_state();
+                return !vm.in_error_state() && !vm.is_building();
             })
         },
 
@@ -680,9 +708,11 @@
             // initialize interval
             this.init_stats_intervals(this.stats_update_interval);
             
-            this.bind("change:progress", _.bind(this.update_building_progress, this));
-            this.update_building_progress();
-
+            // handle progress message on instance change
+            this.bind("change", _.bind(this.update_status_message, this));
+            // force update of progress message
+            this.update_status_message(true);
+            
             // default values
             this.bind("change:state", _.bind(function(){
                 if (this.state() == "DESTROY") { 
@@ -717,29 +747,134 @@
             };
             return st;
         },
+            
+        get_diagnostics: function(success) {
+            this.__make_api_call(this.get_diagnostics_url(),
+                                 "read", // create so that sync later uses POST to make the call
+                                 null, // payload
+                                 function(data) {
+                                     success(data);
+                                 },  
+                                 null, 'diagnostics');
+        },
 
-        update_building_progress: function() {
+        has_diagnostics: function() {
+            return this.get("diagnostics") && this.get("diagnostics").length;
+        },
+
+        get_progress_info: function() {
+            // details about progress message
+            // contains a list of diagnostic messages
+            return this.get("status_messages");
+        },
+
+        get_status_message: function() {
+            return this.get('status_message');
+        },
+        
+        // extract status message from diagnostics
+        status_message_from_diagnostics: function(diagnostics) {
+            var valid_sources_map = synnefo.config.diagnostics_status_messages_map;
+            var valid_sources = valid_sources_map[this.get('status')];
+            if (!valid_sources) { return null };
+            
+            // filter messsages based on diagnostic source
+            var messages = _.filter(diagnostics, function(diag) {
+                return valid_sources.indexOf(diag.source) > -1;
+            });
+
+            var msg = messages[0];
+            if (msg) {
+              var message = msg.message;
+              var message_tpl = snf.config.diagnostic_messages_tpls[msg.source];
+
+              if (message_tpl) {
+                  message = message_tpl.replace('MESSAGE', msg.message);
+              }
+              return message;
+            }
+            
+            // no message to display, but vm in build state, display
+            // finalizing message.
+            if (this.is_building() == 'BUILD') {
+                return synnefo.config.BUILDING_MESSAGES['FINAL'];
+            }
+            return null;
+        },
+
+        update_status_message: function(force) {
+            // update only if one of the specified attributes has changed
+            if (
+              !this.keysChanged(['diagnostics', 'progress', 'status', 'state'])
+                && !force
+            ) { return };
+            
+            // if user requested to destroy the vm set the appropriate 
+            // message.
+            if (this.get('state') == "DESTROY") { 
+                message = "Terminating..."
+                this.set({status_message: message})
+                return;
+            }
+            
+            // set error message, if vm has diagnostic message display it as
+            // progress message
+            if (this.in_error_state()) {
+                var d = this.get('diagnostics');
+                if (d && d.length) {
+                    var message = this.status_message_from_diagnostics(d);
+                    this.set({status_message: message});
+                } else {
+                    this.set({status_message: null});
+                }
+                return;
+            }
+            
+            // identify building status message
             if (this.is_building()) {
-                var progress = this.get("progress");
-                if (progress == 0) {
-                    this.state("BUILD_INIT");
-                    this.set({progress_message: BUILDING_MESSAGES['INIT']});
+                var self = this;
+                var success = function(msg) {
+                    self.set({status_message: msg});
                 }
-                if (progress > 0 && progress < 99) {
-                    this.state("BUILD_COPY");
-                    this.get_copy_details(true, undefined, _.bind(function(details){
-                        this.set({
-                            progress_message: BUILDING_MESSAGES['COPY'].format(details.copy, 
-                                                                               details.size, 
-                                                                               details.progress)
-                        });
-                    }, this));
+                this.get_building_status_message(success);
+                return;
+            }
+
+            this.set({status_message:null});
+        },
+            
+        // get building status message. Asynchronous function since it requires
+        // access to vm image.
+        get_building_status_message: function(callback) {
+            // no progress is set, vm is in initial build status
+            var progress = this.get("progress");
+            if (progress == 0 || !progress) {
+                return callback(BUILDING_MESSAGES['INIT']);
+            }
+            
+            // vm has copy progress, display copy percentage
+            if (progress > 0 && progress <= 99) {
+                this.get_copy_details(true, undefined, _.bind(
+                    function(details){
+                        callback(BUILDING_MESSAGES['COPY'].format(details.copy, 
+                                                           details.size, 
+                                                           details.progress));
+                }, this));
+                return;
+            }
+
+            // copy finished display FINAL message or identify status message
+            // from diagnostics.
+            if (progress >= 100) {
+                if (!this.has_diagnostics()) {
+                        callback(BUILDING_MESSAGES['FINAL']);
+                } else {
+                        var d = this.get("diagnostics");
+                        var msg = this.status_message_from_diagnostics(d);
+                        if (msg) {
+                              callback(msg);
+                        }
                 }
-                if (progress == 100) {
-                    this.state("BUILD_FINAL");
-                    this.set({progress_message: BUILDING_MESSAGES['FINAL']});
-                }
-            } else {
             }
         },
 
@@ -1050,12 +1185,20 @@
             return flv;
         },
 
-        // retrieve the metadata object
         get_meta: function(key) {
-            try {
+            if (this.get('metadata') && this.get('metadata').values) {
+                if (!this.get('metadata').values[key]) { return null }
                 return _.escape(this.get('metadata').values[key]);
-            } catch (err) {
-                return {};
+            } else {
+                return null;
+            }
+        },
+
+        get_meta_keys: function() {
+            if (this.get('metadata') && this.get('metadata').values) {
+                return _.keys(this.get('metadata').values);
+            } else {
+                return [];
             }
         },
         
@@ -1272,6 +1415,10 @@
             return this.url() + "/action";
         },
 
+        get_diagnostics_url: function() {
+            return this.url() + "/diagnostics";
+        },
+
         get_connection_info: function(host_os, success, error) {
             var url = "/machines/connect";
             params = {
@@ -1388,7 +1535,6 @@
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             if (!resp) { return []};
-               
             var data = _.map(resp.networks.values, _.bind(this.parse_net_api_data, this));
             return data;
         },
@@ -1464,6 +1610,10 @@
             }
             
             return this.api_call(this.path, "create", params, callback);
+        },
+
+        get_public: function(){
+          return this.filter(function(n){return n.get('public')});
         }
     })
 
@@ -1474,6 +1624,7 @@
         noUpdate: true,
         supportIncUpdates: false,
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
+        meta_labels: {},
         read_method: 'read',
 
         // update collection model with id passed
@@ -1526,7 +1677,6 @@
         },
 
         parse: function (resp, xhr) {
-            // FIXME: depricated global var
             var data = _.map(resp.images.values, _.bind(this.parse_meta, this));
             return resp.images.values;
         },
@@ -1604,7 +1754,7 @@
             var url = getUrl.call(this) + "/" + id;
             this.api_call(this.path + "/" + id, "read", {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {
-                this.add({id:id, cpu:"", ram:"", disk:"", name: "", status:"DELETED"})
+                this.add({id:id, cpu:"Unknown", ram:"Unknown", disk:"Unknown", name: "Unknown", status:"DELETED"})
             }, this), _.bind(function(flv) {
                 if (!flv.flavor.status) { flv.flavor.status = "DELETED" };
                 this.add(flv.flavor);
@@ -1612,7 +1762,6 @@
         },
 
         parse: function (resp, xhr) {
-            // FIXME: depricated global var
             return _.map(resp.flavors.values, function(o) { o.disk_template = o['SNF:disk_template']; return o});
         },
 
@@ -1682,10 +1831,54 @@
         copy_image_meta: true,
 
         parse: function (resp, xhr) {
-            // FIXME: depricated after refactoring
             var data = resp;
             if (!resp) { return [] };
             data = _.filter(_.map(resp.servers.values, _.bind(this.parse_vm_api_data, this)), function(v){return v});
+            return data;
+        },
+
+        parse_vm_api_data: function(data) {
+            // do not add non existing DELETED entries
+            if (data.status && data.status == "DELETED") {
+                if (!this.get(data.id)) {
+                    return false;
+                }
+            }
+
+            // OS attribute
+            if (this.has_meta(data)) {
+                data['OS'] = data.metadata.values.OS || "okeanos";
+            }
+            
+            if (!data.diagnostics) {
+                data.diagnostics = [];
+            }
+
+            // network metadata
+            data['firewalls'] = {};
+            data['nics'] = {};
+            data['linked_to'] = [];
+
+            if (data['attachments'] && data['attachments'].values) {
+                var nics = data['attachments'].values;
+                _.each(nics, function(nic) {
+                    var net_id = nic.network_id;
+                    var index = parseInt(NIC_REGEX.exec(nic.id)[2]);
+                    if (data['linked_to'].indexOf(net_id) == -1) {
+                        data['linked_to'].push(net_id);
+                    }
+
+                    data['nics'][nic.id] = nic;
+                })
+            }
+            
+            // if vm has no metadata, no metadata object
+            // is in json response, reset it to force
+            // value update
+            if (!data['metadata']) {
+                data['metadata'] = {values:{}};
+            }
+
             return data;
         },
 
@@ -1751,54 +1944,22 @@
             return vm_data.metadata && vm_data.metadata.values
         },
 
-        parse_vm_api_data: function(data) {
-            // do not add non existing DELETED entries
-            if (data.status && data.status == "DELETED") {
-                if (!this.get(data.id)) {
-                    return false;
-                }
-            }
-
-            // OS attribute
-            if (this.has_meta(data)) {
-                data['OS'] = data.metadata.values.OS || "okeanos";
-            }
-            
-
-            // network metadata
-            data['firewalls'] = {};
-            data['nics'] = {};
-            data['linked_to'] = [];
-
-            if (data['attachments'] && data['attachments'].values) {
-                var nics = data['attachments'].values;
-                _.each(nics, function(nic) {
-                    var net_id = nic.network_id;
-                    var index = parseInt(NIC_REGEX.exec(nic.id)[2]);
-                    if (data['linked_to'].indexOf(net_id) == -1) {
-                        data['linked_to'].push(net_id);
-                    }
-
-                    data['nics'][nic.id] = nic;
-                })
-            }
-            
-            // if vm has no metadata, no metadata object
-            // is in json response, reset it to force
-            // value update
-            if (!data['metadata']) {
-                data['metadata'] = {values:{}};
-            }
-
-            return data;
-        },
-
         create: function (name, image, flavor, meta, extra, callback) {
+
             if (this.copy_image_meta) {
+                if (synnefo.config.vm_image_common_metadata) {
+                    _.each(synnefo.config.vm_image_common_metadata, 
+                        function(key){
+                            if (image.get_meta(key)) {
+                                meta[key] = image.get_meta(key);
+                            }
+                    });
+                }
+
                 if (image.get("OS")) {
                     meta['OS'] = image.get("OS");
                 }
-           }
+            }
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
@@ -1856,6 +2017,7 @@
             
             this.set({'pending_firewall': value});
             this.set({'pending_firewall_sending': true});
+            this.set({'pending_firewall_from': this.get('firewallProfile')});
 
             var success_cb = function() {
                 if (callback) {
@@ -1873,11 +2035,14 @@
 
         reset_pending_firewall: function() {
             this.set({'pending_firewall': false});
+            this.set({'pending_firewall': false});
         },
 
         check_firewall: function() {
             var firewall = this.get('firewallProfile');
             var pending = this.get('pending_firewall');
+            var previous = this.get('pending_firewall_from');
+            if (previous != firewall) { this.get_vm().require_reboot() };
             this.reset_pending_firewall();
         }
         

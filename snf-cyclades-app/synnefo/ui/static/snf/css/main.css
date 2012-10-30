@@ -827,6 +827,30 @@ div.image-container {
     vertical-align: top;
 }
 
+.icon .build-progress {
+    margin-left: -3px;
+}
+
+#machinesview .build-progress .message {
+  padding: 3px;
+}
+
+#machinesview .build-progress .btn:hover {
+  background-color: #387693;
+}
+
+#machinesview .column1 .build-progress .btn {
+    margin-top: 5px;
+    display: inline-block;
+}
+
+#machinesview .build-progress .btn {
+    cursor: pointer;
+    background-color: #5e1616;
+    color: #FFF;
+    padding: 3px;
+}
+
 .ip-version-label {
     font-size: 0.8em;
     padding: 0.3em;
@@ -1106,9 +1130,15 @@ div.connect-border:hover {
     font-size: 75%;
 }
 
+.icon div.indicators {
+    float: right;
+}
+
 div.indicators {
     margin-right: 2px !important;
+    cursor: pointer;
 }
+
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #63cf1c;
     width:10px;
@@ -4518,6 +4548,12 @@ table.list-machines .wave {
     color: #387693;
 }
 
+.overlay .diagnostics-list {
+    height: 400px;
+    overflow: scroll;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
 .overlay .overlay-content .description.subinfo {
     margin-bottom:0;
     border-bottom: none;
@@ -4702,6 +4738,60 @@ table.list-machines .wave {
     vertical-align: middle;
     margin-left: 10px;
     margin-bottom: 2px;
+}
+
+.overlay-info .msg-log-entry .src {
+    color: #4085A5;
+    float: right;
+    font-size: 0.9em;
+}
+
+.overlay-info .msg-log-entry .date {
+    font-style: italic;
+}
+
+.overlay-info .msg-log-entry pre {
+    color: #333;
+    width: 100%;
+    display: none;
+    margin: 10px 0;
+}
+
+.msg-log-entry.warning {
+    color: #E57F01;
+}
+
+.overlay-info .msg-log-entry.with-details .src {
+    margin-right: 15px;
+}
+
+.overlay-info .msg-log-entry.with-details {
+    cursor: pointer;
+}
+
+.overlay-info .msg-log-entry.with-details {
+    background-image: url("../images/plus-8-dark.png");
+    background-repeat: no-repeat;
+    background-position: 99% 9px;
+}
+
+.overlay-info .msg-log-entry.with-details.expanded {
+    background-image: url("../images/minus-8-dark.png");
+}
+
+.overlay-info .msg-log-entry .msg {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.overlay-info .msg-log-entry {
+    border-bottom: 1px solid #aaa;
+    padding: 5px;
+}
+
+.overlay-info .description.subinfo {
+    border: none !important;
+    padding-top: 0 !important;
 }
 
 .overlay-info .content {
@@ -5520,6 +5610,23 @@ table.list-machines .wave {
     height: 160px;
     overflow-y: scroll;
     padding-right: 15px;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title .custom {
+    display: inline-block;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title {
+    background-color: #999 !important;
+    border-color: #888 !important;
+}
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail .custom {
+    float: right;
+    display: none;
+    font-size: 0.8em;
+    margin-left: 10px;
+    color: #DDD;
+    margin-top: 2px;
 }
 
 .create-vm .select-image.wide .images-info-cont .extra-details .image-detail {

@@ -6,6 +6,7 @@ dev
 ***
 * AMQP client which supports connection with multiple brokers using
   HA-queues and publisher-confirms to guarantee delivery of messages.
+* Added astakos client lib helper get_token_from_cookie
 
 v0.9.7
 ------

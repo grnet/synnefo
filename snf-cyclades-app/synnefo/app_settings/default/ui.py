@@ -35,6 +35,10 @@ UI_UPDATE_INTERVAL_MAX = UI_UPDATE_INTERVAL * 3
 # Fast update interval
 UI_UPDATE_INTERVAL_FAST = UI_UPDATE_INTERVAL / 2
 
+# Miliseconds to remove from the previous server response time used in
+# consecutive API calls (aligning changes-since attribute).
+UI_CHANGES_SINCE_ALIGNMENT = 0
+
 # List of emails used for sending the feedback messages to (following the ADMINS format)
 FEEDBACK_CONTACTS = (
     # ('Contact Name', 'contact_email@domain.com'),
@@ -79,7 +83,7 @@ VM_CREATE_SUGGESTED_FLAVORS = {
 
 # A list of metadata keys to clone from image
 # to the virtual machine on its creation.
-VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain"]
+VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users", "remote"]
 
 # A list of suggested vm roles to display to user on create wizard
 VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
@@ -143,7 +147,7 @@ UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False
 # Whether to display destroy action on private networks that contain vms. If
 # set to True, destroy action will only get displayed if user disconnect all
 # virtual machines from the network.
-UI_NETWORK_STRICT_DESTROY = False
+UI_NETWORK_STRICT_DESTROY = True
 
 
 ###############

@@ -67,6 +67,7 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_disks_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
@@ -132,7 +133,7 @@
         var BUILDING_MESSAGES = {
             'INIT': '{% trans "Initializing..." %}',
             'COPY': '{% trans "{0} of {1} ({2}%)" %}',
-            'FINAL': '{% trans "Finalizing..." %}'
+            'FINAL': '{% trans "Bulding image..." %}'
         }
 
         var ERROR_OVERRIDES = {
@@ -238,9 +239,11 @@
                     <li><a href="networks" title="{% trans "configure networking" %}"
                         class="primary" id="networks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
-                    <li class="hidden"><a href="disks" title="{% trans "manage your storage volumes" %}"
+                    {% comment %}
+                    <li><a href="disks" title="{% trans "manage your storage volumes" %}"
                         class="primary" id="disks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}disks-icon.png" /></a></li>
+                    {% endcomment %}
                 </ul>
                 </div>
                 <div class="css-panes">
@@ -250,7 +253,9 @@
                     <div id="networks-pane" class="pane">
                         {% include "partials/networks.html" %}
                     </div>
-                    <div id="disks-pane" class="pane"></div>
+                    <div id="disks-pane" class="pane">
+                    	{% include "partials/disks.html" %}
+                    </div>
 
                     <div class="confirm_multiple clearfix" id="multiple_actions_container">
                         <div class="confirm_multiple_actions confirm-all-cont global hidden confirm_multiple_cont clearfix">
@@ -458,39 +463,47 @@
         </div>
     </div>
     <div class="modal" id="feedback-form" class="feedback notification-box">
-        <h3 class="popup-header overlay-header">
-            <span class="header-box">{% trans "Send feedback" %}</span>
-        </h3>
-        <div class="popup-body">
-            <div class="popup-body-inner">
-                <div class="form-container">
-                <p class="feedback-intro">
-                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
-We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
-                <form id="feedback-form">
-                    <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
-                    <div class="description"></div>
-                    <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
-                    <textarea name="feedback-msg" class="feedback-text"></textarea>
+      <h3 class="popup-header overlay-header">
+        <span class="header-box">{% trans "Send feedback" %}</span>
+      </h3>
+      <div class="popup-body">
+        <div class="popup-body-inner">
+          <div class="form-container">
+            <p class="feedback-intro">
+            {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+            We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
+            <form id="feedback-form">
+              <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+              <div class="description"></div>
+              <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
+              <textarea name="feedback-msg" class="feedback-text"></textarea>
 
-                    <input type="checkbox" name="submit-submit-data" class='submit-data' />
-                    <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
-                    <textarea name="feedback-data" class="data-text"></textarea>
-                </form>
-            </div>
+              <input type="checkbox" name="submit-submit-data" class='submit-data' />
+              <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
+              <textarea name="feedback-data" class="data-text"></textarea>
+            </form>
+          </div>
 
-            <div class="message sending">{% trans "submiting your data....." %}</div>
-            <div class="message success">
-                {% trans "thank you for submiting your feedback" %}
-                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
-            <div class="message errormsg">
-                {% trans "some error occured submiting submiting your feedback, please try again later" %}
-                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
-            </div>
-            </div>
+          <div class="message sending">{% trans "submiting your data....." %}</div>
+          <div class="message success">
+            {% trans "thank you for submiting your feedback" %}
+            <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+          <div class="message errormsg">
+            {% trans "some error occured submiting submiting your feedback, please try again later" %}
+            <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
         </div>
+      </div>
     </div>
     
+    <div id="details-overlay" class="overlay-content overlay-info hidden">
+        <div class="description intro">
+            <p></p>
+        </div>
+        <div class="description subinfo">
+            <p></p>
+        </div>
+    </div>
+
     <div id="api-info-overlay" class="overlay-content overlay-info hidden">
         <div class="description">
             <p>{% blocktrans with EXTERNAL_CLIENT_URL as EXTERNAL_CLIENT_URL %}Use the following API key along with the <a
@@ -567,6 +580,19 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.vm_name_template = {{ vm_name_template|safe }};
             synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
+            synnefo.config.vm_image_common_metadata = {{ vm_image_common_metadata|safe }};
+
+            synnefo.config.diagnostics_update_interval = {{ diagnostics_update_interval }};
+            // override diagnostic messages display
+            synnefo.config.diagnostic_messages_tpls = {
+              'image-helper-task-start': "{% trans "Running task 'MESSAGE'" %}"
+            };
+            // what messages to display based on vm status
+            synnefo.config.diagnostics_status_messages_map = {
+                'BUILD': ['image-helper-task-start', 'image-info'],
+                'ERROR': ['image-error']
+            };
+
    			// TODO: make it dynamic
             synnefo.config.api_urls = {
                 'compute':  {{ compute_api_url|safe }}, 
@@ -583,6 +609,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
             synnefo.config.images_url = '{{ SYNNEFO_IMAGES_URL }}';
             synnefo.config.image_deleted_title = {{ image_deleted_title|safe }};
+            synnefo.config.changes_since_alignment = {{ changes_since_alignment }};
             synnefo.config.image_deleted_size_title = {{ image_deleted_size_title|safe }};
             synnefo.config.use_glance = {{ use_glance }};
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
@@ -599,6 +626,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.network_allow_duplicate_vm_nics = {{ network_allow_duplicate_vm_nics }};
             synnefo.config.network_strict_destroy = {{ network_strict_destroy }};
             synnefo.config.network_allow_multiple_destory = {{ network_allow_multiple_destroy }};
+            synnefo.config.group_public_networks = {{ group_public_networks }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
@@ -621,6 +649,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });
+
         })
     </script>
 </body>

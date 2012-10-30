@@ -39,9 +39,7 @@ from synnefo.logic import utils, backend
 
 from synnefo.lib.utils import merge_time
 
-
 log = logging.getLogger()
-
 
 def handle_message_delivery(func):
     """ Generic decorator for handling messages.
@@ -208,14 +206,60 @@ def update_network(network, msg, event_time):
 @instance_from_msg
 @if_update_required
 def update_build_progress(vm, msg, event_time):
-    """Process a create progress message"""
+    """
+    Process a create progress message. Update build progress, or create
+    appropriate diagnostic entries for the virtual machine instance.
+    """
     log.debug("Processing ganeti-create-progress msg: %s", msg)
 
-    if msg['type'] != "ganeti-create-progress":
+    if msg['type'] not in ('image-copy-progress', 'image-error', 'image-info',
+                           'image-warning', 'image-helper'):
         log.error("Message is of unknown type %s", msg['type'])
         return
 
-    backend.process_create_progress(vm, event_time, msg['rprogress'], None)
+    if msg['type'] == 'image-copy-progress':
+        backend.process_create_progress(vm, event_time, msg['progress'])
+        # we do not add diagnostic messages for copy-progress messages
+        return
+
+    # default diagnostic fields
+    source = msg['type']
+    level = 'DEBUG'
+    message = msg.get('messages', None)
+    if isinstance(message, list):
+        message = " ".join(message)
+
+    details = msg.get('stderr', None)
+
+    if msg['type'] == 'image-helper':
+        # for helper task events join subtype to diagnostic source and
+        # set task name as diagnostic message
+        if msg.get('subtype', None) and msg.get('subtype') in ['task-start',
+              'task-end']:
+            message = msg.get('task', message)
+            source = "%s-%s" % (source, msg.get('subtype'))
+
+        if msg.get('subtype', None) == 'warning':
+            level = 'WARNING'
+
+        if msg.get('subtype', None) == 'error':
+            level = 'ERROR'
+
+        if msg.get('subtype', None) == 'info':
+            level = 'INFO'
+
+    if msg['type'] == 'image-error':
+        level = 'ERROR'
+
+    if msg['type'] == 'image-warning':
+        level = 'WARNING'
+
+    if not message.strip():
+        message = " ".join(source.split("-")).capitalize()
+
+    # create the diagnostic entry
+    backend.create_instance_diagnostic(vm, message, source, level, event_time,
+        details=details)
 
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])

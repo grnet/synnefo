@@ -1,0 +1,20 @@
+{% load i18n %}
+<!-- the create button -->
+<div id="machines-pane-top" class="pane-top">
+    <div id="createcontainer" class="create-container">
+        <a id="create" rel="#wizard" href="#" class="createbutton" >{% trans "New Machine +" %}</a>
+    </div>
+
+    <!-- changing between standard/list view -->
+    <div id="view-select" class="clearfix">
+        <a class="machines_view_link" id="machines_view_icon_link" href="" title="{% trans "Icon view" %}">
+            <span class="ico"></span><span class="title">{% trans "icon" %}</span>
+        </a>
+        <a class="machines_view_link" id="machines_view_list_link" href="" title="{% trans "List view" %}">
+            <span class="ico"></span><span class="title">{% trans "list" %}</span>
+        </a>
+        <a class="machines_view_link" id="machines_view_single_link" href="" title="{% trans "Single view" %}">
+            <span class="ico"></span><span class="title">{% trans "single" %}</span>
+        </a>
+    </div>
+</div>

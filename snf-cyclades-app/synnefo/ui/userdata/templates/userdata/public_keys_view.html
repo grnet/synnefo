@@ -1,98 +1,108 @@
 {% load i18n %}
 <div class="public-keys-view clearfix">
-    <div class="loading-models">{% trans "Loading..." %}</div>
-    <div class="models-view">
-            <div class="previous-view-link"><div class="change-view-action">Back to
-                    machine create wizard</div></div>
-
-            <div class="list-wrapper model-list">
-                <h3 class="list-title hidden">{% trans "SSH public keys list" %}</h3>
-                <div class="top-actions clearfix">
-                    <div class="collection-action add add-new">{% trans "create/import new" %}</div>
-                    <div class="collection-action generate add-generate">{% trans "generate new" %}</div>
-                </div>
-                <div class="limit-msg">{% trans "SSH keys limit reached." %}</div>
-                <div class="model-description">
-                <p>You can use SSH keys to establish a secure connection 
-between your computer and the virtual machines. </p>
-                </div>
-                <div class="list-messages">
-                </div>
-                <div class="private-cont">
-                    <div class="private-download clearfix">
-                        <div class="close-private">{% trans "close" %}</div>
-                        <div class="private-msg download">
-                        </div>
-                        <div class="private-msg copy">
-                            {% trans "Create a file with the following contents" %}
-                        </div>
-                        <form target="_blank" id="private-key-form" method="post">
-                            <input type="hidden" name="data" />
-                            <input type="hidden" name="name" />
-
-                            <span class="form-text">{% trans "Your new public key has been added" %}</span>
-                            <input type="submit" class="down-button form-text"
-                            id="download-private-key" value="click here" />
-                            <span class="form-text">
-                                {% trans " to download private key." %}
-                            </span>
-                        </form>
-                        <div class="key-contents clearfix"><textarea></textarea></div>
-                    </div>
-                </div>
-                <div class="hidden public-key-item clearfix" id="model-item-tpl">
-                    <div class="param key-type"></div>
-                    <div class="param name"></div>
-                    <div class="param fingerprint"><div class="flabel">fingerprint:</div><div class="text"></div></div>
-                    <div class="param publicid hidden">
-                        <div class="param-content"><textarea></textarea></div>
-                    </div>
-                </div>
-                <ul class="keys-list">
-                    <li class="header">
-                        <div class="title">{% trans "Name" %}</div>
-                        <div class="title">{% trans "Public key ID" %}</div>
-                    </li>
-                </ul>
-                <ul class="items-list">
-                    <li class="items-empty-msg hidden msg">
-                    <div class="title">{% trans "No public keys exist" %} <span class="quick-add">add one</span> now</div>
-                    </li>
-                </ul>
-            </div>
-            <div class="form-wrapper model-form-cont clearfix">
-                <h3 class="new-title hidden">{% trans "Create new SSH public key" %}</h3>
-                <h3 class="edit-title hidden">{% trans "Edit SSH public key" %}</h3>
-                <form class="model-form">
-                    <div class="form-messages">
-                    </div>
-                    <div class="model-form-fields">
-                        <div class="form-field">
-                            <label for="">{% trans "Key name" %}</label>
-                            <div class="errors"></div>
-                            <input type="text" class="input-name inline"/>
-                        </div>
-                        <div class="form-field clearfix">
-                            <label for="">{% trans "Key content" %}</label>
-                            <div class="errors"></div>
-                            <textarea class="input-content"></textarea>
-                        </div>
-                        <div class="form-field inline clearfix fromfile-field">
-                            <label for="">{% trans "Import from file" %}</label>
-                            <div class="fromfile">
-                            <input type="file" class="content-input-file"
-                            title="Import from file" />
-                        </div>
-                        </div>
-                        <div class="form-field">
-                        </div>
-                    </div>
-                </form>
-                <div class="form-actions clearfix">
-                    <div class="form-action submit">{% trans "Submit" %}</div>
-                    <div class="form-action cancel">{% trans "Cancel" %}</div>
-                </div>
-            </div>
-        </div>
+  <div class="loading-models">{% trans "Loading..." %}</div>
+  <div class="models-view">
+    <div class="previous-view-link">
+      <div class="change-view-action">Back to machine create wizard
+      </div>
     </div>
+
+    <div class="list-wrapper model-list">
+      <h3 class="list-title hidden">{% trans "SSH public keys list" %}</h3>
+      <div class="top-actions clearfix">
+        <div class="collection-action add add-new">{% trans "create/import new" %}</div>
+        <div class="collection-action generate add-generate">{% trans "generate new" %}</div>
+      </div>
+      <div class="limit-msg">{% trans "SSH keys limit reached." %}</div>
+      <div class="model-description">
+        <p>You can use SSH keys to establish a secure connection 
+        between your computer and the virtual machines. </p>
+      </div>
+      <div class="list-messages">
+      </div>
+      <div class="private-cont">
+        <div class="private-download clearfix">
+          <div class="close-private">{% trans "close" %}</div>
+          <div class="private-msg download">
+          </div>
+          <div class="private-msg copy">
+            {% trans "Create a file with the following contents" %}
+          </div>
+          <form target="_blank" id="private-key-form" method="post">
+            <input type="hidden" name="data" />
+            <input type="hidden" name="name" />
+
+            <span class="form-text">{% trans "Your new public key has been added" %}</span>
+            <input type="submit" class="down-button form-text"
+            id="download-private-key" value="click here" />
+            <span class="form-text">
+              {% trans " to download private key." %}
+            </span>
+          </form>
+          <div class="key-contents clearfix">
+            <textarea></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="hidden public-key-item clearfix" id="model-item-tpl">
+        <div class="param key-type"></div>
+        <div class="param name"></div>
+        <div class="param fingerprint">
+          <div class="flabel">fingerprint:</div>
+          <div class="text"></div>
+        </div>
+        <div class="param publicid hidden">
+          <div class="param-content">
+            <textarea></textarea>
+          </div>
+        </div>
+      </div>
+      <ul class="keys-list">
+        <li class="header">
+        <div class="title">{% trans "Name" %}</div>
+        <div class="title">{% trans "Public key ID" %}</div>
+        </li>
+      </ul>
+      <ul class="items-list">
+        <li class="items-empty-msg hidden msg">
+        <div class="title">
+          {% trans "No public keys exist" %} <span class="quick-add">add one</span> now
+        </div>
+        </li>
+      </ul>
+    </div>
+    <div class="form-wrapper model-form-cont clearfix">
+      <h3 class="new-title hidden">{% trans "Create new SSH public key" %}</h3>
+      <h3 class="edit-title hidden">{% trans "Edit SSH public key" %}</h3>
+      <form class="model-form">
+        <div class="form-messages">
+        </div>
+        <div class="model-form-fields">
+          <div class="form-field">
+            <label for="">{% trans "Key name" %}</label>
+            <div class="errors"></div>
+            <input type="text" class="input-name inline"/>
+          </div>
+          <div class="form-field clearfix">
+            <label for="">{% trans "Key content" %}</label>
+            <div class="errors"></div>
+            <textarea class="input-content"></textarea>
+          </div>
+          <div class="form-field inline clearfix fromfile-field">
+            <label for="">{% trans "Import from file" %}</label>
+            <div class="fromfile">
+              <input type="file" class="content-input-file"
+              title="Import from file" />
+            </div>
+          </div>
+          <div class="form-field">
+          </div>
+        </div>
+      </form>
+      <div class="form-actions clearfix">
+        <div class="form-action submit">{% trans "Submit" %}</div>
+        <div class="form-action cancel">{% trans "Cancel" %}</div>
+      </div>
+    </div>
+  </div>
 </div>

@@ -43,7 +43,7 @@ def network_deleted_badge(network):
     Return a span badge styled based on the vm current status
     """
     deleted_badge = ""
-    if network.state == "DELETED":
+    if network.deleted:
         deleted_badge = '<span class="badge badge-important">Deleted</span>'
     return deleted_badge
 
@@ -55,7 +55,7 @@ def get_os(vm):
         return vm.metadata.filter(meta_key="OS").get().meta_value
     except:
         return "unknown"
-    
+
 get_os.is_safe = True
 
 @register.filter(name="network_vms")
@@ -64,7 +64,7 @@ def network_vms(network, account):
     for nic in network.nics.filter(machine__userid=account):
         vms.append(nic.machine)
     return vms
-    
+
 network_vms.is_safe = True
 
 @register.filter(name="network_nics")
@@ -73,5 +73,5 @@ def network_nics(network, account):
     for nic in network.nics.filter(machine__userid=account):
         vms.append(nic)
     return vms
-    
+
 network_nics.is_safe = True

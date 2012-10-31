@@ -1,4 +1,38 @@
+# Copyright 2012 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 import re
+import logging
 
 from itertools import chain
 
@@ -8,12 +42,16 @@ from django.db.models import get_apps
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
+
 from urllib import unquote
 
 from synnefo.lib.astakos import get_user
 from synnefo.db.models import *
+
+logger = logging.getLogger(__name__)
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
 
@@ -33,15 +71,31 @@ def get_token_from_cookie(request, cookiename):
     return None
 
 
-# TODO: here we mix ui setting with helpdesk settings
-# if sometime in the future helpdesk gets splitted from the
-# cyclades api code this should change and helpdesk should provide
-# its own setting HELPDESK_AUTH_COOKIE_NAME.
-AUTH_COOKIE = getattr(settings, 'UI_AUTH_COOKIE_NAME', getattr(settings,
-    'HELPDESK_AUTH_COOKIE_NAME', '_pithos2_a'))
+AUTH_COOKIE_NAME = getattr(settings, 'HELPDESK_AUTH_COOKIE_NAME', getattr(settings,
+    'UI_AUTH_COOKIE_NAME', '_pithos2_a'))
+PERMITTED_GROUPS = getattr(settings, 'HELPDESK_PERMITTED_GROUPS',
+                                    ['helpdesk'])
+SHOW_DELETED_VMS = getattr(settings, 'HELPDESK_SHOW_DELETED_VMS', False)
 
 
-def helpdesk_user_required(func, groups=['helpdesk']):
+def token_check(func):
+    """
+    Mimic csrf security check using user auth token.
+    """
+    def wrapper(request, *args, **kwargs):
+        if not hasattr(request, 'user'):
+            raise PermissionDenied
+
+        token = request.POST.get('token', None)
+        if token and token != request.user.get('auth_token', None):
+            return func(request, *args, **kwargs)
+
+        raise PermissionDenied
+
+    return wrapper
+
+
+def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
     """
     Django view wrapper that checks if identified request user has helpdesk
     permissions (exists in helpdesk group)
@@ -51,7 +105,7 @@ def helpdesk_user_required(func, groups=['helpdesk']):
         if not HELPDESK_ENABLED:
             raise Http404
 
-        token = get_token_from_cookie(request, AUTH_COOKIE)
+        token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
         get_user(request, settings.ASTAKOS_URL, fallback_token=token)
         if hasattr(request, 'user') and request.user:
             groups = request.user.get('groups', [])
@@ -59,12 +113,17 @@ def helpdesk_user_required(func, groups=['helpdesk']):
             if not groups:
                 raise PermissionDenied
 
+            has_perm = False
             for g in groups:
-                if not g in groups:
-                    raise PermissionDenied
+                if g in permitted_groups:
+                    has_perm = True
+
+            if not has_perm:
+                raise PermissionDenied
         else:
             raise PermissionDenied
 
+        logging.debug("User %s accessed helpdesk view" % (request.user_uniq))
         return func(request, *args, **kwargs)
 
     return wrapper
@@ -91,6 +150,8 @@ def account(request, account_or_ip):
     Account details view.
     """
 
+    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
+
     account_exists = True
     vms = []
     networks = []
@@ -104,12 +165,18 @@ def account(request, account_or_ip):
         except NetworkInterface.DoesNotExist:
             account_exists = False
     else:
-        # all user vms
-        vms = VirtualMachine.objects.filter(userid=account).order_by('deleted')
+        filter_extra = {}
+        if not show_deleted:
+            filter_extra['deleted'] = False
 
+        # all user vms
+        vms = VirtualMachine.objects.filter(userid=account,
+                                            **filter_extra).order_by('deleted')
         # return all user private and public networks
-        public_networks = Network.objects.filter(public=True).order_by('state')
-        private_networks = Network.objects.filter(userid=account).order_by('state')
+        public_networks = Network.objects.filter(public=True,
+                                                 **filter_extra).order_by('state')
+        private_networks = Network.objects.filter(userid=account,
+                                                 **filter_extra).order_by('state')
         networks = list(public_networks) + list(private_networks)
 
         if vms.count() == 0 and private_networks.count() == 0:
@@ -120,12 +187,33 @@ def account(request, account_or_ip):
         'is_ip': is_ip,
         'account': account,
         'vms': vms,
+        'csrf_token': request.user['auth_token'],
         'networks': networks,
         'UI_MEDIA_URL': settings.UI_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",
         extra_context=user_context)
+
+
+@helpdesk_user_required
+@token_check
+def suspend_vm(request, vm_id):
+    vm = VirtualMachine.objects.get(pk=vm_id)
+    vm.suspended = True
+    vm.save()
+    account = vm.userid
+    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+
+
+@helpdesk_user_required
+@token_check
+def suspend_vm_release(request, vm_id):
+    vm = VirtualMachine.objects.get(pk=vm_id)
+    vm.suspended = False
+    vm.save()
+    account = vm.userid
+    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
 
 
 @helpdesk_user_required

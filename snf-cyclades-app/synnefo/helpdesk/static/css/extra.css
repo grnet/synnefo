@@ -186,3 +186,8 @@ h4.expanded .badge				{ background-position: 185px 43px}
 h4 i 							{ margin-top: 4px; margin-right: 10px;}
 .container-fluid 				{ margin-left:auto; margin-right:auto; max-width:960px; }
 h3.info							{ cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}
+
+.vm-suspend-form { margin-top: 20px; text-align: right; }
+.vm-suspend-form form { margin-bottom: 0px; }
+.vm-suspend-form.suspended form input { background-color: #2956B2; color: #ffffff;}
+.vm-suspend-form form input { background-color: #F81A23; color: #ffffff;}

@@ -100,11 +100,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for entity, key in get_entity:
             try:
-                Entity.objects.get(entity=entity, key=key)
+                e = Entity.objects.get(entity=entity, key=key)
             except Entity.DoesNotExist:
                 continue
 
-            append((entity, key))
+            append((entity, e.owner.entity))
 
         return entities
 
@@ -190,8 +190,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.flags = flags
                 h.save()
             except Holding.DoesNotExist:
-                h = Holding.objects.create( entity=entity, resource=resource,
-                                            policy=policy, flags=flags      )
+                h = Holding.objects.create( entity=e, resource=resource,
+                                            policy=p, flags=flags      )
 
         return rejected
 
@@ -316,6 +316,12 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         serial = commission.serial
 
         for entity, resource, quantity in provisions:
+            try:
+                e = Entity.objects.get(entity=entity)
+            except Entity.DoesNotExist:
+                m = "No source entity '%s'" % (entity,)
+                raise NoEntityError(m)
+
             release = 0
             if quantity < 0:
                 release = 1
@@ -367,7 +373,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                         raise NoCapacityError(m)
 
             Provision.objects.create(   serial      =   commission,
-                                        entity      =   t,
+                                        entity      =   e,
                                         resource    =   resource,
                                         quantity    =   quantity   )
             if release:
@@ -511,7 +517,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
     def resolve_pending_commissions(self,   context={}, clientkey=None,
                                             max_serial=None, accept_set=()  ):
         accept_set = set(accept_set)
-        pending = self.get_pending_commissions(clientkey=clientkey)
+        pending = self.get_pending_commissions(context=context, clientkey=clientkey)
         pending = sorted(pending)
 
         accept = self.accept_commission
@@ -522,9 +528,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 break
 
             if serial in accept_set:
-                accept(clientkey=clientkey, serial=serial)
+                accept(context=context, clientkey=clientkey, serials=[serial])
             else:
-                reject(clientkey=clientkey, serial=serial)
+                reject(context=context, clientkey=clientkey, serials=[serial])
 
         return
 

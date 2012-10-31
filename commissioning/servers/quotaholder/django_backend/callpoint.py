@@ -112,17 +112,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         limits = []
         append = limits.append
 
-        for entity, resource, key in get_limits:
+        for policy in get_limits:
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
+                p = Policy.objects.get(policy=policy)
             except Policy.DoesNotExist:
                 continue
 
-            if h.entity.key != key:
-                continue
-            p = h.policy
-            append((h.entity, h.resource, p.quantity, p.capacity,
-                    p.import_limit, p.export_limit, h.flags))
+            append((policy, p.quantity, p.capacity,
+                    p.import_limit, p.export_limit))
 
         return limits
 

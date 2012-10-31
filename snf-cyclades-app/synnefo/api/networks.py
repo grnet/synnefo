@@ -304,10 +304,9 @@ def network_action(request, network_id):
     if net.deleted:
         raise Network.DeletedError
 
-    key = req.keys()[0]
-    val = req[key]
-
     try:
+        key = req.keys()[0]
+        val = req[key]
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])
     except KeyError:

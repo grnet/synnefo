@@ -157,17 +157,20 @@ def encrypt(plaintext):
     return b64encode(enc)
 
 
-def get_vm(server_id, user_id):
-    """Return a VirtualMachine instance or raise ItemNotFound."""
+def get_vm(server_id, user_id, non_deleted=False, non_suspended=False):
+    """Find a VirtualMachine instance based on ID and owner."""
 
     try:
         server_id = int(server_id)
-        return VirtualMachine.objects.get(id=server_id, userid=user_id)
+        vm = VirtualMachine.objects.get(id=server_id, userid=user_id)
+        if non_deleted and vm.deleted:
+            raise VirtualMachine.DeletedError
+        if non_suspended and vm.suspended:
+            raise Unauthorized("Administratively Suspended VM")
     except ValueError:
         raise BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound('Server not found.')
-
 
 def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""

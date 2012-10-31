@@ -286,7 +286,6 @@ def get_console(request, vm, args):
 
 
 @server_action('firewallProfile')
-@transaction.commit_on_success
 def set_firewall_profile(request, vm, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
@@ -318,17 +317,14 @@ def add(request, net, args):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
+    if net.state != 'ACTIVE':
+        raise ServiceUnavailable('Network not active yet')
+
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
-    vm = get_vm(server_id, request.user_uniq)
 
-    log.info("Connect VM %s to Network %s", vm, net)
-
-    net = Network.objects.get(id=net.id)
-
-    if net.state != 'ACTIVE':
-        raise ServiceUnavailable('Network not active yet')
+    vm = get_vm(server_id, request.user_uniq, non_suspended=True)
 
     address = None
     if net.dhcp:
@@ -366,10 +362,11 @@ def remove(request, net, args):
 
     if not server_id or not nic_index:
         raise BadRequest('Malformed Request.')
-    vm = get_vm(server_id, request.user_uniq)
+
+    vm = get_vm(server_id, request.user_uniq, non_suspended=True)
     nic = get_nic_from_index(vm, nic_index)
 
-    log.info("Disconnect VM %s NIC %s", vm, str(nic.index))
+    log.info("Removing NIC %s from VM %s", str(nic.index), vm)
 
     if nic.dirty:
         raise BuildInProgress('Machine is busy.')

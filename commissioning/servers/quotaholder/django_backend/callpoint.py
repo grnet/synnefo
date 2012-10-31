@@ -158,7 +158,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             if h.entity.key != key:
                 continue
 
-            append((h.entity.entity, h.resource, h.policy,
+            append((h.entity.entity, h.resource, h.policy.policy,
                     h.imported, h.exported,
                     h.returned, h.released, h.flags))
 

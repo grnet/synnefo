@@ -1,3 +1,4 @@
+import sys
 from commissioning.clients.http import HTTP_API_Client
 from commissioning import QuotaholderAPI
 
@@ -9,6 +10,97 @@ def new_quota_holder_client(QH_URL):
         api_spec = QuotaholderAPI()
 
     return QuotaholderHTTP(QH_URL)
+
+def method_accepts(*types):
+    '''Method decorator. Checks decorated function's arguments are
+    of the expected types. The self argument is ignored. This is
+    based on the ``accepts`` decorator.
+
+    Parameters:
+    types -- The expected types of the inputs to the decorated function.
+             Must specify type for each parameter.
+    '''
+    try:
+        def decorator(f):
+            def newf(*args):
+                args_to_check = args[1:] # Throw away self (or cls)
+                assert len(args_to_check) == len(types)
+                argtypes = tuple(map(type, args_to_check))
+                if argtypes != types:
+                    msg = info(f.__name__, types, argtypes, 0)
+                    raise TypeError, msg
+                return f(*args)
+            newf.__name__ = f.__name__
+            return newf
+        return decorator
+    except KeyError, key:
+        raise KeyError, key + "is not a valid keyword argument"
+    except TypeError, msg:
+        raise TypeError, msg
+
+# http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
+# Slightly modified to always raise an error
+def accepts(*types):
+    '''Function decorator. Checks decorated function's arguments are
+    of the expected types.
+
+    Parameters:
+    types -- The expected types of the inputs to the decorated function.
+             Must specify type for each parameter.
+    '''
+    try:
+        def decorator(f):
+            def newf(*args):
+                assert len(args) == len(types)
+                argtypes = tuple(map(type, args))
+                if argtypes != types:
+                    msg = info(f.__name__, types, argtypes, 0)
+                    raise TypeError, msg
+                return f(*args)
+            newf.__name__ = f.__name__
+            return newf
+        return decorator
+    except KeyError, key:
+        raise KeyError, key + "is not a valid keyword argument"
+    except TypeError, msg:
+        raise TypeError, msg
+
+# http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
+# Slightly modified to always raise an error
+def returns(ret_type):
+    '''Function decorator. Checks decorated function's return value
+    is of the expected type.
+
+    Parameters:
+    ret_type -- The expected type of the decorated function's return value.
+                Must specify type for each parameter.
+    '''
+    try:
+        def decorator(f):
+            def newf(*args):
+                result = f(*args)
+                res_type = type(result)
+                if res_type != ret_type:
+                    msg = info(f.__name__, (ret_type,), (res_type,), 1)
+                    raise TypeError, msg
+                return result
+            newf.__name__ = f.__name__
+            return newf
+        return decorator
+    except KeyError, key:
+        raise KeyError, key + "is not a valid keyword argument"
+    except TypeError, msg:
+        raise TypeError, msg
+
+# http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
+def info(fname, expected, actual, flag):
+    '''Convenience function returns nicely formatted error/warning msg.'''
+    format = lambda types: ', '.join([str(t).split("'")[1] for t in types])
+    expected, actual = format(expected), format(actual)
+    msg = "'{}' method ".format( fname )\
+          + ("accepts", "returns")[flag] + " ({}), but ".format(expected)\
+          + ("was given", "result is")[flag] + " ({})".format(actual)
+    return msg
 
 def check_string(name, value):
     assert isinstance(value, str), "%s is not a string, but a %s" % (name, type(value))

@@ -111,7 +111,6 @@ def check_context(context):
     return context
 
 def check_node_name(node_name):
-    assert isinstance(node_name, str)
     assert len(node_name) > 0
     return node_name
 

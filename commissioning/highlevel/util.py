@@ -136,3 +136,8 @@ def parent_node_name_of(node_name):
         else:
             upto_name = '/'.join(elements[:-1])
             return upto_name
+
+NameOfSystemNode = 'system'
+NameOfResourcesNode = 'system/resources'
+NameOfGroupsNode = 'system/groups'
+NameOfUsersNode = 'system/users'

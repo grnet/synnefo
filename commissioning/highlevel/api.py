@@ -6,24 +6,24 @@ from util import check_context
 from util import check_string
 from util import method_accepts
 from util import returns
+from util import NameOfSystemNode
+from util import NameOfResourcesNode
+from util import NameOfGroupsNode
+from util import NameOfUsersNode
 
 class HighLevelAPI(object):
     """
     High-level Quota Holder API that supports definitions of resources, resource pools, groups and users and
     the transfer of resource quotas from respective pools to both groups and users.
     """
-    NameOfSystemNode = 'system'
-    NameOfResourcesNode = 'system/resources'
-    NameOfGroupsNode = 'system/groups'
-    NameOfUsersNode = 'system/users'
 
     def __init__(self, qh, **kwd):
         self.__qh = qh
         self.__context = check_context(kwd.get('context') or {})
         self.__node_keys = {
-            HighLevelAPI.NameOfSystemNode: check_string('system_key', kwd.get('system_key') or ''),
-            HighLevelAPI.NameOfResourcesNode: check_string('resources_key', kwd.get('resources_key') or ''),
-            HighLevelAPI.NameOfGroupsNode: check_string('groups_key', kwd.get('groups_key') or '')
+            NameOfSystemNode: check_string('system_key', kwd.get('system_key') or ''),
+            NameOfResourcesNode: check_string('resources_key', kwd.get('resources_key') or ''),
+            NameOfGroupsNode: check_string('groups_key', kwd.get('groups_key') or '')
         }
 
 
@@ -107,14 +107,16 @@ class HighLevelAPI(object):
         """
         Ensure that the node 'system/resources' exists.
         """
-        return self.ensure_node(HighLevelAPI.NameOfResourcesNode)
+        return self.ensure_node(NameOfResourcesNode)
+
 
     @returns(str)
     def ensure_groups_node(self):
         """
         Ensure that the node 'system/groups' exists.
         """
-        return self.ensure_node(HighLevelAPI.NameOfGroupsNode)
+        return self.ensure_node(NameOfGroupsNode)
+
 
     @returns(str)
     def ensure_users_node(self):

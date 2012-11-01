@@ -99,6 +99,7 @@ class HighLevelAPI(object):
         )
         return len(entity_owner_list) == 1 # TODO: any other check here?
 
+
     @returns(str)
     def ensure_resources_node(self):
         """
@@ -120,15 +121,42 @@ class HighLevelAPI(object):
         """
         Ensure that the node 'system/users' exists.
         """
-        return self.ensure_node(HighLevelAPI.NameOfUsersNode)
+        return self.ensure_node(NameOfUsersNode)
+
+
+    @method_accepts(str, str)
+    @returns(str)
+    def normalize_child_node_name(self, child_node_name, parent_node_name):
+        check_node_name(child_node_name)
+        check_node_name(parent_node_name)
+        last_part_child_node_name = self.last_part_of_node_name(child_node_name)
+        normalized_child_node_name = '%s/%s' % (
+            parent_node_name,
+            last_part_child_node_name
+        ) # recreate full node name
+        return normalized_child_node_name
+
 
     @method_accepts(str)
     @returns(str)
-    def normalize_group_name(self, group_name):
-        check_node_name(group_name)
-        group_name = group_name.split('/')[-1:] # collapse and keep the last part
-        group_name = '%s/%s' % (HighLevelAPI.NameOfGroupsNode, group_name) # recreate full node name
-        return group_name
+    def normalize_group_node_name(self, group_node_name):
+        return self.normalize_child_node_name(group_node_name, NameOfGroupsNode)
+
+
+    @method_accepts(str)
+    @returns(str)
+    def last_part_of_node_name(self, node_name):
+        """
+        Collapses a full node name to its last part, that is the name after the last slash,
+        and returns that last part.
+
+        So, a name 'system/groups/foogrooop' is collapsed to 'foogrooop' and the
+        latter is returned.
+        """
+        check_node_name(node_name)
+        bottom_node_name = node_name.split('/')[-1:] # collapse and keep the last part
+        return bottom_node_name
+
 
     @method_accepts(str, str)
     @returns(str)
@@ -136,8 +164,12 @@ class HighLevelAPI(object):
         """
         Creates a new group under 'system/groups'.
 
-        The ``group_name`` can either be a full path (e.g. 'system/groups/mygroup') or just the last part
+        The ``group_node_name`` can either be a full path (e.g. 'system/groups/mygroup') or just the last part
         (e.g. 'mygroup'). Note that if it is the full path, then everything but the last part is ignored.
+        You must always use the returned ``group_node_name`` as the most authoritative value instead of
+        the one passed as a parameter.
+
+        No further resource assignment is done, you must use ````.
 
         ``group_name`` - The name of the new group.
         ``group_key``  - The key (password) for the new group.
@@ -147,9 +179,51 @@ class HighLevelAPI(object):
         """
         check_node_name(group_node_name)
         check_node_key(group_node_key)
+
         groups_node_name = self.ensure_groups_node()
-        group_node_name = self.normalize_group_name(group_node_name) # We are forgiving and accept simple name
-        created_group_name = self.qh_create_node(group_node_name, groups_node_name, group_node_key, self.__groups_key)
+
+        group_node_name = self.normalize_group_node_name(group_node_name) # We are forgiving...
+        group_node_name = self.qh_create_node(
+            group_node_name,
+            groups_node_name,
+            group_node_key,
+            self.__groups_key)
         self.set_cached_node_key(group_node_name, group_node_key)
 
-        
+        return group_node_name
+
+
+    @method_accepts(str, str, int, int, int)
+    @returns(str)
+    def group_define_resource(self,
+                              group_node_name,
+                              resource_node_name,
+                              limit_per_user,
+                              bucket_quantity,
+                              bucket_capacity):
+        """
+        Defines a resource that a group provides to its users.
+        """
+        check_node_name(group_node_name)
+        check_node_name(resource_node_name)
+
+        # 1. Create a definitional resource node under the group.
+        #    This resource defines the limit per user.
+        #    E.g. A resource named 'pithos+' gives rise to a resource/node named 'def_pithos+'
+        last_resource_node_name = self.last_part_of_node_name(resource_node_name)
+        def_last_resource_node_name = 'def_%s' % (last_resource_node_name,)
+        def_resource_node_name = self.normalize_child_node_name(
+            def_last_resource_node_name,
+            group_node_name
+        )
+        if not self.qh_has_node(def_resource_node_name):
+            def_resource_node_name = self.qh_create_node(def_resource_node_name)
+        # TODO: make policy with the limit
+
+        # 2. Create the operational resource node under the group.
+        #    This resource is a big bucket with the operational quantity and capacity.
+        #    Everything is put into and out of this bucket.
+
+
+
+

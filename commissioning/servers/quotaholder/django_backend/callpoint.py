@@ -114,11 +114,12 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for policy in get_limits:
             try:
-                p = Policy.objects.get(policy = policy)
+                p = Policy.objects.get(policy=policy)
             except Policy.DoesNotExist:
                 continue
 
-            append((p.policy, p.quantity, p.capacity, p.import_limit, p.export_limit))
+            append((policy, p.quantity, p.capacity,
+                    p.import_limit, p.export_limit))
 
         return limits
 
@@ -157,7 +158,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             if h.entity.key != key:
                 continue
 
-            append((h.entity.entity, h.resource, h.policy,
+            append((h.entity.entity, h.resource, h.policy.policy,
                     h.imported, h.exported,
                     h.returned, h.released, h.flags))
 
@@ -622,7 +623,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     'log_time'                  :   g.log_time,
                     'reason'                    :   g.reason,
                 }
-                    
+
                 append(o)
 
             after = g.issue_time

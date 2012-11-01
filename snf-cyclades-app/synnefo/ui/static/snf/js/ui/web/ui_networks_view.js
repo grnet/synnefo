@@ -760,12 +760,12 @@
 
 
         show_nics_list: function() {
-            if (this.nics_empty()) { return }
+            //if (this.nics_empty()) { return }
             this.nics_list_toggler.addClass("open");
             this.nics_list.slideDown(function(){
                 $(window).trigger("resize");
             }).closest(".network").addClass("expand");
-            this.$(".empty-network-slot").show();
+            this.$(".empty-network-slot").slideDown();
             this.nics_visible = true;
         },
 
@@ -774,7 +774,7 @@
             this.nics_list.slideUp(function(){
                 $(window).trigger("resize");
             }).closest(".network").removeClass("expand");
-            this.$(".empty-network-slot").hide();
+            this.$(".empty-network-slot").slideUp();
             this.nics_visible = false;
         },
         
@@ -787,7 +787,6 @@
                     this.show_nics_list();
                 }
 
-                this.check_empty_nics();
             }, this));
         },
 
@@ -853,7 +852,8 @@
                 this.$(".confirm_single").hide();
                 this.$("a.selected").removeClass("selected");
             }, this));
-
+            
+            this.$(".empty-network-slot").hide();
             $(window).bind("resize", _.bind(function() {
                 this.fix_left_border();
             }, this));

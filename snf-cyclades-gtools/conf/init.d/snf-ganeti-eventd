@@ -39,7 +39,7 @@ check_ganeti_master() {
     HOST=`/bin/hostname -f`
 
     if [ "x$MASTER" != x$HOST ]; then
-        log_warning_msg "snf-ganeti-eventd should run on the ganeti master only, aborting start"
+        log_warning_msg "snf-ganeti-eventd should run on the ganeti master only, aborting start (use 'force-start' if you know what you are doing)"
         log_end_msg 0
         exit 0
     fi
@@ -85,6 +85,22 @@ case "$1" in
             fi
         fi
         ;;
+  force-start)
+        if "$SNF_EVENTD_ENABLE"; then
+            log_daemon_msg "Starting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
+        else
+            if [ -s "$SNF_EVENTD_DEFAULTS" ]; then
+                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS, starting anyway"
+            fi
+        fi
+
+        if [ -s $SNF_EVENTD_PID_FILE ] && kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
+            log_progress_msg "apparently already running"
+            log_end_msg 0
+            exit 0
+        fi
+        eventd_start
+        ;;
   stop)
         log_daemon_msg "Stopping snf-ganeti-eventd daemon" "snf-ganeti-eventd"
         start-stop-daemon --stop --quiet --oknodo --pidfile $SNF_EVENTD_PID_FILE
@@ -117,7 +133,7 @@ case "$1" in
         exit $? # notreached due to set -e
         ;;
   *)
-        echo "Usage: /etc/init.d/snf-ganeti-eventd {start|stop|restart|status}"
+        echo "Usage: /etc/init.d/snf-ganeti-eventd {start|stop|restart|force-start|status}"
         exit 1
 esac
 

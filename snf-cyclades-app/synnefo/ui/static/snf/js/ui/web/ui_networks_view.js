@@ -229,6 +229,11 @@
             this.init_handlers();
         },
 
+        reset_dhcp_form: function() {
+          this.subnet_select.find("option")[0].selected = 1;
+          this.subnet_custom.val("");
+        },
+
         check_dhcp_form: function() {
             if (this.dhcp_select.is(":checked")) {
                 this.dhcp_form.show();
@@ -247,6 +252,7 @@
 
             this.dhcp_select.click(_.bind(function(e){
                 this.check_dhcp_form();
+                this.reset_dhcp_form();
             }, this));
 
             this.subnet_select.change(_.bind(function(e){

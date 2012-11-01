@@ -157,17 +157,20 @@ def encrypt(plaintext):
     return b64encode(enc)
 
 
-def get_vm(server_id, user_id):
-    """Return a VirtualMachine instance or raise ItemNotFound."""
+def get_vm(server_id, user_id, non_deleted=False, non_suspended=False):
+    """Find a VirtualMachine instance based on ID and owner."""
 
     try:
         server_id = int(server_id)
-        return VirtualMachine.objects.get(id=server_id, userid=user_id)
+        vm = VirtualMachine.objects.get(id=server_id, userid=user_id)
+        if non_deleted and vm.deleted:
+            raise VirtualMachine.DeletedError
+        if non_suspended and vm.suspended:
+            raise Unauthorized("Administratively Suspended VM")
     except ValueError:
         raise BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound('Server not found.')
-
 
 def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""
@@ -191,13 +194,15 @@ def get_image(image_id, user_id):
         backend.close()
 
 
-def get_flavor(flavor_id):
+def get_flavor(flavor_id, include_deleted=False):
     """Return a Flavor instance or raise ItemNotFound."""
 
     try:
         flavor_id = int(flavor_id)
-        # Ensure that request if for active flavor
-        return Flavor.objects.get(id=flavor_id, deleted=False)
+        if include_deleted:
+            return Flavor.objects.get(id=flavor_id)
+        else:
+            return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
     except (ValueError, Flavor.DoesNotExist):
         raise ItemNotFound('Flavor not found.')
 
@@ -390,6 +395,9 @@ def api_method(http_method=None, atom_allowed=False):
                 return resp
             except VirtualMachine.DeletedError:
                 fault = BadRequest('Server has been deleted.')
+                return render_fault(request, fault)
+            except Network.DeletedError:
+                fault = BadRequest('Network has been deleted.')
                 return render_fault(request, fault)
             except VirtualMachine.BuildingError:
                 fault = BuildInProgress('Server is being built.')

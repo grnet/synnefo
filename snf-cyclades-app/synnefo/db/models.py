@@ -466,6 +466,9 @@ class Network(models.Model):
         def __str__(self):
             return repr(str(self._action))
 
+    class DeletedError(Exception):
+        pass
+
     @property
     def backend_id(self):
         """Return the backend id by prepending backend-prefix."""

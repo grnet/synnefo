@@ -60,7 +60,8 @@ from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
-from ganeti.cli import GetClient
+from ganeti.ssconf import SimpleConfigReader
+
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
@@ -269,8 +270,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 def find_cluster_name():
     global handler_logger
     try:
-        cl = GetClient()
-        name = cl.QueryClusterInfo()['name']
+        scr = SimpleConfigReader()
+        name = scr.GetClusterName()
     except Exception as e:
         handler_logger.error('Can not get the name of the Cluster: %s' % e)
         raise e

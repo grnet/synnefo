@@ -131,6 +131,7 @@ def vm_to_dict(vm, detail=False):
         d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.imageid
+        d['suspended'] = vm.suspended
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
@@ -296,7 +297,8 @@ def create_server(request):
         image['metadata'] = dict((key.upper(), val) \
                                  for key, val in properties.items())
 
-        flavor = util.get_flavor(flavor_id)
+        # Ensure that request if for active flavor
+        flavor = util.get_flavor(flavor_id, include_deleted=False)
         password = util.random_password()
 
         count = VirtualMachine.objects.filter(userid=request.user_uniq,
@@ -315,7 +317,7 @@ def create_server(request):
 
         if backend is None:
             log.error("No available backends for VM with flavor %s", flavor)
-            raise Exception("No available backends")
+            raise faults.ServiceUnavailable("No available backends")
     except:
         transaction.rollback()
         raise
@@ -327,8 +329,8 @@ def create_server(request):
             (network, address) = util.allocate_public_address(backend)
             if address is None:
                 log.error("Public networks of backend %s are full", backend)
-                raise faults.OverLimit("Can not allocate IP for new machine."
-                                       " Public networks are full.")
+                msg = "Failed to allocate public IP for new VM"
+                raise faults.ServiceUnavailable(msg)
             nic = {'ip': address, 'network': network.backend_id}
         else:
             network = choice(list(util.backend_public_networks(backend)))
@@ -417,7 +419,7 @@ def update_server_name(request, server_id):
     except (TypeError, KeyError):
         raise faults.BadRequest("Malformed request")
 
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     vm.name = name
     vm.save()
 
@@ -437,7 +439,7 @@ def delete_server(request, server_id):
     #                       overLimit (413)
 
     log.info('delete_server %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     delete_instance(vm)
     return HttpResponse(status=204)
 
@@ -446,16 +448,19 @@ def delete_server(request, server_id):
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq)
+
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")
 
-    key = req.keys()[0]
-    val = req[key]
+    # Do not allow any action on deleted or suspended VMs
+    vm = util.get_vm(server_id, request.user_uniq, non_deleted=True,
+                     non_suspended=True)
 
     try:
+        key = req.keys()[0]
+        val = req[key]
         assert isinstance(val, dict)
-        return server_actions[key](request, vm, req[key])
+        return server_actions[key](request, vm, val)
     except KeyError:
         raise faults.BadRequest("Unknown action")
     except AssertionError:
@@ -535,7 +540,7 @@ def update_metadata(request, server_id):
 
     req = util.get_request_dict(request)
     log.info('update_server_metadata %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
         metadata = req['metadata']
         assert isinstance(metadata, dict)
@@ -584,7 +589,7 @@ def create_metadata_item(request, server_id, key):
 
     req = util.get_request_dict(request)
     log.info('create_server_metadata_item %s %s %s', server_id, key, req)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -618,7 +623,7 @@ def delete_metadata_item(request, server_id, key):
     #                       overLimit (413),
 
     log.info('delete_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()

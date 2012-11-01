@@ -55,7 +55,7 @@ class Command(BaseCommand):
             help="List only servers in the building state"),
         make_option('--deleted', action='store_true', dest='deleted',
                     default=False,
-                    help="List deleted servers"),
+                    help="Include deletd servers"),
         make_option('--backend-id', dest='backend_id',
                     help="List only servers of the specified backend")
         )

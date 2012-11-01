@@ -236,7 +236,7 @@ def start_action(vm, action):
     if not action in [x[0] for x in VirtualMachine.ACTIONS]:
         raise VirtualMachine.InvalidActionError(action)
 
-    # No actions to deleted and no actions beside destroy to suspended VMs
+    # No actions to deleted VMs
     if vm.deleted:
         raise VirtualMachine.DeletedError
 
@@ -249,21 +249,6 @@ def start_action(vm, action):
     vm.backendopcode = None
     vm.backendjobstatus = None
     vm.backendlogmsg = None
-
-    # Update the relevant flags if the VM is being suspended or destroyed.
-    # Do not set the deleted flag here, see ticket #721.
-    #
-    # The deleted flag is set asynchronously, when an OP_INSTANCE_REMOVE
-    # completes successfully. Hence, a server may be visible for some time
-    # after a DELETE /servers/id returns HTTP 204.
-    #
-    if action == "DESTROY":
-        # vm.deleted = True
-        pass
-    elif action == "SUSPEND":
-        vm.suspended = True
-    elif action == "START":
-        vm.suspended = False
 
     vm.save()
 

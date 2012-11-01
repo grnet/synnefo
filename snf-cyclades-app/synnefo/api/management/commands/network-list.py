@@ -53,7 +53,7 @@ class Command(BaseCommand):
             action='store_true',
             dest='deleted',
             default=False,
-            help="List only deleted networks"),
+            help="Include deleted networks"),
         make_option('--public',
             action='store_true',
             dest='public',
@@ -70,11 +70,10 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        networks = Network.objects.all()
         if options['deleted']:
-            networks = networks.filter(deleted=True)
+            networks = Network.objects.all()
         else:
-            networks = networks.exclude(deleted=True)
+            networks = Network.objects.filter(deleted=False)
 
         if options['public']:
             networks = networks.filter(public=True)

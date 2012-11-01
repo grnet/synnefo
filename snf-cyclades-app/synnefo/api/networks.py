@@ -44,7 +44,7 @@ from django.utils import simplejson as json
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (BadRequest, Unauthorized,
+from synnefo.api.faults import (ServiceUnavailable, BadRequest, Unauthorized,
                                 NetworkInUse, OverLimit)
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
@@ -202,7 +202,9 @@ def create_network(request):
                 action='CREATE',
                 state='PENDING')
     except EmptyPool:
-        raise OverLimit('Network count limit exceeded.')
+        log.error("Failed to allocate resources for network of type: %s",
+                  net_type)
+        raise ServiceUnavailable("Failed to allocate resources for network")
 
     # Create BackendNetwork entries for each Backend
     network.create_backend_network()
@@ -252,6 +254,8 @@ def update_network_name(request, network_id):
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not rename the public network.')
+    if net.deleted:
+        raise Network.DeletedError
     net.name = name
     net.save()
     return HttpResponse(status=204)
@@ -273,8 +277,12 @@ def delete_network(request, network_id):
     if net.public:
         raise Unauthorized('Can not delete the public network.')
 
+    if net.deleted:
+        raise Network.DeletedError
+
     if net.machines.all():  # Nics attached on network
         raise NetworkInUse('Machines are connected to network.')
+
 
     net.action = 'DESTROY'
     net.save()
@@ -293,11 +301,12 @@ def network_action(request, network_id):
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
         raise Unauthorized('Can not modify the public network.')
-
-    key = req.keys()[0]
-    val = req[key]
+    if net.deleted:
+        raise Network.DeletedError
 
     try:
+        key = req.keys()[0]
+        val = req[key]
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])
     except KeyError:

@@ -31,10 +31,7 @@ class HighLevelAPI(object):
     @returns(str)
     def get_cached_node_key(self, node_name):
         check_node_name(node_name)
-        try:
-            return self.__node_keys[node_name]
-        except:
-            raise Exception("Unknown key for node '%s'" % (node_name,))
+        return self.__node_keys.get(node_name) or '' # sane default
 
 
     @method_accepts(str, str)

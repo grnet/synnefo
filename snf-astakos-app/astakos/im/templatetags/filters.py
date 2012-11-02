@@ -46,31 +46,34 @@ register = template.Library()
 
 DELIM = ','
 
+
 @register.filter
 def monthssince(joined_date):
     now = datetime.datetime.now()
-    date = datetime.datetime(year=joined_date.year, month=joined_date.month, day=1)
+    date = datetime.datetime(
+        year=joined_date.year, month=joined_date.month, day=1)
     months = []
-    
+
     month = date.month
     year = date.year
-    timestamp=calendar.timegm( date.utctimetuple() )
-    
+    timestamp = calendar.timegm(date.utctimetuple())
+
     while date < now:
         months.append((year, month, timestamp))
-        
+
         if date.month < 12:
             month = date.month + 1
             year = date.year
         else:
             month = 1
             year = date.year + 1
-            
+
         date = datetime.datetime(year=year, month=month, day=1)
-        timestamp=calendar.timegm( date.utctimetuple() )
-        
+        timestamp = calendar.timegm(date.utctimetuple())
+
     return months
-    
+
+
 @register.filter
 def lookup(d, key):
     return d.get(key)
@@ -84,17 +87,18 @@ def dkeys(d):
 @register.filter
 def month_name(month_number):
     return calendar.month_name[month_number]
-    
+
 
 @register.filter
-def todate(value, arg = ''):
+def todate(value, arg=''):
     secs = int(value) / 1000
     return datetime.datetime.fromtimestamp(secs)
 
 
 @register.filter
-def rcut(value, chars = '/'):
+def rcut(value, chars='/'):
     return value.rstrip(chars)
+
 
 @register.filter
 def paginate(l, args):
@@ -106,11 +110,11 @@ def paginate(l, args):
             default = ''
             if sorting.endswith('_date'):
                 default = datetime.datetime.utcfromtimestamp(0)
-            l.sort(key=lambda i: getattr(i, sorting) \
-                        if getattr(i, sorting) else default)
-            
+            l.sort(key=lambda i: getattr(i, sorting)
+                   if getattr(i, sorting) else default)
+
     paginator = Paginator(l, PAGINATE_BY)
-    
+
     try:
         page_number = int(page)
     except ValueError:
@@ -124,11 +128,13 @@ def paginate(l, args):
         page = paginator.page(1)
     return page
 
+
 @register.filter
 def concat(str1, str2):
     if not str2:
         return str(str1)
     return '%s%s%s' % (str1, DELIM, str2)
+
 
 @register.filter
 def items(d):

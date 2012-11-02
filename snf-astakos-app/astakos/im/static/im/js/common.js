@@ -173,6 +173,23 @@ $(document).ready(function() {
 				}
 			});
 		}
+		
+		if($("#id_issue_date_demo").length > 0 ){
+			$( "#id_issue_date_demo" ).datepicker({
+				defaultDate: "+0", 
+				dateFormat: "yy-mm-dd",
+				onSelect: function( selectedDate ) {
+					$( "#id_expiration_date_demo" ).datepicker( "option", "minDate", selectedDate );
+				}
+			});
+			$( "#id_expiration_date_demo" ).datepicker({
+				defaultDate: "+1w", 
+				dateFormat: "yy-mm-dd",
+				onSelect: function( selectedDate ) {
+					$( "#id_issue_date_demo" ).datepicker( "option", "maxDate", selectedDate );
+				}
+			});
+		}
 		$( "#id_start_date" ).datepicker({
             dateFormat: "yy-mm-dd",
             onSelect: function( selectedDate ) {

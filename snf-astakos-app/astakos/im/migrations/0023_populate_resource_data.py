@@ -17,13 +17,13 @@ class Migration(DataMigration):
 
         def create_policies(args):
             sn, dict = args
-            url = dict.get('url') 
+            url = dict.get('url')
             policy = dict.get('quota') or ()
             s, created = orm.Service.objects.get_or_create(name=sn,
                                                            defaults={'url': url})
             if not created and not s.url:
                 s.url = url
-                s.save()
+            s.save()
 
             for rn, l in policy.iteritems():
                 try:
@@ -49,7 +49,7 @@ class Migration(DataMigration):
 
         def destroy_policies(args):
             sn, dict = args
-            url = dict.get('url') 
+            url = dict.get('url')
             policy = dict.get('quota') or ()
             for rn, l in policy.iteritems():
                 try:
@@ -59,9 +59,9 @@ class Migration(DataMigration):
                     q.delete()
                 except orm.AstakosGroupQuota.DoesNotExist:
                     continue
-        
+
         map(destroy_policies, SERVICES.iteritems())
-    
+
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},

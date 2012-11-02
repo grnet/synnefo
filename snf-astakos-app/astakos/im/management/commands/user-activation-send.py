@@ -37,26 +37,28 @@ from astakos.im.functions import send_activation, SendMailError
 
 from ._common import get_user
 
+
 class Command(BaseCommand):
     args = "<user ID or email> [user ID or email] ..."
     help = "Sends an activation email to one or more users"
-    
+
     def handle(self, *args, **options):
         if not args:
             raise CommandError("No user was given")
-        
+
         for email_or_id in args:
             user = get_user(email_or_id, is_active=False)
             if not user:
                 self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
                 continue
             if user.is_active:
-                self.stderr.write("Already active user '%s'\n" % (email_or_id,))
+                self.stderr.write(
+                    "Already active user '%s'\n" % (email_or_id,))
                 continue
-            
+
             try:
                 send_activation(user)
             except SendMailError, e:
                 raise CommandError(e.message)
-            
+
             self.stdout.write("Activation sent to '%s'\n" % (user.email,))

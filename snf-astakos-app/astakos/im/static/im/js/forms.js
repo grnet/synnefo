@@ -7,6 +7,7 @@
       var $this = $(this);
       var el = $('<a class="checkbox-widget" href="javascript:void(0)"/>');
       var form = $this.closest(".form-row");
+	  var className = $this.attr('class');
 
       // add class to identify form rows which contain a checkbox
       form.addClass("with-checkbox");
@@ -20,7 +21,13 @@
                 var src = e.srcElement.nodeName;
                 if (src == "LABEL" || src == "label") {
                     el.toggleClass("checked");
+					
                 };
+                if ($this.attr('checked')=='checked') {
+					($this.removeAttr('checked'))
+				} else {
+					$this.attr('checked','checked')
+				}
             })
         }
       }
@@ -28,8 +35,11 @@
       
       if ($this.attr('checked')) {
         el.addClass("checked");  
+        
       }
 
+	  el.addClass(className);	
+		
       el.click(function() {
         el.toggleClass("checked");
         $this.attr('checked', el.hasClass("checked"));
@@ -105,3 +115,4 @@
 
   };
 })( jQuery );
+

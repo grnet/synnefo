@@ -4,25 +4,28 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Changing field 'AstakosGroupQuota.limit'
-        db.alter_column('im_astakosgroupquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(null=True))
+        db.alter_column('im_astakosgroupquota', 'limit', self.gf(
+            'django.db.models.fields.PositiveIntegerField')(null=True))
 
         # Changing field 'AstakosUserQuota.limit'
-        db.alter_column('im_astakosuserquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(null=True))
-
+        db.alter_column('im_astakosuserquota', 'limit', self.gf(
+            'django.db.models.fields.PositiveIntegerField')(null=True))
 
     def backwards(self, orm):
-        
+
         # Changing field 'AstakosGroupQuota.limit'
-        db.alter_column('im_astakosgroupquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(default=None))
+        db.alter_column('im_astakosgroupquota', 'limit', self.gf(
+            'django.db.models.fields.PositiveIntegerField')(default=None))
 
         # Changing field 'AstakosUserQuota.limit'
-        db.alter_column('im_astakosuserquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(default=None))
-
+        db.alter_column('im_astakosuserquota', 'limit', self.gf(
+            'django.db.models.fields.PositiveIntegerField')(default=None))
 
     models = {
         'auth.group': {

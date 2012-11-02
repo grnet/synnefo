@@ -38,7 +38,7 @@ from astakos.im.models import Resource, Service
 
 
 class Command(BaseCommand):
-    args = "<service> <resource> [<key>=<value>...]"
+    args = "<service> <resource> <desc> <unit>"
     help = "Add a resource"
 
     def handle(self, *args, **options):

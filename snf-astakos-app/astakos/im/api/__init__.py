@@ -173,33 +173,33 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         item = MenuItem
         item.current_path = absolute(request, request.path)
         append(item(
-                url=absolute(request, reverse('index')),
-                name=user.email))
+               url=absolute(request, reverse('index')),
+               name=user.email))
         append(item(url=absolute(request, reverse('edit_profile')),
                name="My account"))
         if with_extra_links:
             if user.has_usable_password() and user.provider in ('local', ''):
                 append(item(
-                        url=absolute(request, reverse('password_change')),
-                        name="Change password"))
+                       url=absolute(request, reverse('password_change')),
+                       name="Change password"))
             if EMAILCHANGE_ENABLED:
                 append(item(
-                        url=absolute(request, reverse('email_change')),
-                        name="Change email"))
+                       url=absolute(request, reverse('email_change')),
+                       name="Change email"))
             if INVITATIONS_ENABLED:
                 append(item(
-                        url=absolute(request, reverse('invite')),
-                        name="Invitations"))
+                       url=absolute(request, reverse('invite')),
+                       name="Invitations"))
             append(item(
-                    url=absolute(request, reverse('feedback')),
-                    name="Feedback"))
+                   url=absolute(request, reverse('feedback')),
+                   name="Feedback"))
             append(item(
-                    url=absolute(request, reverse('group_list')),
-                    name="Groups",
-                    submenu=(item(
-                                url=absolute(request,
-                                             reverse('group_list')),
-                                name="Overview"),
+                   url=absolute(request, reverse('group_list')),
+                   name="Groups",
+                   submenu=(item(
+                            url=absolute(request,
+                                         reverse('group_list')),
+                            name="Overview"),
                             item(
                                 url=absolute(request,
                                              reverse('group_create_list')),
@@ -209,18 +209,18 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                                              reverse('group_search')),
                                 name="Join"),)))
             append(item(
-                    url=absolute(request, reverse('resource_list')),
-                    name="Resources"))
+                   url=absolute(request, reverse('resource_list')),
+                   name="Resources"))
             append(item(
-                    url=absolute(request, reverse('billing')),
-                    name="Billing"))
+                   url=absolute(request, reverse('billing')),
+                   name="Billing"))
             append(item(
-                    url=absolute(request, reverse('timeline')),
-                    name="Timeline"))
+                   url=absolute(request, reverse('timeline')),
+                   name="Timeline"))
         if with_signout:
             append(item(
-                    url=absolute(request, reverse('logout')),
-                    name="Sign out"))
+                   url=absolute(request, reverse('logout')),
+                   name="Sign out"))
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))

@@ -41,14 +41,16 @@ from django.core.exceptions import ValidationError
 from astakos.im.models import AstakosUser
 from ._common import add_group_permission
 
+
 class Command(BaseCommand):
     args = "<groupname> <permission> [<permissions> ...]"
     help = "Add group permissions"
-    
+
     def handle(self, *args, **options):
         if len(args) < 2:
-            raise CommandError("Please provide a group name and at least one permission")
-        
+            raise CommandError(
+                "Please provide a group name and at least one permission")
+
         group = None
         try:
             if args[0].isdigit():
@@ -57,17 +59,20 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=args[0])
         except Group.DoesNotExist, e:
             raise CommandError("Invalid group")
-        
+
         try:
             content_type = ContentType.objects.get(app_label='im',
-                                                       model='astakosuser')
+                                                   model='astakosuser')
             for pname in args[1:]:
                 r, created = add_group_permission(group, pname)
                 if created:
-                    self.stdout.write('Permission: %s created successfully\n' % pname)
+                    self.stdout.write(
+                        'Permission: %s created successfully\n' % pname)
                 if r == 0:
-                    self.stdout.write('Group has already permission: %s\n' % pname)
+                    self.stdout.write(
+                        'Group has already permission: %s\n' % pname)
                 else:
-                    self.stdout.write('Permission: %s added successfully\n' % pname)
+                    self.stdout.write(
+                        'Permission: %s added successfully\n' % pname)
         except Exception, e:
             raise CommandError(e)

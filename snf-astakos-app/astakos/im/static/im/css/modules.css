@@ -28,7 +28,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg p.title span	                        { border-bottom:2px dotted #fff; padding:0 0 10px 0;}
 .top-msg.active                             	{ display:block;}
 .top-msg +.mainlogo                             { margin-top:-73px;}
-.top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em; font-weight:bold; border:0 none; color:#fff; text-decoration:none;}
+.top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em;  border:0 none; color:#fff; text-decoration:none;}
 .top-msg .close:hover                           { color:#000;}
 .top-msg.success                             	{ background-color:#77C596; color: #fff}
 .top-msg.error                              	{ background-color:#EF4F54; color: #fff}
@@ -55,7 +55,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .two-cols .lt                                   { float:left; width:400px;}
 .two-cols-blog .rt                              { float:right; width:220px; margin-left:80px; padding-right:65px;}
 .two-cols-blog .lt 	                            { overflow:hidden;}
-.container h2									{ font-weight:700; font-size:1.308em; margin-bottom:1em; }
+.container h2									{ font-weight:normal; font-size:1.308em; margin-bottom:1em; }
 .container h3                    				{ font-weight:normal; margin-bottom:1em; }
 .container h2 em 								{ color: #3582AC; font-style:normal; }
 /*.content a						                { border-bottom: 1px solid #F89A1C; text-decoration:none; color:#000; }
@@ -351,4 +351,61 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 
 .projects .details a.edit						{ float:right; margin-left:20px;  }
 .projects .details .data						{ overflow:hidden; }
+.projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
+
+
+/* quotas-form  */
+
+.quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
+.quotas-form fieldset legend span				{ color:#222; }
+.quotas-form .with-checkbox .checkbox-widget	{ margin-top:12px; } 
+.quotas-form .with-checkbox span.info 			{ bottom:22px; }
+.quotas-form input[type="submit"]				{ margin:15px 0; background-color:#B3B3B3 }
+.quotas-form input[type="submit"]:hover			{ background:#55B577 }
+.quotas-form input[type="submit"]:focus			{ border-color: #B3B3B3}
+.quotas-form input[type="submit"]:focus:hover	{ border-color: #55B577}
+.quotas-form fieldset ul						{ padding:0; margin:0 0 1em; }
+.quotas-form fieldset ul li						{ list-style:none outside none; float:left; padding:0 0 0 60px; margin:0; }
+.quotas-form fieldset ul li:first-child			{ padding-left:0; }
+.quotas-form fieldset ul li a					{ display:block; width:82px; height:82px; overflow:hidden; }
+.quotas-form fieldset ul li a:hover	img			{ margin-top:-151px; }
+.quotas-form fieldset ul li a.selected img		{ margin-top:-313px; }
+.quotas-form p.msg								{ color:#B3B3B3; }
+.quotas-form a.delete							{ position:absolute; right:0; top:0; color:#B3B3B3; z-index:2 }
+.quotas-form .group								{ display:none; position:relative; background:url(../images/dots.jpg) repeat-x scroll center bottom; margin-bottom:2em; padding-bottom:2em;}
+.quotas-form .group fieldset					{ background:transparent; margin-bottom:1em; padding-bottom:1em; }
+.quotas-form .group fieldset legend				{ margin-bottom:1em; padding-bottom:1em; }
+.quotas-form fieldset ul li.rel+li.rel			{ background:url(../images/quota-related-bg.png) no-repeat left center; }
+.quotas-form .double-checks label				{ font-size:1.077em; }
+.quotas-form .double-checks .form-row			{ float:left; margin-right:10px;}
+.quotas-form .double-checks .with-checkbox .checkbox-widget	{ left:0; }
+.quotas-form .double-checks .with-checkbox input[type="text"]	{ width:60px; float:left; margin:9px 15px -9px; display:none; padding:6px; }
+.quotas-form .double-checks .with-checkbox label{ width:auto; float:left; margin-left:35px; }
+.quotas-form .double-checks .with-checkbox input[type="text"].hideshow	{ display:block; }
+form.quotas-form legend span.info				{ top:0; bottom:auto; left:250px; }
+form.quotas-form legend span.info span			{ width:400px; }
+.quotas-form .with-checkbox+.with-checkbox		{ width:196px; }
+ 
+.stats ul										{ margin:0; padding:0; list-style:none outside none; }
+.stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}
+.stats .bar										{ padding:20px 0; text-align:center;  float:left; width:200px;}
+.stats .bar div									{ width:340px; height:30px; border:1px solid #000;}
+.stats .bar span								{ text-align:right; display:block; height:100%; color:#fff;  line-height:30px; font-size:1.231em; text-indent:50px;}
+.stats .red .bar span							{ background:#ef4f54; }
+.stats .yellow .bar span						{ background:#f6921e; }
+.stats .green .bar span							{ background:#55b577; }
+.stats .img-wrap								{ float:left; width:100px; background:url(../images/statistics_icons.png) no-repeat center center; padding:30px 0; }
+.stats .info									{ margin:0 25px ; width:320px; float:left;  }
+.stats .info p									{ color:#999; margin:0; }
+.stats .info h3									{ font-size:1.231em; color:#222222 }
+.stats .vm .img-wrap							{ background-image:url(../images/vm-stats.png) }
+.stats .ram .img-wrap							{ background-image:url(../images/ram-stats.png) }
+.stats .network .img-wrap						{ background-image:url(../images/network-stats.png) }
+.stats .disk .img-wrap							{ background-image:url(../images/disk-stats.png) }
+.stats .storage .img-wrap						{ background-image:url(../images/storage-stats.png) }
+.stats .bandwidth .img-wrap						{ background-image:url(../images/bandwidth-stats.png) }
+
+.stats .red .img-wrap							{ background-position: 15px 7px; }
+.stats .yellow .img-wrap						{ background-position: -124px 7px; }
+.stats .green .img-wrap							{ background-position: -263px 7px; }
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}

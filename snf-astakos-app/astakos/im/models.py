@@ -41,13 +41,15 @@ from base64 import b64encode
 from random import randint
 from collections import defaultdict
 
-from django.db import models
-from django.contrib.auth.models import User, UserManager, Group
+from django.db import models, IntegrityError
+from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models.signals import (pre_save, post_save, post_syncdb,
                                       post_delete)
+from django.contrib.contenttypes.models import ContentType
+
 from django.dispatch import Signal
 from django.db.models import Q
 
@@ -57,10 +59,19 @@ from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
 from astakos.im.endpoints.quotaholder import (register_users, send_quota,
                                               register_resources)
 from astakos.im.endpoints.aquarium.producer import report_user_event
-
+from astakos.im.functions import send_invitation
 from astakos.im.tasks import propagate_groupmembers_quota
+from astakos.im.functions import send_invitation
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_CONTENT_TYPE = None
+try:
+    content_type = ContentType.objects.get(app_label='im', model='astakosuser')
+except:
+    content_type = DEFAULT_CONTENT_TYPE
+
+RESOURCE_SEPARATOR = '.'
 
 
 class Service(models.Model):
@@ -76,7 +87,6 @@ class Service(models.Model):
     def save(self, **kwargs):
         if not self.id:
             self.renew_token()
-        self.full_clean()
         super(Service, self).save(**kwargs)
 
     def renew_token(self):
@@ -93,6 +103,26 @@ class Service(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def resources(self):
+        return self.resource_set.all()
+
+    @resources.setter
+    def resources(self, resources):
+        for s in resources:
+            self.resource_set.create(**s)
+    
+    def add_resource(self, service, resource, uplimit, update=True):
+        """Raises ObjectDoesNotExist, IntegrityError"""
+        resource = Resource.objects.get(service__name=service, name=resource)
+        if update:
+            AstakosUserQuota.objects.update_or_create(user=self,
+                                                      resource=resource,
+                                                      defaults={'uplimit': uplimit})
+        else:
+            q = self.astakosuserquota_set
+            q.create(resource=resource, uplimit=uplimit)
+
 
 class ResourceMetadata(models.Model):
     key = models.CharField('Name', max_length=255, unique=True, db_index=True)
@@ -103,9 +133,12 @@ class Resource(models.Model):
     name = models.CharField('Name', max_length=255, unique=True, db_index=True)
     meta = models.ManyToManyField(ResourceMetadata)
     service = models.ForeignKey(Service)
+    desc = models.TextField('Description', null=True)
+    unit = models.CharField('Name', null=True, max_length=255)
+    group = models.CharField('Group', null=True, max_length=255)
 
     def __str__(self):
-        return '%s.%s' % (self.service, self.name)
+        return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
 
 
 class GroupKind(models.Model):
@@ -185,7 +218,7 @@ class AstakosGroup(Group):
     def members(self):
         q = self.membership_set.select_related().all()
         return [m.person for m in q]
-
+    
     @property
     def approved_members(self):
         q = self.membership_set.select_related().all()
@@ -197,7 +230,34 @@ class AstakosGroup(Group):
         for q in self.astakosgroupquota_set.select_related().all():
             d[q.resource] += q.uplimit
         return d
+    
+    def add_policy(self, service, resource, uplimit, update=True):
+        """Raises ObjectDoesNotExist, IntegrityError"""
+        print '#', locals()
+        resource = Resource.objects.get(service__name=service, name=resource)
+        if update:
+            AstakosGroupQuota.objects.update_or_create(
+                group=self,
+                resource=resource,
+                defaults={'uplimit': uplimit}
+            )
+        else:
+            q = self.astakosgroupquota_set
+            q.create(resource=resource, uplimit=uplimit)
+    
+    @property
+    def policies(self):
+        return self.astakosgroupquota_set.select_related().all()
 
+    @policies.setter
+    def policies(self, policies):
+        for p in policies:
+            service = policies.get('service', None)
+            resource = policies.get('resource', None)
+            uplimit = policies.get('uplimit', 0)
+            update = policies.get('update', True)
+            self.add_policy(service, resource, uplimit, update)
+    
     @property
     def owners(self):
         return self.owner.all()
@@ -245,7 +305,7 @@ class AstakosUser(User):
 
     has_credits = models.BooleanField('Has credits?', default=False)
     has_signed_terms = models.BooleanField(
-        'Agree with the terms?', default=False)
+        'I agree with the terms', default=False)
     date_signed_terms = models.DateTimeField(
         'Signed terms date', null=True, blank=True)
 
@@ -263,6 +323,8 @@ class AstakosUser(User):
         through='Membership')
 
     __has_signed_terms = False
+    dirsturbed_quota = models.BooleanField('Needs quotaholder syncing',
+                                           default=False, db_index=True)
 
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
@@ -273,7 +335,7 @@ class AstakosUser(User):
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms
-        if not self.id:
+        if not self.id and not self.is_active:
             self.is_active = False
 
     @property
@@ -289,6 +351,21 @@ class AstakosUser(User):
         else:
             self.last_name = parts[0]
 
+    def add_permission(self, pname):
+        if self.has_perm(pname):
+            return
+        p, created = Permission.objects.get_or_create(codename=pname,
+                                                      name=pname.capitalize(),
+                                                      content_type=content_type)
+        self.user_permissions.add(p)
+
+    def remove_permission(self, pname):
+        if self.has_perm(pname):
+            return
+        p = Permission.objects.get(codename=pname,
+                                   content_type=content_type)
+        self.user_permissions.remove(p)
+
     @property
     def invitation(self):
         try:
@@ -296,12 +373,20 @@ class AstakosUser(User):
         except Invitation.DoesNotExist:
             return None
 
+    def invite(self, email, realname):
+        inv = Invitation(inviter=self, username=email, realname=realname)
+        inv.save()
+        send_invitation(inv)
+        self.invitations = max(0, self.invitations - 1)
+        self.save()
+
     @property
     def quota(self):
+        """Returns a dict with the sum of quota limits per resource"""
         d = defaultdict(int)
-        for q in self.astakosuserquota_set.select_related().all():
+        for q in self.policies:
             d[q.resource] += q.uplimit
-        for m in self.membership_set.select_related().all():
+        for m in self.extended_groups:
             if not m.is_approved:
                 continue
             g = m.group
@@ -309,9 +394,49 @@ class AstakosUser(User):
                 continue
             for r, uplimit in g.quota.iteritems():
                 d[r] += uplimit
-        
+
         # TODO set default for remaining
         return d
+
+    @property
+    def policies(self):
+        return self.astakosuserquota_set.select_related().all()
+
+    @policies.setter
+    def policies(self, policies):
+        for p in policies:
+            service = policies.get('service', None)
+            resource = policies.get('resource', None)
+            uplimit = policies.get('uplimit', 0)
+            update = policies.get('update', True)
+            self.add_policy(service, resource, uplimit, update)
+
+    def add_policy(self, service, resource, uplimit, update=True):
+        """Raises ObjectDoesNotExist, IntegrityError"""
+        resource = Resource.objects.get(service__name=service, name=resource)
+        if update:
+            AstakosUserQuota.objects.update_or_create(user=self,
+                                                      resource=resource,
+                                                      defaults={'uplimit': uplimit})
+        else:
+            q = self.astakosuserquota_set
+            q.create(resource=resource, uplimit=uplimit)
+
+    def remove_policy(self, service, resource):
+        """Raises ObjectDoesNotExist, IntegrityError"""
+        resource = Resource.objects.get(service__name=service, name=resource)
+        q = self.policies.get(resource=resource).delete()
+
+    @property
+    def extended_groups(self):
+        return self.membership_set.select_related().all()
+
+    @extended_groups.setter
+    def extended_groups(self, groups):
+        #TODO exceptions
+        for name in groups:
+            group = AstakosGroup.objects.get(name=name)
+            self.membership_set.create(group=group)
 
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
@@ -390,6 +515,10 @@ class AstakosUser(User):
             return False
         return True
 
+    def store_disturbed_quota(self, set=True):
+        self.disturbed_quota = set
+        self.save()
+
 
 class Membership(models.Model):
     person = models.ForeignKey(AstakosUser)
@@ -421,8 +550,37 @@ class Membership(models.Model):
         self.delete()
         quota_disturbed.send(sender=self, users=(self.person,))
 
+class AstakosQuotaManager(models.Manager):
+    def _update_or_create(self, **kwargs):
+        assert kwargs, \
+            'update_or_create() must be passed at least one keyword argument'
+        obj, created = self.get_or_create(**kwargs)
+        defaults = kwargs.pop('defaults', {})
+        if created:
+            return obj, True, False
+        else:
+            try:
+                params = dict(
+                    [(k, v) for k, v in kwargs.items() if '__' not in k])
+                params.update(defaults)
+                for attr, val in params.items():
+                    if hasattr(obj, attr):
+                        setattr(obj, attr, val)
+                sid = transaction.savepoint()
+                obj.save(force_update=True)
+                transaction.savepoint_commit(sid)
+                return obj, False, True
+            except IntegrityError, e:
+                transaction.savepoint_rollback(sid)
+                try:
+                    return self.get(**kwargs), False, False
+                except self.model.DoesNotExist:
+                    raise e
+
+    update_or_create = _update_or_create
 
 class AstakosGroupQuota(models.Model):
+    objects = AstakosQuotaManager()
     limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
     uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
@@ -431,8 +589,8 @@ class AstakosGroupQuota(models.Model):
     class Meta:
         unique_together = ("resource", "group")
 
-
 class AstakosUserQuota(models.Model):
+    objects = AstakosQuotaManager()
     limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
     uplimit = models.BigIntegerField('Up limit', null=True)
     resource = models.ForeignKey(Resource)
@@ -523,7 +681,7 @@ class EmailChangeManager(models.Manager):
 
 class EmailChange(models.Model):
     new_email_address = models.EmailField(_(u'new e-mail address'),
-        help_text=_(u'Your old email address will be used until you verify your new one.'))
+                                          help_text=_(u'Your old email address will be used until you verify your new one.'))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchange_user')
     requested_at = models.DateTimeField(default=datetime.now())
@@ -611,8 +769,7 @@ def astakosuser_pre_save(sender, instance, **kwargs):
     else:
         get = AstakosUser.__getattribute__
         l = filter(lambda f: get(db_instance, f) != get(instance, f),
-                   BILLING_FIELDS
-                   )
+                   BILLING_FIELDS)
         instance.aquarium_report = True if l else False
 
 
@@ -624,6 +781,7 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
+    instance.renew_token()
 
 
 def resource_post_save(sender, instance, created, **kwargs):
@@ -648,14 +806,13 @@ def send_quota_disturbed(sender, instance, **kwargs):
     elif sender == AstakosGroup:
         if not instance.is_enabled:
             return
-    quota_disturbed.send(sender=sender, users=users)
+    map(lambda u: u.store_disturbed_quota, users)
 
-
-def on_quota_disturbed(sender, users, **kwargs):
-    print '>>>', locals()
-    if not users:
-        return
-    send_quota(users)
+# def on_quota_disturbed(sender, users, **kwargs):
+#     print '>>>', locals()
+#     if not users:
+#         return
+#     send_quota(users)
 
 post_syncdb.connect(fix_superusers)
 post_save.connect(user_post_save, sender=User)
@@ -664,7 +821,7 @@ post_save.connect(astakosuser_post_save, sender=AstakosUser)
 post_save.connect(resource_post_save, sender=Resource)
 
 quota_disturbed = Signal(providing_args=["users"])
-quota_disturbed.connect(on_quota_disturbed)
+# quota_disturbed.connect(on_quota_disturbed)
 
 post_delete.connect(send_quota_disturbed, sender=AstakosGroup)
 post_delete.connect(send_quota_disturbed, sender=Membership)

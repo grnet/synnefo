@@ -33,6 +33,9 @@
 
 import logging
 import calendar
+import inflect
+
+engine = inflect.engine()
 
 from urllib import quote
 from functools import wraps
@@ -45,11 +48,11 @@ from django.contrib.auth.views import password_change
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
-<<<<<<< HEAD
 from django.db.utils import IntegrityError
 from django.forms.fields import URLField
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
-    HttpResponseRedirect, HttpResponseBadRequest, Http404
+from django.http import (HttpResponse, HttpResponseBadRequest,
+                         HttpResponseForbidden, HttpResponseRedirect,
+                         HttpResponseBadRequest, Http404)
 from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
@@ -60,9 +63,9 @@ from django.views.generic.list_detail import object_list, object_detail
 from django.http import HttpResponseBadRequest
 from django.core.xheaders import populate_xheaders
 
-from astakos.im.models import (
-    AstakosUser, ApprovalTerms, AstakosGroup, Resource,
-    EmailChange, GroupKind, Membership, AstakosGroupQuota)
+from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
+                               Resource, EmailChange, GroupKind, Membership,
+                               AstakosGroupQuota)
 from django.views.decorators.http import require_http_methods
 
 from astakos.im.activation_backends import get_backend, SimpleBackend
@@ -75,22 +78,23 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               AstakosGroupSortForm, MembersSortForm,
                               TimelineForm, PickResourceForm)
 from astakos.im.functions import (send_feedback, SendMailError,
-                                  invite as invite_func, logout as auth_logout,
+                                  logout as auth_logout,
                                   activate as activate_func,
                                   switch_account_to_shibboleth,
-                                  send_admin_notification,
+                                  send_group_creation_notification,
                                   SendNotificationError)
 from astakos.im.endpoints.quotaholder import timeline_charge
-from astakos.im.settings import (
-    COOKIE_NAME, COOKIE_DOMAIN, SITENAME, LOGOUT_NEXT,
-    LOGGING_LEVEL, PAGINATE_BY)
+from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
+                                 LOGGING_LEVEL, PAGINATE_BY)
 from astakos.im.tasks import request_billing
+from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
 
 logger = logging.getLogger(__name__)
 
 
 DB_REPLACE_GROUP_SCHEME = """REPLACE(REPLACE("auth_group".name, 'http://', ''),
                                      'https://', '')"""
+
 
 def render_response(template, tab=None, status=200, reset_cookie=False,
                     context_instance=None, **kwargs):
@@ -220,9 +224,10 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
         if inviter.invitations > 0:
             if form.is_valid():
                 try:
-                    invitation = form.save()
-                    invite_func(invitation, inviter)
-                    message = _('Invitation sent to %s' % invitation.username)
+                    email = form.cleaned_data.get('username')
+                    realname = form.cleaned_data.get('realname')
+                    inviter.invite(email, realname)
+                    message = _('Invitation sent to %s' % email)
                     messages.success(request, message)
                 except SendMailError, e:
                     message = e.message
@@ -475,7 +480,8 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         return response
     messages.success(request, _('You have successfully logged out.'))
     context = get_context(request, extra_context)
-    response.write(template_loader.render_to_string(template, context_instance=context))
+    response.write(
+        template_loader.render_to_string(template, context_instance=context))
     return response
 
 
@@ -569,6 +575,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
             pass
 
     if not term:
+        messages.error(request, 'There are no approval terms.')
         return HttpResponseRedirect(reverse('index'))
     f = open(term.location, 'r')
     terms = f.read()
@@ -601,6 +608,7 @@ def change_password(request):
     return password_change(request,
                            post_change_redirect=reverse('edit_profile'),
                            password_change_form=ExtendedPasswordChangeForm)
+
 
 @require_http_methods(["GET", "POST"])
 @login_required
@@ -700,14 +708,13 @@ def group_add(request, kind_name='default'):
 
             # send notification
             try:
-                send_admin_notification(
+                send_group_creation_notification(
                     template_name='im/group_creation_notification.txt',
                     dictionary={
                         'group': new_object,
                         'owner': request.user,
                         'policies': policies,
-                    },
-                    subject='%s alpha2 testing group creation notification' % SITENAME
+                    }
                 )
             except SendNotificationError, e:
                 messages.error(request, e, fail_silently=True)
@@ -767,7 +774,7 @@ def group_list(request):
             d['own'].append(g)
         else:
             d['other'].append(g)
-    
+
     # validate sorting
     fields = ('own', 'other')
     for f in fields:
@@ -777,7 +784,7 @@ def group_list(request):
             if not form.is_valid():
                 globals()['%s_sorting' % f] = form.cleaned_data.get('sort_by')
     return object_list(request, queryset=none,
-                       extra_context={'is_search':False,
+                       extra_context={'is_search': False,
                                       'mine': d['own'],
                                       'other': d['other'],
                                       'own_sorting': own_sorting,
@@ -804,7 +811,7 @@ def group_detail(request, group_id):
                         THEN 1 ELSE 0 END""" % request.user.id,
         'kindname': """SELECT name FROM im_groupkind
                        WHERE id = im_astakosgroup.kind_id"""})
-    
+
     model = q.model
     context_processors = None
     mimetype = None
@@ -813,13 +820,13 @@ def group_detail(request, group_id):
     except AstakosGroup.DoesNotExist:
         raise Http404("No %s found matching the query" % (
             model._meta.verbose_name))
-    
+
     update_form = AstakosGroupUpdateForm(instance=obj)
     addmembers_form = AddGroupMembersForm()
     if request.method == 'POST':
         update_data = {}
         addmembers_data = {}
-        for k,v in request.POST.iteritems():
+        for k, v in request.POST.iteritems():
             if k in update_form.fields:
                 update_data[k] = v
             if k in addmembers_form.fields:
@@ -833,20 +840,21 @@ def group_detail(request, group_id):
         if addmembers_form.is_valid():
             map(obj.approve_member, addmembers_form.valid_users)
             addmembers_form = AddGroupMembersForm()
-    
-    template_name = "%s/%s_detail.html" % (model._meta.app_label, model._meta.object_name.lower())
+
+    template_name = "%s/%s_detail.html" % (
+        model._meta.app_label, model._meta.object_name.lower())
     t = template_loader.get_template(template_name)
     c = RequestContext(request, {
         'object': obj,
     }, context_processors)
-    
+
     # validate sorting
-    sorting= request.GET.get('sorting')
+    sorting = request.GET.get('sorting')
     if sorting:
         form = MembersSortForm({'sort_by': sorting})
         if form.is_valid():
             sorting = form.cleaned_data.get('sort_by')
-         
+
     extra_context = {'update_form': update_form,
                      'addmembers_form': addmembers_form,
                      'page': request.GET.get('page', 1),
@@ -857,7 +865,8 @@ def group_detail(request, group_id):
         else:
             c[key] = value
     response = HttpResponse(t.render(c), mimetype=mimetype)
-    populate_xheaders(request, response, model, getattr(obj, obj._meta.pk.name))
+    populate_xheaders(
+        request, response, model, getattr(obj, obj._meta.pk.name))
     return response
 
 
@@ -877,23 +886,23 @@ def group_search(request, extra_context=None, **kwargs):
         queryset = queryset.filter(name__contains=q)
         queryset = queryset.filter(approval_date__isnull=False)
         queryset = queryset.extra(select={
-                'groupname': DB_REPLACE_GROUP_SCHEME,
-                'kindname': "im_groupkind.name",
-                'approved_members_num': """
+                                  'groupname': DB_REPLACE_GROUP_SCHEME,
+                                  'kindname': "im_groupkind.name",
+                                  'approved_members_num': """
                     SELECT COUNT(*) FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND date_joined IS NOT NULL""",
-                'membership_approval_date': """
+                                  'membership_approval_date': """
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s""" % request.user.id,
-                'is_member': """
+                                  'is_member': """
                     SELECT CASE WHEN EXISTS(
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s)
                     THEN 1 ELSE 0 END""" % request.user.id,
-                'is_owner': """
+                                  'is_owner': """
                     SELECT CASE WHEN EXISTS(
                     SELECT id FROM im_astakosuser_owner
                     WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
@@ -914,6 +923,7 @@ def group_search(request, extra_context=None, **kwargs):
                            is_search=True,
                            q=q,
                            sorting=sorting))
+
 
 @signed_terms_required
 @login_required
@@ -942,14 +952,14 @@ def group_all(request, extra_context=None, **kwargs):
         # TODO check sorting value
         q = q.order_by(sorting)
     return object_list(
-                request,
-                q,
-                paginate_by=PAGINATE_BY,
-                page=request.GET.get('page') or 1,
-                template_name='im/astakosgroup_list.html',
-                extra_context=dict(form=AstakosGroupSearchForm(),
-                                   is_search=True,
-                                   sorting=sorting))
+        request,
+        q,
+        paginate_by=PAGINATE_BY,
+        page=request.GET.get('page') or 1,
+        template_name='im/astakosgroup_list.html',
+        extra_context=dict(form=AstakosGroupSearchForm(),
+                           is_search=True,
+                           sorting=sorting))
 
 
 @signed_terms_required
@@ -1043,22 +1053,74 @@ def disapprove_member(request, membership):
 @signed_terms_required
 @login_required
 def resource_list(request):
-    if request.method == 'POST':
-        form = PickResourceForm(request.POST)
-        if form.is_valid():
-            r = form.cleaned_data.get('resource')
-            if r:
-                groups = request.user.membership_set.only('group').filter(
-                    date_joined__isnull=False)
-                groups = [g.group_id for g in groups]
-                q = AstakosGroupQuota.objects.select_related().filter(
-                    resource=r, group__in=groups)
+#     if request.method == 'POST':
+#         form = PickResourceForm(request.POST)
+#         if form.is_valid():
+#             r = form.cleaned_data.get('resource')
+#             if r:
+#                 groups = request.user.membership_set.only('group').filter(
+#                     date_joined__isnull=False)
+#                 groups = [g.group_id for g in groups]
+#                 q = AstakosGroupQuota.objects.select_related().filter(
+#                     resource=r, group__in=groups)
+#     else:
+#         form = PickResourceForm()
+#         q = AstakosGroupQuota.objects.none()
+#
+#     return object_list(request, q,
+#                        template_name='im/astakosuserquota_list.html',
+#                        extra_context={'form': form, 'data':data})
+
+    def with_class(entry):
+        entry['load_class'] = 'red'
+        max_value = float(entry['maxValue'])
+        curr_value = float(entry['currValue'])
+        entry['ratio'] = (curr_value / max_value) * 100
+        if entry['ratio'] < 66:
+            entry['load_class'] = 'yellow'
+        if entry['ratio'] < 33:
+            entry['load_class'] = 'green'
+
+        return entry
+
+    def pluralize(entry):
+        entry['plural'] = engine.plural(entry.get('name'))
+        return entry
+
+    c = AstakosDjangoDBCallpoint()
+    try:
+        data = c.get_user_status(request.user.id)
+    except Exception, e:
+        data = None
+        messages.error(request, e)
     else:
-        form = PickResourceForm()
-        q = AstakosGroupQuota.objects.none()
-    return object_list(request, q,
-                       template_name='im/astakosuserquota_list.html',
-                       extra_context={'form': form})
+        backenddata = map(with_class, data)
+        data = map(pluralize, data)
+    return render_response('im/resource_list.html',
+                           data=data,
+                           context_instance=get_context(request))
+
+def group_create_demo(request):
+    
+    resource_catalog = {
+        'groups': {
+            'compute': {
+                'cyclades.vm':  { 'unit': 'number' }, 
+                'cyclades.ram': { 'unit': 'bytes' }, 
+                'cyclades.cpu': { 'unit': 'number' }
+            },
+            'storage': {
+                'pithos.diskspace' : { 'unit': 'mebibytes' }
+            }
+        }
+    }
+    
+    
+    return render_response(
+        template='im/astakosgroup_form_demo.html',
+        context_instance=get_context(request),
+        resource_catalog=resource_catalog,
+        groups=resource_catalog['groups'] )
 
 
 def group_create_list(request):
@@ -1071,64 +1133,64 @@ def group_create_list(request):
 @signed_terms_required
 @login_required
 def billing(request):
-    
+
     today = datetime.today()
-    month_last_day= calendar.monthrange(today.year, today.month)[1]
-    
+    month_last_day = calendar.monthrange(today.year, today.month)[1]
+    data['resources'] = map(with_class, data['resources'])
     start = request.POST.get('datefrom', None)
     if start:
         today = datetime.fromtimestamp(int(start))
-        month_last_day= calendar.monthrange(today.year, today.month)[1]
-    
+        month_last_day = calendar.monthrange(today.year, today.month)[1]
+
     start = datetime(today.year, today.month, 1).strftime("%s")
     end = datetime(today.year, today.month, month_last_day).strftime("%s")
     r = request_billing.apply(args=('pgerakios@grnet.gr',
                                     int(start) * 1000,
                                     int(end) * 1000))
     data = {}
-    
+
     try:
         status, data = r.result
-        data=_clear_billing_data(data)
+        data = _clear_billing_data(data)
         if status != 200:
             messages.error(request, _('Service response status: %d' % status))
     except:
         messages.error(request, r.result)
-    
+
     print type(start)
-    
+
     return render_response(
         template='im/billing.html',
         context_instance=get_context(request),
         data=data,
-        zerodate=datetime(month=1,year=1970, day=1),
+        zerodate=datetime(month=1, year=1970, day=1),
         today=today,
         start=int(start),
-        month_last_day=month_last_day)  
-    
+        month_last_day=month_last_day)
+
+
 def _clear_billing_data(data):
-    
+
     # remove addcredits entries
     def isnotcredit(e):
         return e['serviceName'] != "addcredits"
-    
-    
-    
-    # separate services    
+
+    # separate services
     def servicefilter(service_name):
         service = service_name
+
         def fltr(e):
             return e['serviceName'] == service
         return fltr
-        
-    
+
     data['bill_nocredits'] = filter(isnotcredit, data['bill'])
     data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
     data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
         
-    return data    
-
+    return data
+     
+     
 @signed_terms_required
 @login_required
 def timeline(request):
@@ -1146,13 +1208,13 @@ def timeline(request):
                                'event name', 'event date',
                                'incremental cost', 'total cost')
             timeline_body = timeline_charge(
-                                    data['entity'],     data['resource'],
-                                    data['start_date'], data['end_date'],
-                                    data['details'],    data['operation'])
-        
+                data['entity'], data['resource'],
+                data['start_date'], data['end_date'],
+                data['details'], data['operation'])
+
     return render_response(template='im/timeline.html',
                            context_instance=get_context(request),
                            form=form,
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
-    return data
+    return data 

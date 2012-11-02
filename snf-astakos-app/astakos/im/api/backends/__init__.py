@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,19 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
-
-from astakos.im.models import AstakosUser, Resource
-from astakos.im.endpoints.quotaholder import register_users, register_resources
+from astakos.im.api.backends.lib.django import DjangoBackend
 
 
-class Command(BaseCommand):
-    help = "Send user information and resource quota in the Quotaholder"
-
-    def handle(self, *args, **options):
-        try:
-            register_resources(Resource.objects.all())
-            register_users(AstakosUser.objects.all())
-        except BaseException, e:
-            raise CommandError("Bootstrap failed.")
+def get_backend():
+    return DjangoBackend()

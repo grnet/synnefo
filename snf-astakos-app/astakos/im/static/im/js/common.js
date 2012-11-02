@@ -229,6 +229,12 @@ $(document).ready(function() {
 		$(this).hide();
 	})
 	
+	$('.stats .bar').each(function(){
+		h=parseInt($(this).parent('li').height());
+		g=(h-32)/2;
+		$(this).css('marginTop',g)
+	})
+	
 	
 });
 

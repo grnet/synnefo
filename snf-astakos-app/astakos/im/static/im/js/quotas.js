@@ -10,7 +10,7 @@ $(document).ready(function() {
 				if( $(this).hasClass(id) ) {
 					$(this).appendTo('.foo');
 					$(this).show('slow');
-					$(this).find('input')[0].focus();
+					$(this).find('input')[0].focus()
 				}
 			});
 		}   
@@ -25,8 +25,8 @@ $(document).ready(function() {
 		$(this).siblings('fieldset').find('input[type="checkbox"].limited').removeAttr('checked');  
 		$(this).siblings('fieldset').find('input[type="checkbox"].unlimited').attr('checked','checked');  
 		$(this).siblings('fieldset').find('.double-checks input[type="text"]').removeClass('hideshow');
-		$(this).parents('.group').appendTo('.not-foo');	
 		$(this).parents('.group').hide('slow');
+		$(this).parents('.group').appendTo('.not-foo');	
 		groupClass = $(this).parents('.group').attr('class').replace('group ', '');
 		$('.quotas-form ul li a').each(function() {
 			if($(this).attr('id')==groupClass) {
@@ -41,13 +41,12 @@ $(document).ready(function() {
 		
 	$('.quotas-form .checkbox-widget.limited').click(function(e){
 		e.preventDefault();
-		$(this).siblings('input[type="text"]').toggleClass('hideshow');
+		$(this).siblings('input[type="text"]').toggle();
 		$(this).siblings('input[type="text"]').focus();
 	 	parentdiv = $(this).parents('.form-row').prev('.form-row');
 	 	parentdiv.find('input[type="checkbox"].unlimited').removeAttr('checked');  
 	 	parentdiv.find('.checkbox-widget').removeClass('checked');
-	 		
-	 	
+	 	checkTextInput();
 	});
 	
 	$('.quotas-form .checkbox-widget.unlimited').click(function(e){
@@ -55,9 +54,12 @@ $(document).ready(function() {
 		parentdiv.find('.checkbox-widget').removeClass('checked');
 		parentdiv.find('input[type="checkbox"].limited').removeAttr('checked');  
 		parentdiv.find('input[type="text"]').val('');	
-		parentdiv.find('input[type="text"]').removeClass('hideshow');	
+		parentdiv.find('input[type="text"]').hide();	
 		
 		
 	})
+	
+	
+	
 	
 });

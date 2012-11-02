@@ -193,11 +193,12 @@ class HighLevelAPI(object):
         return group_node_name
 
 
-    @method_accepts(str, str, int, int, int)
+    @method_accepts(str, str, int, int, int, int)
     @returns(str)
     def group_define_resource(self,
                               group_node_name,
                               resource_node_name,
+                              limit_this_group,
                               limit_per_user,
                               bucket_quantity,
                               bucket_capacity):
@@ -207,23 +208,41 @@ class HighLevelAPI(object):
         check_node_name(group_node_name)
         check_node_name(resource_node_name)
 
-        # 1. Create a definitional resource node under the group.
-        #    This resource defines the limit per user.
-        #    E.g. A resource named 'pithos+' gives rise to a resource/node named 'def_pithos+'
         last_resource_node_name = self.last_part_of_node_name(resource_node_name)
-        def_last_resource_node_name = 'def_%s' % (last_resource_node_name,)
-        def_resource_node_name = self.normalize_child_node_name(
-            def_last_resource_node_name,
+
+        # 1. Create a per-this-group definitional resource node under the group.
+        #    This resource defines the limit for this group.
+        #    E.g. A resource named 'pithos+' gives rise to a resource/node named 'def_thisgroup_pithos+'
+        def_thisgroup_last_resource_node_name = 'def_thisgroup_%s' % (last_resource_node_name,)
+        def_thisgroup_resource_node_name = self.normalize_child_node_name(
+            def_thisgroup_last_resource_node_name,
             group_node_name
         )
-        if not self.qh_has_node(def_resource_node_name):
-            def_resource_node_name = self.qh_create_node(def_resource_node_name)
+        if not self.qh_has_node(def_thisgroup_resource_node_name):
+            def_peruser_resource_node_name = self.qh_create_node(def_thisgroup_resource_node_name)
+            # TODO: make policy with the limit
+
+        # 2. Create a per-user definitional resource node under the group.
+        #    This resource defines the limit per user.
+        #    E.g. A resource named 'pithos+' gives rise to a resource/node named 'def_peruser_pithos+'
+        def_peruser_last_resource_node_name = 'def_peruser_%s' % (last_resource_node_name,)
+        def_peruser_resource_node_name = self.normalize_child_node_name(
+            def_peruser_last_resource_node_name,
+            group_node_name
+        )
+        if not self.qh_has_node(def_peruser_resource_node_name):
+            def_peruser_resource_node_name = self.qh_create_node(def_peruser_resource_node_name)
         # TODO: make policy with the limit
 
-        # 2. Create the operational resource node under the group.
+        # 3. Create the operational resource node under the group.
         #    This resource is a big bucket with the operational quantity and capacity.
         #    Everything is put into and out of this bucket.
-
+        bucket_last_resource_node_name = 'bucket_%s' % (last_resource_node_name,)
+        bucket_resource_node_name = self.normalize_child_node_name(
+            bucket_last_resource_node_name,
+            group_node_name
+        )
+        # TODO: make policy with the quantity + capacity
 
 
 

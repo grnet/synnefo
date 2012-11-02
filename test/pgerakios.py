@@ -1,10 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import sys
 import os
 from commissioning.clients.http import HTTP_API_Client, init_logger_stderr
 from commissioning import QuotaholderAPI
 import random
+import copy
 import inspect
+
 
 init_logger_stderr('mylogger', level='INFO')
 
@@ -120,6 +122,14 @@ class Policy(Config):
     PolicyState = enum('NOT_EXISTS', 'EXISTS', 'DUMMY')
 
     policies = {}
+
+    @staticmethod
+    def copy(policy):
+        return copy.deepcopy(policy)
+
+    @staticmethod
+    def union(policy1,policy2):
+        return copy(policy1)
 
     @staticmethod
     def get(name):
@@ -255,6 +265,10 @@ class Resource(Config):
     ResourceState = enum('DIRTY', 'LOADED')
 
     @staticmethod
+    def copy(resource):
+        return copy.copy(resource)
+
+    @staticmethod
     def allDirty(resourceList):
         for r in resourceList:
             r.setDirty()
@@ -327,7 +341,7 @@ class Resource(Config):
         else:
             il2 = [(r.entity.entityName,r.resourceName,r.entity.entityKey,r.policy.policyName) for r in rl2]
             ol2 = Resource.con().set_holding(context=Resource.Context,set_holding=il2)
-            
+
         rejectedList = []
 
 
@@ -396,6 +410,9 @@ class Resource(Config):
         self.policy = policy
         self.setDirty(True)
 
+    def setFromPolicy(self):
+        self.set(quantity=self.policy.quantity,capacity=self.policy.capacity)
+
     def quantity(self, query=False):
         if(query):
             self.load()
@@ -404,6 +421,8 @@ class Resource(Config):
 
 
     def load(self,dirtyOnly=True):
+        if(not self.policy.isDummy()):
+            self.policy.load()
         return Resource.loadMany([self],dirtyOnly) == []
 
     def save(self,dirtyOnly=True):
@@ -454,6 +473,11 @@ class Commission(Config):
         return not (self.__eq__(other))
 
 
+    def inverse(self):
+        ret = copy.copy(self)
+        ret.resources_quant = [(r,-q) for r,q in ret.resources_quant]
+        return ret
+
     def canChange(self):
         return self.state == Commission.CommissionState.NOT_ISSUED
 
@@ -502,19 +526,24 @@ class Entity(Config):
     allEntities = {}
 
     @staticmethod
-    def get(name="", key="", parent=None):
+    def getClass(className,name="", key="", parent=None):
         e = Entity.allEntities.get(name)
         if(e == None):
-            e = Entity()
+            e = locals()[className]()
             if(name == "system" or name == ""):
                 e.set("system", "", None)
             else:
                 cexn(parent == None, "Entity.get of a non-existent entity with name {0} and no parent.", name)
-                cexn(not isinstance(parent, Entity), "Entity.get parent of {0} is not an Entity!", name)
+                #cexn(not isinstance(parent, Entity), "Entity.get parent of {0} is not an Entity!", name)
                 e.set(name, key, parent)
             Entity.allEntities[name] = e
 
         return e
+
+    @staticmethod
+    def get(name="", key="", parent=None):
+        Entity.get("Entity",name,key,parent)
+
 
     @staticmethod
     def list():
@@ -592,6 +621,10 @@ class Entity(Config):
     def _check(self):
     #       cexn(self != Entity.allEntities.get(self.entityName),"Entity {0} does not exist in global dict",self.entityName)
         pass
+
+    def getChildren(self):
+        list = Entity.con().list_entities(context=Entity.Context,entity=self.entityName,key=self.entityKey)
+        return [Entity.get(e,"",self) for e in list]
 
     def reset(self):
         self.set(None, None, None)
@@ -682,6 +715,201 @@ class Entity(Config):
             return Commission.saveAll(valid) == []
         else:
             return Commission.denyAll(valid) == []
+
+
+    def clearFinished(self):
+        self.commissions = [c for c in self.commissions() if(c.canChange())]
+
+#########################################################################################################
+
+class ResourceHolder(Entity):
+
+    root = Entity.get("pgerakios", "key1",Entity.get())
+    resourceNames = ["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
+
+    def __init__(self):
+        super(Entity,self).__init__()
+        self.commission = Commission(self)
+        for r in ResourceHolder.resourceNames:
+            self.addResource(r)
+
+    def newCommission(self):
+        self.commission = Commission(self)
+        return self.commission
+
+    def loadResources(self):
+        self.getResource(True)
+
+    def commit(self):
+        self.issue()
+        return self.commission.accept()
+
+    def reject(self):
+        self.issue()
+        return self.commission.reject()
+
+    def release(self):
+        if(not self.commission.canChange()):
+            exn("The joinGroup commission is not finalized! Nothing to do.")
+            # commit the inverse stuff (send stuff back to groups)
+        self.commission = self.commission.inverse()
+        b = self.commit()
+        self.newCommission()
+        # Remove entity
+        return b and super(ResourceHolder,self).release()
+
+class Group(ResourceHolder):
+
+    groupRoot =   Entity.getClass("Group","group","group",ResourceHolder.root)
+    systemGroupName = "system"
+    systemGroupKey  = "system"
+
+    @staticmethod
+    def getSystemGroup(self):
+        return Group.get(Group.systemGroupName,Group.systemGroupKey)
+
+    @staticmethod
+    def listGroups():
+        return Group.groupRoot.getChildren()
+
+    @staticmethod
+    def get(name,key):
+        ret = Entity.getClass("Group",name,key,Group.groupRoot)
+        if(name == Group.systemGroupName):
+            ret.makeSystem()
+        elif(ret.exists(True) == False):
+            ret.drawResources()
+        return ret
+
+    def __init__(self):
+        super(ResourceHolder,self).__init__()
+        self.users = []
+        self.userResourcePolicies = {}
+        self.initializedSystem = False
+
+        # load policies for groups
+        self.loadGroupResourcePolicies()
+        # load policies for users
+        self.loadUserResourcePolicies()
+
+    def loadGroupResourcePolicies(self):
+        for r in self.getResources():
+            r.policy.load()
+
+    def loadUserResourcePolicies(self):
+        for r in self.resourceNames:
+            self.userResourcePolicies[r] = Policy.get("{0}.{1}".format(self.entityName,r))
+
+
+    def getUserPolicyFor(self,resourceName):
+        return self.userResourcePolicies[resourceName]
+
+    def getUserPolicies(self):
+        return self.userResourcePolicies
+
+    def makeSystem(self):
+        if(self.initializedSystem):
+            return
+        #TODO: create system resources here
+        self.initializedSystem = True
+
+
+    def drawResources(self):
+        for r in self.getResources():
+            self.commission.addResource(r,r.policy.quantity)
+        #
+        self.commission.commit()
+
+    def savePolicyQuantities(self,**kwargs):
+        res  = self.getResources()
+        policies = []
+        for name,quantity in kwargs:
+            r = self.getResource(name)
+            r.policy.quantity = quantity
+            policies.append(r)
+        Policy.save(policies)
+
+
+class User(ResourceHolder):
+
+    userRoot = Entity.getClass("User","user","user",ResourceHolder.root)
+
+    @staticmethod
+    def listUsers():
+        return User.userRoot.getChildren()
+
+    @staticmethod
+    def get(name,key):
+        return Entity.getClass("User",name,key,User.userRoot)
+
+    def __init__(self):
+        super(ResourceHolder,self).__init__(None)
+        self.groups = []
+        self.loadPolicy()
+
+
+    def reload(self):
+        # order does matter!
+        self.clearFinished()
+        self.reject()
+        self.loadResources()
+        self.loadPolicies()
+
+    def loadPolices(self):
+        dict = {}
+        for g in self.groups:
+            for r in self.resourceNames:
+                p = g.getUserPolicyFor(r.name)
+                if(dict[r.name] == None):
+                    dict[r.name] = Policy.copy(p)
+                else:
+                    dict[r.name] = Policy.union(dict[r.name],p)
+
+        # Change user policy to dummy !!! its a copy of the group policy so
+        # we can modify its fields
+        for r in  self.getResources():
+            dict[r.name].setDummy(True)
+            r.setPolicy(dict[r.name])
+            ## FIXME: THIS IS NOT CORRECT
+            r.setFromPolicy()
+
+
+    def joinGroup(self,group):
+        self.groups.append(group)
+        self.groups.users.append(self)
+        #
+        for r in self.getResources():
+            groupUserPolicy = group.getUserPolicyFor(r.resourceName)
+            self.commission.addResource(r,groupUserPolicy.quantity)
+        self.commit()
+
+
+# Main program
+
+try:
+
+    # Group1
+    group1 = Group.get("group1","group1")
+
+    #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
+    group1.savePolicyQuantities('pithos'=10,'cyclades.vm'=2,'cyclades.mem'=3)
+
+
+    user1 = User.get("prodromos", "key1")
+    user1.joinGroup(group1)
+
+finally:
+    for e in Entity.list():
+        if(e.entityName != "system" and e.entityName != "pgerakios"):
+            e.release()
+
+
+
+
+
+printf("Hello world!")
+
+exit(0)
 
 
 # Main program

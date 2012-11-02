@@ -98,6 +98,10 @@ APPEND_SLASH = False
 #
 IGNORE_FLAVOR_DISK_SIZES = False
 
+# Fixed mapping of user VMs to a specific backend.
+# e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
+BACKEND_PER_USER = {}
+
 # Quota
 #
 # Maximum number of VMs a user is allowed to have.

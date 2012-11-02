@@ -257,7 +257,7 @@ def create_server(request):
             raise faults.OverLimit("Server count limit exceeded for your account.")
 
         backend_allocator = BackendAllocator()
-        backend = backend_allocator.allocate(flavor)
+        backend = backend_allocator.allocate(request.user_uniq, flavor)
 
         if backend is None:
             log.error("No available backends for VM with flavor %s", flavor)

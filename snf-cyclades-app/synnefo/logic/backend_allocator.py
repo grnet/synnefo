@@ -31,7 +31,8 @@ import logging
 import datetime
 from django.utils import importlib
 
-from synnefo import settings
+from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
+                              BACKEND_PER_USER)
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
 from synnefo.api.util import backend_public_networks
@@ -45,9 +46,9 @@ class BackendAllocator():
     """
     def __init__(self):
         self.strategy_mod =\
-            importlib.import_module(settings.BACKEND_ALLOCATOR_MODULE)
+            importlib.import_module(BACKEND_ALLOCATOR_MODULE)
 
-    def allocate(self, flavor):
+    def allocate(self, userid, flavor):
         """Allocate a vm of the specified flavor to a backend.
 
         Warning!!: An explicit commit is required after calling this function,
@@ -55,6 +56,12 @@ class BackendAllocator():
         function.
 
         """
+
+        backend = None
+        backend = get_backend_for_user(userid)
+        if backend:
+            return backend
+
         # Get the size of the vm
         disk = flavor_disk(flavor)
         ram = flavor.ram
@@ -138,9 +145,30 @@ def refresh_backends_stats(backends):
     """
 
     now = datetime.datetime.now()
-    delta = datetime.timedelta(minutes=settings.BACKEND_REFRESH_MIN)
+    delta = datetime.timedelta(minutes=BACKEND_REFRESH_MIN)
     for b in backends:
         if now > b.updated + delta:
             log.debug("Updating resources of backend %r. Last Updated %r",
                       b, b.updated)
             update_resources(b)
+
+
+def get_backend_for_user(userid):
+    """Find fixed Backend for user based on BACKEND_PER_USER setting."""
+
+    backend = BACKEND_PER_USER.get(userid)
+
+    if not backend:
+        return None
+
+    try:
+        try:
+            backend_id = int(backend)
+            return Backend.objects.get(id=backend_id)
+        except ValueError:
+            pass
+
+        backend_name = str(backend)
+        return Backend.objects.get(clustername=backend_name)
+    except Backend.DoesNotExist:
+        log.error("Invalid backend %s for user %s", backend, userid)

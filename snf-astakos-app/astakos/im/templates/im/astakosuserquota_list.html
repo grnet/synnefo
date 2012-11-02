@@ -14,7 +14,13 @@
     				<h3>{{ r.description }}</h3>
     				<p>
     					{{ r.ratio|floatformat }}% Used<br>
-    					You are using {{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }}{{ r.unit }} {{ r.plural|capfirst }} - Aouch!
+    					You are using {{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }}{{ r.unit }} 
+    					{% if r.maxValue == '1' %}
+    						{{ r.name|capfirst}}
+    					{% else %} 
+    						{{ r.plural|capfirst }}
+    					{% endif %}
+    					 - Aouch!
     				</p>
     			</div>
     			<div class="bar">

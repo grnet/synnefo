@@ -28,7 +28,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg p.title span	                        { border-bottom:2px dotted #fff; padding:0 0 10px 0;}
 .top-msg.active                             	{ display:block;}
 .top-msg +.mainlogo                             { margin-top:-73px;}
-.top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em; font-weight:bold; border:0 none; color:#fff; text-decoration:none;}
+.top-msg .close                                 { position:absolute; bottom:20px; right:20px; font-size:1.3em;  border:0 none; color:#fff; text-decoration:none;}
 .top-msg .close:hover                           { color:#000;}
 .top-msg.success                             	{ background-color:#77C596; color: #fff}
 .top-msg.error                              	{ background-color:#EF4F54; color: #fff}
@@ -357,9 +357,10 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 /* quotas-form  */
 
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
-.quotas-form fieldset legend					{ color:#55B577; font-size:1.308em; margin-bottom:2em; }
-.quotas-form .with-checkbox .checkbox-widget	{ margin-top:14px; } 
-.quotas-form .with-checkbox span.info 			{ bottom:19px; }
+.quotas-form fieldset legend					{ color:#55B577; font-size:1.154em; margin-bottom:3em; position:relative; }
+.quotas-form fieldset legend span				{ color:#222; }
+.quotas-form .with-checkbox .checkbox-widget	{ margin-top:12px; } 
+.quotas-form .with-checkbox span.info 			{ bottom:22px; }
 .quotas-form .form-row.submit					{ text-align:center; }
 .quotas-form input[type="submit"]				{ margin:15px 0; background-color:#B3B3B3 }
 .quotas-form input[type="submit"]:hover			{ background:#55B577 }
@@ -371,20 +372,23 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .quotas-form fieldset ul li a					{ display:block; width:82px; height:82px; overflow:hidden; }
 .quotas-form fieldset ul li a:hover	img			{ margin-top:-151px; }
 .quotas-form fieldset ul li a.selected img		{ margin-top:-313px; }
+.quotas-form fieldset ul li a.selected:focus	{ outline:0 none; }
 .quotas-form p.msg								{ color:#B3B3B3; }
-.quotas-form fieldset legend 					{ margin-bottom:1em; font-size:1.154em }
-.quotas-form a.delete							{ position:absolute; right:0; top:0; color:#B3B3B3; }
-.quotas-form .quota								{ display:none; }
+.quotas-form a.delete							{ position:absolute; right:0; top:0; color:#B3B3B3; z-index:2 }
+.quotas-form .group								{ display:none; position:relative; background:url(../images/dots.jpg) repeat-x scroll center bottom; margin-bottom:2em; padding-bottom:2em;}
+.quotas-form .group fieldset					{ background:transparent; margin-bottom:1em; padding-bottom:1em; }
+.quotas-form .group fieldset legend				{ margin-bottom:1em; padding-bottom:1em; }
 .quotas-form fieldset ul li.rel+li.rel			{ background:url(../images/quota-related-bg.png) no-repeat left center; }
-.quotas-form .quota	.with-checkbox input[type="text"] { width:100px; margin:10px 0 0; float:left;}
-.quotas-form .quota .with-checkbox label		{ position:absolute; left:0; top:0; }
-.quotas-form .quota .with-checkbox p			{ padding-left:224px; float:left; }
-.quotas-form .quota .double-checkbox			{ float:left; }
-.quotas-form .quota .double-checkbox + .double-checkbox label   { display:none; }
-.quotas-form .quota .double-checkbox + .double-checkbox p		{ padding-left:20px; }
-.quotas-form .quota .double-checkbox .checkbox-widget			{ position:static; }
-
-
+.quotas-form .double-checks label				{ font-size:1.077em; }
+.quotas-form .double-checks .form-row			{ float:left; margin-right:10px;}
+.quotas-form .double-checks .with-checkbox .checkbox-widget	{ left:0; }
+.quotas-form .double-checks .with-checkbox input[type="text"]	{ width:60px; float:left; margin:9px 15px -9px; display:none; padding:6px; }
+.quotas-form .double-checks .with-checkbox label{ width:auto; float:left; margin-left:35px; }
+.quotas-form .double-checks .with-checkbox input[type="text"].hideshow	{ display:block; }
+form.quotas-form legend span.info				{ top:0; bottom:auto; left:250px; }
+form.quotas-form legend span.info span			{ width:400px; }
+.quotas-form .with-checkbox+.with-checkbox		{ width:196px; }
+ 
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}

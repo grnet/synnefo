@@ -1050,8 +1050,8 @@ def resource_list(request):
             'name': 'vm',
             'description': 'Number Of Vms',
             'unit':'',
-            'maxValue':'100',
-            'currValue':'50'
+            'maxValue':'1',
+            'currValue':'1'
             },{
             'name': 'ram',
             'description':'Total Ram Usage',
@@ -1111,6 +1111,31 @@ def resource_list(request):
     return object_list(request, q,
                        template_name='im/astakosuserquota_list.html',
                        extra_context={'form': form, 'data':data})
+
+
+
+def group_create_demo(request):
+    
+    resource_catalog = {
+        'groups': {
+            'compute': {
+                'cyclades.vm':  { 'unit': 'number' }, 
+                'cyclades.ram': { 'unit': 'bytes' }, 
+                'cyclades.cpu': { 'unit': 'number' }
+            },
+            'storage': {
+                'pithos.diskspace' : { 'unit': 'mebibytes' }
+            }
+        }
+    }
+    
+    
+    return render_response(
+        template='im/astakosgroup_form_demo.html',
+        context_instance=get_context(request),
+        resource_catalog=resource_catalog,
+        groups=resource_catalog['groups'] )
+     
 
 
 def group_create_list(request):
@@ -1181,13 +1206,9 @@ def _clear_billing_data(data):
         
     return data
 
-def group_create_demo(request):
-    return render_response(
-        template='im/astakosgroup_form_demo.html',
-        context_instance=get_context(request))
-    
-    return data    
 
+     
+     
 @signed_terms_required
 @login_required
 def timeline(request):

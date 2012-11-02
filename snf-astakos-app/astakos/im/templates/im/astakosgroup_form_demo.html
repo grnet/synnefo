@@ -18,8 +18,8 @@
     	</legend>
     	<div class="form-row">
     		<p class="clearfix">
-    			<label for="id">ID</label>
-    			<input type="text" name="id">
+    			<label for="id_name">Name</label>
+    			<input type="text" name="name" id="id_name" autocomplete="off">
     			<span class="extra-img">&nbsp;</span>
          		<span class="info"> 
 			    	<em>more info</em>
@@ -30,8 +30,8 @@
     	<div class="form-row">
     		
     		<p class="clearfix">
-    			<label for="name">Name</label>
-    			<input type="text" name="name">
+    			<label for="id_homepage">Homepage Url</label>
+    			<input type="text" name="homepage" id="id_homepage" maxlength="255" autocomplete="off">
     			<span class="extra-img">&nbsp;</span>
          		<span class="info"> 
 			    	<em>more info</em>
@@ -42,8 +42,8 @@
     	</div>
     	<div class="form-row">
     		<p class="clearfix">
-    			<label for="description">Description</label>
-    			<textarea name="description"></textarea>
+    			<label for="id_desc">Description</label>
+    			<textarea id="id_desc" rows="10" cols="40" name="desc"></textarea>
     			<span class="extra-img">&nbsp;</span>
          		<span class="info"> 
 			    	<em>more info</em>
@@ -53,8 +53,8 @@
     	</div>
     	<div class="form-row">
     		<p class="clearfix">
-    			<label for="id_issue_date_demo">Issue Date</label>
-    			<input type="text" id="id_issue_date_demo" name="id_issue_date_demo" class="hasDatepicker">
+    			<label for="id_issue_date">Issue Date</label>
+    			<input type="text" id="id_issue_date" name="issue_date" class="hasDatepicker">
     			<span class="extra-img">&nbsp;</span>
          		<span class="info"> 
 			    	<em>more info</em>
@@ -65,8 +65,8 @@
     	
     	<div class="form-row">
     		<p class="clearfix">
-    			<label for="id_expiration_date_demo">Expiration Date</label>
-    			<input type="text" name="id_expiration_date_demo" id="id_expiration_date_demo" class="hasDatepicker">
+    			<label for="id_expiration_date">Expiration Date</label>
+    			<input type="text" name="expiration_date" id="id_expiration_date" class="hasDatepicker">
     			<span class="extra-img">&nbsp;</span>
          		<span class="info"> 
 			    	<em>more info</em>
@@ -76,7 +76,7 @@
     	</div>
     	<div class="form-row ">
 		     <p class="clearfix ">
-		        <label for="id_moderation_enabled">Modaration</label>
+		        <label for="id_moderation_enabled">Moderation</label>
 		        <input type="checkbox" id="id_moderation_enabled" name="moderation_enabled" autocomplete="off" style="display: none;">
 		        <span class="extra-img">&nbsp;</span>
 	          	<span class="info"> 
@@ -120,7 +120,7 @@
     		<li><a href="#vm_1" id="vm_1"><img src="/static/im/images/create-resource-vm.png" alt="vm"/></a></li>
     		<li><a href="#storage_1" id="storage_1"><img src="/static/im/images/create-resource-storage.png" alt="storage"/></a></li>
     	</ul>
-    	<p class="msg">if you choose CPU without selecting any VMs you must also select RAM and DISKSPACE</p>
+    	<!--p class="msg">if you choose CPU without selecting any VMs you must also select RAM and DISKSPACE</p-->
     </fieldset>
     <div class="foo">
     	
@@ -254,8 +254,7 @@
 		    			<p class="clearfix">
 		    				<label for="storage_per_user_limited">Limited</label>
 		    				<input type="checkbox" id="storage_per_user_limited" name="storage_per_user_limited" class="limited">
-		       				<input type="text" id="storage_user_limited_num"/>
-		       				 
+		       				<input type="text" id="storage_user_limited_num"/> 
 		    			</p>
 		    		</div>
 		    		

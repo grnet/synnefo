@@ -29,10 +29,8 @@ def printf(fmt, *args):
         print(fmt.format(*args))
     return 0
 
-
 def exn(fmt, *args):
     raise Exception(fmt.format(*args))
-
 
 def cexn(b, fmt, *args):
     if(b):
@@ -522,28 +520,22 @@ class Commission(Config):
 class Entity(Config):
     # static  field (in some sense --- if it is assigned it will create a new binding)
     EntityState = enum('NOT_EXISTS', 'EXISTS')
+    systemName = "system"
+    systemKey = ""
 
     allEntities = {}
 
     @staticmethod
-    def getClass(className,name="", key="", parent=None):
+    def get(name="",f=(lambda: Entity().set("system","",None))):
+        printf("get name {0}",name)
+        if(name == ""):
+            name = "system"
+        if( Entity.allEntities.get("system") == None):
+            Entity.allEntities[name] = Entity().set("system","",None)
         e = Entity.allEntities.get(name)
         if(e == None):
-            e = locals()[className]()
-            if(name == "system" or name == ""):
-                e.set("system", "", None)
-            else:
-                cexn(parent == None, "Entity.get of a non-existent entity with name {0} and no parent.", name)
-                #cexn(not isinstance(parent, Entity), "Entity.get parent of {0} is not an Entity!", name)
-                e.set(name, key, parent)
-            Entity.allEntities[name] = e
-
+            Entity.allEntities[name] = f()
         return e
-
-    @staticmethod
-    def get(name="", key="", parent=None):
-        Entity.get("Entity",name,key,parent)
-
 
     @staticmethod
     def list():
@@ -592,7 +584,7 @@ class Entity(Config):
         printf("\n")
         for name,parentName in acceptedList:
             e = find((lambda e: e.entityName == name),entityList)
-            if(parentName !=  e.parent.entityName):
+            if(e.parent != None and parentName !=  e.parent.entityName):
                 exn("Parent of {0} is {1} and not {2}.",e.entityName,parentName,e.parent.parentName)
         for e in ok:
             e.state = Entity.EntityState.EXISTS
@@ -614,7 +606,7 @@ class Entity(Config):
         return not (self.__eq__(other))
 
     def __init__(self):
-        self.set(None, None, None)
+        self.set("system", "", None)
         self._commissions = []
         self._resources = []
 
@@ -630,10 +622,12 @@ class Entity(Config):
         self.set(None, None, None)
 
     def set(self, name, password, parent):
+        cexn(parent == None and name != "system", "Entity.get of a non-existent entity with name {0} and no parent.", name)
         self.entityName = name
         self.entityKey = password
         self.parent = parent
         self.state = Entity.EntityState.NOT_EXISTS
+        return self
 
     def exists(self, query=False):
         self._check()
@@ -724,8 +718,8 @@ class Entity(Config):
 
 class ResourceHolder(Entity):
 
-    root = Entity.get("pgerakios", "key1",Entity.get())
-    resourceNames = ["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
+    root = Entity.get("pgerakios", lambda: Entity().set("pgerakios","key1",Entity.get("system")))
+    resourceNames = ["pithos","cyclades_vm","cyclades_cpu","cyclades_mem"]
 
     def __init__(self):
         super(Entity,self).__init__()
@@ -760,7 +754,7 @@ class ResourceHolder(Entity):
 
 class Group(ResourceHolder):
 
-    groupRoot =   Entity.getClass("Group","group","group",ResourceHolder.root)
+    groupRoot =   Entity.get("group",lambda: Group().set("group","group",ResourceHolder.root))
     systemGroupName = "system"
     systemGroupKey  = "system"
 
@@ -774,7 +768,7 @@ class Group(ResourceHolder):
 
     @staticmethod
     def get(name,key):
-        ret = Entity.getClass("Group",name,key,Group.groupRoot)
+        ret =   Entity.get(name,lambda: Group().set(name,key,Group.groupRoot))
         if(name == Group.systemGroupName):
             ret.makeSystem()
         elif(ret.exists(True) == False):
@@ -810,7 +804,11 @@ class Group(ResourceHolder):
     def makeSystem(self):
         if(self.initializedSystem):
             return
-        #TODO: create system resources here
+        #
+        for r in self.getResources():
+            r.quantity = 1000
+        self.saveResources(True)
+        #
         self.initializedSystem = True
 
 
@@ -831,8 +829,7 @@ class Group(ResourceHolder):
 
 
 class User(ResourceHolder):
-
-    userRoot = Entity.getClass("User","user","user",ResourceHolder.root)
+    userRoot =   Entity.get("user",lambda: User().set("user","user",ResourceHolder.root))
 
     @staticmethod
     def listUsers():
@@ -840,7 +837,7 @@ class User(ResourceHolder):
 
     @staticmethod
     def get(name,key):
-        return Entity.getClass("User",name,key,User.userRoot)
+         return Entity.get(name,lambda: User().set(name,key,User.userRoot))
 
     def __init__(self):
         super(ResourceHolder,self).__init__(None)
@@ -881,7 +878,8 @@ class User(ResourceHolder):
         for r in self.getResources():
             groupUserPolicy = group.getUserPolicyFor(r.resourceName)
             self.commission.addResource(r,groupUserPolicy.quantity)
-        self.commit()
+        #DO NOT COMMIT HERE
+        # self.commit !!! no
 
 
 # Main program
@@ -889,14 +887,24 @@ class User(ResourceHolder):
 try:
 
     # Group1
+    printf("Step 1")
     group1 = Group.get("group1","group1")
 
+    printf("Step 2  name : {0}",group1.entityName)
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
-    group1.savePolicyQuantities('pithos'=10,'cyclades.vm'=2,'cyclades.mem'=3)
+    group1.savePolicyQuantities(pithos=10,cyclades_vm=2,cyclades_mem=3)
 
 
+
+    printf("Step 3 ")
     user1 = User.get("prodromos", "key1")
+
+    printf("Step 4 ")
     user1.joinGroup(group1)
+    printf("Step 5")
+    user1.commit()
+    printf("Step 6")
+    user1.release()
 
 finally:
     for e in Entity.list():

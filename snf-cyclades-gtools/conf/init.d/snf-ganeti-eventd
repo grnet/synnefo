@@ -68,9 +68,6 @@ eventd_start() {
 
 case "$1" in
   start)
-        # Check if we are on the Ganeti master node
-        check_ganeti_master
-
         if "$SNF_EVENTD_ENABLE"; then
             log_daemon_msg "Starting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
             if [ -s $SNF_EVENTD_PID_FILE ] && kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
@@ -78,6 +75,8 @@ case "$1" in
                 log_end_msg 0
                 exit 0
             fi
+            # Check if we are on the Ganeti master node
+            check_ganeti_master
             eventd_start
         else
             if [ -s "$SNF_EVENTD_DEFAULTS" ]; then

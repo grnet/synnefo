@@ -20,14 +20,10 @@
             $(lbl).click(function(e){
                 var src = e.srcElement.nodeName;
                 if (src == "LABEL" || src == "label") {
-                    el.toggleClass("checked");
-					
+                    el.toggleClass("checked");	
+                    $this.attr('checked', el.hasClass("checked"));
                 };
-                if ($this.attr('checked')=='checked') {
-					($this.removeAttr('checked'))
-				} else {
-					$this.attr('checked','checked')
-				}
+                
             })
         }
       }
@@ -115,4 +111,6 @@
 
   };
 })( jQuery );
+
+
 

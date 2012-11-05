@@ -389,6 +389,11 @@ form.quotas-form legend span.info				{ top:0; bottom:auto; left:225px; }
 form.quotas-form legend span.info span			{ width:400px; }
 .quotas-form .with-checkbox+.with-checkbox		{ width:196px; }
  
+.quotas-form .radios label						{ font-size:1.077em; } 
+.quotas-form .radios .radio-wrap label			{ width:auto; margin-right:11px;}
+.quotas-form .radios .radio-wrap>.radio			{ float:left; margin:10px 10px 0 0; }  
+.quotas-form .radios input[type="text"]			{ width:60px;  margin:9px 15px -9px;  padding:6px; display:none;}
+
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}

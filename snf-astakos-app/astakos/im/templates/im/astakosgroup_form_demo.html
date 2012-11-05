@@ -4,7 +4,10 @@
  
 {% block headjs %}
 	{{ block.super }}	 
-	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
+		
+	<script src="{{ IM_STATIC_URL }}js/jquery.uniform.js"></script>
+	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>
+	 <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/uniform.default.css" type="text/css" media="screen">	
 {% endblock %}		
 <form action="" method="post" class="withlabels quotas-form">{% csrf_token %}
 	 
@@ -85,7 +88,7 @@
 			    </span>
 		     </p>
 		</div>
-		<div class="double-checks">
+		<div class="double-checks clearfix">
     		<label>Max users per group</label>
     		<div class="form-row">
     			<p class="clearfix">
@@ -103,6 +106,17 @@
     		</div>
     		
     	</div> 
+    	<!--<div class="radios clearfix">
+    		<label>Max users per group</label>
+    		<div class="radio-wrap">
+	    		
+	            <input type="radio" name="radio1" value="1" id="vm_radio_unlimited" checked="checked">
+	            <label for="vm_radio_unlimited">Unlimited</label>
+	            <input type="radio" name="radio1" value="0" id="vm_radio_limited" >
+	            <label for="vm_radio_limited">Limited</label>
+	            <input type="text" id="vm_radio_limited_num" name="vm_radio_limited_num"/>
+    		</div>
+    	</div>-->
     </fieldset>       
     <fieldset id="icons">
     	<legend>
@@ -153,7 +167,7 @@
 		    			<p class="clearfix">
 		    				<label for="vm_per_user_limited">Limited</label>
 		    				<input type="checkbox" id="vm_per_user_limited" name="vm_per_user_limited" class="limited">
-		       				<input type="text" id="vm_user_limited_num"/>
+		       				<input type="text" id="vm_per_user_limited_num" name="vm_per_user_limited_num"/>
 		       				 
 		    			</p>
 		    		</div>
@@ -186,7 +200,7 @@
 		    			<p class="clearfix">
 		    				<label for="cpu_per_user_limited">Limited</label>
 		    				<input type="checkbox" id="cpu_per_user_limited" name="cpu_per_user_limited" class="limited">
-		       				<input type="text" id="cpu_user_limited_num"/>
+		       				<input type="text" id="cpu_user_limited_num" name="cpu_user_limited_num"/>
 		       				 
 		    			</p>
 		    		</div>

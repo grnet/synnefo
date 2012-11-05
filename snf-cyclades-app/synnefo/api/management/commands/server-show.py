@@ -36,7 +36,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
 
-from ._common import format_bool, format_date
+from ._common import format_bool, format_date, format_vm_state
 
 
 class Command(BaseCommand):
@@ -68,7 +68,7 @@ class Command(BaseCommand):
             'flavor': flavor,
             'deleted': format_bool(server.deleted),
             'suspended': format_bool(server.suspended),
-            'state': server.operstate
+            'state': format_vm_state(server)
         }
         
         for key, val in sorted(kv.items()):

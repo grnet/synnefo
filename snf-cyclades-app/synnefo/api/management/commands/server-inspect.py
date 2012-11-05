@@ -40,6 +40,7 @@ from synnefo.api.util import get_image
 from synnefo.lib.utils import merge_time
 from synnefo.db.models import VirtualMachine
 from synnefo.logic.rapi import GanetiApiError
+from ._common import format_vm_state
 
 
 # Fields to print from a gnt-instance info
@@ -84,11 +85,11 @@ class Command(BaseCommand):
 
         sep = '-' * 80 + '\n'
         labels = ('name', 'owner', 'flavor', 'image', 'state', 'backend',
-                  'deleted', 'action', 'backendjobid', 'backendopcodoe',
+                  'deleted', 'action', 'backendjobid', 'backendopcode',
                   'backendjobstatus', 'backend_time')
-        fields = (vm.name, vm.userid, vm.flavor.name, image, vm.operstate,
-                  str(vm.backend), str(vm.deleted), str(vm.action),
-                  str(vm.backendjobid), str(vm.backendopcode),
+        fields = (vm.name, vm.userid, vm.flavor.name, image,
+                  format_vm_state(vm), str(vm.backend), str(vm.deleted),
+                  str(vm.action), str(vm.backendjobid), str(vm.backendopcode),
                   str(vm.backendjobstatus), str(vm.backendtime))
 
         self.stdout.write(sep)

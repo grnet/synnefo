@@ -176,7 +176,7 @@ class HighLevelAPI(object):
             
         if attribute_simple_name.index('/') >= 0:
             raise Exception(
-                "Cannot define attribute %s for global resource '%s' because the atribute name is not simple" % (
+                "Cannot define attribute %s for global resource '%s' because the attribute name is not simple" % (
                     (attribute_simple_name, attribute_value),
                     global_resource_name
             ))
@@ -380,7 +380,7 @@ class HighLevelAPI(object):
         # 1. Create a per-this-group definitional resource under the group node.
         #    This resource defines the limit for this group.
         #    E.g. A resource named 'pithos+' gives rise to
-        #    'def_pergroup_pithos+'
+        #    'def_pergroup_pithos+'.
         self.create_node_resource(parent_node_name=group_node_name,
                                   global_resource_name=global_resource_name,
                                   resource_name_prefix='def_pergroup',
@@ -394,14 +394,19 @@ class HighLevelAPI(object):
         #    This resource defines the limit per user.
         #    E.g. A resource named 'pithos+' gives rise to
         #    'def_peruser_pithos+'
-        self.create_node_resource(parent_node_name=group_node_name,
-                                  global_resource_name=global_resource_name,
-                                  resource_name_prefix='def_peruser',
-                                  quantity=limit_per_user,
-                                  capacity=0,
-                                  import_limit=0,
-                                  export_limit=0,
-                                  flags=0)
+        #
+        # NOTE: If the ``limit_per_user`` is negative, then no such resource
+        #       is defined and the relevant value will be obtained from
+        #       the global resource.
+        if limit_per_user >= 0:
+            self.create_node_resource(parent_node_name=group_node_name,
+                                      global_resource_name=global_resource_name,
+                                      resource_name_prefix='def_peruser',
+                                      quantity=limit_per_user,
+                                      capacity=0,
+                                      import_limit=0,
+                                      export_limit=0,
+                                      flags=0)
 
         # 3. Create the operational resource node under the group.
         #    This resource is a big bucket with the operational quantity and

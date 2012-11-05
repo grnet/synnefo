@@ -5,10 +5,7 @@
  
 {% block headjs %}
 	{{ block.super }}	 
-		
-	<script src="{{ IM_STATIC_URL }}js/jquery.uniform.js"></script>
-	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>
-	 <link rel="stylesheet" href="{{ IM_STATIC_URL }}css/uniform.default.css" type="text/css" media="screen">	
+	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
 {% endblock %}		
 <form action="" method="post" class="withlabels quotas-form">{% csrf_token %}
 	 

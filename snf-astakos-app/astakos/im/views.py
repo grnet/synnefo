@@ -146,6 +146,7 @@ def signed_terms_required(func):
     return wrapper
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def index(request, login_template_name='im/login.html', extra_context=None):
     """
@@ -177,6 +178,7 @@ def index(request, login_template_name='im/login.html', extra_context=None):
                            context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 @transaction.commit_manually
@@ -255,6 +257,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
                            context_instance=context)
 
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
@@ -317,6 +320,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 
 @transaction.commit_manually
+@require_http_methods(["GET", "POST"])
 def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
@@ -401,6 +405,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                            context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
@@ -452,6 +457,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def logout(request, template='registration/logged_out.html', extra_context=None):
     """
@@ -480,6 +486,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
     return response
 
 
+@require_http_methods(["GET", "POST"])
 @transaction.commit_manually
 def activate(request, greeting_email_template_name='im/welcome_email.txt',
              helpdesk_email_template_name='im/helpdesk_notification.txt'):
@@ -553,6 +560,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
             return index(request)
 
 
+@require_http_methods(["GET", "POST"])
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context=None):
     term = None
     terms = None
@@ -595,6 +603,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
                                context_instance=get_context(request, extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 def change_password(request):
     return password_change(request,
@@ -1072,16 +1081,14 @@ def resource_list(request):
             entry['load_class'] = 'yellow'
         if entry['ratio'] < 33:
             entry['load_class'] = 'green'
-
         return entry
 
     def pluralize(entry):
         entry['plural'] = engine.plural(entry.get('name'))
         return entry
 
-    c = AstakosDjangoDBCallpoint()
     try:
-        data = c.get_user_status(request.user.id)
+        data = callpoint.get_user_status(request.user.id)
     except Exception, e:
         data = None
         messages.error(request, e)
@@ -1170,7 +1177,7 @@ def group_create_demo(request, kind_name='default'):
 
 
 def group_create_list(request):
-    form = P ickResourceForm()
+    form = PickResourceForm()
     return render_response(
         template='im/astakosgroup_create_list.html',
         context_instance=get_context(request),)
@@ -1233,14 +1240,6 @@ def _clear_billing_data(data):
     data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
     data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
-
-    return data
-
-
-def group_create_demo(request):
-    return render_response(
-        template='im/astakosgroup_form_demo.html',
-        context_instance=get_context(request))
 
     return data
      

@@ -73,6 +73,7 @@ except:
 
 RESOURCE_SEPARATOR = '.'
 
+
 class Service(models.Model):
     name = models.CharField('Name', max_length=255, unique=True, db_index=True)
     url = models.FilePathField()
@@ -338,7 +339,9 @@ class AstakosUser(User):
 
     astakos_groups = models.ManyToManyField(
         AstakosGroup, verbose_name=_('agroups'), blank=True,
-        help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."),
+        help_text=_("""In addition to the permissions manually assigned, this
+                    user will also get all permissions granted to each group
+                    he/she is in."""),
         through='Membership')
 
     __has_signed_terms = False
@@ -477,6 +480,7 @@ class AstakosUser(User):
                     self.username = username
             if not self.provider:
                 self.provider = 'local'
+            self.email = self.email.lower()
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent

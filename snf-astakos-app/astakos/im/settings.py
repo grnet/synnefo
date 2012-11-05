@@ -128,24 +128,6 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
     'Password reset on %s alpha2 testing' % SITENAME)
 
-# Configurable email subjects
-INVITATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
-        'Invitation to %s alpha2 testing' % SITENAME)
-GREETING_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_GREETING_EMAIL_SUBJECT',
-        'Welcome to %s alpha2 testing' % SITENAME)
-FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
-        'Feedback from %s alpha2 testing' % SITENAME)
-VERIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
-        '%s alpha2 testing account activation is needed' % SITENAME)
-ADMIN_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT',
-        '%s alpha2 testing account created (%%(user)s)' % SITENAME)
-HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
-        '%s alpha2 testing account activated (%%(user)s)' % SITENAME)
-EMAIL_CHANGE_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
-        'Email change on %s alpha2 testing' % SITENAME)
-PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
-        'Password reset on %s alpha2 testing' % SITENAME)
-
 # Set the quota holder component URI
 QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
 

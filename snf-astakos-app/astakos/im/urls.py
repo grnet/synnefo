@@ -33,7 +33,9 @@
 
 from django.conf.urls.defaults import patterns, url
 
-from astakos.im.forms import ExtendedPasswordResetForm, ExtendedPasswordChangeForm, LoginForm
+from astakos.im.forms import (ExtendedPasswordResetForm,
+                              ExtendedPasswordChangeForm,
+                              ExtendedSetPasswordForm, LoginForm)
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 
 urlpatterns = patterns('astakos.im.views',

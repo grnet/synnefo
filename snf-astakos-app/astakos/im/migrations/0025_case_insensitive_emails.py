@@ -1,20 +1,20 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
-class Migration(SchemaMigration):
-    def forwards(self, orm):
-        
-        # Adding field 'AstakosUser.disturbed_quota'
-        db.add_column('im_astakosuser', 'disturbed_quota', self.gf('django.db.models.fields.BooleanField')(default=False, db_index=True), keep_default=False)
 
+class Migration(DataMigration):
+
+    def forwards(self, orm):
+        "Write your forwards methods here."
+        for u in orm.AstakosUser.objects.all():
+            u.email = u.email.lower()
+            u.save()
 
     def backwards(self, orm):
-        
-        # Deleting field 'AstakosUser.disturbed_quota'
-        db.delete_column('im_astakosuser', 'disturbed_quota')
+        "Write your backwards methods here."
 
     models = {
         'auth.group': {
@@ -61,14 +61,14 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 2, 12, 26, 58, 562036)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 4, 9, 47, 13, 40029)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'im.astakosgroup': {
             'Meta': {'object_name': 'AstakosGroup', '_ormbases': ['auth.Group']},
             'approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 2, 12, 26, 58, 555664)'}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 4, 9, 47, 13, 34050)'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'estimated_participants': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'expiration_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
@@ -96,7 +96,6 @@ class Migration(SchemaMigration):
             'auth_token_created': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'auth_token_expires': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'date_signed_terms': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'disturbed_quota': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
             'email_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_credits': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_signed_terms': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -123,7 +122,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 2, 12, 26, 58, 563564)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 4, 9, 47, 13, 41566)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.groupkind': {
@@ -145,19 +144,17 @@ class Migration(SchemaMigration):
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
-            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 11, 2, 12, 26, 58, 559632)', 'blank': 'True'}),
+            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 10, 4, 9, 47, 13, 37772)', 'blank': 'True'}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
         },
         'im.resource': {
             'Meta': {'object_name': 'Resource'},
-            'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'meta': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.ResourceMetadata']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'}),
-            'service': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Service']"}),
-            'unit': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'})
+            'service': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Service']"})
         },
         'im.resourcemetadata': {
             'Meta': {'object_name': 'ResourceMetadata'},

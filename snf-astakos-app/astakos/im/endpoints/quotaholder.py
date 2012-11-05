@@ -68,7 +68,7 @@ def call(func_name):
 
             data = payload_func(entities, client, **kwargs)
             if not data:
-                return c,
+                return c, data
 
             funcname = func.__name__
             kwargs = {'context': {}, funcname: data}

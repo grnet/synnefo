@@ -35,14 +35,11 @@
             {% for k, v in user.quota|items %}
                 <strong>{{k}}</strong>
                 <table class="zebra-striped id-sorted">
-<!-- 
                     <thead>
                       <tr>
                         <th>Limit (Group)</th>
                       </tr>
                     </thead>
- -->
- <!--
                     <tbody>
                     {% for m in user.membership_set.select_related.all %}
                         {% if m.group.is_enabled %}

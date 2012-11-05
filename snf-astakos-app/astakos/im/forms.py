@@ -35,8 +35,8 @@ from urlparse import urljoin
 from django import forms
 from django.utils.translation import ugettext as _
 from django.contrib.auth.forms import (UserCreationForm, AuthenticationForm,
-                                       PasswordResetForm, PasswordChangeForm
-                                       )
+                                       PasswordResetForm, PasswordChangeForm,
+                                       SetPasswordForm)
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
@@ -295,7 +295,8 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         return email
 
 
-class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm, InvitedThirdPartyUserCreationForm):
+class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
+                                        InvitedThirdPartyUserCreationForm):
     pass
 
 
@@ -355,10 +356,11 @@ class LoginForm(AuthenticationForm):
 class ProfileForm(forms.ModelForm):
     """
     Subclass of ``ModelForm`` for permiting user to edit his/her profile.
-    Most of the fields are readonly since the user is not allowed to change them.
+    Most of the fields are readonly since the user is not allowed to change
+    them.
 
-    The class defines a save method which sets ``is_verified`` to True so as the user
-    during the next login will not to be redirected to profile page.
+    The class defines a save method which sets ``is_verified`` to True so as the
+    user during the next login will not to be redirected to profile page.
     """
     renew = forms.BooleanField(label='Renew token', required=False)
 
@@ -513,7 +515,10 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     Extends PasswordChangeForm by enabling user
     to optionally renew also the token.
     """
-    renew = forms.BooleanField(label='Renew token', required=False)
+    if not NEWPASSWD_INVALIDATE_TOKEN:
+        renew = forms.BooleanField(label='Renew token', required=False,
+                                   initial=True,
+                                   help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)

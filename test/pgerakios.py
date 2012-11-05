@@ -601,8 +601,8 @@ class Entity(Config):
         printf("\n")
         for name,parentName in acceptedList:
             e = find((lambda e: e.entityName == name),entityList)
-            if(e.parent != None and parentName !=  e.parent.entityName):
-                exn("Parent of {0} is {1} and not {2}.",e.entityName,parentName,e.parent.parentName)
+            #if(e.parent != None and parentName !=  e.parent.entityName):
+            #    exn("Parent of {0} is {1} and not {2}.",e.entityName,parentName,e.parent.parentName)
         for e in ok:
             e.state = Entity.EntityState.EXISTS
         for e in notok:
@@ -633,7 +633,7 @@ class Entity(Config):
 
     def getChildren(self):
         list = Entity.con().list_entities(context=Entity.Context,entity=self.entityName,key=self.entityKey)
-        return [Entity.get(e,"",self) for e in list]
+        return [Entity.get(e,lambda: Entity().set(e,"",self)) for e in list]
 
     def reset(self):
         self.set(None, None, None)
@@ -784,7 +784,10 @@ class Group(ResourceHolder):
     def getGroupRoot():
         def createRoot():
             return Group().set(Group.systemGroupName,Group.systemGroupKey,ResourceHolder.root)
-        return Entity.get(Group.systemGroupName,createRoot)
+        e = Entity.get(Group.systemGroupName,createRoot)
+        if(not e.exists()):
+            e.create(True)
+        return e
 
 
     @staticmethod
@@ -802,7 +805,6 @@ class Group(ResourceHolder):
     
     def set(self, name, password, parent):
         super(ResourceHolder,self).set(name, password, parent)
-        printf("Hello !!")
         return self
 
     def __init__(self):
@@ -874,9 +876,11 @@ class User(ResourceHolder):
     def getUserRoot():
         def createRoot():
             return User().set(User.systemUserName,User.systemUserKey,ResourceHolder.root)
-        return Entity.get(User.systemUserName,createRoot)
-
-
+        e = Entity.get(User.systemUserName,createRoot)
+        if(not e.exists()):
+            e.create(True)
+        return e
+        
     @staticmethod
     def get(name,key):
         def userCreate():
@@ -944,7 +948,13 @@ try:
     #cexn(group1.create() == False, "Could not create group  group1")
     group1.create()
     
-    printf("Type of group1 : {0}", type(group1) )
+    printf("Type of group1 : {0}, exists ? {1} ", type(group1), group1.exists(True))
+    
+    
+    for e in ResourceHolder.root.getChildren():
+        printf("{0} child Entity {1}",ResourceHolder.root.entityName,e.entityName)
+    
+    
     if(not isinstance(group1,Group)):
         exn("Not instance of group")
 
@@ -952,33 +962,64 @@ try:
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
     group1.savePolicyQuantities(pithos=10,cyclades_vm=2,cyclades_mem=3)
 
-
+    printf("Group1 resources BEGIN")
+    for r in group1.getResources(True):
+        printf("Group {0} resource {1} = {2}",group1.entityName,r.resourceName,r.quantity())
+    printf("Group1 resources END")
+    
+    
+ 
 
     printf("Step 3 ")
     user1 = User.get("prodromos", "key1")
 
     user1.create()
     #cexn(user1.create() == False, "Could not create group  group1")
+
+    printf("User1 resources BEGIN")
+    for r in user1.getResources(True):
+        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity)
+    printf("User1 resources END")    
  
-    
     
     printf("Step 4 ")
     user1.joinGroup(group1)
+    
+    
+    #
+    printf("User1 resources BEGIN")
+    for r in user1.getResources(False):
+        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity)
+    printf("User1 resources END")    
+    
+    #exn("End of story")
+    
     printf("Step 5")
     user1.commit()
+    
+    printf("User1 resources BEGIN")
+    for r in user1.getResources(True):
+        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity)
+    printf("User1 resources END")    
+    
+    
     printf("Step 6")
     user1.release()
 
 finally:
-    for e in Entity.list():
-        if(e.entityName != "system" and e.entityName != "pgerakios"):
-            e.release()
+    no = ["system","pgerakios"]
+    yes = ["group","user"]
+    #
+    no.append(yes)
+    for e in [e for e in Entity.list() if(e.entityName not in no)]:
+        #printf("Releasing step 1: {0}",e.entityName)
+        e.release()
+        #
+    for e in [e for e in Entity.list() if(e.entityName in yes)]:
+        #printf("Releasing step 1: {0}",e.entityName)
+        e.release()
 
 
-
-
-
-printf("Hello world!")
 
 exit(0)
 

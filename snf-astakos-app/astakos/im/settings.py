@@ -132,11 +132,44 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(
 QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
 
 # Set the cloud service properties
-SERVICES = getattr(settings, 'ASTAKOS_SERVICES',
-                   {'cyclades': {'url': 'https://node1.example.com/ui/',
-                                 'quota': {'vm': 2}},
-                    'pithos+': {'url': 'https://node2.example.com/ui/',
-                                'quota': {'diskspace': 50 * 1024 * 1024 * 1024}}})
+SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
+    'cyclades': {
+        'url': 'https://node1.example.com/ui/',
+        'resources': [{
+            'name':'vm',
+            'group':'storage',
+            'uplimit':2,
+            'desc': 'Number of virtual machines'
+            },{
+            'name':'disksize',
+            'group':'storage',
+            'uplimit':5,
+            'unit':'GB',
+            'desc': 'Virtual machine disk size'
+            },{
+            'name':'cpu',
+            'group':'storage',
+            'uplimit':1,
+            'desc': 'Number of virtual machine processors'
+            },{
+            'name':'ram',
+            'group':'storage',
+            'uplimit':1024,
+            'unit':'MB',
+            'desc': 'Virtual machines'
+            }]
+    },
+    'pithos+': {
+        'url': 'https://node2.example.com/ui/',
+        'resources':[{
+            'name':'diskspace',
+            'group':'compute',
+            'uplimit':5 * 1024 * 1024 * 1024,
+            'unit':'bytes',
+            'desc': 'Pithos account diskspace'
+            }]
+    }
+})
 
 # Set the billing URI
 AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')

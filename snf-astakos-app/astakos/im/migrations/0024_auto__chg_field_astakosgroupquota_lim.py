@@ -18,14 +18,14 @@ class Migration(SchemaMigration):
             'django.db.models.fields.PositiveIntegerField')(null=True))
 
     def backwards(self, orm):
-
-        # Changing field 'AstakosGroupQuota.limit'
-        db.alter_column('im_astakosgroupquota', 'limit', self.gf(
-            'django.db.models.fields.PositiveIntegerField')(default=None))
-
-        # Changing field 'AstakosUserQuota.limit'
-        db.alter_column('im_astakosuserquota', 'limit', self.gf(
-            'django.db.models.fields.PositiveIntegerField')(default=None))
+        pass
+#        # Changing field 'AstakosGroupQuota.limit'
+#         db.alter_column('im_astakosgroupquota', 'limit', self.gf(
+#             'django.db.models.fields.PositiveIntegerField')(default=None))
+#
+#        # Changing field 'AstakosUserQuota.limit'
+#         db.alter_column('im_astakosuserquota', 'limit', self.gf(
+#             'django.db.models.fields.PositiveIntegerField')(default=None))
 
     models = {
         'auth.group': {

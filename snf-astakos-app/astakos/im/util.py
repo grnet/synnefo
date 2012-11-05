@@ -43,8 +43,8 @@ from django.template import RequestContext
 from django.utils.translation import ugettext as _
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
-from django.core.exceptions import ValidationError
-
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db.models.fields import Field
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.settings import COOKIE_NAME, \
     COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
@@ -146,8 +146,7 @@ def set_cookie(response, user):
     cookie_value = quote(user.email + '|' + user.auth_token)
     response.set_cookie(COOKIE_NAME, value=cookie_value,
                         expires=expire_fmt, path='/',
-                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE
-                        )
+                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
     msg = 'Cookie [expiring %s] set for %s' % (
         user.auth_token_expires,
         user.email
@@ -172,11 +171,61 @@ def reverse_lazy(*args, **kwargs):
 
 
 def reserved_email(email):
-    return AstakosUser.objects.filter(email=email).count() != 0
+    return AstakosUser.objects.filter(email__iexact=email).count() != 0
 
 
 def get_query(request):
     try:
         return request.__getattribute__(request.method)
     except AttributeError:
-        return request.GET
+        return {}
+
+
+def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
+                  include_empty=True):
+    '''
+        serialize model object to dict with related objects
+
+        author: Vadym Zakovinko <vp@zakovinko.com>
+        date: January 31, 2011
+        http://djangosnippets.org/snippets/2342/
+    '''
+    tree = {}
+    for field_name in obj._meta.get_all_field_names():
+        try:
+            field = getattr(obj, field_name)
+        except (ObjectDoesNotExist, AttributeError):
+            continue
+
+        if field.__class__.__name__ in ['RelatedManager', 'ManyRelatedManager']:
+            if field.model.__name__ in exclude:
+                continue
+
+            if field.__class__.__name__ == 'ManyRelatedManager':
+                exclude.append(obj.__class__.__name__)
+            subtree = []
+            for related_obj in getattr(obj, field_name).all():
+                value = model_to_dict(related_obj, exclude=exclude)
+                if value or include_empty:
+                    subtree.append(value)
+            if subtree or include_empty:
+                tree[field_name] = subtree
+            continue
+
+        field = obj._meta.get_field_by_name(field_name)[0]
+        if field.__class__.__name__ in exclude:
+            continue
+
+        if field.__class__.__name__ == 'RelatedObject':
+            exclude.append(field.model.__name__)
+            tree[field_name] = model_to_dict(getattr(obj, field_name),
+                                             exclude=exclude)
+            continue
+
+        value = getattr(obj, field_name)
+        if field.__class__.__name__ == 'ForeignKey':
+            value = unicode(value) if value is not None else value
+        if value or include_empty:
+            tree[field_name] = value
+
+    return tree

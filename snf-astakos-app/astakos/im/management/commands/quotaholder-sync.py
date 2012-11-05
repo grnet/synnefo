@@ -32,26 +32,22 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
 
-from astakos.im.models import Service
-from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
+from astakos.im.models import AstakosUser, Resource
+from astakos.im.endpoints.quotaholder import register_users, register_resources
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
-    help = "Register a service"
+    help = "Send user information and resource quota in the Quotaholder"
 
     def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError("Invalid number of arguments")
-
-        s = {'name':args[0], 'url':args[1]}
-        if len(args) == 3:
-            s['icon'] = args[2]
         try:
-            c = AstakosDjangoDBCallpoint()
-            c.add_services((s,))
-        except Exception, e:
-            raise CommandError(e)
-        else:
-            self.stdout.write(
-                'Service created successfully\n')
+            register_resources(Resource.objects.all())
+            register_users(AstakosUser.objects.filter(disturbed_quota=True))
+        except BaseException, e:
+            logger.exception(e)
+            raise CommandError("Syncing failed.")

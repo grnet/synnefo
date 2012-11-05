@@ -35,7 +35,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 from django.db import transaction
 
-from astakos.im.functions import invite, SendMailError
+from astakos.im.functions import SendMailError
 from astakos.im.models import Invitation
 
 from ._common import get_user
@@ -61,9 +61,7 @@ class Command(BaseCommand):
             realname = args[2]
 
             try:
-                invitation = Invitation(
-                    username=email, realname=realname, inviter=inviter)
-                invite(invitation, inviter)
+                inviter.invite(email, realname)
                 self.stdout.write("Invitation sent to '%s'\n" % (email,))
             except SendMailError, e:
                 transaction.rollback()

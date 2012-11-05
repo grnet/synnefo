@@ -39,7 +39,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from astakos.im.models import AstakosUser
 
-content_type = None
+DEFAULT_CONTENT_TYPE = None
 
 
 def get_user(email_or_id, **kwargs):
@@ -67,14 +67,11 @@ def format_date(d):
 
 
 def get_astakosuser_content_type():
-    if content_type:
-        return content_type
-
     try:
         return ContentType.objects.get(app_label='im',
                                        model='astakosuser')
     except:
-        return content_type
+        return DEFAULT_CONTENT_TYPE
 
 
 def add_user_permission(user, pname):

@@ -31,19 +31,48 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
+from optparse import make_option
 
-from astakos.im.models import AstakosUser, Resource
-from astakos.im.endpoints.quotaholder import register_users, register_resources
+from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+
+from astakos.im.models import AstakosUser
+from ._common import add_group_permission
 
 
 class Command(BaseCommand):
-    help = "Send user information and resource quota in the Quotaholder"
+    args = "<groupname> <permission> [<permissions> ...]"
+    help = "Add group permissions"
 
     def handle(self, *args, **options):
+        if len(args) < 2:
+            raise CommandError(
+                "Please provide a group name and at least one permission")
+
+        group = None
         try:
-            register_resources(Resource.objects.all())
-            register_users(AstakosUser.objects.all())
-        except BaseException, e:
-            raise CommandError("Bootstrap failed.")
+            if args[0].isdigit():
+                group = Group.objects.get(id=args[0])
+            else:
+                group = Group.objects.get(name=args[0])
+        except Group.DoesNotExist, e:
+            raise CommandError("Invalid group")
+
+        try:
+            content_type = ContentType.objects.get(app_label='im',
+                                                   model='astakosuser')
+            for pname in args[1:]:
+                r, created = add_group_permission(group, pname)
+                if created:
+                    self.stdout.write(
+                        'Permission: %s created successfully\n' % pname)
+                if r == 0:
+                    self.stdout.write(
+                        'Group has already permission: %s\n' % pname)
+                else:
+                    self.stdout.write(
+                        'Permission: %s added successfully\n' % pname)
+        except Exception, e:
+            raise CommandError(e)

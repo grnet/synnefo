@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,27 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from astakos.im.api.backends.lib.django import DjangoBackend
 
-from astakos.im.models import Service
-from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
 
-class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
-    help = "Register a service"
-
-    def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError("Invalid number of arguments")
-
-        s = {'name':args[0], 'url':args[1]}
-        if len(args) == 3:
-            s['icon'] = args[2]
-        try:
-            c = AstakosDjangoDBCallpoint()
-            c.add_services((s,))
-        except Exception, e:
-            raise CommandError(e)
-        else:
-            self.stdout.write(
-                'Service created successfully\n')
+def get_backend():
+    return DjangoBackend()

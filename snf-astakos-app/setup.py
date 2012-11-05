@@ -83,6 +83,7 @@ INSTALL_REQUIRES = [
     'commissioning',
     'celery',
     'requests',
+    'inflect'
 ]
 
 EXTRAS_REQUIRES = {

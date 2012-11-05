@@ -229,15 +229,36 @@ $(document).ready(function() {
 		$(this).hide();
 	})
 	
-	$('.stats .bar').each(function(){
-		h=parseInt($(this).parent('li').height());
-		g=(h-32)/2;
-		$(this).css('marginTop',g)
+// quota form actions
+	
+	$('.quotas-form ul li a').click(function(e){
+		e.preventDefault();
+		$(this).addClass('selected');
+		var id = $(this).attr('id');
+		$('.quotas-form fieldset').each(function() {
+			if($(this).hasClass(id)) {
+				$(this).show('slow');
+			}
+		}); 	
+		
+	});
+	
+	$('.quotas-form fieldset .delete').click(function(e){
+		e.preventDefault();
+		$(this).parents('fieldset').find('input').val('');
+		$(this).parents('fieldset').hide('slow');
+		fieldsetClass = $(this).parents('fieldset').attr('class').replace('quota ', '');
+		$('.quotas-form ul li a').each(function() {
+			if($(this).attr('id')==fieldsetClass) {
+				$(this).removeClass('selected');
+			}
+		}); 
+		 
+		 
 	})
 	
 	
-});
-
+	
 $(window).resize(function() {
     
    setContainerMinHeight('.container .wrapper');

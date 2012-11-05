@@ -238,7 +238,6 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 
 
 @quotas.uses_commission
-@transaction.commit_on_success
 def update_network_state(serials, network):
     old_state = network.state
 

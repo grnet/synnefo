@@ -110,32 +110,117 @@ def check_context(context):
     assert isinstance(context, dict)
     return context
 
+def check_abs_name(name):
+    check_string('name', name)
+    assert len(name) > 0
+    assert not name.startswith('/') # Although absolute, no / prefix is needed
+    assert not name.endswith('/')
+    assert name == 'system' or name.startswith('system/')
+    return name
+
 def check_node_name(node_name):
-    assert len(node_name) > 0
-    return node_name
+    """
+    A ``node_name`` must always be a string in absolute form.
+    """
+    check_string('node_name', node_name)
+    return check_abs_name(node_name)
+
+def check_resource_name(resource_name):
+    """
+    A ``resource_name`` must always be a string in absolute form.
+    """
+    check_string('resource_name', resource_name)
+    return check_abs_name(resource_name)
+
+def check_def_resource_name(resource_name):
+    check_abs_name(resource_name)
+    assert resource_name.startswith('def_')
 
 def check_node_key(node_key):
-    assert (node_key is None) or isinstance(node_key, str)
+    if node_key is not None:
+        check_string('node_key', node_key)
     return node_key
 
 def is_system_node(node_name):
     check_node_name(node_name)
     return node_name == 'system'
 
-def parent_node_name_of(node_name):
-    if is_system_node(node_name):
-        return node_name
+@accepts(str, str)
+@returns(bool)
+def is_child_of_abs_name(child, parent):
+    check_abs_name(parent)
+    return child.startswith(parent) and child != parent
+    
+def abs_parent_name_of(abs_name):
+    """
+    Given an absolute name, it returns its parent.
+    If ``abs_name`` is 'system' then it returns 'system', since this is
+    the convention of Quota Holder.
+    """
+    if is_system_node(abs_name):
+        return abs_name
     else:
-        check_node_name(node_name)
+        check_abs_name(abs_name)
 
         # For 'a/b/c' we get ['a', 'b', 'c']
         # And for 'a' we get ['a']
-        elements = node_name.split('/')
+        elements = abs_name.split('/')
         if len(elements) == 1:
-            raise Exception("Only 'system' is the top level entity, you provided '%s'" % (node_name))
+            raise Exception("Only 'system' is the top level entity, you provided '%s'" % (abs_name))
         else:
             upto_name = '/'.join(elements[:-1])
             return upto_name
+
+@accepts(str)
+@returns(str)
+def last_part_of_abs_name(name):
+    """
+    Given an absolute name, which is made of simple parts separated with
+    slashes), computes the last part, that is the one after the last
+    slash.
+    """
+    last_part = name.split('/')[-1:]
+    return last_part
+
+@accepts(str)
+@returns(str)
+def last_part_of_abs_node_name(node_name):
+    check_node_name(node_name)
+    last_part = last_part_of_abs_name(node_name)
+    return last_part
+
+@accepts(str)
+@returns(str)
+def last_part_of_abs_resource_name(resource_name):
+    check_resource_name(resource_name)
+    last_part = last_part_of_abs_name(resource_name)
+    return last_part
+
+@accepts(str, str)
+@returns(str)
+def reparent_child_name_under(self, child_name, parent_node_name):
+    """
+    Given a child name and an absolute parent node name, creates an
+    absolute name for the child so as to reside under the given parent.
+    Only the last part is used from the child name.
+    """
+    check_node_name(parent_node_name)
+    last_part_child_node_name = last_part_of_abs_name(child_name)
+    normalized_child_abs_name = '%s/%s' % (
+        parent_node_name,
+        last_part_child_node_name
+    ) # recreate full node name
+    return normalized_child_abs_name
+
+@accepts(str)
+@returns(str)
+def reparent_group_node_name(group_node_name):
+    return reparent_child_name_under(group_node_name, NameOfGroupsNode)
+
+@accepts(str)
+@returns(str)
+def reparent_resource_under(resource_name, parent_abs_name):
+    return reparent_child_name_under(resource_name, parent_abs_name)
 
 NameOfSystemNode = 'system'
 NameOfResourcesNode = 'system/resources'

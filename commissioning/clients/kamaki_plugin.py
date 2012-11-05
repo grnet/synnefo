@@ -51,13 +51,6 @@ def debug(fmt, *args):
 #     pass
 
 
-# class Kamaki_plugin(Client):
-    
-#     def __init__(self, base_url, token):
-#         super(Kamaki_plugin, self).__init__()
-#         self.callpoint = Callpoint()
-    
-
 class Kamaki_plugin(Callpoint):
 
     appname = 'kamaki_plugin'
@@ -84,14 +77,12 @@ class Kamaki_plugin(Callpoint):
         method = _kc.get if any(api_call.startswith(x)
                                 for x in gettable) else _kc.post
 
-        print 'URL:', self.kclient.base_url
         path = '/api/quotaholder/v/' + api_call
         json_data = self.json_dumps(data)
         debug("%s %s\n%s\n<<<\n", method, path, json_data)
         
         resp = method(path, data=json_data)
         debug(">>>\nStatus: %s", resp.status_code)
-        print 'Client URL:', self.kclient.http_client.url
         
         # for name, value in resp.getheaders():
         #     debug("%s: %s", name, value)
@@ -112,7 +103,6 @@ class Kamaki_plugin(Callpoint):
 
 class QHKamaki(Kamaki_plugin):
     api_spec = QuotaholderAPI()
-    def __init__(self):
-        url = 'http://127.0.0.1:8000'
-        super(QHKamaki, self).__init__(url, '')
+    def __init__(self, base_url='http://127.0.0.1:8000', token=''):
+        super(QHKamaki, self).__init__(base_url, token)
 

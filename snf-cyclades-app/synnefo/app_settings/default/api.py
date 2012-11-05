@@ -47,7 +47,7 @@ PUBLIC_ROUTED_TAGS = ['ip-less-routed']
 # addresses. If this setting is set to False, IP pool management will be
 # delegated to Ganeti. If machines have been created with this option as False,
 # you must run network reconciliation after turning it to True.
-PUBLIC_ROUTED_USE_POOL = True
+PUBLIC_USE_POOL = True
 
 # Settings for PRIVATE_MAC_FILTERED network:
 # ------------------------------------------

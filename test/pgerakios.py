@@ -360,7 +360,8 @@ class Resource(Config):
             ol2 = []
         #
         #
-        #TODO
+        #FIXME:
+        return []
 
 
     def isDirty(self):
@@ -413,9 +414,6 @@ class Resource(Config):
     def setPolicy(self, policy):
         self.policy = policy
         self.setDirty(True)
-
-    def setFromPolicy(self):
-        self.set(quantity=self.policy.quantity,capacity=self.policy.capacity)
 
     def quantity(self, query=False):
         if(query):
@@ -495,8 +493,10 @@ class Commission(Config):
     def issue(self):
         prov = [(r.entity.entityName, r.resourceName, q) for r, q in self.resources_quant if(q != 0)]
         if(prov != []):
+            printf("Target is {0} and prov_list= {1}",self.target.entityName,prov)
             self.serial = Commission.con().issue_commission(context=Commission.Context,
                 target=self.target.entityName,
+                key=self.target.entityKey,
                 clientKey=Client.clientKey,
                 owner=self.target.parent.entityName,
                 ownerKey=self.target.parent.entityKey,
@@ -517,11 +517,11 @@ class Commission(Config):
     def addResource(self, resource, quantity):
         cexn(self.state != Commission.CommissionState.NOT_ISSUED,
             "Attempted to add a resource to a commission that has been issued.")
-        cexn(resource in [r  for r, q in self.resources_quant],
+        cexn(resource in [r  for r,q in self.resources_quant],
             "Resource {0} already exists in commission.", resource.resourceName)
-        cexn(resource.quantity < quantity,
-            "Insufficient quantity: Resource {0} quantity is {1} but {2} is required.",
-            resource.resourceName, resource.quantity, quantity)
+        #cexn(resource.quantity < quantity,
+            #   "Insufficient quantity: Resource {0} quantity is {1} but {2} is required.",
+            #  resource.resourceName, resource.quantity, quantity)
         self.resources_quant.append((resource, quantity))
         return True
 
@@ -840,7 +840,7 @@ class Group(ResourceHolder):
             return
         #
         for r in self.getResources():
-            r.quantity = 1000
+            r.policy.quantity = 1000
         self.saveResources(True)
         #
         self.initializedSystem = True
@@ -852,12 +852,20 @@ class Group(ResourceHolder):
         #
         return self.commit() 
 
-    def savePolicyQuantities(self,**kwargs):
+    def saveGroupPolicyQuantities(self,**kwargs):
         policies = []
         for name,quantity in kwargs.items():
             r = self.getResource(name)
             r.policy.quantity = quantity
             policies.append(r.policy)
+        Policy.saveMany(policies)
+        
+    def saveUserPolicyQuantities(self,**kwargs):
+        policies = []
+        for name,quantity in kwargs.items():
+            p = self.getUserPolicyFor(name)
+            p.quantity = quantity
+            policies.append(p)
         Policy.saveMany(policies)
 
 
@@ -922,9 +930,6 @@ class User(ResourceHolder):
             p = dict.get(r.resourceName)
             p.setDummy(True)
             r.setPolicy(p)
-            ## FIXME: THIS IS NOT CORRECT
-            r.setFromPolicy()
-
 
     def joinGroup(self,group):
         self.groups.append(group)
@@ -932,7 +937,8 @@ class User(ResourceHolder):
         #
         for r in self.getResources():
             groupUserPolicy = group.getUserPolicyFor(r.resourceName)
-            self.commission.addResource(r,groupUserPolicy.quantity)
+            #printf("join group ==> Resource entity: {0}",r.entity.entityName)
+            self.commission.addResource(group.getResource(r.resourceName),groupUserPolicy.quantity)
         #DO NOT COMMIT HERE
         # self.commit !!! no
 
@@ -960,7 +966,8 @@ try:
 
     printf("Step 2  name : {0}",group1.entityName)
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
-    group1.savePolicyQuantities(pithos=10,cyclades_vm=2,cyclades_mem=3)
+    group1.saveGroupPolicyQuantities(pithos=10,cyclades_vm=8,cyclades_mem=9)
+    group1.saveUserPolicyQuantities(pithos=2,cyclades_vm=2,cyclades_mem=1)
 
     printf("Group1 resources BEGIN")
     for r in group1.getResources(True):
@@ -976,20 +983,22 @@ try:
     user1.create()
     #cexn(user1.create() == False, "Could not create group  group1")
 
+    cexn(user1.exists(True) == False,"User does not exist!!")
+    
     printf("User1 resources BEGIN")
     for r in user1.getResources(True):
-        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity)
+        printf("User {0} resource {1} = {2} ",user1.entityName,r.resourceName,r.quantity())
     printf("User1 resources END")    
  
     
     printf("Step 4 ")
-    user1.joinGroup(group1)
     
+    user1.joinGroup(group1)
     
     #
     printf("User1 resources BEGIN")
     for r in user1.getResources(False):
-        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity)
+        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity())
     printf("User1 resources END")    
     
     #exn("End of story")
@@ -997,9 +1006,11 @@ try:
     printf("Step 5")
     user1.commit()
     
+
+    
     printf("User1 resources BEGIN")
     for r in user1.getResources(True):
-        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity)
+        printf("User {0} resource {1} = {2}",user1.entityName,r.resourceName,r.quantity())
     printf("User1 resources END")    
     
     

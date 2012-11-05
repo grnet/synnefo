@@ -74,8 +74,8 @@ def custom_messages(request):
     if type(PROFILE_MESSAGES) == dict:
         PROFILE_MESSAGES = PROFILE_MESSAGES.items()
 
-    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or \
-            LOGIN_MESSAGES or PROFILE_MESSAGES)
+    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or
+                              LOGIN_MESSAGES or PROFILE_MESSAGES)
 
     return {
         'GLOBAL_MESSAGES': GLOBAL_MESSAGES,

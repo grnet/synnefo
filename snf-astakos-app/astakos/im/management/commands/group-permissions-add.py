@@ -31,38 +31,48 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
+
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 
-from astakos.im.models import Invitation
-
-from ._common import format_bool, format_date
+from astakos.im.models import AstakosUser
+from ._common import add_group_permission
 
 
 class Command(BaseCommand):
-    args = "<invitation ID>"
-    help = "Show invitation info"
+    args = "<groupname> <permission> [<permissions> ...]"
+    help = "Add group permissions"
 
     def handle(self, *args, **options):
-        if len(args) != 1:
-            raise CommandError("Please provide an invitation id")
+        if len(args) < 2:
+            raise CommandError(
+                "Please provide a group name and at least one permission")
+
+        group = None
+        try:
+            if args[0].isdigit():
+                group = Group.objects.get(id=args[0])
+            else:
+                group = Group.objects.get(name=args[0])
+        except Group.DoesNotExist, e:
+            raise CommandError("Invalid group")
 
         try:
-            invitation = Invitation.objects.get(id=int(args[0]))
-        except Invitation.DoesNotExist:
-            raise CommandError("Unknown invitation id '%s'" % (args[0],))
-
-        kv = {
-            'id': invitation.id,
-            'real name': invitation.realname,
-            'email': invitation.username,
-            'code': invitation.code,
-            'consumed': format_bool(invitation.is_consumed),
-            'date created': format_date(invitation.created),
-            'date consumed': format_date(invitation.consumed),
-            'inviter real name': invitation.inviter.realname,
-            'invitater email': invitation.inviter.email,
-        }
-
-        for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(18), val)
-            self.stdout.write(line.encode('utf8'))
+            content_type = ContentType.objects.get(app_label='im',
+                                                   model='astakosuser')
+            for pname in args[1:]:
+                r, created = add_group_permission(group, pname)
+                if created:
+                    self.stdout.write(
+                        'Permission: %s created successfully\n' % pname)
+                if r == 0:
+                    self.stdout.write(
+                        'Group has already permission: %s\n' % pname)
+                else:
+                    self.stdout.write(
+                        'Permission: %s added successfully\n' % pname)
+        except Exception, e:
+            raise CommandError(e)

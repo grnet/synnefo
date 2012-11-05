@@ -9,7 +9,7 @@ Issue date:                     {{group.issue_date|date:"d/m/Y"}}
 Expiration date:                {{group.expiration_date|date:"d/m/Y"}}
 Moderation:                     {{group.moderation_enabled}}
 Owner:                          {{owner}}
-Expected participant number:    {{group.estimated_participants}}
+Maximum participant number:	{{group.max_participants}}
 Policies:
 {% for p in policies %}
     {{p}}
@@ -28,7 +28,7 @@ Issue date:                     {{group.issue_date|date:"d/m/Y"}}
 Expiration date:                {{group.expiration_date|date:"d/m/Y"}}
 Moderation:                     {{group.moderation_enabled}}
 Owner:                          {{owner}}
-Expected participant number:    {{group.estimated_participants}}
+Maximum participant number:	{{group.max_participants}}
 Policies:
 {% for p in policies %}
     {{p}}

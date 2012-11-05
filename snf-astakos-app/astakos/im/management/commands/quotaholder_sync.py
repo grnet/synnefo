@@ -37,6 +37,9 @@ from django.db.utils import IntegrityError
 from astakos.im.models import AstakosUser, Resource
 from astakos.im.endpoints.quotaholder import register_users, register_resources
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = "Send user information and resource quota in the Quotaholder"
@@ -44,6 +47,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             register_resources(Resource.objects.all())
-            register_users(AstakosUser.objects.all())
+            register_users(AstakosUser.objects.filter(disturbed_quota=True))
         except BaseException, e:
-            raise CommandError("Bootstrap failed.")
+            logger.exception(e)
+            raise CommandError("Syncing failed.")

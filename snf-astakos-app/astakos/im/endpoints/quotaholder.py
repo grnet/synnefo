@@ -57,19 +57,19 @@ def call(func_name):
         def wrapper(entities=(), client=None, **kwargs):
             if not entities:
                 return ()
-        
+
             if not QUOTA_HOLDER_URL:
                 return ()
-        
+
             c = client or QuotaholderHTTP(QUOTA_HOLDER_URL)
             func = c.__dict__.get(func_name)
             if not func:
                 return c,
-            
+
             data = payload_func(entities, client, **kwargs)
             if not data:
                 return c,
-            
+
             funcname = func.__name__
             kwargs = {'context': {}, funcname: data}
             rejected = func(**kwargs)
@@ -78,6 +78,7 @@ def call(func_name):
             return c, rejected
         return wrapper
     return decorator
+
 
 @call('set_quota')
 def send_quota(users, client=None):
@@ -91,8 +92,9 @@ def send_quota(users, client=None):
             import_limit = None
             export_limit = None
             flags = 0
-            args = (user.email, resource, key, quantity, capacity, import_limit,
-                    export_limit, flags)
+            args = (
+                user.email, resource, key, quantity, capacity, import_limit,
+                export_limit, flags)
             append(args)
     return data
 
@@ -172,8 +174,10 @@ timefmt = '%Y-%m-%dT%H:%M:%S.%f'
 
 SECOND_RESOLUTION = 1
 
+
 def total_seconds(timedelta_object):
     return timedelta_object.seconds + timedelta_object.days * 86400
+
 
 def iter_timeline(timeline, before):
     if not timeline:
@@ -185,6 +189,7 @@ def iter_timeline(timeline, before):
     t = dict(t)
     t['issue_time'] = before
     yield t
+
 
 def _usage_units(timeline, after, before, details=0):
 
@@ -226,11 +231,13 @@ def _usage_units(timeline, after, before, details=0):
             'total',
             point['resource'],
             issue_time,
-            uu_total/t_total,
+            uu_total / t_total,
             uu_total)
+
 
 def usage_units(timeline, after, before, details=0):
     return list(_usage_units(timeline, after, before, details=details))
+
 
 def traffic_units(timeline, after, before, details=0):
     tu_total = 0
@@ -263,8 +270,9 @@ def traffic_units(timeline, after, before, details=0):
             'total',
             point['resource'],
             issue_time,
-            tu_total//len(timeline),
+            tu_total // len(timeline),
             tu_total)
+
 
 def timeline_charge(entity, resource, after, before, details, charge_type):
     key = '1'
@@ -278,10 +286,9 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
 
     quotaholder = QuotaholderHTTP(QUOTA_HOLDER_URL)
     timeline = quotaholder.get_timeline(
-                            context         =   {},
-                            after           =   after,
-                            before          =   before,
-                            get_timeline    =   [[entity, resource, key]])
+        context={},
+        after=after,
+        before=before,
+        get_timeline=[[entity, resource, key]])
     cu = charge_units(timeline, after, before, details=details)
     return cu
-

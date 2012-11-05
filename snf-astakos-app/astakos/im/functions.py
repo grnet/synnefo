@@ -43,6 +43,7 @@ from django.template import Context, loader
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.http import HttpRequest
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 
 from urllib import quote
 from urlparse import urljoin
@@ -52,13 +53,14 @@ from functools import wraps
 
 from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL,
                                  LOGGING_LEVEL, VERIFICATION_EMAIL_SUBJECT,
-                                 ADMIN_NOTIFICATION_EMAIL_SUBJECT,
+                                 ACCOUNT_CREATION_SUBJECT,
+                                 GROUP_CREATION_SUBJECT,
                                  HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
                                  INVITATION_EMAIL_SUBJECT,
                                  GREETING_EMAIL_SUBJECT,
                                  FEEDBACK_EMAIL_SUBJECT,
                                  EMAIL_CHANGE_EMAIL_SUBJECT)
-from astakos.im.models import AstakosUser
+import astakos.im.models
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +70,11 @@ def logged(func, msg):
     def with_logging(*args, **kwargs):
         email = ''
         user = None
-        if len(args) == 2 and isinstance(args[1], AstakosUser):
-            user = args[1]
-        elif len(args) == 1 and isinstance(args[0], HttpRequest):
+        try:
             request = args[0]
-            user = request.user
-        email = user.email if user and user.is_authenticated() else ''
+            email = request.user.email
+        except (KeyError, AttributeError), e:
+            email = ''
         r = func(*args, **kwargs)
         if LOGGING_LEVEL:
             logger.log(LOGGING_LEVEL, msg % email)
@@ -116,10 +117,9 @@ def send_activation(user, template_name='im/activation_email.txt'):
     user.save()
 
 
-def send_admin_notification(template_name,
-                            dictionary=None,
-                            subject='alpha2 testing notification',
-                            ):
+def _send_admin_notification(template_name,
+                             dictionary=None,
+                             subject='alpha2 testing notification',):
     """
     Send notification email to settings.ADMINS.
 
@@ -131,7 +131,7 @@ def send_admin_notification(template_name,
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(_(ADMIN_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+        send_mail(subject,
                   message, sender, [i[1] for i in settings.ADMINS])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
@@ -139,6 +139,18 @@ def send_admin_notification(template_name,
     else:
         msg = 'Sent admin notification for user %s' % dictionary
         logger.log(LOGGING_LEVEL, msg)
+
+
+def send_account_creation_notification(template_name, dictionary=None):
+    user = dictionary.get('user', AnonymousUser())
+    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
+    return _send_admin_notification(template_name, dictionary, subject=subject)
+
+
+def send_group_creation_notification(template_name, dictionary=None):
+    group = dictionary.get('group', astakos.im.models.AstakosGroup())
+    subject = _(GROUP_CREATION_SUBJECT) % {'group': group.name}
+    return _send_admin_notification(template_name, dictionary, subject=subject)
 
 
 def send_helpdesk_notification(user, template_name='im/account_notification.txt'):
@@ -155,8 +167,9 @@ def send_helpdesk_notification(user, template_name='im/account_notification.txt'
     )
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
-                  message, sender, [DEFAULT_CONTACT_EMAIL])
+        send_mail(
+            _(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+            message, sender, [DEFAULT_CONTACT_EMAIL])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -188,6 +201,8 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     else:
         msg = 'Sent invitation %s' % invitation
         logger.log(LOGGING_LEVEL, msg)
+        invitation.inviter.invitations = max(0, self.invitations - 1)
+        invitation.inviter.save()
 
 
 def send_greeting(user, email_template_name='im/welcome_email.txt'):
@@ -241,7 +256,7 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         c = {'url': url, 'site_name': SITENAME}
         from_email = settings.SERVER_EMAIL
         send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT),
-            t.render(Context(c)), from_email, [ec.new_email_address])
+                  t.render(Context(c)), from_email, [ec.new_email_address])
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise ChangeEmailError()
@@ -265,35 +280,21 @@ def activate(user, email_template_name='im/welcome_email.txt',
     send_greeting(user, email_template_name)
 
 
-def switch_account_to_shibboleth(user, local_user, greeting_template_name='im/welcome_email.txt'):
-    if not user or not isinstance(user, AstakosUser):
+def switch_account_to_shibboleth(user, local_user,
+                                 greeting_template_name='im/welcome_email.txt'):
+    try:
+        provider = user.provider
+    except AttributeError:
         return
-
-    if not local_user or not isinstance(user, AstakosUser):
-        return
-
-    if not user.provider == 'shibboleth':
-        return
-
-    user.delete()
-    local_user.provider = 'shibboleth'
-    local_user.third_party_identifier = user.third_party_identifier
-    local_user.save()
-    send_greeting(local_user, greeting_template_name)
-    return local_user
-
-
-def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):
-    """
-    Send an invitation email and upon success reduces inviter's invitation by one.
-
-    Raises SendInvitationError
-    """
-    invitation.inviter = inviter
-    invitation.save()
-    send_invitation(invitation, email_template_name)
-    inviter.invitations = max(0, inviter.invitations - 1)
-    inviter.save()
+    else:
+        if not provider == 'shibboleth':
+            return
+        user.delete()
+        local_user.provider = 'shibboleth'
+        local_user.third_party_identifier = user.third_party_identifier
+        local_user.save()
+        send_greeting(local_user, greeting_template_name)
+        return local_user
 
 
 class SendMailError(Exception):

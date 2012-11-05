@@ -75,9 +75,11 @@ urlpatterns = patterns('astakos.im.views',
                            {}, name='group_join'),
                        url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave',
                            {}, name='group_leave'),
-                       url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$',
+                       url(
+                           r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$',
                            'approve_member', {}, name='approve_member'),
-                       url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$',
+                       url(
+                           r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$',
                            'disapprove_member', {}, name='disapprove_member'),
                        url(r'^group/create/?$', 'group_create_list', {},
                            name='group_create_list'),
@@ -110,7 +112,7 @@ if 'local' in IM_MODULES:
                                 'password_reset_done'),
                             url(
                                 r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
-                            'password_reset_confirm'),
+                            'password_reset_confirm', {'set_password_form': ExtendedSetPasswordForm}),
                             url(r'^local/password/reset/complete/?$',
                                 'password_reset_complete'),
                             url(

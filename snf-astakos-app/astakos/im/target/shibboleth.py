@@ -112,8 +112,5 @@ def login(request, backend=None, on_login_template='im/login.html',
         return render_response(on_creation_template,
                                signup_form=form,
                                provider='shibboleth',
-                               context_instance=get_context(
-                               request,
-                               extra_context
-                               )
-                               )
+                               context_instance=get_context(request,
+                                                            extra_context))

@@ -2,16 +2,17 @@
 
 from south.v2 import DataMigration
 
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Obsolete migration."
         return
-    
+
     def backwards(self, orm):
         "Obsolete migration."
         return
-    
+
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},

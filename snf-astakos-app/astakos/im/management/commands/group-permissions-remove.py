@@ -31,27 +31,44 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from optparse import make_option
 
-from astakos.im.models import Service
-from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
+from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
+
+from astakos.im.models import AstakosUser
+from ._common import remove_group_permission
+
 
 class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
-    help = "Register a service"
+    args = "<groupname> <permission> [<permissions> ...]"
+    help = "Remove group permissions"
 
     def handle(self, *args, **options):
         if len(args) < 2:
-            raise CommandError("Invalid number of arguments")
+            raise CommandError(
+                "Please provide a group name and at least one permission")
 
-        s = {'name':args[0], 'url':args[1]}
-        if len(args) == 3:
-            s['icon'] = args[2]
+        group = None
         try:
-            c = AstakosDjangoDBCallpoint()
-            c.add_services((s,))
+            if args[0].isdigit():
+                group = Group.objects.get(id=args[0])
+            else:
+                group = Group.objects.get(name=args[0])
+        except Group.DoesNotExist, e:
+            raise CommandError("Invalid group")
+
+        try:
+            for pname in args[1:]:
+                r = remove_group_permission(group, pname)
+                if r < 0:
+                    self.stdout.write(
+                        'Invalid permission codename: %s\n' % pname)
+                elif r == 0:
+                    self.stdout.write('Group has not permission: %s\n' % pname)
+                elif r > 0:
+                    self.stdout.write(
+                        'Permission: %s removed successfully\n' % pname)
         except Exception, e:
             raise CommandError(e)
-        else:
-            self.stdout.write(
-                'Service created successfully\n')

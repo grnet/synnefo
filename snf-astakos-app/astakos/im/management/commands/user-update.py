@@ -32,15 +32,13 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.db.utils import IntegrityError
 
-from astakos.im.models import (AstakosUser, AstakosGroup, Membership, Resource,
-                               AstakosUserQuota)
-from astakos.im.endpoints.aquarium.producer import report_user_credits_event
+from astakos.im.models import AstakosUser
 from ._common import remove_user_permission, add_user_permission
 
 
@@ -48,7 +46,7 @@ class Command(BaseCommand):
     args = "<user ID>"
     help = "Modify a user's attributes"
 
-    option_list = list(BaseCommand.option_list) + [
+    option_list = BaseCommand.option_list + (
         make_option('--invitations',
                     dest='invitations',
                     metavar='NUM',
@@ -107,20 +105,8 @@ class Command(BaseCommand):
         make_option('--delete-permission',
                     dest='delete-permission',
                     help="Delete user permission"),
-        make_option('--refill-credits',
-                    action='store_true',
-                    dest='refill',
-                    default=False,
-                    help="Refill user credits"),
-    ]
-    resources = Resource.objects.select_related().all()
-    append = option_list.append
-    for r in resources:
-        append(make_option('--%s-set-quota' % r,
-                    dest='%s-set-quota' % r,
-                    metavar='QUANTITY',
-                    help="Set resource quota"))
-    
+    )
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID")
@@ -150,27 +136,20 @@ class Command(BaseCommand):
         groupname = options.get('add-group')
         if groupname is not None:
             try:
-                group = AstakosGroup.objects.get(name=groupname)
-                m = Membership(
-                    person=user, group=group, date_joined=datetime.now())
-                m.save()
-            except AstakosGroup.DoesNotExist, e:
+                group = Group.objects.get(name=groupname)
+                user.groups.add(group)
+            except Group.DoesNotExist, e:
                 self.stdout.write(
                     "Group named %s does not exist\n" % groupname)
-            except IntegrityError, e:
-                self.stdout.write("User is already member of %s\n" % groupname)
 
         groupname = options.get('delete-group')
         if groupname is not None:
             try:
-                group = AstakosGroup.objects.get(name=groupname)
-                m = Membership.objects.get(person=user, group=group)
-                m.delete()
-            except AstakosGroup.DoesNotExist, e:
+                group = Group.objects.get(name=groupname)
+                user.groups.remove(group)
+            except Group.DoesNotExist, e:
                 self.stdout.write(
                     "Group named %s does not exist\n" % groupname)
-            except Membership.DoesNotExist, e:
-                self.stdout.write("User is not a member of %s\n" % groupname)
 
         pname = options.get('add-permission')
         if pname is not None:
@@ -223,9 +202,6 @@ class Command(BaseCommand):
         if options['renew_token']:
             user.renew_token()
 
-        if options['refill']:
-            report_user_credits_event(user)
-
         try:
             user.save()
         except ValidationError, e:
@@ -233,16 +209,3 @@ class Command(BaseCommand):
 
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
-        
-        for r in self.resources:
-            limit = options.get('%s-set-quota' % r)
-            if not limit:
-                continue
-            if not limit.isdigit():
-                raise CommandError('Invalid limit')
-            
-            q = AstakosUserQuota.objects
-            q, created = q.get_or_create(resource=r, user=user,
-                                         defaults={'uplimit': limit})
-            verb = 'set' if created else 'updated'
-            self.stdout.write('User\'s quota %s successfully\n' % verb)

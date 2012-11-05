@@ -38,8 +38,9 @@ from django.utils.translation import ugettext as _
 from astakos.im.models import AstakosUser
 from astakos.im.forms import LocalUserCreationForm, ShibbolethUserCreationForm
 from astakos.im.util import get_invitation
-from astakos.im.functions import send_verification, send_activation, \
-    send_admin_notification, activate
+from astakos.im.functions import (send_verification, send_activation,
+                                  send_account_creation_notification,
+                                  send_group_creation_notification, activate)
 from astakos.im.settings import INVITATIONS_ENABLED, MODERATION_ENABLED, SITENAME, RE_USER_EMAIL_PATTERNS
 
 import logging
@@ -129,10 +130,9 @@ class ActivationBackend(object):
                     send_activation(user, activation_template_name)
                     return VerificationSent()
             else:
-                send_admin_notification(
+                send_account_creation_notification(
                     template_name=admin_email_template_name,
-                    dictionary={'user': user, 'group_creation': True},
-                    subject='%s alpha2 testing account notification' % SITENAME
+                    dictionary={'user': user, 'group_creation': True}
                 )
                 return NotificationSent()
         except BaseException, e:

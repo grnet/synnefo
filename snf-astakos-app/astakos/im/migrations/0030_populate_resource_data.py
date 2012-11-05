@@ -37,7 +37,6 @@ class Migration(DataMigration):
                         name=rn,
                         defaults=r)
                 except Exception, e:
-                    logger.exception(e)
                     print "Cannot create resource ", rn
                     continue
 
@@ -61,9 +60,14 @@ class Migration(DataMigration):
             for r in resources:
                 rn = r.get('name', '')
                 try:
+                    q = orm.AstakosGroupQuota.objects.get(
+                        group=default,
+                        resource__name=rn)
+                    q.delete()
                     q = orm.Resource.objects.get(service__name=sn, name=rn)
                     q.delete()
-                except orm.Resource.DoesNotExist:
+                except Exception, e:
+                    print "Cannot create resource ", rn
                     continue
 
         map(destroy_policies, SERVICES.iteritems())

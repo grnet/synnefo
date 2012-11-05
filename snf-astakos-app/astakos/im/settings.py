@@ -137,23 +137,23 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
         'url': 'https://node1.example.com/ui/',
         'resources': [{
             'name':'vm',
-            'group':'storage',
+            'group':'compute',
             'uplimit':2,
             'desc': 'Number of virtual machines'
             },{
             'name':'disksize',
-            'group':'storage',
+            'group':'compute',
             'uplimit':5,
             'unit':'GB',
             'desc': 'Virtual machine disk size'
             },{
             'name':'cpu',
-            'group':'storage',
+            'group':'compute',
             'uplimit':1,
             'desc': 'Number of virtual machine processors'
             },{
             'name':'ram',
-            'group':'storage',
+            'group':'compute',
             'uplimit':1024,
             'unit':'MB',
             'desc': 'Virtual machines'
@@ -163,7 +163,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
         'url': 'https://node2.example.com/ui/',
         'resources':[{
             'name':'diskspace',
-            'group':'compute',
+            'group':'storage',
             'uplimit':5 * 1024 * 1024 * 1024,
             'unit':'bytes',
             'desc': 'Pithos account diskspace'

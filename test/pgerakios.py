@@ -131,8 +131,11 @@ class Policy(Config):
 
     @staticmethod
     def get(name):
-        #TODO:
-        exn("Not implemented")
+        p = Policy.policies.get(name)
+        if(p == None):
+            p = Policy.newDummy()
+            Policy.policies[name] = p
+        return p
 
     # Dummy policies are neither loaded nor saved.
     @staticmethod
@@ -159,8 +162,11 @@ class Policy(Config):
     @staticmethod
     def saveMany(policyList):
         inputList = [(p.policyName, p.quantity, p.capacity, p.importLimit, p.exportLimit)
-                     for p in policyList if(p.valid() and not p.isDummy())]
-        rejectedList = Policy.con().set_limits(context=Policy.Context, set_limits=inputList)
+                     for p in policyList if(p.isValid() and not p.isDummy())]
+        if(inputList != []):
+            rejectedList = Policy.con().set_limits(context=Policy.Context, set_limits=inputList)
+        else:
+            rejectedList = policyList
         ok, notok = Policy.splitRejected(policyList, rejectedList)
         for p in ok:
             p.exist = Policy.PolicyState.EXISTS
@@ -219,7 +225,7 @@ class Policy(Config):
         return self.policyName
 
 
-    def valid(self):
+    def isValid(self):
         return  self.policyName == None or self.quantity == None or  self.capacity == None or  self.importLimit == None  or self.exportLimit == None
 
 
@@ -432,10 +438,12 @@ class Commission(Config):
 
     @staticmethod
     def saveAll(comList):
-        inputList = [c.serial for c in comList if(c.isPending())]
-        rejectedList = Commission.con().accept_commission(context=Commission.Context,
-            clientKey=Client.clientKey,
-            serials=inputList, reason='ACCEPT')
+        inputList = [c.serial for c in comList if(c.isPending() and c.serial != None)]
+        #cexn(inputList==None,"input list is NONE!")
+        if(inputList != []):
+            rejectedList = Commission.con().accept_commission(context=Commission.Context,
+                clientKey=Client.clientKey,
+                serials=inputList, reason='ACCEPT')
         for c in inputList:
             c.state = Commission.CommissionState.ACCEPTED
             #TODO: not implemented yet because the API does not support this.
@@ -485,13 +493,14 @@ class Commission(Config):
 
 
     def issue(self):
-        prov = [(r.entity.entityName, r.resourceName, q) for r, q in self.resources_quant]
-        self.serial = Commission.con().issue_commission(context=Commission.Context,
-            target=self.target.entityName,
-            clientKey=Client.clientKey,
-            owner=self.target.parent.entityName,
-            ownerKey=self.target.parent.entityKey,
-            provisions=prov)
+        prov = [(r.entity.entityName, r.resourceName, q) for r, q in self.resources_quant if(q != 0)]
+        if(prov != []):
+            self.serial = Commission.con().issue_commission(context=Commission.Context,
+                target=self.target.entityName,
+                clientKey=Client.clientKey,
+                owner=self.target.parent.entityName,
+                ownerKey=self.target.parent.entityKey,
+                provisions=prov)
         self.state = Commission.CommissionState.PENDING
         return True
 
@@ -510,9 +519,9 @@ class Commission(Config):
             "Attempted to add a resource to a commission that has been issued.")
         cexn(resource in [r  for r, q in self.resources_quant],
             "Resource {0} already exists in commission.", resource.resourceName)
-        cexn(resource.quantity() < quantity,
+        cexn(resource.quantity < quantity,
             "Insufficient quantity: Resource {0} quantity is {1} but {2} is required.",
-            resource.resourceName, resource.quantity(), quantity)
+            resource.resourceName, resource.quantity, quantity)
         self.resources_quant.append((resource, quantity))
         return True
 
@@ -526,20 +535,28 @@ class Entity(Config):
     allEntities = {}
 
     @staticmethod
-    def get(name="",f=(lambda: Entity().set("system","",None))):
-        printf("get name {0}",name)
+    def get(name="",f=(lambda: (lambda x: Entity().set("system","",None))(printf("DEFAULT entity: system")) )):
+        #printf("System name {0} ==> get name {1}",Entity.systemName,name)
+        # If system has not been added to hierarchy add it now
+        if( Entity.allEntities.get(Entity.systemName) == None):
+            Entity.allEntities[Entity.systemName] = Entity().set(Entity.systemName,"",None)
+        # If name is empty, then translate it to system
         if(name == ""):
-            name = "system"
-        if( Entity.allEntities.get("system") == None):
-            Entity.allEntities[name] = Entity().set("system","",None)
+            name = Entity.systemName
+        # find entity named name
         e = Entity.allEntities.get(name)
+        #otherwise, create a new one
         if(e == None):
-            Entity.allEntities[name] = f()
+            #printf("calling f for name {0}",name)
+            e = f()
+            Entity.allEntities[name] = e
+            
+        #printf("Getting object with name {0} and type {1} and its name is {2}",name,type(e),e.entityName)
         return e
 
     @staticmethod
     def list():
-        return [v for k, v in Entity.allEntities.iteritems()]
+        return [v for k, v in Entity.allEntities.iteritems() if(v!=None)]
 
     @staticmethod
     def split(entityList, rejectedList, op):
@@ -606,7 +623,7 @@ class Entity(Config):
         return not (self.__eq__(other))
 
     def __init__(self):
-        self.set("system", "", None)
+        self.set(None, None, None)
         self._commissions = []
         self._resources = []
 
@@ -622,7 +639,7 @@ class Entity(Config):
         self.set(None, None, None)
 
     def set(self, name, password, parent):
-        cexn(parent == None and name != "system", "Entity.get of a non-existent entity with name {0} and no parent.", name)
+        cexn(parent == None and name != "system" and name != None, "Entity.get of a non-existent entity with name {0} and no parent.", name)
         self.entityName = name
         self.entityKey = password
         self.parent = parent
@@ -682,7 +699,7 @@ class Entity(Config):
                 r1 = Resource(r,self)
                 ret.append(r1)
             Resource.loadMany(ret)
-            self_resources = ret + [r for r in self._resources if(r not in ret)]
+            self._resources = ret + [r for r in self._resources if(r not in ret)]
 
         return self._resources
 
@@ -722,7 +739,9 @@ class ResourceHolder(Entity):
     resourceNames = ["pithos","cyclades_vm","cyclades_cpu","cyclades_mem"]
 
     def __init__(self):
-        super(Entity,self).__init__()
+        #super(Entity,self).__init__()
+        Entity.__init__(self)
+        printf("INIT of ResourceHolder invoked for {0}",self.entityName)
         self.commission = Commission(self)
         for r in ResourceHolder.resourceNames:
             self.addResource(r)
@@ -735,48 +754,61 @@ class ResourceHolder(Entity):
         self.getResource(True)
 
     def commit(self):
-        self.issue()
-        return self.commission.accept()
+        return self.commission.issue() and self.commission.accept()
 
     def reject(self):
-        self.issue()
-        return self.commission.reject()
+        return self.issue() and self.commission.reject()
 
     def release(self):
+        # If there is a committed commission, then undo changes
         if(not self.commission.canChange()):
-            exn("The joinGroup commission is not finalized! Nothing to do.")
             # commit the inverse stuff (send stuff back to groups)
-        self.commission = self.commission.inverse()
-        b = self.commit()
-        self.newCommission()
+            self.commission = self.commission.inverse()
+            b = self.commit()
+            self.newCommission()
+            if(not b):
+                return False
         # Remove entity
-        return b and super(ResourceHolder,self).release()
+        return super(ResourceHolder,self).release()
 
 class Group(ResourceHolder):
 
-    groupRoot =   Entity.get("group",lambda: Group().set("group","group",ResourceHolder.root))
-    systemGroupName = "system"
-    systemGroupKey  = "system"
-
-    @staticmethod
-    def getSystemGroup(self):
-        return Group.get(Group.systemGroupName,Group.systemGroupKey)
+    systemGroupName = "group"
+    systemGroupKey  = "group"
 
     @staticmethod
     def listGroups():
-        return Group.groupRoot.getChildren()
+        return Group.getGroupRoot().getChildren()
+
+    @staticmethod
+    def getGroupRoot():
+        def createRoot():
+            return Group().set(Group.systemGroupName,Group.systemGroupKey,ResourceHolder.root)
+        return Entity.get(Group.systemGroupName,createRoot)
+
 
     @staticmethod
     def get(name,key):
-        ret =   Entity.get(name,lambda: Group().set(name,key,Group.groupRoot))
+        def groupCreate():
+            g = Group().set(name,key,Group.getGroupRoot())
+            printf("Creating group {0} with type {1}",name,type(g))
+            return g
+        ret =   Entity.get(name,groupCreate)
         if(name == Group.systemGroupName):
             ret.makeSystem()
         elif(ret.exists(True) == False):
             ret.drawResources()
         return ret
+    
+    def set(self, name, password, parent):
+        super(ResourceHolder,self).set(name, password, parent)
+        printf("Hello !!")
+        return self
 
     def __init__(self):
-        super(ResourceHolder,self).__init__()
+        #super(ResourceHolder,self).__init__()
+        ResourceHolder.__init__(self)
+        printf("INIT of Group invoked for {0}",self.entityName)
         self.users = []
         self.userResourcePolicies = {}
         self.initializedSystem = False
@@ -816,33 +848,48 @@ class Group(ResourceHolder):
         for r in self.getResources():
             self.commission.addResource(r,r.policy.quantity)
         #
-        self.commission.commit()
+        return self.commit() 
 
     def savePolicyQuantities(self,**kwargs):
-        res  = self.getResources()
         policies = []
-        for name,quantity in kwargs:
+        for name,quantity in kwargs.items():
             r = self.getResource(name)
             r.policy.quantity = quantity
-            policies.append(r)
-        Policy.save(policies)
+            policies.append(r.policy)
+        Policy.saveMany(policies)
 
 
 class User(ResourceHolder):
-    userRoot =   Entity.get("user",lambda: User().set("user","user",ResourceHolder.root))
+
+    systemUserName = "group"
+    systemUserKey  = "group"
+    
+    #userRoot =   Entity.get("user",lambda: User().set("user","user",ResourceHolder.root))
 
     @staticmethod
     def listUsers():
         return User.userRoot.getChildren()
 
     @staticmethod
+    def getUserRoot():
+        def createRoot():
+            return User().set(User.systemUserName,User.systemUserKey,ResourceHolder.root)
+        return Entity.get(User.systemUserName,createRoot)
+
+
+    @staticmethod
     def get(name,key):
-         return Entity.get(name,lambda: User().set(name,key,User.userRoot))
+        def userCreate():
+            u = User().set(name,key,User.getUserRoot())
+            printf("Creating user {0} with type {1}",name,type(u))
+            return u
+        return  Entity.get(name,userCreate)
 
     def __init__(self):
-        super(ResourceHolder,self).__init__(None)
+        #super(ResourceHolder,self).__init__()
+        ResourceHolder.__init__(self)
         self.groups = []
-        self.loadPolicy()
+        self.loadPolicies()
 
 
     def reload(self):
@@ -852,11 +899,14 @@ class User(ResourceHolder):
         self.loadResources()
         self.loadPolicies()
 
-    def loadPolices(self):
+    def loadPolicies(self):
         dict = {}
+        for r in self.getResources()    :
+            dict[r.resourceName] = r.policy
+            
         for g in self.groups:
             for r in self.resourceNames:
-                p = g.getUserPolicyFor(r.name)
+                p = g.getUserPolicyFor(r.resourceName)
                 if(dict[r.name] == None):
                     dict[r.name] = Policy.copy(p)
                 else:
@@ -865,15 +915,16 @@ class User(ResourceHolder):
         # Change user policy to dummy !!! its a copy of the group policy so
         # we can modify its fields
         for r in  self.getResources():
-            dict[r.name].setDummy(True)
-            r.setPolicy(dict[r.name])
+            p = dict.get(r.resourceName)
+            p.setDummy(True)
+            r.setPolicy(p)
             ## FIXME: THIS IS NOT CORRECT
             r.setFromPolicy()
 
 
     def joinGroup(self,group):
         self.groups.append(group)
-        self.groups.users.append(self)
+        group.users.append(self)
         #
         for r in self.getResources():
             groupUserPolicy = group.getUserPolicyFor(r.resourceName)
@@ -889,6 +940,13 @@ try:
     # Group1
     printf("Step 1")
     group1 = Group.get("group1","group1")
+    
+    #cexn(group1.create() == False, "Could not create group  group1")
+    group1.create()
+    
+    printf("Type of group1 : {0}", type(group1) )
+    if(not isinstance(group1,Group)):
+        exn("Not instance of group")
 
     printf("Step 2  name : {0}",group1.entityName)
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
@@ -899,6 +957,11 @@ try:
     printf("Step 3 ")
     user1 = User.get("prodromos", "key1")
 
+    user1.create()
+    #cexn(user1.create() == False, "Could not create group  group1")
+ 
+    
+    
     printf("Step 4 ")
     user1.joinGroup(group1)
     printf("Step 5")

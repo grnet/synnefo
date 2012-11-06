@@ -195,9 +195,17 @@ def update_network(network, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    backend.process_network_status(network, event_time,
-                                   msg['jobId'], msg['operation'],
-                                   msg['status'], msg['logmsg'])
+    opcode = msg['operation']
+    status = msg['status']
+    jobid = msg['jobId']
+
+    if opcode == "OP_NETWORK_SET_PARAMS":
+        backend.process_network_modify(network, event_time, jobid, opcode,
+                                       status, msg['add_reserved_ips'],
+                                       msg['remove_reserved_ips'])
+    else:
+        backend.process_network_status(network, event_time, jobid, opcode,
+                                       status, msg['logmsg'])
 
     log.debug("Done processing ganeti-network-status msg for network %s.",
               msg['network'])

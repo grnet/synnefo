@@ -51,6 +51,9 @@ class Unauthorized(Fault):
 class ResizeNotAllowed(Fault):
     code = 403
 
+class Forbidden(Fault):
+    code = 403
+
 class ItemNotFound(Fault):
     code = 404
 

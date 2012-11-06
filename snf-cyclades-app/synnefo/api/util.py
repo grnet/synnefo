@@ -57,7 +57,7 @@ from django.db.models import Q
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType)
+                                BadMediaType, Forbidden)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable)
@@ -166,7 +166,7 @@ def get_vm(server_id, user_id, non_deleted=False, non_suspended=False):
         if non_deleted and vm.deleted:
             raise VirtualMachine.DeletedError
         if non_suspended and vm.suspended:
-            raise Unauthorized("Administratively Suspended VM")
+            raise Forbidden("Administratively Suspended VM")
         return vm
     except ValueError:
         raise BadRequest('Invalid server ID.')

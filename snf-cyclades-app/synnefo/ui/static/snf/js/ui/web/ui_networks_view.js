@@ -909,7 +909,7 @@
         },
         
         nic_in_network: function(nic) {
-          return nic.get_network().id != this.network.id;
+          return nic.get_network().id == this.network.id;
         },
 
         nic_added_handler: function(action, nic) {

@@ -1011,6 +1011,12 @@
         remove: function() {
             $(this.el).remove();
         },
+        
+        get_name: function() {
+          var net_name = this.network.get('name');
+          if (net_name == "public") { net_name = "Internet" };
+          return net_name;
+        },
 
         update_layout: function() {
             // has vms ???
@@ -1022,8 +1028,7 @@
             //
             this.$(".machines-count").text(this.get_nics().length);
 
-            var net_name = this.network.get("name");
-            if (net_name == "public") { net_name = "Internet" }
+            var net_name = this.get_name();
             this.$(".name-div span.name").text(net_name);
 
             if (this.rename_view) {
@@ -1123,7 +1128,11 @@
                                                                    network, 
                                                                    view);
         },
-        
+          
+        get_name: function() {
+          return synnefo.config.grouped_network_name || views.GroupedPublicNetworkView.__super__.get_name.call(this);
+        },
+
         nic_in_network: function(nic) {
           var nic_net  = nic.get_network();
           return _.filter(this.networks, function(n) { 

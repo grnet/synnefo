@@ -149,6 +149,12 @@ UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False
 # virtual machines from the network.
 UI_NETWORK_STRICT_DESTROY = True
 
+# Whether or not to group public networks nics in a single network view
+UI_GROUP_PUBLIC_NETWORKS = True
+
+# The name of the grouped network view
+UI_GROUPED_NETWORK_NAME = 'Internet'
+
 
 ###############
 # UI EXTENSIONS

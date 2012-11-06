@@ -49,20 +49,22 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
             make_option("--backend-id", dest="backend_id",
-                        help="The ID of the Ganeti backend"),
+                        help="ID of the Ganeti backend"),
             make_option("--name", dest="name",
                         help="Name of the server."),
             make_option("--user-id", dest="user_id",
-                        help="The owner of the server"),
-            make_option("--image-id", dest="image_id"),
-            make_option("--flavor-id", dest="flavor_id"),
-            make_option("--password", dest="password")
+                        help="ID of the Owner of the server."),
+            make_option("--image-id", dest="image_id",
+                        help="ID of the image."),
+            make_option("--flavor-id", dest="flavor_id",
+                        help="ID of the flavor"),
+            make_option("--password", dest="password",
+                        help="Password for the new server")
         )
 
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
-
 
         name = options['name']
         user_id = options['user_id']
@@ -118,7 +120,6 @@ class Command(BaseCommand):
             backend = ballocator.allocate(user_id, flavor)
             if not backend:
                 raise CommandError("Can not allocate VM")
-
 
         # Get Public address
         (network, address) = allocate_public_address(backend)

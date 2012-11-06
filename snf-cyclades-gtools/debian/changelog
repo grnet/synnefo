@@ -1,8 +1,8 @@
-snf-cyclades-gtools (0.11.0~rc18-1) stable; urgency=low
+snf-cyclades-gtools (0.11.0-1) stable; urgency=low
 
   * New upstream version
 
- -- Dimitris Aragiorgis <dimara@grnet.gr>  Thu, 16 Oct 2012 18:13:07 +0300
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Sun, 04 Nov 2012 20:22:06 +0200
 
 snf-cyclades-gtools (0.10.0-2) stable; urgency=low
 

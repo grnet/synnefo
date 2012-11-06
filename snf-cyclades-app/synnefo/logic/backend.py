@@ -428,7 +428,11 @@ def _create_network(network, backend):
     tags = network.backend_tag
     if network.dhcp:
         tags.append('nfdhcpd')
-    tags = ','.join(tags)
+
+    if network.public:
+        conflicts_check = True
+    else:
+        conflicts_check = False
 
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)
@@ -445,6 +449,7 @@ def _create_network(network, backend):
                                     gateway6=network.gateway6,
                                     network_type=network_type,
                                     mac_prefix=mac_prefix,
+                                    conflicts_check=conflicts_check,
                                     tags=tags)
 
 
@@ -454,15 +459,21 @@ def connect_network(network, backend, depend_job=None, group=None):
 
     mode = "routed" if "ROUTED" in network.type else "bridged"
 
+    if network.public:
+        conflicts_check = True
+    else:
+        conflicts_check = False
+
     depend_jobs = [depend_job] if depend_job else []
     with pooled_rapi_client(backend) as client:
         if group:
             client.ConnectNetwork(network.backend_id, group, mode,
-                                  network.link, depend_jobs)
+                                  network.link, conflicts_check, depend_jobs)
         else:
             for group in client.GetGroups():
                 client.ConnectNetwork(network.backend_id, group, mode,
-                                      network.link, depend_jobs)
+                                      network.link, conflicts_check,
+                                      depend_jobs)
 
 
 def delete_network(network, backends=None, disconnect=True):

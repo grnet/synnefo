@@ -1162,6 +1162,34 @@ def group_create_demo(request, kind_name='default'):
         }
         form = form_class(data)
 
+    resource_presentation = {
+       'compute': {
+            'help_text':'group compute help text',
+                     
+        },
+        'storage': {
+            'help_text':'group storage help text',
+                      
+        },  
+        'pithos+.diskspace': {
+            'help_text':'resource pithos+.diskspace help text',
+                      
+        },  
+        'cyclades.vm': {
+            'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
+                      
+        },  
+        'cyclades.disksize': {
+            'help_text':'resource cyclades.disksize help text',
+                      
+        },  
+        'cyclades.ram': {
+            'help_text':'resource cyclades.ram help text',
+                      
+        }                        
+                             
+    }
+    
     # Create the template, context, response
     template_name = "%s/%s_form_demo.html" % (
         model._meta.app_label,
@@ -1171,7 +1199,8 @@ def group_create_demo(request, kind_name='default'):
     c = RequestContext(request, {
         'form': form,
         'kind': kind,
-        'resource_catalog':resource_catalog
+        'resource_catalog':resource_catalog,
+        'resource_presentation':resource_presentation
     }, context_processors)
     return HttpResponse(t.render(c))
 

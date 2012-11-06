@@ -1,8 +1,9 @@
 $(document).ready(function() {
 
-	// quota form actions
 	$('.quotas-form ul li a').click(function(e){
-		//e.preventDefault();
+		if ( $(this).hasClass('selected')){
+			e.preventDefault();
+		}
 		if ( !$(this).hasClass('selected')){
 			$(this).addClass('selected');
 			var id = $(this).attr('id');
@@ -34,14 +35,12 @@ $(document).ready(function() {
 				$(this).removeClass('selected');
 			}
 		}); 
-		
 		 
 		 
 	});
 	 
 		
-	$('.quotas-form .checkbox-widget.limited').click(function(e){
-		e.preventDefault();
+	$('.quotas-form input.limited').bind("changed", function(e){
 		$(this).siblings('input[type="text"]').toggle();
 		$(this).siblings('input[type="text"]').focus();
 	 	parentdiv = $(this).parents('.form-row').prev('.form-row');
@@ -50,7 +49,7 @@ $(document).ready(function() {
 		 
 	});
 	
-	$('.quotas-form .checkbox-widget.unlimited').click(function(e){
+	$('.quotas-form input.unlimited').bind("changed", function(e){
 		parentdiv = $(this).parents('.form-row').next('.form-row');
 		if (parentdiv.find('.checkbox-widget').hasClass('checked')){
 			parentdiv.find('.checkbox-widget').removeClass('checked');
@@ -63,7 +62,7 @@ $(document).ready(function() {
 		
 	})
 	
-	$('input:radio').uniform();
+	//$('input:radio').uniform();
 	$('.radio .radio span').each(function(index) {	    
 		if ($(this).hasClass('checked')){
 			alert('f');

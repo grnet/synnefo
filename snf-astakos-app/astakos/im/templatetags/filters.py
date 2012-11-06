@@ -141,3 +141,8 @@ def items(d):
     if isinstance(d, defaultdict):
         return d.iteritems()
     return d
+
+
+@register.filter
+def get_value_after_dot(value):
+    return value.split(".")[1]

@@ -22,6 +22,7 @@
                 if (src == "LABEL" || src == "label") {
                     el.toggleClass("checked");	
                     $this.attr('checked', el.hasClass("checked"));
+                    $this.trigger('changed');
                 };
                 
             })
@@ -37,8 +38,10 @@
 	  el.addClass(className);	
 		
       el.click(function() {
+
         el.toggleClass("checked");
         $this.attr('checked', el.hasClass("checked"));
+        $this.trigger('changed');
       });
       
       el.keypress(function(e){
@@ -47,6 +50,7 @@
       		e.preventDefault();
       		el.toggleClass("checked");
         	$this.attr('checked', el.hasClass("checked"));
+        	$this.trigger('changed');
       	}
       })
 

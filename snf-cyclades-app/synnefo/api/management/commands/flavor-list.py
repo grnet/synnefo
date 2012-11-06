@@ -42,7 +42,7 @@ from ._common import format_bool
 
 class Command(BaseCommand):
     help = "List flavors"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('-c',
             action='store_true',
@@ -50,21 +50,21 @@ class Command(BaseCommand):
             default=False,
             help="Use pipes to separate values"),
         )
-    
+
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
-        
+
         labels = ('id', 'name', 'cpus', 'ram', 'disk', 'template', 'deleted')
         columns = (3, 12, 6, 6, 6, 10, 7)
-        
+
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-        
-        for flavor in Flavor.objects.all():
+
+        for flavor in Flavor.objects.all().order_by('id'):
             id = str(flavor.id)
             cpu = str(flavor.cpu)
             ram = str(flavor.ram)
@@ -72,10 +72,10 @@ class Command(BaseCommand):
             deleted = format_bool(flavor.deleted)
             fields = (id, flavor.name, cpu, ram, disk, flavor.disk_template,
                       deleted)
-            
+
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
+
             self.stdout.write(line.encode('utf8') + '\n')

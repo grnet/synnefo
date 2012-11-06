@@ -1659,7 +1659,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
                     gateway6=None, mac_prefix=None, network_type=None,
-                    tags=None, dry_run=False):
+                    tags=None, conflicts_check=False, dry_run=False):
     """Creates a new network.
 
     @type name: str
@@ -1688,20 +1688,23 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "network6": network6,
       "mac_prefix": mac_prefix,
       "network_type": network_type,
-      "tags": tags
+      "tags": tags,
+      "conflicts_check": conflicts_check,
       }
 
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
                              query, body)
 
-  def ConnectNetwork(self, network_name, group_name, mode, link, depends=None):
+  def ConnectNetwork(self, network_name, group_name, mode, link,
+                     conflicts_check=False, depends=None):
     """Connects a Network to a NodeGroup with the given netparams
 
     """
     body = {
       "group_name": group_name,
       "network_mode": mode,
-      "network_link": link
+      "network_link": link,
+      "conflicts_check": conflicts_check,
       }
 
     if depends:

@@ -591,6 +591,8 @@
             payload._options = options || {};
             return this.api_call(this.api_path() + "/action", "create", 
                                  payload,
+                                 undefined,
+                                 error,
                                  _.bind(function(){
                                      //this.vms.add_pending(vm.id);
                                      this.increase_connecting();
@@ -603,6 +605,8 @@
             payload._options = options || {};
             return this.api_call(this.api_path() + "/action", "create", 
                                  payload,
+                                 undefined,
+                                 error,
                                  _.bind(function(){
                                      nic.set({"removing": 1});
                                      nic.get_network().update_state();

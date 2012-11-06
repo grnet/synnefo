@@ -582,6 +582,7 @@
     })
 
     views.FirewallEditView = views.View.extend({
+
         initialize: function(nic, network, parent) {
             this.parent = parent;
             this.vm = nic.get_vm();
@@ -767,6 +768,7 @@
 
         show_nics_list: function() {
             //if (this.nics_empty()) { return }
+            var self = this;
             this.nics_list_toggler.addClass("open");
             this.nics_list.slideDown(function(){
                 $(window).trigger("resize");
@@ -789,10 +791,13 @@
                 if (this.nics_list.is(":visible")) {
                     this.hide_nics_list();
                 } else {
-                    this.fix_left_border();
                     this.show_nics_list();
+                    this.fix_left_border();
                 }
 
+            }, this));
+            $(window).bind("resize", _.bind(function() {
+                this.fix_left_border();
             }, this));
         },
 
@@ -860,9 +865,6 @@
             }, this));
             
             this.$(".empty-network-slot").hide();
-            $(window).bind("resize", _.bind(function() {
-                this.fix_left_border();
-            }, this));
         },
 
         show_connect_vms: function() {
@@ -1080,7 +1082,7 @@
             if (!this.nics_visible) { return };
             
             var imgheight = 2783;
-            var opened_vm_height = 133 + 20;
+            var opened_vm_height = 133 + 18;
             var closed_vm_height = 61 + 20;
             var additional_height = 25;
 

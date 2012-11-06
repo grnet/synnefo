@@ -37,6 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine, Backend
+from ._common import format_vm_state
 
 
 class Command(BaseCommand):
@@ -101,7 +102,9 @@ class Command(BaseCommand):
                 image = cache.get_image(server.imageid, server.userid)['name']
             except:
                 image = server.imageid
-            fields = (id, name, server.userid, flavor, image, server.operstate,
+
+            state = format_vm_state(server)
+            fields = (id, name, server.userid, flavor, image, state,
                       str(server.backend))
 
             if options['csv']:

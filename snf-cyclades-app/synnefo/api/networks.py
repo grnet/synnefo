@@ -44,7 +44,7 @@ from django.utils import simplejson as json
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (ServiceUnavailable, BadRequest, Unauthorized,
+from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
                                 NetworkInUse, OverLimit)
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
@@ -152,6 +152,7 @@ def create_network(request):
     #                       unauthorized (401),
     #                       badMediaType(415),
     #                       badRequest (400),
+    #                       forbidden (403)
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
@@ -171,7 +172,7 @@ def create_network(request):
         raise BadRequest('Malformed request.')
 
     if net_type == 'PUBLIC_ROUTED':
-        raise Unauthorized('Can not create a public network.')
+        raise Forbidden('Can not create a public network.')
 
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
                                                deleted=False))
@@ -239,6 +240,7 @@ def update_network_name(request, network_id):
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
     #                       badRequest (400),
+    #                       forbidden (403)
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
@@ -253,7 +255,7 @@ def update_network_name(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Unauthorized('Can not rename the public network.')
+        raise Forbidden('Can not rename the public network.')
     if net.deleted:
         raise Network.DeletedError
     net.name = name
@@ -268,14 +270,14 @@ def delete_network(request, network_id):
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
+    #                       forbidden (403)
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       overLimit (413)
 
     log.info('delete_network %s', network_id)
     net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
-        raise Unauthorized('Can not delete the public network.')
+        raise Forbidden('Can not delete the public network.')
 
     if net.deleted:
         raise Network.DeletedError
@@ -300,7 +302,7 @@ def network_action(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Unauthorized('Can not modify the public network.')
+        raise Forbidden('Can not modify the public network.')
     if net.deleted:
         raise Network.DeletedError
 

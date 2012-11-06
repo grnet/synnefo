@@ -157,6 +157,11 @@ class Backend(models.Model):
         else:
             # ON_DELETE = SET NULL
             self.virtual_machines.all().backend = None
+            # Remove BackendNetworks of this Backend.
+            # Do not use networks.all().delete(), since delete() method of
+            # BackendNetwork will not be called!
+            for net in self.networks.all():
+                net.delete()
             super(Backend, self).delete(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):

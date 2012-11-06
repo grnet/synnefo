@@ -48,3 +48,10 @@ def format_date(d):
         return timesince(d) + ' ago'
     else:
         return 'in ' + timeuntil(d)
+
+
+def format_vm_state(vm):
+    if vm.operstate == "BUILD":
+        return "BUILD(" + str(vm.buildpercentage) + "%)"
+    else:
+        return vm.operstate

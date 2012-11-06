@@ -256,6 +256,9 @@ def GenericCurlConfig(verbose=False, use_signal=False,
     lcsslver = sslver.lower()
     if lcsslver.startswith("openssl/"):
       pass
+    elif lcsslver.startswith("nss/"):
+      # TODO: investigate compatibility beyond a simple test
+      pass
     elif lcsslver.startswith("gnutls/"):
       if capath:
         raise Error("cURL linked against GnuTLS has no support for a"
@@ -1659,7 +1662,8 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
                     gateway6=None, mac_prefix=None, network_type=None,
-                    tags=None, dry_run=False):
+                    add_reserved_ips=None, tags=[],
+                    conflicts_check=False, dry_run=False):
     """Creates a new network.
 
     @type name: str
@@ -1674,12 +1678,6 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
 
-    if tags:
-      tags = tags.split(',')
-    else:
-      tags = []
-
-
     body = {
       "network_name": network_name,
       "gateway": gateway,
@@ -1688,20 +1686,24 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "network6": network6,
       "mac_prefix": mac_prefix,
       "network_type": network_type,
-      "tags": tags
+      "add_reserved_ips": add_reserved_ips,
+      "conflicts_check": conflicts_check,
+      "tags": tags,
       }
 
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
                              query, body)
 
-  def ConnectNetwork(self, network_name, group_name, mode, link, depends=None):
+  def ConnectNetwork(self, network_name, group_name, mode, link,
+                     conflicts_check=False, depends=None, dry_run=False):
     """Connects a Network to a NodeGroup with the given netparams
 
     """
     body = {
       "group_name": group_name,
       "network_mode": mode,
-      "network_link": link
+      "network_link": link,
+      "conflicts_check": conflicts_check,
       }
 
     if depends:
@@ -1709,12 +1711,15 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       for d in depends:
         body['depends'].append([d, ["success"]])
 
+    query = []
+    _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_PUT,
                              ("/%s/networks/%s/connect" %
-                             (GANETI_RAPI_VERSION, network_name)), None, body)
+                             (GANETI_RAPI_VERSION, network_name)), query, body)
 
-  def DisconnectNetwork(self, network_name, group_name, depends=None):
+  def DisconnectNetwork(self, network_name, group_name,
+                        depends=None, dry_run=False):
     """Connects a Network to a NodeGroup with the given netparams
 
     """
@@ -1727,12 +1732,30 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       for d in depends:
         body['depends'].append([d, ["success"]])
 
+    query = []
+    _AppendDryRunIf(query, dry_run)
+
     return self._SendRequest(HTTP_PUT,
                              ("/%s/networks/%s/disconnect" %
-                             (GANETI_RAPI_VERSION, network_name)), None, body)
+                             (GANETI_RAPI_VERSION, network_name)), query, body)
 
 
-  def DeleteNetwork(self, network, depends=None):
+  def ModifyNetwork(self, network, **kwargs):
+    """Modifies a network.
+
+    More details for parameters can be found in the RAPI documentation.
+
+    @type network: string
+    @param network: Network name
+    @rtype: string
+    @return: job id
+
+    """
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/networks/%s/modify" %
+                              (GANETI_RAPI_VERSION, network)), None, kwargs)
+
+  def DeleteNetwork(self, network, depends=None, dry_run=False):
     """Deletes a network.
 
     @type group: str
@@ -1750,10 +1773,68 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       for d in depends:
         body['depends'].append([d, ["success"]])
 
+    query = []
+    _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_DELETE,
                              ("/%s/networks/%s" %
-                              (GANETI_RAPI_VERSION, network)), None, body)
+                              (GANETI_RAPI_VERSION, network)), query, body)
+
+  def GetNetworkTags(self, network):
+    """Gets tags for a network.
+
+    @type network: string
+    @param network: Node group whose tags to return
+
+    @rtype: list of strings
+    @return: tags for the network
+
+    """
+    return self._SendRequest(HTTP_GET,
+                             ("/%s/networks/%s/tags" %
+                              (GANETI_RAPI_VERSION, network)), None, None)
+
+  def AddNetworkTags(self, network, tags, dry_run=False):
+    """Adds tags to a network.
+
+    @type network: str
+    @param network: network to add tags to
+    @type tags: list of string
+    @param tags: tags to add to the network
+    @type dry_run: bool
+    @param dry_run: whether to perform a dry run
+
+    @rtype: string
+    @return: job id
+
+    """
+    query = [("tag", t) for t in tags]
+    _AppendDryRunIf(query, dry_run)
+
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/networks/%s/tags" %
+                              (GANETI_RAPI_VERSION, network)), query, None)
+
+  def DeleteNetworkTags(self, network, tags, dry_run=False):
+    """Deletes tags from a network.
+
+    @type network: str
+    @param network: network to delete tags from
+    @type tags: list of string
+    @param tags: tags to delete
+    @type dry_run: bool
+    @param dry_run: whether to perform a dry run
+    @rtype: string
+    @return: job id
+
+    """
+    query = [("tag", t) for t in tags]
+    _AppendDryRunIf(query, dry_run)
+
+    return self._SendRequest(HTTP_DELETE,
+                             ("/%s/networks/%s/tags" %
+                              (GANETI_RAPI_VERSION, network)), query, None)
+
 
   def GetGroups(self, bulk=False):
     """Gets all node groups in the cluster.

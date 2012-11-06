@@ -257,7 +257,7 @@ def create_server(request):
             raise faults.OverLimit("Server count limit exceeded for your account.")
 
         backend_allocator = BackendAllocator()
-        backend = backend_allocator.allocate(flavor)
+        backend = backend_allocator.allocate(request.user_uniq, flavor)
 
         if backend is None:
             log.error("No available backends for VM with flavor %s", flavor)
@@ -269,7 +269,7 @@ def create_server(request):
         transaction.commit()
 
     try:
-        if settings.PUBLIC_ROUTED_USE_POOL:
+        if settings.PUBLIC_USE_POOL:
             (network, address) = util.allocate_public_address(backend)
             if address is None:
                 log.error("Public networks of backend %s are full", backend)

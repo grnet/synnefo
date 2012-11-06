@@ -41,7 +41,7 @@ from synnefo.db.models import VirtualMachine, Backend
 
 class Command(BaseCommand):
     help = "List servers"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('-c',
             action='store_true',
@@ -59,14 +59,17 @@ class Command(BaseCommand):
         make_option('--backend_id', dest='backend_id',
                     help="List only servers of the specified backend")
         )
-    
+
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
         if options['backend_id']:
-            servers = \
-            Backend.objects.get(id=options['backend_id']).virtual_machines
+            try:
+                servers = Backend.objects.get(id=options['backend_id'])\
+                                         .virtual_machines
+            except Backend.DoesNotExist:
+                raise CommandError("Backend not found in DB")
         else:
             servers = VirtualMachine.objects
 
@@ -77,18 +80,18 @@ class Command(BaseCommand):
 
         if options['build']:
             servers = servers.filter(operstate='BUILD')
-        
+
         labels = ('id', 'name', 'owner', 'flavor', 'image', 'state',
                   'backend')
         columns = (3, 12, 20, 11, 12, 9, 40)
-        
+
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-        
-        for server in servers:
+
+        for server in servers.order_by('id'):
             id = str(server.id)
             try:
                 name = server.name.decode('utf8')
@@ -101,10 +104,10 @@ class Command(BaseCommand):
                 image = server.imageid
             fields = (id, name, server.userid, flavor, image, server.operstate,
                       str(server.backend))
-            
+
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
+
             self.stdout.write(line.encode('utf8') + '\n')

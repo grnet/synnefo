@@ -28,8 +28,9 @@ There are also components for:
 .. toctree::
    :maxdepth: 1
 
-   Secure image deployment (image tool) <snf-image>
+   Secure image deployment (snf-image tool) <snf-image>
    Command-line cloud management (kamaki tool) <http://docs.dev.grnet.gr/kamaki/latest/index.html>
+   Image bundling/uploading/registering (snf-image-creator tool) <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>
 
 Synnefo is designed to be as simple, scalable and production ready as possible.
 Furthermore, although it can be deployed in small configurations, its prime
@@ -100,6 +101,7 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
  * `snf-cyclades-gtools <http://docs.dev.grnet.gr/snf-cyclades-gtools/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
  * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
+ * `snf-image-creator <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://docs.dev.grnet.gr/snf-occi/latest/index.html>`_
  * `snf-cloudcms <http://docs.dev.grnet.gr/snf-cloudcms/latest/index.html>`_
  * `nfdhcpd <https://code.grnet.gr/projects/nfdhcpd>`_

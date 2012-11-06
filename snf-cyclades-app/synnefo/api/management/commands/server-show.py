@@ -42,25 +42,31 @@ from ._common import format_bool, format_date
 class Command(BaseCommand):
     args = "<server ID>"
     help = "Show server info"
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
-        
+
         try:
             server_id = int(args[0])
             server = VirtualMachine.objects.get(id=server_id)
         except (ValueError, VirtualMachine.DoesNotExist):
             raise CommandError("Invalid server ID")
-        
+
         flavor = '%s (%s)' % (server.flavor.id, server.flavor.name)
-        image = '%s (%s)' % (server.imageid,
-                        get_image(server.imageid, server.userid).get('name'))
-        
+        userid = server.userid
+
+        imageid = server.imageid
+        try:
+            image_name = get_image(imageid, userid).get('name')
+        except:
+            image_name = "None"
+        image = '%s (%s)' % (imageid, image_name)
+
         kv = {
             'id': server_id,
             'name': server.name,
-            'owner': server.userid,
+            'owner': userid,
             'created': format_date(server.created),
             'updated': format_date(server.updated),
             'image': image,
@@ -70,7 +76,7 @@ class Command(BaseCommand):
             'suspended': format_bool(server.suspended),
             'state': server.operstate
         }
-        
+
         for key, val in sorted(kv.items()):
             line = '%s: %s\n' % (key.rjust(16), val)
             self.stdout.write(line.encode('utf8'))

@@ -166,12 +166,16 @@ def create_network(request):
         gateway = d.get('gateway', None)
         gateway6 = d.get('gateway6', None)
         net_type = d.get('type', 'PRIVATE_MAC_FILTERED')
+        public = d.get('public', False)
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    if net_type == 'PUBLIC_ROUTED':
+    if public:
         raise Unauthorized('Can not create a public network.')
+
+    if net_type not in ('PRIVATE_MAC_FILTERED', 'PRIVATE_PHYSICAL_VLAN'):
+        raise Unauthorized('Can not create a network of type %s.' % net_type)
 
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
                                                deleted=False))

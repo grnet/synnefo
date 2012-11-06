@@ -1676,6 +1676,9 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
     if tags:
       tags = tags.split(',')
+    else:
+      tags = []
+
 
     body = {
       "network_name": network_name,

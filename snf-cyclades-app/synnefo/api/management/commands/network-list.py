@@ -96,7 +96,7 @@ class Command(BaseCommand):
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
-        for network in networks:
+        for network in networks.order_by("id"):
             fields = [str(network.id),
                       network.name,
                       network.type,

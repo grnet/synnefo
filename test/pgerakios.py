@@ -8,7 +8,7 @@ import copy
 import inspect
 
 
-init_logger_stderr('mylogger', level='INFO')
+#init_logger_stderr('mylogger', level='INFO')
 
 def environ_get(key, default_value=''):
     if os.environ.has_key(key):
@@ -26,7 +26,8 @@ assert QH_PORT != None
 def printf(fmt, *args):
     global QH_DEBUG
     if(QH_DEBUG):
-        print(fmt.format(*args))
+        sys.stderr.write(fmt.format(*args) + "\n")
+#        print(fmt.format(*args))
     return 0
 
 def exn(fmt, *args):
@@ -134,6 +135,7 @@ class Policy(Config):
         p = Policy.policies.get(name)
         if(p == None):
             p = Policy.newDummy()
+            p.policyName = name
             Policy.policies[name] = p
         return p
 
@@ -148,7 +150,7 @@ class Policy(Config):
     def splitRejected(policyList, rejectedList):
         (a, b) = split((lambda p: p.policyName not in rejectedList), policyList)
         if(b != []):
-            printf("Rejected entities (call to set_limits): {0}", rejectedList)
+            printf("Rejected entities (call to set_limits!!): {0}", [p.policyName for p in b])
         return (a, b)
 
     @staticmethod
@@ -162,16 +164,20 @@ class Policy(Config):
     @staticmethod
     def saveMany(policyList):
         inputList = [(p.policyName, p.quantity, p.capacity, p.importLimit, p.exportLimit)
-                     for p in policyList if(p.isValid() and not p.isDummy())]
+                     for p in policyList if(not p.isDummy())]
         if(inputList != []):
+            printf("set_limits input list is : {0}",inputList)
             rejectedList = Policy.con().set_limits(context=Policy.Context, set_limits=inputList)
         else:
-            rejectedList = policyList
+            printf("EMPTY INPUT LIST")
+            for p in policyList:
+                printf("Policy list item {0} valid={1} dummy={2}",p.policyName,p.isValid(),p.isDummy())
+            rejectedList = inputList
         ok, notok = Policy.splitRejected(policyList, rejectedList)
         for p in ok:
             p.exist = Policy.PolicyState.EXISTS
         for p in notok:
-            if(p.exist == Policy.EXISTS):
+            if(p.exist == Policy.PolicyState.EXISTS):
                 p.exist = Policy.PolicyState.NOT_EXISTS
         return notok
 
@@ -193,6 +199,9 @@ class Policy(Config):
                 p.exist = Policy.PolicyState.NOT_EXISTS
 
         return notok
+    
+    def __str__(self):
+        return "Policy({0})".format(self.policyName)
 
     def reset(self):
         self.set(None, 0, 0, 0, 0)
@@ -293,7 +302,7 @@ class Resource(Config):
             oList1 = []
         else:
             oList1 = Resource.con().get_quota(context=Resource.Context, get_quota=iList1)
-            for e, res, q, c, il, el, p, i, e, r1, r2, f in oList1:
+            for e, res, q, c, il, el, i, e, r1, r2, f in oList1:
                 res1 = find((lambda r: r.resourceName == res), rl1)
                 res1.imported = i
                 res1.exported = e
@@ -337,15 +346,18 @@ class Resource(Config):
             ol1 = []
         else:
             il1 = [(r.entity.entityName, r.resourceName, r.entity.entityKey,r.policy.quantity,
-                    r.policy.capacity,r.policy.importLimit,r.policy.ExportLimit,Resource.Flags) for r in rl1]
+                    r.policy.capacity,r.policy.importLimit,r.policy.exportLimit,Resource.Flags) for r in rl1]
             ol1 = Resource.con().set_quota(context=Resource.Context,set_quota=il1)
 
         if(rl2 == []):
             ol2 = []
         else:
-            il2 = [(r.entity.entityName,r.resourceName,r.entity.entityKey,r.policy.policyName) for r in rl2]
+            il2 = [(r.entity.entityName,r.resourceName,r.entity.entityKey,r.policy.policyName,Resource.Flags) for r in rl2]
             ol2 = Resource.con().set_holding(context=Resource.Context,set_holding=il2)
 
+        if(ol2 != []):
+            exn("Rejected ol2 = {0}",ol2)
+            
         rejectedList = []
 
 
@@ -805,8 +817,12 @@ class Group(ResourceHolder):
     
     def set(self, name, password, parent):
         super(ResourceHolder,self).set(name, password, parent)
+        # load policies for users
+        self.userResourcePolicies = {}
+        if(name != None):
+            self.loadUserResourcePolicies()
         return self
-
+    
     def __init__(self):
         #super(ResourceHolder,self).__init__()
         ResourceHolder.__init__(self)
@@ -817,8 +833,6 @@ class Group(ResourceHolder):
 
         # load policies for groups
         self.loadGroupResourcePolicies()
-        # load policies for users
-        self.loadUserResourcePolicies()
 
     def loadGroupResourcePolicies(self):
         for r in self.getResources():
@@ -827,7 +841,6 @@ class Group(ResourceHolder):
     def loadUserResourcePolicies(self):
         for r in self.resourceNames:
             self.userResourcePolicies[r] = Policy.get("{0}.{1}".format(self.entityName,r))
-
 
     def getUserPolicyFor(self,resourceName):
         return self.userResourcePolicies[resourceName]
@@ -857,16 +870,25 @@ class Group(ResourceHolder):
         for name,quantity in kwargs.items():
             r = self.getResource(name)
             r.policy.quantity = quantity
+            r.policy.setDummy(False)
+            r.policy.policyName =  "group."  + self.entityName + "." + name 
             policies.append(r.policy)
+            
         Policy.saveMany(policies)
         
     def saveUserPolicyQuantities(self,**kwargs):
         policies = []
         for name,quantity in kwargs.items():
             p = self.getUserPolicyFor(name)
+
             p.quantity = quantity
+            p.setDummy(False)            
+            #p.policyName =  "group."  + self.entityName             
             policies.append(p)
-        Policy.saveMany(policies)
+        b = Policy.saveMany(policies)
+        for p in policies:
+            p.setDummy(True)
+        return b
 
 
 class User(ResourceHolder):
@@ -935,10 +957,17 @@ class User(ResourceHolder):
         self.groups.append(group)
         group.users.append(self)
         #
+        rlist = []
         for r in self.getResources():
             groupUserPolicy = group.getUserPolicyFor(r.resourceName)
-            #printf("join group ==> Resource entity: {0}",r.entity.entityName)
+            printf("join group ==> Resource entity: {0} with name {1}",r.entity.entityName,groupUserPolicy.name())
+            #
             self.commission.addResource(group.getResource(r.resourceName),groupUserPolicy.quantity)
+            #
+            r.setPolicy(groupUserPolicy)
+            rlist.append(r)
+        #
+        Resource.saveMany(rlist,False)
         #DO NOT COMMIT HERE
         # self.commit !!! no
 
@@ -946,7 +975,7 @@ class User(ResourceHolder):
 # Main program
 
 try:
-
+    #
     # Group1
     printf("Step 1")
     group1 = Group.get("group1","group1")
@@ -966,8 +995,8 @@ try:
 
     printf("Step 2  name : {0}",group1.entityName)
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
-    group1.saveGroupPolicyQuantities(pithos=10,cyclades_vm=8,cyclades_mem=9)
-    group1.saveUserPolicyQuantities(pithos=2,cyclades_vm=2,cyclades_mem=1)
+    group1.saveGroupPolicyQuantities(pithos=10,cyclades_vm=8,cyclades_mem=9,cyclades_cpu=12)
+    group1.saveUserPolicyQuantities(pithos=2,cyclades_vm=2,cyclades_mem=1,cyclades_cpu=3)
 
     printf("Group1 resources BEGIN")
     for r in group1.getResources(True):

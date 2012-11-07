@@ -102,56 +102,87 @@ def info(fname, expected, actual, flag):
           + ("was given", "result is")[flag] + " ({})".format(actual)
     return msg
 
-def check_string(name, value):
-    assert isinstance(value, str), "%s is not a string, but a %s" % (name, type(value))
+def check_string(label, value):
+    if not isinstance(value, str):
+        raise Exception(
+            "%s is not a string, but a(n) %s with value %s" % (
+                label, type(value), value))
     return value
 
 def check_context(context):
     assert isinstance(context, dict)
     return context
 
-def check_abs_name(name):
-    check_string('name', name)
-    assert len(name) > 0
-    assert not name.startswith('/') # Although absolute, no / prefix is needed
-    assert not name.endswith('/')
-    assert name == 'system' or name.startswith('system/')
+@accepts(str, str)
+@returns(bool)
+def is_abs_name(name, label='name'):
+    check_string(label, name)
+    return (name == 'system') or name.startswith('system/') 
+    
+    
+def check_abs_name(abs_name, label = 'abs_name'):
+    check_string(label, abs_name)
+    if len(abs_name) == 0:
+        raise Exception("Absolute abs_name '%s' is empty" % (label,))
+    
+    if abs_name.startswith('/'):
+        raise Exception(
+            "Absolute abs_name %s (='%s') starts with '/'" % (label, abs_name))
+        
+    if abs_name.endswith('/'):
+        raise Exception(
+            "Absolute abs_name %s (='%s') ends with '/'" % (label, abs_name))
+
+    if (abs_name != 'system') or (not abs_name.startswith('system/')):
+        raise Exception(
+            "Unknown hierarchy for absolute abs_name %s (='%s'). Should be 'system' or start with 'system/'" % (
+                label, abs_name))
+    
+    return abs_name
+
+def check_relative_name(relative_name, label='relative_name'):
+    check_string(label, relative_name)
+    if relative_name.startswith('system') or relative_name.startswith('system/'):
+        raise Exception("%s (='%s'), which was intended as relative, has absolute form" % (label, relative_name))
+            
+    return relative_name
+
+def check_name(name, label='name'):
+    check_string(label, name)
+    if len(name) == 0:
+        raise Exception("Name %s is empty" % (label,))
     return name
 
-def check_node_name(node_name):
-    """
-    A ``node_name`` must always be a string in absolute form.
-    """
-    check_string('node_name', node_name)
-    return check_abs_name(node_name)
 
-def check_resource_name(resource_name):
+def check_abs_global_resource_name(abs_resource_name,
+                                   label='abs_resource_name'):
     """
-    A ``resource_name`` must always be a string in absolute form.
+    ``abs_resource_name`` must always be a string in absolute form.
     """
-    check_string('resource_name', resource_name)
-    return check_abs_name(resource_name)
+    check_abs_name(abs_resource_name, label)
+    if not abs_resource_name.startswith(NameOfResourcesNode):
+        raise Exception("'%s' is not a global resource name" % (abs_resource_name,))
+        
+    return abs_resource_name
 
-def check_def_resource_name(resource_name):
-    check_abs_name(resource_name)
-    assert resource_name.startswith('def_')
 
 def check_node_key(node_key):
     if node_key is not None:
         check_string('node_key', node_key)
     return node_key
 
+
 def is_system_node(node_name):
-    check_node_name(node_name)
     return node_name == 'system'
+
 
 @accepts(str, str)
 @returns(bool)
 def is_child_of_abs_name(child, parent):
     check_abs_name(parent)
     return child.startswith(parent) and child != parent
-    
-def abs_parent_name_of(abs_name):
+
+def parent_abs_name_of(abs_name, label='abs_name'):
     """
     Given an absolute name, it returns its parent.
     If ``abs_name`` is 'system' then it returns 'system', since this is
@@ -160,69 +191,147 @@ def abs_parent_name_of(abs_name):
     if is_system_node(abs_name):
         return abs_name
     else:
-        check_abs_name(abs_name)
+        check_abs_name(abs_name, label)
 
         # For 'a/b/c' we get ['a', 'b', 'c']
         # And for 'a' we get ['a']
         elements = abs_name.split('/')
+        
         if len(elements) == 1:
-            raise Exception("Only 'system' is the top level entity, you provided '%s'" % (abs_name))
+            # This must be normally caught by the call check_abs_name(abs_name)
+            # but let's be safe anyway 
+            raise Exception(
+                "Only 'system' is the top level entity, you provided '%s'" % (
+                    abs_name))
         else:
             upto_name = '/'.join(elements[:-1])
             return upto_name
 
 @accepts(str)
 @returns(str)
-def last_part_of_abs_name(name):
+def last_part_of_abs_name(abs_name, label='abs_name'):
     """
-    Given an absolute name, which is made of simple parts separated with
+    Given an absolute abs_name, which is made of simple parts separated with
     slashes), computes the last part, that is the one after the last
     slash.
     """
-    last_part = name.split('/')[-1:]
+    check_abs_name(abs_name, label)
+    last_part = abs_name.split('/')[-1:]
     return last_part
 
-@accepts(str)
-@returns(str)
-def last_part_of_abs_node_name(node_name):
-    check_node_name(node_name)
-    last_part = last_part_of_abs_name(node_name)
-    return last_part
 
-@accepts(str)
+@accepts(str, str, str, str)
 @returns(str)
-def last_part_of_abs_resource_name(resource_name):
-    check_resource_name(resource_name)
-    last_part = last_part_of_abs_name(resource_name)
-    return last_part
-
-@accepts(str, str)
-@returns(str)
-def reparent_child_name_under(self, child_name, parent_node_name):
+def reparent_child_name_under(child_name,
+                              parent_node_name,
+                              child_label='child_name',
+                              parent_label='parent_node_name'):
     """
     Given a child name and an absolute parent node name, creates an
     absolute name for the child so as to reside under the given parent.
-    Only the last part is used from the child name.
     """
-    check_node_name(parent_node_name)
-    last_part_child_node_name = last_part_of_abs_name(child_name)
-    normalized_child_abs_name = '%s/%s' % (
-        parent_node_name,
-        last_part_child_node_name
-    ) # recreate full node name
-    return normalized_child_abs_name
+    check_abs_name(parent_node_name, parent_label)
 
-@accepts(str)
-@returns(str)
-def reparent_group_node_name(group_node_name):
-    return reparent_child_name_under(group_node_name, NameOfGroupsNode)
+    if child_name == parent_node_name:
+        raise Exception(
+            "%s is the same as %s (='%s')" % (
+                child_label,
+                parent_label,
+                parent_node_name)) 
 
-@accepts(str)
+    # If already under this parent, we are set.
+    if child_name.startswith(parent_node_name):
+        return child_name
+    
+    # Else, just make the new absolute name by concatenation
+    return '%s/%s' % (parent_node_name, child_name)
+
+
+def make_abs_group_name(group_name):
+    check_name(group_name, 'group_name')
+    return reparent_child_name_under(child_name=group_name,
+                                     parent_node_name=NameOfGroupsNode,
+                                     child_label='group_name',
+                                     parent_label='NameOfGroupsNode')
+
+def make_abs_global_resource_name(global_resource_name):
+    check_name(global_resource_name, 'global_resource_name')
+    return reparent_child_name_under(child_name=global_resource_name,
+                                     parent_node_name=NameOfResourcesNode,
+                                     child_label='global_resource_name',
+                                     parent_label='NameOfResourcesNode') 
+
+def make_abs_user_name(user_name):
+    check_name(user_name, 'user_name')
+    return reparent_child_name_under(child_name=user_name,
+                                     parent_node_name=NameOfUsersNode,
+                                     child_label='user_name',
+                                     parent_label='NameOfUsersNode')
+    
+@accepts(str, str, str, str)
 @returns(str)
-def reparent_resource_under(resource_name, parent_abs_name):
-    return reparent_child_name_under(resource_name, parent_abs_name)
+def relative_child_name_under(child_name,
+                              parent_name,
+                              child_label='child_name',
+                              parent_label='parent_name'):
+    check_abs_name(parent_name, parent_label)
+    
+    if child_name == parent_name:
+        raise Exception(
+            "%s is the same as %s (='%s')" % (
+                child_label,
+                parent_label,
+                parent_name)) 
+
+    if not child_name.startswith(parent_name):
+        raise Exception(
+            "%s (='%s') is not a child of %s (='%s')" % (
+                child_label,
+                child_name,
+                parent_label,
+                parent_name))
+
+    return child_name[len(parent_name) + 1:]
+
+
+@accepts(str, str)
+@returns(str)
+def make_rel_group_name(group_name, label='group_name'):
+    check_name(group_name, label)
+    return relative_child_name_under(child_name=group_name,
+                                     parent_name=NameOfGroupsNode,
+                                     child_label='group_name',
+                                     parent_label='NameOfGroupsNode')
+    
+
+@accepts(str, str)
+@returns(str)
+def make_rel_global_resource_name(resource_name, label='resource_name'):
+    check_name(resource_name, label)
+    return relative_child_name_under(child_name=resource_name,
+                                     parent_name=NameOfResourcesNode,
+                                     child_label='resource_name',
+                                     parent_label='NameOfResourcesNode')
+    
+
+@accepts(str, str)
+@returns(str)
+def make_rel_user_name(user_name, label='user_name'):
+    check_name(user_name, label)
+    return relative_child_name_under(child_name=user_name,
+                                     parent_name=NameOfUsersNode,
+                                     child_label='user_name',
+                                     parent_label='NameOfUsersNode')
+
 
 NameOfSystemNode = 'system'
 NameOfResourcesNode = 'system/resources'
 NameOfGroupsNode = 'system/groups'
 NameOfUsersNode = 'system/users'
+
+ResourceAttributePrefixes = {
+    NameOfResourcesNode: 'r',
+    NameOfGroupsNode: 'g',
+    NameOfUsersNode: 'u'
+}
+

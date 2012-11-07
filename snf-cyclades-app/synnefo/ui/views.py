@@ -137,7 +137,7 @@ NETWORK_STRICT_DESTROY = getattr(settings,
 NETWORK_ALLOW_MULTIPLE_DESTROY = getattr(settings,
                     'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
-GROUPED_NETWORK_NAME = getattr(settings, 'UI_GROUPED_NETWORK_NAME', 'Internet')
+GROUPED_PUBLIC_NETWORK_NAME = getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -197,7 +197,7 @@ def home(request):
                'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
                'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
                'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
-               'grouped_network_name': json.dumps(GROUPED_NETWORK_NAME),
+               'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
                'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
                'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL)
     }

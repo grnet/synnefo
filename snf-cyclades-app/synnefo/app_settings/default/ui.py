@@ -153,7 +153,7 @@ UI_NETWORK_STRICT_DESTROY = True
 UI_GROUP_PUBLIC_NETWORKS = True
 
 # The name of the grouped network view
-UI_GROUPED_NETWORK_NAME = 'Internet'
+UI_GROUPED_PUBLIC_NETWORK_NAME = 'Internet'
 
 
 ###############

@@ -1132,7 +1132,7 @@
         },
           
         get_name: function() {
-          return synnefo.config.grouped_network_name || views.GroupedPublicNetworkView.__super__.get_name.call(this);
+          return synnefo.config.grouped_public_network_name || views.GroupedPublicNetworkView.__super__.get_name.call(this);
         },
 
         nic_in_network: function(nic) {

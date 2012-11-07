@@ -42,10 +42,10 @@ class Boolean(Integer):
 Boolean = Boolean()
 
 
-class GroupKind(Integer):
-    def init(self):
-        self.opts.update({'minimum': 1, 'maximum': 5})
-GroupKind = GroupKind()
+# class GroupKind(Integer):
+#     def init(self):
+#         self.opts.update({'minimum': 1, 'maximum': 5})
+# GroupKind = GroupKind()
 
 Timepoint = Text(classname='Timepoint', maxlen=24)
 
@@ -280,7 +280,7 @@ class AstakosAPI(Specificator):
         self,
         groups=ListOf(
             name=Name,
-            kind=GroupKind,
+            kind=Name,
             homepage=Url,
             desc=Text(),
             policies=ListOf(resource=Name, upimit=Nonnegative),
@@ -303,7 +303,7 @@ class AstakosAPI(Specificator):
     def search_groups(self, key=Name):
         return ListOf(
             group=Name,
-            kind=GroupKind,
+            kind=Nonnegative,
             homepage=Url,
             desc=Text(),
             creation_date=Timepoint,
@@ -319,7 +319,7 @@ class AstakosAPI(Specificator):
     def list_groups(self):
         return ListOf(
             group=Name,
-            kind=GroupKind,
+            kind=Nonnegative,
             homepage=Url,
             desc=Text(),
             creation_date=Timepoint,

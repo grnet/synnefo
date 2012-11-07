@@ -22,12 +22,11 @@ class Migration(DataMigration):
             sn, dict = args
             url = dict.get('url')
             resources = dict.get('resources') or ()
-            s, created = orm.Service.objects.get_or_create(name=sn,
-                                                           defaults={'url': url})
-            if not created and not s.url:
-                s.url = url
-            s.save()
-
+            s, created = orm.Service.objects.get_or_create(
+                name=sn,
+                defaults={'url': url}
+            )
+            
             for r in resources:
                 try:
                     rn = r.pop('name', '')
@@ -43,8 +42,10 @@ class Migration(DataMigration):
                 q, created = orm.AstakosGroupQuota.objects.get_or_create(
                     group=default,
                     resource=r,
-                    uplimit=uplimit,
-                    limit=0)
+                    defaults={
+                        'uplimit':uplimit,
+                    }
+                )
         map(create_policies, SERVICES.iteritems())
 
     def backwards(self, orm):

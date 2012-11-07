@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,23 +31,23 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
+class ItemNotExists(ValueError):
+    def __init__(self, type, **kwargs):
+        fields = " and ".join('%s=%s' % (k,v) for k,v in kwargs.iteritems())
+        msg = "%(type)s with %(fields)s does not exist."
+        super(ItemNotExists, self).__init__(msg % locals())
 
-from astakos.im.models import AstakosUser, Resource
-from astakos.im.endpoints.quotaholder import register_users, register_resources
+class ItemExists(ValueError):
+    def __init__(self, type, **kwargs):
+        fields = " and ".join('%s=%s' % (k,v) for k,v in kwargs.iteritems())
+        msg = "%(type)s with %(fields)s already exists."
+        super(ItemExists, self).__init__(msg % locals())
 
-import logging
-logger = logging.getLogger(__name__)
+class MultipleItemsExist(ValueError):
+    def __init__(self, type, **kwargs):
+        fields = " and ".join('%s=%s' % (k,v) for k,v in kwargs.iteritems())
+        msg = "There are mulptiple %(type)s with %(fields)s."
+        super(MultipleItemsExist, self).__init__(msg % locals())
 
-
-class Command(BaseCommand):
-    help = "Send user information and resource quota in the Quotaholder"
-
-    def handle(self, *args, **options):
-        try:
-            register_resources(Resource.objects.all())
-            register_users(AstakosUser.objects.all())
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Syncing failed.")
+class MissingIdentifier(IOError):
+    pass

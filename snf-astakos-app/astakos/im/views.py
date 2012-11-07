@@ -87,7 +87,7 @@ from astakos.im.endpoints.quotaholder import timeline_charge
 from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
                                  LOGGING_LEVEL, PAGINATE_BY)
 from astakos.im.tasks import request_billing
-from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
+from astakos.im.api.callpoint import AstakosCallpoint
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ logger = logging.getLogger(__name__)
 DB_REPLACE_GROUP_SCHEME = """REPLACE(REPLACE("auth_group".name, 'http://', ''),
                                      'https://', '')"""
 
-callpoint = AstakosDjangoDBCallpoint()
+callpoint = AstakosCallpoint()
 
 def render_response(template, tab=None, status=200, reset_cookie=False,
                     context_instance=None, **kwargs):
@@ -667,10 +667,53 @@ def change_email(request, activation_key=None,
 @signed_terms_required
 @login_required
 def group_add(request, kind_name='default'):
+    result = callpoint.list_resources()
+    resource_catalog = {'resources':defaultdict(defaultdict),
+                        'groups':defaultdict(list)}
+    if result.is_success:
+        for r in result.data:
+            service = r.get('service', '')
+            name = r.get('name', '')
+            group = r.get('group', '')
+            unit = r.get('unit', '')
+            fullname = '%s%s%s' % (service, RESOURCE_SEPARATOR, name)
+            resource_catalog['resources'][fullname] = dict(unit=unit)
+            resource_catalog['groups'][group].append(fullname)
+        
+        resource_catalog = dict(resource_catalog)
+        for k, v in resource_catalog.iteritems():
+            resource_catalog[k] = dict(v)
+    else:
+        messages.error(
+            request,
+            'Unable to retrieve system resources: %s' % result.reason
+    )
+    
     try:
         kind = GroupKind.objects.get(name=kind_name)
     except:
         return HttpResponseBadRequest(_('No such group kind'))
+    
+    resource_presentation = {
+       'compute': {
+            'help_text':'group compute help text',
+        },
+        'storage': {
+            'help_text':'group storage help text',
+        },
+        'pithos+.diskspace': {
+            'help_text':'resource pithos+.diskspace help text',
+        },
+        'cyclades.vm': {
+            'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
+        },
+        'cyclades.disksize': {
+            'help_text':'resource cyclades.disksize help text',
+        },
+        'cyclades.ram': {
+            'help_text':'resource cyclades.ram help text',
+        }
+    }
 
     post_save_redirect = '/im/group/%(id)s/'
     context_processors = None
@@ -678,57 +721,46 @@ def group_add(request, kind_name='default'):
         model=None,
         form_class=AstakosGroupCreationForm
     )
-    resources = dict(
-        (str(r.id), r) for r in Resource.objects.select_related().all())
-    policies = []
+    
     if request.method == 'POST':
-        form = form_class(request.POST, request.FILES, resources=resources)
+        form = form_class(request.POST, request.FILES)
         if form.is_valid():
-            new_object = form.save()
+            d = form.cleaned_data.copy()
+            d['owners'] = [request.user]
+            result = callpoint.create_groups((d,)).next()
+            if result.is_success:
+                new_object = result.data[0]
+                msg = _("The %(verbose_name)s was created successfully.") %\
+                    {"verbose_name": model._meta.verbose_name}
+                messages.success(request, msg, fail_silently=True)
 
-            # save owner
-            new_object.owners = [request.user]
-
-            # save quota policies
-            for (rid, uplimit) in form.resources():
-                try:
-                    r = resources[rid]
-                except KeyError, e:
-                    logger.exception(e)
-                    # TODO Should I stay or should I go???
-                    continue
-                else:
-                    new_object.astakosgroupquota_set.create(
-                        resource=r,
-                        uplimit=uplimit
-                    )
-                policies.append('%s %d' % (r, uplimit))
-            msg = _("The %(verbose_name)s was created successfully.") %\
-                {"verbose_name": model._meta.verbose_name}
-            messages.success(request, msg, fail_silently=True)
-
-            # send notification
-            try:
-                send_group_creation_notification(
-                    template_name='im/group_creation_notification.txt',
-                    dictionary={
-                        'group': new_object,
-                        'owner': request.user,
-                        'policies': policies,
-                    }
-                )
-            except SendNotificationError, e:
-                messages.error(request, e, fail_silently=True)
-            return HttpResponseRedirect(post_save_redirect % new_object.__dict__)
+#                # send notification
+#                 try:
+#                     send_group_creation_notification(
+#                         template_name='im/group_creation_notification.txt',
+#                         dictionary={
+#                             'group': new_object,
+#                             'owner': request.user,
+#                             'policies': list(form.cleaned_data['policies']),
+#                         }
+#                     )
+#                 except SendNotificationError, e:
+#                     messages.error(request, e, fail_silently=True)
+                return HttpResponseRedirect(post_save_redirect % new_object)
+            else:
+                msg = _("The %(verbose_name)s creation failed: %(reason)s.") %\
+                    {"verbose_name": model._meta.verbose_name,
+                     "reason":result.reason}
+                messages.error(request, msg, fail_silently=True)
     else:
         now = datetime.now()
         data = {
             'kind': kind
         }
-        form = form_class(data, resources=resources)
+        form = form_class(data)
 
     # Create the template, context, response
-    template_name = "%s/%s_form.html" % (
+    template_name = "%s/%s_form_demo.html" % (
         model._meta.app_label,
         model._meta.object_name.lower()
     )
@@ -736,9 +768,10 @@ def group_add(request, kind_name='default'):
     c = RequestContext(request, {
         'form': form,
         'kind': kind,
+        'resource_catalog':resource_catalog,
+        'resource_presentation':resource_presentation,
     }, context_processors)
     return HttpResponse(t.render(c))
-
 
 @signed_terms_required
 @login_required
@@ -1087,122 +1120,16 @@ def resource_list(request):
         entry['plural'] = engine.plural(entry.get('name'))
         return entry
 
-    try:
-        data = callpoint.get_user_status(request.user.id)
-    except Exception, e:
-        data = None
-        messages.error(request, e)
+    result = callpoint.get_user_status(request.user.id)
+    if result.is_success:
+        backenddata = map(with_class, result.data)
+        data = map(pluralize, result.data)
     else:
-        backenddata = map(with_class, data)
-        data = map(pluralize, data)
+        data = None
+        messages.error(request, result.reason)
     return render_response('im/resource_list.html',
                            data=data,
                            context_instance=get_context(request))
-
-@signed_terms_required
-@login_required
-def group_create_demo(request, kind_name='default'):
-    resources = callpoint.list_resources()
-    resource_catalog = {'resources':defaultdict(defaultdict),
-                        'groups':defaultdict(list)}
-    for r in resources:
-        service = r.get('service', '')
-        name = r.get('name', '')
-        group = r.get('group', '')
-        unit = r.get('unit', '')
-        fullname = '%s%s%s' % (service, RESOURCE_SEPARATOR, name)
-        resource_catalog['resources'][fullname] = dict(unit=unit)
-        resource_catalog['groups'][group].append(fullname)
-    
-    resource_catalog = dict(resource_catalog)
-    for k, v in resource_catalog.iteritems():
-        resource_catalog[k] = dict(v)
-    try:
-        kind = GroupKind.objects.get(name=kind_name)
-    except:
-        return HttpResponseBadRequest(_('No such group kind'))
-
-    post_save_redirect = '/im/group/%(id)s/'
-    context_processors = None
-    model, form_class = get_model_and_form_class(
-        model=None,
-        form_class=AstakosGroupCreationForm
-    )
-    
-    if request.method == 'POST':
-        form = form_class(request.POST, request.FILES)
-        if form.is_valid():
-            new_object = form.save()
-            new_object.policies = form.policies()
-
-            # save owner
-            new_object.owners = [request.user]
-            
-            msg = _("The %(verbose_name)s was created successfully.") %\
-                {"verbose_name": model._meta.verbose_name}
-            messages.success(request, msg, fail_silently=True)
-
-            # send notification
-            try:
-                send_group_creation_notification(
-                    template_name='im/group_creation_notification.txt',
-                    dictionary={
-                        'group': new_object,
-                        'owner': request.user,
-                        'policies': list(form.policies()),
-                    }
-                )
-            except SendNotificationError, e:
-                messages.error(request, e, fail_silently=True)
-            return HttpResponseRedirect(post_save_redirect % new_object.__dict__)
-    else:
-        now = datetime.now()
-        data = {
-            'kind': kind
-        }
-        form = form_class(data)
-
-    resource_presentation = {
-       'compute': {
-            'help_text':'group compute help text',
-                     
-        },
-        'storage': {
-            'help_text':'group storage help text',
-                      
-        },  
-        'pithos+.diskspace': {
-            'help_text':'resource pithos+.diskspace help text',
-                      
-        },  
-        'cyclades.vm': {
-            'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
-                      
-        },  
-        'cyclades.disksize': {
-            'help_text':'resource cyclades.disksize help text',
-                      
-        },  
-        'cyclades.ram': {
-            'help_text':'resource cyclades.ram help text',
-                      
-        }                        
-                             
-    }
-    
-    # Create the template, context, response
-    template_name = "%s/%s_form_demo.html" % (
-        model._meta.app_label,
-        model._meta.object_name.lower()
-    )
-    t = template_loader.get_template(template_name)
-    c = RequestContext(request, {
-        'form': form,
-        'kind': kind,
-        'resource_catalog':resource_catalog,
-        'resource_presentation':resource_presentation
-    }, context_processors)
-    return HttpResponse(t.render(c))
 
 
 def group_create_list(request):

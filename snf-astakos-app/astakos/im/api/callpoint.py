@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.api.spec import AstakosAPI
-from backends import get_backend
+from astakos.im.api.backends import get_backend
 
 from commissioning import (Callpoint,
                            #                             CommissionException,
@@ -49,7 +49,7 @@ from commissioning import (Callpoint,
 # from .models import (Holder, Entity, Policy, Holding,
 #                      Commission, Provision, ProvisionLog, now)
 
-class AstakosDjangoDBCallpoint():
+class AstakosCallpoint():
 
     api_spec = AstakosAPI()
 
@@ -159,4 +159,4 @@ class AstakosDjangoDBCallpoint():
         rejected = (b.create_group(**g) for g in groups)
         return rejected
 
-API_Callpoint = AstakosDjangoDBCallpoint
+API_Callpoint = AstakosCallpoint

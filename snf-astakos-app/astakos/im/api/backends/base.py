@@ -1,18 +1,23 @@
-class ItemNotExists(NameError):
-    pass
+import astakos.im.api.backends.errors
 
-
-class ItemExists(NameError):
-    pass
-
-
-class MissingIdentifier(IOError):
-    pass
-
+(SUCCESS, FAILURE) = range(2)
 
 class BaseBackend(object):
-    def update_user():
-        pass
+    #TODO filled
+    pass
 
-    def create_user():
-        pass
+class SuccessResult():
+    def __init__(self, data):
+        self.data = data
+    
+    @property
+    def is_success(self):
+        return True
+
+class FailureResult():
+    def __init__(self, reason):
+        self.reason = reason
+    
+    @property
+    def is_success(self):
+        return False

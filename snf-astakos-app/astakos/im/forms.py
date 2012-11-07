@@ -572,18 +572,22 @@ class AstakosGroupCreationForm(forms.ModelForm):
         map(add_field,
             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
         )
-        
-    def policies(self):
+    
+    def clean(self):
+        self.cleaned_data['policies'] = []
+        append = self.cleaned_data['policies'].append
+        tbd = []
         for name, uplimit in self.cleaned_data.iteritems():
             subs = name.split('_uplimit')
             if len(subs) == 2:
+                tbd.append(name)
                 prefix, suffix = subs
-#               # yield only those having a value
-#                    if not value:
-#                        continue
                 s, r = prefix.split(RESOURCE_SEPARATOR)
-                yield dict(service=s, resource=r, uplimit=uplimit)
-
+                append(dict(service=s, resource=r, uplimit=uplimit))
+        for name in tbd:
+            del self.cleaned_data[name]
+        return self.cleaned_data
+        
 
 class AstakosGroupUpdateForm(forms.ModelForm):
     class Meta:

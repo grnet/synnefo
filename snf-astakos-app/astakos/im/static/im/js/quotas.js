@@ -1,6 +1,7 @@
 $(document).ready(function() {
 
 	$('.quotas-form ul li a').click(function(e){
+		$(this).siblings('input[type="hidden"]').val('1');
 		if ( $(this).hasClass('selected')){
 			e.preventDefault();
 		}
@@ -33,6 +34,7 @@ $(document).ready(function() {
 		$('.quotas-form ul li a').each(function() {
 			if($(this).attr('id')==groupClass) {
 				$(this).removeClass('selected');
+				$(this).siblings('input[type="hidden"]').val('0');
 			}
 		}); 
 		 

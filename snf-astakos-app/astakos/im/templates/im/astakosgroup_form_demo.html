@@ -57,6 +57,7 @@
             {% with resource_presentation|lookup:g as group_info %} 		
     		<li>
     			<a href="#{{ g }}" id="{{'group_'|add:g}}"><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
+    			<input type="hidden" name="{{ 'is_selected_'|add:g }}"  id="{{ 'id_is_selected_'|add:g }}" value="0">
     			<p class="msg">{{ group_info.help_text }}</p>
     		</li>
     		{% endwith %}

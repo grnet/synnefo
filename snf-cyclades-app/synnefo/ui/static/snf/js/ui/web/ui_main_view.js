@@ -740,9 +740,52 @@
             }
         },
         
+        load_user_quotas: function() {
+          var main_view = this;
+          snf.api.sync('read', undefined, {
+            url:'/ui/userquota', 
+            success: function(d) {
+              snf.user.quotas = {};
+              snf.user.quotas['vms'] = d.vms_quota;
+              snf.user.quotas['networks'] = d.networks_quota;
+              main_view.init_quotas_handlers(['vms','networks']);
+            }
+          });
+        },
+        
+        check_quotas: function(type) {
+          var storage = synnefo.storage[type];
+          var consumed = storage.length;
+          if (type == "networks") {
+            consumed = storage.filter(function(net){
+              return !net.is_public() && !net.is_deleted();
+            }).length;
+          }
+          if (snf.user.quotas && consumed >= snf.user.quotas[type]) {
+            storage.trigger("quota_reached");
+          } else {
+            storage.trigger("quota_free");
+          }
+        },
+
+        init_quotas_handlers: function(types) {
+          var self = this;
+          _.each(types, function(type) {
+            var storage = synnefo.storage[type];
+            if (!storage) { return };
+            var check_quotas = function() {
+              self.check_quotas(type);
+            }
+            storage.bind("add", check_quotas);
+            storage.bind("remove", check_quotas);
+            check_quotas();
+          })
+        },
+
         // initial view based on user cookie
         show_initial_view: function() {
           this.set_vm_view_handlers();
+          this.load_user_quotas();
           this.hide_loading_view();
           
           bb.history.start();
@@ -751,15 +794,30 @@
         },
 
         show_vm_details: function(vm) {
-            this.router.vm_details_view(vm.id);
+            if (vm) {
+              this.router.vm_details_view(vm.id);
+            }
         },
 
         set_vm_view_handlers: function() {
             var self = this;
             $("#createcontainer #create").click(function(e){
                 e.preventDefault();
+                if ($(this).hasClass("disabled")) { return }
                 self.router.vm_create_view();
-            })
+            });
+
+            synnefo.storage.vms.bind("quota_reached", function(){
+              $("#createcontainer #create").addClass("disabled");
+              $("#createcontainer #create").attr("title", "Machines limit reached");
+            });
+
+            synnefo.storage.vms.bind("quota_free", function(){
+              $("#createcontainer #create").removeClass("disabled");
+              $("#createcontainer #create").attr("title", "");
+            });
+
+            this.check_quotas('vms');
         },
 
         check_empty: function() {

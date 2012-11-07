@@ -1249,10 +1249,22 @@
             storage.networks.bind("remove", _.bind(this.network_removed_handler, this, "remove"));
 
             this.$("#networkscreate").click(_.bind(function(e){
-                e.preventDefault();
-                this.create_view.show();
+              e.preventDefault();
+              if ($(this.$("#networkscreate")).hasClass("disabled")) { return }
+              this.create_view.show();
             }, this));
             
+            var self = this;
+            storage.networks.bind("quota_reached", function(){
+              self.$("#networkscreate").addClass("disabled").attr("title", 
+                                                            "Networks limit reached");
+            });
+            storage.networks.bind("quota_free", function(){
+              self.$("#networkscreate").removeClass("disabled").attr("title", 
+                                                            "");
+            });
+            
+            synnefo.ui.main.check_quotas("networks");
         },
 
         update_networks: function(nets) {

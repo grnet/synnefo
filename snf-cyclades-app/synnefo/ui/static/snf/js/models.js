@@ -483,6 +483,10 @@
             this.bind("change:status", _.bind(this.update_state, this));
             return ret;
         },
+        
+        is_deleted: function() {
+          return this.get('status') == 'DELETED';
+        },
 
         toJSON: function() {
             var attrs = _.clone(this.attributes);

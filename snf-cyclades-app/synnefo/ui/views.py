@@ -218,6 +218,19 @@ def machines_console(request):
                'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', request, context)
 
+def user_quota(request):
+    get_user(request, settings.ASTAKOS_URL)
+    vms_limit_for_user = \
+        settings.VMS_USER_QUOTA.get(request.user_uniq,
+                settings.MAX_VMS_PER_USER)
+
+    networks_limit_for_user = \
+        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                settings.MAX_NETWORKS_PER_USER)
+    return HttpResponse('{"vms_quota":%d, "networks_quota":%d}' % (vms_limit_for_user,
+                                                               networks_limit_for_user),
+                        mimetype="application/json")
+
 def js_tests(request):
     return template('tests', request, {})
 

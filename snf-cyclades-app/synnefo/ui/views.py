@@ -96,6 +96,8 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
+VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
+                                    'snf-%(id)s.vm.okeanos.grnet.gr')
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
 SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
@@ -199,7 +201,8 @@ def home(request):
                'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
                'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
                'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
-               'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL)
+               'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
+               'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT % {'id':'{0}'})
     }
     return template('home', request, context)
 
@@ -239,9 +242,9 @@ CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already
 CONNECT_WINDOWS_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
 established using Remote Desktop. Click on the following link, and if asked
 open it using "Remote Desktop Connection".
-IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
-after its creation.""")
-CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use""")
+<br /><span class="important">IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
+after its creation.</span>""")
+CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use.""")
 
 # info/subinfo for all os combinations
 #
@@ -252,15 +255,22 @@ CONNECT_PROMPT_MESSAGES = {
     'linux': {
             'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
             'windows': [CONNECT_LINUX_WINDOWS_MESSAGE,
-                        CONNECT_LINUX_WINDOWS_SUBMESSAGE]
-        },
+                        CONNECT_LINUX_WINDOWS_SUBMESSAGE],
+            'ssh_message': "ssh %(user)s@%(hostname)s"
+    },
     'windows': {
             'linux': [CONNECT_WINDOWS_LINUX_MESSAGE,
                       CONNECT_WINDOWS_LINUX_SUBMESSAGE],
             'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE,
-                        CONNECT_WINDOWS_WINDOWS_SUBMESSAGE]
-        }
-    }
+                        CONNECT_WINDOWS_WINDOWS_SUBMESSAGE],
+            'ssh_message': "%(user)s@%(hostname)s"
+    },
+}
+
+APPEND_CONNECT_PROMPT_MESSAGES = getattr(settings, 'UI_CONNECT_PROMPT_MESSAGES',
+                                       {})
+for k, v in APPEND_CONNECT_PROMPT_MESSAGES.iteritems():
+    CONNECT_PROMPT_MESSAGES[k].update(v)
 
 # retrieve domain prefix from settings
 DOMAIN_PREFIX = getattr(settings, 'MACHINE_DOMAIN_PREFIX', getattr(settings,
@@ -271,6 +281,7 @@ DOMAIN_TPL = "%s%%s" % DOMAIN_PREFIX
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
+    hostname = request.GET.get('hostname','')
     operating_system = metadata_os = request.GET.get('os','')
     server_id = request.GET.get('srv', 0)
     host_os = request.GET.get('host_os','Linux').lower()
@@ -303,29 +314,52 @@ def machines_connect(request):
 
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
+        EXTRA_RDP_CONTENT = getattr(settings, 'UI_EXTRA_RDP_CONTENT', '')
+        if callable(EXTRA_RDP_CONTENT):
+            extra_rdp_content = EXTRA_RDP_CONTENT(server_id, ip_address,
+                                                  hostname, username)
+        else:
+            extra_rdp_content = EXTRA_RDP_CONTENT % {
+                    'server_id':server_id,
+                    'ip_address': ip_address,
+                    'hostname': hostname,
+                    'user': username
+                  }
+
         rdp_context = {
                 'username': username,
                 'domain': domain,
-                'ip_address': ip_address
+                'ip_address': ip_address,
+                'extra_content': extra_rdp_content
         }
 
         rdp_file_data = render_to_string("synnefo-windows.rdp", rdp_context)
         response = HttpResponse(rdp_file_data, mimetype='application/x-rdp')
 
         # proper filename, use server id and ip address
-        filename = "%d-%s.rdp" % (int(server_id), ip_address)
+        filename = "%d-%s.rdp" % (int(server_id), hostname)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        link_title = _("Remote desktop to %s") % ip_address
-        link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" % (
-                reverse("ui_machines_connect"), ip_address, operating_system,int(server_id), username, domain)
-
+        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get('ssh_message')
+        if host_os == 'windows':
+            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get('ssh_message')
+        if callable(ssh_message):
+            link_title = ssh_message(server_id, ip_address, hostname, username)
+        else:
+            link_title = ssh_message % {
+                    'server_id':server_id,
+                    'ip_address': ip_address,
+                    'hostname': hostname,
+                    'user': username
+                  }
         if (operating_system != "windows"):
-            link_title = "ssh %s@%s" % (username, ip_address)
             link_url = None
 
-            if host_os == "windows":
-                link_title = "%s@%s" % (username, ip_address)
+        else:
+            link_title = _("Remote desktop to %s") % ip_address
+            link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s&hostname=%s" % (
+                    reverse("ui_machines_connect"), ip_address,
+                    operating_system, int(server_id), username, domain, hostname)
 
         # try to find a specific message
         try:

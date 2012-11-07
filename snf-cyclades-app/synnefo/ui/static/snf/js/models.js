@@ -1249,6 +1249,14 @@
             return this.get_nics(function(n){ return n.get_network().is_public() === true })[0];
         },
 
+        get_hostname: function() {
+          var hostname = this.get_meta('hostname');
+          if (!hostname) {
+            hostname = synnefo.config.vm_hostname_format.format(this.id);
+          }
+          return hostname;
+        },
+
         get_nic: function(net_id) {
         },
 
@@ -1431,7 +1439,8 @@
         get_connection_info: function(host_os, success, error) {
             var url = "/machines/connect";
             params = {
-                ip_address: this.get_addresses().ip4,
+                ip_address: this.get_public_nic().get('ipv4'),
+                hostname: this.get_hostname(),
                 os: this.get_os(),
                 host_os: host_os,
                 srv: this.id

@@ -92,12 +92,41 @@ VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "W
 # vms. {0} gets replaced by the image OS value
 VM_CREATE_NAME_TPL = "My {0} server"
 
+# Template to use to build vm hostname
+UI_VM_HOSTNAME_FORMAT = 'snf-%(id)s.vm.okeanos.grnet.gr'
+
 # Name/description metadata for the available flavor disk templates
 # Dict key is the disk_template value as stored in database
 UI_FLAVORS_DISK_TEMPLATES_INFO = {
     'drbd': {'name': 'DRBD',
              'description': 'DRBD storage.'},
 }
+
+# Override default connect prompt messages. The setting gets appended to the
+# ui default values so you only need to modify parameters you need to alter.
+#
+# Indicative format:
+# {
+#    '<browser os1>': {
+#        '<vm os family1>': ['top message....', 'bottom message'],
+#        '<vm os family 2>': ['top message....', 'bottom message'],
+#        'ssh_message': 'ssh %(user)s@%(hostname)s'
+# }
+#
+# you may use the following parameters to format ssh_message:
+#
+# * server_id: the database pk of the vm
+# * ip_address: the ipv4 address of the public vm nic
+# * hostname: vm hostname
+# * user: vm username
+#
+# you may assign a callable python object to the ssh_message, if so the above
+# parameters get passed as arguments to the provided object.
+UI_CONNECT_PROMPT_MESSAGES = {}
+
+# extend rdp file content. May be a string with format parameters similar to
+# those used in UI_CONNECT_PROMPT_MESSAGES `ssh_message` or a callable object.
+UI_EXTRA_RDP_CONTENT = None
 
 
 #######################

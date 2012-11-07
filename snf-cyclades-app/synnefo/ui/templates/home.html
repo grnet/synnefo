@@ -628,6 +628,7 @@
             synnefo.config.network_allow_multiple_destory = {{ network_allow_multiple_destroy }};
             synnefo.config.group_public_networks = {{ group_public_networks }};
             synnefo.config.grouped_public_network_name = {{ grouped_public_network_name|safe }};
+            synnefo.config.vm_hostname_format = {{ vm_hostname_format|safe }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,

@@ -3798,12 +3798,12 @@ div.single div.column3 div.server-name:hover {
 }
 
 #console-header div.help-text {
-    font-size: 75%;
+    font-size: 70%;
     font-weight:bold;
     color:#FFFFFF;
     position: absolute;
     height: 20px;
-    top: 78px;
+    top: 79px;
 }
 
 div.console-container {
@@ -3818,8 +3818,7 @@ div.console-container {
 .console-info {
     font-size:80%;
     color: white;
-    float:left;
-    position:relative;
+    position:absolute;
     margin: 15px 0 0 480px;
 }
 

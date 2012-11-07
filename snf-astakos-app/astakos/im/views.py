@@ -664,6 +664,7 @@ def change_email(request, activation_key=None,
                                                         extra_context))
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_add(request, kind_name='default'):
@@ -725,33 +726,11 @@ def group_add(request, kind_name='default'):
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
-            d = form.cleaned_data.copy()
-            d['owners'] = [request.user]
-            result = callpoint.create_groups((d,)).next()
-            if result.is_success:
-                new_object = result.data[0]
-                msg = _("The %(verbose_name)s was created successfully.") %\
-                    {"verbose_name": model._meta.verbose_name}
-                messages.success(request, msg, fail_silently=True)
-
-#                # send notification
-#                 try:
-#                     send_group_creation_notification(
-#                         template_name='im/group_creation_notification.txt',
-#                         dictionary={
-#                             'group': new_object,
-#                             'owner': request.user,
-#                             'policies': list(form.cleaned_data['policies']),
-#                         }
-#                     )
-#                 except SendNotificationError, e:
-#                     messages.error(request, e, fail_silently=True)
-                return HttpResponseRedirect(post_save_redirect % new_object)
-            else:
-                msg = _("The %(verbose_name)s creation failed: %(reason)s.") %\
-                    {"verbose_name": model._meta.verbose_name,
-                     "reason":result.reason}
-                messages.error(request, msg, fail_silently=True)
+            return render_response(
+                template='im/astakosgroup_form_summary.html',
+                context_instance=get_context(request),
+                data=form.cleaned_data
+            )
     else:
         now = datetime.now()
         data = {
@@ -773,6 +752,47 @@ def group_add(request, kind_name='default'):
     }, context_processors)
     return HttpResponse(t.render(c))
 
+
+# @require_http_methods(["POST"])
+# @signed_terms_required
+# @login_required
+def group_add_complete(request):
+    d = dict(request.POST)
+    d['owners'] = [request.user]
+    result = callpoint.create_groups((d,)).next()
+    if result.is_success:
+        new_object = result.data[0]
+        model = AstakosGroup
+        msg = _("The %(verbose_name)s was created successfully.") %\
+            {"verbose_name": model._meta.verbose_name}
+        messages.success(request, msg, fail_silently=True)
+
+#                # send notification
+#                 try:
+#                     send_group_creation_notification(
+#                         template_name='im/group_creation_notification.txt',
+#                         dictionary={
+#                             'group': new_object,
+#                             'owner': request.user,
+#                             'policies': list(form.cleaned_data['policies']),
+#                         }
+#                     )
+#                 except SendNotificationError, e:
+#                     messages.error(request, e, fail_silently=True)
+        post_save_redirect = '/im/group/%(id)s/'
+        return HttpResponseRedirect(post_save_redirect % new_object)
+    else:
+        msg = _("The %(verbose_name)s creation failed: %(reason)s.") %\
+            {"verbose_name": model._meta.verbose_name,
+             "reason":result.reason}
+        messages.error(request, msg, fail_silently=True)
+    
+    return render_response(
+    template='im/astakosgroup_form_summary.html',
+    context_instance=get_context(request))
+
+
+@require_http_methods(["GET"])
 @signed_terms_required
 @login_required
 def group_list(request):
@@ -828,6 +848,7 @@ def group_list(request):
                                       })
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_detail(request, group_id):
@@ -904,6 +925,7 @@ def group_detail(request, group_id):
     return response
 
 
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_search(request, extra_context=None, **kwargs):
@@ -959,6 +981,7 @@ def group_search(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
+@require_http_methods(["GET"])
 @signed_terms_required
 @login_required
 def group_all(request, extra_context=None, **kwargs):
@@ -996,6 +1019,7 @@ def group_all(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 def group_join(request, group_id):
@@ -1015,6 +1039,7 @@ def group_join(request, group_id):
         return group_search(request)
 
 
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 def group_leave(request, group_id):
@@ -1053,6 +1078,7 @@ def handle_membership(func):
     return wrapper
 
 
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @handle_membership
@@ -1084,6 +1110,7 @@ def disapprove_member(request, membership):
         messages.error(request, msg)
 
 
+@require_http_methods(["GET"])
 @signed_terms_required
 @login_required
 def resource_list(request):
@@ -1139,6 +1166,7 @@ def group_create_list(request):
         context_instance=get_context(request),)
 
 
+@require_http_methods(["GET"])
 @signed_terms_required
 @login_required
 def billing(request):
@@ -1200,6 +1228,7 @@ def _clear_billing_data(data):
     return data
      
      
+@require_http_methods(["GET"])
 @signed_terms_required
 @login_required
 def timeline(request):
@@ -1226,10 +1255,4 @@ def timeline(request):
                            form=form,
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
-    return data 
-
-
-def group_summary(request):
-    return render_response(
-        template='im/astakosgroup_form_summary.html',
-        context_instance=get_context(request)  )
+    return data

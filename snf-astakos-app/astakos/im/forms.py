@@ -538,7 +538,8 @@ class AstakosGroupCreationForm(forms.ModelForm):
     name = forms.URLField()
     moderation_enabled = forms.BooleanField(
         help_text="Check if you want to approve members participation manually",
-        required=False
+        required=False,
+        initial=True
     )
     max_participants = forms.IntegerField(
         widget=forms.HiddenInput(), label='', required=False
@@ -564,28 +565,43 @@ class AstakosGroupCreationForm(forms.ModelForm):
                                 'issue_date', 'expiration_date',
                                 'moderation_enabled', 'max_participants']
         
-        def add_field((k, v)):
+        def add_fields((k, v)):
             self.fields[k] = forms.IntegerField(
                 required=False,
                 widget=forms.HiddenInput()
             )
-        map(add_field,
+        map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
+        )
+        
+        def add_fields((k, v)):
+            self.fields[k] = forms.BooleanField(
+                required=False,
+                widget=forms.HiddenInput()
+            )
+        map(add_fields,
+            ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
         )
     
     def clean(self):
+        super(AstakosGroupCreationForm, self).clean()
         self.cleaned_data['policies'] = []
         append = self.cleaned_data['policies'].append
-        tbd = []
+        tbd = [f for f in self.fields if f.startswith('is_selected_')]
         for name, uplimit in self.cleaned_data.iteritems():
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 tbd.append(name)
                 prefix, suffix = subs
                 s, r = prefix.split(RESOURCE_SEPARATOR)
-                append(dict(service=s, resource=r, uplimit=uplimit))
-        for name in tbd:
-            del self.cleaned_data[name]
+                resource = Resource.objects.get(service__name=s, name=r)
+                
+                # keep only resource limits for selected resource groups
+                if self.cleaned_data.get(
+                    'is_selected_%s' % resource.group, True
+                ):
+                    append(dict(service=s, resource=r, uplimit=uplimit))
+        (self.cleaned_data.pop(name, None) for name in tbd)
         return self.cleaned_data
         
 

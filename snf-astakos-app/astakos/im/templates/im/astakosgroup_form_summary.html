@@ -4,10 +4,11 @@
 
 {% block page.body %}
  
+{{ data }}
 <div class="projects summary">
 	<h2>GROUP REQUEST SUMMARY</h2>
 	<p>Lorem ipsum</p>
-	<form class="quotas-form">
+	<form action="{% url group_add_complete %}" class="quotas-form">
 		<div class="full-dotted">
 			 <h3>DETAILS:</h3>
 			 <dl class="alt-style">

@@ -4560,7 +4560,7 @@ table.list-machines .wave {
     overflow-y: scroll;
     overflow-x: hidden;
 }
-.overlay .overlay-content .description.subinfo {
+.overlay .overlay-content .description.subinfo, .overlay .extra-info {
     margin-bottom:0;
     border-bottom: none;
     padding-bottom:0;

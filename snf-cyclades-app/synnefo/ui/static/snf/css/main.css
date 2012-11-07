@@ -315,7 +315,7 @@ div.css-panes {
 }
 
 #console-header {
-    height: 67px;
+    height: 79px;
     margin-bottom:15px;
     background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
@@ -3792,7 +3792,7 @@ div.single div.column3 div.server-name:hover {
 
 /* console css */
 .console-header-logo {
-    padding-top: 17px;
+    padding-top: 16px;
     margin-left: 30px;
     position: fixed;
 }
@@ -3801,9 +3801,9 @@ div.single div.column3 div.server-name:hover {
     font-size: 75%;
     font-weight:bold;
     color:#FFFFFF;
-    float:left;
     position: absolute;
-    margin: 45px 0 0 2px;
+    height: 20px;
+    top: 78px;
 }
 
 div.console-container {

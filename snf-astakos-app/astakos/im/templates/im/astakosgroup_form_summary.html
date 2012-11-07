@@ -1,0 +1,55 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+ 
+<div class="projects summary">
+	<h2>GROUP REQUEST SUMMARY</h2>
+	<p>Lorem ipsum</p>
+	<form class="quotas-form">
+		<div class="full-dotted">
+			 <h3>DETAILS:</h3>
+			 <dl class="alt-style">
+			 	<dt>Name</dt>
+			 	<dd>http://c2.grnet.gr/&nbsp;</dd>
+			 	<dt>Description</dt>
+			 	<dd>Description for this group</dd>
+			 	<dt>Type</dt>
+			 	<dd>Course&nbsp;</dd>
+			 	<dt>Issue date:</dt>
+			 	<dd>08/08/2012&nbsp;</dd>
+			 	<dt>Expiration Date</dt>
+			 	<dd>07/09/2012&nbsp;</dd>
+			 	<dt>Modaration</dt>
+			 	<dd>Yes</dd>
+			 	<dt>Max members per group</dt>
+			 	<dd>Unlimited</dd>
+			 </dl>
+		 </div>
+		 <div class="full-dotted">
+			 <h3>RESOURCES:</h3>
+			 
+	           <dl class="alt-style">
+			 	<dt>Max Storage per Unser</dt>
+			 	<dd>Unlimited</dd>
+			 	<dt>Max Vms per user</dt>
+			 	<dd>3</dd>
+			 	<dt>Max diskspace per user</dt>
+			 	<dd>5GB</dd>
+			 	<dt>Max RAM per user</dt>
+		 		<dd>2GB</dd>
+			 	<dt>Max CPU per user</dt>
+			 	<dd>2</dd>
+			 </dl>
+	         
+		 </div>
+		 <p>If you want to correct any of these <a href="">go back</a> to the form </p>
+		 <div class="form-row submit">
+	   		<input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
+		 </div>
+	</form>
+    
+</div>
+ 
+{% endblock %}

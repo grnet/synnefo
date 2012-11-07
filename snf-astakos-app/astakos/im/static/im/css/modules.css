@@ -388,8 +388,9 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .quotas-form .double-checks .with-checkbox label{ width:auto; float:left; margin-left:35px; }
 .quotas-form .double-checks .with-checkbox input[type="text"].hideshow	{ display:block; }
 form.quotas-form legend span.info				{ top:0; bottom:auto; left:225px; }
-form.quotas-form legend span.info span			{ width:400px; }
+form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .with-checkbox+.with-checkbox		{ width:196px; }
+.summary dl.alt-style dt						{ color:#55B577; }
  
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }

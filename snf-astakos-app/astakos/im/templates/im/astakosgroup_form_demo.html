@@ -8,7 +8,7 @@
 {% block page.body %}
  
 	
-<form action="" method="post" class="withlabels quotas-form">{% csrf_token %}
+<form action="{% url group_summary %}" method="post" class="withlabels quotas-form">{% csrf_token %}
 	 
     <fieldset>
     	<legend>
@@ -121,7 +121,7 @@
     {% endwith %}
 	 
     <div class="form-row submit">
-   		<input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
+   		<input type="submit" value="VIEW REQUEST SUMMARY" class="submit altcol" autocomplete="off">
 	</div>     
 </form>
 	 

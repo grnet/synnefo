@@ -1227,3 +1227,9 @@ def timeline(request):
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
     return data 
+
+
+def group_summary(request):
+    return render_response(
+        template='im/astakosgroup_form_summary.html',
+        context_instance=get_context(request)  )

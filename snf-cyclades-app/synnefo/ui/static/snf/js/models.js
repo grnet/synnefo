@@ -1173,6 +1173,7 @@
         
         // get image object
         get_image: function(callback) {
+            if (callback == undefined) { callback = function(){} }
             var image = storage.images.get(this.get('imageRef'));
             if (!image) {
                 storage.images.update_unknown_id(this.get('imageRef'), callback);
@@ -1192,12 +1193,12 @@
             return flv;
         },
 
-        get_meta: function(key) {
+        get_meta: function(key, deflt) {
             if (this.get('metadata') && this.get('metadata').values) {
-                if (!this.get('metadata').values[key]) { return null }
+                if (!this.get('metadata').values[key]) { return deflt }
                 return _.escape(this.get('metadata').values[key]);
             } else {
-                return null;
+                return deflt;
             }
         },
 
@@ -1211,8 +1212,9 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta('OS') || (this.get_image(function(){}) ? 
-                                          this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
+            var image = this.get_image();
+            return this.get_meta('OS') || (image ? 
+                                            image.get_os() || "okeanos" : "okeanos");
         },
 
         get_gui: function() {

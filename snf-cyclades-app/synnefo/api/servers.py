@@ -334,9 +334,6 @@ def create_server(request):
         'password': password
     })
 
-    # TODO: if nodeapi app is enabled vm gets an extra attribute `params_url`
-    # we should provide that url to the create_instance method. How ????
-
     try:
         if settings.PUBLIC_USE_POOL:
             (network, address) = util.allocate_public_address(backend)
@@ -364,6 +361,8 @@ def create_server(request):
             imageid=image_id,
             flavor=flavor,
             action="CREATE")
+
+        vmapi_url = vm.get_vmapi_params_urls()
 
         try:
             jobID = create_instance(vm, nic, flavor, image, password, personality)

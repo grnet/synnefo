@@ -38,20 +38,20 @@ from django.utils import simplejson as json
 class TestServerParams(TestCase):
 
     def test_cache_backend(self):
-        from synnefo.nodeapi import backend
+        from synnefo.vmapi import backend
         backend.set("test", 1)
         self.assertEqual(backend.get("test"), 1)
         backend.set("test", None)
         self.assertEqual(backend.get("test"), None)
 
     def test_get_key(self):
-        from synnefo.nodeapi import get_key
-        self.assertEqual(get_key("snf-1", "12345"), "nodeapi_snf-1_12345")
-        self.assertEqual(get_key("snf-1", None, "12345"), "nodeapi_snf-1_12345")
+        from synnefo.vmapi import get_key
+        self.assertEqual(get_key("snf-1", "12345"), "vmapi_snf-1_12345")
+        self.assertEqual(get_key("snf-1", None, "12345"), "vmapi_snf-1_12345")
 
     def test_params_create(self):
-        from synnefo.nodeapi.models import create_server_params
-        from synnefo.nodeapi import backend
+        from synnefo.vmapi.models import create_server_params
+        from synnefo.vmapi import backend
         try:
             from synnefo.api.servers import server_created
             from synnefo.db.models import VirtualMachine
@@ -64,8 +64,8 @@ class TestServerParams(TestCase):
         params = {'password': 'X^942Jjfdsa', 'personality': {}}
         uuid = create_server_params(sender=vm, created_vm_params=params)
 
-        self.assertEqual(vm.params_url, '/nodeapi/server-params/%s' % uuid)
-        key = "nodeapi_%s" % uuid
+        self.assertEqual(vm.params_url, '/vmapi/server-params/%s' % uuid)
+        key = "vmapi_%s" % uuid
         self.assertEqual(type(backend.get(key)), str)
         data = json.loads(backend.get(key))
         self.assertEqual('password' in data, True)

@@ -32,22 +32,10 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
-from django.utils import simplejson as json
-from django.core.urlresolvers import reverse
 
-from synnefo.api.servers import server_created
-from synnefo.nodeapi import backend, get_key, get_uuid
-
-
-def create_server_params(sender, created_vm_params, **kwargs):
-    json_value = json.dumps(created_vm_params)
-    uuid = get_uuid()
-    key = get_key(uuid)
-    backend.set(key, json_value)
-
-    # inject sender (vm) with its parameters url
-    setattr(sender, 'params_url', reverse('nodeapi_server_params', args=[uuid]))
-    return uuid
-
-server_created.connect(create_server_params)
+CACHE_BACKEND = getattr(settings, 'VMAPI_CACHE_BACKEND',
+    settings.CACHE_BACKEND)
+CACHE_KEY_PREFIX = getattr(settings, 'VMAPI_CACHE_KEY_PREFIX',
+    'vmapi')
+RESET_PARAMS = getattr(settings, 'VMAPI_RESET_PARAMS', True)
 

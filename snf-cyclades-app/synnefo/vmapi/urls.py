@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,22 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import Http404, HttpResponse
+from django.conf.urls.defaults import include, patterns, url
 
-from synnefo.nodeapi import backend, get_key
-from synnefo.nodeapi.settings import RESET_PARAMS
-
-def server_params(request, uuid):
-    uuid = request.GET.get('uuid', None)
-    if not uuid:
-        raise Http404
-
-    params = backend.get(get_key(uuid))
-    if not params:
-        raise Http404
-
-    if RESET_PARAMS:
-        backend.set(uuid, None)
-
-    return HttpResponse(params, content_type="application/json")
-
+urlpatterns = patterns('synnefo.vmapi.views',
+    url(r'^server-params/(?P<uuid>.*)$', 'server_params', name="vmapi_server_params"),
+)

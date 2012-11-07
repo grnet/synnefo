@@ -31,27 +31,23 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from uuid import uuid4
+from django.conf import settings
+from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
 
-from django.core.cache import get_cache
-from django.core import signals
+from synnefo.api.servers import server_created
+from synnefo.vmapi import backend, get_key, get_uuid
 
-from synnefo.nodeapi.settings import CACHE_KEY_PREFIX, CACHE_BACKEND
 
-def get_uuid():
-    return str(uuid4())
+def create_server_params(sender, created_vm_params, **kwargs):
+    json_value = json.dumps(created_vm_params)
+    uuid = get_uuid()
+    key = get_key(uuid)
+    backend.set(key, json_value)
 
-def get_key(*args):
-    args = map(str, filter(bool, list(args)))
-    args.insert(0, CACHE_KEY_PREFIX)
-    return "_".join(args)
+    # inject sender (vm) with its parameters url
+    setattr(sender, 'params_url', reverse('vmapi_server_params', args=[uuid]))
+    return uuid
 
-# initialize serverparams cache backend
-backend = get_cache(CACHE_BACKEND)
-
-# Some caches -- pythont-memcached in particular -- need to do a cleanup at the
-# end of a request cycle. If the cache provides a close() method, wire it up
-# here.
-if hasattr(backend, 'close'):
-    signals.request_finished.connect(backend.close)
+server_created.connect(create_server_params)
 

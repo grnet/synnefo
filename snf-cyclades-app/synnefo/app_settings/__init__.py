@@ -5,6 +5,7 @@ synnefo_web_apps = [
     'synnefo.db',
     'synnefo.logic',
     'synnefo.plankton',
+    'synnefo.vmapi',
     'synnefo.helpdesk',
     'synnefo.nodeapi',
     'synnefo.ui.userdata',

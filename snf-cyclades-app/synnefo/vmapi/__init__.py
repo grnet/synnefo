@@ -31,11 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from uuid import uuid4
 
-CACHE_BACKEND = getattr(settings, 'NODEAPI_CACHE_BACKEND',
-    settings.CACHE_BACKEND)
-CACHE_KEY_PREFIX = getattr(settings, 'NODEAPI_CACHE_KEY_PREFIX',
-    'nodeapi')
-RESET_PARAMS = getattr(settings, 'NODEAPI_RESET_PARAMS', True)
+from django.core.cache import get_cache
+from django.core import signals
+
+from synnefo.vmapi.settings import CACHE_KEY_PREFIX, CACHE_BACKEND
+
+def get_uuid():
+    return str(uuid4())
+
+def get_key(*args):
+    args = map(str, filter(bool, list(args)))
+    args.insert(0, CACHE_KEY_PREFIX)
+    return "_".join(args)
+
+# initialize serverparams cache backend
+backend = get_cache(CACHE_BACKEND)
+
+# Some caches -- pythont-memcached in particular -- need to do a cleanup at the
+# end of a request cycle. If the cache provides a close() method, wire it up
+# here.
+if hasattr(backend, 'close'):
+    signals.request_finished.connect(backend.close)
 

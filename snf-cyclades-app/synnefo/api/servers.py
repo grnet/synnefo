@@ -349,7 +349,8 @@ def create_server(request):
             backend=backend,
             userid=request.user_uniq,
             imageid=image_id,
-            flavor=flavor)
+            flavor=flavor,
+            action="CREATE")
 
         try:
             jobID = create_instance(vm, nic, flavor, image, password, personality)
@@ -419,7 +420,8 @@ def update_server_name(request, server_id):
     except (TypeError, KeyError):
         raise faults.BadRequest("Malformed request")
 
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_suspended=True)
     vm.name = name
     vm.save()
 
@@ -439,7 +441,9 @@ def delete_server(request, server_id):
     #                       overLimit (413)
 
     log.info('delete_server %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_suspended=True)
+    start_action(vm, 'DESTROY')
     delete_instance(vm)
     return HttpResponse(status=204)
 
@@ -453,11 +457,13 @@ def server_action(request, server_id):
         raise faults.BadRequest("Malformed request")
 
     # Do not allow any action on deleted or suspended VMs
-    vm = util.get_vm(server_id, request.user_uniq, non_deleted=True,
-                     non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_deleted=True, non_suspended=True)
 
     try:
         key = req.keys()[0]
+        if key != 'console':
+            start_action(vm, key_to_action(key))
         val = req[key]
         assert isinstance(val, dict)
         return server_actions[key](request, vm, val)
@@ -465,6 +471,43 @@ def server_action(request, server_id):
         raise faults.BadRequest("Unknown action")
     except AssertionError:
         raise faults.BadRequest("Invalid argument")
+
+
+def key_to_action(key):
+    """Map HTTP request key to a VM Action"""
+    if key == "shutdown":
+        return "STOP"
+    if key == "delete":
+        return "DESTROY"
+    if key == "console":
+        return None
+    else:
+        return key.upper()
+
+
+def start_action(vm, action):
+    log.debug("Applying action %s to VM %s", action, vm)
+    if not action:
+        return
+
+    if not action in [x[0] for x in VirtualMachine.ACTIONS]:
+        raise faults.ServiceUnavailable("Action %s not supported" % action)
+
+    # No actions to deleted VMs
+    if vm.deleted:
+        raise VirtualMachine.DeletedError
+
+    # No actions to machines being built. They may be destroyed, however.
+    if vm.operstate == 'BUILD' and action != 'DESTROY':
+        raise VirtualMachine.BuildingError
+
+    vm.action = action
+    vm.backendjobid = None
+    vm.backendopcode = None
+    vm.backendjobstatus = None
+    vm.backendlogmsg = None
+
+    vm.save()
 
 
 @util.api_method('GET')

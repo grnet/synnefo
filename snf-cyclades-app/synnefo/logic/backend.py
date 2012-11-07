@@ -255,30 +255,6 @@ def process_create_progress(vm, etime, progress):
     vm.save()
 
 
-def start_action(vm, action):
-    """Update the state of a VM when a new action is initiated."""
-    log.debug("Applying action %s to VM %s", action, vm)
-
-    if not action in [x[0] for x in VirtualMachine.ACTIONS]:
-        raise VirtualMachine.InvalidActionError(action)
-
-    # No actions to deleted VMs
-    if vm.deleted:
-        raise VirtualMachine.DeletedError
-
-    # No actions to machines being built. They may be destroyed, however.
-    if vm.operstate == 'BUILD' and action != 'DESTROY':
-        raise VirtualMachine.BuildingError
-
-    vm.action = action
-    vm.backendjobid = None
-    vm.backendopcode = None
-    vm.backendjobstatus = None
-    vm.backendlogmsg = None
-
-    vm.save()
-
-
 def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
     details=None):
     """
@@ -376,7 +352,6 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
 
 
 def delete_instance(vm):
-    start_action(vm, 'DESTROY')
     with pooled_rapi_client(vm) as client:
         return client.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
@@ -389,13 +364,11 @@ def reboot_instance(vm, reboot_type):
 
 
 def startup_instance(vm):
-    start_action(vm, 'START')
     with pooled_rapi_client(vm) as client:
         return client.StartupInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def shutdown_instance(vm):
-    start_action(vm, 'STOP')
     with pooled_rapi_client(vm) as client:
         return client.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
 

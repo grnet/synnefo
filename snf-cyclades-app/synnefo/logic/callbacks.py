@@ -77,7 +77,7 @@ def instance_from_msg(func):
     def wrapper(msg):
         try:
             vm_id = utils.id_from_instance_name(msg["instance"])
-            vm = VirtualMachine.objects.get(id=vm_id)
+            vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
             func(vm, msg)
         except VirtualMachine.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown instance %s.", msg['instance'])

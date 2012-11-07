@@ -70,11 +70,9 @@ class Command(BaseCommand):
 
         try:
             vm_id = int(args[0])
+            vm = VirtualMachine.objects.get(id=vm_id)
         except ValueError:
             raise CommandError("Invalid server ID")
-
-        try:
-            vm = VirtualMachine.objects.get(id=vm_id)
         except VirtualMachine.DoesNotExist:
             raise CommandError("Server not found in DB")
 
@@ -105,26 +103,24 @@ class Command(BaseCommand):
         client = vm.get_client()
         try:
             g_vm = client.GetInstance(vm.backend_vm_id)
+            self.stdout.write('\n')
+            self.stdout.write(sep)
+            self.stdout.write('State of Server in Ganeti\n')
+            self.stdout.write(sep)
+            for i in GANETI_INSTANCE_FIELDS:
+                try:
+                    value = g_vm[i]
+                    if i.find('time') != -1:
+                        value = datetime.fromtimestamp(value)
+                    self.stdout.write(i.ljust(14) + ': ' + str(value) + '\n')
+                except KeyError:
+                    pass
         except GanetiApiError as e:
             if e.code == 404:
                 self.stdout.write('Server does not exist in backend %s\n' %
                                   vm.backend.clustername)
-                return
             else:
                 raise e
-
-        self.stdout.write('\n')
-        self.stdout.write(sep)
-        self.stdout.write('State of Server in Ganeti\n')
-        self.stdout.write(sep)
-        for i in GANETI_INSTANCE_FIELDS:
-            try:
-                value = g_vm[i]
-                if i.find('time') != -1:
-                    value = datetime.fromtimestamp(value)
-                self.stdout.write(i.ljust(14) + ': ' + str(value) + '\n')
-            except KeyError:
-                pass
 
         if not options['jobs']:
             return

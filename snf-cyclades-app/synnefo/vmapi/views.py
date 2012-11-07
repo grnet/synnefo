@@ -31,22 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from logging import getLogger
+
 from django.http import Http404, HttpResponse
 
 from synnefo.vmapi import backend, get_key
-from synnefo.vmapi.settings import RESET_PARAMS
+from synnefo.vmapi import settings
+
+log = getLogger('synnefo.vmapi')
 
 def server_params(request, uuid):
-    uuid = request.GET.get('uuid', None)
     if not uuid:
         raise Http404
 
-    params = backend.get(get_key(uuid))
+    cache_key = get_key(uuid)
+    params = backend.get(cache_key)
     if not params:
+        log.error('Request vmapi params key not found: %s', cache_key)
         raise Http404
 
-    if RESET_PARAMS:
-        backend.set(uuid, None)
+    if settings.RESET_PARAMS:
+        backend.set(cache_key, None)
 
     return HttpResponse(params, content_type="application/json")
 

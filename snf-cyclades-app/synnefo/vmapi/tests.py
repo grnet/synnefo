@@ -35,6 +35,8 @@
 from django.test import TestCase
 from django.utils import simplejson as json
 
+from synnefo.vmapi import settings
+
 class TestServerParams(TestCase):
 
     def test_cache_backend(self):
@@ -64,13 +66,19 @@ class TestServerParams(TestCase):
         params = {'password': 'X^942Jjfdsa', 'personality': {}}
         uuid = create_server_params(sender=vm, created_vm_params=params)
 
-        self.assertEqual(vm.params_url, '/vmapi/server-params/%s' % uuid)
+        self.assertEqual(vm.params_url, settings.BASE_URL + '/vmapi/server-params/%s' % uuid)
         key = "vmapi_%s" % uuid
         self.assertEqual(type(backend.get(key)), str)
         data = json.loads(backend.get(key))
         self.assertEqual('password' in data, True)
         self.assertEqual('personality' in data, True)
         self.assertEqual(data.get('password'), 'X^942Jjfdsa')
+
+        response = self.client.get('/vmapi/server-params/%s' % uuid)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get('/vmapi/server-params/%s' % uuid)
+        self.assertEqual(response.status_code, 404)
+
 
     def test_params_view(self):
         pass

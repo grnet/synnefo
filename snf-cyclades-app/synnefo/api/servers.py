@@ -328,12 +328,6 @@ def create_server(request):
     else:
         transaction.commit()
 
-    # dispatch server created signal
-    server_created.send(sender=vm, created_vm_params={
-        'personality': personality,
-        'password': password
-    })
-
     try:
         if settings.PUBLIC_USE_POOL:
             (network, address) = util.allocate_public_address(backend)
@@ -362,7 +356,11 @@ def create_server(request):
             flavor=flavor,
             action="CREATE")
 
-        vmapi_url = vm.get_vmapi_params_urls()
+        # dispatch server created signal
+        server_created.send(sender=vm, created_vm_params={
+            'personality': personality,
+            'password': password
+        })
 
         try:
             jobID = create_instance(vm, nic, flavor, image, password, personality)

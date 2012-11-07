@@ -321,6 +321,9 @@
             if (synnefo.config.support_ssh_os_list.indexOf(this.get_os()) > -1) {
                 return true;
             }
+            if (this.get_meta('osfamily') == 'linux') {
+              return true;
+            }
             return false;
         },
 

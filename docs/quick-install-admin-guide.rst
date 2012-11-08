@@ -854,21 +854,47 @@ For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
 
 We highly recommend that you read the official Ganeti documentation, if you are
 not familiar with Ganeti. If you are extremely impatient, you can result with
-the above assumed setup by running:
+the above assumed setup by running on both nodes:
 
 .. code-block:: console
 
-   root@node1:~ # apt-get install ganeti2
-   root@node1:~ # apt-get install ganeti-htools
-   root@node2:~ # apt-get install ganeti2
-   root@node2:~ # apt-get install ganeti-htools
+   # apt-get install ganeti2
+   # apt-get install ganeti-htools
+   # modprobe drbd minor_count=255 usermode_helper=/bin/true
+
+Unfortunatelly, stock Ganeti doesn't support IP pool management yet (we are
+working hard to merge it upstream for Ganeti 2.7). Synnefo depends on the IP
+pool functionality of Ganeti, so you have to use GRNET's patches for now. To
+do so you have to build your own package from source:
+
+.. code-block:: console
+
+   # apt-get install python-bitarray
+   # apt-get install git-buildpackage
+   # git clone https://code.grnet.gr/git/ganeti-local
+   # mkdir build-area
+   # cd ganeti-local
+   # git checkout stable-2.6-grnet
+   # git checkout debian-2.6-grnet
+   # git-buildpackage --git-upstream-branch=stable-2.6-grnet \
+                   --git-debian-branch=debian-2.6-grnet \
+                   --git-export=INDEX \
+                   --git-ignore-new
+
+This will create two deb packages in build-area. You should then run in both
+nodes:
+
+.. code-block:: console
+
+   # dpkg -i build-area/\*deb
+   # apt-get install -f
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
 both nodes, choose a domain name that resolves to a valid floating IP (let's say
 it's ``ganeti.node1.example.com``). Make sure node1 and node2 have root access
 between each other using ssh keys and not passwords. Also, make sure there is an
 lvm volume group named ``ganeti`` that will host your VMs' disks. Finally, setup
-a bridge interface on the host machines (e.g:: br0). Then run on node1:
+a bridge interface on the host machines (e.g: br0). Then run on node1:
 
 .. code-block:: console
 
@@ -882,6 +908,8 @@ a bridge interface on the host machines (e.g:: br0). Then run on node1:
 
    root@node1:~ # gnt-node add --no-node-setup --master-capable=yes
                                --vm-capable=yes node2.example.com
+   root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
+   root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
 
 For any problems you may stumble upon installing Ganeti, please refer to the
 `official documentation <http://docs.ganeti.org/ganeti/2.5/html>`_. Installation
@@ -1030,12 +1058,9 @@ Run on the :ref:`GANETI-MASTER's <GANETI_NODES>` (node1) command line:
 
 .. code-block:: console
 
-   # gnt-instance add -o snf-image+default --os-parameters
-                      img_passwd=my_vm_example_passw0rd,
-                      img_format=diskdump,
-                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
-                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
-                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
+   # gnt-instance add -o snf-image+default --os-parameters \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       testvm1
 
 In the above command:
@@ -1078,8 +1103,8 @@ move on to networking now.
     the Cyclades Network Service, but only the Cyclades Compute Service
     (recommended for now).
 
-Network setup overview
-----------------------
+Networking Setup Overview
+-------------------------
 
 This part is deployment-specific and must be customized based on the specific
 needs of the system administrator. However, to do so, the administrator needs
@@ -1087,58 +1112,56 @@ to understand how each level handles Virtual Networks, to be able to setup the
 backend appropriately, before installing Cyclades. To do so, please read the
 :ref:`Network <networks>` section before proceeding.
 
-Public Network setup
---------------------
+Since synnefo 0.11 all network actions are managed with the snf-manage
+network-* commands. This needs the underlying setup (Ganeti, nfdhcpd,
+snf-network, bridges, vlans) to be already configured correctly. The only
+actions needed in this point are:
 
-Physical hosts' public network setup
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+a) Have Ganeti with IP pool management support installed.
 
-The physical hosts' setup is out of the scope of this guide.
+b) Install :ref:`snf-network <snf-network>`, which provides a synnefo specific kvm-ifup script, etc.
 
-However, two common cases that you may want to consider (and choose from) are:
+c) Install :ref:`nfdhcpd <nfdhcpd>`, which serves DHCP requests of the VMs.
 
-a) One public bridge, where all VMs' public tap interfaces will connect.
-b) IP-less routing over the same vlan on every host.
+In order to test that everything is setup correctly before installing Cyclades,
+we will make some testing actions in this section, and the actual setup will be
+done afterwards with snf-manage commands.
 
-When you setup your physical hosts (node1 and node2) for the Public Network,
-then you need to inform Ganeti about the Network's IP range.
+.. _snf-network:
 
-Add the public network to Ganeti
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+snf-network
+~~~~~~~~~~~
 
-Once you have Ganeti with IP pool management up and running, you need to choose
-the public network for your VMs and add it to Ganeti. Let's assume, that you
-want to assign IPs from the ``5.6.7.0/27`` range to your new VMs, with
-``5.6.7.1`` as their gateway. You can add the network by running:
+snf-network includes `kvm-vif-bridge` script that is invoked every time
+a tap (a VM's NIC) is created. Based on environment variables passed by
+Ganeti it issues various commands depending on the network type the NIC is
+connected to and sets up a corresponding dhcp lease.
 
-.. code-block:: console
-
-   # gnt-network add --network=5.6.7.0/27 --gateway=5.6.7.1 public_network
-
-Then, connect the network to all your nodegroups. We assume that we only have
-one nodegroup (``default``) in our Ganeti cluster:
+Install snf-network on all Ganeti nodes:
 
 .. code-block:: console
 
-   # gnt-network connect public_network default public_link
+   # apt-get install snf-network
 
-Your new network is now ready from the Ganeti perspective. Now, we need to setup
-`NFDHCPD` to actually reply with the correct IPs (that Ganeti will choose for
-each NIC).
+Then, in :file:`/etc/default/snf-network` set:
 
-NFDHCPD
+.. code-block:: console
+
+   MAC_MASK=ff:ff:f0:00:00:00
+
+.. _nfdhcpd:
+
+nfdhcpd
 ~~~~~~~
 
-At this point, Ganeti knows about your preferred network, it can manage the IP
-pool and choose a specific IP for each new VM's NIC. However, the actual
-assignment of the IP to the NIC is not done by Ganeti. It is done after the VM
-boots and its dhcp client makes a request. When this is done, `NFDHCPD` will
-reply to the request with Ganeti's chosen IP. So, we need to install `NFDHCPD`
-on all VM-capable nodes of the Ganeti cluster (node1 and node2 in our case) and
-connect it to Ganeti:
+Each NIC's IP is chosen by Ganeti (with IP pool management support).
+`kvm-vif-bridge` script sets up dhcp leases and when the VM boots and
+makes a dhcp request, iptables will mangle the packet and `nfdhcpd` will
+create a dhcp response.
 
 .. code-block:: console
 
+   # apt-get install nfqueue-bindings-python=0.3+physindev-1
    # apt-get install nfdhcpd
 
 Edit ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network configuration. At
@@ -1157,87 +1180,134 @@ If you are using ``ferm``, then you need to run the following:
    # echo "@include 'nfdhcpd.ferm';" >> /etc/ferm/ferm.conf
    # /etc/init.d/ferm restart
 
-Now, you need to connect `NFDHCPD` with Ganeti. To do that, you need to install
-a custom KVM ifup script for use by Ganeti, as ``/etc/ganeti/kvm-vif-bridge``,
-on all VM-capable GANETI-NODEs (node1 and node2). A sample implementation is
-provided along with `snf-cyclades-gtools <snf-cyclades-gtools>`, that will
-be installed in the next sections, however you will probably need to write your
-own, according to your underlying network configuration.
-
-Testing the Public Network
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-So, we have setup the bridges/vlans on the physical hosts appropriately, we have
-added the desired network to Ganeti, we have installed nfdhcpd and installed the
-appropriate ``kvm-vif-bridge`` script under ``/etc/ganeti``.
-
-Now, it is time to test that the backend infrastracture is correctly setup for
-the Public Network. We assume to have used the (b) method on setting up the
-physical hosts. We will add a new VM, the same way we did it on the previous
-testing section. However, now will also add one NIC, configured to be managed
-from our previously defined network. Run on the GANETI-MASTER (node1):
+or make sure to run after boot:
 
 .. code-block:: console
 
-   # gnt-instance add -o snf-image+default --os-parameters
-                      img_passwd=my_vm_example_passw0rd,
-                      img_format=diskdump,
-                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
-                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
-                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
-                      --net 0:ip=pool,mode=routed,link=public_link
+   # iptables -t mangle -A PREROUTING -p udp -m udp --dport 67 -j NFQUEUE --queue-num 42
+
+and if you have IPv6 enabled:
+
+.. code-block:: console
+
+   # ip6tables -t mangle -A PREROUTING -p ipv6-icmp -m icmp6 --icmpv6-type 133 -j NFQUEUE --queue-num 43
+   # ip6tables -t mangle -A PREROUTING -p ipv6-icmp -m icmp6 --icmpv6-type 135 -j NFQUEUE --queue-num 44
+
+You can check which clients are currently served by nfdhcpd by running:
+
+.. code-block:: console
+
+   # kill -SIGUSR1 `cat /var/run/nfdhcpd/nfdhcpd.pid`
+
+When you run the above, then check ``/var/log/nfdhcpd/nfdhcpd.log``.
+
+Public Network Setup
+--------------------
+
+To achieve basic networking the simplest way is to have a common bridge (e.g.
+``br0``, on the same collision domain with the router) where all VMs will connect
+to. Packets will be "forwarded" to the router and then to the Internet. If
+you want a more advanced setup (ip-less routing and proxy-arp plese refer to
+:ref:`Network <networks>` section).
+
+Physical Host Setup
+~~~~~~~~~~~~~~~~~~~
+
+Assuming ``eth0`` on both hosts is the public interface (directly connected
+to the router), run on every node:
+
+.. code-block:: console
+
+   # brctl addbr br0
+   # ip link set br0 up
+   # vconfig add eth0 100
+   # ip link set eth0.100 up
+   # brctl addif br0 eth0.100
+
+
+Testing a Public Network
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let's assume, that you want to assign IPs from the ``5.6.7.0/27`` range to you
+new VMs, with ``5.6.7.1`` as the router's gateway. In Ganeti you can add the
+network by running:
+
+.. code-block:: console
+
+   # gnt-network add --network=5.6.7.0/27 --gateway=5.6.7.1 --network-type=public --tags=nfdhcpd test-net-public
+
+Then, connect the network to all your nodegroups. We assume that we only have
+one nodegroup (``default``) in our Ganeti cluster:
+
+.. code-block:: console
+
+   # gnt-network connect test-net-public default bridged br0
+
+Now, it is time to test that the backend infrastracture is correctly setup for
+the Public Network. We will add a new VM, the same way we did it on the
+previous testing section. However, now will also add one NIC, configured to be
+managed from our previously defined network. Run on the GANETI-MASTER (node1):
+
+.. code-block:: console
+
+   # gnt-instance add -o snf-image+default --os-parameters \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check \
+                      --net 0:ip=pool,network=test-net-public \
                       testvm2
 
 If the above returns successfully, connect to the new VM and run:
 
 .. code-block:: console
 
-   root@testvm2:~ # ifconfig -a
+   root@testvm2:~ # ip addr
+   root@testvm2:~ # ip route
+   root@testvm2:~ # cat /etc/resolv.conf
 
-If a network interface appears with an IP from you Public Network's range
-(``5.6.7.0/27``) and the corresponding gateway, then you have successfully
-connected Ganeti with `NFDHCPD` (and ``kvm-vif-bridge`` works correctly).
+to check IP address (5.6.7.2), IP routes (default via 5.6.7.1) and DNS config
+(nameserver option in nfdhcpd.conf). This shows correct configuration of
+ganeti, snf-network and nfdhcpd.
 
 Now ping the outside world. If this works too, then you have also configured
-correctly your physical hosts' networking.
-
-Later, Cyclades will create the first NIC of every new VM by issuing an
-analogous command. The first NIC of the instance will be the NIC connected to
-the Public Network. The ``link`` variable will be set accordingly in the
-Cyclades conf files later on the guide.
+correctly your physical host and router.
 
 Make sure everything works as expected, before proceeding with the Private
 Networks setup.
 
 .. _private-networks-setup:
 
-Private Networks setup
+Private Networks Setup
 ----------------------
 
-Physical hosts' private networks setup
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Synnefo supports two types of private networks:
 
-At the physical host's level, it is the administrator's responsibility to
-configure the network appropriately, according to his/her needs (as for the
-Public Network).
+ - based on MAC filtering
+ - based on physical VLANs
 
-However we propose the following setup:
+Both types provide Layer 2 isolation to the end-user.
 
-For every possible Private Network we assume a pre-provisioned bridge interface
-exists on every host with the same name. Every Private Network will be
-associated with one of the pre-provisioned bridges. Then the instance's new NIC
-(while connecting to the Private Network) will be connected to that bridge. All
-instances' tap interfaces that reside in the same Private Network will be
-connected in the corresponding bridge of that network. Furthermore, every
-bridge will be connected to a corresponding vlan. So, lets assume that our
-Cyclades installation allows for 20 Private Networks to be setup. We should
-pre-provision the corresponding bridges and vlans to all the hosts. We can do
-this by running on all VM-capable Ganeti nodes (in our case node1 and node2):
+For the first type a common bridge (e.g. ``prv0``) is needed while for the second a
+range of bridges (e.g. ``prv1..prv100``) each bridged on a different physical
+VLAN. To this end to assure isolation among end-users' private networks each
+has to have different MAC prefix (for the filtering to take place) or to be
+"connected" to a different bridge (VLAN actually).
+
+Physical Host Setup
+~~~~~~~~~~~~~~~~~~~
+
+In order to create the necessary VLAN/bridges, one for MAC filtered private
+networks and various (e.g. 20) for private networks based on physical VLANs,
+run on every node:
+
+Assuming ``eth0`` of both hosts are somehow (via cable/switch with VLANs
+configured correctly) connected together, run on every node:
 
 .. code-block:: console
 
+   # apt-get install vlan
+   # modprobe 8021q
    # $iface=eth0
-   # for prv in $(seq 1 20); do
+   # for prv in $(seq 0 20); do
 	vlan=$prv
 	bridge=prv$prv
 	vconfig add $iface $vlan
@@ -1248,80 +1318,86 @@ this by running on all VM-capable Ganeti nodes (in our case node1 and node2):
 	ifconfig $bridge up
       done
 
-The above will do the following (assuming ``eth0`` exists on both hosts):
+The above will do the following :
 
- * provision 20 new bridges: ``prv1`` - ``prv20``
- * provision 20 new vlans: ``eth0.1`` - ``eth0.20``
- * add the corresponding vlan to the equivelant bridge
+ * provision 21 new bridges: ``prv0`` - ``prv20``
+ * provision 21 new vlans: ``eth0.0`` - ``eth0.20``
+ * add the corresponding vlan to the equivalent bridge
 
 You can run ``brctl show`` on both nodes to see if everything was setup
 correctly.
 
-Everything is now setup to support the 20 Cyclades Private Networks. Later,
-we will configure Cyclades to talk to those 20 pre-provisioned bridges.
+Synnefo Setup
+~~~~~~~~~~~~~
+
+As long as those resourses have been provisioned, admin has to define two
+different pools in Synnefo:
+
+ - MAC prefix Pool
+ - Bridge Pool
+
+.. code-block:: console
+
+   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
+
+   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
+
+Change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
+
+.. code-block:: console
+
+   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
 
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To test the Private Networks, we will create two instances and put them in the
-same Private Network (``prv1``). This means that the instances will have a
-second NIC connected to the ``prv1`` pre-provisioned bridge.
+same Private Networks (one MAC Filtered and one Physical VLAN). This means
+that the instances will have a second NIC connected to the ``prv0``
+pre-provisioned bridge and a third to ``prv1``.
 
 We run the same command as in the Public Network testing section, but with one
 more argument for the second NIC:
 
 .. code-block:: console
 
-   # gnt-instance add -o snf-image+default --os-parameters
-                      img_passwd=my_vm_example_passw0rd,
-                      img_format=diskdump,
-                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
-                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
-                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
-                      --net 0:ip=pool,mode=routed,link=public_link
-                      --net 1:ip=none,mode=bridged,link=prv1
+   # gnt-network add --network=192.168.1.0/24 --mac-prefix=aa:00:55 --network-type=private --tags=nfdhcpd,private-filtered test-net-prv-mac
+   # gnt-network connect test-net-prv-mac default bridged prv0
+
+   # gnt-network add --network=10.0.0.0/24 --tags=nfdhcpd --network-type=private test-net-prv-vlan
+   # gnt-network connect test-net-prv-vlan default bridged prv1
+
+   # gnt-instance add -o snf-image+default --os-parameters \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check \
+                      --net 0:ip=pool,network=test-net-public \
+                      --net 1:ip=pool,network=test-net-prv-mac \
+                      --net 2:ip=none,network=test-net-prv-vlan \
                       testvm3
 
-   # gnt-instance add -o snf-image+default --os-parameters
-                      img_passwd=my_vm_example_passw0rd,
-                      img_format=diskdump,
-                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
-                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
-                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
-                      --net 0:ip=pool,mode=routed,link=public_link
-                      --net 1:ip=none,mode=bridged,link=prv1
+   # gnt-instance add -o snf-image+default --os-parameters \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      -t plain --disk 0:size=2G --no-name-check --no-ip-check \
+                      --net 0:ip=pool,network=test-net-public \
+                      --net 1:ip=pool,network=test-net-prv-mac \
+                      --net 2:ip=none,network=test-net-prv-vlan \
                       testvm4
 
-Above, we create two instances with their first NIC connected to the Public
-Network and their second NIC connected to the first Private Network (``prv1``).
-Now, connect to the instances using VNC and make sure everything works as
-expected:
+Above, we create two instances with first NIC connected to the internet, their
+second NIC connected to a MAC filtered private Network and their third NIC
+connected to the first Physical VLAN Private Network. Now, connect to the
+instances using VNC and make sure everything works as expected:
 
-a) The instances have access to the public internet through their first eth
-   interface (``eth0``), which has been automatically assigned a public IP.
+ a) The instances have access to the public internet through their first eth
+    interface (``eth0``), which has been automatically assigned a public IP.
 
-b) Setup the second eth interface of the instances (``eth1``), by assigning two
-   different private IPs (e.g.: ``10.0.0.1`` and ``10.0.0.2``) and the
-   corresponding netmask. If they ``ping`` each other successfully, then
-   the Private Network works.
+ b) ``eth1`` will have mac prefix ``aa:00:55``, while ``eth2`` default one (``aa:00:00``)
 
-Repeat the procedure with more instances connected in different Private Networks
-(``prv{1-20}``), by adding more NICs on each instance. e.g.: We add an instance
-connected to the Public Network and Private Networks 1, 3 and 19:
+ c) ip link set ``eth1``/``eth2`` up
 
-.. code-block:: console
+ d) dhclient ``eth1``/``eth2``
 
-   # gnt-instance add -o snf-image+default --os-parameters
-                      img_passwd=my_vm_example_passw0rd,
-                      img_format=diskdump,
-                      img_id="pithos://user@example.com/pithos/debian_base-6.0-7-x86_64.diskdump",
-                      img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'
-                      -t plain --disk 0:size=2G --no-name-check --no-ip-check
-                      --net 0:ip=pool,mode=routed,link=public_link
-                      --net 1:ip=none,mode=bridged,link=prv1
-                      --net 2:ip=none,mode=bridged,link=prv3
-                      --net 3:ip=none,mode=bridged,link=prv19
-                      testvm5
+ e) On testvm3  ping 192.168.1.2/10.0.0.2
 
 If everything works as expected, then you have finished the Network Setup at the
 backend for both types of Networks (Public & Private).
@@ -1583,8 +1659,10 @@ Add a Public Network
 ----------------------
 
 Cyclades supports different Public Networks on different Ganeti backends.
-After connecting Cyclades with our Ganeti cluster, we need to setup the Public
-Network for this Ganeti backend (`id = 1`):
+After connecting Cyclades with our Ganeti cluster, we need to setup a Public
+Network for this Ganeti backend (`id = 1`). The basic setup is to bridge every
+created NIC on a bridge. After having a bridge (e.g. br0) created in every
+backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
 
 .. code-block:: console
 
@@ -1592,7 +1670,7 @@ Network for this Ganeti backend (`id = 1`):
                                --gateway=5.6.7.1
                                --subnet6=2001:648:2FFC:1322::/64
                                --gateway6=2001:648:2FFC:1322::1
-                               --public --dhcp --type=PUBLIC_ROUTED
+                               --public --dhcp --type=CUSTOM_BRIDGED
                                --name=public_network
                                --backend-id=1
 

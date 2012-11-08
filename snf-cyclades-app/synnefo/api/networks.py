@@ -174,6 +174,13 @@ def create_network(request):
     if net_type == 'PUBLIC_ROUTED':
         raise Forbidden('Can not create a public network.')
 
+    if net_type not in ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
+                        'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
+                        'CUSTOM_BRIDGED']:
+        raise BadRequest("Invalid network type: %s", net_type)
+    if net_type not in settings.ENABLED_NETWORKS:
+        raise Forbidden("Can not create %s network" % net_type)
+
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
                                                deleted=False))
 

@@ -219,7 +219,9 @@ class DjangoBackend(BaseBackend):
     @safe
     def get_resource_usage(self, user_id):
         user = self._lookup_user(user_id)
-        c, data = get_quota((user,))
+	r = get_quota((user,))
+	print '>>>', r 
+	c, data = r 
         resources = []
         append = resources.append
         for t in data:

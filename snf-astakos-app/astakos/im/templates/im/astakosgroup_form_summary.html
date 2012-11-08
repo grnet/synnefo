@@ -6,34 +6,36 @@
  
 {{ data }}
 <div class="projects summary">
-	<h2>GROUP REQUEST SUMMARY</h2>
+	<h2>CONFIRM YOUR REQUEST</h2>
 	<p>Lorem ipsum</p>
 	<form action="{% url group_add_complete %}" class="quotas-form">
+ 		{% for k,v in data.iteritems %}
+ 			<input type="hidden" name="{{ k }}" value="{{ v }}">
+ 		{% endfor %}
 		<div class="full-dotted">
 			 <h3>DETAILS:</h3>
 			 <dl class="alt-style">
 			 	<dt>Name</dt>
-			 	<dd>http://c2.grnet.gr/&nbsp;</dd>
+			 	<dd>{{ data.name|strip_http }}&nbsp;</dd>
+			 	<dt>Homepage Url</dt>
+			 	<dd>{{ data.homepage }}&nbsp;</dd>
 			 	<dt>Description</dt>
-			 	<dd>Description for this group</dd>
-			 	<dt>Type</dt>
-			 	<dd>Course&nbsp;</dd>
+			 	<dd>{{ data.desc }}</dd>
+			 	<!--<dt>Type</dt>
+			 	<dd>Course&nbsp;</dd>-->
 			 	<dt>Issue date:</dt>
-			 	<dd>08/08/2012&nbsp;</dd>
+			 	<dd>{{ data.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 			 	<dt>Expiration Date</dt>
-			 	<dd>07/09/2012&nbsp;</dd>
+			 	<dd>{{ data.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
 			 	<dt>Modaration</dt>
-			 	<dd>Yes</dd>
+			 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
 			 	<dt>Max members per group</dt>
-			 	<dd>Unlimited</dd>
+			 	<dd>{% if  data.max_participants %}{{ data.max_participants }}{% else %}Unlimited{% endif %}</dd>
 			 </dl>
 		 </div>
 		 <div class="full-dotted">
 			 <h3>RESOURCES:</h3>
-			 
 	           <dl class="alt-style">
-			 	<dt>Max Storage per Unser</dt>
-			 	<dd>Unlimited</dd>
 			 	<dt>Max Vms per user</dt>
 			 	<dd>3</dd>
 			 	<dt>Max diskspace per user</dt>
@@ -45,7 +47,10 @@
 			 </dl>
 	         
 		 </div>
-		 <p>If you want to correct any of these <a href="">go back</a> to the form </p>
+		 <div class="full-dotted">
+		 	 
+		 </div>
+		 
 		 <div class="form-row submit">
 	   		<input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
 		 </div>

@@ -11,18 +11,18 @@
 	 	{% if object.is_member %}
 			<em>
 				{% if object.is_owner %}
-					[ADMINISTRATOR]
+					[ ADMINISTRATOR ]
 				{%  else %}
 					[ ENROLLED ]
 				{% endif %}
 			</em>		
 		{% endif %}
-	 	<span>[ {{object.kindname|upper}} ]</span>
+	 	<span>{{object.kindname|upper}}</span>
 	 </h2>
 	 
 	 <div class="details">
 	 	{% if object.is_owner %}
-	 		<a href="#" class="edit">[ EDIT GROUP INFO ]</a>
+	 		<a href="#" class="edit">EDIT GROUP INFO</a>
 	 	{% endif %}
 	 	<div class="data">
 		 	<p>{{ object.desc }}</p>
@@ -54,8 +54,8 @@
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
 		 	<dd>{{object.name}}&nbsp;</dd>
-		 	<dt>Type</dt>
-		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>
+		 	<!--<dt>Type</dt>
+		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>-->
 		 	<dt>Issue date:</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Expiration Date</dt>

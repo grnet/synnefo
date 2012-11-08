@@ -19,7 +19,7 @@ $(document).ready(function() {
 	});
 	
 	$('.quotas-form .group .delete').click(function(e){
-		 
+		e.preventDefault(); 
 		$(this).siblings('fieldset').find('input').val('');
 		
 		$(this).siblings('fieldset').find('.checkbox-widget.unlimited').addClass('checked');

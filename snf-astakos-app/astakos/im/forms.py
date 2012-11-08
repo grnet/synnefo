@@ -613,8 +613,8 @@ class AstakosGroupUpdateForm(forms.ModelForm):
 
 class AddGroupMembersForm(forms.Form):
     q = forms.CharField(
-        max_length=800, widget=forms.Textarea, label=_('Search users'),
-        help_text=_('Add comma separated user emails'),
+        max_length=800, widget=forms.Textarea, label=_('Add users'),
+        help_text=_('Add comma separated user emails, eg. user1@user.com, user2@user.com'),
         required=True)
 
     def clean(self):

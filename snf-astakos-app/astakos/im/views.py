@@ -704,15 +704,23 @@ def group_add(request, kind_name='default'):
         },
         'pithos+.diskspace': {
             'help_text':'resource pithos+.diskspace help text',
+            'is_abbreviation':False,
         },
         'cyclades.vm': {
             'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
+            'is_abbreviation':True,
         },
         'cyclades.disksize': {
             'help_text':'resource cyclades.disksize help text',
+            'is_abbreviation':False,
         },
         'cyclades.ram': {
             'help_text':'resource cyclades.ram help text',
+            'is_abbreviation':True,
+        },
+        'cyclades.cpu': {
+            'help_text':'resource cyclades.cpu help text',
+            'is_abbreviation':True,
         }
     }
 

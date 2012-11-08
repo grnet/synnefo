@@ -211,12 +211,14 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(
                    url=absolute(request, reverse('resource_list')),
                    name="Resources"))
+            """
             append(item(
                    url=absolute(request, reverse('billing')),
                    name="Billing"))
             append(item(
                    url=absolute(request, reverse('timeline')),
                    name="Timeline"))
+            """
         if with_signout:
             append(item(
                    url=absolute(request, reverse('logout')),

@@ -372,6 +372,7 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .quotas-form fieldset ul li a					{ display:block; width:82px; height:82px; overflow:hidden; }
 .quotas-form fieldset ul li a:hover	img			{ margin-top:-84px; }
 .quotas-form fieldset ul li a.selected img		{ margin-top:-168px; }
+.quotas-form fieldset ul li a.selected:hover	{ cursor:default }
 .quotas-form fieldset ul li a.selected:focus	{ outline:0 none; }
 .quotas-form fieldset ul li p					{ position:absolute; top:95px; left:0; display: none;}
 .quotas-form fieldset ul li:hover p				{ display:block; }
@@ -387,11 +388,16 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .quotas-form .double-checks .with-checkbox input[type="text"]	{ width:60px; float:left; margin:9px 15px -9px; display:none; padding:6px; }
 .quotas-form .double-checks .with-checkbox label{ width:auto; float:left; margin-left:35px; }
 .quotas-form .double-checks .with-checkbox input[type="text"].hideshow	{ display:block; }
-form.quotas-form legend span.info				{ top:0; bottom:auto; left:225px; }
+form.quotas-form legend span.info				{ top:1px; bottom:auto; left:225px; }
 form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .with-checkbox+.with-checkbox		{ width:196px; }
 .summary dl.alt-style dt						{ color:#55B577; }
- 
+.quotas-form .with-info .double-checks p		{ clear:both; }
+.quotas-form .with-info .with-checkbox+.with-checkbox		{ width:auto; }
+.quotas-form .with-info .double-checks 			{ position:relative; margin-bottom:70px; }
+.quotas-form .with-info .double-checks .form-row+.form-row					{ position:absolute; left:224px; top:40px;}
+.quotas-form .with-info .double-checks span.info { left:262px; }
+	 
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}

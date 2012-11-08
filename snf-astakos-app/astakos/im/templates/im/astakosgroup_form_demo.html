@@ -10,7 +10,7 @@
 	
 <form action="" method="post" class="withlabels quotas-form">{% csrf_token %}
 	 
-    <fieldset>
+    <fieldset class="with-info">
     	<legend>
     		1. CREATE GROUP
 			<span class="info"> 
@@ -27,6 +27,10 @@
     			<p class="clearfix">
     				<label for="members_unlimited">Unlimited</label>
     				<input type="checkbox" id="members_unlimited" name="members_unlimited" class="unlimited" checked="checked">
+    				<span class="info"> 
+				    	<em>more info</em>
+				    	<span>Help Text Help Text Help Text Text Help Text Help Text</span>
+			    	</span>  
     			</p>
     		</div>
     		<div class="form-row">
@@ -34,8 +38,9 @@
     				<label for="members_limited">Limited</label>
     				<input type="checkbox" id="members_limited" name="members_limited" class="limited">
        				<input type="text" id="members_uplimit" name="members_uplimit" />
-       				 
+	       			  		 
     			</p>
+    			
     		</div>
     		
     	</div> 
@@ -79,7 +84,11 @@
 		    {% with resources|lookup:r as resource%}
 		    <fieldset class="quota storage">
 		    	<legend>
-		    		{{ r|get_value_after_dot|capfirst }}
+		    		{% if resource_info.is_abbreviation %}
+		    			{{ r|get_value_after_dot|upper }}
+		    		{% else %}
+		    			{{ r|get_value_after_dot|capfirst }}
+		    		{% endif %}
 		    		<span class="info"> 
 				    	<em>more info</em>
 				    	<span>{{ resource_info.help_text }}</span>
@@ -94,7 +103,12 @@
 		    		</p>
 		    	</div>-->
  				<div class="double-checks">
-		    		<label>Max {{ r|get_value_after_dot }}{% if not resource.unit %}s {% endif  %} per user</label>
+		    		<label>
+		    			Max {% if resource_info.is_abbreviation %}{{ r|get_value_after_dot|upper }}{% else %}{{ r|get_value_after_dot }}{% endif %}{% if not resource.unit %}s {% endif  %} per user
+						{% if resource.unit %} 
+						 	({{ resource.unit }})
+						{% endif  %}
+					</label>
 		    		<div class="form-row">
 		    			<p class="clearfix">
 		    				<label for="{{r|add:'_unlimited'}}">Unlimited</label>
@@ -122,7 +136,7 @@
     {% endwith %}
 	 
     <div class="form-row submit">
-   		<input type="submit" value="VIEW REQUEST SUMMARY" class="submit altcol" autocomplete="off">
+   		<input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
 	</div>     
 </form>
 	 

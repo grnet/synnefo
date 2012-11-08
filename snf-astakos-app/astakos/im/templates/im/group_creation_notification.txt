@@ -12,7 +12,7 @@ Owner:                          {{owner}}
 Maximum participant number:	{{group.max_participants}}
 Policies:
 {% for p in policies %}
-    {{p.service}}.{{p.resource}}: uplimit:{{p.uplimit}}
+    {{p.service}}.{{p.resource}}: uplimit:{% if p.uplimit %}{{p.uplimit}}{% else %}inf{% endif %}
 {% endfor %}
 
 Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
@@ -31,7 +31,7 @@ Owner:                          {{owner}}
 Maximum participant number:	{{group.max_participants}}
 Policies:
 {% for p in policies %}
-    {{p.service}}.{{p.resource}}: uplimit:{{p.uplimit}}
+    {{p.service}}.{{p.resource}}: uplimit:{% if p.uplimit %}{{p.uplimit}}{% else %}inf{% endif %}
 {% endfor %}
 
 For its activation you can use the command line tool:

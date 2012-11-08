@@ -113,7 +113,6 @@
         },
 
         parse: function(resp, xhr) {
-            return resp.server;
         },
 
         remove: function() {
@@ -1557,7 +1556,8 @@
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             if (!resp) { return []};
-            var data = _.map(resp.networks.values, _.bind(this.parse_net_api_data, this));
+            var data = _.filter(_.map(resp.networks.values, _.bind(this.parse_net_api_data, this)),
+                               function(e){ return e });
             return data;
         },
 
@@ -1606,6 +1606,10 @@
                       }
                   }
                 });
+            }
+
+            if (data.status == "DELETED" && !this.get(parseInt(data.id))) {
+              return false;
             }
             return data;
         },

@@ -4560,6 +4560,7 @@ table.list-machines .wave {
     overflow-y: scroll;
     overflow-x: hidden;
 }
+
 .overlay .overlay-content .description.subinfo, .overlay .extra-info {
     margin-bottom:0;
     border-bottom: none;
@@ -4575,6 +4576,11 @@ table.list-machines .wave {
     color: #800000;
 }
 
+.overlay .overlay-content .description.noborder {
+  margin-bottom:0;
+  border:0;
+}
+
 .overlay .overlay-content .description {
     color: #444;
     border-bottom: 1px solid #64a6c4;
@@ -4583,6 +4589,7 @@ table.list-machines .wave {
     font-size: 0.9em;
     line-height: 1.6em;
 }
+
 .overlay .overlay-content .empty-message {
     margin-bottom: 5px;
 }
@@ -6960,4 +6967,35 @@ input.has-errors {
     background-color: transparent;
     border: none;
     color: #800;
+}
+
+.single .suspended-notice {
+  right: 180px;
+  top: 0px;
+  padding: 7px;
+  padding-bottom: 6px;
+}
+
+.icon .suspended-notice {
+  right: 192px;
+  top: 50px;
+}
+
+.suspended-notice {
+  display: inline-block;
+  padding: 4px;
+  background-color: #8f1915;
+  cursor: pointer;
+  position: absolute;
+  color: #fff;
+  font-size: 0.6em;
+  display: none;
+}
+
+.suspended .suspended-notice {
+  display: block;
+}
+
+.suspended .action-indicator {
+  display: none !important;
 }

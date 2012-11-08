@@ -84,6 +84,33 @@
 
     });
 
+    views.SuspendedVMView = views.FeedbackView.extend({
+        view_id: "suspended_info_view",
+        
+        css_class: 'overlay-api-info overlay-error non-critical',
+        overlay_id: "overlay-api-info",
+
+        subtitle: "",
+        title: "VM Suspended",
+
+        beforeOpen: function() {
+            views.SuspendedVMView.__super__.beforeOpen.apply(this);
+            $(this.$(".description p")[0]).html($("#suspended-vm-overlay .description").html())
+        },
+
+        show: function(vm, data, collect_data, extra_data, cb) {
+            this.vm = vm;
+            data = "Suspended VM Details";
+            data += "\n====================";
+            data += "\nID: " + vm.id;
+            data += "\nName: " + vm.get('name');
+            data += "\nPublic IP: " + vm.get_public_nic().get('ipv4');
+            data += "\n\n";
+            views.SuspendedVMView.__super__.show.call(this, data, collect_data, extra_data, cb);
+        }
+
+    });
+
     views.ApiInfoView = views.Overlay.extend({
         view_id: "api_info_view",
         
@@ -549,6 +576,7 @@
             this.create_vm_view = new views.CreateVMView();
             this.api_info_view = new views.ApiInfoView();
             this.details_view = new views.DetailsView();
+            this.suspended_view = new views.SuspendedVMView();
             //this.notice_view = new views.NoticeView();
         },
         

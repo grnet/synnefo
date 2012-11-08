@@ -395,6 +395,7 @@
             this.confirm = this.$("button.yes");
             this.details = this.$(".action-details");
             this.vm_connect = this.$(".machine-connect");
+            this.actions = this.$(".net-vm-actions");
 
             this.init_handlers();
             this.connect_overlay = new views.VMConnectView();
@@ -434,6 +435,7 @@
                     this.disconnect_nic();
                     this.confirm_el.hide();
                     this.disconnect.removeClass("selected");
+                    this.actions.find("a").removeClass("visible");
                 }, this));
 
                 snf.ui.main.bind("view:change", _.bind(function(v) {
@@ -1090,6 +1092,10 @@
                 this.$(".spinner").show();
                 this.$(".state").addClass("destroying-state");
                 this.$(".actions").hide();
+            } else {
+                this.$(".state").removeClass("destroying-state");
+                this.$(".actions").show();
+                this.$(".actions a").removeClass("visible");
             }
         },
 

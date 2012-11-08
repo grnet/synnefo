@@ -115,8 +115,8 @@
         parse: function(resp, xhr) {
         },
 
-        remove: function() {
-            this.api_call(this.api_path(), "delete");
+        remove: function(complete, error, success) {
+            this.api_call(this.api_path(), "delete", undefined, complete, error, success);
         },
 
         changedKeys: function() {
@@ -570,18 +570,27 @@
 
         call: function(action, params, success, error) {
             if (action == "destroy") {
+                var previous_state = this.get('state');
+                var previous_status = this.get('status');
+
                 this.set({state:"DESTROY"});
-                this.get("actions").remove("destroy", params);
-                this.remove(_.bind(function(){
-                    success();
-                }, this), error);
+
+                var _success = _.bind(function() {
+                    if (success) { success() };
+                }, this);
+                var _error = _.bind(function() {
+                    this.set({state: previous_state, status: previous_status})
+                    if (error) { error() };
+                }, this);
+
+                this.remove(undefined, _error, _success);
             }
             
             if (action == "disconnect") {
                 if (this.get("state") == "DESTROY") {
                     return;
                 }
-
+                
                 _.each(params, _.bind(function(nic_id) {
                     var nic = snf.storage.nics.get(nic_id);
                     this.get("actions").remove("disconnect", nic_id);
@@ -660,10 +669,12 @@
         },
 
         do_all_pending_actions: function(success, error) {
-            var destroy = this.get("actions").has_action("destroy");
-            _.each(this.get("actions").actions, _.bind(function(params, action) {
-                _.each(params, _.bind(function(with_params) {
-                    this.call(action, with_params, success, error);
+          var params, actions, action_params;
+          actions = _.clone(this.get("actions").actions);
+            _.each(actions, _.bind(function(params, action) {
+                action_params = _.map(actions[action], function(a){ return _.clone(a)});
+                _.each(action_params, _.bind(function(params) {
+                    this.call(action, params, success, error);
                 }, this));
             }, this));
             this.get("actions").reset();

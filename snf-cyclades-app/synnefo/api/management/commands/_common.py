@@ -31,9 +31,14 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import ipaddr
 from datetime import datetime
 
 from django.utils.timesince import timesince, timeuntil
+from django.core.management import CommandError
+
+from synnefo.api.util import validate_network_size
+from synnefo.settings import MAX_CIDR_BLOCK
 
 
 def format_bool(b):
@@ -55,3 +60,36 @@ def format_vm_state(vm):
         return "BUILD(" + str(vm.buildpercentage) + "%)"
     else:
         return vm.operstate
+
+
+def validate_network_info(options):
+    subnet = options['subnet']
+    gateway = options['gateway']
+    subnet6 = options['subnet6']
+    gateway6 = options['gateway6']
+
+    try:
+        net = ipaddr.IPv4Network(subnet)
+        prefix = net.prefixlen
+        if not validate_network_size(prefix):
+            raise CommandError("Unsupport network mask %d."
+                               " Must be in range (%s,29] "
+                               % (prefix, MAX_CIDR_BLOCK))
+    except ValueError:
+        raise CommandError('Malformed subnet')
+    try:
+        gateway and ipaddr.IPv4Address(gateway) or None
+    except ValueError:
+        raise CommandError('Malformed gateway')
+
+    try:
+        subnet6 and ipaddr.IPv6Network(subnet6) or None
+    except ValueError:
+        raise CommandError('Malformed subnet6')
+
+    try:
+        gateway6 and ipaddr.IPv6Address(gateway6) or None
+    except ValueError:
+        raise CommandError('Malformed gateway6')
+
+    return subnet, gateway, subnet6, gateway6

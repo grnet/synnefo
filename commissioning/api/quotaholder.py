@@ -3,7 +3,7 @@ from .specificator  import (CanonifyException, SpecifyException,
                             Specificator, Null, Integer, Text,
                             Tuple, ListOf, Dict, Args)
 
-Context             =   Dict(classname='Context')
+Context             =   Dict(classname='Context', null=True)
 
 class Name(Text):
     def init(self):

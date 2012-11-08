@@ -39,7 +39,7 @@ from synnefo.logic import utils, backend
 
 from synnefo.lib.utils import merge_time
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 def handle_message_delivery(func):
     """ Generic decorator for handling messages.

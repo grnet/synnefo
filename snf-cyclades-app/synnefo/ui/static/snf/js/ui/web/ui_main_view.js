@@ -743,7 +743,7 @@
         load_user_quotas: function() {
           var main_view = this;
           snf.api.sync('read', undefined, {
-            url:'/ui/userquota', 
+            url: synnefo.config.quota_url, 
             success: function(d) {
               snf.user.quotas = {};
               snf.user.quotas['vms'] = d.vms_quota;

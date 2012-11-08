@@ -630,6 +630,7 @@
             synnefo.config.grouped_public_network_name = {{ grouped_public_network_name|safe }};
             synnefo.config.vm_hostname_format = {{ vm_hostname_format|safe }};
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
+            synnefo.config.quota_url = '{% url synnefo.ui.views.user_quota %}';
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,

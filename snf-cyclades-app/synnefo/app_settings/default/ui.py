@@ -170,6 +170,10 @@ UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'PRIVATE_FILTERED': 'mac-filtering'}
 # network with dhcp enabled
 UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.0/24', '192.168.0.0/24']
 
+# UI will use this setting to find an available network subnet if user requests
+# automatic subnet selection.
+UI_AUTOMATIC_NETWORK_RANGE_FORMAT = "192.168.%d.0/24"
+
 # Whether to display already connected vm's to the network connect overlay
 UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False
 

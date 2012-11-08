@@ -138,6 +138,9 @@ NETWORK_STRICT_DESTROY = getattr(settings,
                     'UI_NETWORK_STRICT_DESTROY', False)
 NETWORK_ALLOW_MULTIPLE_DESTROY = getattr(settings,
                     'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
+AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
+                                         'UI_AUTOMATIC_NETWORK_RANGE_FORMAT',
+                                        "192.168.%d.0/24").replace("%d", "{0}")
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
@@ -199,6 +202,7 @@ def home(request):
                'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
                'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
                'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
+               'automatic_network_range_format': json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
                'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
                'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
                'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),

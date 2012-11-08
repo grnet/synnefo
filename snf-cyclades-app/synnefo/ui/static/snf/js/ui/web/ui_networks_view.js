@@ -314,6 +314,22 @@
 
             return true;
         },
+        
+        get_next_available_subnet: function() {
+            var auto_tpl = synnefo.config.automatic_network_range_format;
+            if (!auto_tpl) {
+                return null
+            }
+            var index = 0;
+            var subnet = auto_tpl.format(index);
+            var networks = synnefo.storage.networks;
+            var check_existing = function(n) { return n.get('cidr') == subnet }
+            while (networks.filter(check_existing).length > 0 && index <= 255) {
+                index++;
+                subnet = auto_tpl.format(index); 
+            }
+            return subnet;
+        },
 
         create: function() {
             this.create_button.addClass("in-progress");
@@ -329,7 +345,7 @@
                 if (this.subnet_select.val() == "custom") {
                     subnet = this.subnet_custom.val();
                 } else if (this.subnet_select.val() == "auto") {
-                    subnet = null;
+                    subnet = this.get_next_available_subnet()
                 } else {
                     subnet = this.subnet_select.val();
                 }

@@ -152,9 +152,9 @@ $(document).ready(function() {
    
     
     
-    if ($('.widjets'.length > 0)) {
-		$('.widjets li div').equalHeights();
-	}
+    //if ($('.widjets'.length > 0)) {
+		///$('.widjets li div').equalHeights();
+	///}
     
     $(function() {
     	if($("#id_issue_date").length > 0 ){
@@ -237,8 +237,8 @@ $(document).ready(function() {
 $(window).resize(function() {
     
    setContainerMinHeight('.container .wrapper');
-   if ($('.widjets').length > 0) {
-		$('.widjets  li div').equalHeights();
-	}
+   ///if ($('.widjets').length > 0) {
+		//$('.widjets  li div').equalHeights();
+	//}
 
 });

@@ -22,7 +22,7 @@
 	    </form>
 	    {% else %}
     
-		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>You can <a href="{% url group_create_list %}">create a new group</a> or <a href="{% url group_search %}">join</a> to an existing one.</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>You can <!--<a href="{% url group_create_list %}">create a new group</a>--> <a href="{% url group_add 'course' %}">create a new group</a>or <a href="{% url group_search %}">join</a> to an existing one.</p>
 		
 		<div class="widjets"> 
 			<a href="#" class="widjet-x" title="remove boxes">X</a>
@@ -30,7 +30,8 @@
 				<li>
 					<div>
 						<p>WELCOME!<br>Connect with a world of people who share your passions.<br>With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p><p style="text-align: center"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></p>
-						<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>
+						<p class="btn"><a href="{% url group_add 'course' %}" class="submit">CREATE</a></p>
+						<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
 					</div>
 				</li>
 				<li>

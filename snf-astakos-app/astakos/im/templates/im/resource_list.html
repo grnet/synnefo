@@ -7,20 +7,21 @@
     <div class="stats clearfix">
 		<ul>
 			{% for r in data %}
-			 
-    		<li class="clearfix  {{ r.load_class }} {{ r.name}}">
+			{% with resource_presentation|lookup:r.name as resource_info %}
+    		<li class="clearfix  {{ r.load_class }} {{ r.name|get_value_after_dot}}">
     			<div class="img-wrap">&nbsp;</div>
     			<div class="info">
-    				<h3>{{ r.description }}</h3>
+    				<h3>{{ resource_info.report_desc }}</h3>
     				<p>
     					{{ r.ratio|floatformat }}% Used<br>
-    					You are using {{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }}{{ r.unit }} {{ r.plural|capfirst }} - Aouch!
+    					You are using {{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }} {{ r.unit }} {% if resource_info.is_abbreviation %}{{ r.name|get_value_after_dot|upper }}{% else %}{{ r.name|get_value_after_dot }}{% endif %}{% if not r.unit %}s {% endif  %} 
     				</p>
     			</div>
     			<div class="bar">
     				<div><span style="width:{{ r.ratio|floatformat }}%;">{{ r.ratio|floatformat }}% &nbsp;&nbsp;</span></div>
     			</div>
     		</li>
+    		{% endwith %}
     		{% endfor %}
     	</ul>
     </div>    

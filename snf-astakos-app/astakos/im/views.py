@@ -664,6 +664,45 @@ def change_email(request, activation_key=None,
                                                         extra_context))
 
 
+
+resource_presentation = {
+       'compute': {
+            'help_text':'group compute help text',
+            'is_abbreviation':False,
+            'report_desc':''
+        },
+        'storage': {
+            'help_text':'group storage help text',
+            'is_abbreviation':False,
+            'report_desc':''
+        },
+        'pithos+.diskspace': {
+            'help_text':'resource pithos+.diskspace help text',
+            'is_abbreviation':False,
+            'report_desc':'Diskspace used'
+        },
+        'cyclades.vm': {
+            'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
+            'is_abbreviation':True,
+            'report_desc':'Number of Virtual Machines'
+        },
+        'cyclades.disksize': {
+            'help_text':'resource cyclades.disksize help text',
+            'is_abbreviation':False,
+            'report_desc':'Amount of Disksize used'
+        },
+        'cyclades.ram': {
+            'help_text':'resource cyclades.ram help text',
+            'is_abbreviation':True,
+            'report_desc':'RAM used'
+        },
+        'cyclades.cpu': {
+            'help_text':'resource cyclades.cpu help text',
+            'is_abbreviation':True,
+            'report_desc':'CPUs used'
+        }
+    }
+
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
@@ -695,34 +734,7 @@ def group_add(request, kind_name='default'):
     except:
         return HttpResponseBadRequest(_('No such group kind'))
     
-    resource_presentation = {
-       'compute': {
-            'help_text':'group compute help text',
-        },
-        'storage': {
-            'help_text':'group storage help text',
-        },
-        'pithos+.diskspace': {
-            'help_text':'resource pithos+.diskspace help text',
-            'is_abbreviation':False,
-        },
-        'cyclades.vm': {
-            'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
-            'is_abbreviation':True,
-        },
-        'cyclades.disksize': {
-            'help_text':'resource cyclades.disksize help text',
-            'is_abbreviation':False,
-        },
-        'cyclades.ram': {
-            'help_text':'resource cyclades.ram help text',
-            'is_abbreviation':True,
-        },
-        'cyclades.cpu': {
-            'help_text':'resource cyclades.cpu help text',
-            'is_abbreviation':True,
-        }
-    }
+    
 
     post_save_redirect = '/im/group/%(id)s/'
     context_processors = None
@@ -1166,6 +1178,7 @@ def resource_list(request):
         messages.error(request, result.reason)
     return render_response('im/resource_list.html',
                            data=data,
+                           resource_presentation=resource_presentation,
                            context_instance=get_context(request))
 
 

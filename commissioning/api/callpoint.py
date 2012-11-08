@@ -27,7 +27,7 @@ class Callpoint(object):
             m = "No api spec given to '%s'" % (type(self).__name__,)
             raise NotImplementedError(m)
 
-        for call_name, call_doc in canonifier.call_attrs():
+        for call_name, call_doc in canonifier.call_docs():
             if hasattr(self, call_name):
                 # don't crash: wrap the function instead
                 #m = (   "Method '%s' defined both in natively "

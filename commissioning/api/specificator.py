@@ -611,13 +611,18 @@ class Dict(Canonical):
 
 
 class Canonifier(object):
-    def __init__(self, name, input_canonicals, output_canonicals):
+    def __init__(self, name, input_canonicals, output_canonicals, doc_strings):
         self.name = name
         self.input_canonicals = dict(input_canonicals)
         self.output_canonicals = dict(output_canonicals)
+        self.doc_strings = dict(doc_strings)
 
     def call_names(self):
         return self.input_canonicals.keys()
+
+    def call_docs(self):
+        for call_name, call_doc in self.doc_strings.iteritems():
+            yield call_name, call_doc
 
     def call_attrs(self):
         for call_name, canonical in self.input_canonicals.iteritems():
@@ -657,12 +662,14 @@ class Specificator(object):
 
         canonical_inputs = {}
         canonical_outputs = {}
+        doc_strings = {}
 
         for name in dir(cls):
             f = getattr(cls, name)
             if not inspect.ismethod(f) or f.__name__.startswith('_'):
                 continue
 
+            doc_strings[name] = f.__doc__
             argspec = inspect.getargspec(f)
             defaults = argspec.defaults
             args = argspec.args
@@ -698,7 +705,8 @@ class Specificator(object):
                 raise SpecifyException(m)
             canonical_outputs[name] = canonical
 
-        return Canonifier(cls.__name__, canonical_inputs, canonical_outputs)
+        return Canonifier(cls.__name__, canonical_inputs, canonical_outputs,
+                          doc_strings)
 
     def __call__(self):
         return self

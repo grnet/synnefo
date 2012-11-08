@@ -106,6 +106,9 @@ class Kamaki_plugin(Callpoint):
         f = getattr(self, method)
         return f(**argdict)
 
+    def get_doc(self, method):
+        return self.api_spec.doc_strings[method]
+
 class QHKamaki(Kamaki_plugin):
     api_spec = QuotaholderAPI()
     def __init__(self, base_url='http://127.0.0.1:8000', token=''):

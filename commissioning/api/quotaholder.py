@@ -81,7 +81,7 @@ class QuotaholderAPI(Specificator):
                 context     =   Context,
                 get_entity  =   ListOf(Entity, Key, nonempty=1)
         ):
-
+        """get_entity description"""
         entities = ListOf(Entity, Owner)
         return entities
 

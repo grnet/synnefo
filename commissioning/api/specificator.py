@@ -2,6 +2,12 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
+import json
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from commissioning.utils.ordereddict import OrderedDict
 
 def shorts(s):
     if not isinstance(s, unicode):
@@ -12,6 +18,10 @@ def shorts(s):
 
     return s[:61] + '...'
         
+
+class ShowableOrderedDict(OrderedDict):
+    def tostring(self, depth=0, showopts=0, multiline=0):
+        return str(self)
 
 class CanonifyException(Exception):
     pass
@@ -56,6 +66,9 @@ class Canonical(object):
         return
 
     def __call__(self, item):
+        return self.check(item)
+
+    def check(self, item):
         opts = self.opts
         if item is None and 'default' in opts:
             item = opts['default']
@@ -64,11 +77,25 @@ class Canonical(object):
         if item is None and can_be_null:
             return None
 
-        return self.check(item)
+        return self._check(item)
 
-    def check(self, item):
+    def _check(self, item):
         return item
 
+    def parse(self, item):
+        opts = self.opts
+        if item is None and 'default' in opts:
+            item = opts['default']
+
+        can_be_null = opts.get('null', False)
+        if item is None and can_be_null:
+            return None
+
+        return self._parse(item)
+
+    def _parse(self, item):
+        raise NotImplementedError
+    
     def create(self):
         return None
 
@@ -126,14 +153,14 @@ class Canonical(object):
     def __repr__(self):
         return self.tostring(multiline=0, showopts=1)
 
-    def check(item):
+    def _check(item):
         canonified = item
         return canonified
 
 
 class Null(Canonical):
 
-    def check(self, item):
+    def _check(self, item):
         return None
 
 Nothing = Null()
@@ -141,7 +168,7 @@ Nothing = Null()
 
 class Integer(Canonical):
 
-    def check(self, item):
+    def _check(self, item):
         try:
             num = long(item)
         except ValueError, e:
@@ -167,6 +194,9 @@ class Integer(Canonical):
             raise CanonifyException(m)
 
         return num
+
+    def _parse(self, item):
+        return self.check(item)
 
     def random_integer(self, kw):
         optget = self.opts.get
@@ -214,7 +244,7 @@ class Text(Canonical):
             opts['choices'] = dict((unicode(x), unicode(x))
                                     for x in opts['choices'])
 
-    def check(self, item):
+    def _check(self, item):
         if not isinstance(item, unicode):
             # require non-unicode items to be utf8
             item = str(item)
@@ -263,6 +293,9 @@ class Text(Canonical):
                     raise CanonifyException(m)
 
         return item
+
+    def _parse(self, item):
+        return self.check(item)
 
     default_alphabet = '0123456789αβγδεζ'.decode('utf8')
 
@@ -316,7 +349,7 @@ class Bytes(Canonical):
             opts['choices'] = dict((str(x), str(x))
                                     for x in opts['choices'])
 
-    def check(self, item):
+    def _check(self, item):
         if isinstance(item, unicode):
             # convert unicode to utf8
             item = item.encode('utf8')
@@ -412,7 +445,7 @@ class ListOf(Canonical):
         else:
             self.canonical = Args(**kw)
 
-    def check(self, item):
+    def _check(self, item):
         if item is None:
             item = ()
 
@@ -436,6 +469,10 @@ class ListOf(Canonical):
 
         return canonified
 
+    def _parse(self, item):
+        l = json.loads(item)
+        return self.check(l)
+        
     def random_listof(self, kw):
         z = randint(1, 4)
         get_random = self.canonical.random
@@ -449,19 +486,32 @@ class Args(Canonical):
 
     def init(self):
         if self.args:
-            raise ValueError("Args accepts only keyword arguments")
+            self.dct = self.args[0]
 
-    def check(self, item):
+    # item : list of strings
+    def _parse(self, item):
+        formals = len(self.dct)
+        actuals = len(item)
+        if actuals != formals:
+            raise Exception('param inconsistent')
+
+        parsed = ShowableOrderedDict()
+        for it, (k, v) in zip(item, self.dct.items()):
+            print 'item:', it
+            parsed[k] = v.parse(it)
+        return parsed
+        
+    def _check(self, item):
         try:
-            item = dict(item)
+            item = ShowableOrderedDict(item)
         except TypeError, e:
             m = "%s: %s is not dict-able" % (self, shorts(item))
             raise CanonifyException(m)
 
-        canonified = {}
-
+        canonified = ShowableOrderedDict()
+        
         try:
-            for n, c in self.kw.items():
+            for n, c in self.dct.items():
                 t = item[n] if n in item else None
                 canonified[n] = c(t)
         except KeyError:
@@ -473,7 +523,7 @@ class Args(Canonical):
 
     def random_args(self, kw):
         args = {}
-        for n, c in self.kw.items():
+        for n, c in self.dct.items():
             args[n] = c.random()
         return args
 
@@ -482,7 +532,7 @@ class Args(Canonical):
 
 class Tuple(Canonical):
 
-    def check(self, item):
+    def _check(self, item):
         try:
             items = list(item)
         except TypeError, e:
@@ -501,6 +551,10 @@ class Tuple(Canonical):
 
         return tuple(g)
 
+    def _parse(self, item):
+        t = json.loads(item)
+        return self.check(t)
+        
     def __add__(self, other):
         oargs = other.args if isinstance(other, Tuple) else (other,)
         args = self.args + oargs
@@ -514,7 +568,7 @@ class Tuple(Canonical):
 
 class Dict(Canonical):
 
-    def check(self, item):
+    def _check(self, item):
 
         try:
             item = dict(item)
@@ -542,6 +596,10 @@ class Dict(Canonical):
 
         return canonified
 
+    def _parse(self, item):
+        d = json.loads(item)
+        return self.check(d)
+        
     def random_dict(self, kw):
         item = {}
         for n, c in self.canonical.items():
@@ -622,14 +680,14 @@ class Specificator(object):
                 m = "Unspecified arguments in '%s': %s" % a
                 raise SpecifyException(m)
 
-            args = dict(zip(args, defaults))
+            args = ShowableOrderedDict(zip(args, defaults))
             for a, c in args.items():
                 if not isinstance(c, Canonical):
                     m = ("argument '%s=%s' is not an instance of 'Canonical'"
                          % (a, repr(c)))
                     raise SpecifyException(m)
 
-            canonical = Null() if len(args) == 0 else Args(**args)
+            canonical = Null() if len(args) == 0 else Args(args)
             canonical_inputs[name] = canonical
 
             self = object.__new__(cls)

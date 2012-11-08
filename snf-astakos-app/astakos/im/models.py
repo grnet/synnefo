@@ -73,6 +73,7 @@ except:
 
 RESOURCE_SEPARATOR = '.'
 
+inf = float('inf')
 
 class Service(models.Model):
     name = models.CharField('Name', max_length=255, unique=True, db_index=True)
@@ -250,7 +251,7 @@ class AstakosGroup(Group):
     def quota(self):
         d = defaultdict(int)
         for q in self.astakosgroupquota_set.select_related().all():
-            d[q.resource] += q.uplimit
+            d[q.resource] += q.uplimit or inf
         return d
     
     def add_policy(self, service, resource, uplimit, update=True):
@@ -407,7 +408,7 @@ class AstakosUser(User):
         """Returns a dict with the sum of quota limits per resource"""
         d = defaultdict(int)
         for q in self.policies:
-            d[q.resource] += q.uplimit
+            d[q.resource] += q.uplimit or inf
         for m in self.extended_groups:
             if not m.is_approved:
                 continue
@@ -415,8 +416,7 @@ class AstakosUser(User):
             if not g.is_enabled:
                 continue
             for r, uplimit in g.quota.iteritems():
-                d[r] += uplimit
-
+                d[r] += uplimit or inf
         # TODO set default for remaining
         return d
 

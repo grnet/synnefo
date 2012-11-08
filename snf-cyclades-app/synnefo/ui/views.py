@@ -101,6 +101,7 @@ VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
 SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
+CUSTOM_IMAGE_HELP_URL = getattr(settings, "UI_CUSTOM_IMAGE_HELP_URL", None)
 
 # MEDIA PATHS
 UI_MEDIA_URL = getattr(settings, "UI_MEDIA_URL",
@@ -195,6 +196,7 @@ def home(request):
                'use_glance': json.dumps(ENABLE_GLANCE),
                'glance_api_url': json.dumps(GLANCE_API_URL),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
+               'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
                'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
                'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
                'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),

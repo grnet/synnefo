@@ -289,6 +289,12 @@
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
+
+            $(".custom-image-help").hide();
+            if (type == 'personal') {
+                $(".custom-image-help").show();
+            }
+
             this.update_layout_for_type(type);
         },
 

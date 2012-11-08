@@ -143,13 +143,13 @@ def _send_admin_notification(template_name,
 
 def send_account_creation_notification(template_name, dictionary=None):
     user = dictionary.get('user', AnonymousUser())
-    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
+    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user':user.get('email', '')}
     return _send_admin_notification(template_name, dictionary, subject=subject)
 
 
 def send_group_creation_notification(template_name, dictionary=None):
     group = dictionary.get('group', astakos.im.models.AstakosGroup())
-    subject = _(GROUP_CREATION_SUBJECT) % {'group': group.name}
+    subject = _(GROUP_CREATION_SUBJECT) % {'group':group.get('name', '')}
     return _send_admin_notification(template_name, dictionary, subject=subject)
 
 

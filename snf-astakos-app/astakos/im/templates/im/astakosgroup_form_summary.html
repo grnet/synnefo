@@ -4,18 +4,22 @@
 
 {% block page.body %}
  
-<!--{{ data }}-->
+{% with form.data as data %}	 	
 <div class="projects summary">
 	<h2>CONFIRM YOUR REQUEST</h2>
 	<p>Lorem ipsum</p>
-	<form action="{% url group_add_complete %}" class="quotas-form">
+	<form action="{% url group_add_complete %}" method="post" class="quotas-form">{% csrf_token %}
+<!-- 
  		{% for k,v in data.iteritems %}
  			<input type="hidden" name="{{ k }}" value="{{ v }}">
  		{% endfor %}
+ -->
+        {% include "im/form_render.html" %}
+		
 		<div class="full-dotted">
 			 <h3>DETAILS:</h3>
-			 <dl class="alt-style">
-			 	<dt>Name</dt>
+			 <dl class="alt-style">			    
+			    <dt>Name</dt>
 			 	<dd>{{ data.name|strip_http }}&nbsp;</dd>
 			 	<dt>Homepage Url</dt>
 			 	<dd>{{ data.homepage }}&nbsp;</dd>
@@ -35,9 +39,8 @@
 		 </div>
 		 <div class="full-dotted">
 			 <h3>RESOURCES:</h3>
-	           <dl class="alt-style">
-	           	
-	           	{% for r in data.policies %}
+	           <dl class="alt-style">	           	
+	           	{% for r in policies %}
 	           		{% with r.service|add:'.'|add:r.resource as t %}
 	           		{% with resource_catalog|lookup:'resources' as resources %}
 	           		{% with resources|lookup:t as info %}
@@ -80,5 +83,6 @@
 	</form>
     
 </div>
+{% endwith %}
  
 {% endblock %}

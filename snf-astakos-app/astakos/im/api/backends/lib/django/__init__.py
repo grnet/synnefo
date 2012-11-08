@@ -65,7 +65,7 @@ def safe(func):
         except Exception, e:
             logger.exception(e)
             transaction.rollback()
-            return FailureResult(getattr(e, 'message', e))
+            return FailureResult(e)
         else:
             transaction.commit()
             return SuccessResult(data)
@@ -297,9 +297,6 @@ class DjangoBackend(BaseBackend):
         permissions = kwargs.pop('permissions', ())
         members = kwargs.pop('members', ())
         owners = kwargs.pop('owners', ())
-        kwargs['kind'] = self._lookup_object(
-            GroupKind, name=kwargs.get('kind', 'course')
-        )
 
         g = self._create_object(AstakosGroup, **kwargs)
 

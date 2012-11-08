@@ -542,7 +542,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         initial=True
     )
     max_participants = forms.IntegerField(
-        widget=forms.HiddenInput(), label='', required=False
+        required=False, min_value=1
     )
 
     class Meta:
@@ -554,8 +554,8 @@ class AstakosGroupCreationForm(forms.ModelForm):
         qd = args.pop(0).copy()
         members_unlimited = qd.pop('members_unlimited', False)
         members_uplimit = qd.pop('members_uplimit', None)
-        max_participants = None if members_unlimited else members_uplimit
-        qd['max_participants']= max_participants.pop(0) if max_participants else None
+#         max_participants = None if members_unlimited else members_uplimit
+#         qd['max_participants']= max_participants.pop(0) if max_participants else None
         
         #substitue QueryDict
         args.insert(0, qd)
@@ -564,11 +564,11 @@ class AstakosGroupCreationForm(forms.ModelForm):
         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
                                 'issue_date', 'expiration_date',
                                 'moderation_enabled', 'max_participants']
-        
         def add_fields((k, v)):
             self.fields[k] = forms.IntegerField(
                 required=False,
-                widget=forms.HiddenInput()
+                widget=forms.HiddenInput(),
+                min_value=1
             )
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
@@ -583,8 +583,82 @@ class AstakosGroupCreationForm(forms.ModelForm):
             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
         )
     
+    def policies(self):
+        self.clean()
+        policies = []
+        append = policies.append
+        for name, uplimit in self.cleaned_data.iteritems():
+            subs = name.split('_uplimit')
+            if len(subs) == 2:
+                prefix, suffix = subs
+                s, r = prefix.split(RESOURCE_SEPARATOR)
+                resource = Resource.objects.get(service__name=s, name=r)
+                
+                # keep only resource limits for selected resource groups
+                if self.cleaned_data.get(
+                    'is_selected_%s' % resource.group, True
+                ):
+                    append(dict(service=s, resource=r, uplimit=uplimit))
+        return policies
+
+class AstakosGroupCreationSummaryForm(forms.ModelForm):
+    kind = forms.ModelChoiceField(
+        queryset=GroupKind.objects.all(),
+        label="",
+        widget=forms.HiddenInput()
+    )
+    name = forms.URLField()
+    moderation_enabled = forms.BooleanField(
+        help_text="Check if you want to approve members participation manually",
+        required=False,
+        initial=True
+    )
+    max_participants = forms.IntegerField(
+        required=False, min_value=1
+    )
+
+    class Meta:
+        model = AstakosGroup
+
+    def __init__(self, *args, **kwargs):
+        #update QueryDict
+        args = list(args)
+        qd = args.pop(0).copy()
+        members_unlimited = qd.pop('members_unlimited', False)
+        members_uplimit = qd.pop('members_uplimit', None)
+#         max_participants = None if members_unlimited else members_uplimit
+#         qd['max_participants']= max_participants.pop(0) if max_participants else None
+        
+        #substitue QueryDict
+        args.insert(0, qd)
+        
+        super(AstakosGroupCreationSummaryForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
+                                'issue_date', 'expiration_date',
+                                'moderation_enabled', 'max_participants']
+        def add_fields((k, v)):
+            self.fields[k] = forms.IntegerField(
+                required=False,
+                widget=forms.TextInput(),
+                min_value=1
+            )
+        map(add_fields,
+            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
+        )
+        
+        def add_fields((k, v)):
+            self.fields[k] = forms.BooleanField(
+                required=False,
+                widget=forms.HiddenInput()
+            )
+        map(add_fields,
+            ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
+        )
+        for f in self.fields.values():
+            f.widget = forms.HiddenInput()
+
     def clean(self):
-        super(AstakosGroupCreationForm, self).clean()
+        super(AstakosGroupCreationSummaryForm, self).clean()
         self.cleaned_data['policies'] = []
         append = self.cleaned_data['policies'].append
         tbd = [f for f in self.fields if f.startswith('is_selected_')]
@@ -601,9 +675,9 @@ class AstakosGroupCreationForm(forms.ModelForm):
                     'is_selected_%s' % resource.group, True
                 ):
                     append(dict(service=s, resource=r, uplimit=uplimit))
-        (self.cleaned_data.pop(name, None) for name in tbd)
+        for name in tbd:
+            self.cleaned_data.pop(name, None)
         return self.cleaned_data
-        
 
 class AstakosGroupUpdateForm(forms.ModelForm):
     class Meta:

@@ -76,7 +76,8 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
                               AstakosGroupSortForm, MembersSortForm,
-                              TimelineForm, PickResourceForm)
+                              TimelineForm, PickResourceForm,
+                              AstakosGroupCreationSummaryForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   logout as auth_logout,
                                   activate as activate_func,
@@ -749,7 +750,8 @@ def group_add(request, kind_name='default'):
             return render_response(
                 template='im/astakosgroup_form_summary.html',
                 context_instance=get_context(request),
-                data=form.cleaned_data,
+                form = AstakosGroupCreationSummaryForm(form.cleaned_data),
+                policies = form.policies(),
                 resource_catalog=resource_catalog,
                 resource_presentation=resource_presentation
             )
@@ -775,43 +777,45 @@ def group_add(request, kind_name='default'):
     return HttpResponse(t.render(c))
 
 
-# @require_http_methods(["POST"])
-# @signed_terms_required
-# @login_required
+@require_http_methods(["POST"])
+@signed_terms_required
+@login_required
 def group_add_complete(request):
-    d = dict(request.POST)
-    d['owners'] = [request.user]
-    result = callpoint.create_groups((d,)).next()
-    if result.is_success:
-        new_object = result.data[0]
-        model = AstakosGroup
-        msg = _("The %(verbose_name)s was created successfully.") %\
-            {"verbose_name": model._meta.verbose_name}
-        messages.success(request, msg, fail_silently=True)
-
-#                # send notification
-#                 try:
-#                     send_group_creation_notification(
-#                         template_name='im/group_creation_notification.txt',
-#                         dictionary={
-#                             'group': new_object,
-#                             'owner': request.user,
-#                             'policies': list(form.cleaned_data['policies']),
-#                         }
-#                     )
-#                 except SendNotificationError, e:
-#                     messages.error(request, e, fail_silently=True)
-        post_save_redirect = '/im/group/%(id)s/'
-        return HttpResponseRedirect(post_save_redirect % new_object)
-    else:
-        msg = _("The %(verbose_name)s creation failed: %(reason)s.") %\
-            {"verbose_name": model._meta.verbose_name,
-             "reason":result.reason}
-        messages.error(request, msg, fail_silently=True)
-    
+    model = AstakosGroup
+    form = AstakosGroupCreationSummaryForm(request.POST)
+    if form.is_valid():
+        d = form.cleaned_data
+        d['owners'] = [request.user]
+        result = callpoint.create_groups((d,)).next()
+        if result.is_success:
+            new_object = result.data[0]
+            msg = _("The %(verbose_name)s was created successfully.") %\
+                {"verbose_name": model._meta.verbose_name}
+            messages.success(request, msg, fail_silently=True)
+            
+            # send notification
+            try:
+                send_group_creation_notification(
+                    template_name='im/group_creation_notification.txt',
+                    dictionary={
+                        'group': new_object,
+                        'owner': request.user,
+                        'policies': d.get('policies', [])
+                    }
+                )
+            except SendNotificationError, e:
+                messages.error(request, e, fail_silently=True)
+            post_save_redirect = '/im/group/%(id)s/'
+            return HttpResponseRedirect(post_save_redirect % new_object)
+        else:
+            msg = _("The %(verbose_name)s creation failed: %(reason)s.") %\
+                {"verbose_name": model._meta.verbose_name,
+                 "reason":result.reason}
+            messages.error(request, msg, fail_silently=True)
     return render_response(
-    template='im/astakosgroup_form_summary.html',
-    context_instance=get_context(request))
+        template='im/astakosgroup_form_summary.html',
+        context_instance=get_context(request),
+        form=form)
 
 
 @require_http_methods(["GET"])
@@ -1003,7 +1007,7 @@ def group_search(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 def group_all(request, extra_context=None, **kwargs):

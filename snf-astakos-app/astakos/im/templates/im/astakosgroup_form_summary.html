@@ -4,7 +4,7 @@
 
 {% block page.body %}
  
-{{ data }}
+<!--{{ data }}-->
 <div class="projects summary">
 	<h2>CONFIRM YOUR REQUEST</h2>
 	<p>Lorem ipsum</p>
@@ -28,7 +28,7 @@
 			 	<dt>Expiration Date</dt>
 			 	<dd>{{ data.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
 			 	<dt>Modaration</dt>
-			 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
+			 	<dd>{% if data.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
 			 	<dt>Max members per group</dt>
 			 	<dd>{% if  data.max_participants %}{{ data.max_participants }}{% else %}Unlimited{% endif %}</dd>
 			 </dl>
@@ -36,14 +36,37 @@
 		 <div class="full-dotted">
 			 <h3>RESOURCES:</h3>
 	           <dl class="alt-style">
-			 	<dt>Max Vms per user</dt>
+	           	
+	           	{% for r in data.policies %}
+	           		{% with r.service|add:'.'|add:r.resource as t %}
+	           		{% with resource_catalog|lookup:'resources' as resources %}
+	           		{% with resources|lookup:t as info %}
+	           		{% with resource_presentation|lookup:t as resource_info %}
+	           			<dt>
+	           				Max {% if resource_info.is_abbreviation %}{{ r.resource|upper }}{% else %}{{ r.resource }}{% endif %}{% if not info.unit %}s {% endif  %}  per user
+	           			</dt>
+	           			
+	           			<dd>
+	           			{% if r.uplimit %}
+	           				{{ r.uplimit }} {% if info.unit %}({{ info.unit}}){% endif %}
+	           			{% else %}
+	           				Unlimited
+	           			{% endif %}
+	           			</dd>
+	           		{% endwith %}
+	           		{% endwith %}
+	           		{% endwith %}
+	           		{% endwith %}
+	           	{% endfor %}
+			 	
+			 	<!--<dt>Max Vms per user</dt>
 			 	<dd>3</dd>
 			 	<dt>Max diskspace per user</dt>
 			 	<dd>5GB</dd>
 			 	<dt>Max RAM per user</dt>
 		 		<dd>2GB</dd>
 			 	<dt>Max CPU per user</dt>
-			 	<dd>2</dd>
+			 	<dd>2</dd>-->
 			 </dl>
 	         
 		 </div>

@@ -737,7 +737,9 @@ def group_add(request, kind_name='default'):
             return render_response(
                 template='im/astakosgroup_form_summary.html',
                 context_instance=get_context(request),
-                data=form.cleaned_data
+                data=form.cleaned_data,
+                resource_catalog=resource_catalog,
+                resource_presentation=resource_presentation
             )
     else:
         now = datetime.now()

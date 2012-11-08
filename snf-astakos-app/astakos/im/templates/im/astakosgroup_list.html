@@ -25,20 +25,28 @@
 		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>You can <!--<a href="{% url group_create_list %}">create a new group</a>--> <a href="{% url group_add 'course' %}">create a new group</a>or <a href="{% url group_search %}">join</a> to an existing one.</p>
 		
 		<div class="widjets"> 
-			<a href="#" class="widjet-x" title="remove boxes">X</a>
+			<!--<a href="#" class="widjet-x" title="remove boxes">X</a>-->
 			<ul class="clearfix">	
-				<li>
+				<li class="create">
 					<div>
-						<p>WELCOME!<br>Connect with a world of people who share your passions.<br>With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p><p style="text-align: center"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></p>
-						<p class="btn"><a href="{% url group_add 'course' %}" class="submit">CREATE</a></p>
-						<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
+						<div class="wrap">
+							<h2>WELCOME!</h2>
+							<p  ><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></p>
+							<p class="txt">Connect with a world of people who share your passions.<br>With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
+							<p><a href="{% url group_add 'course' %}">create a group ></a></p>
+							<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
+						</div>
 					</div>
 				</li>
-				<li>
+				<li class="join">
 					<div>
-						<p>LOOKING FOR A GROUP?</p><p>Well, this is the place to start!<br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br></p>
-						<p style="text-align: center"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></p>
-						<p class="btn"><a href="{% url group_search %}" class="submit">JOIN</a></p>
+						<div class="wrap">
+							<h2>ALREADY AWARE?</h2>
+							<p  ><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></p>
+							<p class="txt">Well, this is the place to start!<br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br></p>
+							
+							<p><a href="{% url group_search %}">join a group ></a></p>
+						</div>
 					</div>
 				</li>
 			</ul>
@@ -155,7 +163,7 @@
             {% if mine %}
             {% with own_page|concat:own_sorting as args %}
             {% with mine|paginate:args as mine %}
-	      	    <div class="full-dotted">
+	      	    <div >
 					<form method="GET" class="minimal" action="#myGroups">
 						<div class="form-row">
 						    <select name="own_sorting" onchange="this.form.submit();">

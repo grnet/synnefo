@@ -101,6 +101,11 @@ class Kamaki_plugin(Callpoint):
                 exc = CallError.from_dict(error)
             raise exc
 
+    def call(self, method, arglist):
+        argdict = self.api_spec.input_canonicals[method].parse(arglist)
+        f = getattr(self, method)
+        return f(**argdict)
+
 class QHKamaki(Kamaki_plugin):
     api_spec = QuotaholderAPI()
     def __init__(self, base_url='http://127.0.0.1:8000', token=''):

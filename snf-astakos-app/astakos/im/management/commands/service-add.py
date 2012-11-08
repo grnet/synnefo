@@ -34,7 +34,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Service
-from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
+from astakos.im.api.callpoint import AstakosCallpoint
 
 class Command(BaseCommand):
     args = "<name> <url> [<icon>]"
@@ -48,7 +48,7 @@ class Command(BaseCommand):
         if len(args) == 3:
             s['icon'] = args[2]
         try:
-            c = AstakosDjangoDBCallpoint()
+            c = AstakosCallpoint()
             c.add_services((s,))
         except Exception, e:
             raise CommandError(e)

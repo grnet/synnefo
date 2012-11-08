@@ -42,7 +42,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
-from astakos.im.api.callpoint import AstakosDjangoDBCallpoint
+from astakos.im.api.callpoint import AstakosCallpoint
 
 from ._common import add_user_permission
 
@@ -111,9 +111,18 @@ class Command(BaseCommand):
             u['password'] = AstakosUser.objects.make_random_password()
 
         try:
-            c = AstakosDjangoDBCallpoint()
-            c.create_users((u,))
+            c = AstakosCallpoint()
+            r = c.create_users((u,))
         except socket.error, e:
             raise CommandError(e)
         except ValidationError, e:
             raise CommandError(e)
+        else:
+            failed = (res for res in r if not res.is_success)
+            for r in failed:
+                if not r.is_success:
+                    raise CommandError(r.reason)
+            if not failed:
+                self.stdout.write('User created successfully')
+                if not u.get('password'):
+                    self.stdout.write('with password: %s' % u['password'])

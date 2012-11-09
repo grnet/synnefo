@@ -208,6 +208,9 @@
 
             // initialize vm specific event handlers 
             this.__set_vm_handlers(vm);
+            vm_view.find(".suspended-notice").click(function(){
+              synnefo.ui.main.suspended_view.show(vm);
+            })
             return vm_view;
         },
         
@@ -322,6 +325,13 @@
                 this.action_views[vm.id].update_layout();
             }
             
+            var el = this.vm(vm);
+            if (vm.get('suspended')) {
+              el.addClass("suspended");
+            } else {
+              el.removeClass("suspended");
+            }
+
             try {
                 this.post_update_vm(vm);
             } catch (err) {};

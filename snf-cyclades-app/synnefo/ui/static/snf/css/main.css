@@ -315,7 +315,7 @@ div.css-panes {
 }
 
 #console-header {
-    height: 67px;
+    height: 79px;
     margin-bottom:15px;
     background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
@@ -2579,6 +2579,13 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     margin-left: -15px;
 }
 
+.createbutton.disabled, #networkscreate.disabled {
+  background-color: #888 !important;
+  border-left-color: #aaa !important;
+  cursor: help !important;
+  color: #ccc !important;
+}
+
 #networkscreate:hover {
     background-color: #FF9955;
 }
@@ -3792,18 +3799,18 @@ div.single div.column3 div.server-name:hover {
 
 /* console css */
 .console-header-logo {
-    padding-top: 17px;
+    padding-top: 16px;
     margin-left: 30px;
     position: fixed;
 }
 
 #console-header div.help-text {
-    font-size: 75%;
+    font-size: 70%;
     font-weight:bold;
     color:#FFFFFF;
-    float:left;
     position: absolute;
-    margin: 45px 0 0 2px;
+    height: 20px;
+    top: 79px;
 }
 
 div.console-container {
@@ -3818,8 +3825,7 @@ div.console-container {
 .console-info {
     font-size:80%;
     color: white;
-    float:left;
-    position:relative;
+    position:absolute;
     margin: 15px 0 0 480px;
 }
 
@@ -4554,7 +4560,8 @@ table.list-machines .wave {
     overflow-y: scroll;
     overflow-x: hidden;
 }
-.overlay .overlay-content .description.subinfo {
+
+.overlay .overlay-content .description.subinfo, .overlay .extra-info {
     margin-bottom:0;
     border-bottom: none;
     padding-bottom:0;
@@ -4569,6 +4576,11 @@ table.list-machines .wave {
     color: #800000;
 }
 
+.overlay .overlay-content .description.noborder {
+  margin-bottom:0;
+  border:0;
+}
+
 .overlay .overlay-content .description {
     color: #444;
     border-bottom: 1px solid #64a6c4;
@@ -4577,6 +4589,7 @@ table.list-machines .wave {
     font-size: 0.9em;
     line-height: 1.6em;
 }
+
 .overlay .overlay-content .empty-message {
     margin-bottom: 5px;
 }
@@ -6954,4 +6967,35 @@ input.has-errors {
     background-color: transparent;
     border: none;
     color: #800;
+}
+
+.single .suspended-notice {
+  right: 180px;
+  top: 0px;
+  padding: 7px;
+  padding-bottom: 6px;
+}
+
+.icon .suspended-notice {
+  right: 192px;
+  top: 50px;
+}
+
+.suspended-notice {
+  display: inline-block;
+  padding: 4px;
+  background-color: #8f1915;
+  cursor: pointer;
+  position: absolute;
+  color: #fff;
+  font-size: 0.6em;
+  display: none;
+}
+
+.suspended .suspended-notice {
+  display: block;
+}
+
+.suspended .action-indicator {
+  display: none !important;
 }

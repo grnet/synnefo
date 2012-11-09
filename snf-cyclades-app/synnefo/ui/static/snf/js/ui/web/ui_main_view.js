@@ -84,6 +84,33 @@
 
     });
 
+    views.SuspendedVMView = views.FeedbackView.extend({
+        view_id: "suspended_info_view",
+        
+        css_class: 'overlay-api-info overlay-error non-critical',
+        overlay_id: "overlay-api-info",
+
+        subtitle: "",
+        title: "VM Suspended",
+
+        beforeOpen: function() {
+            views.SuspendedVMView.__super__.beforeOpen.apply(this);
+            $(this.$(".description p")[0]).html($("#suspended-vm-overlay .description").html())
+        },
+
+        show: function(vm, data, collect_data, extra_data, cb) {
+            this.vm = vm;
+            data = "Suspended VM Details";
+            data += "\n====================";
+            data += "\nID: " + vm.id;
+            data += "\nName: " + vm.get('name');
+            data += "\nPublic IP: " + vm.get_public_nic().get('ipv4');
+            data += "\n\n";
+            views.SuspendedVMView.__super__.show.call(this, data, collect_data, extra_data, cb);
+        }
+
+    });
+
     views.ApiInfoView = views.Overlay.extend({
         view_id: "api_info_view",
         
@@ -549,6 +576,7 @@
             this.create_vm_view = new views.CreateVMView();
             this.api_info_view = new views.ApiInfoView();
             this.details_view = new views.DetailsView();
+            this.suspended_view = new views.SuspendedVMView();
             //this.notice_view = new views.NoticeView();
         },
         
@@ -740,9 +768,52 @@
             }
         },
         
+        load_user_quotas: function() {
+          var main_view = this;
+          snf.api.sync('read', undefined, {
+            url: synnefo.config.quota_url, 
+            success: function(d) {
+              snf.user.quotas = {};
+              snf.user.quotas['vms'] = d.vms_quota;
+              snf.user.quotas['networks'] = d.networks_quota;
+              main_view.init_quotas_handlers(['vms','networks']);
+            }
+          });
+        },
+        
+        check_quotas: function(type) {
+          var storage = synnefo.storage[type];
+          var consumed = storage.length;
+          if (type == "networks") {
+            consumed = storage.filter(function(net){
+              return !net.is_public() && !net.is_deleted();
+            }).length;
+          }
+          if (snf.user.quotas && consumed >= snf.user.quotas[type]) {
+            storage.trigger("quota_reached");
+          } else {
+            storage.trigger("quota_free");
+          }
+        },
+
+        init_quotas_handlers: function(types) {
+          var self = this;
+          _.each(types, function(type) {
+            var storage = synnefo.storage[type];
+            if (!storage) { return };
+            var check_quotas = function() {
+              self.check_quotas(type);
+            }
+            storage.bind("add", check_quotas);
+            storage.bind("remove", check_quotas);
+            check_quotas();
+          })
+        },
+
         // initial view based on user cookie
         show_initial_view: function() {
           this.set_vm_view_handlers();
+          this.load_user_quotas();
           this.hide_loading_view();
           
           bb.history.start();
@@ -751,15 +822,30 @@
         },
 
         show_vm_details: function(vm) {
-            this.router.vm_details_view(vm.id);
+            if (vm) {
+              this.router.vm_details_view(vm.id);
+            }
         },
 
         set_vm_view_handlers: function() {
             var self = this;
             $("#createcontainer #create").click(function(e){
                 e.preventDefault();
+                if ($(this).hasClass("disabled")) { return }
                 self.router.vm_create_view();
-            })
+            });
+
+            synnefo.storage.vms.bind("quota_reached", function(){
+              $("#createcontainer #create").addClass("disabled");
+              $("#createcontainer #create").attr("title", "Machines limit reached");
+            });
+
+            synnefo.storage.vms.bind("quota_free", function(){
+              $("#createcontainer #create").removeClass("disabled");
+              $("#createcontainer #create").attr("title", "");
+            });
+
+            this.check_quotas('vms');
         },
 
         check_empty: function() {

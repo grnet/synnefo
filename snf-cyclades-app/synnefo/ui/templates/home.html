@@ -504,6 +504,12 @@
         </div>
     </div>
 
+    <div id="suspended-vm-overlay" class="overlay-content overlay-info hidden">
+        <div class="description noborder">
+          You VM has been suspended, please contact us for more details.
+        </div>
+    </div>
+
     <div id="api-info-overlay" class="overlay-content overlay-info hidden">
         <div class="description">
             <p>{% blocktrans with EXTERNAL_CLIENT_URL as EXTERNAL_CLIENT_URL %}Use the following API key along with the <a
@@ -627,6 +633,11 @@
             synnefo.config.network_strict_destroy = {{ network_strict_destroy }};
             synnefo.config.network_allow_multiple_destory = {{ network_allow_multiple_destroy }};
             synnefo.config.group_public_networks = {{ group_public_networks }};
+            synnefo.config.grouped_public_network_name = {{ grouped_public_network_name|safe }};
+            synnefo.config.vm_hostname_format = {{ vm_hostname_format|safe }};
+            synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
+            synnefo.config.quota_url = '{% url synnefo.ui.views.user_quota %}';
+            synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,

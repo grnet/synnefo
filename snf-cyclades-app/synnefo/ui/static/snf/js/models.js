@@ -113,11 +113,10 @@
         },
 
         parse: function(resp, xhr) {
-            return resp.server;
         },
 
-        remove: function() {
-            this.api_call(this.api_path(), "delete");
+        remove: function(complete, error, success) {
+            this.api_call(this.api_path(), "delete", undefined, complete, error, success);
         },
 
         changedKeys: function() {
@@ -321,6 +320,9 @@
             if (synnefo.config.support_ssh_os_list.indexOf(this.get_os()) > -1) {
                 return true;
             }
+            if (this.get_meta('osfamily') == 'linux') {
+              return true;
+            }
             return false;
         },
 
@@ -480,6 +482,10 @@
             this.bind("change:status", _.bind(this.update_state, this));
             return ret;
         },
+        
+        is_deleted: function() {
+          return this.get('status') == 'DELETED';
+        },
 
         toJSON: function() {
             var attrs = _.clone(this.attributes);
@@ -564,18 +570,27 @@
 
         call: function(action, params, success, error) {
             if (action == "destroy") {
+                var previous_state = this.get('state');
+                var previous_status = this.get('status');
+
                 this.set({state:"DESTROY"});
-                this.get("actions").remove("destroy", params);
-                this.remove(_.bind(function(){
-                    success();
-                }, this), error);
+
+                var _success = _.bind(function() {
+                    if (success) { success() };
+                }, this);
+                var _error = _.bind(function() {
+                    this.set({state: previous_state, status: previous_status})
+                    if (error) { error() };
+                }, this);
+
+                this.remove(undefined, _error, _success);
             }
             
             if (action == "disconnect") {
                 if (this.get("state") == "DESTROY") {
                     return;
                 }
-
+                
                 _.each(params, _.bind(function(nic_id) {
                     var nic = snf.storage.nics.get(nic_id);
                     this.get("actions").remove("disconnect", nic_id);
@@ -591,6 +606,8 @@
             payload._options = options || {};
             return this.api_call(this.api_path() + "/action", "create", 
                                  payload,
+                                 undefined,
+                                 error,
                                  _.bind(function(){
                                      //this.vms.add_pending(vm.id);
                                      this.increase_connecting();
@@ -603,6 +620,8 @@
             payload._options = options || {};
             return this.api_call(this.api_path() + "/action", "create", 
                                  payload,
+                                 undefined,
+                                 error,
                                  _.bind(function(){
                                      nic.set({"removing": 1});
                                      nic.get_network().update_state();
@@ -650,10 +669,12 @@
         },
 
         do_all_pending_actions: function(success, error) {
-            var destroy = this.get("actions").has_action("destroy");
-            _.each(this.get("actions").actions, _.bind(function(params, action) {
-                _.each(params, _.bind(function(with_params) {
-                    this.call(action, with_params, success, error);
+          var params, actions, action_params;
+          actions = _.clone(this.get("actions").actions);
+            _.each(actions, _.bind(function(params, action) {
+                action_params = _.map(actions[action], function(a){ return _.clone(a)});
+                _.each(action_params, _.bind(function(params) {
+                    this.call(action, params, success, error);
                 }, this));
             }, this));
             this.get("actions").reset();
@@ -1166,6 +1187,7 @@
         
         // get image object
         get_image: function(callback) {
+            if (callback == undefined) { callback = function(){} }
             var image = storage.images.get(this.get('imageRef'));
             if (!image) {
                 storage.images.update_unknown_id(this.get('imageRef'), callback);
@@ -1185,12 +1207,12 @@
             return flv;
         },
 
-        get_meta: function(key) {
+        get_meta: function(key, deflt) {
             if (this.get('metadata') && this.get('metadata').values) {
-                if (!this.get('metadata').values[key]) { return null }
+                if (!this.get('metadata').values[key]) { return deflt }
                 return _.escape(this.get('metadata').values[key]);
             } else {
-                return null;
+                return deflt;
             }
         },
 
@@ -1204,8 +1226,9 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta('OS') || (this.get_image(function(){}) ? 
-                                          this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
+            var image = this.get_image();
+            return this.get_meta('OS') || (image ? 
+                                            image.get_os() || "okeanos" : "okeanos");
         },
 
         get_gui: function() {
@@ -1238,6 +1261,14 @@
 
         get_public_nic: function() {
             return this.get_nics(function(n){ return n.get_network().is_public() === true })[0];
+        },
+
+        get_hostname: function() {
+          var hostname = this.get_meta('hostname');
+          if (!hostname) {
+            hostname = synnefo.config.vm_hostname_format.format(this.id);
+          }
+          return hostname;
         },
 
         get_nic: function(net_id) {
@@ -1422,7 +1453,8 @@
         get_connection_info: function(host_os, success, error) {
             var url = "/machines/connect";
             params = {
-                ip_address: this.get_addresses().ip4,
+                ip_address: this.get_public_nic().get('ipv4'),
+                hostname: this.get_hostname(),
                 os: this.get_os(),
                 host_os: host_os,
                 srv: this.id
@@ -1535,7 +1567,8 @@
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             if (!resp) { return []};
-            var data = _.map(resp.networks.values, _.bind(this.parse_net_api_data, this));
+            var data = _.filter(_.map(resp.networks.values, _.bind(this.parse_net_api_data, this)),
+                               function(e){ return e });
             return data;
         },
 
@@ -1584,6 +1617,10 @@
                       }
                   }
                 });
+            }
+
+            if (data.status == "DELETED" && !this.get(parseInt(data.id))) {
+              return false;
             }
             return data;
         },

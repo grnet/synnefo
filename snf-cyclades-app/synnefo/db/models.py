@@ -294,6 +294,8 @@ class VirtualMachine(models.Model):
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
 
+    objects = ForUpdateManager()
+
     def get_client(self):
         if self.backend:
             return self.backend.get_client()

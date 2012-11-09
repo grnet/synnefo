@@ -65,7 +65,12 @@ from synnefo.logic import callbacks
 from synnefo.logic import queues
 
 import logging
-log = logging.getLogger()
+
+log = logging.getLogger("dispatcher")
+log_amqp = logging.getLogger("amqp")
+log_logic = logging.getLogger("synnefo.logic")
+
+LOGGERS = [log, log_amqp, log_logic]
 
 
 class Dispatcher:
@@ -273,17 +278,17 @@ def setup_logging(opts):
     import logging
     formatter = logging.Formatter("%(asctime)s %(name)s %(module)s [%(levelname)s] %(message)s")
     if opts.debug:
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
-        log.addHandler(stream_handler)
+        log_handler = logging.StreamHandler()
+        log_handler.setFormatter(formatter)
     else:
         import logging.handlers
         log_file = "/var/log/synnefo/dispatcher.log"
-        file_handler = logging.handlers.WatchedFileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        log.addHandler(file_handler)
+        log_handler = logging.handlers.WatchedFileHandler(log_file)
+        log_handler.setFormatter(formatter)
 
-    log.setLevel(logging.DEBUG)
+    for l in LOGGERS:
+        l.addHandler(log_handler)
+        l.setLevel(logging.DEBUG)
 
 
 def main():

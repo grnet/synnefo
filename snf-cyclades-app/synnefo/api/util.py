@@ -157,12 +157,16 @@ def encrypt(plaintext):
     return b64encode(enc)
 
 
-def get_vm(server_id, user_id, non_deleted=False, non_suspended=False):
+def get_vm(server_id, user_id, for_update=False, non_deleted=False,
+           non_suspended=False):
     """Find a VirtualMachine instance based on ID and owner."""
 
     try:
         server_id = int(server_id)
-        vm = VirtualMachine.objects.get(id=server_id, userid=user_id)
+        servers = VirtualMachine.objects
+        if for_update:
+            servers = servers.select_for_update()
+        vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
             raise VirtualMachine.DeletedError
         if non_suspended and vm.suspended:
@@ -172,6 +176,7 @@ def get_vm(server_id, user_id, non_deleted=False, non_suspended=False):
         raise BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound('Server not found.')
+
 
 def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""

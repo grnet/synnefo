@@ -52,7 +52,7 @@ from functools import wraps
 from ordereddict import OrderedDict
 from synnefo import settings
 
-logger = logging.getLogger()
+logger = logging.getLogger("amqp")
 
 
 def reconnect_decorator(func):

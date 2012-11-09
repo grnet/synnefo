@@ -74,7 +74,7 @@ class Command(BaseCommand):
         else:
             flavors = Flavor.objects.filter(deleted=False)
 
-        for flavor in flavors:
+        for flavor in flavors.order_by('id'):
             id = str(flavor.id)
             cpu = str(flavor.cpu)
             ram = str(flavor.ram)

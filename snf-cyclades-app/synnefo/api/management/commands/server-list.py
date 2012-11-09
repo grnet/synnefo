@@ -66,8 +66,11 @@ class Command(BaseCommand):
             raise CommandError("Command doesn't accept any arguments")
 
         if options['backend_id']:
-            servers = \
-            Backend.objects.get(id=options['backend_id']).virtual_machines
+            try:
+                servers = Backend.objects.get(id=options['backend_id'])\
+                                         .virtual_machines
+            except Backend.DoesNotExist:
+                raise CommandError("Backend not found in DB")
         else:
             servers = VirtualMachine.objects
 
@@ -91,7 +94,7 @@ class Command(BaseCommand):
 
         cache = ImageCache()
 
-        for server in servers:
+        for server in servers.order_by('id'):
             id = str(server.id)
             try:
                 name = server.name.decode('utf8')

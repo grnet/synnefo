@@ -251,8 +251,13 @@ class JobFileHandler(pyinotify.ProcessEvent):
                # 'network_mode': get_field(input, 'network_mode'),
                # 'network_link': get_field(input, 'network_link'),
                'gateway':      get_field(input, 'gateway'),
-               # 'reserved_ips': get_field(input, 'reserved_ips'),
                'group_name':   get_field(input, 'group_name')}
+
+        if op_id == "OP_NETWORK_SET_PARAMS":
+            msg.update(
+                {'add_reserved_ips':    get_field(input, 'add_reserved_ips'),
+                 'remove_reserved_ips': get_field(input, 'remove_reserved_ips')
+                })
 
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 

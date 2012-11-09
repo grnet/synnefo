@@ -39,7 +39,7 @@ import bitarray
 
 from optparse import make_option
 
-from synnefo.settings import PUBLIC_ROUTED_USE_POOL
+from synnefo.settings import PUBLIC_USE_POOL
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -87,8 +87,7 @@ def reconcile_networks(out, fix, conflicting_ips):
     for network in networks:
         net_id = network.id
         destroying = network.action == 'DESTROY'
-        uses_pool = not (network.type == 'PUBLIC_ROUTED' and (not
-                        PUBLIC_ROUTED_USE_POOL))
+        uses_pool = not network.public or PUBLIC_USE_POOL
         ip_available_maps = []
         ip_reserved_maps = []
 

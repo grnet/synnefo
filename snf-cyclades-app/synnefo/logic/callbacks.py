@@ -39,7 +39,7 @@ from synnefo.logic import utils, backend
 
 from synnefo.lib.utils import merge_time
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 def handle_message_delivery(func):
     """ Generic decorator for handling messages.
@@ -77,7 +77,7 @@ def instance_from_msg(func):
     def wrapper(msg):
         try:
             vm_id = utils.id_from_instance_name(msg["instance"])
-            vm = VirtualMachine.objects.get(id=vm_id)
+            vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
             func(vm, msg)
         except VirtualMachine.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
@@ -195,9 +195,17 @@ def update_network(network, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    backend.process_network_status(network, event_time,
-                                   msg['jobId'], msg['operation'],
-                                   msg['status'], msg['logmsg'])
+    opcode = msg['operation']
+    status = msg['status']
+    jobid = msg['jobId']
+
+    if opcode == "OP_NETWORK_SET_PARAMS":
+        backend.process_network_modify(network, event_time, jobid, opcode,
+                                       status, msg['add_reserved_ips'],
+                                       msg['remove_reserved_ips'])
+    else:
+        backend.process_network_status(network, event_time, jobid, opcode,
+                                       status, msg['logmsg'])
 
     log.debug("Done processing ganeti-network-status msg for network %s.",
               msg['network'])

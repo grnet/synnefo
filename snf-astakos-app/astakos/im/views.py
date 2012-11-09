@@ -1173,7 +1173,10 @@ def resource_list(request):
         entry['load_class'] = 'red'
         max_value = float(entry['maxValue'])
         curr_value = float(entry['currValue'])
-        entry['ratio'] = (curr_value / max_value) * 100
+        if max_value > 0 :
+           entry['ratio'] = (curr_value / max_value) * 100
+        else: 
+           entry['ratio'] = 0 
         if entry['ratio'] < 66:
             entry['load_class'] = 'yellow'
         if entry['ratio'] < 33:

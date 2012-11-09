@@ -4,6 +4,7 @@ from util import is_system_node
 from util import check_context
 from util import check_string
 from util import method_accepts
+from util import accepts
 from util import returns
 from util import NameOfSystemNode
 from util import NameOfResourcesNode
@@ -20,6 +21,8 @@ from util import make_rel_global_resource_name
 from util import make_rel_group_name
 from util import make_rel_user_name
 from util import check_name
+from util import level_of_node
+from util import check_abs_name
 
 class HighLevelAPI(object):
     """
@@ -47,8 +50,35 @@ class HighLevelAPI(object):
     
     """
 
-    def __init__(self, qh, **kwd):
-        self.__qh = qh
+    def __init__(self, qh = None, **kwd):
+        if qh is None:
+            def new_http_qh(url):
+                from commissioning.clients.http import HTTP_API_Client
+                from commissioning import QuotaholderAPI
+                class QuotaholderHTTP(HTTP_API_Client):
+                    api_spec = QuotaholderAPI()
+                return QuotaholderHTTP(url)
+            
+            def check_dict(d):
+                if d.has_key('QH_URL'):
+                    return kwd['QH_URL']
+                elif d.has_key('QH_HOST') and d.has_key('QH_PORT'):
+                    return "http://%s:%s/api/quotaholder/v" % (
+                        d['QH_HOST'],
+                        d['QH_PORT'])
+                else:
+                    return None
+            
+            from os import environ
+            url = check_dict(kwd) or check_dict(environ)
+            if url is None:
+                raise Exception("No quota holder low-level api specified")
+            del environ
+            self.__qh = new_http_qh(url)
+            
+        else:
+            self.__qh = qh
+            
         self.__context = check_context(kwd.get('context') or {})
         self.__node_keys = {
             NameOfSystemNode: check_string('system_key',
@@ -61,8 +91,9 @@ class HighLevelAPI(object):
 
 
     # internal API
-    @method_accepts(str, str, str, str, int, int, int, int, int)
-    @returns(str)
+    @method_accepts(basestring, basestring, basestring, basestring,
+                    int, int, int, int, int)
+    @returns(basestring)
     def __create_attribute_of_node_for_resource(self,
                                                 abs_or_not_node_name,
                                                 intended_parent_node_name,
@@ -125,14 +156,14 @@ class HighLevelAPI(object):
         return computed_attribute_name
 
 
-    @method_accepts(str)
-    @returns(str)
-    def get_cached_node_key(self, abs_node_name):
-        check_abs_name(abs_node_name, 'abs_node_name')
-        return self.__node_keys.get(abs_node_name) or '' # sane default
+    @method_accepts(basestring)
+    @returns(basestring)
+    def get_cached_node_key(self, node_name):
+        check_abs_name(node_name, 'node_name')
+        return self.__node_keys.get(node_name) or '' # sane default
 
 
-    @method_accepts(str, str)
+    @method_accepts(basestring, basestring)
     @returns(type(None))
     def set_cached_node_key(self, abs_node_name, node_key, label='abs_node_name'):
         check_abs_name(abs_node_name, label)
@@ -147,8 +178,43 @@ class HighLevelAPI(object):
         return self.__node_keys.copy() # Client cannot mess with the original
     
     
-    @method_accepts(str, str)
-    @returns(str)
+    @method_accepts(basestring)
+    @returns(list)
+    def get_node_children(self, node_name):
+        check_abs_name(node_name, 'node_name')
+        entities = self.__qh.list_entities(context=self.__context,
+                                entity=node_name,
+                                key=self.get_cached_node_key(node_name))
+        return entities
+    
+    
+    def get_toplevel_nodes(self):
+        """
+        Return all nodes with absolute name starting with 'system/'
+        """
+        all_implied_system_children = self.get_node_children(NameOfSystemNode)
+        return [node_name for node_name in all_implied_system_children \
+                if node_name.startswith('system/') and \
+                level_of_node(node_name) == 1]
+    
+        
+    def get_global_resources(self):
+        self.ensure_resources_node()
+        return self.get_node_children(NameOfResourcesNode)
+    
+    
+    def get_groups(self):
+        self.ensure_groups_node()
+        return self.get_node_children(NameOfGroupsNode)
+    
+    
+    def get_users(self):
+        self.ensure_users_node()
+        return self.get_node_children(NameOfUsersNode)
+    
+    
+    @method_accepts(basestring, basestring)
+    @returns(basestring)
     def ensure_node(self, abs_node_name, label='abs_node_name'):
         if not self.has_node(abs_node_name, label):
             return self.create_node(abs_node_name, label)
@@ -156,7 +222,7 @@ class HighLevelAPI(object):
             return abs_node_name
 
     
-    @returns(str)
+    @returns(basestring)
     def ensure_resources_node(self):
         """
         Ensure that the node 'system/resources' exists.
@@ -164,7 +230,7 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfResourcesNode, 'NameOfResourcesNode')
 
 
-    @returns(str)
+    @returns(basestring)
     def ensure_groups_node(self):
         """
         Ensure that the node 'system/groups' exists.
@@ -172,7 +238,7 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfGroupsNode, 'NameOfGroupsNode')
 
 
-    @returns(str)
+    @returns(basestring)
     def ensure_users_node(self):
         """
         Ensure that the node 'system/users' exists.
@@ -180,7 +246,7 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfUsersNode, 'NameOfGroupsNode')
 
 
-    @method_accepts(str, str)
+    @method_accepts(basestring, basestring)
     @returns(bool)
     def has_node(self, abs_node_name, label='abs_node_name'):
         """
@@ -197,8 +263,8 @@ class HighLevelAPI(object):
         return len(entity_owner_list) == 1 # TODO: any other check here?
 
 
-    @method_accepts(str, str)
-    @returns(str)
+    @method_accepts(basestring, basestring)
+    @returns(basestring)
     def create_node(self, node_name, label='node_name'):
         """
         Creates a node with an absolute name ``node_name``.
@@ -240,14 +306,14 @@ class HighLevelAPI(object):
             return node_name
 
 
-    @method_accepts(str)
+    @method_accepts(basestring)
     @returns(bool)
     def has_global_resource(self, abs_resource_name):
         check_abs_global_resource_name(abs_resource_name)
         return self.has_node(abs_resource_name)
 
 
-    @method_accepts(str)
+    @method_accepts(basestring)
     def define_global_resource(self, resource_name):
         """
         Defines a resource globally known to Quota Holder.
@@ -268,8 +334,8 @@ class HighLevelAPI(object):
         return self.create_node(abs_resource_name, 'abs_resource_name')
         
     
-    @method_accepts(str, str, int, int, int, int, int)
-    @returns(str)
+    @method_accepts(basestring, basestring, int, int, int, int, int)
+    @returns(basestring)
     def define_attribute_of_global_resource(self,
                                             global_resource_name,
                                             attribute_name,
@@ -309,8 +375,8 @@ class HighLevelAPI(object):
 
             
     
-    @method_accepts(str, str)
-    @returns(str)
+    @method_accepts(basestring, basestring)
+    @returns(basestring)
     def define_group(self, group_name, group_node_key=''):
         """
         Creates a new group under 'system/groups'.
@@ -342,8 +408,8 @@ class HighLevelAPI(object):
     
 
     
-    @method_accepts(str, str, str, int, int, int, int, int)
-    @returns(str)
+    @method_accepts(basestring, basestring, basestring, int, int, int, int, int)
+    @returns(basestring)
     def define_attribute_of_group_for_resource(self,
                                                group_name,
                                                attribute_name,
@@ -370,8 +436,8 @@ class HighLevelAPI(object):
             flags=flags)
 
 
-    @method_accepts(str, str, int, int, int, int, int, int, int)
-    @returns(str, str, str)
+    @method_accepts(basestring, basestring, int, int, int, int, int, int, int)
+    @returns(type(None))
     def define_group_resource(self,
                               group_name,
                               resource_name,

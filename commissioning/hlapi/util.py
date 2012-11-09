@@ -1,15 +1,23 @@
 import sys
-from commissioning.clients.http import HTTP_API_Client
-from commissioning import QuotaholderAPI
 
-def new_quota_holder_client(QH_URL):
-    """
-    Create a new quota holder api client
-    """
-    class QuotaholderHTTP(HTTP_API_Client):
-        api_spec = QuotaholderAPI()
+def isstr(s):
+    return issubclass(type(s), basestring)
 
-    return QuotaholderHTTP(QH_URL)
+def compatible_input_types(given, expected):
+    if len(given) != len(expected):
+        return False
+    for i in xrange(len(given)):
+        if isstr(given[i]) and not isstr(expected[i]):
+            return False
+        if isstr(expected[i]) and not isstr(given[i]):
+            return False
+        if type(given[i]) != type(expected[i]):
+            return False
+    return True
+        
+
+def compatible_return_types(given, expected):
+    pass
 
 def method_accepts(*types):
     '''Method decorator. Checks decorated function's arguments are
@@ -92,15 +100,17 @@ def returns(ret_type):
     except TypeError, msg:
         raise TypeError, msg
 
+
 # http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
 def info(fname, expected, actual, flag):
     '''Convenience function returns nicely formatted error/warning msg.'''
     format = lambda types: ', '.join([str(t).split("'")[1] for t in types])
     expected, actual = format(expected), format(actual)
-    msg = "'{}' method ".format( fname )\
-          + ("accepts", "returns")[flag] + " ({}), but ".format(expected)\
-          + ("was given", "result is")[flag] + " ({})".format(actual)
+    msg = "'{0}' method ".format( fname )\
+          + ("accepts", "returns")[flag] + " ({0}), but ".format(expected)\
+          + ("was given", "result is")[flag] + " ({0})".format(actual)
     return msg
+
 
 def check_string(label, value):
     if not isinstance(value, str):
@@ -109,11 +119,13 @@ def check_string(label, value):
                 label, type(value), value))
     return value
 
+
 def check_context(context):
     assert isinstance(context, dict)
     return context
 
-@accepts(str, str)
+
+@accepts(basestring, basestring)
 @returns(bool)
 def is_abs_name(name, label='name'):
     check_string(label, name)
@@ -123,21 +135,25 @@ def is_abs_name(name, label='name'):
 def check_abs_name(abs_name, label = 'abs_name'):
     check_string(label, abs_name)
     if len(abs_name) == 0:
-        raise Exception("Absolute abs_name '%s' is empty" % (label,))
+        raise Exception("Absolute %s is empty" % (label,))
     
     if abs_name.startswith('/'):
         raise Exception(
-            "Absolute abs_name %s (='%s') starts with '/'" % (label, abs_name))
+            "Absolute %s='%s' starts with '/'" % (label, abs_name))
         
     if abs_name.endswith('/'):
         raise Exception(
-            "Absolute abs_name %s (='%s') ends with '/'" % (label, abs_name))
+            "Absolute %s='%s' ends with '/'" % (label, abs_name))
 
-    if (abs_name != 'system') or (not abs_name.startswith('system/')):
+    if (abs_name != 'system') and (not abs_name.startswith('system/')):
         raise Exception(
-            "Unknown hierarchy for absolute abs_name %s (='%s'). Should be 'system' or start with 'system/'" % (
+            "Unknown hierarchy for %s='%s'. Should be 'system' or start with 'system/'" % (
                 label, abs_name))
-    
+
+    if abs_name.find('//') >= 0:
+        raise Exception("// is not allowed in %s='%s'" % (
+                label, abs_name))
+         
     return abs_name
 
 def check_relative_name(relative_name, label='relative_name'):
@@ -151,6 +167,11 @@ def check_name(name, label='name'):
     check_string(label, name)
     if len(name) == 0:
         raise Exception("Name %s is empty" % (label,))
+    
+    if name.find('//') >= 0:
+        raise Exception("// is not allowed in %s (='%s')" % (
+                label, name))
+        
     return name
 
 
@@ -173,14 +194,27 @@ def check_node_key(node_key):
 
 
 def is_system_node(node_name):
+    check_string('node_name', node_name)
     return node_name == 'system'
 
 
-@accepts(str, str)
+def level_of_node(node_name):
+    """
+    Returns the level of a node in the absolute hierarchy, that is under
+    node 'system'.
+    
+    By convention, 'system' has level zero.
+    """
+    check_abs_name(node_name, 'node_name')
+    len(node_name.split('/')) - 1
+    
+
+@accepts(basestring, basestring)
 @returns(bool)
 def is_child_of_abs_name(child, parent):
     check_abs_name(parent)
     return child.startswith(parent) and child != parent
+
 
 def parent_abs_name_of(abs_name, label='abs_name'):
     """
@@ -207,8 +241,9 @@ def parent_abs_name_of(abs_name, label='abs_name'):
             upto_name = '/'.join(elements[:-1])
             return upto_name
 
-@accepts(str)
-@returns(str)
+
+@accepts(basestring)
+@returns(basestring)
 def last_part_of_abs_name(abs_name, label='abs_name'):
     """
     Given an absolute abs_name, which is made of simple parts separated with
@@ -220,8 +255,8 @@ def last_part_of_abs_name(abs_name, label='abs_name'):
     return last_part
 
 
-@accepts(str, str, str, str)
-@returns(str)
+@accepts(basestring, basestring, basestring, basestring)
+@returns(basestring)
 def reparent_child_name_under(child_name,
                               parent_node_name,
                               child_label='child_name',
@@ -267,9 +302,10 @@ def make_abs_user_name(user_name):
                                      parent_node_name=NameOfUsersNode,
                                      child_label='user_name',
                                      parent_label='NameOfUsersNode')
-    
-@accepts(str, str, str, str)
-@returns(str)
+
+
+@accepts(basestring, basestring, basestring, basestring)
+@returns(basestring)
 def relative_child_name_under(child_name,
                               parent_name,
                               child_label='child_name',
@@ -294,8 +330,8 @@ def relative_child_name_under(child_name,
     return child_name[len(parent_name) + 1:]
 
 
-@accepts(str, str)
-@returns(str)
+@accepts(basestring, basestring)
+@returns(basestring)
 def make_rel_group_name(group_name, label='group_name'):
     check_name(group_name, label)
     return relative_child_name_under(child_name=group_name,
@@ -304,8 +340,8 @@ def make_rel_group_name(group_name, label='group_name'):
                                      parent_label='NameOfGroupsNode')
     
 
-@accepts(str, str)
-@returns(str)
+@accepts(basestring, basestring)
+@returns(basestring)
 def make_rel_global_resource_name(resource_name, label='resource_name'):
     check_name(resource_name, label)
     return relative_child_name_under(child_name=resource_name,
@@ -314,8 +350,8 @@ def make_rel_global_resource_name(resource_name, label='resource_name'):
                                      parent_label='NameOfResourcesNode')
     
 
-@accepts(str, str)
-@returns(str)
+@accepts(basestring, basestring)
+@returns(basestring)
 def make_rel_user_name(user_name, label='user_name'):
     check_name(user_name, label)
     return relative_child_name_under(child_name=user_name,
@@ -328,6 +364,7 @@ NameOfSystemNode = 'system'
 NameOfResourcesNode = 'system/resources'
 NameOfGroupsNode = 'system/groups'
 NameOfUsersNode = 'system/users'
+
 
 ResourceAttributePrefixes = {
     NameOfResourcesNode: 'r',

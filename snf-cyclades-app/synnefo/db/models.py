@@ -261,7 +261,8 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
-    userid = models.CharField('User ID of the owner', max_length=100)
+    userid = models.CharField('User ID of the owner', max_length=100,
+                              db_index=True)
     backend = models.ForeignKey(Backend, null=True,
                                 related_name="virtual_machines",)
     backend_hash = models.CharField(max_length=128, null=True, editable=False)
@@ -270,7 +271,7 @@ class VirtualMachine(models.Model):
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
-    deleted = models.BooleanField('Deleted', default=False)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
 
@@ -418,7 +419,8 @@ class Network(models.Model):
     )
 
     name = models.CharField('Network Name', max_length=128)
-    userid = models.CharField('User ID of the owner', max_length=128, null=True)
+    userid = models.CharField('User ID of the owner', max_length=128,
+                              null=True, db_index=True)
     subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
     subnet6 = models.CharField('IPv6 Subnet', max_length=64, null=True)
     gateway = models.CharField('Gateway', max_length=32, null=True)
@@ -428,10 +430,10 @@ class Network(models.Model):
                             default='PRIVATE_PHYSICAL_VLAN')
     link = models.CharField('Network Link', max_length=128, null=True)
     mac_prefix = models.CharField('MAC Prefix', max_length=32, null=False)
-    public = models.BooleanField(default=False)
+    public = models.BooleanField(default=False, db_index=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    deleted = models.BooleanField('Deleted', default=False)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True)
     state = models.CharField(choices=OPER_STATES, max_length=32,
                              default='PENDING')
     machines = models.ManyToManyField(VirtualMachine,

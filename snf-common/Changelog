@@ -2,8 +2,14 @@ Changelog
 =========
 
 
-dev
-***
+v0.12.0
+-------
+  AMQP:
+	* Add support for basic_nack and basic_reject
+	* Add support for RabbitMQ dead-letter-exchange mechanism
+
+v0.10.0
+------
 * AMQP client which supports connection with multiple brokers using
   HA-queues and publisher-confirms to guarantee delivery of messages.
 * Added astakos client lib helper get_token_from_cookie

@@ -16,6 +16,17 @@ NEW FEATURES:
 	* New setting UI_CHANGES_SINCE_ALIGMENT to allow aligment of the date used
 	  by ui in api calls that support changes-since parameter.
 
+  PLANKTON:
+	* Pool connections to Pithos backend.
+	* Add snf-manage image-{list, show} management commands
+
+  LOGIC:
+    * Support for suspended VMs
+	* Add snf-manage queue-retry management command
+	* Support for RabbitMQ dead-letter-exchange in dispatcher
+	* Support for rejecting messages from rejecting messages from dispatcher
+	* Process Ganeti messages about network reserved_ips
+
 v0.11.0
 *******
 

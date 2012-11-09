@@ -693,6 +693,11 @@ resource_presentation = {
             'is_abbreviation':False,
             'report_desc':'Amount of Disksize used'
         },
+        'cyclades.disk': {
+            'help_text':'resource cyclades.disk help text',
+            'is_abbreviation':False,
+            'report_desc':'Amount of Disk used'    
+        },
         'cyclades.ram': {
             'help_text':'resource cyclades.ram help text',
             'is_abbreviation':True,
@@ -702,6 +707,11 @@ resource_presentation = {
             'help_text':'resource cyclades.cpu help text',
             'is_abbreviation':True,
             'report_desc':'CPUs used'
+        },
+        'cyclades.network.private': {
+            'help_text':'resource cyclades.network.private help text',
+            'is_abbreviation':False,
+            'report_desc':'Network used'
         }
     }
 

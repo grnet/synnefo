@@ -437,6 +437,7 @@ form.quotas-form legend span.info span			{ width:395px; }
 .stats .cpu .img-wrap							{ background-image:url(../images/cpu-stats.png) }
 .stats .network .img-wrap						{ background-image:url(../images/network-stats.png) }
 .stats .disksize .img-wrap						{ background-image:url(../images/disk-stats.png) }
+.stats .disk .img-wrap							{ background-image:url(../images/disk-stats.png) }
 .stats .diskspace .img-wrap						{ background-image:url(../images/storage-stats.png) }
 .stats .bandwidth .img-wrap						{ background-image:url(../images/bandwidth-stats.png) }
 

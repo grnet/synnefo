@@ -62,6 +62,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
+                                 BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  SERVICE_TOKEN, COOKIE_NAME)
 
@@ -860,7 +861,9 @@ _pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
                                          block_path=BACKEND_BLOCK_PATH,
                                          block_umask=BACKEND_BLOCK_UMASK,
                                          queue_module=BACKEND_QUEUE_MODULE,
-                                         queue_connection=BACKEND_QUEUE_CONNECTION)
+                                         queue_hosts=BACKEND_QUEUE_HOSTS,
+                                         queue_exchange=BACKEND_QUEUE_EXCHANGE,
+                                         free_versioning=BACKEND_FREE_VERSIONING)
 
 
 def get_backend():

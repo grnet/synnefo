@@ -42,6 +42,7 @@ PITHOS_BACKEND_QUEUE_HOSTS       None                                           
 PITHOS_BACKEND_QUEUE_EXCHANGE    pithos
 PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                            Default user quota
 PITHOS_BACKEND_VERSIONING        auto                                              Default versioning policy for containers
+PITHOS_BACKEND_FREE_VERSIONING   True                                              Default versioning debit policy (default free)
 PITHOS_UPDATE_MD5                True                                              Update object checksums when using hashmaps
 PITHOS_SERVICE_TOKEN             ''                                                Service token acquired by the identity provider (astakos)
 ===============================  ================================================  ============================================================

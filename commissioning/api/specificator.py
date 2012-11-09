@@ -35,8 +35,15 @@ class Canonical(object):
     random_choice = None
 
     def __init__(self, *args, **kw):
-        self.args = args
-        self.kw = kw
+        self.args = []
+        named_args = []
+        for a in args:
+            if isinstance(a, tuple) and len(a) == 2:
+                named_args.append(a)
+            else:
+                self.args.append(a)
+        ordered_dict = ShowableOrderedDict(named_args)
+
         self.name = kw.pop('classname', self.__class__.__name__)
         random_choice = kw.pop('random', None)
         if random_choice is not None:
@@ -53,6 +60,8 @@ class Canonical(object):
                 del kw[k]
 
         self.opts = opts
+        ordered_dict.update(kw)
+        self.kw = ordered_dict
         self.init()
 
         if 'default' in opts:
@@ -484,19 +493,15 @@ class ListOf(Canonical):
 
 class Args(Canonical):
 
-    def init(self):
-        if self.args:
-            self.dct = self.args[0]
-
     # item : list of strings
     def _parse(self, item):
-        formals = len(self.dct)
+        formals = len(self.kw)
         actuals = len(item)
         if actuals != formals:
             raise Exception('param inconsistent')
 
         parsed = ShowableOrderedDict()
-        for it, (k, v) in zip(item, self.dct.items()):
+        for it, (k, v) in zip(item, self.kw.items()):
             print 'item:', it
             parsed[k] = v.parse(it)
         return parsed
@@ -511,7 +516,7 @@ class Args(Canonical):
         canonified = ShowableOrderedDict()
         
         try:
-            for n, c in self.dct.items():
+            for n, c in self.kw.items():
                 t = item[n] if n in item else None
                 canonified[n] = c(t)
         except KeyError:
@@ -523,7 +528,7 @@ class Args(Canonical):
 
     def random_args(self, kw):
         args = {}
-        for n, c in self.dct.items():
+        for n, c in self.kw.items():
             args[n] = c.random()
         return args
 
@@ -687,14 +692,14 @@ class Specificator(object):
                 m = "Unspecified arguments in '%s': %s" % a
                 raise SpecifyException(m)
 
-            args = ShowableOrderedDict(zip(args, defaults))
-            for a, c in args.items():
+            args = zip(args, defaults)
+            for a, c in args:
                 if not isinstance(c, Canonical):
                     m = ("argument '%s=%s' is not an instance of 'Canonical'"
                          % (a, repr(c)))
                     raise SpecifyException(m)
 
-            canonical = Null() if len(args) == 0 else Args(args)
+            canonical = Null() if len(args) == 0 else Args(*args)
             canonical_inputs[name] = canonical
 
             self = object.__new__(cls)

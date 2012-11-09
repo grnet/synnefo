@@ -358,7 +358,7 @@ class AstakosUser(User):
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms
-        if not self.id and not self.is_active:
+        if not self.id:
             self.is_active = False
 
     @property

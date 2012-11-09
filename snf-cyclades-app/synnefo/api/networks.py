@@ -182,10 +182,14 @@ def create_network(request):
     if net_type not in settings.ENABLED_NETWORKS:
         raise Forbidden("Can not create %s network" % net_type)
 
+    networks_user_limit = \
+        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                                         settings.MAX_NETWORKS_PER_USER)
+
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
                                                deleted=False))
 
-    if user_networks >= settings.MAX_NETWORKS_PER_USER:
+    if user_networks >= networks_user_limit:
         raise OverLimit('Network count limit exceeded for your account.')
 
     cidr_block = int(subnet.split('/')[1])

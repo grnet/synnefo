@@ -377,7 +377,7 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
 .quotas-form fieldset legend					{ color:#55B577; font-size:1.154em; margin-bottom:3em; position:relative; }
-.quotas-form fieldset legend span				{ color:#222; }
+.quotas-form fieldset legend span				{ color:#222; font-size:0.867em; }
 .quotas-form .with-checkbox .checkbox-widget	{ margin-top:12px; } 
 .quotas-form .with-checkbox span.info 			{ bottom:22px; }
 .quotas-form .form-row.submit					{ text-align:center; }
@@ -416,6 +416,8 @@ form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .with-info .double-checks 			{ position:relative; margin-bottom:70px; }
 .quotas-form .with-info .double-checks .form-row+.form-row					{ position:absolute; left:224px; top:40px;}
 .quotas-form .with-info .double-checks span.info { left:262px; }
+.quotas-form .with-info .with-checkbox			{ margin-bottom:12px; }	 
+	 
 	 
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
@@ -432,8 +434,9 @@ form.quotas-form legend span.info span			{ width:395px; }
 .stats .info h3									{ font-size:1.231em; color:#222222 }
 .stats .vm .img-wrap							{ background-image:url(../images/vm-stats.png) }
 .stats .ram .img-wrap							{ background-image:url(../images/ram-stats.png) }
+.stats .cpu .img-wrap							{ background-image:url(../images/cpu-stats.png) }
 .stats .network .img-wrap						{ background-image:url(../images/network-stats.png) }
-.stats .disksize .img-wrap							{ background-image:url(../images/disk-stats.png) }
+.stats .disksize .img-wrap						{ background-image:url(../images/disk-stats.png) }
 .stats .diskspace .img-wrap						{ background-image:url(../images/storage-stats.png) }
 .stats .bandwidth .img-wrap						{ background-image:url(../images/bandwidth-stats.png) }
 
@@ -441,3 +444,6 @@ form.quotas-form legend span.info span			{ width:395px; }
 .stats .yellow .img-wrap						{ background-position: -124px 7px; }
 .stats .green .img-wrap							{ background-position: -263px 7px; }
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
+
+/* temp style to hide extra menu for groups */
+.navigation ul+ul								{ display:none; }

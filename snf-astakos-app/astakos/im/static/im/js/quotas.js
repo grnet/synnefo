@@ -26,7 +26,7 @@ $(document).ready(function() {
 		$(this).siblings('fieldset').find('.checkbox-widget.limited').removeClass('checked');
 		$(this).siblings('fieldset').find('input[type="checkbox"].limited').removeAttr('checked');  
 		$(this).siblings('fieldset').find('input[type="checkbox"].unlimited').attr('checked','checked');  
-		$(this).siblings('fieldset').find('.double-checks input[type="text"]').removeClass('hideshow');
+		$(this).siblings('fieldset').find('.double-checks input[type="text"]').hide();
 		$(this).parents('.group').hide('slow', function() {
 		    $(this).appendTo('.not-foo');	
 		});
@@ -43,11 +43,15 @@ $(document).ready(function() {
 	 
 		
 	$('.quotas-form input.limited').bind("changed", function(e){
-		$(this).siblings('input[type="text"]').toggle();
-		$(this).siblings('input[type="text"]').focus();
-	 	parentdiv = $(this).parents('.form-row').prev('.form-row');
-	 	parentdiv.find('input[type="checkbox"].unlimited').removeAttr('checked');  
-	 	parentdiv.find('.checkbox-widget').removeClass('checked');
+		console.log($(this).attr('checked'));
+		if ($(this).attr('checked')){
+			$(this).siblings('input[type="text"]').toggle();
+			$(this).siblings('input[type="text"]').focus();
+		 	parentdiv = $(this).parents('.form-row').prev('.form-row');
+		 	parentdiv.find('input[type="checkbox"].unlimited').removeAttr('checked');  
+		 	parentdiv.find('.checkbox-widget').removeClass('checked');
+		}
+		
 		 
 	});
 	

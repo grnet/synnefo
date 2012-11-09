@@ -8,9 +8,11 @@
       var el = $('<a class="checkbox-widget" href="javascript:void(0)"/>');
       var form = $this.closest(".form-row");
 	  var className = $this.attr('class');
+	  var isRadio = $this.hasClass('radio');
 
       // add class to identify form rows which contain a checkbox
       form.addClass("with-checkbox");
+
       
       if ($this.prev().length > 0) {
         var lbl = $this.prev()[0];
@@ -18,6 +20,7 @@
             $(lbl).addClass("checkbox-label");
 
             $(lbl).click(function(e){
+            	if (isRadio && $this.attr('checked')){ return; }
                 var src = e.srcElement.nodeName;
                 if (src == "LABEL" || src == "label") {
                     el.toggleClass("checked");	
@@ -38,7 +41,7 @@
 	  el.addClass(className);	
 		
       el.click(function() {
-
+		if (isRadio && $this.attr('checked')){ return; }
         el.toggleClass("checked");
         $this.attr('checked', el.hasClass("checked"));
         $this.trigger('changed');
@@ -47,6 +50,7 @@
       el.keypress(function(e){
       	
       	if (e.keyCode == 0 || e.keyCode == 32){
+      		if (isRadio && $this.attr('checked')){ return; }
       		e.preventDefault();
       		el.toggleClass("checked");
         	$this.attr('checked', el.hasClass("checked"));

@@ -65,7 +65,7 @@ class Canonical(object):
             if item is None:
                 opts['null'] = 1
             else:
-                opts['default'] = self.check(item)
+                opts['default'] = self._check(item)
 
     def init(self):
         return

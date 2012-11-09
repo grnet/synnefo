@@ -41,23 +41,36 @@ from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.api.util import get_image, allocate_public_address
 from synnefo.api.faults import ItemNotFound
 
+HELP_MSG = """
+
+Create a new VM without authenticating the user or checking the resource
+limits of the user. Also the allocator can be bypassed by specifing a
+backend-id.
+"""
+
 
 class Command(BaseCommand):
-    help = "Create a new VM."
+    help = "Create a new VM." + HELP_MSG
 
     output_transaction = True
 
     option_list = BaseCommand.option_list + (
             make_option("--backend-id", dest="backend_id",
-                        help="ID of the Ganeti backend"),
+                        help="Unique identifier of the Ganeti backend."
+                             " Use snf-manage backend-list to find out"
+                             " available backends."),
             make_option("--name", dest="name",
-                        help="Name of the server."),
+                        help="An arbitrary string for naming the server"),
             make_option("--user-id", dest="user_id",
-                        help="ID of the Owner of the server."),
+                        help="Unique identifier of the owner of the server"),
             make_option("--image-id", dest="image_id",
-                        help="ID of the image."),
+                        help="Unique identifier of the image."
+                             " Use snf-manage image-list to find out"
+                             " available images."),
             make_option("--flavor-id", dest="flavor_id",
-                        help="ID of the flavor"),
+                        help="Unique identifier of the flavor"
+                             " Use snf-manage flavor-list to find out"
+                             " available flavors."),
             make_option("--password", dest="password",
                         help="Password for the new server")
         )

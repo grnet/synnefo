@@ -37,32 +37,32 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Flavor
 
-from ._common import format_bool, format_date
-
 
 class Command(BaseCommand):
+    output_transaction = True
     args = "<cpu>[,<cpu>,...] " \
            "<ram>[,<ram>,...] " \
            "<disk>[,<disk>,...] " \
            "<disk template>[,<disk template>,...]"
-    help = "Create one or more flavors"
-    
+    help = "Create one or more flavors.\n\nThe flavors that will be created are"\
+           " those belonging to the cartesian product of the arguments"\
+
     def handle(self, *args, **options):
         if len(args) != 4:
             raise CommandError("Invalid number of arguments")
-        
+
         cpus = args[0].split(',')
         rams = args[1].split(',')
         disks = args[2].split(',')
         templates = args[3].split(',')
-        
+
         flavors = []
         for cpu, ram, disk, template in product(cpus, rams, disks, templates):
             try:
                 flavors.append((int(cpu), int(ram), int(disk), template))
             except ValueError:
                 raise CommandError("Invalid values")
-        
+
         for cpu, ram, disk, template in flavors:
             flavor = Flavor.objects.create(cpu=cpu, ram=ram, disk=disk,
                                            disk_template=template)

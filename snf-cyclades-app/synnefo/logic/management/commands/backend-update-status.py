@@ -48,7 +48,11 @@ class Command(BaseCommand):
                    help="Update statistics of only this backend"),
         make_option('--older-than', dest='older_than', metavar="MINUTES",
                    help="Update only backends that have not been updated for\
-                   MINUTES. Set to 0 to force update.")
+                   MINUTES. Set to 0 to force update."),
+        make_option('--include-drained', dest='drained',
+                    default=False,
+                    action='store_true',
+                    help="Also update statistics of drained backends")
         )
 
     def handle(self, **options):
@@ -62,8 +66,10 @@ class Command(BaseCommand):
             except Backend.DoesNotExist:
                 raise CommandError("Backend not found in DB")
         else:
-            # XXX:filter drained ?
-            backends = Backend.objects.all()
+            backends = Backend.objects.filter(offline=False)
+
+        if not options['drained']:
+            backends = backends.filter(drained=False)
 
         now = datetime.datetime.now()
         if options['older_than'] is not None:

@@ -36,6 +36,7 @@ from pprint import pprint
 
 class Command(BaseCommand):
     args = "<image_id>"
+    help = "Display available information about an image"
 
     def handle(self, *args, **options):
 

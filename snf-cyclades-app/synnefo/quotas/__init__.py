@@ -180,12 +180,12 @@ def invert_resources(resources_dict):
 def create_commission(user, resources, delete=False):
     if delete:
         resources = invert_resources(resources)
-    provisions = [('system', 'cyclades.' + r, s)
+    provisions = [('cyclades', 'cyclades.' + r, s)
                   for r, s in resources.items()]
     log.debug("Provisions are %s", provisions)
     return  {"context":    {},
              "target":     user,
-             "key":        "",
+             "key":        "1",
              "clientkey":  "cyclades",
              "owner":      "",
              "ownerkey":   "",

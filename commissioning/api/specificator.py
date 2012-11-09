@@ -158,10 +158,6 @@ class Canonical(object):
     def __repr__(self):
         return self.tostring(multiline=0, showopts=1)
 
-    def _check(item):
-        canonified = item
-        return canonified
-
 
 class Null(Canonical):
 

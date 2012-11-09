@@ -38,14 +38,14 @@ class Migration(DataMigration):
                 except Exception, e:
                     print "Cannot create resource ", rn
                     continue
-
-                q, created = orm.AstakosGroupQuota.objects.get_or_create(
-                    group=default,
-                    resource=r,
-                    defaults={
-                        'uplimit':uplimit,
-                    }
-                )
+                else:
+                    q, created = orm.AstakosGroupQuota.objects.get_or_create(
+                        group=default,
+                        resource=r,
+                        defaults={
+                            'uplimit':uplimit,
+                        }
+                    )
         map(create_policies, SERVICES.iteritems())
 
     def backwards(self, orm):

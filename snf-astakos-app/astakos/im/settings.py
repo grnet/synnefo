@@ -157,7 +157,13 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
             'uplimit':1024*1024*1024,
             'unit':'bytes',
             'desc': 'Virtual machines'
-            }]
+            },{
+            'name':'network.private',
+            'group':'compute',
+            'uplimit':1,
+            'desc': 'Private networks'
+            }
+        ]
     },
     'pithos+': {
         'url': 'https://node2.example.com/ui/',

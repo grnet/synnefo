@@ -22,7 +22,14 @@
 	    </form>
 	    {% else %}
     
-		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. <br>You can <!--<a href="{% url group_create_list %}">create a new group</a>--> <a href="{% url group_add 'course' %}">create a new group</a>or <a href="{% url group_search %}">join</a> to an existing one.</p>
+		<p>Okeanos grants resources according to activities organized by groups.
+		   Join or create a group to get access to more resources.
+		   <br>
+		   <a href="{% url group_search %}">Join an existing one</a>
+		   or
+		   <!--<a href="{% url group_create_list %}">Create a new group</a>-->
+		   <a href="{% url group_add 'course' %}">create a new group</a>.
+		</p>
 		
 		<div class="widjets"> 
 			<!--<a href="#" class="widjet-x" title="remove boxes">X</a>-->
@@ -42,7 +49,7 @@
 					<div>
 						<div class="wrap">
 							<h2>ALREADY AWARE?</h2>
-							<p><a href="{% url group_add 'course' %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+							<p><a href="{% url group_search %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
 							<p class="txt">Well, this is the place to start!<br>sdofuisd ofuaofi usdiof uiofu osifuaoi ufisdfiousf oiusd<br></p>
 							
 							<p><a href="{% url group_search %}">join a group ></a></p>

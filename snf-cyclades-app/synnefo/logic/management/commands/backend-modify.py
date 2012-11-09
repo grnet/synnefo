@@ -33,8 +33,7 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-
-from synnefo.db.models import Backend
+from synnefo.management.common import get_backend
 
 
 class Command(BaseCommand):
@@ -78,13 +77,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a backend ID")
 
-        try:
-            backend_id = int(args[0])
-            backend = Backend.objects.get(id=backend_id)
-        except ValueError:
-            raise CommandError("Invalid backend ID")
-        except Backend.DoesNotExist:
-            raise CommandError("Backend not found in DB")
+        backend = get_backend(args[0])
 
         # Ensure fields correspondence with options and Backend model
         fields = ('clustername', 'port', 'username', 'password', 'drained',

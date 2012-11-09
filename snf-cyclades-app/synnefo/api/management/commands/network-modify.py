@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Network, pooled_rapi_client
-from _common import validate_network_info
+from synnefo.management.common import validate_network_info, get_network
 
 HELP_MSG = \
 """Modify a network.
@@ -102,13 +102,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a network ID")
 
-        try:
-            network_id = int(args[0])
-            network = Network.objects.get(id=network_id)
-        except ValueError:
-            raise CommandError("Invalid network ID")
-        except (ValueError, Network.DoesNotExist):
-            raise CommandError("Network not found in DB")
+        network = get_network(args[0])
 
         # Validate subnet
         if options.get('subnet'):

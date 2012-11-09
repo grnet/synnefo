@@ -34,10 +34,12 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import validate_network_info, get_backend
 
-from synnefo.db.models import Network, Backend
+from synnefo.db.models import Network
 from synnefo.logic.backend import create_network
-from _common import validate_network_info
+
+from synnefo.api.util import net_resources
 
 NETWORK_TYPES = ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
                  'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
@@ -132,13 +134,7 @@ class Command(BaseCommand):
             raise CommandError("Can not override PHYSICAL_VLAN link")
 
         if backend_id:
-            try:
-                backend_id = int(backend_id)
-                backend = Backend.objects.get(id=backend_id)
-            except ValueError:
-                raise CommandError("Invalid backend ID")
-            except Backend.DoesNotExist:
-                raise CommandError("Backend not found in DB")
+            backend = get_backend(backend_id)
 
         default_link, default_mac_prefix = net_resources(net_type)
         if not link:

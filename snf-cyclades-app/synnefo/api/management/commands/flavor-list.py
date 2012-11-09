@@ -34,10 +34,9 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import format_bool
 
 from synnefo.db.models import Flavor
-
-from ._common import format_bool
 
 
 class Command(BaseCommand):

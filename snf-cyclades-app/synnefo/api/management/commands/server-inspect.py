@@ -31,16 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-
 from datetime import datetime
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.api.util import get_image
 from synnefo.lib.utils import merge_time
-from synnefo.db.models import VirtualMachine
 from synnefo.logic.rapi import GanetiApiError
-from ._common import format_vm_state
+from synnefo.management import common
 
 
 # Fields to print from a gnt-instance info
@@ -56,6 +53,7 @@ GANETI_JOB_FIELDS = ('id', 'status', 'summary', 'opresult', 'opstatus',
 
 class Command(BaseCommand):
     help = "Inspect a server on DB and Ganeti"
+    args = "<server ID>"
 
     option_list = BaseCommand.option_list + (
         make_option('--jobs', action='store_true',
@@ -68,16 +66,10 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        try:
-            vm_id = int(args[0])
-            vm = VirtualMachine.objects.get(id=vm_id)
-        except ValueError:
-            raise CommandError("Invalid server ID")
-        except VirtualMachine.DoesNotExist:
-            raise CommandError("Server not found in DB")
+        vm = common.get_vm(args[0])
 
         try:
-            image = get_image(vm.imageid, vm.userid)['name']
+            image = common.get_image(vm.imageid, vm.userid)['name']
         except:
             image = vm.imageid
 
@@ -86,9 +78,10 @@ class Command(BaseCommand):
                   'deleted', 'action', 'backendjobid', 'backendopcode',
                   'backendjobstatus', 'backend_time')
         fields = (vm.name, vm.userid, vm.flavor.name, image,
-                  format_vm_state(vm), str(vm.backend), str(vm.deleted),
-                  str(vm.action), str(vm.backendjobid), str(vm.backendopcode),
-                  str(vm.backendjobstatus), str(vm.backendtime))
+                  common.format_vm_state(vm), str(vm.backend),
+                  str(vm.deleted), str(vm.action), str(vm.backendjobid),
+                  str(vm.backendopcode), str(vm.backendjobstatus),
+                  str(vm.backendtime))
 
         self.stdout.write(sep)
         self.stdout.write('State of Server in DB\n')

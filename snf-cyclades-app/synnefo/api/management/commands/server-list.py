@@ -34,10 +34,10 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import format_vm_state, get_backend
 
 from synnefo.api.util import get_image
-from synnefo.db.models import VirtualMachine, Backend
-from ._common import format_vm_state
+from synnefo.db.models import VirtualMachine
 
 
 class Command(BaseCommand):
@@ -71,11 +71,8 @@ class Command(BaseCommand):
             raise CommandError("Command doesn't accept any arguments")
 
         if options['backend_id']:
-            try:
-                servers = Backend.objects.get(id=options['backend_id'])\
-                                         .virtual_machines
-            except Backend.DoesNotExist:
-                raise CommandError("Backend not found in DB")
+            backend = get_backend(options['backend_id'])
+            servers = backend.virtual_machines
         else:
             servers = VirtualMachine.objects
 

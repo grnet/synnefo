@@ -29,7 +29,9 @@
 #
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
+from synnefo.management.common import get_backend
+
 from synnefo import settings
 import datetime
 
@@ -58,18 +60,11 @@ class Command(BaseCommand):
     def handle(self, **options):
 
         if options['backend_id']:
-            try:
-                backend_id = int(options['backend_id'])
-                backends = [Backend.objects.get(id=backend_id)]
-            except ValueError:
-                raise CommandError("Wrong backend ID")
-            except Backend.DoesNotExist:
-                raise CommandError("Backend not found in DB")
+            backends = [get_backend(options['backend_id'])]
         else:
             backends = Backend.objects.filter(offline=False)
-
-        if not options['drained']:
-            backends = backends.filter(drained=False)
+            if not options['drained']:
+                backends = backends.filter(drained=False)
 
         now = datetime.datetime.now()
         if options['older_than'] is not None:

@@ -29,8 +29,8 @@
 #
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.db.models import Network
 from synnefo.logic.backend import delete_network
+from synnefo.management.common import get_network
 
 
 class Command(BaseCommand):
@@ -45,13 +45,7 @@ class Command(BaseCommand):
         if len(args) < 1:
             raise CommandError("Please provide a network ID")
 
-        try:
-            network_id = int(args[0])
-            network = Network.objects.get(id=network_id)
-        except ValueError:
-            raise CommandError("Invalid network ID")
-        except Network.DoesNotExist:
-            raise CommandError("Network not found in DB")
+        network = get_network(args[0])
 
         self.stdout.write('Trying to remove network: %s\n' % str(network))
 

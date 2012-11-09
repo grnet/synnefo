@@ -34,6 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import get_vm
 
 from synnefo.db.models import VirtualMachine
 
@@ -77,11 +78,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        try:
-            server_id = int(args[0])
-            server = VirtualMachine.objects.get(id=server_id)
-        except (ValueError, VirtualMachine.DoesNotExist):
-            raise CommandError("Invalid server ID")
+        server = get_vm(args[0])
 
         name = options.get('name')
         if name is not None:

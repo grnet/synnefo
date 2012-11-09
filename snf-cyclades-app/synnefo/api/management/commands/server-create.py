@@ -34,12 +34,12 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management import common
 
-from synnefo.db.models import VirtualMachine, Backend, Flavor
+from synnefo.db.models import VirtualMachine
 from synnefo.logic.backend import create_instance
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.api.util import get_image, allocate_public_address
-from synnefo.api.faults import ItemNotFound
+from synnefo.api.util import allocate_public_address
 
 HELP_MSG = """
 
@@ -95,22 +95,11 @@ class Command(BaseCommand):
 
         # Get Flavor
         if flavor_id:
-            try:
-                flavor_id = int(flavor_id)
-                flavor = Flavor.objects.get(id=flavor_id)
-            except ValueError:
-                raise CommandError("Invalid flavor-id")
-            except Flavor.DoesNotExist:
-                raise CommandError("Flavor not found")
-        else:
-            raise CommandError("flavor-id is mandatory")
+            flavor = common.get_flavor(flavor_id)
 
         # Get Image
         if image_id:
-            try:
-                img = get_image(image_id, user_id)
-            except ItemNotFound:
-                raise CommandError("Image not found")
+            img = common.get_image(image_id, user_id)
 
             properties = img.get('properties', {})
             image = {}
@@ -123,11 +112,7 @@ class Command(BaseCommand):
 
         # Get Backend
         if backend_id:
-            try:
-                backend_id = int(backend_id)
-                backend = Backend.objects.get(id=backend_id)
-            except (ValueError, Backend.DoesNotExist):
-                raise CommandError("Invalid Backend ID")
+            backend = common.get_backend(backend_id)
         else:
             ballocator = BackendAllocator()
             backend = ballocator.allocate(user_id, flavor)

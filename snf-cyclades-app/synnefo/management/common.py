@@ -31,11 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+
 import ipaddr
 from datetime import datetime
 
 from django.utils.timesince import timesince, timeuntil
+
 from django.core.management import CommandError
+from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
+from synnefo.api.util import get_image as backend_get_image
+from synnefo.api.faults import ItemNotFound
 
 from synnefo.api.util import validate_network_size
 from synnefo.settings import MAX_CIDR_BLOCK
@@ -93,3 +98,63 @@ def validate_network_info(options):
         raise CommandError('Malformed gateway6')
 
     return subnet, gateway, subnet6, gateway6
+
+
+def get_backend(backend_id):
+    try:
+        backend_id = int(backend_id)
+        return Backend.objects.get(id=backend_id)
+    except ValueError:
+        raise CommandError("Invalid Backend ID: %s" % backend_id)
+    except Backend.DoesNotExist:
+        raise CommandError("Backend with ID %s not found in DB. "
+                           " Use snf-manage backend-list to find"
+                           " out available backend IDs." % backend_id)
+
+
+def get_image(image_id, user_id):
+    if image_id:
+        try:
+            return backend_get_image(image_id, user_id)
+        except ItemNotFound:
+            raise CommandError("Image with ID %s not found."
+                               " Use snf-manage image-list to find"
+                               " out available image IDs." % image_id)
+    else:
+        raise CommandError("image-id is mandatory")
+
+
+def get_vm(server_id):
+    try:
+        server_id = int(server_id)
+        return VirtualMachine.objects.get(id=server_id)
+    except ValueError:
+        raise CommandError("Invalid server ID: %s", server_id)
+    except VirtualMachine.DoesNotExist:
+        raise CommandError("Server with ID %s not found in DB."
+                           " Use snf-manage server-list to find out"
+                           " available server IDs." % server_id)
+
+
+def get_network(network_id):
+    try:
+        network_id = int(network_id)
+        return Network.objects.get(id=network_id)
+    except ValueError:
+        raise CommandError("Invalid network ID: %s", network_id)
+    except Network.DoesNotExist:
+        raise CommandError("Network with ID %s not found in DB."
+                           " Use snf-manage network-list to find out"
+                           " available network IDs." % network_id)
+
+
+def get_flavor(flavor_id):
+    try:
+        flavor_id = int(flavor_id)
+        return Flavor.objects.get(id=flavor_id)
+    except ValueError:
+        raise CommandError("Invalid flavor ID: %s", flavor_id)
+    except Flavor.DoesNotExist:
+        raise CommandError("Flavor with ID %s not found in DB."
+                           " Use snf-manage flavor-list to find out"
+                           " available flavor IDs." % flavor_id)

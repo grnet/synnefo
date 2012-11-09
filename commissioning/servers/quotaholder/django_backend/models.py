@@ -12,9 +12,9 @@ from django.db import transaction
 
 class Holder(Model):
 
-    attribute   =   CharField(max_length=72, primary_key=True)
+    attribute   =   CharField(max_length=4096, primary_key=True)
     intval      =   BigIntegerField()
-    strval      =   CharField(max_length=72)
+    strval      =   CharField(max_length=4096)
 
 
 def alloc_serial(nr=1):
@@ -36,15 +36,15 @@ def alloc_serial(nr=1):
 
 class Entity(Model):
 
-    entity      =   CharField(max_length=72, primary_key=True)
+    entity      =   CharField(max_length=4096, primary_key=True)
     owner       =   ForeignKey('self', to_field='entity',
                                related_name='entities')
-    key         =   CharField(max_length=72, null=False)
+    key         =   CharField(max_length=4096, null=False)
 
 
 class Policy(Model):
 
-    policy          =   CharField(max_length=72, primary_key=True)
+    policy          =   CharField(max_length=4096, primary_key=True)
     quantity        =   BigIntegerField(null=True, default=None)
     capacity        =   BigIntegerField(null=True,  default=None)
     import_limit    =   BigIntegerField(null=True,  default=None)
@@ -54,7 +54,7 @@ class Policy(Model):
 class Holding(Model):
 
     entity      =   ForeignKey(Entity, to_field='entity')
-    resource    =   CharField(max_length=72, null=False)
+    resource    =   CharField(max_length=4096, null=False)
 
     policy      =   ForeignKey(Policy, to_field='policy')
     flags       =   BigIntegerField(null=False, default=0)
@@ -82,8 +82,8 @@ class Commission(Model):
 
     serial      =   BigIntegerField(primary_key=True, default=alloc_serial)
     entity      =   ForeignKey(Entity, to_field='entity')
-    name        =   CharField(max_length=72, null=True)
-    clientkey   =   CharField(max_length=72, null=False)
+    name        =   CharField(max_length=4096, null=True)
+    clientkey   =   CharField(max_length=4096, null=False)
     issue_time  =   CharField(max_length=24, default=now)
 
 
@@ -94,19 +94,19 @@ class Provision(Model):
                                 related_name='provisions'   )
 
     entity      =   ForeignKey(Entity, to_field='entity')
-    resource    =   CharField(max_length=72, null=False)
+    resource    =   CharField(max_length=4096, null=False)
     quantity    =   BigIntegerField(null=False)
 
 
 class ProvisionLog(Model):
 
     serial              =   BigIntegerField()
-    source              =   CharField(max_length=72)
-    target              =   CharField(max_length=72)
-    name                =   CharField(max_length=72)
-    issue_time          =   CharField(max_length=24)
-    log_time            =   CharField(max_length=24)
-    resource            =   CharField(max_length=72)
+    source              =   CharField(max_length=4096)
+    target              =   CharField(max_length=4096)
+    name                =   CharField(max_length=4096)
+    issue_time          =   CharField(max_length=4096)
+    log_time            =   CharField(max_length=4096)
+    resource            =   CharField(max_length=4096)
     source_quantity     =   BigIntegerField(null=True)
     source_capacity     =   BigIntegerField(null=True)
     source_import_limit =   BigIntegerField(null=True)
@@ -124,7 +124,7 @@ class ProvisionLog(Model):
     target_returned     =   BigIntegerField(null=False)
     target_released     =   BigIntegerField(null=False)
     delta_quantity      =   BigIntegerField(null=False)
-    reason              =   CharField(max_length=128)
+    reason              =   CharField(max_length=4096)
 
 
     def source_allocated_through(self):

@@ -385,8 +385,9 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                         logger.log(LOGGING_LEVEL, msg)
                 if user and user.is_active:
                     next = request.POST.get('next', '')
+                    response = prepare_response(request, user, next=next)
                     transaction.commit()
-                    return prepare_response(request, user, next=next)
+                    return response
                 messages.add_message(request, status, message)
                 transaction.commit()
                 return render_response(on_success,

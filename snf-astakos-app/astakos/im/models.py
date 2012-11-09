@@ -456,7 +456,7 @@ class AstakosUser(User):
     @extended_groups.setter
     def extended_groups(self, groups):
         #TODO exceptions
-        for name in groups:
+        for name in (groups or ()):
             group = AstakosGroup.objects.get(name=name)
             self.membership_set.create(group=group)
 
@@ -803,7 +803,7 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
-    instance.renew_token()
+#     instance.renew_token()
 
 
 def resource_post_save(sender, instance, created, **kwargs):

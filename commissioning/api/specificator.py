@@ -19,10 +19,6 @@ def shorts(s):
     return s[:61] + '...'
         
 
-class ShowableOrderedDict(OrderedDict):
-    def tostring(self, depth=0, showopts=0, multiline=0):
-        return str(self)
-
 class CanonifyException(Exception):
     pass
 
@@ -42,7 +38,7 @@ class Canonical(object):
                 named_args.append(a)
             else:
                 self.args.append(a)
-        ordered_dict = ShowableOrderedDict(named_args)
+        ordered_dict = OrderedDict(named_args)
 
         self.name = kw.pop('classname', self.__class__.__name__)
         random_choice = kw.pop('random', None)
@@ -500,7 +496,7 @@ class Args(Canonical):
         if actuals != formals:
             raise Exception('param inconsistent')
 
-        parsed = ShowableOrderedDict()
+        parsed = OrderedDict()
         for it, (k, v) in zip(item, self.kw.items()):
             print 'item:', it
             parsed[k] = v.parse(it)
@@ -508,12 +504,12 @@ class Args(Canonical):
         
     def _check(self, item):
         try:
-            item = ShowableOrderedDict(item)
+            item = OrderedDict(item)
         except TypeError, e:
             m = "%s: %s is not dict-able" % (self, shorts(item))
             raise CanonifyException(m)
 
-        canonified = ShowableOrderedDict()
+        canonified = OrderedDict()
         
         try:
             for n, c in self.kw.items():

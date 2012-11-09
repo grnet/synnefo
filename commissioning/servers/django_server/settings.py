@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'commissioning.controllers.django_controller',
     'commissioning.servers.django_server.server_app',
+    'south',
     #'django_extensions',
 )
 
@@ -108,4 +109,3 @@ for name in names:
         pass
 
 INSTALLED_APPS += tuple(applist)
-

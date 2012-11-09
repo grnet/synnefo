@@ -156,10 +156,10 @@ def issue_vm_commission(user, flavor, delete=False):
 def get_server_resources(flavor):
     return {'vm': 1,
             'cpu': flavor.cpu,
-            'disk': flavor.disk,
+            'disk': 1073741824 * flavor.disk,  # flavor.disk is in GB
             # 'public_ip': 1,
             #'disk_template': flavor.disk_template,
-            'ram': flavor.ram}
+            'ram': 1048576 * flavor.ram}  # flavor.ram is in MB
 
 
 def issue_network_commission(user, delete=False):

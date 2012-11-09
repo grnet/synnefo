@@ -497,9 +497,9 @@ class Args(Canonical):
             raise Exception('param inconsistent')
 
         parsed = OrderedDict()
-        for it, (k, v) in zip(item, self.kw.items()):
+        for it, (k, canonical) in zip(item, self.kw.items()):
             print 'item:', it
-            parsed[k] = v.parse(it)
+            parsed[k] = canonical.parse(it)
         return parsed
         
     def _check(self, item):

@@ -90,7 +90,7 @@ class Kamaki_plugin(Callpoint):
         status = int(resp.status_code)
         if status == 200:
             body = resp.json
-            debug("\n%s\n<<<\n", body[:128])
+            debug("\n%s\n<<<\n", body[:128] if body else None)
             return body
         else:
             try:

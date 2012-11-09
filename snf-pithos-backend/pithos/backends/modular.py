@@ -173,7 +173,7 @@ class ModularBackend(BaseBackend):
         if queue_module and queue_hosts:
             self.queue_module = load_module(queue_module)
             params = {'hosts': queue_hosts,
-                      'exchange': queue_exchange,
+            		  'exchange': queue_exchange,
                       'client_id': QUEUE_CLIENT_ID}
             self.queue = self.queue_module.Queue(**params)
         else:
@@ -817,7 +817,6 @@ class ModularBackend(BaseBackend):
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,
                                   'versions': ','.join([str(dest_version_id)])})
-
         if permissions is not None:
             self.permissions.access_set(path, permissions)
             self._report_sharing_change(user, account, path, {'members': self.permissions.access_members(path)})

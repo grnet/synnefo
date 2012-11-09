@@ -64,6 +64,8 @@ def dev():
 
 # wrap local to respect global capturing setting from env.capture
 oldlocal = local
+
+
 def local(cmd, capture="default"):
     if capture != "default":
         capture = capture
@@ -84,7 +86,7 @@ def remove_pkg(p):
 
 
 def build_pkg(p):
-    info ("building package: %s" % p)
+    info("building package: %s" % p)
     with lcd(package_root(p)):
         try:
             local("rm -r dist build")
@@ -121,11 +123,11 @@ def installall():
 def collectdists():
     if os.path.exists("./packages"):
         notice("removing 'packages' directory")
-        local("rm -r packages");
+        local("rm -r packages")
 
-    local("mkdir packages");
+    local("mkdir packages")
     for p in env.packages:
-        local("cp %s/dist/*.tar.gz ./packages/" % package_root(p));
+        local("cp %s/dist/*.tar.gz ./packages/" % package_root(p))
 
 
 def removeall():
@@ -154,7 +156,7 @@ def branch():
 
 @contextmanager
 def co(c):
-    current_branch = branch();
+    current_branch = branch()
     git("checkout %s" % c)
     # Use a try block to make sure we checkout the original branch.
     try:
@@ -178,11 +180,11 @@ env.upstream = 'packaging'
 
 def _last_commit(f):
     return local("git rev-list --all --date-order --max-count=1 %s" % f,
-            capture=True).strip()
+                 capture=True).strip()
 
 
-def _diff_from_master(c,f):
-    return local("git log --oneline %s..%s %s" \
+def _diff_from_master(c, f):
+    return local("git log --oneline %s..%s %s"
                  " | wc -l" % (c, env.upstream, f), capture=True)
 
 
@@ -234,7 +236,7 @@ def builddeb(p, master="packaging", branch="debian-0.9"):
             local("git add ./*/*/version.py -f")
             local(("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s"
                    " --git-export=INDEX --git-ignore-new %s") %
-                   (master, branch, "" if env.signdebs else "-us -uc"))
+                  (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
             local("git reset ./*/*/version.py")
         info("Done building debian package for %s" % p)
@@ -245,8 +247,6 @@ def builddeball(b="debian-0.9"):
         builddeb(p=p, branch=b)
 
 
-
 @roles('pypi')
 def uploadtars():
     put("packages/*.tar.gz", 'www/pypi/')
-

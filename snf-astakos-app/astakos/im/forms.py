@@ -591,7 +591,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 prefix, suffix = subs
-                s, r = prefix.split(RESOURCE_SEPARATOR)
+                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
                 
                 # keep only resource limits for selected resource groups
@@ -667,7 +667,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
             if len(subs) == 2:
                 tbd.append(name)
                 prefix, suffix = subs
-                s, r = prefix.split(RESOURCE_SEPARATOR)
+                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
                 
                 # keep only resource limits for selected resource groups

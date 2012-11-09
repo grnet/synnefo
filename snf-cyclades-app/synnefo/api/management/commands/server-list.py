@@ -49,6 +49,11 @@ class Command(BaseCommand):
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
+        make_option('--suspended',
+            action='store_true',
+            dest='suspended',
+            default=False,
+            help="List only suspended servers"),
         make_option('--build',
             action='store_true',
             dest='build',
@@ -78,6 +83,9 @@ class Command(BaseCommand):
             servers = servers.all()
         else:
             servers = servers.filter(deleted=False)
+
+        if options['suspended']:
+            servers = servers.filter(suspended=True)
 
         if options['build']:
             servers = servers.filter(operstate='BUILD')

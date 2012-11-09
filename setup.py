@@ -25,6 +25,7 @@ setup   (
             'commissioning.servers.fscrud.fscrud_django',
 
             'commissioning.utils',
+            'commissioning.hlapi'
     ],
 
     package_data    =   {

@@ -143,8 +143,8 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
             },{
             'name':'disksize',
             'group':'compute',
-            'uplimit':5,
-            'unit':'GB',
+            'uplimit':5*1024*1024*1024,
+            'unit':'bytes',
             'desc': 'Virtual machine disk size'
             },{
             'name':'cpu',
@@ -154,8 +154,8 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
             },{
             'name':'ram',
             'group':'compute',
-            'uplimit':1024,
-            'unit':'MB',
+            'uplimit':1024*1024*1024,
+            'unit':'bytes',
             'desc': 'Virtual machines'
             }]
     },

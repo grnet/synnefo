@@ -3,21 +3,27 @@ import sys
 def isstr(s):
     return issubclass(type(s), basestring)
 
-def compatible_input_types(given, expected):
-    if len(given) != len(expected):
-        return False
-    for i in xrange(len(given)):
-        if isstr(given[i]) and not isstr(expected[i]):
-            return False
-        if isstr(expected[i]) and not isstr(given[i]):
-            return False
-        if type(given[i]) != type(expected[i]):
-            return False
-    return True
+def compatible_type(given_t, expected_t):
+    if issubclass(expected_t, basestring):
+        expected_t = basestring
+    if issubclass(given_t, basestring):
+        given_t = basestring
+    return given_t == expected_t
         
 
-def compatible_return_types(given, expected):
-    pass
+def compatible_input_types(given, expected):
+    print "given=%s, expected=%s" % (given, expected)
+    if len(given) != len(expected):
+        return False    
+    for i in xrange(len(given)):
+        if not compatible_type(given[i], expected[i]):
+            return False
+    return True
+
+
+def compatible_return_type(given, expected):
+    return compatible_type(given, expected)
+
 
 def method_accepts(*types):
     '''Method decorator. Checks decorated function's arguments are
@@ -33,8 +39,11 @@ def method_accepts(*types):
             def newf(*args):
                 args_to_check = args[1:] # Throw away self (or cls)
                 assert len(args_to_check) == len(types)
+                if len(args_to_check) != len(types):
+                    raise TypeError("Wrong number of arguments. Expected is %s, given is %s" % (len(types), len(args_to_check)))
                 argtypes = tuple(map(type, args_to_check))
-                if argtypes != types:
+#                if argtypes != types:
+                if not compatible_input_types(argtypes, types):
                     msg = info(f.__name__, types, argtypes, 0)
                     raise TypeError, msg
                 return f(*args)
@@ -59,9 +68,11 @@ def accepts(*types):
     try:
         def decorator(f):
             def newf(*args):
-                assert len(args) == len(types)
+                if len(args) != len(types):
+                    raise TypeError("Wrong number of arguments. Expected is %s, given is %s" % (len(types), len(args)))
                 argtypes = tuple(map(type, args))
-                if argtypes != types:
+#                if argtypes != types:
+                if not compatible_input_types(argtypes, types):
                     msg = info(f.__name__, types, argtypes, 0)
                     raise TypeError, msg
                 return f(*args)
@@ -88,7 +99,9 @@ def returns(ret_type):
             def newf(*args):
                 result = f(*args)
                 res_type = type(result)
-                if res_type != ret_type:
+                print "ret_type=%s, res_type=%s" % (ret_type, res_type)
+#                if res_type != ret_type:
+                if not compatible_type(res_type, ret_type):
                     msg = info(f.__name__, (ret_type,), (res_type,), 1)
                     raise TypeError, msg
                 return result

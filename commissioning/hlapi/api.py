@@ -91,9 +91,9 @@ class HighLevelAPI(object):
 
 
     # internal API
-    @method_accepts(basestring, basestring, basestring, basestring,
+    @method_accepts(str, str, str, str,
                     int, int, int, int, int)
-    @returns(basestring)
+    @returns(str)
     def __create_attribute_of_node_for_resource(self,
                                                 abs_or_not_node_name,
                                                 intended_parent_node_name,
@@ -156,14 +156,14 @@ class HighLevelAPI(object):
         return computed_attribute_name
 
 
-    @method_accepts(basestring)
-    @returns(basestring)
+    @method_accepts(str)
+    @returns(str)
     def get_cached_node_key(self, node_name):
         check_abs_name(node_name, 'node_name')
         return self.__node_keys.get(node_name) or '' # sane default
 
 
-    @method_accepts(basestring, basestring)
+    @method_accepts(str, str)
     @returns(type(None))
     def set_cached_node_key(self, abs_node_name, node_key, label='abs_node_name'):
         check_abs_name(abs_node_name, label)
@@ -178,7 +178,7 @@ class HighLevelAPI(object):
         return self.__node_keys.copy() # Client cannot mess with the original
     
     
-    @method_accepts(basestring)
+    @method_accepts(str)
     @returns(list)
     def get_node_children(self, node_name):
         check_abs_name(node_name, 'node_name')
@@ -213,8 +213,8 @@ class HighLevelAPI(object):
         return self.get_node_children(NameOfUsersNode)
     
     
-    @method_accepts(basestring, basestring)
-    @returns(basestring)
+    @method_accepts(str, str)
+    @returns(str)
     def ensure_node(self, abs_node_name, label='abs_node_name'):
         if not self.has_node(abs_node_name, label):
             return self.create_node(abs_node_name, label)
@@ -222,7 +222,7 @@ class HighLevelAPI(object):
             return abs_node_name
 
     
-    @returns(basestring)
+    @returns(str)
     def ensure_resources_node(self):
         """
         Ensure that the node 'system/resources' exists.
@@ -230,7 +230,7 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfResourcesNode, 'NameOfResourcesNode')
 
 
-    @returns(basestring)
+    @returns(str)
     def ensure_groups_node(self):
         """
         Ensure that the node 'system/groups' exists.
@@ -238,7 +238,7 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfGroupsNode, 'NameOfGroupsNode')
 
 
-    @returns(basestring)
+    @returns(str)
     def ensure_users_node(self):
         """
         Ensure that the node 'system/users' exists.
@@ -246,7 +246,7 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfUsersNode, 'NameOfGroupsNode')
 
 
-    @method_accepts(basestring, basestring)
+    @method_accepts(str, str)
     @returns(bool)
     def has_node(self, abs_node_name, label='abs_node_name'):
         """
@@ -263,8 +263,8 @@ class HighLevelAPI(object):
         return len(entity_owner_list) == 1 # TODO: any other check here?
 
 
-    @method_accepts(basestring, basestring)
-    @returns(basestring)
+    @method_accepts(str, str)
+    @returns(str)
     def create_node(self, node_name, label='node_name'):
         """
         Creates a node with an absolute name ``node_name``.
@@ -306,14 +306,14 @@ class HighLevelAPI(object):
             return node_name
 
 
-    @method_accepts(basestring)
+    @method_accepts(str)
     @returns(bool)
     def has_global_resource(self, abs_resource_name):
         check_abs_global_resource_name(abs_resource_name)
         return self.has_node(abs_resource_name)
 
 
-    @method_accepts(basestring)
+    @method_accepts(str)
     def define_global_resource(self, resource_name):
         """
         Defines a resource globally known to Quota Holder.
@@ -334,8 +334,8 @@ class HighLevelAPI(object):
         return self.create_node(abs_resource_name, 'abs_resource_name')
         
     
-    @method_accepts(basestring, basestring, int, int, int, int, int)
-    @returns(basestring)
+    @method_accepts(str, str, int, int, int, int, int)
+    @returns(str)
     def define_attribute_of_global_resource(self,
                                             global_resource_name,
                                             attribute_name,
@@ -375,8 +375,8 @@ class HighLevelAPI(object):
 
             
     
-    @method_accepts(basestring, basestring)
-    @returns(basestring)
+    @method_accepts(str, str)
+    @returns(str)
     def define_group(self, group_name, group_node_key=''):
         """
         Creates a new group under 'system/groups'.
@@ -408,8 +408,8 @@ class HighLevelAPI(object):
     
 
     
-    @method_accepts(basestring, basestring, basestring, int, int, int, int, int)
-    @returns(basestring)
+    @method_accepts(str, str, str, int, int, int, int, int)
+    @returns(str)
     def define_attribute_of_group_for_resource(self,
                                                group_name,
                                                attribute_name,
@@ -436,7 +436,7 @@ class HighLevelAPI(object):
             flags=flags)
 
 
-    @method_accepts(basestring, basestring, int, int, int, int, int, int, int)
+    @method_accepts(str, str, int, int, int, int, int, int, int)
     @returns(type(None))
     def define_group_resource(self,
                               group_name,

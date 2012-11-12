@@ -125,10 +125,11 @@ def backend_method(func=None, autocommit=1):
             self.wrapper.commit()
             return ret
         except:
-            self.quotaholder.reject_commission(
-                        context     =   {},
-                        clientkey   =   'pithos',
-                        serials     =   serials)
+            if serials:
+                self.quotaholder.reject_commission(
+                            context     =   {},
+                            clientkey   =   'pithos',
+                            serials     =   serials)
             self.wrapper.rollback()
             raise
     return fn
@@ -1263,6 +1264,9 @@ class ModularBackend(BaseBackend):
                               account, QUEUE_INSTANCE_ID, 'diskspace',
                               float(size), details))
 
+        if not self.quotaholder_url:
+            return
+        
         serial = self.quotaholder.issue_commission(
                 context     =   {},
                 target      =   account,

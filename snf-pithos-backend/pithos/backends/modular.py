@@ -112,6 +112,7 @@ def backend_method(func=None, autocommit=1):
         serials = []
         self.serials = serials
         self.messages = []
+
         try:
             ret = func(self, *args, **kw)
             for m in self.messages:
@@ -142,7 +143,8 @@ class ModularBackend(BaseBackend):
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None,
-                 queue_exchange=None, quotaholder_url=None):
+                 queue_exchange=None, quotaholder_url=None,
+                 free_versioning=True):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -151,9 +153,10 @@ class ModularBackend(BaseBackend):
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
-                
+        
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024  # 4MB
+        self.free_versioning = free_versioning
 
         self.default_policy = {'quota': DEFAULT_QUOTA,
                                'versioning': DEFAULT_VERSIONING}
@@ -184,7 +187,7 @@ class ModularBackend(BaseBackend):
         if queue_module and queue_hosts:
             self.queue_module = load_module(queue_module)
             params = {'hosts': queue_hosts,
-                          'exchange': queue_exchange,
+            		  'exchange': queue_exchange,
                       'client_id': QUEUE_CLIENT_ID}
             self.queue = self.queue_module.Queue(**params)
         else:
@@ -508,7 +511,7 @@ class ModularBackend(BaseBackend):
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             self._report_size_change(user, account, -size,
                                      {'action':'container purge', 'path': path,
-                                      'versions': serials})
+                                      'versions': ','.join(str(i) for i in serials)})
             return
 
         if not delimiter:
@@ -523,9 +526,9 @@ class ModularBackend(BaseBackend):
             self._report_size_change(user, account, -size,
                                      {'action': 'container delete',
                                       'path': path,
-                                      'versions': serials})
+                                      'versions': ','.join(str(i) for i in serials)})
         else:
-                # remove only contents
+            # remove only contents
             src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
             paths = []
             for t in src_names:
@@ -534,10 +537,13 @@ class ModularBackend(BaseBackend):
                 src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
                 del_size = self._apply_versioning(
                     account, container, src_version_id)
-                if del_size:
-                    self._report_size_change(user, account, -del_size,
-                                             {'action': 'object delete',
-                                              'path': path, 'versions': [dest_version_id]})
+                self._report_size_change(
+                	user, account, -del_size, {
+                		'action': 'object delete',
+                		'path': path,
+                     	'versions': ','.join([str(dest_version_id)])
+                     }
+                )
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
@@ -817,20 +823,19 @@ class ModularBackend(BaseBackend):
         self._put_metadata_duplicate(
             src_version_id, dest_version_id, domain, meta, replace_meta)
 
-        # Check quota.
         del_size = self._apply_versioning(account, container, pre_version_id)
         size_delta = size - del_size
-        if size_delta > 0:
-            account_quota = long(self._get_policy(account_node)['quota'])
-            container_quota = long(self._get_policy(container_node)['quota'])
-            if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
-               (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
-                # This must be executed in a transaction, so the version is never created if it fails.
-                raise QuotaError
+#        # Check quota.
+#         if size_delta > 0:
+#             account_quota = long(self._get_policy(account_node)['quota'])
+#             container_quota = long(self._get_policy(container_node)['quota'])
+#             if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
+#                (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
+#                 # This must be executed in a transaction, so the version is never created if it fails.
+#                 raise QuotaError
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,
-                                  'versions': [dest_version_id]})
-
+                                  'versions': ','.join([str(dest_version_id)])})
         if permissions is not None:
             self.permissions.access_set(path, permissions)
             self._report_sharing_change(user, account, path, {'members': self.permissions.access_members(path)})
@@ -961,16 +966,15 @@ class ModularBackend(BaseBackend):
                 self.permissions.access_clear(path)
             self._report_size_change(user, account, -size,
                                     {'action': 'object purge', 'path': path,
-                                     'versions': serials})
+                                     'versions': ','.join(str(i) for i in serials)})
             return
 
         path, node = self._lookup_object(account, container, name)
         src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
         del_size = self._apply_versioning(account, container, src_version_id)
-        if del_size:
-            self._report_size_change(user, account, -del_size,
-                                     {'action': 'object delete', 'path': path,
-                                      'versions': [dest_version_id]})
+        self._report_size_change(user, account, -del_size,
+                                 {'action': 'object delete', 'path': path,
+                                  'versions': ','.join([str(dest_version_id)])})
         self._report_object_change(
             user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
@@ -985,11 +989,10 @@ class ModularBackend(BaseBackend):
                 src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, type='', hash=None, checksum='', cluster=CLUSTER_DELETED)
                 del_size = self._apply_versioning(
                     account, container, src_version_id)
-                if del_size:
-                    self._report_size_change(user, account, -del_size,
-                                             {'action': 'object delete',
-                                              'path': path,
-                                              'versions': [dest_version_id]})
+                self._report_size_change(user, account, -del_size,
+                                         {'action': 'object delete',
+                                          'path': path,
+                                          'versions': ','.join([str(dest_version_id)])})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
@@ -1266,14 +1269,14 @@ class ModularBackend(BaseBackend):
         logger.debug("_report_object_change: %s %s %s %s", user,
                      account, path, details)
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',),
-                                                  account, QUEUE_INSTANCE_ID, 'object', path, details))
+                              account, QUEUE_INSTANCE_ID, 'object', path, details))
 
     def _report_sharing_change(self, user, account, path, details={}):
         logger.debug("_report_permissions_change: %s %s %s %s",
                      user, account, path, details)
         details.update({'user': user})
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',),
-                                                  account, QUEUE_INSTANCE_ID, 'sharing', path, details))
+                              account, QUEUE_INSTANCE_ID, 'sharing', path, details))
 
     # Policy functions.
 
@@ -1313,7 +1316,7 @@ class ModularBackend(BaseBackend):
             return 0
         path, node = self._lookup_container(account, container)
         versioning = self._get_policy(node)['versioning']
-        if versioning != 'auto':
+        if versioning != 'auto' or self.free_versioning:
             hash, size = self.node.version_remove(version_id)
             self.store.map_delete(hash)
             return size
@@ -1333,6 +1336,7 @@ class ModularBackend(BaseBackend):
         formatted = []
         for p in paths:
             node = self.node.node_lookup(p)
+            props = None
             if node is not None:
                 props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is not None:

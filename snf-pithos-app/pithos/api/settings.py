@@ -44,6 +44,7 @@ BACKEND_QUEUE_EXCHANGE = getattr(settings, 'PITHOS_BACKEND_QUEUE_EXCHANGE', 'pit
 BACKEND_QUOTA = getattr(
     settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
+BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', True)
 
 PITHOS_QUOTAHOLDER_URL = getattr(settings,
                                 'PITHOS_QUOTAHOLDER_URL',

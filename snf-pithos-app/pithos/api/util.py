@@ -62,10 +62,10 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE,
                                  PITHOS_QUOTAHOLDER_URL,
-                                 BACKEND_QUOTA, BACKEND_VERSIONING,
+				 BACKEND_QUOTA, BACKEND_VERSIONING,
+                                 BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  SERVICE_TOKEN, COOKIE_NAME)
-
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError, ItemNotExists, VersionNotExists
 
@@ -850,89 +850,29 @@ def simple_list_response(request, l):
         return json.dumps(l)
 
 
-
-def _get_backend():
-    backend = connect_backend(db_module=BACKEND_DB_MODULE,
-                              db_connection=BACKEND_DB_CONNECTION,
-                              block_module=BACKEND_BLOCK_MODULE,
-                              block_path=BACKEND_BLOCK_PATH,
-                              block_umask=BACKEND_BLOCK_UMASK,
-                              queue_module=BACKEND_QUEUE_MODULE,
-                              queue_hosts=BACKEND_QUEUE_HOSTS,
-                              queue_exchange=BACKEND_QUEUE_EXCHANGE,
-                              quotaholder_url=PITHOS_QUOTAHOLDER_URL)
-    backend.default_policy['quota'] = BACKEND_QUOTA
-    backend.default_policy['versioning'] = BACKEND_VERSIONING
-    return backend
-
-
-def _pooled_backend_close(backend):
-    backend._pool.pool_put(backend)
-
-
-from synnefo.lib.pool import ObjectPool
-from new import instancemethod
-from select import select
-from traceback import print_exc
-
-USAGE_LIMIT = 500
+from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 5
 
-class PithosBackendPool(ObjectPool):
-    def _pool_create(self):
-        backend = _get_backend()
-        backend._real_close = backend.close
-        backend.close = instancemethod(_pooled_backend_close, backend,
-                                       type(backend))
-        backend._pool = self
-        backend._use_count = USAGE_LIMIT
-        return backend
 
-    def _pool_verify(self, backend):
-        wrapper = backend.wrapper
-        conn = wrapper.conn
-        if conn.closed:
-            return False
-
-        if conn.in_transaction():
-            conn.close()
-            return False
-
-        try:
-            fd = conn.connection.connection.fileno()
-            r, w, x = select([fd], (), (), 0)
-            if r:
-                conn.close()
-                return False
-        except:
-            print_exc()
-            return False
-
-        return True
-
-    def _pool_cleanup(self, backend):
-        c = backend._use_count - 1
-        if c < 0:
-            backend._real_close()
-            return True
-
-        backend._use_count = c
-        wrapper = backend.wrapper
-        if wrapper.trans is not None:
-            conn = wrapper.conn
-            if conn.closed:
-                wrapper.trans = None
-            else:
-                wrapper.rollback()
-        if backend.messages:
-            backend.messages = []
-        return False
-
-_pithos_backend_pool = PithosBackendPool(size=POOL_SIZE)
+_pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
+                                         db_module=BACKEND_DB_MODULE,
+                                         db_connection=BACKEND_DB_CONNECTION,
+                                         block_module=BACKEND_BLOCK_MODULE,
+                                         block_path=BACKEND_BLOCK_PATH,
+                                         block_umask=BACKEND_BLOCK_UMASK,
+                                         queue_module=BACKEND_QUEUE_MODULE,
+                                         queue_hosts=BACKEND_QUEUE_HOSTS,
+                                         queue_exchange=BACKEND_QUEUE_EXCHANGE,
+					 quotaholder_url=PITHOS_QUOTAHOLDER_URL,
+                                         free_versioning=BACKEND_FREE_VERSIONING)
 
 
 def get_backend():
-    return _pithos_backend_pool.pool_get()
+    backend = _pithos_backend_pool.pool_get()
+    backend.default_policy['quota'] = BACKEND_QUOTA
+    backend.default_policy['versioning'] = BACKEND_VERSIONING
+    backend.messages = []
+    return backend
 
 
 def update_request_headers(request):
@@ -1051,6 +991,8 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 update_response_headers(request, response)
                 return response
             except Fault, fault:
+                if fault.code >= 500:
+                    logger.exception("API Fault")
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)

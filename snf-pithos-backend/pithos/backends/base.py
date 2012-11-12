@@ -68,6 +68,7 @@ class ItemNotExists(NameError):
 class VersionNotExists(IndexError):
     pass
 
+
 class BaseBackend(object):
     """Abstract backend class that serves as a reference for actual implementations.
 

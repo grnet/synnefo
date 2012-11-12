@@ -70,11 +70,12 @@ def list_flavors(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     log.debug('list_flavors detail=%s', detail)
     active_flavors = Flavor.objects.exclude(deleted=True)
-    flavors = [flavor_to_dict(flavor, detail) for flavor in active_flavors]
-    
+    flavors = [flavor_to_dict(flavor, detail)\
+               for flavor in active_flavors.order_by('id')]
+
     if request.serialization == 'xml':
         data = render_to_string('list_flavors.xml', {
             'flavors': flavors,
@@ -83,6 +84,7 @@ def list_flavors(request, detail=False):
         data = json.dumps({'flavors': {'values': flavors}})
 
     return HttpResponse(data, status=200)
+
 
 @util.api_method('GET')
 def get_flavor_details(request, flavor_id):
@@ -93,7 +95,7 @@ def get_flavor_details(request, flavor_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     log.debug('get_flavor_details %s', flavor_id)
     flavor = util.get_flavor(flavor_id, include_deleted=True)
     flavordict = flavor_to_dict(flavor, detail=True)

@@ -96,7 +96,8 @@ def network_to_dict(network, user_id, detail=True):
         d['public'] = network.public
 
         attachments = [util.construct_nic_id(nic)
-                       for nic in network.nics.filter(machine__userid=user_id)]
+                       for nic in network.nics.filter(machine__userid=user_id)\
+                                              .order_by('machine')]
         d['attachments'] = {'values': attachments}
     return d
 
@@ -131,7 +132,7 @@ def list_networks(request, detail=False):
         user_networks = user_networks.filter(deleted=False)
 
     networks = [network_to_dict(network, request.user_uniq, detail)
-                for network in user_networks]
+                for network in user_networks.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {

@@ -137,7 +137,7 @@ def vm_to_dict(vm, detail=False):
         if metadata:
             d['metadata'] = {'values': metadata}
 
-        attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+        attachments = [nic_to_dict(nic) for nic in vm.nics.order_by('index')]
         if attachments:
             d['attachments'] = {'values': attachments}
 
@@ -226,7 +226,8 @@ def list_servers(request, detail=False):
     else:
         user_vms = user_vms.filter(deleted=False)
 
-    servers = [vm_to_dict(server, detail) for server in user_vms]
+    servers = [vm_to_dict(server, detail)\
+               for server in user_vms.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_servers.xml', {

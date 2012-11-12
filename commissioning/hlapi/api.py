@@ -24,6 +24,107 @@ from util import check_name
 from util import level_of_node
 from util import check_abs_name
 
+class Quota(object):
+    def __init__(self):
+        self.entity = None
+        self.resource = None
+        self.quantity = None
+        self.capacity = None
+        self.import_limit = None
+        self.export_limit = None
+        self.imported = None
+        self.exported = None
+        self.returned = None
+        self.released = None
+        self.flags = Quota.default_flags()
+
+    def is_unknown(self):
+        return \
+            self.entity is None and \
+            self.resource is None and \
+            self.quantity is None and \
+            self.capacity is None and \
+            self.import_limit is None and \
+            self.export_limit is None and \
+            self.returned is None and \
+            self.released is None
+            
+    @classmethod
+    def default_flags(cls):
+        return 0
+    
+    @classmethod
+    def from_tuple(cls, quota):
+        q = Quota()
+        q.entity = quota[0]
+        q.resource = quota[1]
+        q.quantity = quota[2]
+        q.capacity = quota[3]
+        q.import_limit = quota[4]
+        q.export_limit = quota[5]
+        q.imported = quota[6]
+        q.exported = quota[7]
+        q.returned = quota[8]
+        q.released = quota[9]
+        q.flags = quota[10]
+        return q
+    
+    @classmethod
+    def from_dict(cls, d):
+        q = Quota()
+        q.entity = d.get('entity') or None
+        q.resource = d.get('resource') or None
+        q.quantity = d.get('quantity') or None
+        q.capacity = d.get('capacity') or None
+        q.import_limit = d.get('import_limit') or None
+        q.export_limit = d.get('export_limit') or None
+        q.imported = d.get('imported') or None
+        q.exported = d.get('exported') or None
+        q.returned = d.get('returned') or None
+        q.released = d.get('released') or None
+        q.flags = d.get('flags') or Quota.default_flags()
+        return q
+        
+    def to_full_dict(self):
+        return {'entity': self.entity,
+                'resource': self.resource,
+                'quantity': self.quantity,
+                'capacity': self.capacity,
+                'import_limit': self.import_limit,
+                'export_limit': self.export_limit,
+                'imported': self.imported,
+                'exported': self.exported,
+                'returned': self.returned,
+                'released': self.released,
+                'flags': self.flags
+                }
+
+    def to_dict(self):
+        d={}
+        def add(key, value):
+            if value is not None:
+                d[key] = value
+        add('entity', self.entity)
+        add('resource', self.resource)
+        add('quantity', self.quantity)
+        add('capacity', self.capacity)
+        add('import_limit', self.import_limit)
+        add('export_limit', self.export_limit)
+        add('imported', self.imported)
+        add('exported', self.exported)
+        add('returned', self.returned)
+        add('released', self.released)
+        add('flags', self.flags)
+        return d
+
+        
+    def __str__(self):
+        return str(self.to_dict())
+        
+    def __repr__(self):
+        return self.__str__()
+    
+
 class HighLevelAPI(object):
     """
     High-level Quota Holder API that supports definitions of resources,
@@ -86,7 +187,9 @@ class HighLevelAPI(object):
             NameOfResourcesNode: check_string('resources_key',
                                               kwd.get('resources_key') or ''),
             NameOfGroupsNode: check_string('groups_key',
-                                           kwd.get('groups_key') or '')
+                                           kwd.get('groups_key') or ''),
+            NameOfUsersNode: check_string('users_key',
+                                           kwd.get('users_key') or '')
         }
 
 
@@ -155,6 +258,112 @@ class HighLevelAPI(object):
             
         return computed_attribute_name
 
+    #+++##########################################
+    # Public, low-level API.
+    # We expose some low-level Quota Holder API
+    #+++##########################################
+
+    def qh_list_entities(self, entity, key=''):
+        key = key or self.__node_keys.get(entity) or ''
+        return self.__qh.list_entities(context=self.__context,
+                                       entity=entity,
+                                       key=key)
+    
+    def qh_list_resources(self, entity, key=''):
+        key = key or self.__node_keys.get(entity) or ''
+        return self.__qh.list_resources(context=self.__context,
+                                       entity=entity,
+                                       key=key)        
+    
+    def qh_get_quota(self, entity, resource, key=''):
+        key = key or self.__node_keys.get(entity) or ''
+        quota_list = self.__qh.get_quota(context=self.__context,
+                                   get_quota=[(entity, resource, key)])
+        if quota_list:
+            quota = quota_list[0]
+            return Quota.from_tuple(quota)
+        else:
+            return Quota() # empty
+    
+    
+    def qh_set_quota(self, entity, resource, key,
+                     quantity, capacity,
+                     import_limit, export_limit, flags):
+        key = key or self.__node_keys.get(entity) or ''
+        rejected = self.__qh.set_quota(context=self.__context,
+                            set_quota=[(entity,
+                                        resource,
+                                        key,
+                                        quantity,
+                                        capacity,
+                                        import_limit,
+                                        export_limit,
+                                        flags)])
+        if len(rejected) > 0:
+            raise Exception("Rejected set_quota for entity=%s, resource=%s" % (
+                    entity, resource))
+        q = Quota.from_tuple((entity,
+                              resource,
+                              quantity,
+                              capacity,
+                              import_limit,
+                              export_limit,
+                              None, None, None, None,
+                              flags))
+        return q
+        
+    
+    def qh_create_entity(self, entity, owner, key='', owner_key=''):
+        key = key or self.__node_keys.get(entity) or ''
+        owner_key = key or self.__node_keys.get(owner) or ''
+        rejected = self.__qh.create_entity(context=self.__context,
+                                    create_entity=[(entity,
+                                                    owner,
+                                                    key,
+                                                    owner_key)])
+        if len(rejected) > 0:
+            raise Exception("Could not create entity '%s' under '%s'" % (
+                    entity, owner))
+        return entity
+        
+    def qh_get_entity(self, entity, key=''):
+        key = key or self.__node_keys.get(entity) or ''
+        entity_owners = self.__qh.get_entity(context=self.__context,
+                                 get_entity=[(entity, key)])
+        if len(entity_owners) == 0:
+            return None
+        else:
+            return entity_owners[0] 
+        
+    def qh_release_entity(self, entity, key=''):
+        key = key or self.__node_keys.get(entity) or ''
+        rejected = self.__qh.release_entity(context=self.__context,
+                                 release_entity=[(entity, key)])
+        if len(rejected) > 0:
+            raise Exception("Could not release entity '%s'" % (entity))
+    
+    def qh_make_one_commission(self, target_entity, target_entity_key,
+                            client_key, owner, owner_key,
+                            source_entity, source_resource, quantity):
+        tx_id = self.__qh.issue_commission(context=self.__context,
+                                       target=target_entity,
+                                       key=target_entity_key,
+                                       clientkey=client_key,
+                                       owner=owner,
+                                       ownerkey=owner_key,
+                                       provisions=[(source_entity,
+                                                    source_resource,
+                                                    quantity)])
+        self.__qh.accept_commission(context=self.__context,
+                                    clientkey=client_key,
+                                    serials=[tx_id])
+        return tx_id
+        
+    #---##########################################
+    # Public, low-level API.
+    # We expose some low-level Quota Holder API
+    #---##########################################
+
 
     @method_accepts(str)
     @returns(str)
@@ -182,20 +391,19 @@ class HighLevelAPI(object):
     @returns(list)
     def get_node_children(self, node_name):
         check_abs_name(node_name, 'node_name')
-        entities = self.__qh.list_entities(context=self.__context,
-                                entity=node_name,
-                                key=self.get_cached_node_key(node_name))
-        return entities
+        all_entities = self.__qh.list_entities(
+            context=self.__context,
+            entity=node_name,
+            key=self.get_cached_node_key(node_name))
+        return [child_node_name for child_node_name in all_entities \
+                if child_node_name.startswith(node_name + '/')]
     
     
     def get_toplevel_nodes(self):
         """
         Return all nodes with absolute name starting with 'system/'
         """
-        all_implied_system_children = self.get_node_children(NameOfSystemNode)
-        return [node_name for node_name in all_implied_system_children \
-                if node_name.startswith('system/') and \
-                level_of_node(node_name) == 1]
+        return self.get_node_children(NameOfSystemNode)
     
         
     def get_global_resources(self):

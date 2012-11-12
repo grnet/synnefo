@@ -38,9 +38,8 @@ def method_accepts(*types):
         def decorator(f):
             def newf(*args):
                 args_to_check = args[1:] # Throw away self (or cls)
-                assert len(args_to_check) == len(types)
                 if len(args_to_check) != len(types):
-                    raise TypeError("Wrong number of arguments. Expected is %s, given is %s" % (len(types), len(args_to_check)))
+                    raise TypeError("Wrong number of arguments. Expected is %s (of types %s), given is %s" % (len(types), types, len(args_to_check)))
                 argtypes = tuple(map(type, args_to_check))
 #                if argtypes != types:
                 if not compatible_input_types(argtypes, types):
@@ -99,7 +98,7 @@ def returns(ret_type):
             def newf(*args):
                 result = f(*args)
                 res_type = type(result)
-                print "ret_type=%s, res_type=%s" % (ret_type, res_type)
+#                print "ret_type=%s, res_type=%s" % (ret_type, res_type)
 #                if res_type != ret_type:
                 if not compatible_type(res_type, ret_type):
                     msg = info(f.__name__, (ret_type,), (res_type,), 1)

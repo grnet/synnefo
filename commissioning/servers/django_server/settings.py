@@ -37,6 +37,8 @@ ROOT_URLCONF = 'commissioning.servers.django_server.urls'
 from commissioning.utils.pyconf import pyconf_vars
 confdir = environ.get('COMMISSIONING_CONF_DIR') or '/etc/%s' % (_appname,)
 conffile = '%s/django.conf' % (confdir,)
+if environ.has_key("COMMISSIONING_CONF_DIR"):
+    print "Custom Django Configuration: %s" % (conffile, )
 pyconf_vars(conffile, locals())
 COMMISSIONING_APP_NAME=_appname
 del _appname

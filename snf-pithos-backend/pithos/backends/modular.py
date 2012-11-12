@@ -825,14 +825,14 @@ class ModularBackend(BaseBackend):
 
         del_size = self._apply_versioning(account, container, pre_version_id)
         size_delta = size - del_size
-#        # Check quota.
-#         if size_delta > 0:
-#             account_quota = long(self._get_policy(account_node)['quota'])
-#             container_quota = long(self._get_policy(container_node)['quota'])
-#             if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
-#                (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
-#                 # This must be executed in a transaction, so the version is never created if it fails.
-#                 raise QuotaError
+        if not quotaholder_url:	# Check quota.
+        if size_delta > 0:
+            account_quota = long(self._get_policy(account_node)['quota'])
+            container_quota = long(self._get_policy(container_node)['quota'])
+            if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
+               (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
+                # This must be executed in a transaction, so the version is never created if it fails.
+                raise QuotaError
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,
                                   'versions': ','.join([str(dest_version_id)])})

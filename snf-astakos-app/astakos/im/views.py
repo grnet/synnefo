@@ -788,7 +788,8 @@ def group_add(request, kind_name='default'):
     return HttpResponse(t.render(c))
 
 
-@require_http_methods(["POST"])
+#@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_add_complete(request):
@@ -829,7 +830,8 @@ def group_add_complete(request):
         form=form)
 
 
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_list(request):
@@ -1018,7 +1020,7 @@ def group_search(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_all(request, extra_context=None, **kwargs):
@@ -1056,7 +1058,8 @@ def group_all(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
-@require_http_methods(["POST"])
+#@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def group_join(request, group_id):
@@ -1115,7 +1118,8 @@ def handle_membership(func):
     return wrapper
 
 
-@require_http_methods(["POST"])
+#@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 @handle_membership
@@ -1147,7 +1151,8 @@ def disapprove_member(request, membership):
         messages.error(request, msg)
 
 
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def resource_list(request):
@@ -1207,7 +1212,8 @@ def group_create_list(request):
         context_instance=get_context(request),)
 
 
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def billing(request):
@@ -1269,7 +1275,8 @@ def _clear_billing_data(data):
     return data
      
      
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def timeline(request):

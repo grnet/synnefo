@@ -47,6 +47,8 @@ if QUOTA_HOLDER_URL:
 
 ENTITY_KEY = '1'
 
+inf = float('inf')
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +90,7 @@ def send_quota(users, client=None):
         for resource, uplimit in user.quota.iteritems():
             key = ENTITY_KEY
             quantity = None
-            capacity = uplimit
+            capacity = uplimit if uplimit != inf else None
             import_limit = None
             export_limit = None
             flags = 0

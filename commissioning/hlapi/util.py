@@ -12,7 +12,7 @@ def compatible_type(given_t, expected_t):
         
 
 def compatible_input_types(given, expected):
-    print "given=%s, expected=%s" % (given, expected)
+#    print "given=%s, expected=%s" % (given, expected)
     if len(given) != len(expected):
         return False    
     for i in xrange(len(given)):
@@ -126,7 +126,7 @@ def info(fname, expected, actual, flag):
 
 
 def check_string(label, value):
-    if not isinstance(value, str):
+    if not issubclass(type(value), basestring):
         raise Exception(
             "%s is not a string, but a(n) %s with value %s" % (
                 label, type(value), value))
@@ -138,7 +138,7 @@ def check_context(context):
     return context
 
 
-@accepts(basestring, basestring)
+@accepts(str, str)
 @returns(bool)
 def is_abs_name(name, label='name'):
     check_string(label, name)
@@ -222,7 +222,7 @@ def level_of_node(node_name):
     len(node_name.split('/')) - 1
     
 
-@accepts(basestring, basestring)
+@accepts(str, str)
 @returns(bool)
 def is_child_of_abs_name(child, parent):
     check_abs_name(parent)
@@ -255,8 +255,8 @@ def parent_abs_name_of(abs_name, label='abs_name'):
             return upto_name
 
 
-@accepts(basestring)
-@returns(basestring)
+@accepts(str)
+@returns(str)
 def last_part_of_abs_name(abs_name, label='abs_name'):
     """
     Given an absolute abs_name, which is made of simple parts separated with
@@ -268,8 +268,8 @@ def last_part_of_abs_name(abs_name, label='abs_name'):
     return last_part
 
 
-@accepts(basestring, basestring, basestring, basestring)
-@returns(basestring)
+@accepts(str, str, str, str)
+@returns(str)
 def reparent_child_name_under(child_name,
                               parent_node_name,
                               child_label='child_name',
@@ -317,8 +317,8 @@ def make_abs_user_name(user_name):
                                      parent_label='NameOfUsersNode')
 
 
-@accepts(basestring, basestring, basestring, basestring)
-@returns(basestring)
+@accepts(str, str, str, str)
+@returns(str)
 def relative_child_name_under(child_name,
                               parent_name,
                               child_label='child_name',
@@ -343,8 +343,8 @@ def relative_child_name_under(child_name,
     return child_name[len(parent_name) + 1:]
 
 
-@accepts(basestring, basestring)
-@returns(basestring)
+@accepts(str, str)
+@returns(str)
 def make_rel_group_name(group_name, label='group_name'):
     check_name(group_name, label)
     return relative_child_name_under(child_name=group_name,
@@ -353,8 +353,8 @@ def make_rel_group_name(group_name, label='group_name'):
                                      parent_label='NameOfGroupsNode')
     
 
-@accepts(basestring, basestring)
-@returns(basestring)
+@accepts(str, str)
+@returns(str)
 def make_rel_global_resource_name(resource_name, label='resource_name'):
     check_name(resource_name, label)
     return relative_child_name_under(child_name=resource_name,
@@ -363,8 +363,8 @@ def make_rel_global_resource_name(resource_name, label='resource_name'):
                                      parent_label='NameOfResourcesNode')
     
 
-@accepts(basestring, basestring)
-@returns(basestring)
+@accepts(str, str)
+@returns(str)
 def make_rel_user_name(user_name, label='user_name'):
     check_name(user_name, label)
     return relative_child_name_under(child_name=user_name,

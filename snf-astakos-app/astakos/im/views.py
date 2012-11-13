@@ -775,7 +775,7 @@ def group_add(request, kind_name='default'):
         form = form_class(data)
 
     # Create the template, context, response
-    template_name = "%s/%s_form_demo.html" % (
+    template_name = "%s/%s_form.html" % (
         model._meta.app_label,
         model._meta.object_name.lower()
     )

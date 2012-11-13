@@ -1057,11 +1057,17 @@ class Group(ResourceHolder):
         default = Set([])
         for resourceName,quantity in kwargs:            
             default.add(resourceName)
-            c.addResource(system.getResource(resourceName),quantity)
+            r = copy.copy(system.getResource(resourceName))
+            r.resourceName = r.resourceName + ".groupPolicy"
+            printf("#1 REQUESTING  {0} from system.{1}",quantity,r.resourceName)
+            c.addResource(r,quantity)
         remaining = Set(system.getResourceNames()).difference(default)
         for resourceName in remaining: 
-            r = self.getResource(resourceName)
-            c.addResource(system.getResource(resourceName),r.policy.capacity)        
+            sysRes = copy.copy(system.getResource(resourceName))
+            sysRes.resourceName = sysRes.resourceName + ".groupPolicy"
+            r = self.getResource(resourceName) 
+            printf("#2 REQUESTING  {0} from system.{1}",r.policy.capacity,sysRes.resourceName)
+            c.addResource(sysRes,r.policy.capacity)        
         return c.accept(True)
  
 
@@ -1239,23 +1245,28 @@ class User(ResourceHolder):
         for group in groupList:
             self._joinGroup(group)
         Resource.saveMany(self.getResources(),False)
-        
-    
+            
     def drawResources(self,**kwargs):
         for prefixedName,quantity in kwargs:            
             group,resourceName = tuple(prefixedName.split("_"))
             self.commission.addResource(Group.get(group,"").getResource(resourceName),quantity)
         #    
-
-    
     def commit(self):
         return ResourceHolder.commit(self)
     
+    def _leaveGroups(self,groupList):
+        #TODO:
+        # revert commissions
+        # revert policies !!!
+        exn("Not implemented")
+        
+    def leaveGroup(self,group):
+        self._leaveGroups([group])
     
     def release(self):
         if(not self.commission.isFinal()):
             self.reject()
-        #TODO: abort commision if not pending
+        self._leaveGroups(self.groups)
         ResourceHolder.release(self)
 
 

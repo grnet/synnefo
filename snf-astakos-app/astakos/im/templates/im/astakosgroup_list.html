@@ -7,19 +7,19 @@
     <div class="projects">
 	    <h2>GROUPS</h2>
 	    {% if form %}
-	    <p>You can search for a group by name</p>
-	    <form action="{% url group_search %}" method="post" class="withlabels signup">{% csrf_token %}
-	            {% include "im/form_render.html" %}
-	            <div class="form-row submit">
-	                <input type="submit" class="submit altcol" value="SEARCH" />
-	            </div>
-	    </form>
-	     
-	    <form action="{% url group_all %}" method="post" class="link-like alone">{% csrf_token %}
-	        <div class="form-row submit">
-	            <input type="submit" class="submit altcol" value="Show all groups" />
-	        </div>
-	    </form>
+		    <p>You can search for a group by name</p>
+		    <form action="{% url group_search %}" method="post" class="withlabels signup">{% csrf_token %}
+		            {% include "im/form_render.html" %}
+		            <div class="form-row submit">
+		                <input type="submit" class="submit altcol" value="SEARCH" />
+		            </div>
+		    </form>
+		     
+		    <form action="{% url group_all %}" method="post" class="link-like alone">{% csrf_token %}
+		        <div class="form-row submit">
+		            <input type="submit" class="submit altcol" value="Show all groups" />
+		        </div>
+		    </form>
 	    {% else %}
     
 		<p>Okeanos grants resources according to activities organized by groups.
@@ -124,7 +124,7 @@
                     {% else %}
                             Not member 
                                 <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
-                                    <input type="submit"   value="JOIN GROUP" />
+                                    <input type="submit"   value="JOIN GROUP" class="join_group" />
                                 </form>
                             
                     {% endif %}
@@ -150,23 +150,106 @@
         </div>
         
      
-    <div class="pagination">
-		<p class="next-prev">
-	        {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
-            {% endif %}
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
-            {% endif %}
-    	</p>
-		<p class="nums">
-			<span class="current">
-                Page {{ page_obj.number }} of {{ paginator.num_pages }}
-            </span>
-		</p>
-   </div>
+	    <div class="pagination">
+			<p class="next-prev">
+		        {% if page_obj.has_previous %}
+	                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+	            {% endif %}
+	            {% if page_obj.has_next %}
+	                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+	            {% endif %}
+	    	</p>
+			<p class="nums">
+				<span class="current">
+	                Page {{ page_obj.number }} of {{ paginator.num_pages }}
+	            </span>
+			</p>
+	   </div>
       <!-- Group listing -->
-        {% else %}
+       {% else %}
+       	
+        	 
+        	{% if all %}
+            {% with all_page|concat:all_sorting as args %}
+            {% with all|paginate:args as all %}
+	      	    <div >
+					<form method="GET" class="minimal" action="#allGroups">
+						<div class="form-row">
+						    <select name="all_sorting" onchange="this.form.submit();">
+							    <option value="">Sort by</option>
+							    <option value="groupname" {% if all_sorting == 'groupname' %}selected{% endif %}>Name</option>
+					            <option value="kindname" {% if all_sorting == 'kindname' %}selected{% endif %}>Type</option>			
+					            <option value="issue_date" {% if all_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
+					            <option value="expiration_date" {% if all_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
+					            <option value="approved_members_num" {% if all_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
+					            <option value="is_enabled" {% if all_sorting == 'is_enabled' %}selected{% endif %}>Status</option>
+					            <option value="moderation_enabled" {% if all_sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
+							</select>
+						</div>
+					</form>
+					<table class="alt-style complex" id="allGroups">
+			            <caption>MY GROUPS</caption>
+			            <thead>
+			              <tr>
+			                <th>Name</th>
+			                <th>Type</th>
+			                <th>Issued</th>
+			                <th>Expires</th>
+			                <th>Enrolled</th>
+			                <th>Status</th>
+			                <th>Moderated</th>
+			                <th>&nbsp;</th>
+			                
+			              </tr>
+			            </thead>
+			            <tbody>
+			              {% for o in all.object_list %}
+			              <tr class="{% cycle 'tr1' 'tr2' %}">
+			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a></td>
+			                <td>{{o.kindname|capfirst}}</td>
+			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
+			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
+			                <td>{{ o.approved_members_num }}</td>
+			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
+			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
+			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
+			              </tr>
+			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
+			                <td colspan="8" class="info-td">
+			                	<div>
+			                		<p>{{o.desc}}</p>
+					                <p>{% if o.homepage%}
+							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+							 		{% endif %}
+							 		</p>
+			                	</div>	
+			                </td>
+			              </tr>
+			              {% endfor %}
+			            </tbody>
+			        </table>
+				</div>
+				<div class="pagination">
+					<p class="next-prev">
+				        {% if all.has_previous %}
+                            <a href="?all_page={{ all.previous_page_number }}{% if all_sorting %}&all_sorting={{ all_sorting }}{% endif%}{% if all_sorting %}&all_sorting={{ all_sorting }}{% endif%}#allGroups">previous</a>
+                        {% endif %}
+			            {% if all.has_next %}
+                            <a href="?all_page={{ all.next_page_number }}{% if all_sorting %}&all_sorting={{ all_sorting }}{% endif%}{% if all_sorting %}&all_sorting={{ other_sorting }}{% endif%}#allGroups">next</a>
+                        {% endif %}
+			    	</p>
+					<p class="nums">
+						<span class="current">
+                            Page {{ all.number }} of {{ all.paginator.num_pages }}
+                        </span>
+					</p>
+			   </div>
+			
+      		{% endwith %}
+            {% endwith %}
+      		{% endif %}
+         
+        	<!--
             {% if mine %}
             {% with own_page|concat:own_sorting as args %}
             {% with mine|paginate:args as mine %}
@@ -325,10 +408,10 @@
 				<div class="pagination">
 					<p class="next-prev">
 				        {% if other.has_previous %}
-                            <a href="?other_page={{ other.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">previous</a>
+                            <a href="#iParticipateIn?other_page={{ other.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">previous</a>
                         {% endif %}
 			            {% if other.has_next %}
-                            <a href="?other_page={{ other.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">next</a>
+                            <a href="#iParticipateIn?other_page={{ other.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">next</a>
                         {% endif %}
 			    	</p>
 					<p class="nums">
@@ -341,6 +424,7 @@
 			{% endwith %}
             {% endwith %}
 			{% endif %}
+			-->
 	      	
             {% if q %}
                 <h2>No groups found!</h2>

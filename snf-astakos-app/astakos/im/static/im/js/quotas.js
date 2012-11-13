@@ -66,15 +66,66 @@ $(document).ready(function() {
 		
 		
 		
-	})
-	
-	//$('input:radio').uniform();
-	$('.radio .radio span').each(function(index) {	    
-		if ($(this).hasClass('checked')){
-			alert('f');
-		}
 	});
 
-	
+ 
+	 
+	$('.quotas-form .quota input[type="text"]').change(function () {
+	 	
+	 	// get value from input
+	 	var value = $(this).val();
+	 	
+	 	// replace , with .  and get number 
+	 	value = value.replace(",",".");
+	 	var num = parseFloat(value);
+	 	var bytes = num;
+	 	
+	 	if ($(this).hasClass('dehumanize')){
+	 		 // get suffix. 'i' renders it case insensitive
+		 	var suf = value.match( new RegExp('GB|KB|MB|TB|bytes', 'i'));
+		 	if (suf){
+		 		
+		 		suf = suf[0].toLowerCase(); 
+		 	
+			 	// transform to bytes
+			 	switch (suf){
+			 		case 'bytes': 
+			 		  bytes = num*Math.pow(1024,0);
+			 		  break;
+			 		case 'byte': 
+			 		  bytes = num*Math.pow(1024,0);
+			 		  break;
+			 		case 'kb':
+			 		  bytes = num*Math.pow(1024,1);
+			 		  break;
+			 		case 'mb':
+			 		  bytes = num*Math.pow(1024,2);
+			 		  break;
+			 		case 'gb':
+			 		  bytes = num*Math.pow(1024,3);
+			 		  break;
+			 		case 'tb':
+			 		  bytes = num*Math.pow(1024,4);
+			 		  break;    
+			 		default:
+			 		  bytes = num; 
+		 		}
+		 	} else {
+		 		 bytes = num; 
+		 	}
+	 	}
+	 	
+	 	
+	 	var human_value = value;
+	 	var machine_value = bytes;
+	 	
+	 	//get input name without _proxy
+	 	hidden_name = $(this).attr('name').replace("_proxy","");
+	 	var hidden_input = $("input[name='"+hidden_name+"']");
+	 	
+	 	hidden_input.val(bytes);
+	 	
+	 	$(this).parents('.form-row').find('.msg').html( human_value+ machine_value  ); 
+	 });
 	
 });

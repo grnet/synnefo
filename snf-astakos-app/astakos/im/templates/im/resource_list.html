@@ -5,6 +5,7 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="stats clearfix">
+
 		<ul>
 			{% for r in data %}
 			{% with resource_presentation|lookup:r.name as resource_info %}
@@ -14,7 +15,15 @@
     				<h3>{{ resource_info.report_desc }}</h3>
     				<p>
     					{{ r.ratio|floatformat }}% Used<br>
-    					You are using {{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }} {{ r.unit }} {% if resource_info.is_abbreviation %}{{ r.name|get_value_after_dot|upper }}{% else %}{{ r.name|get_value_after_dot }}{% endif %}{% if not r.unit %}s {% endif  %} 
+    					You are using 
+    					{% if r.unit == 'bytes' %}
+    						{{ r.currValue|sizeof_fmt  }} out of your {{ r.maxValue|sizeof_fmt }}
+    					{% else %}
+    						{{ r.currValue }} {{ r.unit }} out of your {{ r.maxValue }} {{ r.unit }}
+    					{% endif %}
+    					 
+    					{% if resource_info.is_abbreviation %}{{ r.name|get_value_after_dot|upper }}{% else %}{{ r.name|get_value_after_dot }}{% endif %}{% if r.maxValue|floatformat:"0" != "1" and not r.unit %}s {% endif  %}
+    					  
     				</p>
     			</div>
     			<div class="bar">

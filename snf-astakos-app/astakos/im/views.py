@@ -681,37 +681,44 @@ resource_presentation = {
         'pithos+.diskspace': {
             'help_text':'resource pithos+.diskspace help text',
             'is_abbreviation':False,
-            'report_desc':'Diskspace used'
+            'report_desc':'Pithos+ Diskspace',
+            'placeholder':'eg. 10GB'
         },
         'cyclades.vm': {
             'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
             'is_abbreviation':True,
-            'report_desc':'Number of Virtual Machines'
+            'report_desc':'Virtual Machines',
+            'placeholder':'eg. 2'
         },
         'cyclades.disksize': {
             'help_text':'resource cyclades.disksize help text',
             'is_abbreviation':False,
-            'report_desc':'Amount of Disksize used'
+            'report_desc':'Disksize',
+            'placeholder':'eg. 5GB'
         },
         'cyclades.disk': {
             'help_text':'resource cyclades.disk help text',
             'is_abbreviation':False,
-            'report_desc':'Amount of Disk used'    
+            'report_desc':'Disk',
+            'placeholder':'eg. 5GB'    
         },
         'cyclades.ram': {
             'help_text':'resource cyclades.ram help text',
             'is_abbreviation':True,
-            'report_desc':'RAM used'
+            'report_desc':'RAM',
+            'placeholder':'eg. 4GB'
         },
         'cyclades.cpu': {
             'help_text':'resource cyclades.cpu help text',
             'is_abbreviation':True,
-            'report_desc':'CPUs used'
+            'report_desc':'CPUs',
+            'placeholder':'eg. 1'
         },
         'cyclades.network.private': {
             'help_text':'resource cyclades.network.private help text',
             'is_abbreviation':False,
-            'report_desc':'Network used'
+            'report_desc':'Network',
+            'placeholder':'eg. 1'
         }
     }
 
@@ -860,14 +867,18 @@ def group_list(request):
         WHERE im_membership.person_id = %s
         """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id))
     d = defaultdict(list)
+    
     for g in q:
         if request.user.email == g.groupowner:
             d['own'].append(g)
         else:
             d['other'].append(g)
-
+    
+    for g in q:
+        d['all'].append(g)
+    
     # validate sorting
-    fields = ('own', 'other')
+    fields = ('own', 'other', 'all')
     for f in fields:
         v = globals()['%s_sorting' % f] = request.GET.get('%s_sorting' % f)
         if v:
@@ -876,12 +887,15 @@ def group_list(request):
                 globals()['%s_sorting' % f] = form.cleaned_data.get('sort_by')
     return object_list(request, queryset=none,
                        extra_context={'is_search': False,
+                                      'all': d['all'],
                                       'mine': d['own'],
                                       'other': d['other'],
                                       'own_sorting': own_sorting,
                                       'other_sorting': other_sorting,
+                                      'all_sorting': all_sorting,
                                       'own_page': request.GET.get('own_page', 1),
-                                      'other_page': request.GET.get('other_page', 1)
+                                      'other_page': request.GET.get('other_page', 1),
+                                      'all_page': request.GET.get('all_page', 1)
                                       })
 
 

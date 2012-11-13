@@ -565,13 +565,15 @@ class AstakosGroupCreationForm(forms.ModelForm):
                                 'issue_date', 'expiration_date',
                                 'moderation_enabled', 'max_participants']
         def add_fields((k, v)):
+            print '####', k, v
+            k = k.partition('_proxy')[0]
             self.fields[k] = forms.IntegerField(
                 required=False,
                 widget=forms.HiddenInput(),
                 min_value=1
             )
         map(add_fields,
-            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
+            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit_proxy'))
         )
         
         def add_fields((k, v)):
@@ -639,7 +641,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         def add_fields((k, v)):
             self.fields[k] = forms.IntegerField(
                 required=False,
-                widget=forms.TextInput(),
+                #widget=forms.TextInput(),
                 min_value=1
             )
         map(add_fields,
@@ -649,7 +651,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         def add_fields((k, v)):
             self.fields[k] = forms.BooleanField(
                 required=False,
-                widget=forms.HiddenInput()
+                #widget=forms.HiddenInput()
             )
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))

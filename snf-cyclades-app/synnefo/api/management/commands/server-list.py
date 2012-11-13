@@ -34,10 +34,13 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import format_vm_state, get_backend
-
+from synnefo.management.common import (format_vm_state, get_backend,
+                                       filter_results)
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
+
+
+FIELDS = VirtualMachine._meta.get_all_field_names()
 
 
 class Command(BaseCommand):
@@ -59,11 +62,20 @@ class Command(BaseCommand):
             dest='build',
             default=False,
             help="List only servers in the building state"),
-        make_option('--deleted', action='store_true', dest='deleted',
-                    default=False,
-                    help="Include deletd servers"),
-        make_option('--backend-id', dest='backend_id',
-                    help="List only servers of the specified backend")
+        make_option('--deleted',
+            action='store_true',
+            dest='deleted',
+            default=False,
+            help="Include deleted servers"),
+        make_option('--backend-id',
+            dest='backend_id',
+            help="List only servers of the specified backend"),
+        make_option('--filter-by',
+            dest='filter_by',
+            help="Filter results. Comma seperated list of key `cond` val pairs"
+                 " that displayed entries must satisfy. e.g."
+                 " --filter-by \"operstate=STARTED,id>=22\"."
+                 " Available keys are: %s" % ", ".join(FIELDS))
         )
 
     def handle(self, *args, **options):
@@ -86,6 +98,10 @@ class Command(BaseCommand):
 
         if options['build']:
             servers = servers.filter(operstate='BUILD')
+
+        filter_by = options['filter_by']
+        if filter_by:
+            servers = filter_results(servers, filter_by)
 
         labels = ('id', 'name', 'owner', 'flavor', 'image', 'state',
                   'backend')

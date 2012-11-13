@@ -34,9 +34,10 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import format_bool
-
+from synnefo.management.common import format_bool, filter_results
 from synnefo.db.models import Network
+
+FIELDS = Network._meta.get_all_field_names()
 
 
 class Command(BaseCommand):
@@ -63,6 +64,13 @@ class Command(BaseCommand):
             dest='ipv6',
             default=False,
             help="Show IPv6 information of the network"),
+        make_option('--filter-by',
+            dest='filter_by',
+            help="Filter results. Comma seperated list of key 'cond' val pairs"
+                 " that displayed entries must satisfy. e.g."
+                 " --filter-by \"name=Network-1,link!=prv0\"."
+                 " Available keys are: %s" % ", ".join(FIELDS))
+
         )
 
     def handle(self, *args, **options):
@@ -76,6 +84,10 @@ class Command(BaseCommand):
 
         if options['public']:
             networks = networks.filter(public=True)
+
+        filter_by = options['filter_by']
+        if filter_by:
+            networks = filter_results(networks, filter_by)
 
         labels = ['id', 'name', 'type', 'owner',
                   'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']

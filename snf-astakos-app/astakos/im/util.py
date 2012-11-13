@@ -45,10 +45,14 @@ from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models.fields import Field
+from django.utils.translation import ugettext as _
+
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.settings import COOKIE_NAME, \
     COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
 from astakos.im.functions import login
+
+import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +98,10 @@ def get_invitation(request):
         return
     invitation = Invitation.objects.get(code=code)
     if invitation.is_consumed:
-        raise ValueError(_('Invitation is used'))
+        raise ValueError(_(astakos_messages.INVITATION_CONSUMED_ERR))
     if reserved_email(invitation.username):
-        raise ValueError(_('Email: %s is reserved' % invitation.username))
+        email = invitation.username
+        raise ValueError(_(astakos_messages.EMAIL_RESRVED) % locals()))
     return invitation
 
 

@@ -60,6 +60,8 @@ from astakos.im.functions import send_change_email
 
 from astakos.im.util import reserved_email, get_query
 
+import astakos.im.messages as astakos_messages
+
 import logging
 import hashlib
 import recaptcha.client.captcha as captcha
@@ -116,15 +118,15 @@ class LocalUserCreationForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
-            raise forms.ValidationError(_("This field is required"))
+            raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
-            raise forms.ValidationError(_("This email is already used"))
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return email
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
-            raise forms.ValidationError(_('You have to agree with the terms'))
+            raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
     def clean_recaptcha_response_field(self):
@@ -142,8 +144,7 @@ class LocalUserCreationForm(UserCreationForm):
         rrf = self.cleaned_data['recaptcha_response_field']
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(
-                _('You have not entered the correct words'))
+            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
 
     def save(self, commit=True):
         """
@@ -222,13 +223,13 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
-            raise forms.ValidationError(_("This field is required"))
+            raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         return email
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
-            raise forms.ValidationError(_('You have to agree with the terms'))
+            raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
     def save(self, commit=True):
@@ -287,10 +288,9 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         email = self.cleaned_data['email']
         for user in AstakosUser.objects.filter(email=email):
             if user.provider == 'shibboleth':
-                raise forms.ValidationError(_("This email is already associated with another shibboleth account."))
+                raise forms.ValidationError(_(astakos_messages.SHIBBOLETH_EMAIL_USED))
             elif not user.is_active:
-                raise forms.ValidationError(_("This email is already associated with an inactive account. \
-                                              You need to wait to be activated before being able to switch to a shibboleth account."))
+                raise forms.ValidationError(_(astakos_messages.SHIBBOLETH_INACTIVE_ACC))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
 
@@ -343,13 +343,12 @@ class LoginForm(AuthenticationForm):
         rrf = self.cleaned_data['recaptcha_response_field']
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(
-                _('You have not entered the correct words'))
+            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
 
     def clean(self):
         super(LoginForm, self).clean()
         if self.user_cache and self.user_cache.provider not in ('local', ''):
-            raise forms.ValidationError(_('Local login is not the current authentication method for this account.'))
+            raise forms.ValidationError(_(astakos_messages.SUSPENDED_LOCAL_ACC))
         return self.cleaned_data
 
 
@@ -419,10 +418,9 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         try:
             user = AstakosUser.objects.get(email=email, is_active=True)
             if not user.has_usable_password():
-                raise forms.ValidationError(
-                    _("This account has not a usable password."))
+                raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
         except AstakosUser.DoesNotExist:
-            raise forms.ValidationError(_('That e-mail address doesn\'t have an associated user account. Are you sure you\'ve registered?'))
+            raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
 
     def save(
@@ -460,7 +458,7 @@ class EmailChangeForm(forms.ModelForm):
     def clean_new_email_address(self):
         addr = self.cleaned_data['new_email_address']
         if AstakosUser.objects.filter(email__iexact=addr):
-            raise forms.ValidationError(_(u'This email address is already in use. Please supply a different email address.'))
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
     def save(self, email_template_name, request, commit=True):
@@ -485,7 +483,7 @@ class SignApprovalTermsForm(forms.ModelForm):
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
-            raise forms.ValidationError(_('You have to agree with the terms'))
+            raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
 
@@ -503,8 +501,7 @@ class InvitationForm(forms.ModelForm):
         username = self.cleaned_data['username']
         try:
             Invitation.objects.get(username=username)
-            raise forms.ValidationError(
-                _('There is already invitation for this email.'))
+            raise forms.ValidationError(_(astakos_messages.INVITATION_EMAIL_EXISTS))
         except Invitation.DoesNotExist:
             pass
         return username
@@ -690,7 +687,7 @@ class AstakosGroupUpdateForm(forms.ModelForm):
 class AddGroupMembersForm(forms.Form):
     q = forms.CharField(
         max_length=800, widget=forms.Textarea, label=_('Add users'),
-        help_text=_('Add comma separated user emails, eg. user1@user.com, user2@user.com'),
+        help_text=_(astakos_messages.ADD_GROUP_MEMBERS_Q_HELP),
         required=True)
 
     def clean(self):
@@ -700,8 +697,7 @@ class AddGroupMembersForm(forms.Form):
         db_entries = AstakosUser.objects.filter(email__in=users)
         unknown = list(set(users) - set(u.email for u in db_entries))
         if unknown:
-            raise forms.ValidationError(
-                _('Unknown users: %s' % ','.join(unknown)))
+            raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
         self.valid_users = db_entries
         return self.cleaned_data
 

@@ -61,6 +61,7 @@ from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL,
                                  FEEDBACK_EMAIL_SUBJECT,
                                  EMAIL_CHANGE_EMAIL_SUBJECT)
 import astakos.im.models
+import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
 
@@ -303,41 +304,41 @@ class SendMailError(Exception):
 
 class SendAdminNotificationError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send notification')
+        self.message = _(astakos_messages.ADMIN_NOTIFICATION_SEND_ERR)
         super(SendAdminNotificationError, self).__init__()
 
 
 class SendVerificationError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send verification')
+        self.message = _(astakos_messages.VERIFICATION_SEND_ERR)
         super(SendVerificationError, self).__init__()
 
 
 class SendInvitationError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send invitation')
+        self.message = _(astakos_messages.INVITATION_SEND_ERR)
         super(SendInvitationError, self).__init__()
 
 
 class SendGreetingError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send greeting')
+        self.message = _(astakos_messages.GREETING_SEND_ERR)
         super(SendGreetingError, self).__init__()
 
 
 class SendFeedbackError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send feedback')
+        self.message = _(astakos_messages.FEEDBACK_SEND_ERR)
         super(SendFeedbackError, self).__init__()
 
 
 class ChangeEmailError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send change email')
+        self.message = self.message = _(astakos_messages.CHANGE_EMAIL_SEND_ERR)
         super(ChangeEmailError, self).__init__()
 
 
 class SendNotificationError(SendMailError):
     def __init__(self):
-        self.message = _('Failed to send notification email')
+        self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
         super(SendNotificationError, self).__init__()

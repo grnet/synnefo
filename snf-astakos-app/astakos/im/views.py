@@ -90,6 +90,8 @@ from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
 from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
+import astakos.im.messages as astakos_messages
+
 logger = logging.getLogger(__name__)
 
 
@@ -229,21 +231,21 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
                     email = form.cleaned_data.get('username')
                     realname = form.cleaned_data.get('realname')
                     inviter.invite(email, realname)
-                    message = _('Invitation sent to %s' % email)
+                    message = _(astakos_messages.INVITATION_SENT) % locals()
                     messages.success(request, message)
                 except SendMailError, e:
                     message = e.message
                     messages.error(request, message)
                     transaction.rollback()
                 except BaseException, e:
-                    message = _('Something went wrong.')
+                    message = _(astakos_messages.GENERIC_ERROR)
                     messages.error(request, message)
                     logger.exception(e)
                     transaction.rollback()
                 else:
                     transaction.commit()
         else:
-            message = _('No invitations left')
+            message = _(astakos_messages.MAX_INVITATION_NUMBER_REACHED)
             messages.error(request, message)
 
     sent = [{'email': inv.username,
@@ -305,7 +307,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                 next = request.POST.get('next')
                 if next:
                     return redirect(next)
-                msg = _('Profile has been updated successfully')
+                msg = _(astakos_messages.PROFILE_UPDATED)
                 messages.success(request, msg)
             except ValueError, ve:
                 messages.success(request, ve)
@@ -397,7 +399,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 messages.error(request, message)
                 transaction.rollback()
             except BaseException, e:
-                message = _('Something went wrong.')
+                message = _(astakos_messages.GENERIC_ERROR)
                 messages.error(request, message)
                 logger.exception(e)
                 transaction.rollback()
@@ -452,7 +454,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
             except SendMailError, e:
                 messages.error(request, message)
             else:
-                message = _('Feedback successfully sent')
+                message = _(astakos_messages.FEEDBACK_SENT)
                 messages.success(request, message)
     return render_response(template_name,
                            feedback_form=form,
@@ -481,7 +483,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
         return response
-    messages.success(request, _('You have successfully logged out.'))
+    messages.success(request, _(astakos_messages.LOGOUT_SUCCESS))
     context = get_context(request, extra_context)
     response.write(
         template_loader.render_to_string(template, context_instance=context))
@@ -504,10 +506,10 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     try:
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
-        return HttpResponseBadRequest(_('No such user'))
+        return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
 
     if user.is_active:
-        message = _('Account already active.')
+        message = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
         messages.error(request, message)
         return index(request)
 
@@ -534,7 +536,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
             transaction.rollback()
             return index(request)
         except BaseException, e:
-            message = _('Something went wrong.')
+            message = _(astakos_messages.GENERIC_ERROR)
             messages.error(request, message)
             logger.exception(e)
             transaction.rollback()
@@ -555,7 +557,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
             transaction.rollback()
             return index(request)
         except BaseException, e:
-            message = _('Something went wrong.')
+            message = _(astakos_messages.GENERIC_ERROR)
             messages.error(request, message)
             logger.exception(e)
             transaction.rollback()
@@ -578,7 +580,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
             pass
 
     if not term:
-        messages.error(request, 'There are no approval terms.')
+        messages.error(request, _(astakos_messages.NO_APPROVAL_TERMS))
         return HttpResponseRedirect(reverse('index'))
     f = open(term.location, 'r')
     terms = f.read()
@@ -626,7 +628,7 @@ def change_email(request, activation_key=None,
         try:
             user = EmailChange.objects.change_email(activation_key)
             if request.user.is_authenticated() and request.user == user:
-                msg = _('Email changed successfully.')
+                msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
                 auth_logout(request)
                 response = prepare_response(request, user)
@@ -653,11 +655,10 @@ def change_email(request, activation_key=None,
             messages.error(request, msg)
             transaction.rollback()
         except IntegrityError, e:
-            msg = _('There is already a pending change email request.')
+            msg = _(astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
             messages.error(request, msg)
         else:
-            msg = _('Change email request has been registered succefully.\
-                    You are going to receive a verification email in the new address.')
+            msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)
             transaction.commit()
     return render_response(form_template_name,
@@ -751,7 +752,7 @@ def group_add(request, kind_name='default'):
     try:
         kind = GroupKind.objects.get(name=kind_name)
     except:
-        return HttpResponseBadRequest(_('No such group kind'))
+        return HttpResponseBadRequest(_(astakos_messages.GROUPKIND_UNKNOWN))
     
     
 
@@ -781,7 +782,7 @@ def group_add(request, kind_name='default'):
         form = form_class(data)
 
     # Create the template, context, response
-    template_name = "%s/%s_form_demo.html" % (
+    template_name = "%s/%s_form.html" % (
         model._meta.app_label,
         model._meta.object_name.lower()
     )
@@ -795,7 +796,8 @@ def group_add(request, kind_name='default'):
     return HttpResponse(t.render(c))
 
 
-@require_http_methods(["POST"])
+#@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_add_complete(request):
@@ -807,7 +809,7 @@ def group_add_complete(request):
         result = callpoint.create_groups((d,)).next()
         if result.is_success:
             new_object = result.data[0]
-            msg = _("The %(verbose_name)s was created successfully.") %\
+            msg = _(astakos_messages.OBJECT_CREATED) %\
                 {"verbose_name": model._meta.verbose_name}
             messages.success(request, msg, fail_silently=True)
             
@@ -826,7 +828,7 @@ def group_add_complete(request):
             post_save_redirect = '/im/group/%(id)s/'
             return HttpResponseRedirect(post_save_redirect % new_object)
         else:
-            msg = _("The %(verbose_name)s creation failed: %(reason)s.") %\
+            msg = _(astakos_messages.OBJECT_CREATED_FAILED) %\
                 {"verbose_name": model._meta.verbose_name,
                  "reason":result.reason}
             messages.error(request, msg, fail_silently=True)
@@ -836,7 +838,8 @@ def group_add_complete(request):
         form=form)
 
 
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_list(request):
@@ -944,7 +947,11 @@ def group_detail(request, group_id):
         if update_form.is_valid():
             update_form.save()
         if addmembers_form.is_valid():
-            map(obj.approve_member, addmembers_form.valid_users)
+            try:
+                map(obj.approve_member, addmembers_form.valid_users)
+            except AssertionError:
+                msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
+                messages.error(request, msg)
             addmembers_form = AddGroupMembersForm()
 
     template_name = "%s/%s_detail.html" % (
@@ -1032,7 +1039,7 @@ def group_search(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_all(request, extra_context=None, **kwargs):
@@ -1070,7 +1077,8 @@ def group_all(request, extra_context=None, **kwargs):
                            sorting=sorting))
 
 
-@require_http_methods(["POST"])
+#@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def group_join(request, group_id):
@@ -1085,7 +1093,7 @@ def group_join(request, group_id):
         return HttpResponseRedirect(post_save_redirect)
     except IntegrityError, e:
         logger.exception(e)
-        msg = _('Failed to join group.')
+        msg = _(astakos_messages.GROUP_JOIN_FAILURE)
         messages.error(request, msg)
         return group_search(request)
 
@@ -1099,9 +1107,9 @@ def group_leave(request, group_id):
             group__id=group_id,
             person=request.user)
     except Membership.DoesNotExist:
-        return HttpResponseBadRequest(_('Invalid membership.'))
+        return HttpResponseBadRequest(_(astakos_messages.NOT_A_MEMBER))
     if request.user in m.group.owner.all():
-        return HttpResponseForbidden(_('Owner can not leave the group.'))
+        return HttpResponseForbidden(_(astakos_messages.OWNER_CANNOT_LEAVE_GROUP))
     return delete_object(
         request,
         model=Membership,
@@ -1120,16 +1128,17 @@ def handle_membership(func):
                 group__id=group_id,
                 person__id=user_id)
         except Membership.DoesNotExist:
-            return HttpResponseBadRequest(_('Invalid membership.'))
+            return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
         else:
             if request.user not in m.group.owner.all():
-                return HttpResponseForbidden(_('User is not a group owner.'))
+                return HttpResponseForbidden(_(astakos_messages.NOT_OWNER))
             func(request, m)
             return group_detail(request, group_id)
     return wrapper
 
 
-@require_http_methods(["POST"])
+#@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 @handle_membership
@@ -1137,12 +1146,15 @@ def approve_member(request, membership):
     try:
         membership.approve()
         realname = membership.person.realname
-        msg = _('%s has been successfully joined the group.' % realname)
+        msg = _(astakos_messages.MEMBER_JOINED_GROUP) % locals()
         messages.success(request, msg)
+    except AssertionError:
+        msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
+        messages.error(request, msg)
     except BaseException, e:
         logger.exception(e)
         realname = membership.person.realname
-        msg = _('Something went wrong during %s\'s approval.' % realname)
+        msg = _(astakos_messages.GENERIC_ERROR)
         messages.error(request, msg)
 
 
@@ -1153,15 +1165,16 @@ def disapprove_member(request, membership):
     try:
         membership.disapprove()
         realname = membership.person.realname
-        msg = _('%s has been successfully removed from the group.' % realname)
+        msg = MEMBER_REMOVED % realname
         messages.success(request, msg)
     except BaseException, e:
         logger.exception(e)
-        msg = _('Something went wrong during %s\'s disapproval.' % realname)
+        msg = _(astakos_messages.GENERIC_ERROR)
         messages.error(request, msg)
 
 
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def resource_list(request):
@@ -1221,7 +1234,8 @@ def group_create_list(request):
         context_instance=get_context(request),)
 
 
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def billing(request):
@@ -1245,7 +1259,7 @@ def billing(request):
         status, data = r.result
         data = _clear_billing_data(data)
         if status != 200:
-            messages.error(request, _('Service response status: %d' % status))
+            messages.error(request, _(astakos_messages.BILLING_ERROR) % status)
     except:
         messages.error(request, r.result)
 
@@ -1283,7 +1297,8 @@ def _clear_billing_data(data):
     return data
      
      
-@require_http_methods(["GET"])
+#@require_http_methods(["GET"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 def timeline(request):

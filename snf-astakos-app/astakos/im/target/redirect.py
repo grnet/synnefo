@@ -45,6 +45,8 @@ from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
 from astakos.im.util import set_cookie
 from astakos.im.functions import login as auth_login, logout
 
+import astakos.im.messages as astakos_messages
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -62,7 +64,7 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(_('No next parameter'))
+        return HttpResponseBadRequest(_(astakos_messages.MISSING_NEXT_PARAMETER))
     force = request.GET.get('force', None)
     response = HttpResponse()
     if force == '':

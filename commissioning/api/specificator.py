@@ -2,7 +2,6 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
-import json
 
 try:
     from collections import OrderedDict
@@ -471,8 +470,28 @@ class ListOf(Canonical):
         return canonified
 
     def _parse(self, item):
-        l = json.loads(item)
-        return self.check(l)
+        if item is None:
+            item = ()
+
+        try:
+            items = iter(item)
+        except TypeError, e:
+            m = "%s: %s is not iterable" % (self, shorts(item))
+            raise CanonifyException(m)
+
+        canonical = self.canonical
+        canonified = []
+        append = canonified.append
+
+        for k, v in items:
+            item = canonical.parse(v)
+            append(item)
+
+        if not canonified and self.opts.get('nonempty', False):
+            m = "%s: must be nonempty" % (self,)
+            raise CanonifyException(m)
+
+        return canonified
         
     def random_listof(self, kw):
         z = randint(1, 4)
@@ -485,17 +504,30 @@ class ListOf(Canonical):
 
 class Args(Canonical):
 
-    # item : list of strings
-    def _parse(self, item):
-        formals = len(self.kw)
-        actuals = len(item)
-        if actuals != formals:
+    def _parse(self, arglist):
+        formalslen = len(self.kw)
+        arglen = len(arglist)
+        if arglen != formalslen:
             raise Exception('param inconsistent')
 
         parsed = OrderedDict()
-        for it, (k, canonical) in zip(item, self.kw.items()):
-            print 'item:', it
-            parsed[k] = canonical.parse(it)
+        keys = self.kw.keys()
+        position = 0
+
+        for k, v in arglist:
+            if k:
+                parsed[k] = self.kw[k].parse(v)
+            else:
+                # find the right position
+                for i in range(position, arglen):
+                    key = keys[i]
+                    if not key in parsed.keys():
+                        position = i + 1
+                        break
+                else: # exhausted
+                    raise Exception("shouldn't happen")
+                parsed[key] = self.kw[key].parse(v)
+
         return parsed
         
     def _check(self, item):
@@ -549,8 +581,23 @@ class Tuple(Canonical):
         return tuple(g)
 
     def _parse(self, item):
-        t = json.loads(item)
-        return self.check(t)
+        try:
+            items = list(item)
+        except TypeError, e:
+            m = "%s: %s is not iterable" % (self, shorts(item))
+            raise CanonifyException(m)
+
+        canonicals = self.args
+        zi = len(items)
+        zc = len(canonicals)
+
+        if zi != zc:
+            m = "%s: expecting %d elements, not %d (%s)" % (self, zc, zi, str(items))
+            raise CanonifyException(m)
+
+        g = (canonical.parse(element)
+             for canonical, (k, element) in zip(self.args, item))
+        return tuple(g)
         
     def __add__(self, other):
         oargs = other.args if isinstance(other, Tuple) else (other,)
@@ -594,8 +641,32 @@ class Dict(Canonical):
         return canonified
 
     def _parse(self, item):
-        d = json.loads(item)
-        return self.check(d)
+
+        try:
+            item = dict(item)
+        except TypeError:
+            m = "%s: '%s' is not dict-able" % (self, shorts(item))
+            raise CanonifyException(m)
+
+        canonified = {}
+        canonical = self.kw
+
+        for n, c in canonical.items():
+            if n not in item:
+                m = "%s: key '%s' not found" % (self, shorts(n))
+                raise CanonifyException(m)
+            canonified[n] = c(item[n])
+
+        strict = self.opts.get('strict', True)
+        if strict and len(item) != len(canonical):
+            for k in sorted(item.keys()):
+                if k not in canonical:
+                    break
+
+            m = "%s: unexpected key '%s' (strict mode)" % (self, shorts(k))
+            raise CanonifyException(m)
+
+        return canonified
         
     def random_dict(self, kw):
         item = {}

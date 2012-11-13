@@ -5,6 +5,7 @@ from urlparse import urlparse
 from commissioning import Callpoint, CallError
 from commissioning.utils.clijson import clijson
 from commissioning import QuotaholderAPI
+from commissioning.utils.betteron import betteron_decode
 
 from kamaki.clients import Client
 
@@ -102,7 +103,8 @@ class Kamaki_plugin(Callpoint):
             raise exc
 
     def call(self, method, arglist):
-        argdict = self.api_spec.input_canonicals[method].parse(arglist)
+        a, rest = betteron_decode(arglist)
+        argdict = self.api_spec.input_canonicals[method].parse(a)
         f = getattr(self, method)
         return f(**argdict)
 

@@ -933,7 +933,11 @@ def group_detail(request, group_id):
         if update_form.is_valid():
             update_form.save()
         if addmembers_form.is_valid():
-            map(obj.approve_member, addmembers_form.valid_users)
+            try:
+                map(obj.approve_member, addmembers_form.valid_users)
+            except AssertionError:
+                msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
+                messages.error(request, msg)
             addmembers_form = AddGroupMembersForm()
 
     template_name = "%s/%s_detail.html" % (
@@ -1130,6 +1134,9 @@ def approve_member(request, membership):
         realname = membership.person.realname
         msg = _(astakos_messages.MEMBER_JOINED_GROUP) % locals()
         messages.success(request, msg)
+    except AssertionError:
+        msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
+        messages.error(request, msg)
     except BaseException, e:
         logger.exception(e)
         realname = membership.person.realname

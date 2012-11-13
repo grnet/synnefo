@@ -44,6 +44,7 @@ from collections import defaultdict
 from django.db import models, IntegrityError
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
+from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models.signals import (pre_save, post_save, post_syncdb,
@@ -230,14 +231,20 @@ class AstakosGroup(Group):
         self.save()
         quota_disturbed.send(sender=self, users=self.approved_members)
 
+    @transaction.commit_manually
     def approve_member(self, person):
         m, created = self.membership_set.get_or_create(person=person)
         # update date_joined in any case
-        m.date_joined = datetime.now()
-        m.save()
+        try:
+            m.approve()
+        except:
+            transaction.rollback()
+            raise
+        else:
+            transaction.commit()
 
-    def disapprove_member(self, person):
-        self.membership_set.remove(person=person)
+#     def disapprove_member(self, person):
+#         self.membership_set.remove(person=person)
 
     @property
     def members(self):
@@ -564,6 +571,8 @@ class Membership(models.Model):
         return False
 
     def approve(self):
+        if self.group.max_participants:
+            assert len(self.group.approved_members) + 1 <= self.group.max_participants
         self.date_joined = datetime.now()
         self.save()
         quota_disturbed.send(sender=self, users=(self.person,))

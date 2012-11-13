@@ -53,7 +53,7 @@ class QuotaholderAPI(Specificator):
                 context         =   Context,
                 create_entity   =   ListOf(Entity, Owner, Key, OwnerKey, nonempty=1)
         ):
-
+        """create_entity description"""
         rejected = ListOf(Index)
         return rejected
 
@@ -62,7 +62,7 @@ class QuotaholderAPI(Specificator):
                 context         =   Context,
                 set_entity_key  =   ListOf(Entity, Key, NewKey)
         ):
-
+        """set_entity description"""
         rejected = ListOf(Entity)
         return rejected
 
@@ -72,7 +72,7 @@ class QuotaholderAPI(Specificator):
                 entity          =   Entity,
                 key             =   Key
         ):
-
+        """list_entity description"""
         entities = ListOf(Entity)
         return entities
 
@@ -90,7 +90,7 @@ class QuotaholderAPI(Specificator):
                 context     =   Context,
                 get_limits  =   ListOf(Policy, nonempty=1)
         ):
-
+        """get_limits description"""
         limits = ListOf(Policy, Quantity, Capacity,
                         ImportLimit, ExportLimit)
         return limits
@@ -102,7 +102,7 @@ class QuotaholderAPI(Specificator):
                                         ImportLimit, ExportLimit,
                                         nonempty=1 )
         ):
-
+        """set_limits description"""
         rejected = ListOf(Policy)
         return rejected
 
@@ -111,7 +111,7 @@ class QuotaholderAPI(Specificator):
                 context     =   Context,
                 get_holding =   ListOf(Entity, Resource, Key)
         ):
-
+        """get_holding description"""
         holdings = ListOf(  Entity, Resource, Policy,
                             Imported, Exported, Returned, Released, Flags   )
         return holdings
@@ -121,7 +121,7 @@ class QuotaholderAPI(Specificator):
                 context     =   Context,
                 set_holding =   ListOf(Entity, Resource, Key, Policy, Flags)
         ):
-
+        """set_holding description"""
         rejected = ListOf(Entity, Resource, Policy)
         return rejected
 
@@ -131,7 +131,7 @@ class QuotaholderAPI(Specificator):
                 entity      =   Entity,
                 key         =   Key
         ):
-
+        """list_resources description"""
         resources = ListOf(Resource)
         return resources
 
@@ -140,7 +140,7 @@ class QuotaholderAPI(Specificator):
                 context     =   Context,
                 get_quota   =   ListOf(Entity, Resource, Key)
         ):
-
+        """get_quota description"""
         quotas = ListOf(Entity, Resource,
                         Quantity, Capacity,
                         ImportLimit, ExportLimit,
@@ -156,7 +156,7 @@ class QuotaholderAPI(Specificator):
                                         Quantity, Capacity,
                                         ImportLimit, ExportLimit, Flags )
         ):
-
+        """set_quota description"""
         rejected = ListOf(Entity, Resource)
         return rejected
 
@@ -171,7 +171,7 @@ class QuotaholderAPI(Specificator):
                 name        =   Text(default=''),
                 provisions  =   ListOf(Entity, Resource, Quantity)
         ):
-
+        """issue_commission description"""
         return Serial
 
     def accept_commission   (
@@ -181,7 +181,7 @@ class QuotaholderAPI(Specificator):
                 serials     =   ListOf(Serial),
                 reason      =   Text(default='ACCEPT')
         ):
-
+        """accept_commission description"""
         return Nothing
 
     def reject_commission   (
@@ -191,7 +191,7 @@ class QuotaholderAPI(Specificator):
                 serials     =   ListOf(Serial),
                 reason      =   Text(default='REJECT')
         ):
-
+        """reject_commission description"""
         return Nothing
 
     def get_pending_commissions (
@@ -199,7 +199,7 @@ class QuotaholderAPI(Specificator):
                     context     =   Context,
                     clientkey   =   ClientKey
         ):
-
+        """get_pending_commissions description"""
         pending = ListOf(Serial)
         return pending
 
@@ -210,7 +210,7 @@ class QuotaholderAPI(Specificator):
                     max_serial  =   Serial,
                     accept_set  =   ListOf(Serial)
         ):
-
+        """resolve_pending_commissions description"""
         return Nothing
 
     def release_entity  (
@@ -218,7 +218,7 @@ class QuotaholderAPI(Specificator):
                 context         =   Context,
                 release_entity  =   ListOf(Entity, Key, nonempty=1)
         ):
-
+        """relesea_entity description"""
         rejected = ListOf(Entity)
         return rejected
 
@@ -229,7 +229,7 @@ class QuotaholderAPI(Specificator):
                 before          =   Timepoint,
                 get_timeline    =   ListOf(Entity, Resource, Key)
         ):
-
+        """get_timeline description"""
         timeline = ListOf(Dict(
                             serial                      =   Serial,
                             source                      =   Entity,

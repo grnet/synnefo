@@ -41,7 +41,10 @@ from astakos.im.util import get_invitation
 from astakos.im.functions import (send_verification, send_activation,
                                   send_account_creation_notification,
                                   send_group_creation_notification, activate)
-from astakos.im.settings import INVITATIONS_ENABLED, MODERATION_ENABLED, SITENAME, RE_USER_EMAIL_PATTERNS
+from astakos.im.settings import (INVITATIONS_ENABLED, MODERATION_ENABLED,
+    SITENAME, RE_USER_EMAIL_PATTERNS
+)
+from astakos.im.messages import as astakos_messages
 
 import logging
 import re
@@ -226,28 +229,23 @@ class ActivationResult(object):
 
 class VerificationSent(ActivationResult):
     def __init__(self):
-        message = _('Verification sent.')
+        message = _(astakos_messages.VERIFICATION_SENT)
         super(VerificationSent, self).__init__(message)
 
 
 class SwitchAccountsVerificationSent(ActivationResult):
     def __init__(self, email):
-        message = _('This email is already associated with another \
-                    local account. To change this account to a shibboleth \
-                    one follow the link in the verification email sent \
-                    to %s. Otherwise just ignore it.' % email)
+        message = _(astakos_messages.SWITCH_ACCOUNT_LINK_SENT)
         super(SwitchAccountsVerificationSent, self).__init__(message)
 
 
 class NotificationSent(ActivationResult):
     def __init__(self):
-        message = _('Your request for an account was successfully received and is now pending \
-                    approval. You will be notified by email in the next few days. Thanks for \
-                    your interest in ~okeanos! The GRNET team.')
+        message = _(astakos_messages.NOTIFACATION_SENT)
         super(NotificationSent, self).__init__(message)
 
 
 class RegistationCompleted(ActivationResult):
     def __init__(self):
-        message = _('Registration completed. You can now login.')
+        message = _(astakos_messages.REGISTRATION_COMPLETED)
         super(RegistationCompleted, self).__init__(message)

@@ -43,6 +43,8 @@ from astakos.im.views import requires_anonymous
 from astakos.im.forms import LoginForm
 from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
 
+import astakos.im.messages as astakos_messages
+
 from ratelimit.decorators import ratelimit
 
 retries = RATELIMIT_RETRIES_ALLOWED - 1
@@ -72,9 +74,9 @@ def login(request, on_failure='im/login.html'):
 
     message = None
     if not user:
-        message = _('Cannot authenticate account')
+        message = _(astakos_messages.ACCOUNT_AUTHENTICATION_FAILED)
     elif not user.is_active:
-        message = _('Inactive account')
+        message = _(astakos_messages.ACCOUNT_INACTIVE)
     if message:
         messages.error(request, message)
         return render_to_response(on_failure,

@@ -43,6 +43,7 @@ from astakos.im.models import AstakosUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 
+import astakos.im.messages as astakos_messages
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -89,7 +90,7 @@ def login(request, backend=None, on_login_template='im/login.html',
                                     request.GET.get('next'),
                                     'renew' in request.GET)
         else:
-            message = _('Inactive account')
+            message = _(astakos_messages.ACCOUNT_INACTIVE)
             messages.error(request, message)
             return render_response(on_login_template,
                                    login_form=LoginForm(request=request),

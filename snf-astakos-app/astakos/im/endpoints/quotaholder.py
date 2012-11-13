@@ -51,6 +51,7 @@ inf = float('inf')
 
 logger = logging.getLogger(__name__)
 
+inf = float('inf')
 
 def call(func_name):
     """Decorator function for QuotaholderHTTP client calls."""

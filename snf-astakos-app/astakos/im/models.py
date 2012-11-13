@@ -63,6 +63,8 @@ from astakos.im.functions import send_invitation
 from astakos.im.tasks import propagate_groupmembers_quota
 from astakos.im.functions import send_invitation
 
+import astakos.im.messages as astakos_messages
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
@@ -340,9 +342,7 @@ class AstakosUser(User):
 
     astakos_groups = models.ManyToManyField(
         AstakosGroup, verbose_name=_('agroups'), blank=True,
-        help_text=_("""In addition to the permissions manually assigned, this
-                    user will also get all permissions granted to each group
-                    he/she is in."""),
+        help_text=_(astakos_messages.ASTAKOSUSER_GROUPS_HELP),
         through='Membership')
 
     __has_signed_terms = False
@@ -519,7 +519,7 @@ class AstakosUser(User):
         q = q.filter(email=self.email)
         q = q.filter(is_active=self.is_active)
         if q.count() != 0:
-            raise ValidationError({'__all__': [_('Another account with the same email & is_active combination found.')]})
+            raise ValidationError({'__all__': [_(astakos_messages.UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR)]})
 
     @property
     def signed_terms(self):
@@ -690,7 +690,7 @@ class EmailChangeManager(models.Manager):
             except AstakosUser.DoesNotExist:
                 pass
             else:
-                raise ValueError(_('The new email address is reserved.'))
+                raise ValueError(_(astakos_messages.NEW_EMAIL_ADDR_RESERVED))
             # update user
             user = AstakosUser.objects.get(pk=email_change.user_id)
             user.email = email_change.new_email_address
@@ -698,12 +698,12 @@ class EmailChangeManager(models.Manager):
             email_change.delete()
             return user
         except EmailChange.DoesNotExist:
-            raise ValueError(_('Invalid activation key'))
+            raise ValueError(_(astakos_messages.INVALID_ACTIVATION_KEY))
 
 
 class EmailChange(models.Model):
     new_email_address = models.EmailField(_(u'new e-mail address'),
-                                          help_text=_(u'Your old email address will be used until you verify your new one.'))
+                                          help_text=_(astakos_messages.EMAIL_CHANGE_NEW_ADDR_HELP))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchange_user')
     requested_at = models.DateTimeField(default=datetime.now())

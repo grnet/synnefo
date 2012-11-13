@@ -3,10 +3,11 @@ import sys
 import os
 from commissioning.clients.http import HTTP_API_Client, init_logger_stderr
 from commissioning import QuotaholderAPI
+from sets import Set
 import random
 import copy
 import inspect
-
+import traceback
 
 #init_logger_stderr('mylogger', level='INFO')
 
@@ -88,8 +89,9 @@ def split(f, seq):
 
 class Client(object):
     qh = new_qh_client()
-    clientKey = rand_string()
-
+    #clientKey = rand_string()
+    clientKey = "test1"
+    
     @staticmethod
     def get():
         return Client.qh
@@ -123,21 +125,43 @@ class Policy(Config):
     policies = {}
 
     @staticmethod
+    def names(policyList):
+        return [p.policyName for p in policyList]
+    
+    @staticmethod
     def copy(policy):
         return copy.deepcopy(policy)
 
     @staticmethod
     def union(policy1,policy2):
-        return copy(policy1)
+        return Policy.copy(policy1)
 
     @staticmethod
-    def get(name):
+    def get(name,load=False):
         p = Policy.policies.get(name)
         if(p == None):
             p = Policy.newDummy()
             p.policyName = name
             Policy.policies[name] = p
+        elif(load == True):
+            p.load()        
         return p
+    
+    
+    @staticmethod
+    def getMany(names):
+        policyList = [Policy.get(name) for name in names]
+        for p in policyList:
+            p.setDummy(False)
+        return policyList
+
+    
+    @staticmethod
+    def loadManyByName(names):
+        policyList = Policy.getMany(names)
+        rejected = Policy.loadMany(policyList)
+        return split(lambda p: p.policyName not in rejected,policyList)
+        
 
     # Dummy policies are neither loaded nor saved.
     @staticmethod
@@ -150,7 +174,7 @@ class Policy(Config):
     def splitRejected(policyList, rejectedList):
         (a, b) = split((lambda p: p.policyName not in rejectedList), policyList)
         if(b != []):
-            printf("Rejected entities (call to set_limits!!): {0}", [p.policyName for p in b])
+            printf("Rejected policies (call to set_limits!!): {0}", [p.policyName for p in b])
         return (a, b)
 
     @staticmethod
@@ -158,7 +182,7 @@ class Policy(Config):
         acceptedListNames = [x[0] for x in acceptedList]
         (a, b) = split((lambda p: p.policyName in acceptedListNames), policyList)
         if(b != []):
-            printf("Accepted entities (call to get_limits): {0}", acceptedList)
+            printf("Rejected policies (call to get_limits): {0}", b)
         return (a, b)
 
     @staticmethod
@@ -184,18 +208,22 @@ class Policy(Config):
     @staticmethod
     def loadMany(policyList):
         inputList = [p.policyName for p in policyList if(not p.isDummy())]
-        acceptedList = Policy.con().get_limits(context=Policy.Context, get_limits=inputList)
+        #printf("get_limits inputList: {0}", inputList)
+        if(inputList != []):
+            acceptedList = Policy.con().get_limits(context=Policy.Context, get_limits=inputList)
+        else:
+            acceptedList = []
         (ok, notok) = Policy.splitAccepted(policyList, acceptedList)
         # fill the policy
         for p in ok:
             p.exist = Policy.PolicyState.EXISTS
-        g = find((lambda x: x[0]), acceptedList)
-        p.quantity = g[1]
-        p.capacity = g[2]
-        p.importLimit = g[3]
-        p.exportLimit = g[4]
+            g = find((lambda x: x[0] == p.policyName), acceptedList)
+            p.quantity = g[1]
+            p.capacity = g[2]
+            p.importLimit = g[3]
+            p.exportLimit = g[4]
         for p in notok:
-            if(p.exist == Policy.EXISTS):
+            if(p.exist == Policy.PolicyState.EXISTS):
                 p.exist = Policy.PolicyState.NOT_EXISTS
 
         return notok
@@ -204,7 +232,7 @@ class Policy(Config):
         return "Policy({0})".format(self.policyName)
 
     def reset(self):
-        self.set(None, 0, 0, 0, 0)
+        self.set(None, 0, 0, None, None)
 
     def set(self, name, q, c, i, e):
         self.policyName = name
@@ -276,7 +304,15 @@ class Policy(Config):
 class Resource(Config):
 
     ResourceState = enum('DIRTY', 'LOADED')
-
+    
+    @staticmethod
+    def names(resourceList):
+        return [r.resourceName for r in resourceList]
+    
+    @staticmethod
+    def getPolicies(resourceList):
+        return [r.policy for r in resourceList]
+    
     @staticmethod
     def copy(resource):
         return copy.copy(resource)
@@ -340,40 +376,31 @@ class Resource(Config):
         else:
             resourceList = resourceList0
         #
-        (rl1, rl2) = split((lambda r: not r.policy.isDummy()), resourceList)
+        (rl1, rl2) = split((lambda r: r.policy.isDummy()), resourceList)
         #
         if(rl1 == []):
             ol1 = []
         else:
             il1 = [(r.entity.entityName, r.resourceName, r.entity.entityKey,r.policy.quantity,
                     r.policy.capacity,r.policy.importLimit,r.policy.exportLimit,Resource.Flags) for r in rl1]
+            printf("before call to set_quota: input list {0}",il1)
+            #exn("BUG! should not reach this point")
             ol1 = Resource.con().set_quota(context=Resource.Context,set_quota=il1)
-
+            #ListOf(Entity, Resource)
+            ol1 = [find(lambda r: r.resourceName == r and r.entity.entityName == e,rl1) for e,r in ol1]
+            ol1 = [r.policy for r in ol1]
+            
         if(rl2 == []):
             ol2 = []
         else:
             il2 = [(r.entity.entityName,r.resourceName,r.entity.entityKey,r.policy.policyName,Resource.Flags) for r in rl2]
             ol2 = Resource.con().set_holding(context=Resource.Context,set_holding=il2)
+            #rejected = ListOf(Entity, Resource, Policy)
+            printf("####Rejected list ol2: {0}",ol2)
+            ol2 = [find(lambda r: r.resourceName == r and r.entity.entityName == e,rl2) for e,r,p in ol2]
+            ol2 = ol1 = [r.policy for r in ol2]
 
-        if(ol2 != []):
-            exn("Rejected ol2 = {0}",ol2)
-            
-        rejectedList = []
-
-
-        #TODO:
-
-        # 1. set_holding
-        # 2. rejected lists
-
-        if(rl2 == []):
-            ol2 = []
-        else:
-            ol2 = []
-        #
-        #
-        #FIXME:
-        return []
+        return ol1+ol2
 
 
     def isDirty(self):
@@ -454,9 +481,12 @@ class Commission(Config):
             rejectedList = Commission.con().accept_commission(context=Commission.Context,
                 clientKey=Client.clientKey,
                 serials=inputList, reason='ACCEPT')
+            
+        #TODO: not implemented yet because the API does not support this.
+        inputList = [c for c in comList if(c.serial not in rejectedList)]
         for c in inputList:
             c.state = Commission.CommissionState.ACCEPTED
-            #TODO: not implemented yet because the API does not support this.
+
         return [c for c in comList if(c not in inputList)]
 
     @staticmethod
@@ -501,23 +531,29 @@ class Commission(Config):
     def isPending(self):
         return self.state == Commission.CommissionState.PENDING
 
+    def isFinal(self):
+        return (not self.canChange()) and (not self.isPending())
 
     def issue(self):
         prov = [(r.entity.entityName, r.resourceName, q) for r, q in self.resources_quant if(q != 0)]
         if(prov != []):
             printf("Target is {0} and prov_list= {1}",self.target.entityName,prov)
+            cexn(Client.clientKey == None, "Client key has the value NONE")
             self.serial = Commission.con().issue_commission(context=Commission.Context,
                 target=self.target.entityName,
                 key=self.target.entityKey,
                 clientKey=Client.clientKey,
                 owner=self.target.parent.entityName,
                 ownerKey=self.target.parent.entityKey,
-                provisions=prov)
+                provisions=prov,
+                name="Commission from {0} -> {1}".format([a for a,b,c in prov],self.target.entityName))
         self.state = Commission.CommissionState.PENDING
         return True
 
 
-    def accept(self):
+    def accept(self,forceIssue=False):
+        if(forceIssue):
+            self.issue()
         return Commission.saveAll([self]) == []
 
     def reject(self):
@@ -547,7 +583,7 @@ class Entity(Config):
     allEntities = {}
 
     @staticmethod
-    def get(name="",f=(lambda: (lambda x: Entity().set("system","",None))(printf("DEFAULT entity: system")) )):
+    def get(name="",f=None):
         #printf("System name {0} ==> get name {1}",Entity.systemName,name)
         # If system has not been added to hierarchy add it now
         if( Entity.allEntities.get(Entity.systemName) == None):
@@ -559,8 +595,15 @@ class Entity(Config):
         e = Entity.allEntities.get(name)
         #otherwise, create a new one
         if(e == None):
-            #printf("calling f for name {0}",name)
-            e = f()
+            printf("calling f for name {0}",name)
+            if(f == None):
+                if(name == Entity.systemName):
+                    printf("c")
+                    e =  Entity().set("system","",None)
+                else:
+                    exn("Invalid callback function")
+            else:
+                e = f()
             Entity.allEntities[name] = e
             
         #printf("Getting object with name {0} and type {1} and its name is {2}",name,type(e),e.entityName)
@@ -748,14 +791,27 @@ class Entity(Config):
 class ResourceHolder(Entity):
 
     root = Entity.get("pgerakios", lambda: Entity().set("pgerakios","key1",Entity.get("system")))
-    resourceNames = ["pithos","cyclades_vm","cyclades_cpu","cyclades_mem"]
+    resourceDefaults ={
+                     "pithos" : 1000,
+                     "cyclades_vm" : 1000,
+                     "cyclades_cpu" : 1000,
+                     "cyclades_mem" : 1000
+                   }
+    
+    @staticmethod
+    def getResourceNames():
+        return [name for name in ResourceHolder.resourceDefaults]
+    
+    @staticmethod
+    def getResourceDefaultValues():
+        return ResourceHolder.resourceNames
 
     def __init__(self):
         #super(Entity,self).__init__()
         Entity.__init__(self)
         printf("INIT of ResourceHolder invoked for {0}",self.entityName)
         self.commission = Commission(self)
-        for r in ResourceHolder.resourceNames:
+        for r in ResourceHolder.getResourceNames():
             self.addResource(r)
 
     def newCommission(self):
@@ -787,6 +843,10 @@ class Group(ResourceHolder):
 
     systemGroupName = "group"
     systemGroupKey  = "group"
+    initializedSystem = False
+    
+    _systemGroupName = "system_group"
+    _systemGroupPass = "system_group"
 
     @staticmethod
     def listGroups():
@@ -795,100 +855,287 @@ class Group(ResourceHolder):
     @staticmethod
     def getGroupRoot():
         def createRoot():
-            return Group().set(Group.systemGroupName,Group.systemGroupKey,ResourceHolder.root)
-        e = Entity.get(Group.systemGroupName,createRoot)
-        if(not e.exists()):
-            e.create(True)
-        return e
-
+            e = Entity().set(Group.systemGroupName,Group.systemGroupKey,ResourceHolder.root)
+            if(e.exists(True) == False):
+                printf("Group {0} does not exist. Creating {0}.",e.entityName,e.entityName)
+                e.create()
+            return e
+        return  Entity.get(Group.systemGroupName,createRoot)
 
     @staticmethod
-    def get(name,key):
+    def systemGroup():
+        system = Group.get(Group._systemGroupName,Group._systemGroupPass,
+                           # Optional arguments
+                           group_pithos=ResourceHolder.resourceDefaults["pithos"],
+                           group_cyclades_vm=ResourceHolder.resourceDefaults["cyclades_vm"],
+                           group_cyclades_mem=ResourceHolder.resourceDefaults["cyclades_mem"],
+                           group_cyclades_cpu=ResourceHolder.resourceDefaults["cyclades_cpu"],
+                           user_pithos=0,user_cyclades_vm=0,
+                           user_cyclades_mem=0, user_cyclades_cpu=0                      
+                          )
+        cexn(not isinstance(system,Group),"Not instance of Group!")
+        return system
+        
+    
+
+    @staticmethod
+    def get(name,key,**kwargs):
+        printf("@@-1 len of kwargs : {0}", len(kwargs.items()))        
         def groupCreate():
-            g = Group().set(name,key,Group.getGroupRoot())
+            printf("@@0 len of kwargs : {0}", len(kwargs.items()))
+            g = Group(name,key,Group.getGroupRoot(),**kwargs)
             printf("Creating group {0} with type {1}",name,type(g))
             return g
-        ret =   Entity.get(name,groupCreate)
-        if(name == Group.systemGroupName):
-            ret.makeSystem()
-        elif(ret.exists(True) == False):
-            ret.drawResources()
-        return ret
+        ret = Entity.get(name,groupCreate)
+        cexn(not isinstance(ret,Group),"Not instance of Group!")
+        return ret    
     
-    def set(self, name, password, parent):
-        super(ResourceHolder,self).set(name, password, parent)
-        # load policies for users
-        self.userResourcePolicies = {}
-        if(name != None):
-            self.loadUserResourcePolicies()
-        return self
-    
-    def __init__(self):
-        #super(ResourceHolder,self).__init__()
+    def policyName(self,isGroup,resourceName):
+        ret = "group.{0}.{1}.".format(self.entityName,resourceName)
+        if(isGroup):
+            return ret + "groupPolicy"
+        else:
+            return ret + "userPolicy"
+
+    def getUserPolicyFor(self,resourceName):
+            return self.userResourcePolicies[resourceName]
+            
+    def __init__(self, name, password, parent, **kwargs):
+        printf("@@1 len of kwargs : {0}", len(kwargs.items()))
         ResourceHolder.__init__(self)
+        ResourceHolder.set(self,name, password, parent)
         printf("INIT of Group invoked for {0}",self.entityName)
         self.users = []
         self.userResourcePolicies = {}
-        self.initializedSystem = False
-
-        # load policies for groups
-        self.loadGroupResourcePolicies()
-
-    def loadGroupResourcePolicies(self):
-        for r in self.getResources():
-            r.policy.load()
-
-    def loadUserResourcePolicies(self):
-        for r in self.resourceNames:
-            self.userResourcePolicies[r] = Policy.get("{0}.{1}".format(self.entityName,r))
-
-    def getUserPolicyFor(self,resourceName):
-        return self.userResourcePolicies[resourceName]
-
-    def getUserPolicies(self):
-        return self.userResourcePolicies
-
-    def makeSystem(self):
-        if(self.initializedSystem):
-            return
-        #
-        for r in self.getResources():
-            r.policy.quantity = 1000
-        self.saveResources(True)
-        #
-        self.initializedSystem = True
-
-
-    def drawResources(self):
-        for r in self.getResources():
-            self.commission.addResource(r,r.policy.quantity)
-        #
-        return self.commit() 
-
-    def saveGroupPolicyQuantities(self,**kwargs):
-        policies = []
-        for name,quantity in kwargs.items():
-            r = self.getResource(name)
-            r.policy.quantity = quantity
-            r.policy.setDummy(False)
-            r.policy.policyName =  "group."  + self.entityName + "." + name 
-            policies.append(r.policy)
-            
-        Policy.saveMany(policies)
+        #load group and user policies
+        self.userResourcePolicies = {}
         
-    def saveUserPolicyQuantities(self,**kwargs):
-        policies = []
-        for name,quantity in kwargs.items():
-            p = self.getUserPolicyFor(name)
+        printf(" !!!! {0} !!!!", [r.resourceName for r in self.getResources()])
+        
+        def isSystemGroup():
+            return self.entityName == Group._systemGroupName
+        
+        if(isSystemGroup() and Group.initializedSystem):
+            exn("group {0} has already been initialized", Group._systemGroupName)
+                
+        # create entity if it does not exist        
+        if(self.exists(True) == False):
+            printf("Group {0} does not exist. Creating {0}.",self.entityName,self.entityName)
+            self.create()
+        
+        #
+        def getGroupPolicyFor(resourceName):
+            return self.getResource(resourceName).policy
+        
+        def getUserPolicyFor(resourceName):
+            return self.userResourcePolicies[resourceName]
+                        
+        def parseArgs():
+            userArgs={}
+            groupArgs={}
+            resourceNames = Set([])
+            printf("len of kwargs : {0}", len(kwargs.items()))
+            for prefixedResourceName,value in kwargs.items():
+                printf("Prefixed resourcename: {0}",prefixedResourceName)
+                tmp = prefixedResourceName.split("_")
+                prefix = tmp[0]
+                resourceName = "_".join(tmp[1:])
+                #prefix,resourceName = tuple(tmp[0],"".join(tmp[1:]))
+                printf("Prefixed resource name {0} ---> resource name {1}",prefixedResourceName,resourceName)
+                if(prefix == "group"):
+                    groupArgs[resourceName] = value 
+                elif(prefix == "user"):
+                    userArgs[resourceName] = value
+                else:
+                    exn("Unknown prefix " + prefix)
+                resourceNames.add(resourceName)
+                #
+            return (groupArgs,userArgs,resourceNames)
+            
+        def makePolicyNames(resourceNames):
+            policyNames = []
+            for r in resourceNames:
+                printf("Making resource name {0}", r)
+                policyNames.append(self.policyName(True,r))
+                policyNames.append(self.policyName(False,r))
+            return policyNames
 
-            p.quantity = quantity
-            p.setDummy(False)            
-            #p.policyName =  "group."  + self.entityName             
-            policies.append(p)
-        b = Policy.saveMany(policies)
-        for p in policies:
-            p.setDummy(True)
-        return b
+        def fillResources(list):
+            (group,user) = split(lambda p: p.policyName.endswith("groupPolicy"),list)
+            groupRes = []
+            for p in user:
+                resourceName = p.policyName.split(".")[2]
+                self.userResourcePolicies[resourceName] = p
+                p.setDummy(False)
+            for p in group:
+                resourceName = p.policyName.split(".")[2]
+                r = self.getResource(resourceName)
+                #cexn(r.policy.policyName != p.policyName, "Bad policy name {0} {1}",r.policy.policyName , p.policyName)
+                r.policy.policyName = p.policyName 
+                r.policy = p
+                p.setDummy(False)
+                groupRes.append(r)
+            return groupRes
+                
+        def parseResourceNames(policyList):
+            group = []
+            user = []
+            for policyName in policyList:
+                g,entityName,resourceName,postfix = tuple(policyName.split("."))
+                if(postfix == "groupPolicy"):
+                    group.append(resourceName)
+                elif(postfix == "userPolicy"):
+                    user.append(resourceName)
+                else:
+                    exn("bad postfix")                                                    
+            return (group,user)
+        
+        #if(self.isSystemGroup()):
+        #   for r in self.getResources():
+        #      r.policy.quantity = ResourceHolder.getResourceDefaultValues()[r.resourceName]
+        #      r.policy.capacity = 0
+        #      r.policy.setDummy(False)
+                 
+        # Step 1: 
+        # find resourceNames that must be overwritten -> specified in Args
+        # the remaining resourceNames will be loaded
+        # if some the remaining do not exist they will be saved
+        groupArgs, userArgs, resourceNames = parseArgs()
+        allResourceNames = Set([r.resourceName for r in self.getResources()])
+        notInitResources = allResourceNames.difference(resourceNames)
+        
+                         
+        #Step 2: load init policies
+        notInitPolicyNames = makePolicyNames(notInitResources)
+        printf("notInitPolicyNames: {0}  --- resourceNames : {1} --- allResourceNames: {2}",notInitPolicyNames,resourceNames,allResourceNames)
+        (ok,notok) = Policy.loadManyByName(notInitPolicyNames)
+        cexn(notok != [], "There exist some unspecified policies for {0} that were not specified in the constructor arguments and do not already exist: {1}",self.entityName,Policy.names(notok))
+        # link resources to policies
+        #if(self.isSystemGroup()):
+                   
+        fillResources(ok)
+                           
+        #        
+        initPolicyNames = makePolicyNames(resourceNames)
+        initPolicies = Policy.getMany(initPolicyNames)
+        
+        #        
+        for policy in initPolicies:
+            def get():
+                g,entityName,resourceName,postfix = tuple(policy.policyName.split("."))
+                if(postfix == "groupPolicy"):
+                    return groupArgs[resourceName]
+                elif(postfix == "userPolicy"):
+                    return userArgs[resourceName]
+                else:
+                    exn("get exn")            
+            if(isSystemGroup()):
+                policy.capacity = 0
+                policy.quantity = get()
+            # otherwise groups and users have initially zero quantity
+            else:
+                policy.capacity = get()
+                policy.quantity = 0
+
+        
+        # Save policies --- maybe some of the do not exist!        
+        cexn(Policy.saveMany(initPolicies) != [],"Could not save all policies")
+        printf("Saved policies : {0}",Policy.names(initPolicies))
+        saveResources = fillResources(initPolicies)
+        if(saveResources != []):
+            cexn(Resource.saveMany(saveResources) != [] , "Could not save all resources")
+            printf("Saved resources : {0}",Resource.names(saveResources))
+           
+        # system is now initialized
+        if(isSystemGroup()):
+            Group.initializedSystem = True
+            
+
+    def drawSystemResources(self,**kwargs):
+        c = Commission(self)
+        system = Group.systemGroup()
+        default = Set([])
+        for resourceName,quantity in kwargs:            
+            default.add(resourceName)
+            c.addResource(system.getResource(resourceName),quantity)
+        remaining = Set(system.getResourceNames()).difference(default)
+        for resourceName in remaining: 
+            r = self.getResource(resourceName)
+            c.addResource(system.getResource(resourceName),r.policy.capacity)        
+        return c.accept(True)
+ 
+
+    #def drawResources(self,**kwargs):
+    #    for r in self.getResources():
+    #        self.commission.addResource(r,r.policy.quantity)
+    #    #
+    #    return self.commit() 
+    
+    
+
+#    def makeSystem(self):
+#        if( self.entityName != Group.systemGroupName):
+#            exn("Only system entity can invoke this function")
+#        elif(Group.initializedSystem):
+#            exn("group {0} already exists",Group.systemGroupName)
+#        #
+#        for r in self.getResources():
+#            r.policy.quantity = ResourceHolder.getResourceDefaultValues()[r.resourceName]
+#        self.saveResources(True)
+#        #
+#        Group.initializedSystem = True
+#        
+#    def savePolicyQuantities(self,**kwargs):
+#        if(self.isSystemGroup() and Group.initializedSystem and len(kwargs.items)>0):
+#            exn("Already initialized group " + Group.systemName)
+#        #
+#        policies = []
+#        for prefixedResourceName,capacity in kwargs.items():
+#            prefix,resourceName = tuple(prefixedResourceName.split("_"))
+#            if(prefix == "group"):
+#                p = self.getGroupPolicyFor(resourceName)
+#                p.policyName = self.policyName(True,resourceName)                 
+#            elif(prefix == "user"):
+#                p = self.getUserPolicyFor(resourceName)
+#                p.policyName = self.policyName(False,resourceName)
+#            else:
+#                exn("Unknown prefix " + prefix)
+#            if(self.isSystemGroup()):                
+#                p.capacity = 0
+#                p.quantity = capacity
+#            else:
+#                p.capacity = capacity
+#                p.quantity = 0                
+#            p.setDummy(False)                        
+#            policies.append(p)
+#        #
+#        Policy.saveMany(policies)
+
+#    def saveGroupPolicyQuantities(self,**kwargs):
+#        policies = []
+#        for resourceName,capacity in kwargs.items():
+#            p = self.getResource(resourceName).policy
+#            p.capacity = capacity
+#            p.quantity = 0
+#            p.setDummy(False)
+#            p.policyName = self.policyName(True,resourceName) 
+#            policies.append(r.policy)
+#        #
+#        Policy.saveMany(policies)
+#        
+#    def saveUserPolicyQuantities(self,**kwargs):
+#        policies = []
+#        for resourceName,capacity in kwargs.items():
+#            p = self.getUserPolicyFor(resourceName)
+#            p.capacity = capacity
+#            p.quantity = 0
+#            p.setDummy(False)            
+#            #p.policyName =  "group."  + self.entityName             
+#            policies.append(p)
+#        b = Policy.saveMany(policies)
+#        for p in policies:
+#            p.setDummy(True)
+#        return b
 
 
 class User(ResourceHolder):
@@ -905,24 +1152,41 @@ class User(ResourceHolder):
     @staticmethod
     def getUserRoot():
         def createRoot():
-            return User().set(User.systemUserName,User.systemUserKey,ResourceHolder.root)
+            e = Entity().set(User.systemUserName,User.systemUserKey,ResourceHolder.root)
+            if(e.exists(True) == False):
+                printf("Group {0} does not exist. Creating {0}.",e.entityName,e.entityName)
+                e.create()
+            return e
+            
         e = Entity.get(User.systemUserName,createRoot)
-        if(not e.exists()):
-            e.create(True)
+        #if(not e.exists()):
+        #    e.create(True)
         return e
         
     @staticmethod
     def get(name,key):
         def userCreate():
-            u = User().set(name,key,User.getUserRoot())
+            u = User(name,key,User.getUserRoot())
             printf("Creating user {0} with type {1}",name,type(u))
             return u
         return  Entity.get(name,userCreate)
 
-    def __init__(self):
+    def __init__(self,name,password,parent):
         #super(ResourceHolder,self).__init__()
         ResourceHolder.__init__(self)
+        ResourceHolder.set(self,name, password, parent)
+        
+        # create entity if it does not exist        
+        if(self.exists(True) == False):
+            printf("User {0} does not exist. Creating {0}.",self.entityName,self.entityName)            
+            self.create()
+        
         self.groups = []
+
+        self.resourceMap = {}
+        self.groupMap = {}
+        
+        #load policies
         self.loadPolicies()
 
 
@@ -935,11 +1199,11 @@ class User(ResourceHolder):
 
     def loadPolicies(self):
         dict = {}
-        for r in self.getResources()    :
+        for r in self.getResources():
             dict[r.resourceName] = r.policy
             
         for g in self.groups:
-            for r in self.resourceNames:
+            for r in self.getResourceNames():
                 p = g.getUserPolicyFor(r.resourceName)
                 if(dict[r.name] == None):
                     dict[r.name] = Policy.copy(p)
@@ -953,35 +1217,62 @@ class User(ResourceHolder):
             p.setDummy(True)
             r.setPolicy(p)
 
-    def joinGroup(self,group):
+    # 
+    def _joinGroup(self,group):
         self.groups.append(group)
         group.users.append(self)
+        self.groupMap[group] = {}
         #
-        rlist = []
         for r in self.getResources():
             groupUserPolicy = group.getUserPolicyFor(r.resourceName)
             printf("join group ==> Resource entity: {0} with name {1}",r.entity.entityName,groupUserPolicy.name())
             #
-            self.commission.addResource(group.getResource(r.resourceName),groupUserPolicy.quantity)
-            #
-            r.setPolicy(groupUserPolicy)
-            rlist.append(r)
-        #
-        Resource.saveMany(rlist,False)
-        #DO NOT COMMIT HERE
-        # self.commit !!! no
+            #self.commission.addResource(group.getResource(r.resourceName),groupUserPolicy.quantity)
+            # set the new policy but do NOT SAVE
+            r.setPolicy(Policy.union(groupUserPolicy,r.policy))
+       
+    def joinGroup(self,group):
+        self.joinGroups([group])
+        Resource.saveMany(self.getResources(),False)
+                
+    def joinGroups(self,groupList):
+        for group in groupList:
+            self._joinGroup(group)
+        Resource.saveMany(self.getResources(),False)
+        
+    
+    def drawResources(self,**kwargs):
+        for prefixedName,quantity in kwargs:            
+            group,resourceName = tuple(prefixedName.split("_"))
+            self.commission.addResource(Group.get(group,"").getResource(resourceName),quantity)
+        #    
+
+    
+    def commit(self):
+        return ResourceHolder.commit(self)
+    
+    
+    def release(self):
+        if(not self.commission.isFinal()):
+            self.reject()
+        #TODO: abort commision if not pending
+        ResourceHolder.release(self)
 
 
 # Main program
 
 try:
+        
     #
     # Group1
     printf("Step 1")
-    group1 = Group.get("group1","group1")
-    
-    #cexn(group1.create() == False, "Could not create group  group1")
-    group1.create()
+    group1 = Group.get("group1","group1",
+                       # Optional arguments
+                       group_pithos=10,group_cyclades_vm=8,
+                       group_cyclades_mem=9,group_cyclades_cpu=12,
+                       user_pithos=2,user_cyclades_vm=2,
+                       user_cyclades_mem=1, user_cyclades_cpu=3                      
+                      )
     
     printf("Type of group1 : {0}, exists ? {1} ", type(group1), group1.exists(True))
     
@@ -995,22 +1286,16 @@ try:
 
     printf("Step 2  name : {0}",group1.entityName)
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
-    group1.saveGroupPolicyQuantities(pithos=10,cyclades_vm=8,cyclades_mem=9,cyclades_cpu=12)
-    group1.saveUserPolicyQuantities(pithos=2,cyclades_vm=2,cyclades_mem=1,cyclades_cpu=3)
+    group1.drawSystemResources()
 
     printf("Group1 resources BEGIN")
     for r in group1.getResources(True):
-        printf("Group {0} resource {1} = {2}",group1.entityName,r.resourceName,r.quantity())
-    printf("Group1 resources END")
-    
-    
- 
+        printf("Group {0} resource {1} = {2}",
+               group1.entityName,r.resourceName,r.quantity())
+    printf("Group1 resources END")    
 
     printf("Step 3 ")
     user1 = User.get("prodromos", "key1")
-
-    user1.create()
-    #cexn(user1.create() == False, "Could not create group  group1")
 
     cexn(user1.exists(True) == False,"User does not exist!!")
     
@@ -1024,6 +1309,9 @@ try:
     
     user1.joinGroup(group1)
     
+    user1.drawResources(group1_pithos=2,group1_cyclades_vm=2,
+                        group1_cyclades_mem=1, group1_cyclades_cpu=3)
+        
     #
     printf("User1 resources BEGIN")
     for r in user1.getResources(False):
@@ -1045,8 +1333,10 @@ try:
     
     printf("Step 6")
     user1.release()
+    group1.release()
 
 finally:
+    #raw_input("Press any to terminate program other than Ctrl+C")
     no = ["system","pgerakios"]
     yes = ["group","user"]
     #
@@ -1061,56 +1351,56 @@ finally:
 
 
 
-exit(0)
-
-
-# Main program
-root = Entity.get()
-#TODO: implement Entity.get recursively !! using get_entity !!!!
-# TODO: correct Entity.checkAll
-pgerakios = Entity.get("pgerakios", "key1", root)
-pgerakios.create()
-
-try:
-    # Transfer resources
-    e = Entity.get(rand_string(), "key1", pgerakios)
-    e.create()
-
-    p = Policy.newDummy(quantity=0,capacity=10)
-    r1 = e.addResource("CPU",p)
-
-    r2 =e.addResourceWith("MEMORY",quantity=0,capacity=25)
-    rl1 = e.getResources(False)
-    for r in rl1:
-        printf("Resources of e before : {0}", r.resourceName)
-
-    e.saveResources()
-    rl2 = e.getResources(True)
-
-    for r in rl2:
-        printf("r is {0}",r)
-        printf("dict of r : {0}", r.__dict__)
-        printf("Resources of e after : {0}", r.resourceName)
-
-
-    e1 = Entity.get(rand_string(), "key1", pgerakios)
-    e1.create()
-    rl3 = e1.getResources(True)
-    q= e1.addCommission()
-    q.addResource(r1,3)
-    q.addResource(r1,4)
-    e1.commitAllCommissions(False)
-    rl4 = e1.getResources(True)
-
-    for r in rl3:
-        printf("Resources of e1 before : {0}", r.resourceName)
-    for r in rl4:
-        printf("Resources of e1 after : {0}", r.resourceName)
-
-finally:
-    for e in Entity.list():
-        if(e.entityName != "system" and e.entityName != "pgerakios"):
-            e.release()
+#exit(0)
+#
+#
+## Main program
+#root = Entity.get()
+##TODO: implement Entity.get recursively !! using get_entity !!!!
+## TODO: correct Entity.checkAll
+#pgerakios = Entity.get("pgerakios", "key1", root)
+#pgerakios.create()
+#
+#try:
+#    # Transfer resources
+#    e = Entity.get(rand_string(), "key1", pgerakios)
+#    e.create()
+#
+#    p = Policy.newDummy(quantity=0,capacity=10)
+#    r1 = e.addResource("CPU",p)
+#
+#    r2 =e.addResourceWith("MEMORY",quantity=0,capacity=25)
+#    rl1 = e.getResources(False)
+#    for r in rl1:
+#        printf("Resources of e before : {0}", r.resourceName)
+#
+#    e.saveResources()
+#    rl2 = e.getResources(True)
+#
+#    for r in rl2:
+#        printf("r is {0}",r)
+#        printf("dict of r : {0}", r.__dict__)
+#        printf("Resources of e after : {0}", r.resourceName)
+#
+#
+#    e1 = Entity.get(rand_string(), "key1", pgerakios)
+#    e1.create()
+#    rl3 = e1.getResources(True)
+#    q= e1.addCommission()
+#    q.addResource(r1,3)
+#    q.addResource(r1,4)
+#    e1.commitAllCommissions(False)
+#    rl4 = e1.getResources(True)
+#
+#    for r in rl3:
+#        printf("Resources of e1 before : {0}", r.resourceName)
+#    for r in rl4:
+#        printf("Resources of e1 after : {0}", r.resourceName)
+#
+#finally:
+#    for e in Entity.list():
+#        if(e.entityName != "system" and e.entityName != "pgerakios"):
+#            e.release()
 
 
 

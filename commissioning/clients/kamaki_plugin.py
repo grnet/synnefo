@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 
-from synnefo.lib.pool.http import get_http_connection
-from urlparse import urlparse
 from commissioning import Callpoint, CallError
-from commissioning.utils.clijson import clijson
-from commissioning import QuotaholderAPI
-from commissioning.utils.betteron import betteron_decode
-
 from kamaki.clients import Client
 
 import logging
@@ -54,8 +48,6 @@ def debug(fmt, *args):
 
 class Kamaki_plugin(Callpoint):
 
-    appname = 'kamaki_plugin'
-
     def __init__(self, base_url, token):
         super(Kamaki_plugin, self).__init__()
         self._kc = Client(base_url, token)
@@ -101,18 +93,3 @@ class Kamaki_plugin(Callpoint):
             else:
                 exc = CallError.from_dict(error)
             raise exc
-
-    def call(self, method, arglist):
-        a, rest = betteron_decode(arglist)
-        argdict = self.api_spec.input_canonicals[method].parse(a)
-        f = getattr(self, method)
-        return f(**argdict)
-
-    def get_doc(self, method):
-        return self.api_spec.doc_strings[method]
-
-class QHKamaki(Kamaki_plugin):
-    api_spec = QuotaholderAPI()
-    def __init__(self, base_url='http://127.0.0.1:8000', token=''):
-        super(QHKamaki, self).__init__(base_url, token)
-

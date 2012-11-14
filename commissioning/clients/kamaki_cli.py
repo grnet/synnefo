@@ -3,7 +3,7 @@
 from kamaki.cli.commands import _command_init
 from kamaki.cli import command
 
-class cli_generator():
+class cli_generator(object):
 
     api_spec = None
     appname = None

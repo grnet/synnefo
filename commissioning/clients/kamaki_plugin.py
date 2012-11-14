@@ -66,7 +66,7 @@ class Kamaki_plugin(Callpoint):
         method = (_kc.get if any(api_call.startswith(x) for x in gettable)
                   else _kc.post)
 
-        path = '/api/quotaholder/v/' + api_call
+        path = api_call
         json_data = self.json_dumps(data)
         debug("%s %s\n%s\n<<<\n", method, path, json_data)
         

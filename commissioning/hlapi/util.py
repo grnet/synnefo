@@ -3,127 +3,6 @@ import sys
 def isstr(s):
     return issubclass(type(s), basestring)
 
-def compatible_type(given_t, expected_t):
-    if issubclass(expected_t, basestring):
-        expected_t = basestring
-    if issubclass(given_t, basestring):
-        given_t = basestring
-    return given_t == expected_t
-        
-
-def compatible_input_types(given, expected):
-#    print "given=%s, expected=%s" % (given, expected)
-    if len(given) != len(expected):
-        return False    
-    for i in xrange(len(given)):
-        if not compatible_type(given[i], expected[i]):
-            return False
-    return True
-
-
-def compatible_return_type(given, expected):
-    return compatible_type(given, expected)
-
-
-def method_accepts(*types):
-    '''Method decorator. Checks decorated function's arguments are
-    of the expected types. The self argument is ignored. This is
-    based on the ``accepts`` decorator.
-
-    Parameters:
-    types -- The expected types of the inputs to the decorated function.
-             Must specify type for each parameter.
-    '''
-    try:
-        def decorator(f):
-            def newf(*args):
-                args_to_check = args[1:] # Throw away self (or cls)
-                if len(args_to_check) != len(types):
-                    raise TypeError("Wrong number of arguments. Expected is %s (of types %s), given is %s" % (len(types), types, len(args_to_check)))
-                argtypes = tuple(map(type, args_to_check))
-#                if argtypes != types:
-                if not compatible_input_types(argtypes, types):
-                    msg = info(f.__name__, types, argtypes, 0)
-                    raise TypeError, msg
-                return f(*args)
-            newf.__name__ = f.__name__
-            return newf
-        return decorator
-    except KeyError, key:
-        raise KeyError, key + "is not a valid keyword argument"
-    except TypeError, msg:
-        raise TypeError, msg
-
-# http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
-# Slightly modified to always raise an error
-def accepts(*types):
-    '''Function decorator. Checks decorated function's arguments are
-    of the expected types.
-
-    Parameters:
-    types -- The expected types of the inputs to the decorated function.
-             Must specify type for each parameter.
-    '''
-    try:
-        def decorator(f):
-            def newf(*args):
-                if len(args) != len(types):
-                    raise TypeError("Wrong number of arguments. Expected is %s, given is %s" % (len(types), len(args)))
-                argtypes = tuple(map(type, args))
-#                if argtypes != types:
-                if not compatible_input_types(argtypes, types):
-                    msg = info(f.__name__, types, argtypes, 0)
-                    raise TypeError, msg
-                return f(*args)
-            newf.__name__ = f.__name__
-            return newf
-        return decorator
-    except KeyError, key:
-        raise KeyError, key + "is not a valid keyword argument"
-    except TypeError, msg:
-        raise TypeError, msg
-
-# http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
-# Slightly modified to always raise an error
-def returns(ret_type):
-    '''Function decorator. Checks decorated function's return value
-    is of the expected type.
-
-    Parameters:
-    ret_type -- The expected type of the decorated function's return value.
-                Must specify type for each parameter.
-    '''
-    try:
-        def decorator(f):
-            def newf(*args):
-                result = f(*args)
-                res_type = type(result)
-#                print "ret_type=%s, res_type=%s" % (ret_type, res_type)
-#                if res_type != ret_type:
-                if not compatible_type(res_type, ret_type):
-                    msg = info(f.__name__, (ret_type,), (res_type,), 1)
-                    raise TypeError, msg
-                return result
-            newf.__name__ = f.__name__
-            return newf
-        return decorator
-    except KeyError, key:
-        raise KeyError, key + "is not a valid keyword argument"
-    except TypeError, msg:
-        raise TypeError, msg
-
-
-# http://wiki.python.org/moin/PythonDecoratorLibrary#Type_Enforcement_.28accepts.2Freturns.29
-def info(fname, expected, actual, flag):
-    '''Convenience function returns nicely formatted error/warning msg.'''
-    format = lambda types: ', '.join([str(t).split("'")[1] for t in types])
-    expected, actual = format(expected), format(actual)
-    msg = "'{0}' method ".format( fname )\
-          + ("accepts", "returns")[flag] + " ({0}), but ".format(expected)\
-          + ("was given", "result is")[flag] + " ({0})".format(actual)
-    return msg
-
-
 def check_string(label, value):
     if not issubclass(type(value), basestring):
         raise Exception(
@@ -137,8 +16,6 @@ def check_context(context):
     return context
 
 
-@accepts(str, str)
-@returns(bool)
 def is_abs_name(name, label='name'):
     check_string(label, name)
     return (name == 'system') or name.startswith('system/') 
@@ -221,8 +98,6 @@ def level_of_node(node_name):
     len(node_name.split('/')) - 1
     
 
-@accepts(str, str)
-@returns(bool)
 def is_child_of_abs_name(child, parent):
     check_abs_name(parent)
     return child.startswith(parent) and child != parent
@@ -254,8 +129,6 @@ def parent_abs_name_of(abs_name, label='abs_name'):
             return upto_name
 
 
-@accepts(str)
-@returns(str)
 def last_part_of_abs_name(abs_name, label='abs_name'):
     """
     Given an absolute abs_name, which is made of simple parts separated with
@@ -267,8 +140,6 @@ def last_part_of_abs_name(abs_name, label='abs_name'):
     return last_part
 
 
-@accepts(str, str, str, str)
-@returns(str)
 def reparent_child_name_under(child_name,
                               parent_node_name,
                               child_label='child_name',
@@ -316,8 +187,6 @@ def make_abs_user_name(user_name):
                                      parent_label='NameOfUsersNode')
 
 
-@accepts(str, str, str, str)
-@returns(str)
 def relative_child_name_under(child_name,
                               parent_name,
                               child_label='child_name',
@@ -326,24 +195,25 @@ def relative_child_name_under(child_name,
     
     if child_name == parent_name:
         raise Exception(
-            "%s is the same as %s (='%s')" % (
-                child_label,
-                parent_label,
-                parent_name)) 
-
-    if not child_name.startswith(parent_name):
-        raise Exception(
-            "%s (='%s') is not a child of %s (='%s')" % (
+            "%s='%s' is the same as %s='%s'" % (
                 child_label,
                 child_name,
                 parent_label,
-                parent_name))
+                parent_name)) 
 
-    return child_name[len(parent_name) + 1:]
+    if is_abs_name(child_name, child_label):
+        if child_name.startswith(parent_name):
+            return child_name[len(parent_name) + 1:]
+        else:
+            raise Exception(
+                "%s='%s' is not a child of %s='%s'" % (
+                    child_label,
+                    child_name,
+                    parent_label,
+                    parent_name))
+    else:
+        return child_name
 
-
-@accepts(str, str)
-@returns(str)
 def make_rel_group_name(group_name, label='group_name'):
     check_name(group_name, label)
     return relative_child_name_under(child_name=group_name,
@@ -352,8 +222,6 @@ def make_rel_group_name(group_name, label='group_name'):
                                      parent_label='NameOfGroupsNode')
     
 
-@accepts(str, str)
-@returns(str)
 def make_rel_global_resource_name(resource_name, label='resource_name'):
     check_name(resource_name, label)
     return relative_child_name_under(child_name=resource_name,
@@ -362,8 +230,6 @@ def make_rel_global_resource_name(resource_name, label='resource_name'):
                                      parent_label='NameOfResourcesNode')
     
 
-@accepts(str, str)
-@returns(str)
 def make_rel_user_name(user_name, label='user_name'):
     check_name(user_name, label)
     return relative_child_name_under(child_name=user_name,

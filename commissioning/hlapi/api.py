@@ -3,9 +3,6 @@ from util import check_node_key
 from util import is_system_node
 from util import check_context
 from util import check_string
-from util import method_accepts
-from util import accepts
-from util import returns
 from util import NameOfSystemNode
 from util import NameOfResourcesNode
 from util import NameOfGroupsNode
@@ -152,6 +149,8 @@ class HighLevelAPI(object):
     """
 
     def __init__(self, qh = None, **kwd):
+        self.__client_key = kwd.get('client_key') or ''
+        
         if qh is None:
             def new_http_qh(url):
                 from commissioning.clients.http import HTTP_API_Client
@@ -194,9 +193,6 @@ class HighLevelAPI(object):
 
 
     # internal API
-    @method_accepts(str, str, str, str,
-                    int, int, int, int, int)
-    @returns(str)
     def __create_attribute_of_node_for_resource(self,
                                                 abs_or_not_node_name,
                                                 intended_parent_node_name,
@@ -342,38 +338,80 @@ class HighLevelAPI(object):
         if len(rejected) > 0:
             raise Exception("Could not release entity '%s'" % (entity))
     
-    def qh_make_one_commission(self, target_entity, target_entity_key,
-                            client_key, owner, owner_key,
-                            source_entity, source_resource, quantity):
-        tx_id = self.__qh.issue_commission(context=self.__context,
-                                       target=target_entity,
-                                       key=target_entity_key,
-                                       clientkey=client_key,
-                                       owner=owner,
-                                       ownerkey=owner_key,
-                                       provisions=[(source_entity,
-                                                    source_resource,
-                                                    quantity)])
-        self.__qh.accept_commission(context=self.__context,
-                                    clientkey=client_key,
-                                    serials=[tx_id])
-        return tx_id
+    def qh_issue_one_commission(self, target_entity, target_entity_key,
+                                owner, owner_key,
+                                source_entity, resource, quantity):
+        client_key = self.__client_key
+        tx_id = self.__qh.issue_commission(
+            context=self.__context,
+            target=target_entity,
+            key=target_entity_key,
+            clientkey=client_key,
+            owner=owner,
+            ownerkey=owner_key,
+            provisions=[(source_entity,
+            resource,
+            quantity)])
+        try:
+            self.__qh.accept_commission(
+                context=self.__context,
+                clientkey=client_key,
+                serials=[tx_id])
+            return tx_id
+        except:
+            self.__qh.reject_commission(
+                context=self.__context,
+                clientkey=client_key,
+                serials=[tx_id])
+        
         
     #---##########################################
     # Public, low-level API.
     # We expose some low-level Quota Holder API
     #---##########################################
+    
+    
+    #+++##########################################
+    # Public, high-level API.
+    #+++##########################################
 
+    def get_quota(self, entity, resource):
+        return self.qh_get_quota(entity,
+                                 resource,
+                                 self.get_cached_node_key(entity))
+        
+        
+    def set_quota(self, entity, resource,
+                     quantity, capacity,
+                     import_limit, export_limit, flags):
+        return self.qh_set_quota(entity=entity,
+                                 resource=resource,
+                                 key=self.get_cached_node_key(entity),
+                                 quantity=quantity,
+                                 capacity=capacity,
+                                 import_limit=import_limit,
+                                 export_limit=export_limit,
+                                 flags=flags)
+            
+    def issue_one_commission(self, target_entity, source_entity,
+                                resource, quantity):
+        check_abs_name(target_entity, 'target_entity')
+        check_abs_name(source_entity, 'source_entity')
+        
+        return self.qh_issue_one_commission(
+            target_entity=target_entity,
+            target_entity_key=self.get_cached_node_key(target_entity),
+            owner='', # We ignore the owner. Everything must exist
+            owner_key='',
+            source_entity=source_entity,
+            resource=resource,
+            quantity=quantity)
 
-    @method_accepts(str)
-    @returns(str)
     def get_cached_node_key(self, node_name):
         check_abs_name(node_name, 'node_name')
         return self.__node_keys.get(node_name) or '' # sane default
 
 
-    @method_accepts(str, str)
-    @returns(type(None))
     def set_cached_node_key(self, abs_node_name, node_key, label='abs_node_name'):
         check_abs_name(abs_node_name, label)
         check_node_key(node_key)
@@ -382,13 +420,10 @@ class HighLevelAPI(object):
         self.__node_keys[abs_node_name] = node_key
 
 
-    @returns(dict)
     def node_keys(self):
         return self.__node_keys.copy() # Client cannot mess with the original
     
     
-    @method_accepts(str)
-    @returns(list)
     def get_node_children(self, node_name):
         check_abs_name(node_name, 'node_name')
         all_entities = self.__qh.list_entities(
@@ -420,17 +455,20 @@ class HighLevelAPI(object):
         self.ensure_users_node()
         return self.get_node_children(NameOfUsersNode)
     
-    
-    @method_accepts(str, str)
-    @returns(str)
+
     def ensure_node(self, abs_node_name, label='abs_node_name'):
         if not self.has_node(abs_node_name, label):
             return self.create_node(abs_node_name, label)
         else:
             return abs_node_name
 
+
+    def ensure_top_level_nodes(self):
+        return  [self.ensure_resources_node(),
+                 self.ensure_users_node(), 
+                 self.ensure_groups_node()]
     
-    @returns(str)
+    
     def ensure_resources_node(self):
         """
         Ensure that the node 'system/resources' exists.
@@ -438,7 +476,6 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfResourcesNode, 'NameOfResourcesNode')
 
 
-    @returns(str)
     def ensure_groups_node(self):
         """
         Ensure that the node 'system/groups' exists.
@@ -446,7 +483,6 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfGroupsNode, 'NameOfGroupsNode')
 
 
-    @returns(str)
     def ensure_users_node(self):
         """
         Ensure that the node 'system/users' exists.
@@ -454,8 +490,6 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfUsersNode, 'NameOfGroupsNode')
 
 
-    @method_accepts(str, str)
-    @returns(bool)
     def has_node(self, abs_node_name, label='abs_node_name'):
         """
         Checks if an entity with the absolute name ``abs_node_name`` exists.
@@ -471,9 +505,22 @@ class HighLevelAPI(object):
         return len(entity_owner_list) == 1 # TODO: any other check here?
 
 
-    @method_accepts(str, str)
-    @returns(str)
-    def create_node(self, node_name, label='node_name'):
+    def has_group(self, group_name):
+        abs_group_name = make_abs_group_name(group_name)
+        return self.has_node(abs_group_name, 'abs_group_name')
+
+
+    def has_global_resource(self, resource_name):
+        abs_resource_name = make_abs_global_resource_name(resource_name)
+        return self.has_node(abs_resource_name, 'abs_resource_name')
+
+
+    def has_user(self, user_name):
+        abs_user_name = make_abs_user_name(user_name)
+        return self.has_node(abs_user_name, 'abs_user_name')
+    
+    
+    def create_node(self, node_name, node_label):
         """
         Creates a node with an absolute name ``node_name``.
         
@@ -484,15 +531,15 @@ class HighLevelAPI(object):
         
         The implementation maps a node to a Quota Holder entity.
         """
-        check_abs_name(node_name, label)
+        check_abs_name(node_name, node_label)
         
         if is_system_node(node_name):
             # ``system`` entity always exists
             return node_name
 
-        parent_node_name = parent_abs_name_of(node_name, label)
+        parent_node_name = parent_abs_name_of(node_name, node_label)
         # Recursively create hierarchy. Beware the keys must be known.
-        self.ensure_node(parent_node_name, label)
+        self.ensure_node(parent_node_name, node_label)
 
         node_key = self.get_cached_node_key(node_name)
         parent_node_key = self.get_cached_node_key(parent_node_name)
@@ -509,19 +556,11 @@ class HighLevelAPI(object):
             ]
         )
         if len(rejected) > 0:
-            raise Exception("Could not create node '%s'" % (node_name,))
+            raise Exception("Could not create %s='%s'. Maybe it already exists?" % (node_label, node_name,))
         else:
             return node_name
 
 
-    @method_accepts(str)
-    @returns(bool)
-    def has_global_resource(self, abs_resource_name):
-        check_abs_global_resource_name(abs_resource_name)
-        return self.has_node(abs_resource_name)
-
-
-    @method_accepts(str)
     def define_global_resource(self, resource_name):
         """
         Defines a resource globally known to Quota Holder.
@@ -542,8 +581,6 @@ class HighLevelAPI(object):
         return self.create_node(abs_resource_name, 'abs_resource_name')
         
     
-    @method_accepts(str, str, int, int, int, int, int)
-    @returns(str)
     def define_attribute_of_global_resource(self,
                                             global_resource_name,
                                             attribute_name,
@@ -583,8 +620,6 @@ class HighLevelAPI(object):
 
             
     
-    @method_accepts(str, str)
-    @returns(str)
     def define_group(self, group_name, group_node_key=''):
         """
         Creates a new group under 'system/groups'.
@@ -616,8 +651,6 @@ class HighLevelAPI(object):
     
 
     
-    @method_accepts(str, str, str, int, int, int, int, int)
-    @returns(str)
     def define_attribute_of_group_for_resource(self,
                                                group_name,
                                                attribute_name,
@@ -644,13 +677,14 @@ class HighLevelAPI(object):
             flags=flags)
 
 
-    @method_accepts(str, str, int, int, int, int, int, int, int)
-    @returns(type(None))
     def define_group_resource(self,
                               group_name,
                               resource_name,
-                              limit_per_group,
-                              limit_per_user,
+                              group_quota,
+                              group_import_limit,
+                              group_export_limit,
+                              group_flags,
+                              per_user_quota,
                               operational_quantity,
                               operational_capacity,
                               operational_import_limit,
@@ -675,34 +709,28 @@ class HighLevelAPI(object):
                     resource_name,
                     group_name))
 
-        if limit_per_user >= 0:
-            self.define_attribute_of_group_for_resource(group_name=abs_group_name,
-                                                        attribute_name='def_peruser',
-                                                        resource_name=abs_resource_name,
-                                                        quantity=0,
-                                                        capacity=limit_per_user,
-                                                        import_limit=0,
-                                                        export_limit=0,
-                                                        flags=0)
-        else:
-            # The limit will always be obtained from the global resource
-            pass
+        # Define the resource quotas for the group (initially empty)
+        # and do the quota transfer from the global resource
+        group_resource_quota = self.set_quota(
+            entity=abs_group_name,
+            resource=abs_resource_name,
+            quantity=0,
+            capacity=0,
+            import_limit=group_import_limit,
+            export_limit=group_export_limit,
+            flags=group_flags)
 
-        self.define_attribute_of_group_for_resource(group_name=abs_group_name,
-                                                    attribute_name='def_pergroup',
-                                                    resource_name=abs_resource_name,
-                                                    quantity=0,
-                                                    capacity=limit_per_group,
-                                                    import_limit=0,
-                                                    export_limit=0,
-                                                    flags=0)
+        self.issue_one_commission(
+            target_entity=abs_group_name,
+            source_entity=abs_resource_name,
+            resource=abs_resource_name,
+            quantity=group_quota)
+        
+        return self.get_quota(entity=abs_group_name,
+                              resource=abs_resource_name)
 
-        self.define_attribute_of_group_for_resource(group_name=abs_group_name,
-                                                    attribute_name='operational',
-                                                    resource_name=abs_resource_name,
-                                                    quantity=operational_quantity,
-                                                    capacity=operational_capacity,
-                                                    import_limit=operational_import_limit,
-                                                    export_limit=operational_export_limit,
-                                                    flags=operational_flags)
 
+    #+++##########################################
+    # Public, high-level API.
+        #+++##########################################
+    # Public, high-level API.

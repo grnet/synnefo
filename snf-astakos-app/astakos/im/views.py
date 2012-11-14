@@ -777,8 +777,13 @@ def group_add(request, kind_name='default'):
     else:
         now = datetime.now()
         data = {
-            'kind': kind
+            'kind': kind,
         }
+        for group, resources in resource_catalog['groups'].iteritems():
+            data['is_selected_%s' % group] = False
+            for resource in resources:
+                data['%s_uplimit' % resource] = ''
+        
         form = form_class(data)
 
     # Create the template, context, response

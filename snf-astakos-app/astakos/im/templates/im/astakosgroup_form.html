@@ -20,32 +20,7 @@
     	</legend>
         
         {% include "im/form_render.html" %}
-		
-<!-- 
-		<div class="double-checks">
-    		<label>Max users per group</label>
-    		<div class="form-row">
-    			<p class="clearfix">
-    				<label for="members_unlimited">Unlimited</label>
-    				<input type="checkbox" id="members_unlimited" name="members_unlimited" class="unlimited" checked="checked">
-    				<span class="info"> 
-				    	<em>more info</em>
-				    	<span>Help Text Help Text Help Text Text Help Text Help Text</span>
-			    	</span>  
-    			</p>
-    		</div>
-    		<div class="form-row">
-    			<p class="clearfix">
-    				<label for="members_limited">Limited</label>
-    				<input type="checkbox" id="members_limited" name="members_limited" class="limited">
-       				<input type="text" id="members_uplimit" name="members_uplimit" />
-	       			  		 
-    			</p>
-    			
-    		</div>
-    		
-    	</div> 
- -->
+
     </fieldset>     
     
     <fieldset id="icons">
@@ -104,38 +79,8 @@
 		         		<span class="info"><em>more info</em><span>Help Text</span></span>
 		    		</p>
 		    	</div>-->
- 				<!--
- 				<div class="double-checks">
-		    		<label>
-		    			Max {% if resource_info.is_abbreviation %}{{ r|get_value_after_dot|upper }}{% else %}{{ r|get_value_after_dot }}{% endif %}{% if not resource.unit %}s {% endif  %} per user
-						{% if resource.unit %} 
-						 	({{ resource.unit }})
-						{% endif  %}
-					</label>
-		    		<div class="form-row">
-		    			<p class="clearfix">
-		    				<label for="{{r|add:'_unlimited'}}">Unlimited</label>
-		    				<input type="checkbox" id="{{'id_'|add:r|add:'_unlimited'}}" name="{{r|add:'_unlimited'}}_proxy" class="unlimited radio" checked="checked">
-		    			</p>
-		    		</div>
-		    		<div class="form-row">
-		    			<p class="clearfix">
-		    				<label for="{{r|add:'_limited'}}">Limited</label>
-		    				<input type="checkbox" id="id_storage_per_user_limited" name="{{r|add:'_limited'}}_proxy" class="radio limited">
-		       				<input 	type="text" 
-		       						id="{{'id_'|add:r|add:'_uplimit'}}" 
-		       						name="{{r|add:'_uplimit'}}_proxy" 
-		       						placeholder="{{ resource_info.placeholder}} " 
-		       						{% if resource.unit == 'bytes' %} 
-									 	class="dehumanize"
-									{% endif  %}
-		       						/> 
-		    			</p>
-		    			<p class="msg"></p>
-		    		</div>
-		    		
-		    	</div>
-		    	-->
+ 				 
+		    	
 		    	<div class="form-row">
 		    		<p class="clearfix">
 		    			<label for="num_storage">
@@ -150,7 +95,8 @@
 									{% endif  %}
 		       						/> 
 		    			<span class="extra-img">&nbsp;</span>
-		         		<span class="info"><em>more info</em><span>Help Text</span></span>
+		         		<span class="info"><em>more info</em><span>Leave this field blank if you don't want to specify this resource</span></span>
+		         		<p class="error-msg">Invalid format</p>
 		    		</p>
 		    		<p class="msg"></p>
 		    	</div>

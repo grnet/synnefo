@@ -566,17 +566,17 @@ class AstakosGroupCreationForm(forms.ModelForm):
             k = k.partition('_proxy')[0]
             self.fields[k] = forms.IntegerField(
                 required=False,
-                widget=forms.HiddenInput(),
+                #widget=forms.HiddenInput(),
                 min_value=1
             )
         map(add_fields,
-            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit_proxy'))
+            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
         )
         
         def add_fields((k, v)):
             self.fields[k] = forms.BooleanField(
                 required=False,
-                widget=forms.HiddenInput()
+                #widget=forms.HiddenInput()
             )
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))

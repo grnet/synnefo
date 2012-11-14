@@ -68,19 +68,34 @@ $(document).ready(function() {
 		
 	});
 
- 
+    
+	
+	 
 	 
 	$('.quotas-form .quota input[type="text"]').change(function () {
 	 	
+	 	
+	 	 
 	 	// get value from input
 	 	var value = $(this).val();
 	 	
-	 	// replace , with .  and get number 
-	 	value = value.replace(",",".");
-	 	var num = parseFloat(value);
-	 	var bytes = num;
+	 	//get input name without _proxy
+	 	hidden_name = $(this).attr('name').replace("_proxy","");
+	 	var hidden_input = $("input[name='"+hidden_name+"']");
+	 	
 	 	
 	 	if ($(this).hasClass('dehumanize')){
+	 		
+	 		var flag = 0;
+	 		
+	 		// replace , with .  and get number 
+		 	value = value.replace(",",".");
+		 	var num = parseFloat(value);
+		 	
+		 	if ( !num ) { flag = 1}
+		 	
+		 	var bytes = num;
+	 		
 	 		 // get suffix. 'i' renders it case insensitive
 		 	var suf = value.match( new RegExp('GB|KB|MB|TB|bytes', 'i'));
 		 	if (suf){
@@ -111,21 +126,36 @@ $(document).ready(function() {
 			 		  bytes = num; 
 		 		}
 		 	} else {
-		 		 bytes = num; 
+		 		 flag = 1;
 		 	}
+		 	
+		 	if ( flag == '1' ){ 
+		 		$(this).parents('.form-row').addClass('with-errors');
+		 		return;
+		 		 
+		 	} else {
+		 		$(this).parents('.form-row').removeClass('with-errors');
+		 	}
+		 	
+		 	machine_value = bytes;
+		 	hidden_input.val(bytes);
+		 	
+	 	} else {
+
+	 		var is_int = value.match (new RegExp('^[0-9]*$'));
+	 		if ( !is_int ){ 
+	 			$(this).parents('.form-row').find('.error-msg').html('Enter a whole number');
+		 		$(this).parents('.form-row').addClass('with-errors');
+		 		 
+		 	} else {
+		 		$(this).parents('.form-row').removeClass('with-errors');
+		 		hidden_input.val(value);
+		 	}
+
 	 	}
 	 	
 	 	
-	 	var human_value = value;
-	 	var machine_value = bytes;
 	 	
-	 	//get input name without _proxy
-	 	hidden_name = $(this).attr('name').replace("_proxy","");
-	 	var hidden_input = $("input[name='"+hidden_name+"']");
-	 	
-	 	hidden_input.val(bytes);
-	 	
-	 	$(this).parents('.form-row').find('.msg').html( human_value+ machine_value  ); 
 	 });
 	
 });

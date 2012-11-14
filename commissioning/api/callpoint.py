@@ -60,13 +60,13 @@ class Callpoint(object):
             setattr(self, call_name, mk_call_func())
 
     def init_connection(self, connection):
-        raise NotImplementedError
+        pass
 
     def commit(self):
-        raise NotImplementedError
+        pass
 
     def rollback(self):
-        raise NotImplementedError
+        pass
 
     def do_make_call(self, call_name, data):
         raise NotImplementedError

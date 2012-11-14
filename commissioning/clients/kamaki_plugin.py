@@ -49,15 +49,6 @@ class Kamaki_plugin(Callpoint):
         super(Kamaki_plugin, self).__init__()
         self._kc = Client(base_url, token)
 
-    def init_connection(self, connection):
-        self.url = connection
-
-    def commit(self):
-        return
-
-    def rollback(self):
-        return
-
     def do_make_call(self, api_call, data):
 
         _kc = self._kc

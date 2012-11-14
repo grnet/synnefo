@@ -73,9 +73,6 @@ class Kamaki_plugin(Callpoint):
         resp = method(path, data=json_data)
         debug(">>>\nStatus: %s", resp.status_code)
         
-        # for name, value in resp.getheaders():
-        #     debug("%s: %s", name, value)
-
         status = int(resp.status_code)
         if status == 200:
             body = resp.json

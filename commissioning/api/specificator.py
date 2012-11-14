@@ -2,6 +2,7 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
+from commissioning.utils.betteron import betteron_decode
 
 try:
     from collections import OrderedDict
@@ -724,6 +725,11 @@ class Canonifier(object):
 
     def canonify_output(self, name, the_output):
         return self.output_canonical(name)(the_output)
+
+    def parse(self, method, arglist):
+        args, rest = betteron_decode(arglist)
+        argdict = self.input_canonical(method).parse(args)
+        return argdict
 
 
 class Specificator(object):

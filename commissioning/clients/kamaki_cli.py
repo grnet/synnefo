@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from commissioning.utils.betteron import betteron_decode
 from kamaki.cli.commands import _command_init
 from kamaki.cli import command
 
@@ -8,12 +7,7 @@ class cli_generator():
     api_spec = None
     appname = None
     plugin = None
-
-    def parse(self, method, arglist):
-        a, rest = betteron_decode(arglist)
-        a = [(None, None)] + a
-        argdict = self.api_spec.input_canonicals[method].parse(a)
-        return argdict
+    add_context = False
 
     def generate_all(self):
         for f in self.api_spec.call_names():
@@ -30,8 +24,9 @@ class cli_generator():
                                if this.base_url else self.plugin())
 
             def call(this, method, args):
-                arglist = '[' + ' '.join(args) + ']'
-                argdict = self.parse(method, arglist)
+                ctx = '=null ' if self.add_context else ''
+                arglist = '[' + ctx + ' '.join(args) + ']'
+                argdict = self.api_spec.parse(method, arglist)
                 f = getattr(this.client, method)
                 return f(**argdict)
 

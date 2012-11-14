@@ -153,8 +153,6 @@ def betteron_decode(inputf, s=None):
             item += s
             s = inputf(1)
             if s in ' =]':
-                if s == ']':
-                    print "got it here"
                 return item, s
 
 

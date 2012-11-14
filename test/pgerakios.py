@@ -17,8 +17,11 @@ def environ_get(key, default_value=''):
     else:
         return default_value
 
-QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", "127.0.0.1"))
-QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8008"))
+#DEFAULT_PORT = "8008"
+DEFAULT_PORT = "3536"
+DEFAULT_HOST = "127.0.0.1"
+QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", DEFAULT_HOST))
+QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", DEFAULT_PORT))
 QH_DEBUG = True
 
 assert QH_HOST != None
@@ -99,14 +102,13 @@ class Client(object):
     #getPending
     @staticmethod
     def getPending():
-        #get_pending_commissions
-        pass
+        return Client.qh.get_pending_commissions(context={},clientkey=Client.clientKey)
 
     #
     @staticmethod
     def removePending():
-        #resolve_pending_commissions
-        pass
+        #TODO: resolve_pending_commissions
+        exn("Not implemented")
 
 
 class Config(object):
@@ -306,6 +308,14 @@ class Resource(Config):
     ResourceState = enum('DIRTY', 'LOADED')
     
     @staticmethod
+    def loadAllAsDummy(resourceList):
+        resourceList = [copy.deepcopy(r) for r in resourceList]
+        for r in resourceList:
+            r.policy.setDummy(True)
+        #
+        return Resource.loadMany(resourceList,False)
+    
+    @staticmethod
     def names(resourceList):
         return [r.resourceName for r in resourceList]
     
@@ -481,8 +491,16 @@ class Commission(Config):
             rejectedList = Commission.con().accept_commission(context=Commission.Context,
                 clientKey=Client.clientKey,
                 serials=inputList, reason='ACCEPT')
+        else:
+            rejectedList = []
+        
+        if(rejectedList == None):
+            rejectedList = []
             
         #TODO: not implemented yet because the API does not support this.
+        #cexn(isinstance(rejectedList,NoneType),"rejectedList is NoneType")
+        #cexn(isinstance(comList,NoneType),"comList is NoneType")
+        
         inputList = [c for c in comList if(c.serial not in rejectedList)]
         for c in inputList:
             c.state = Commission.CommissionState.ACCEPTED
@@ -522,6 +540,7 @@ class Commission(Config):
     def inverse(self):
         ret = copy.copy(self)
         ret.resources_quant = [(r,-q) for r,q in ret.resources_quant]
+        ret.state = Commission.CommissionState.NOT_ISSUED
         return ret
 
     def canChange(self):
@@ -573,6 +592,9 @@ class Commission(Config):
         self.resources_quant.append((resource, quantity))
         return True
 
+    def __str__(self):
+        prov = [(r.entity.entityName, r.resourceName, q) for r, q in self.resources_quant if(q != 0)]
+        return "Commission(SERIAL={0},PENDING={1},FINAL={2},canChange={3},PROV={4})".format(self.serial,self.isPending(),self.isFinal(),self.canChange(),prov) 
 
 class Entity(Config):
     # static  field (in some sense --- if it is assigned it will create a new binding)
@@ -598,7 +620,6 @@ class Entity(Config):
             printf("calling f for name {0}",name)
             if(f == None):
                 if(name == Entity.systemName):
-                    printf("c")
                     e =  Entity().set("system","",None)
                 else:
                     exn("Invalid callback function")
@@ -634,7 +655,23 @@ class Entity(Config):
         return notok
 
     @staticmethod
-    def deleteMany(entityList):
+    def deleteMany(entityList,force=False):
+        if(entityList == []):
+            return []
+        #
+        if(force):
+            resourceList = []
+            for e in entityList:
+                for r in e.getResources():
+                    r.policy.setDummy(True)
+                    r.policy.quantity = 0
+                    r.policy.capacity = 0
+                    resourceList.append(r)
+            if(resourceList != []):
+                printf("----> REMOVING ALL RESOURCES !!!")
+                Resource.saveMany(resourceList,False)
+                printf("----> REMOVING ALL RESOURCES DONE.")
+            
         inputList = [(e.entityName, e.entityKey) for e in entityList]
         printf("Releasing entities: {0}", inputList)
         rejectedList = Entity.con().release_entity(context=Entity.Context, release_entity=inputList)
@@ -810,33 +847,34 @@ class ResourceHolder(Entity):
         #super(Entity,self).__init__()
         Entity.__init__(self)
         printf("INIT of ResourceHolder invoked for {0}",self.entityName)
-        self.commission = Commission(self)
+        #self.commission = Commission(self)
         for r in ResourceHolder.getResourceNames():
             self.addResource(r)
 
-    def newCommission(self):
-        self.commission = Commission(self)
-        return self.commission
 
     def loadResources(self):
         self.getResource(True)
 
-    def commit(self):
-        return self.commission.issue() and self.commission.accept()
-
-    def reject(self):
-        return self.issue() and self.commission.reject()
+#    def newCommission(self):
+#        self.commission = Commission(self)
+#        return self.commission
+#
+#    def commit(self):
+#        return self.commission.issue() and self.commission.accept()
+#
+#    def reject(self):
+#        return self.issue() and self.commission.reject()
 
     def release(self):
-        # If there is a committed commission, then undo changes
-        if(not self.commission.canChange()):
-            # commit the inverse stuff (send stuff back to groups)
-            self.commission = self.commission.inverse()
-            b = self.commit()
-            self.newCommission()
-            if(not b):
-                return False
-        # Remove entity
+#        # If there is a committed commission, then undo changes
+#        if(not self.commission.canChange()):
+#            # commit the inverse stuff (send stuff back to groups)
+#            self.commission = self.commission.inverse()
+#            b = self.commit()
+#            self.newCommission()
+#            if(not b):
+#                return False
+#        # Remove entity
         return super(ResourceHolder,self).release()
 
 class Group(ResourceHolder):
@@ -880,9 +918,9 @@ class Group(ResourceHolder):
 
     @staticmethod
     def get(name,key,**kwargs):
-        printf("@@-1 len of kwargs : {0}", len(kwargs.items()))        
+        #printf("@@-1 len of kwargs : {0}", len(kwargs.items()))        
         def groupCreate():
-            printf("@@0 len of kwargs : {0}", len(kwargs.items()))
+            #printf("@@0 len of kwargs : {0}", len(kwargs.items()))
             g = Group(name,key,Group.getGroupRoot(),**kwargs)
             printf("Creating group {0} with type {1}",name,type(g))
             return g
@@ -901,7 +939,7 @@ class Group(ResourceHolder):
             return self.userResourcePolicies[resourceName]
             
     def __init__(self, name, password, parent, **kwargs):
-        printf("@@1 len of kwargs : {0}", len(kwargs.items()))
+        #printf("@@1 len of kwargs : {0}", len(kwargs.items()))
         ResourceHolder.__init__(self)
         ResourceHolder.set(self,name, password, parent)
         printf("INIT of Group invoked for {0}",self.entityName)
@@ -910,7 +948,7 @@ class Group(ResourceHolder):
         #load group and user policies
         self.userResourcePolicies = {}
         
-        printf(" !!!! {0} !!!!", [r.resourceName for r in self.getResources()])
+        #printf(" !!!! {0} !!!!", [r.resourceName for r in self.getResources()])
         
         def isSystemGroup():
             return self.entityName == Group._systemGroupName
@@ -934,14 +972,14 @@ class Group(ResourceHolder):
             userArgs={}
             groupArgs={}
             resourceNames = Set([])
-            printf("len of kwargs : {0}", len(kwargs.items()))
+            #printf("len of kwargs : {0}", len(kwargs.items()))
             for prefixedResourceName,value in kwargs.items():
-                printf("Prefixed resourcename: {0}",prefixedResourceName)
+                #printf("Prefixed resourcename: {0}",prefixedResourceName)
                 tmp = prefixedResourceName.split("_")
                 prefix = tmp[0]
                 resourceName = "_".join(tmp[1:])
                 #prefix,resourceName = tuple(tmp[0],"".join(tmp[1:]))
-                printf("Prefixed resource name {0} ---> resource name {1}",prefixedResourceName,resourceName)
+                #printf("Prefixed resource name {0} ---> resource name {1}",prefixedResourceName,resourceName)
                 if(prefix == "group"):
                     groupArgs[resourceName] = value 
                 elif(prefix == "user"):
@@ -955,7 +993,7 @@ class Group(ResourceHolder):
         def makePolicyNames(resourceNames):
             policyNames = []
             for r in resourceNames:
-                printf("Making resource name {0}", r)
+                #printf("Making resource name {0}", r)
                 policyNames.append(self.policyName(True,r))
                 policyNames.append(self.policyName(False,r))
             return policyNames
@@ -1058,13 +1096,13 @@ class Group(ResourceHolder):
         for resourceName,quantity in kwargs:            
             default.add(resourceName)
             r = copy.copy(system.getResource(resourceName))
-            r.resourceName = r.resourceName + ".groupPolicy"
+            #r.resourceName = r.resourceName + ".groupPolicy"
             printf("#1 REQUESTING  {0} from system.{1}",quantity,r.resourceName)
             c.addResource(r,quantity)
         remaining = Set(system.getResourceNames()).difference(default)
         for resourceName in remaining: 
             sysRes = copy.copy(system.getResource(resourceName))
-            sysRes.resourceName = sysRes.resourceName + ".groupPolicy"
+            #sysRes.resourceName = sysRes.resourceName + ".groupPolicy"
             r = self.getResource(resourceName) 
             printf("#2 REQUESTING  {0} from system.{1}",r.policy.capacity,sysRes.resourceName)
             c.addResource(sysRes,r.policy.capacity)        
@@ -1187,6 +1225,7 @@ class User(ResourceHolder):
             printf("User {0} does not exist. Creating {0}.",self.entityName,self.entityName)            
             self.create()
         
+        self.latestCommission = None
         self.groups = []
 
         self.resourceMap = {}
@@ -1194,7 +1233,6 @@ class User(ResourceHolder):
         
         #load policies
         self.loadPolicies()
-
 
     def reload(self):
         # order does matter!
@@ -1245,20 +1283,69 @@ class User(ResourceHolder):
         for group in groupList:
             self._joinGroup(group)
         Resource.saveMany(self.getResources(),False)
+
+
+    def _addLatestCommission(self,resource,quantity):
+        if(self.latestCommission == None):
+            self.latestCommission = self.addCommission()
+        self.latestCommission.addResource(resource, quantity)
+    
             
     def drawResources(self,**kwargs):
-        for prefixedName,quantity in kwargs:            
-            group,resourceName = tuple(prefixedName.split("_"))
-            self.commission.addResource(Group.get(group,"").getResource(resourceName),quantity)
-        #    
-    def commit(self):
-        return ResourceHolder.commit(self)
+        for prefixedName,quantity in kwargs.items():
+            #printf("prefixedName = {0}")            
+            tmp = prefixedName.split("_")
+            group = tmp[0]
+            resourceName = "_".join(tmp[1:])
+            #group,resourceName = tuple(prefixedName.split("_"))
+            self._addLatestCommission(Group.get(group,"").getResource(resourceName),quantity)
+        #
     
+    def finalizeCommission(self,accept=True):
+        if(self.latestCommission == None):
+            return True
+        elif(self.latestCommission.canChange()):
+            self.latestCommission.issue()
+        #    
+        if(self.latestCommission.isPending()):
+            if(accept):
+                b = self.latestCommission.accept()
+            else:
+                b = self.latestCommission.reject()
+            self.latestCommission = None
+            return b
+        else:
+            exn("Should not reach this point")
+                        
+    def commit(self):
+        return self.finalizeCommission(True)
+        
+    def reject(self):
+        return self.finalizeCommission(False)
+        
     def _leaveGroups(self,groupList):
-        #TODO:
-        # revert commissions
-        # revert policies !!!
-        exn("Not implemented")
+        #Must DO before anything else:
+        self.reject()
+
+        #TODO:  revert commissions  revert policies !!!         
+        # remove bindings
+        self.groups = [g for g in self.groups if(g not in groupList)]                            
+        for g in groupList:
+            g.users = [u for u in g.users if(self != u)]
+            
+        
+        qs = [q for q in self._commissions if(q.isFinal() and all(q > -1 for r,q in q.resources_quant))]
+        # Invert prior commissions!
+        #printf("COMMS_LEN {0}  after {1}",len(self._commissions),len(qs))
+        #for q in self._commissions:
+        #    printf("COMM {0} ", q)
+        
+        qs = [q.inverse() for q in qs]        
+        # ok remove resource 
+        for q in qs:
+            q.accept(True)
+        
+        
         
     def leaveGroup(self,group):
         self._leaveGroups([group])
@@ -1273,7 +1360,11 @@ class User(ResourceHolder):
 # Main program
 
 try:
-        
+     
+    pgerakios = Entity.get("pgerakios",lambda: Entity("pgerakios","key1",Entity.get("system")))
+    if(pgerakios.exists(True) == False):
+        pgerakios.create()
+       
     #
     # Group1
     printf("Step 1")
@@ -1294,6 +1385,8 @@ try:
     
     if(not isinstance(group1,Group)):
         exn("Not instance of group")
+
+    printf("PENDING: {0}",Client.getPending())
 
     printf("Step 2  name : {0}",group1.entityName)
     #["pithos","cyclades.vm","cyclades.cpu","cyclades.mem"]
@@ -1332,7 +1425,7 @@ try:
     #exn("End of story")
     
     printf("Step 5")
-    user1.commit()
+    cexn(user1.commit() == False,"Commit failed")
     
 
     
@@ -1342,23 +1435,22 @@ try:
     printf("User1 resources END")    
     
     
+    # TODO:
+    #release resources
     printf("Step 6")
-    user1.release()
-    group1.release()
+    user1.leaveGroup(group1)
+    printf("Step 7")
+ 
+ #Let finally take care of this   
+#    printf("Step 6")
+    #user1.release()
+#    group1.release()
 
 finally:
     #raw_input("Press any to terminate program other than Ctrl+C")
-    no = ["system","pgerakios"]
-    yes = ["group","user"]
-    #
-    no.append(yes)
-    for e in [e for e in Entity.list() if(e.entityName not in no)]:
-        #printf("Releasing step 1: {0}",e.entityName)
-        e.release()
-        #
-    for e in [e for e in Entity.list() if(e.entityName in yes)]:
-        #printf("Releasing step 1: {0}",e.entityName)
-        e.release()
+    no = ["system","pgerakios","group","user"]
+    entityList = [e for e in Entity.list() if(e.entityName not in no)]    
+    Entity.deleteMany(entityList,True)
 
 
 

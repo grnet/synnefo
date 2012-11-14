@@ -18,10 +18,11 @@ class cli_generator():
         class C(_command_init):
             __doc__ = self.api_spec.get_doc(method)
             def init(this):
+                this.token = (this.config.get(self.appname, 'token') or
+                              this.config.get('global', 'token'))
                 this.base_url = (this.config.get(self.appname, 'url') or
                                  this.config.get('global', 'url'))
-                this.client = (self.plugin(this.base_url)
-                               if this.base_url else self.plugin())
+                this.client = self.plugin(this.base_url, this.token)
 
             def call(this, method, args):
                 ctx = '=null ' if self.add_context else ''

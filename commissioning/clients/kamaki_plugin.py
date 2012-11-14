@@ -42,16 +42,12 @@ def debug(fmt, *args):
         _logger.setLevel(logging.DEBUG)
     _logger.debug(fmt % args)
 
-# def debug(fmt, *args):
-#     pass
-
 
 class Kamaki_plugin(Callpoint):
 
     def __init__(self, base_url, token):
         super(Kamaki_plugin, self).__init__()
         self._kc = Client(base_url, token)
-                
 
     def init_connection(self, connection):
         self.url = connection

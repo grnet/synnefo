@@ -4,6 +4,7 @@ from kamaki.cli.commands import _command_init
 from kamaki.cli import command
 
 class cli_generator():
+
     api_spec = None
     appname = None
     plugin = None
@@ -16,7 +17,9 @@ class cli_generator():
 
     def mkClass(self, method):
         class C(_command_init):
+
             __doc__ = self.api_spec.get_doc(method)
+
             def init(this):
                 this.token = (this.config.get(self.appname, 'token') or
                               this.config.get('global', 'token'))

@@ -947,6 +947,7 @@ class Group(ResourceHolder):
         self.userResourcePolicies = {}
         #load group and user policies
         self.userResourcePolicies = {}
+        self.commission = None
         
         #printf(" !!!! {0} !!!!", [r.resourceName for r in self.getResources()])
         
@@ -1090,7 +1091,7 @@ class Group(ResourceHolder):
             
 
     def drawSystemResources(self,**kwargs):
-        c = Commission(self)
+        c = self.addCommission()
         system = Group.systemGroup()
         default = Set([])
         for resourceName,quantity in kwargs:            
@@ -1106,8 +1107,16 @@ class Group(ResourceHolder):
             r = self.getResource(resourceName) 
             printf("#2 REQUESTING  {0} from system.{1}",r.policy.capacity,sysRes.resourceName)
             c.addResource(sysRes,r.policy.capacity)        
-        return c.accept(True)
- 
+        return  c.accept(True)
+
+    def release(self):
+        #
+        qs = [q for q in self._commissions if(q.isFinal() and all(q > -1 for r,q in q.resources_quant))]
+        qs = [q.inverse() for q in qs]        
+        for q in qs:
+            q.accept(True)
+        #
+        ResourceHolder.release(self)
 
     #def drawResources(self,**kwargs):
     #    for r in self.getResources():
@@ -1440,6 +1449,8 @@ try:
     printf("Step 6")
     user1.leaveGroup(group1)
     printf("Step 7")
+    group1.release()
+    printf("Step 8")
  
  #Let finally take care of this   
 #    printf("Step 6")

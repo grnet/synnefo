@@ -9,9 +9,6 @@ class cli_generator():
     appname = None
     plugin = None
 
-    def get_doc(self, method):
-        return self.api_spec.doc_strings[method]
-
     def parse(self, method, arglist):
         a, rest = betteron_decode(arglist)
         a = [(None, None)] + a
@@ -25,7 +22,7 @@ class cli_generator():
 
     def mkClass(self, method):
         class C(_command_init):
-            __doc__ = self.get_doc(method)
+            __doc__ = self.api_spec.get_doc(method)
             def init(this):
                 this.base_url = (this.config.get(self.appname, 'url') or
                                  this.config.get('global', 'url'))

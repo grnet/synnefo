@@ -169,9 +169,6 @@
        {% else %}
        	
         	 
-        	{% if all %}
-            {% with all_page|concat:all_sorting as args %}
-            {% with all|paginate:args as all %}
 	      	    <div >
 					<form method="GET" class="minimal" action="#allGroups">
 						<div class="form-row">
@@ -203,198 +200,25 @@
 			              </tr>
 			            </thead>
 			            <tbody>
-			              {% for o in all.object_list %}
+			              {% for o in page_obj.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
 			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a></td>
 			                <td>{{o.kindname|capfirst}}</td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
 			                <td>{{ o.approved_members_num }}</td>
-			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
-			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
-			              </tr>
-			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-			                <td colspan="8" class="info-td">
-			                	<div>
-			                		<p>{{o.desc}}</p>
-					                <p>{% if o.homepage%}
-							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
-							 		{% endif %}
-							 		</p>
-			                	</div>	
-			                </td>
-			              </tr>
-			              {% endfor %}
-			            </tbody>
-			        </table>
-				</div>
-				<div class="pagination">
-					<p class="next-prev">
-				        {% if all.has_previous %}
-                            <a href="?all_page={{ all.previous_page_number }}{% if all_sorting %}&all_sorting={{ all_sorting }}{% endif%}{% if all_sorting %}&all_sorting={{ all_sorting }}{% endif%}#allGroups">previous</a>
-                        {% endif %}
-			            {% if all.has_next %}
-                            <a href="?all_page={{ all.next_page_number }}{% if all_sorting %}&all_sorting={{ all_sorting }}{% endif%}{% if all_sorting %}&all_sorting={{ other_sorting }}{% endif%}#allGroups">next</a>
-                        {% endif %}
-			    	</p>
-					<p class="nums">
-						<span class="current">
-                            Page {{ all.number }} of {{ all.paginator.num_pages }}
-                        </span>
-					</p>
-			   </div>
-			
-      		{% endwith %}
-            {% endwith %}
-      		{% endif %}
-         
-        	<!--
-            {% if mine %}
-            {% with own_page|concat:own_sorting as args %}
-            {% with mine|paginate:args as mine %}
-	      	    <div >
-					<form method="GET" class="minimal" action="#myGroups">
-						<div class="form-row">
-						    <select name="own_sorting" onchange="this.form.submit();">
-							    <option value="">Sort by</option>
-							    <option value="groupname" {% if own_sorting == 'groupname' %}selected{% endif %}>Name</option>
-					            <option value="kindname" {% if own_sorting == 'kindname' %}selected{% endif %}>Type</option>			
-					            <option value="issue_date" {% if own_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
-					            <option value="expiration_date" {% if own_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
-					            <option value="approved_members_num" {% if own_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
-					            <option value="is_enabled" {% if own_sorting == 'is_enabled' %}selected{% endif %}>Status</option>
-					            <option value="moderation_enabled" {% if own_sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
-							</select>
-						</div>
-					</form>
-					<table class="alt-style complex" id="myGroups">
-			            <caption>MY GROUPS</caption>
-			            <thead>
-			              <tr>
-			                <th>Name</th>
-			                <th>Type</th>
-			                <th>Issued</th>
-			                <th>Expires</th>
-			                <th>Enrolled</th>
-			                <th>Status</th>
-			                <th>Moderated</th>
-			                <th>&nbsp;</th>
-			                
-			              </tr>
-			            </thead>
-			            <tbody>
-			              {% for o in mine.object_list %}
-			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a></td>
-			                <td>{{o.kindname|capfirst}}</td>
-			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
-			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-			                <td>{{ o.approved_members_num }}</td>
-			                <td>{% if o.is_enabled %}Active{% else %}Pending{% endif %}</td>
-			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
-			              </tr>
-			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-			                <td colspan="8" class="info-td">
-			                	<div>
-			                		<p>{{o.desc}}</p>
-					                <p>{% if o.homepage%}
-							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
-							 		{% endif %}
-							 		</p>
-			                	</div>	
-			                </td>
-			              </tr>
-			              {% endfor %}
-			            </tbody>
-			        </table>
-				</div>
-				<div class="pagination">
-					<p class="next-prev">
-				        {% if mine.has_previous %}
-                            <a href="?own_page={{ mine.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">previous</a>
-                        {% endif %}
-			            {% if mine.has_next %}
-                            <a href="?own_page={{ mine.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">next</a>
-                        {% endif %}
-			    	</p>
-					<p class="nums">
-						<span class="current">
-                            Page {{ mine.number }} of {{ mine.paginator.num_pages }}
-                        </span>
-					</p>
-			   </div>
-			
-      		{% endwith %}
-            {% endwith %}
-      		{% endif %}
-	      	
-	      	{% if other %}
-            {% with other_page|concat:other_sorting as args %}
-            {% with other|paginate:args as other %}
- 	      		<div class="full-dotted">
- 	      			<form method="GET" class="minimal" action="#iParticipateIn"> 
-						<div class="form-row">
-							<select name="other_sorting" onchange="this.form.submit();">
-							    <option value="">Sort by</option>
-							    <option value="groupname" {% if other_sorting == 'groupname' %}selected{% endif %}>Name</option>
-					            <option value="kindname" {% if other_sorting == 'kindname' %}selected{% endif %}>Type</option>			
-					            <option value="issue_date" {% if other_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
-					            <option value="expiration_date" {% if other_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
-					            <option value="approved_members_num" {% if other_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
-					            <option value="membership_status" {% if other_sorting == 'membership_status' %}selected{% endif %}>Enrollment Status</option>
-					             
-							</select>
-						</div>
-					</form>
-					<table class="alt-style complex" id="iParticipateIn">
-			            <caption>
-			            	I PARTICIPATE IN
-			            </caption>
-			            <thead>
-			              <tr>
-			                <th>Name</th>
-			                <th>Type</th>
-			                <th>Issued</th>
-			                <th>Expires</th>
-			                <th>Enrolled</th>
-			                <th>Enrollment status</th>
-			                <th>&nbsp;</th>
-			              
-			              </tr>
-			            </thead>
-			            <tbody>
-			              {% for o in other.object_list %}
-			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"}}</a></td>
-			                <td>{{o.kindname|capfirst}}</td>
-			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
-			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-			                
-			                <td>{{ o.approved_members_num }}</td>
-			                
 			                <td>
-			                {% if o.membership_status %}
-			                    Registered
-		                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
-		                             <input type="submit"  value="LEAVE GROUP" />
-		                        </form>	
-			                    
-			                {% else %}
-			                    Pending
-			                {% endif %}
+			                	{% if o.is_enabled %}Active{% else %}Pending{% endif %}
 			                </td>
-			                <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
+			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
+			                <td><a href="#" class="more-info" title="more info">+ more</a></td>
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-			                <td colspan="7" class="info-td">
+			                <td colspan="8" class="info-td">
 			                	<div>
 			                		<p>{{o.desc}}</p>
 					                <p>{% if o.homepage%}
-							 			Visit it group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
-							 		{% else %}
-							 			There is no homepage for this group yet.
+							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
 							 		{% endif %}
 							 		</p>
 			                	</div>	
@@ -403,28 +227,24 @@
 			              {% endfor %}
 			            </tbody>
 			        </table>
-			       
 				</div>
 				<div class="pagination">
 					<p class="next-prev">
-				        {% if other.has_previous %}
-                            <a href="#iParticipateIn?other_page={{ other.previous_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">previous</a>
+				        {% if page.has_previous %}
+                            <a href="?page={{ page.previous_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">previous</a>
                         {% endif %}
-			            {% if other.has_next %}
-                            <a href="#iParticipateIn?other_page={{ other.next_page_number }}{% if own_sorting %}&own_sorting={{ own_sorting }}{% endif%}{% if other_sorting %}&other_sorting={{ other_sorting }}{% endif%}">next</a>
+			            {% if page.has_next %}
+                            <a href="?page={{ page.next_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">next</a>
                         {% endif %}
 			    	</p>
 					<p class="nums">
 						<span class="current">
-                            Page {{ other.number }} of {{ other.paginator.num_pages }}
+                            Page {{ page.number }} of {{ page.paginator.num_pages }}
                         </span>
 					</p>
 			   </div>
-		    
-			{% endwith %}
-            {% endwith %}
-			{% endif %}
-			-->
+		 
+        	 
 	      	
             {% if q %}
                 <h2>No groups found!</h2>

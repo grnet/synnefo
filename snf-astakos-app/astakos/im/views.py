@@ -869,36 +869,40 @@ def group_list(request):
             im_astakosuser_owner.astakosuser_id = owner.id)
         WHERE im_membership.person_id = %s
         """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id))
-    d = defaultdict(list)
-    
-    for g in q:
-        if request.user.email == g.groupowner:
-            d['own'].append(g)
-        else:
-            d['other'].append(g)
-    
-    for g in q:
-        d['all'].append(g)
-    
-    # validate sorting
-    fields = ('own', 'other', 'all')
-    for f in fields:
-        v = globals()['%s_sorting' % f] = request.GET.get('%s_sorting' % f)
-        if v:
-            form = AstakosGroupSortForm({'sort_by': v})
-            if not form.is_valid():
-                globals()['%s_sorting' % f] = form.cleaned_data.get('sort_by')
+    q = list(q)
+#    d = defaultdict(list)
+#    
+#    for g in q:
+#        if request.user.email == g.groupowner:
+#            d['own'].append(g)
+#        else:
+#            d['other'].append(g)
+#    
+#    for g in q:
+#        d['all'].append(g)
+#        
+#        
+#        
+#    
+#    # validate sorting
+#    fields = ('own', 'other', 'all')
+#    for f in fields:
+#        v = globals()['%s_sorting' % f] = request.GET.get('%s_sorting' % f)
+#        if v:
+#            form = AstakosGroupSortForm({'sort_by': v})
+#            if not form.is_valid():
+#                globals()['%s_sorting' % f] = form.cleaned_data.get('sort_by')
     return object_list(request, queryset=none,
                        extra_context={'is_search': False,
-                                      'all': d['all'],
-                                      'mine': d['own'],
-                                      'other': d['other'],
-                                      'own_sorting': own_sorting,
-                                      'other_sorting': other_sorting,
-                                      'all_sorting': all_sorting,
-                                      'own_page': request.GET.get('own_page', 1),
-                                      'other_page': request.GET.get('other_page', 1),
-                                      'all_page': request.GET.get('all_page', 1)
+                                      'q': q,
+#                                      'mine': d['own'],
+#                                      'other': d['other'],
+#                                      'own_sorting': own_sorting,
+#                                      'other_sorting': other_sorting,
+                                      'sorting': request.GET.get('sorting'),
+#                                      'own_page': request.GET.get('own_page', 1),
+#                                      'other_page': request.GET.get('other_page', 1),
+#                                      'all_page': request.GET.get('all_page', 1)
                                       })
 
 

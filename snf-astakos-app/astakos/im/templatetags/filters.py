@@ -100,33 +100,36 @@ def rcut(value, chars='/'):
     return value.rstrip(chars)
 
 
-#@register.filter
-#def paginate(l, args):
-#    page, delim, sorting = args.partition(DELIM)
-#    if sorting:
-#        if isinstance(l, QuerySet):
-#            l = l.order_by(sorting)
-#        elif isinstance(l, list):
-#            default = ''
-#            if sorting.endswith('_date'):
-#                default = datetime.datetime.utcfromtimestamp(0)
-#            l.sort(key=lambda i: getattr(i, sorting)
-#                   if getattr(i, sorting) else default)
-#
-#    paginator = Paginator(l, PAGINATE_BY)
-#
-#    try:
-#        page_number = int(page)
-#    except ValueError:
-#        if page == 'last':
-#            page_number = paginator.num_pages
-#        else:
-#            page_number = 1
-#    try:
-#        page = paginator.page(page_number)
-#    except EmptyPage:
-#        page = paginator.page(1)
-#    return page
+@register.filter
+def paginate(l, args):
+   page, delim, sorting = args.partition(DELIM)
+   if sorting:
+       if isinstance(l, QuerySet):
+           l = l.order_by(sorting)
+       elif isinstance(l, list):
+           default = ''
+           if sorting.endswith('_date'):
+               default = datetime.datetime.utcfromtimestamp(0)
+           l.sort(key=lambda i: getattr(i, sorting)
+                  if getattr(i, sorting) else default)
+   paginator = Paginator(l, PAGINATE_BY)
+   try:
+       paginator.len
+   except AttributeError:
+       paginator._count = len(list(l))
+   
+   try:
+       page_number = int(page)
+   except ValueError:
+       if page == 'last':
+           page_number = paginator.num_pages
+       else:
+           page_number = 1
+   try:
+       page = paginator.page(page_number)
+   except EmptyPage:
+       page = paginator.page(1)
+   return page
 
 
 @register.filter

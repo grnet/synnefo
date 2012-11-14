@@ -63,8 +63,8 @@ class Kamaki_plugin(Callpoint):
         _kc = self._kc
         
         gettable = ['list', 'get', 'read']
-        method = _kc.get if any(api_call.startswith(x)
-                                for x in gettable) else _kc.post
+        method = (_kc.get if any(api_call.startswith(x) for x in gettable)
+                  else _kc.post)
 
         path = '/api/quotaholder/v/' + api_call
         json_data = self.json_dumps(data)

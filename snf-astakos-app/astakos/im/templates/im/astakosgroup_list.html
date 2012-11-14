@@ -167,7 +167,9 @@
 	   </div>
       <!-- Group listing -->
        {% else %}
-       	
+            {{ q }}
+            {% with page|concat:sorting as args %}
+            {% with q|paginate:args as page_obj %}
         	 
 	      	    <div >
 					<form method="GET" class="minimal" action="#allGroups">
@@ -230,21 +232,22 @@
 				</div>
 				<div class="pagination">
 					<p class="next-prev">
-				        {% if page.has_previous %}
-                            <a href="?page={{ page.previous_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">previous</a>
+				        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">previous</a>
                         {% endif %}
-			            {% if page.has_next %}
-                            <a href="?page={{ page.next_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">next</a>
+			            {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">next</a>
                         {% endif %}
 			    	</p>
 					<p class="nums">
 						<span class="current">
-                            Page {{ page.number }} of {{ page.paginator.num_pages }}
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                         </span>
 					</p>
 			   </div>
 		 
-        	 
+        	{% endwith %} 
+	      	{% endwith %} 
 	      	
             {% if q %}
                 <h2>No groups found!</h2>

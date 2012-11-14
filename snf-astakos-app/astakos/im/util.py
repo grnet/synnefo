@@ -101,7 +101,7 @@ def get_invitation(request):
         raise ValueError(_(astakos_messages.INVITATION_CONSUMED_ERR))
     if reserved_email(invitation.username):
         email = invitation.username
-        raise ValueError(_(astakos_messages.EMAIL_RESRVED) % locals()))
+        raise ValueError(_(astakos_messages.EMAIL_RESRVED) % locals())
     return invitation
 
 

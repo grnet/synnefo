@@ -44,7 +44,8 @@ from astakos.im.functions import (send_verification, send_activation,
 from astakos.im.settings import (INVITATIONS_ENABLED, MODERATION_ENABLED,
     SITENAME, RE_USER_EMAIL_PATTERNS
 )
-from astakos.im.messages import as astakos_messages
+
+import astakos.im.messages as astakos_messages
 
 import logging
 import re

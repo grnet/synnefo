@@ -2,6 +2,7 @@
 
 from kamaki.cli.commands import _command_init
 from kamaki.cli import command
+from kamaki.cli.errors import CLIError
 
 class cli_generator(object):
 
@@ -40,8 +41,11 @@ class cli_generator(object):
 
             def main(this, *args):
                 this.init()
-                r = this.call(method, args)
-                print r
+                try:
+                    r = this.call(method, args)
+                    print r
+                except Exception as e:
+                    raise CLIError ('%s: %s\n' % (self.appname, e))
 
         C.__name__ = self.appname + '_' + method
         return C

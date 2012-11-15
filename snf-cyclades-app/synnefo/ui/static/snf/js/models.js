@@ -261,6 +261,16 @@
             return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
+        is_system_image: function() {
+          var owner = this.get_owner();
+          return _.include(_.keys(synnefo.config.system_images_owners), owner)
+        },
+
+        owned_by: function(user) {
+          if (!user) { user = synnefo.user }
+          return user.username == this.get_owner();
+        },
+
         display_owner: function() {
             var owner = this.get_owner();
             if (_.include(_.keys(synnefo.config.system_images_owners), owner)) {

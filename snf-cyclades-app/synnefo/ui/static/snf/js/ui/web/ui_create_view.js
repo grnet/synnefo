@@ -314,6 +314,14 @@
         hide_list_loading: function() {
             this.$(".images-list-cont").removeClass("loading");
         },
+        
+        display_warning_for_image: function(image) {
+          if (!image.is_system_image() && !image.owned_by(synnefo.user)) {
+            $(".create-vm .image-warning").show();
+          } else {
+            $(".create-vm .image-warning").hide();
+          }
+        },
 
         select_image: function(image) {
             if (image && image.get('id') && !_.include(this.images_ids, image.get('id'))) {
@@ -332,6 +340,7 @@
             
             if ((!this.selected_image && image) || (this.selected_image != image))
                 this.trigger("change", image);
+                this.display_warning_for_image(image);
 
             this.selected_image = image;
                 

@@ -6032,6 +6032,15 @@ table.list-machines .wave {
     height: 250px;
 }
 
+.create-vm .image-warning {
+  display: none;
+  background-color: #987249;
+  color: #fff;
+  padding: 10px 15px;
+  font-size: 0.9em;
+  border-bottom: 1px solid #AAA;
+}
+
 .create-vm .create-step-cont .rename input.rename-field {
     font-size: 1.4em;
     padding: 5px;

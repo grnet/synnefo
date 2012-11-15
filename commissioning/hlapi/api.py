@@ -132,20 +132,44 @@ class HighLevelAPI(object):
     into Entities, Resources, Policies and Limits.
     
     High-level API Terminology
+    ~~~~~~~~~~~~~~
     
-    A node is just an entity with an absolute name. The root node called
-    ``system`` is always present and is enforced by the low-level API.
+    An absolute name is a name that is either 'system' or contains 'system/' as
+    its prefix. It is made of parts separated by slash '/'. It does never
+    end in a '/' and it does not contain consecutive '/'s. So, 'system/groups'
+    and 'system/resources' are absolute names but 'foo', 'foo/bar',
+    'system//groups' and 'system/groups/' are not absolute names.
     
-    The meaning of a few default nodes, called the default parent nodes,
-    is predefined.
-    ``system/resources`` is the parent node of all resources known to ~okeanos.
-    ``system/groups`` is the parent node of all user groups known to ~okeanos.
-    ``system/users`` is the parent node of all users known to ~okeanos.
+    A node is an entity whose name is an absolute name, as defined above.
+    The root node named 'system' is always present and is enforced by the
+    low-level API. This node is called the system node or, symbolically,
+    SYSTEM.
+    A node is uniquely identified by its absolute name. 
+    
+    The level of a node is the number of slashes it contains. Equivalently, it
+    is the number of its parts minus one. So, SYSTEM has level zero,
+    'system/resources' has level one, 'system/resources/pithos+' has level
+    two and so on. For a node with a symbolic name A, its level is given
+    symbolically as level(A). By definition level(SYSTEM) = 0.
+    We subsequently use upper-case letters or words, like SYSTEM, A, B and
+    so on, in order to identify nodes.
+    
+    A node A which is not SYSTEM is the (direct) parent of node B
+    if and only if level(A) + 1 = level(B). We denote parenthood symbolically
+    by writing parent(B) = A. Also, we say that B is a (direct) child of A.    
+    By definition, parent(SYSTEM) = SYSTEM.
         
-    A resource is always a node under ``system/resources``.
-    A group is always a node under ``system/groups``.
-    A user is always a node under ``system/users``.
+    A top-level node is a node if level one. There are three top-level nodes,
+    namely 'system/resources', 'system/users' and 'system/groups'. The symbolic
+    names for these are RESOURCES, USERS and GROUPS respectively.
+    RESOURCES is used to model ~okeanos resources, USERS is used to model
+    ~okeanos users and GROUPS is used to model ~okeanos groups. By the previous
+    definition of parenthood,
+    parent(RESOURCES) = parent(USERS) = parent(GROUPS) = SYSTEM.
     
+    A (global) resource R is a node such that parent(R) = RESOURCES.
+    A group G is a node such that parent(G) = GROUPS.
+    A user U is a node such that parent(U) = USERS.    
     """
 
     def __init__(self, qh = None, **kwd):

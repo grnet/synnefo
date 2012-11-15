@@ -1,6 +1,5 @@
 {% load i18n %}
 <div id="createvm-overlay-content" class="hidden create-vm">
-
     <div class="steps-history clearfix">
         <div class="steps-history-cont step1h completed step-header"
             id="vm-create-step-history-1">
@@ -78,6 +77,13 @@
                 </span>
             </div>
         </div>
+    </div>
+    <div class="image-warning">
+      <p>
+      {% blocktrans %}You have selected a user-provided Image, which is not
+      officially endorsed by ~okeanos. Please make sure it is from a
+      trustworthy source.{% endblocktrans %}
+      </p>
     </div>
     <div class="steps-container clearfix">
         <div class="step-1 select-image wide create-step-cont clearfix">

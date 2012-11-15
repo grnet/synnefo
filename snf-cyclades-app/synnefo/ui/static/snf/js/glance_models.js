@@ -43,7 +43,9 @@
         },
 
         display_users: function() {
-            return this.get_meta('users').split(' ').join(", ");
+            try {
+              return this.get_meta('users').split(' ').join(", ");
+            } catch(err) { console.log(err); return ''}
         }
         
     })

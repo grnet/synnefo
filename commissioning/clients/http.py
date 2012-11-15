@@ -85,6 +85,7 @@ def main():
     from os.path import basename, expanduser
     from time import time
     from commissioning import get_callpoint
+    from commissioning.utils.debug import init_logger_stderr
 
     progname = basename(argv[0])
     h, s, t = progname.rpartition('.')

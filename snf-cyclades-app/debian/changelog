@@ -1,3 +1,9 @@
+snf-cyclades-app (0.12.0~rc1-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Sun, 04 Nov 2012 20:22:06 +0200
+
 snf-cyclades-app (0.11.0-1) stable; urgency=low
 
   * New upstream version

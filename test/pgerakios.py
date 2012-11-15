@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os
-from commissioning.clients.http import HTTP_API_Client, init_logger_stderr
+from commissioning.clients.http import HTTP_API_Client
 from commissioning import QuotaholderAPI
 from sets import Set
 import random
@@ -9,7 +9,6 @@ import copy
 import inspect
 import traceback
 
-#init_logger_stderr('mylogger', level='INFO')
 
 def environ_get(key, default_value=''):
     if os.environ.has_key(key):

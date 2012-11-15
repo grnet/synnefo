@@ -90,7 +90,7 @@ class CreateReleaseListAPITest(QHTestCase):
         entityList = self.qh.get_entity(context={},get_entity=[(self.entityName,
                                                                 self.entityKey)])
         if(exists):
-            self.assertEqual([(self.entityName,self.entityKey)],entityList)
+            self.assertEqual([(self.entityName,self.parentName)],entityList)
         else:
             self.assertEqual(entityList,[])
 

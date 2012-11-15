@@ -20,6 +20,5 @@ setup   (
 
     scripts         =   [
             'quotaholder/servers/quotaholder_django/quotaholder-manage',
-            'quotaholder/clients/quotaholder_http',
     ]
 )

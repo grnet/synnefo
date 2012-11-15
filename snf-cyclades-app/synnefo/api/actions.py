@@ -41,7 +41,8 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.faults import (BadRequest, ServiceUnavailable,
-                                ItemNotFound, BuildInProgress)
+                                ItemNotFound, BuildInProgress,
+                                OverLimit)
 from synnefo.api.util import (random_password, get_vm, get_nic_from_index,
                               get_network_free_address)
 from synnefo.db.models import NetworkInterface, Network
@@ -313,12 +314,13 @@ def add(request, net, args):
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
     #                       badRequest (400),
+    #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
 
     if net.state != 'ACTIVE':
-        raise ServiceUnavailable('Network not active yet')
+        raise BuildInProgress('Network not active yet')
 
     server_id = args.get('serverRef', None)
     if not server_id:
@@ -332,7 +334,7 @@ def add(request, net, args):
         try:
             address = get_network_free_address(net)
         except EmptyPool:
-            raise ServiceUnavailable('Network is full')
+            raise OverLimit('Network is full')
 
     log.info("Connecting VM %s to Network %s(%s)", vm, net, address)
 

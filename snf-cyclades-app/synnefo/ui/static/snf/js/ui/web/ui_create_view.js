@@ -359,7 +359,7 @@
         update_image_details: function(image) {
             this.image_details_desc.hide().parent().hide();
             if (image.get_description()) {
-                this.image_details_desc.text(image.get_description(true)).show().parent().show();
+                this.image_details_desc.html(image.get_description(false)).show().parent().show();
             }
             var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
             if (image.get("name")) {
@@ -404,7 +404,7 @@
                 }
                 var row_cls = key.toLowerCase();
                 if (is_extra) { row_cls += " extra-meta" };
-                extra_details.append(detail_tpl.format(_.escape(label), _.escape(value), row_cls));
+                extra_details.append(detail_tpl.format(_.escape(label), value, row_cls));
             }
 
             _.each(meta_keys, function(key) {
@@ -464,7 +464,7 @@
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.escape("OS")),
                                                   _.escape(img.get_readable_size()),
-                                                  util.truncate(img.get_description(), 35),
+                                                  util.truncate(img.get_description(false), 35),
                                                   _.escape(img.display_owner())));
             image.data("image", img);
             image.data("image_id", img.id);

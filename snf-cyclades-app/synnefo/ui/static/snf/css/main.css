@@ -6023,7 +6023,8 @@ table.list-machines .wave {
 }
 
 .create-vm .personalize-cont .confirm-params {
-    max-height: 190px;
+    max-height: 160px;
+    margin-right: 10px;
 }
 
 .create-vm .personalize-cont,

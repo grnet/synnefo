@@ -10,6 +10,10 @@ class cli_generator(object):
     plugin = None
     add_context = False
 
+    def __init__(self):
+        self.api_spec = self.plugin.api_spec
+        self.appname = self.plugin.appname
+
     def generate_all(self):
         for f in self.api_spec.call_names():
             c = self.mkClass(f)

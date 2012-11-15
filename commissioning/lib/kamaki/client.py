@@ -1,47 +1,10 @@
 #!/usr/bin/env python
 
 from commissioning import Callpoint, CallError
+from commissioning.utils.debug import debug
 from kamaki.clients import Client
 
-import logging
-
 from json import loads as json_loads, dumps as json_dumps
-
-_logger = None
-
-def init_logger_file(name, level='DEBUG'):
-    logger = logging.getLogger(name)
-    handler = logging.FileHandler(name + '.log')
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    level = getattr(logging, level, logging.DEBUG)
-    logger.setLevel(level)
-    global _logger
-    _logger = logger
-    return logger
-
-def init_logger_stderr(name, level='DEBUG'):
-    logger = logging.getLogger(name)
-    from sys import stderr
-    handler = logging.StreamHandler(stderr)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    level = getattr(logging, level, logging.DEBUG)
-    logger.setLevel(level)
-    global _logger
-    _logger = logger
-    return logger
-
-
-def debug(fmt, *args):
-    global _logger
-    if _logger is None:
-        init_logger_stderr('logger')
-        _logger.setLevel(logging.DEBUG)
-    _logger.debug(fmt % args)
-
 
 class Kamaki_plugin(Callpoint):
 

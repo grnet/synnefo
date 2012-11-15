@@ -1285,7 +1285,7 @@
                 }
 
                 if (personality.length) {
-                    extra['personality'] = personality;
+                    extra['personality'] = _.flatten(personality);
                 }
 
                 storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){

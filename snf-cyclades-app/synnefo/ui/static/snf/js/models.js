@@ -295,8 +295,12 @@
             return this.get_meta('GUI');
         },
 
-        get_created_user: function() {
-            return synnefo.config.os_created_users[this.get_os()] || "root";
+        get_created_users: function() {
+            try {
+              var users = this.get_meta('users').split(" ");
+            } catch (err) { users = null }
+            if (!users) { users = [synnefo.config.os_created_users[this.get_os()] || "root"]}
+            return users;
         },
 
         get_sort_order: function() {
@@ -318,12 +322,15 @@
             return this.get('status') == "DELETED"
         },
         
-        ssh_keys_path: function() {
-            prepend = '';
-            if (this.get_created_user() != 'root') {
-                prepend = '/home'
-            }
-            return '{1}/{0}/.ssh/authorized_keys'.format(this.get_created_user(), prepend);
+        ssh_keys_paths: function() {
+            return _.map(this.get_created_users(), function(username) {
+                prepend = '';
+                if (username != 'root') {
+                    prepend = '/home'
+                }
+                return '{1}/{0}/.ssh/authorized_keys'.format(username, 
+                                                             prepend);
+            });
         },
 
         _supports_ssh: function() {
@@ -344,16 +351,18 @@
         },
 
         personality_data_for_keys: function(keys) {
-            contents = '';
-            _.each(keys, function(key){
-                contents = contents + key.get("content") + "\n"
-            });
-            contents = $.base64.encode(contents);
+            return _.map(this.ssh_keys_paths(), function(path) {
+                var contents = '';
+                _.each(keys, function(key){
+                    contents = contents + key.get("content") + "\n"
+                });
+                contents = $.base64.encode(contents);
 
-            return {
-                path: this.ssh_keys_path(),
-                contents: contents
-            }
+                return {
+                    path: path,
+                    contents: contents
+                }
+            });
         }
     });
 

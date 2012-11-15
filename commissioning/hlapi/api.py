@@ -7,19 +7,21 @@ from util import NameOfSystemNode
 from util import NameOfResourcesNode
 from util import NameOfGroupsNode
 from util import NameOfUsersNode
-from util import make_abs_global_resource_name
+from util import make_abs_resource_name
 from util import make_abs_group_name
 from util import make_abs_user_name
-from util import reparent_child_name_under 
-from util import check_abs_global_resource_name
+from util import reparent_child_name_under
+from util import check_abs_resource_name
 from util import parent_abs_name_of
 from util import relative_child_name_under
 from util import make_rel_global_resource_name
 from util import make_rel_group_name
 from util import make_rel_user_name
 from util import check_name
+from util import check_attribute_name
 from util import level_of_node
 from util import check_abs_name
+from commissioning.hlapi.util import check_relative_name
 
 class Quota(object):
     def __init__(self):
@@ -174,6 +176,7 @@ class HighLevelAPI(object):
 
     def __init__(self, qh = None, **kwd):
         self.__client_key = kwd.get('client_key') or ''
+        self.__node_key = kwd.get('node_key') or ''
         
         if qh is None:
             def new_http_qh(url):
@@ -218,65 +221,33 @@ class HighLevelAPI(object):
 
     # internal API
     def __create_attribute_of_node_for_resource(self,
-                                                abs_or_not_node_name,
-                                                intended_parent_node_name,
+                                                node_name,
+                                                node_label,
                                                 resource_name,
-                                                simple_attribute_name,
+                                                attribute_name,
                                                 quantity,
                                                 capacity,
                                                 import_limit,
                                                 export_limit,
                                                 flags):
         #
-        check_abs_name(intended_parent_node_name,
-                        'intended_parent_node_name')
+        check_abs_name(node_name, node_label)
+        check_attribute_name(attribute_name)
+                
+        abs_resource_name = make_abs_resource_name(resource_name)
+                
+        computed_attribute_name = '%s_%s' % (attribute_name,
+                                             abs_resource_name)
         
-        intended_parent_node_name = self.ensure_node(intended_parent_node_name)
-        
-        # Fix node name to its intended absolute form just in case
-        node_name = reparent_child_name_under(child_name=abs_or_not_node_name,
-                                              parent_node_name=intended_parent_node_name,
-                                              child_label='abs_or_not_node_name',
-                                              parent_label='intended_parent_node_name')
+        return self.set_quota(
+            entity=node_name,
+            resource=computed_attribute_name,
+            quantity=quantity,
+            capacity=capacity,
+            import_limit=import_limit,
+            export_limit=export_limit,
+            flags=flags)
 
-        self.ensure_resources_node()
-        
-        abs_resource_name = make_abs_global_resource_name(resource_name)
-        self.ensure_node(abs_resource_name)
-        
-        # Fix resource name to its relative form just in case
-        relative_resource_name = make_rel_global_resource_name(resource_name,
-                                                                  'resource_name')
-        
-        computed_attribute_name = '%s_%s' % (simple_attribute_name,
-                                             relative_resource_name)
-        
-        rejected  = self.__qh.set_quota(
-            context=self.__context,
-            set_quota=[(
-                node_name,               # Node -> QH entity
-                computed_attribute_name, # Attribute -> QH resource
-                self.get_cached_node_key(node_name),
-                quantity,
-                capacity, 
-                import_limit, 
-                export_limit, 
-                flags
-            )]
-        )
-        
-        if len(rejected) > 0:
-            raise Exception(
-                "Could not create attribute '%s' [='%s'] for node '%s' [='%s'], related to resource '%s' [='%s']" % (
-                    simple_attribute_name,
-                    computed_attribute_name,
-                    abs_or_not_node_name,
-                    node_name,
-                    resource_name,
-                    abs_resource_name
-            ))
-            
-        return computed_attribute_name
 
     #+++##########################################
     # Public, low-level API.
@@ -431,17 +402,17 @@ class HighLevelAPI(object):
             resource=resource,
             quantity=quantity)
 
-    def get_cached_node_key(self, node_name):
-        check_abs_name(node_name, 'node_name')
-        return self.__node_keys.get(node_name) or '' # sane default
+    def get_cached_node_key(self, node_name, node_label='node_name'):
+        check_abs_name(node_name, node_label)
+        return self.__node_keys.get(node_name) or self.__node_key or ''
 
 
-    def set_cached_node_key(self, abs_node_name, node_key, label='abs_node_name'):
-        check_abs_name(abs_node_name, label)
+    def set_cached_node_key(self, node_name, node_key, node_label='node_name'):
+        check_abs_name(node_name, node_label)
         check_node_key(node_key)
         if node_key is None:
             node_key = ''
-        self.__node_keys[abs_node_name] = node_key
+        self.__node_keys[node_name] = node_key
 
 
     def node_keys(self):
@@ -535,7 +506,7 @@ class HighLevelAPI(object):
 
 
     def has_global_resource(self, resource_name):
-        abs_resource_name = make_abs_global_resource_name(resource_name)
+        abs_resource_name = make_abs_resource_name(resource_name)
         return self.has_node(abs_resource_name, 'abs_resource_name')
 
 
@@ -555,10 +526,12 @@ class HighLevelAPI(object):
         
         The implementation maps a node to a Quota Holder entity.
         """
+        print "Creating %s=%s" % (node_label, node_name)
         check_abs_name(node_name, node_label)
         
         if is_system_node(node_name):
-            # ``system`` entity always exists
+            # SYSTEM always exists
+            print "SYSTEM exists"
             return node_name
 
         parent_node_name = parent_abs_name_of(node_name, node_label)
@@ -580,39 +553,87 @@ class HighLevelAPI(object):
             ]
         )
         if len(rejected) > 0:
-            raise Exception("Could not create %s='%s'. Maybe it already exists?" % (node_label, node_name,))
+            raise Exception("Could not create %s='%s'. Maybe it already exists? Is 'system' entity defined?" % (node_label, node_name,))
         else:
             return node_name
 
 
-    def define_global_resource(self, resource_name):
+    def define_resource(self,
+                        name,
+                        total_quota,
+                        user_quota,
+                        user_max_quota,
+                        group_max_quota):
         """
         Defines a resource globally known to Quota Holder.
         
         Returns the absolute name of the created resource. Note that this may
-        be different from ``resource_name``.
+        be different from ``name``.
         
         The implementation maps a global resource to a Quota Holder entity
         (so this is equivalent to a node in the high-level API but an extra
         check is made to ensure the resource is under 'system/resources').
         """
-        
         # If the name is not in absolute form, make it so.
         # E.g. if it is 'pithos+' make it 'system/resources/pithos+'
-        abs_resource_name = make_abs_global_resource_name(resource_name)
+        abs_resource_name = make_abs_resource_name(name)
+                
+        # Create the resource node
+        self.create_node(node_name=abs_resource_name,
+                         node_label='abs_resource_name')
         
-        # Create hierarchy on demand
-        return self.create_node(abs_resource_name, 'abs_resource_name')
+        # Associate the node with the resource of the same
+        # absolute name
+        resource_quota = self.set_quota(entity=abs_resource_name,
+            resource=abs_resource_name,
+            quantity=0,
+            capacity=total_quota,
+            import_limit=None,
+            export_limit=None,
+            flags=0)
+        
+        rdef_user_quota = self.define_attribute_of_resource(
+            abs_resource_name=abs_resource_name,
+            attribute_name='user',
+            quantity=0,
+            capacity=user_quota,
+            import_limit=0,
+            export_limit=0,
+            flags=0)
+
+        rdef_user_max_quota = self.define_attribute_of_resource(
+            abs_resource_name=abs_resource_name,
+            attribute_name='user_max',
+            quantity=0,
+            capacity=user_max_quota,
+            import_limit=0,
+            export_limit=0,
+            flags=0)
+
+        rdef_group_max_quota = self.define_attribute_of_resource(
+            abs_resource_name=abs_resource_name,
+            attribute_name='group_max',
+            quantity=0,
+            capacity=group_max_quota,
+            import_limit=0,
+            export_limit=0,
+            flags=0)
+        
+
+        return [resource_quota,
+                rdef_user_quota,
+                rdef_user_max_quota,
+                rdef_group_max_quota] 
         
     
-    def define_attribute_of_global_resource(self,
-                                            global_resource_name,
-                                            attribute_name,
-                                            quantity,
-                                            capacity,
-                                            import_limit,
-                                            export_limit,
-                                            flags):
+    def define_attribute_of_resource(self,
+                                     abs_resource_name,
+                                     attribute_name,
+                                     quantity,
+                                     capacity,
+                                     import_limit,
+                                     export_limit,
+                                     flags):
         """
         Defines an ``int`` attribute for global resource named
         ``global_resource_name``.
@@ -626,16 +647,17 @@ class HighLevelAPI(object):
         the node (Quota Holder entity) named ``global_resource_name``. The
         respective value is defined via Quota Holder quotas. 
         """
+        check_attribute_name(attribute_name)
         
         return self.__create_attribute_of_node_for_resource(
-            abs_or_not_node_name=global_resource_name,
-            intended_parent_node_name=NameOfResourcesNode,
-            resource_name=global_resource_name,
-            # r means we define for Resource
+            node_name=abs_resource_name,
+            node_label='abs_resource_name',
+            resource_name=abs_resource_name,
+            # `rdef` means we define for a Resource
             # The attribute name goes next
-            # The relative resource name goes next
+            # The absolute resource name goes next
             #    (will be added by the called method)
-            simple_attribute_name='r_%s' % (attribute_name),
+            attribute_name='rdef_%s' % (attribute_name),
             quantity=quantity,
             capacity=capacity,
             import_limit=import_limit,
@@ -686,14 +708,14 @@ class HighLevelAPI(object):
                                                flags):
         
         return self.__create_attribute_of_node_for_resource(
-            abs_or_not_node_name=group_name,
+            node_name=group_name,
             intended_parent_node_name=NameOfGroupsNode,
             resource_name=resource_name,
             # g means we define for G
             # The attribute name goes next
             # The relative resource name goes next
             #    (will be added by the called method)
-            simple_attribute_name='g_%s' % (attribute_name),
+            attribute_name='g_%s' % (attribute_name),
             quantity=quantity,
             capacity=capacity,
             import_limit=import_limit,
@@ -718,7 +740,7 @@ class HighLevelAPI(object):
         Defines a resource that a group provides to its users.
         """
         abs_group_name = make_abs_group_name(group_name)
-        abs_resource_name = make_abs_global_resource_name(resource_name)
+        abs_resource_name = make_abs_resource_name(resource_name)
         
         if not self.has_global_resource(abs_resource_name):
             raise Exception(

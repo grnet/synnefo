@@ -45,6 +45,13 @@ def check_abs_name(abs_name, label = 'abs_name'):
          
     return abs_name
 
+def check_attribute_name(name, label='simple_name'):
+    check_name(name, label)
+    if name.find('/') >= 0:
+        raise Exception("'%s' is not a valid attribute name (contains '/')")
+    if name.find(' ') >= 0:
+        raise Exception("'%s' is not a valid attribute name (contains ' ')")
+
 def check_relative_name(relative_name, label='relative_name'):
     check_string(label, relative_name)
     if relative_name.startswith('system') or relative_name.startswith('system/'):
@@ -64,8 +71,8 @@ def check_name(name, label='name'):
     return name
 
 
-def check_abs_global_resource_name(abs_resource_name,
-                                   label='abs_resource_name'):
+def check_abs_resource_name(abs_resource_name,
+                            label='abs_resource_name'):
     """
     ``abs_resource_name`` must always be a string in absolute form.
     """
@@ -172,7 +179,7 @@ def make_abs_group_name(group_name):
                                      child_label='group_name',
                                      parent_label='NameOfGroupsNode')
 
-def make_abs_global_resource_name(global_resource_name):
+def make_abs_resource_name(global_resource_name):
     check_name(global_resource_name, 'global_resource_name')
     return reparent_child_name_under(child_name=global_resource_name,
                                      parent_node_name=NameOfResourcesNode,

@@ -48,10 +48,11 @@ from django.contrib import messages
 from django.utils.encoding import smart_str
 
 from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
-    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
-    RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT, \
-    NEWPASSWD_INVALIDATE_TOKEN
+from astakos.im.settings import (INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL,
+    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL,
+    RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT,
+    NEWPASSWD_INVALIDATE_TOKEN, THIRDPARTY_ACC_ADDITIONAL_FIELDS
+)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -182,6 +183,10 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         return user
 
 class ThirdPartyUserCreationForm(forms.ModelForm):
+    third_party_identifier = forms.CharField(
+        widget=forms.HiddenInput(),
+        label=''
+    )
     class Meta:
         model = AstakosUser
         fields = ("email", "first_name", "last_name", "third_party_identifier", "has_signed_terms")
@@ -193,15 +198,16 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         self.request = kwargs.get('request', None)
         if self.request:
             kwargs.pop('request')
+                
+        latest_terms = get_latest_terms()
+        if latest_terms:
+            self._meta.fields.append('has_signed_terms')
+                
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email', 'first_name', 'last_name', 'third_party_identifier']
-        if get_latest_terms():
+        
+        if latest_terms:
             self.fields.keyOrder.append('has_signed_terms')
-        #set readonly form fields
-        ro = ["third_party_identifier"]
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
-
+        
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
@@ -262,20 +268,23 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder.append('additional_email')
         # copy email value to additional_mail in case user will change it
         name = 'email'
         field = self.fields[name]
         self.initial['additional_email'] = self.initial.get(name, field.initial)
-
+        self.initial['email'] = None
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         for user in AstakosUser.objects.filter(email = email):
             if user.provider == 'shibboleth':
-                raise forms.ValidationError(_("This email is already associated with another shibboleth account."))
-            elif not user.is_active:
-                raise forms.ValidationError(_("This email is already associated with an inactive account. \
-                                              You need to wait to be activated before being able to switch to a shibboleth account."))
+                raise forms.ValidationError(_(
+                        "This email is already associated with another shibboleth \
+                        account."
+                    )
+                )
+            else:
+                raise forms.ValidationError(_("This email is already used"))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
 
@@ -321,7 +330,7 @@ class LoginForm(AuthenticationForm):
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
             raise forms.ValidationError(_('You have not entered the correct words'))
-
+    
     def clean(self):
         super(LoginForm, self).clean()
         if self.user_cache and self.user_cache.provider not in ('local', ''):

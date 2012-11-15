@@ -249,23 +249,6 @@ def activate(user, email_template_name='im/welcome_email.txt',
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
-def switch_account_to_shibboleth(user, local_user, greeting_template_name='im/welcome_email.txt'):
-    if not user or not isinstance(user, AstakosUser):
-        return
-    
-    if not local_user or not isinstance(user, AstakosUser):
-        return
-    
-    if not user.provider == 'shibboleth':
-        return
-    
-    user.delete()
-    local_user.provider = 'shibboleth'
-    local_user.third_party_identifier = user.third_party_identifier
-    local_user.save()
-    send_greeting(local_user, greeting_template_name)
-    return local_user
-
 def invite(invitation, inviter, email_template_name='im/welcome_email.txt'):
     """
     Send an invitation email and upon success reduces inviter's invitation by one.

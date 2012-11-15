@@ -64,10 +64,12 @@ class EmailBackend(ModelBackend):
     def authenticate(self, username=None, password=None):
         #If username is an email address, then try to pull it up
         if email_re.search(username):
-            try:
-                user = AstakosUser.objects.get(email=username, is_active=True)
-            except AstakosUser.DoesNotExist:
+            users = AstakosUser.objects.filter(email=username)
+            if not users:
                 return None
+            for user in users:
+                if  user.check_password(password):
+                    return user
         else:
             #We have a non-email address username we
             #should try username

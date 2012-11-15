@@ -52,16 +52,18 @@ from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
-from django.db.models import Q
 from django.views.decorators.http import require_http_methods
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import get_context, prepare_response, set_cookie, get_query
 from astakos.im.forms import *
-from astakos.im.functions import send_greeting, send_feedback, SendMailError, \
-    invite as invite_func, logout as auth_logout, activate as activate_func, switch_account_to_shibboleth
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
+from astakos.im.functions import (send_greeting, send_feedback, SendMailError,
+    invite as invite_func, logout as auth_logout, activate as activate_func
+)
+from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL,
+    COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
+)
 
 logger = logging.getLogger(__name__)
 
@@ -137,9 +139,12 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     template_name = login_template_name
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
-    return render_response(template_name,
-                           login_form = LoginForm(request=request),
-                           context_instance = get_context(request, extra_context))
+    
+    return render_response(
+        template_name,
+        login_form = LoginForm(request=request),
+        context_instance = get_context(request, extra_context)
+    )
 
 @require_http_methods(["GET", "POST"])
 @login_required
@@ -462,43 +467,22 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
         return index(request)
     
     try:
-        local_user = AstakosUser.objects.get(~Q(id = user.id), email=user.email, is_active=True)
-    except AstakosUser.DoesNotExist:
-        try:
-            activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
-            response = prepare_response(request, user, next, renew=True)
-            transaction.commit()
-            return response
-        except SendMailError, e:
-            message = e.message
-            messages.add_message(request, messages.ERROR, message)
-            transaction.rollback()
-            return index(request)
-        except BaseException, e:
-            status = messages.ERROR
-            message = _('Something went wrong.')
-            messages.add_message(request, messages.ERROR, message)
-            logger.exception(e)
-            transaction.rollback()
-            return index(request)
-    else:
-        try:
-            user = switch_account_to_shibboleth(user, local_user, greeting_email_template_name)
-            response = prepare_response(request, user, next, renew=True)
-            transaction.commit()
-            return response
-        except SendMailError, e:
-            message = e.message
-            messages.add_message(request, messages.ERROR, message)
-            transaction.rollback()
-            return index(request)
-        except BaseException, e:
-            status = messages.ERROR
-            message = _('Something went wrong.')
-            messages.add_message(request, messages.ERROR, message)
-            logger.exception(e)
-            transaction.rollback()
-            return index(request)
+        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+        response = prepare_response(request, user, next, renew=True)
+        transaction.commit()
+        return response
+    except SendMailError, e:
+        message = e.message
+        messages.add_message(request, messages.ERROR, message)
+        transaction.rollback()
+        return index(request)
+    except BaseException, e:
+        status = messages.ERROR
+        message = _('Something went wrong.')
+        messages.add_message(request, messages.ERROR, message)
+        logger.exception(e)
+        transaction.rollback()
+        return index(request)
 
 @require_http_methods(["GET", "POST"])
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):

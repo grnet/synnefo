@@ -1,0 +1,20 @@
+{% extends 'im/base_two_cols.html' %}
+
+{% block page.title %}
+    Signup
+{% endblock %}
+
+{% block body.left %}
+    <img class="pic" src="{{ IM_STATIC_URL }}images/pictures/accounts_3.png" />
+{% comment %}{% include "im/services_description.html" %}{% endcomment %}
+{% endblock body.left %}
+
+{% block body.right %}
+    {% if "local" in im_modules %}
+      <div class="form-stacked">
+        <h2><span>Already have an account?</span></h2>
+        <a href="{% url astakos.im.views.index %}?key={{key}}">YES</a>
+        <a href="{% url astakos.im.target.shibboleth.signup %}?key={{key}}">NO</a>
+      </div>
+    {% endif %}
+{% endblock %}

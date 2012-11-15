@@ -120,3 +120,13 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_S
 
 # Enforce token renewal on password change/reset
 NEWPASSWD_INVALIDATE_TOKEN = getattr(settings, 'ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN', True)
+
+# Permit local account migration
+ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(settings, 'ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION', True)
+
+# A dictionary describing the user fields appearing during the second step of third party account creation
+from django import forms
+THIRDPARTY_ACC_ADDITIONAL_FIELDS = getattr(settings, 'ASTAKOS_THIRDPARTY_ACC_ADDITIONAL_FIELDS', {
+    'first_name':None,
+    'last_name':None,
+})

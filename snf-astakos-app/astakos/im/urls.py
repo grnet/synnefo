@@ -86,7 +86,8 @@ if INVITATIONS_ENABLED:
 
 if 'shibboleth' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-        url(r'^login/shibboleth/?$', 'shibboleth.login')
+        url(r'^login/shibboleth/?$', 'shibboleth.login'),
+        url(r'^login/shibboleth/signup/?$', 'shibboleth.signup')
     )
 
 if 'twitter' in IM_MODULES:

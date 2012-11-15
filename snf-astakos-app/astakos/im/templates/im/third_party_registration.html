@@ -17,13 +17,11 @@
       <div class="form-stacked">
         <form action="{% url astakos.im.views.signup %}" method="post"
             class="innerlabels signup">{% csrf_token %}
-          <h2><span>Provide an email address to complete the registration:</span></h2>
+          <h2><span>SIGN UP</span></h2>
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value={{ provider|default:"local" }}>
-            {% with signup_form as form %}
             {% include "im/form_render.html" %}
-            {% endwith %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SUBMIT" />
             </div>

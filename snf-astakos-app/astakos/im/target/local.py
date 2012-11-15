@@ -39,12 +39,14 @@ from django.contrib import messages
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.core.urlresolvers import reverse
 
 from astakos.im.util import prepare_response, get_query
 from astakos.im.views import requires_anonymous
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
+from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION
 
 from ratelimit.decorators import ratelimit
 
@@ -62,11 +64,16 @@ def login(request, on_failure='im/login.html'):
     was_limited = getattr(request, 'limited', False)
     form = LoginForm(data=request.POST, was_limited=was_limited, request=request)
     next = get_query(request).get('next', '')
+    username = get_query(request).get('key')
+    
     if not form.is_valid():
-        return render_to_response(on_failure,
-                                  {'login_form':form,
-                                   'next':next},
-                                  context_instance=RequestContext(request))
+        return render_to_response(
+            on_failure,
+            {'login_form':form,
+             'next':next,
+             'key':username},
+            context_instance=RequestContext(request)
+        )
     # get the user from the cash
     user = form.user_cache
     
@@ -74,11 +81,39 @@ def login(request, on_failure='im/login.html'):
     if not user:
         message = _('Cannot authenticate account')
     elif not user.is_active:
-        message = _('Inactive account')
+        if user.sent_activation:
+            message = _('Your request is pending activation')
+        else:
+            message = _('You have not followed the activation link')
     if message:
         messages.add_message(request, messages.ERROR, message)
         return render_to_response(on_failure,
                                   {'form':form},
                                   context_instance=RequestContext(request))
     
+    # hook for switching account to use third party authentication
+    if ENABLE_LOCAL_ACCOUNT_MIGRATION and username:
+        try:
+            new = PendingThirdPartyUser.objects.get(
+                username=username)
+        except:
+            messages.error(
+                request,
+                _('Account failed to switch to %(provider)s' % locals())
+            )
+            return render_to_response(
+                on_failure,
+                {'login_form':form,
+                 'next':next},
+                context_instance=RequestContext(request)
+            )
+        else:
+            user.provider = new.provider
+            user.third_party_identifier = new.third_party_identifier
+            user.save()
+            new.delete()
+            messages.success(
+                request,
+                _('Account successfully switched to %(provider)s' % user.__dict__)
+            )
     return prepare_response(request, user, next)

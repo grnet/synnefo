@@ -39,7 +39,7 @@ import json
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
-from urlparse import urlparse, urlunparse
+from urlparse import urlparse
 from random import randint
 
 from django.db import models, IntegrityError
@@ -373,6 +373,42 @@ class AdditionalMail(models.Model):
     """
     owner = models.ForeignKey(AstakosUser)
     email = models.EmailField()
+
+class PendingThirdPartyUser(models.Model):
+    """
+    Model for registring successful third party user authentications
+    """
+    third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
+    provider = models.CharField('Provider', max_length=255, blank=True)
+    email = models.EmailField(_('e-mail address'), blank=True)
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
+    affiliation = models.CharField('Affiliation', max_length=255, blank=True)
+    username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
+
+    @property
+    def realname(self):
+        return '%s %s' %(self.first_name, self.last_name)
+
+    @realname.setter
+    def realname(self, value):
+        parts = value.split(' ')
+        if len(parts) == 2:
+            self.first_name = parts[0]
+            self.last_name = parts[1]
+        else:
+            self.last_name = parts[0]
+    
+    def save(self, **kwargs):
+        if not self.id:
+            # set username
+            while not self.username:
+                username =  uuid.uuid4().hex[:30]
+                try:
+                    AstakosUser.objects.get(username = username)
+                except AstakosUser.DoesNotExist, e:
+                    self.username = username
+        super(PendingThirdPartyUser, self).save(**kwargs)
 
 def create_astakos_user(u):
     try:

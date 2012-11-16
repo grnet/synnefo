@@ -380,11 +380,14 @@ class PendingThirdPartyUser(models.Model):
     """
     third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
     provider = models.CharField('Provider', max_length=255, blank=True)
-    email = models.EmailField(_('e-mail address'), blank=True)
+    email = models.EmailField(_('e-mail address'), blank=True, null=True)
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
     last_name = models.CharField(_('last name'), max_length=30, blank=True)
     affiliation = models.CharField('Affiliation', max_length=255, blank=True)
     username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
+    
+    class Meta:
+        unique_together = ("provider", "third_party_identifier")
 
     @property
     def realname(self):

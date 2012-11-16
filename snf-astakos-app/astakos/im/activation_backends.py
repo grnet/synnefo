@@ -101,11 +101,11 @@ class ActivationBackend(object):
                 initial_data = request.POST
         return globals()[formclass](initial_data, instance=instance, request=request)
     
-    def handle_activation(self, user, \
-                          activation_template_name='im/activation_email.txt', \
-                          greeting_template_name='im/welcome_email.txt', \
-                          admin_email_template_name='im/admin_notification.txt', \
-                          switch_accounts_email_template_name='im/switch_accounts_email.txt'):
+    def handle_activation(
+        self, user, activation_template_name='im/activation_email.txt',
+        greeting_template_name='im/welcome_email.txt',
+        admin_email_template_name='im/admin_notification.txt'
+    ):
         """
         If the user is already active returns immediately.
         If the user is not active and there is another account associated with
@@ -120,9 +120,6 @@ class ActivationBackend(object):
         try:
             if user.is_active:
                 return RegistationCompleted()
-            if user.conflicting_email():
-                send_verification(user, switch_accounts_email_template_name)
-                return SwitchAccountsVerificationSent(user.email)
             
             if self._is_preaccepted(user):
                 if user.email_verified:
@@ -230,14 +227,6 @@ class VerificationSent(ActivationResult):
     def __init__(self):
         message = _('Verification sent.')
         super(VerificationSent, self).__init__(message)
-
-class SwitchAccountsVerificationSent(ActivationResult):
-    def __init__(self, email):
-        message = _('This email is already associated with another \
-                    local account. To change this account to a shibboleth \
-                    one follow the link in the verification email sent \
-                    to %s. Otherwise just ignore it.' % email)
-        super(SwitchAccountsVerificationSent, self).__init__(message)
 
 class NotificationSent(ActivationResult):
     def __init__(self):

@@ -356,6 +356,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 message = e.message
                 messages.add_message(request, status, message)
             except BaseException, e:
+                logger.exception(e)
                 status = messages.ERROR
                 message = _('Something went wrong.')
                 messages.add_message(request, status, message)

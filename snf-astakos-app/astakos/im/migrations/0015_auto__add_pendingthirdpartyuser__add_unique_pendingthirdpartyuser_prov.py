@@ -13,7 +13,7 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('third_party_identifier', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
             ('provider', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-            ('email', self.gf('django.db.models.fields.EmailField')(max_length=75, blank=True)),
+            ('email', self.gf('django.db.models.fields.EmailField')(max_length=75, null=True, blank=True)),
             ('first_name', self.gf('django.db.models.fields.CharField')(max_length=30, blank=True)),
             ('last_name', self.gf('django.db.models.fields.CharField')(max_length=30, blank=True)),
             ('affiliation', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
@@ -21,9 +21,15 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('im', ['PendingThirdPartyUser'])
 
+        # Adding unique constraint on 'PendingThirdPartyUser', fields ['provider', 'third_party_identifier']
+        db.create_unique('im_pendingthirdpartyuser', ['provider', 'third_party_identifier'])
+
 
     def backwards(self, orm):
         
+        # Removing unique constraint on 'PendingThirdPartyUser', fields ['provider', 'third_party_identifier']
+        db.delete_unique('im_pendingthirdpartyuser', ['provider', 'third_party_identifier'])
+
         # Deleting model 'PendingThirdPartyUser'
         db.delete_table('im_pendingthirdpartyuser')
 
@@ -73,7 +79,7 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 15, 13, 7, 38, 626139)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 16, 11, 52, 33, 987227)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
@@ -101,7 +107,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 15, 13, 7, 38, 627944)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 16, 11, 52, 33, 988935)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.invitation': {
@@ -116,9 +122,9 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
         },
         'im.pendingthirdpartyuser': {
-            'Meta': {'object_name': 'PendingThirdPartyUser'},
+            'Meta': {'unique_together': "(('provider', 'third_party_identifier'),)", 'object_name': 'PendingThirdPartyUser'},
             'affiliation': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
-            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
+            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),

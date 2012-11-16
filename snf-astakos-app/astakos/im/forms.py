@@ -46,8 +46,12 @@ from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
 from django.contrib import messages
 from django.utils.encoding import smart_str
+from django.forms.models import fields_for_model
 
-from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
+from astakos.im.models import (
+    AstakosUser, Invitation, get_latest_terms,
+    EmailChange, PendingThirdPartyUser
+)
 from astakos.im.settings import (INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL,
     BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL,
     RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT,
@@ -189,7 +193,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
     )
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name", "third_party_identifier", "has_signed_terms")
+        fields = ['email', 'third_party_identifier']
 
     def __init__(self, *args, **kwargs):
         """
@@ -202,7 +206,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         latest_terms = get_latest_terms()
         if latest_terms:
             self._meta.fields.append('has_signed_terms')
-                
+        
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
         
         if latest_terms:
@@ -215,7 +219,17 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
                     % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
                     mark_safe("I agree with %s" % terms_link_html)
-
+        
+        default = fields_for_model(
+            self._meta.model,
+            THIRDPARTY_ACC_ADDITIONAL_FIELDS.keys()
+        )
+        for fname, field in THIRDPARTY_ACC_ADDITIONAL_FIELDS.iteritems():
+            if field:
+                self.fields[fname] = field
+            self.fields.setdefault(fname, default.get(fname))
+            self.initial[fname] = getattr(self.instance, fname, None)
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
@@ -287,6 +301,19 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
                 raise forms.ValidationError(_("This email is already used"))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
+    
+    def save(self, commit=True):
+        user = super(ShibbolethUserCreationForm, self).save(commit=False)
+        try:
+            p = PendingThirdPartyUser.objects.get(
+                provider=user.provider,
+                third_party_identifier=user.third_party_identifier
+            )
+        except:
+            pass
+        else:
+            p.delete()
+        return user
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm, InvitedThirdPartyUserCreationForm):
     pass

@@ -72,7 +72,8 @@ def login(
     request,
     on_login_template='im/login.html',
     on_signup_template='im/third_party_check_local.html',
-    extra_context=None):
+    extra_context=None
+):
     extra_context = extra_context or {}
 
     tokens = request.META
@@ -149,10 +150,11 @@ def login(
 
 @require_http_methods(["GET"])
 @requires_anonymous
-def signup(request,
-           backend=None,
-           on_creation_template='im/third_party_registration.html',
-           extra_context=None
+def signup(
+    request,
+    backend=None,
+    on_creation_template='im/third_party_registration.html',
+    extra_context=None
 ):
     extra_context = extra_context or {}
     username = request.GET.get('key')

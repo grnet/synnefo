@@ -91,6 +91,8 @@ ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT          'Email change on %s alpha2 testing' 
 ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT        'Password reset on %s alpha2 testing' % SITENAME                                Password change email subject
 ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN          True                                                                            Enforce token renewal on password change/reset. If set to False, user can optionally decide
                                                                                                                             whether to renew the token or not.
+ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION      True                                                                            Permit local account migration to third party account
+ASTAKOS_THIRDPARTY_ACC_ADDITIONAL_FIELDS    {'first_name':None, 'last_name':None}                                           The additional user fields appearing during the second step of third party account creation  
 =========================================== =============================================================================   ===========================================================================================
 
 Administrator functions

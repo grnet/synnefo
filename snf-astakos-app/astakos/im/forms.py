@@ -532,7 +532,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         label="",
         widget=forms.HiddenInput()
     )
-    name = forms.URLField()
+    name = forms.URLField(widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}))
     moderation_enabled = forms.BooleanField(
         help_text="Check if you want to approve members participation manually",
         required=False,
@@ -562,11 +562,10 @@ class AstakosGroupCreationForm(forms.ModelForm):
                                 'issue_date', 'expiration_date',
                                 'moderation_enabled', 'max_participants']
         def add_fields((k, v)):
-            print '####', k, v
             k = k.partition('_proxy')[0]
             self.fields[k] = forms.IntegerField(
                 required=False,
-                #widget=forms.HiddenInput(),
+                widget=forms.HiddenInput(),
                 min_value=1
             )
         map(add_fields,
@@ -587,15 +586,17 @@ class AstakosGroupCreationForm(forms.ModelForm):
         policies = []
         append = policies.append
         for name, uplimit in self.cleaned_data.iteritems():
+            
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 prefix, suffix = subs
                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
-                
+ 
                 # keep only resource limits for selected resource groups
+                print '###', resource.group, s, r, uplimit, self.cleaned_data
                 if self.cleaned_data.get(
-                    'is_selected_%s' % resource.group, True
+                    'is_selected_%s' % resource.group, False
                 ):
                     append(dict(service=s, resource=r, uplimit=uplimit))
         return policies
@@ -638,7 +639,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         def add_fields((k, v)):
             self.fields[k] = forms.IntegerField(
                 required=False,
-                #widget=forms.TextInput(),
+                widget=forms.TextInput(),
                 min_value=1
             )
         map(add_fields,
@@ -648,7 +649,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         def add_fields((k, v)):
             self.fields[k] = forms.BooleanField(
                 required=False,
-                #widget=forms.HiddenInput()
+                widget=forms.HiddenInput()
             )
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
@@ -660,6 +661,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         super(AstakosGroupCreationSummaryForm, self).clean()
         self.cleaned_data['policies'] = []
         append = self.cleaned_data['policies'].append
+        #tbd = [f for f in self.fields if (f.startswith('is_selected_') and (not f.endswith('_proxy')))]
         tbd = [f for f in self.fields if f.startswith('is_selected_')]
         for name, uplimit in self.cleaned_data.iteritems():
             subs = name.split('_uplimit')
@@ -686,7 +688,7 @@ class AstakosGroupUpdateForm(forms.ModelForm):
 
 class AddGroupMembersForm(forms.Form):
     q = forms.CharField(
-        max_length=800, widget=forms.Textarea, label=_('Add users'),
+        max_length=800, widget=forms.Textarea, label=_('Add members'),
         help_text=_(astakos_messages.ADD_GROUP_MEMBERS_Q_HELP),
         required=True)
 

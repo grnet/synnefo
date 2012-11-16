@@ -86,6 +86,12 @@ class Command(BaseCommand):
             else:
                 self.stdout.write('Check passed.\n')
 
+        info = client.GetInfo()
+        info_name = info['name']
+        if info_name != clustername:
+            raise CommandError("Invalid clustername value. Please use the"
+                               " Ganeti Cluster name: %s" % info_name)
+
         # Create the new backend in database
         try:
             backend = Backend.objects.create(clustername=clustername,

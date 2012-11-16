@@ -328,8 +328,8 @@
                 if (username != 'root') {
                     prepend = '/home'
                 }
-                return '{1}/{0}/.ssh/authorized_keys'.format(username, 
-                                                             prepend);
+                return {'user': username, 'path': '{1}/{0}/.ssh/authorized_keys'.format(username, 
+                                                             prepend)};
             });
         },
 
@@ -351,7 +351,7 @@
         },
 
         personality_data_for_keys: function(keys) {
-            return _.map(this.ssh_keys_paths(), function(path) {
+            return _.map(this.ssh_keys_paths(), function(pathinfo) {
                 var contents = '';
                 _.each(keys, function(key){
                     contents = contents + key.get("content") + "\n"
@@ -359,8 +359,11 @@
                 contents = $.base64.encode(contents);
 
                 return {
-                    path: path,
-                    contents: contents
+                    path: pathinfo.path,
+                    contents: contents,
+                    mode: 0600,
+                    owner: pathinfo.user,
+                    group: pathinfo.user
                 }
             });
         }

@@ -1288,7 +1288,11 @@
         get_hostname: function() {
           var hostname = this.get_meta('hostname');
           if (!hostname) {
-            hostname = synnefo.config.vm_hostname_format.format(this.id);
+            if (synnefo.config.vm_hostname_format) {
+              hostname = synnefo.config.vm_hostname_format.format(this.id);
+            } else {
+              hostname = this.get_public_nic().get('ipv4');
+            }
           }
           return hostname;
         },

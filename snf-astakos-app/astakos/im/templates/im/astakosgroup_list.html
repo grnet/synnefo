@@ -215,7 +215,7 @@
 			                <th>Expires</th>
 			                <th>Enrolled</th>
 			                <th>Status</th>
-			                <th>Moderated</th>
+			                <th class="centered">Moderated</th>
 			                <th>&nbsp;</th>
 			                
 			              </tr>
@@ -260,7 +260,7 @@
 			                	
 			                	</div>
 			                </td>
-			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
+			                <td class="centered">{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
 			                <td><a href="#" class="more-info" title="more info">+ more info </a></td>
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">

@@ -456,3 +456,5 @@ table .msg-wrap									{ position:relative; }
 table .msg-wrap .dialog							{ position:absolute; border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; left:0; background:#fff; display:none; }
 table .msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
 table .msg-wrap .dialog .no.submit				{ float:right; }
+table.alt-style .centered						{ text-align:center; }
+table.alt-style form.link-like					{ float:none }

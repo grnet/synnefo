@@ -5,7 +5,6 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="stats clearfix">
-
 		<ul>
 			{% for r in data %}
 			{% with resource_presentation|lookup:r.name as resource_info %}

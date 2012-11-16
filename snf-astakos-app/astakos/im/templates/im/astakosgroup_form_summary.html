@@ -6,9 +6,9 @@
  
 {% with form.data as data %}	 	
 <div class="projects summary">
-	<h2>CONFIRM YOUR REQUEST</h2>
-	<p>Lorem ipsum</p>
+	 
 	<form action="{% url group_add_complete %}" method="post" class="quotas-form">{% csrf_token %}
+		<legend>3. CONFIRM YOUR REQUEST</legend>
 <!-- 
  		{% for k,v in data.iteritems %}
  			<input type="hidden" name="{{ k }}" value="{{ v }}">
@@ -16,15 +16,17 @@
  -->
         {% include "im/form_render.html" %}
 		
+		<p>{{ data.desc|safe }}</p>
+		<dl class="alt-style">			    
+			<dt>Homepage Url</dt>
+			<dd>{{ data.homepage }}&nbsp;</dd>
+		</dl>
+		
 		<div class="full-dotted">
 			 <h3>DETAILS:</h3>
 			 <dl class="alt-style">			    
 			    <dt>Name</dt>
 			 	<dd>{{ data.name|strip_http }}&nbsp;</dd>
-			 	<dt>Homepage Url</dt>
-			 	<dd>{{ data.homepage }}&nbsp;</dd>
-			 	<dt>Description</dt>
-			 	<dd>{{ data.desc }}</dd>
 			 	<!--<dt>Type</dt>
 			 	<dd>Course&nbsp;</dd>-->
 			 	<dt>Issue date:</dt>
@@ -51,7 +53,11 @@
 	           			
 	           			<dd>
 	           			{% if r.uplimit %}
-	           				{{ r.uplimit|sizeof_fmt }} {% if info.unit %} ({{ info.unit}}){% endif %}
+	           				 {% if info.unit %}
+	           				 	{{ r.uplimit|sizeof_fmt }}
+	           				 {% else %}
+	           				 	{{ r.uplimit }}
+	           				 {% endif %}
 	           			{% else %}
 	           				Unlimited
 	           			{% endif %}

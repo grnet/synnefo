@@ -78,6 +78,10 @@ def monthssince(joined_date):
 def lookup(d, key):
     return d.get(key)
 
+@register.filter
+def lookup_uni(d, key):
+    return d.get(unicode(key))
+
 
 @register.filter
 def dkeys(d):
@@ -102,6 +106,7 @@ def rcut(value, chars='/'):
 
 @register.filter
 def paginate(l, args):
+   l = l or []
    page, delim, sorting = args.partition(DELIM)
    if sorting:
        if isinstance(l, QuerySet):
@@ -156,7 +161,7 @@ def strip_http(value):
 
 
 from math import log
-unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2])
+unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 0, 0, 0])
 
 @register.filter
 def sizeof_fmt(num):

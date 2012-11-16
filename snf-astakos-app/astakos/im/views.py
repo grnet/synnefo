@@ -696,13 +696,13 @@ resource_presentation = {
             'help_text':'resource cyclades.disksize help text',
             'is_abbreviation':False,
             'report_desc':'Disksize',
-            'placeholder':'eg. 5GB'
+            'placeholder':'eg. 5GB, 2GB etc'
         },
         'cyclades.disk': {
             'help_text':'resource cyclades.disk help text',
             'is_abbreviation':False,
             'report_desc':'Disk',
-            'placeholder':'eg. 5GB'    
+            'placeholder':'eg. 5GB, 2GB etc'
         },
         'cyclades.ram': {
             'help_text':'resource cyclades.ram help text',
@@ -958,10 +958,30 @@ def group_detail(request, group_id):
         if form.is_valid():
             sorting = form.cleaned_data.get('sort_by')
 
+    result = callpoint.list_resources()
+    resource_catalog = {'resources':defaultdict(defaultdict),
+                        'groups':defaultdict(list)}
+    if result.is_success:
+        for r in result.data:
+            service = r.get('service', '')
+            name = r.get('name', '')
+            group = r.get('group', '')
+            unit = r.get('unit', '')
+            fullname = '%s%s%s' % (service, RESOURCE_SEPARATOR, name)
+            resource_catalog['resources'][fullname] = dict(unit=unit)
+            resource_catalog['groups'][group].append(fullname)
+        
+        resource_catalog = dict(resource_catalog)
+        for k, v in resource_catalog.iteritems():
+            resource_catalog[k] = dict(v)
+    
+    print '####', resource_catalog, obj.quota
     extra_context = {'update_form': update_form,
                      'addmembers_form': addmembers_form,
                      'page': request.GET.get('page', 1),
-                     'sorting': sorting}
+                     'sorting': sorting,
+                     'resource_catalog':resource_catalog,
+                     'resource_presentation':resource_presentation,}
     for key, value in extra_context.items():
         if callable(value):
             c[key] = value()
@@ -977,6 +997,7 @@ def group_detail(request, group_id):
 @signed_terms_required
 @login_required
 def group_search(request, extra_context=None, **kwargs):
+    print '###', request
     q = request.GET.get('q')
     sorting = request.GET.get('sorting')
     if request.method == 'GET':
@@ -1011,7 +1032,13 @@ def group_search(request, extra_context=None, **kwargs):
                     SELECT id FROM im_astakosuser_owner
                     WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
                     AND astakosuser_id = %s)
-                    THEN 1 ELSE 0 END""" % request.user.id})
+                    THEN 1 ELSE 0 END""" % request.user.id,
+                    'is_owner': """SELECT CASE WHEN EXISTS(
+                        SELECT id FROM im_astakosuser_owner
+                        WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
+                        AND astakosuser_id = %s)
+                        THEN 1 ELSE 0 END""" % request.user.id, 
+                    })
         if sorting:
             # TODO check sorting value
             queryset = queryset.order_by(sorting)
@@ -1051,7 +1078,12 @@ def group_all(request, extra_context=None, **kwargs):
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
                     AND person_id = %s)
-                    THEN 1 ELSE 0 END""" % request.user.id})
+                    THEN 1 ELSE 0 END""" % request.user.id,
+                 'is_owner': """SELECT CASE WHEN EXISTS(
+                        SELECT id FROM im_astakosuser_owner
+                        WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
+                        AND astakosuser_id = %s)
+                        THEN 1 ELSE 0 END""" % request.user.id,   })
     sorting = request.GET.get('sorting')
     if sorting:
         # TODO check sorting value

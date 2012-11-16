@@ -211,6 +211,11 @@ $(document).ready(function() {
 	$('table .more-info').click(function(e){
 		e.preventDefault();
 		$(this).toggleClass('open');
+		if ($(this).hasClass('open')){
+			$(this).html('- less info ')
+		} else {
+			$(this).html('+ more info ')
+		}
 		$(this).parents('tr').next('tr').toggle();
 		 
 	});
@@ -220,7 +225,7 @@ $(document).ready(function() {
 		$(this).parents('.details').children('.data').hide();
 		$(this).parents('.details').children('.editable').show();
 		$(this).hide();
-	})
+	});
 	
 	
 	$('.widjet-x').click(function(e){
@@ -228,10 +233,34 @@ $(document).ready(function() {
 		$(this).siblings('ul').hide('slow');
 		$(this).hide();
 	})
+
+	// todo den doulevei
+	$('#group_create_form').submit(function(){
+		if ($('.quotas-form .group .form-row.with-errors').length>0 ){
+			return false;
+		}
+		$('.quotas-form .group .form-row.with-errors')[0].focus();
+ 		
+	});
 	
- 
 	
 	
+	$("input.leave, input.join").click(function () {
+		$(this).parents('.msg-wrap').find('.dialog').show();
+		return false;      
+    });
+    
+     $('.msg-wrap .no').click( function(e){
+		e.preventDefault();
+		$(this).parents('.dialog').hide();
+	})
+    
+    $('.msg-wrap .yes').click( function(e){
+		e.preventDefault();
+		$(this).parents('.dialog').siblings('form').submit();
+	})
+    
+    
 });
 	
 $(window).resize(function() {

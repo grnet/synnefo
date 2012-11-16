@@ -364,9 +364,7 @@ table.alt-style tr.tr2 td,
 table.alt-style tr.tmore2 td					{ background:#fff }
 table.alt-style tr td.info-td					{ padding:5px; }
 table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
-table.alt-style tr td a.more-info				{ display:inline-block;  width:17px; height:16px; background:url(../images/plus-minus.png) no-repeat 0 0; margin-left:10px; }
-table.alt-style tr td a.more-info:hover			{ background-image:url(../images/plus-minus-hover.png); text-decoration:none;}
-table.alt-style tr td a.open					{ background-position:-16px 0} 
+ 
 
 .projects .details a.edit						{ float:right; margin-left:20px;  }
 .projects .details .data						{ overflow:hidden; }
@@ -376,10 +374,13 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 /* quotas-form  */
 
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
-.quotas-form fieldset legend					{ color:#55B577; font-size:1.154em; margin-bottom:3em; position:relative; }
-.quotas-form fieldset legend span				{ color:#222; font-size:0.867em; }
+.quotas-form legend								{ color:#55B577; font-size:1.154em; margin-bottom:3em; position:relative; }
+.quotas-form legend span						{ color:#222; font-size:0.867em; }
+form.quotas-form legend span.info				{ position:relative; display:inline-block; top:auto; left:auto;  margin-left:10px;}
+form.quotas-form legend span.info em			{ position:static; }
+form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .with-checkbox .checkbox-widget	{ margin-top:12px; } 
-.quotas-form .with-checkbox span.info 			{ bottom:22px; }
+.quotas-form .with-checkbox span.info 			{ top:15px; }
 .quotas-form .form-row.submit					{ text-align:center; }
 .quotas-form input[type="submit"]				{ margin:15px 0; background-color:#B3B3B3 }
 .quotas-form input[type="submit"]:hover			{ background:#55B577 }
@@ -407,8 +408,6 @@ table.alt-style tr td a.open					{ background-position:-16px 0}
 .quotas-form .double-checks .with-checkbox input[type="text"]	{ width:60px; float:left; margin:9px 15px -9px; display:none; padding:6px; }
 .quotas-form .double-checks .with-checkbox label{ width:auto; float:left; margin-left:35px; }
 .quotas-form .double-checks .with-checkbox input[type="text"].hideshow	{ display:block; }
-form.quotas-form legend span.info				{ top:1px; bottom:auto; left:225px; }
-form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .with-checkbox+.with-checkbox		{ width:196px; }
 .summary dl.alt-style dt						{ color:#55B577; }
 .quotas-form .with-info .double-checks p		{ clear:both; }
@@ -420,6 +419,9 @@ form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .quota input[type="text"]			{ width:150px;}
 .quotas-form .quota .error-msg 					{ display:none; color:red; font-size:0.8em; margin:0; margin-left:224px; margin-bottom:5px; padding:5px; }
 .quotas-form .quota .with-errors .error-msg		{ display:block;}	 
+::-webkit-input-placeholder 					{ color: #D4D4D4; font-style:italic; }
+:-moz-placeholder 								{ color: #D4D4D4;font-style:italic; }
+
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}
@@ -449,3 +451,8 @@ form.quotas-form legend span.info span			{ width:395px; }
 
 /* temp style to hide extra menu for groups */
 .navigation ul+ul								{ display:none; }
+
+table .msg-wrap									{ position:relative; }
+table .msg-wrap .dialog							{ position:absolute; border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; left:0; background:#fff; display:none; }
+table .msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
+table .msg-wrap .dialog .no.submit				{ float:right; }

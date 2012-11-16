@@ -72,7 +72,7 @@ div.form-stacked 							{ margin-bottom: 4em; }
 form.withlabels .checkbox-widget			{ margin-top:20px; }
 form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; }
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
-form span.info								{ position:absolute;z-index:101; bottom:32px;  }
+form span.info								{ position:absolute;z-index:101; top:10px;  }
 form.innerlabels span.info					{ left: 290px; }
 form.withlabels span.info					{ left:485px;  }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
@@ -150,7 +150,7 @@ form+p:first-child, form legend + p				{ margin-bottom:2em; }
 .form-row .dk_option_current a					{ text-shadow:none; background-color: #E7E7E3; text-decoration:none;}
 
 form.link-like									{ display:inline-block; margin:0 5px; float:right;}
-form.link-like input[type="submit"]				{ margin:0; padding:0 5px; background:transparent; color:#F89A1C; cursor:pointer; height:auto;  }
+form.link-like input[type="submit"]				{ margin:0; padding:0 5px; background:transparent; color:#F89A1C; cursor:pointer; height:auto; line-height:120%;  }
 form.link-like input[type="submit"]:hover		{ text-decoration:underline;  }
 form.link-like.alone							{ float:none; margin:0;}
 form.link-like.alone .form-row					{ margin:0; }

@@ -24,7 +24,6 @@
     
 		<p>Okeanos grants resources according to activities organized by groups.
 		   Join or create a group to get access to more resources.
-		   <br>
 		   <a href="{% url group_search %}">Join an existing one</a>
 		   or
 		   <!--<a href="{% url group_create_list %}">Create a new group</a>-->
@@ -69,7 +68,7 @@
 					<select name="sorting" onchange="this.form.submit();">
 					    <option value="">Sort by</option>
 					    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
-			            <option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>			
+			            <!--option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option-->			
 			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
 			            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
 			            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Participants</option> 
@@ -84,52 +83,72 @@
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Type</th>
+                    <!--<th>Type</th>-->
                     <th>Issued</th>
                     <th>Expires</th>
                      
                     <th>Enrolled</th>
                    
                      
-                    <th>Enrollment status</th>
+                    <th>Status</th>
                     <th>&nbsp;</th>
                   
                   </tr>
                 </thead>
                 <tbody>
                   {% for o in object_list %}
-                    <tr class="{% cycle 'tr1' 'tr2' %}">
-                    <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"}}</a></td>
-                    <td>{{o.kindname|capfirst}}</td>
-                    <td>{{o.issue_date|date:"d/m/Y"}}</td>
-                    <td>{{o.expiration_date|date:"d/m/Y"}}</td>
-                    <td>{{o.approved_members_num}}</td>
-                    
-                    <td>
-                    {% if o.is_member %}
-                        {% if o.membership_approval_date %}
-    
-                        Registered
-                        {% if not o.is_owner %}
-                            <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
-                                 <input type="submit"  value="LEAVE GROUP" />
-                            </form>
-                        {% endif %}
-                        
-                            
-
-                        {% else %}
-                            Pending
-                        {% endif %}
-                    {% else %}
-                            Not member 
-                                <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
-                                    <input type="submit"   value="JOIN GROUP" class="join_group" />
-                                </form>
-                            
-                    {% endif %}
-                    </td>
-                    <td><a href="#" class="more-info" title="more info">&nbsp;</a></td>
+                   <tr class="{% cycle 'tr1' 'tr2' %}">
+	                    <td><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"}}</a></td>
+	                    <!--td>{{o.kindname|capfirst}}</td-->
+	                    <td>{{o.issue_date|date:"d/m/Y"}}</td>
+	                    <td>{{o.expiration_date|date:"d/m/Y"}}</td>
+	                    <td>{{o.approved_members_num}}</td>
+	                    
+	                    <td>
+	                    	<div class="msg-wrap">
+	                    		 
+		                    {% if o.is_member %}
+		                        {% if o.membership_approval_date %}
+		    
+		                        
+			                       	{% if not o.is_owner %}
+			                            Registered
+			                            <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+			                                 <input type="submit"  value="x leave group" class="leave"/>
+			                            </form>
+			                            <div class="dialog">
+					                		Are you sure you what to leave this group?<br>
+					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a><br>
+					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+					                		
+					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+					                	</div>
+			                        {% else %}
+			                        	Owner
+			                        {% endif %}
+		                        
+		                            
+		
+		                        {% else %}
+		                            Pending
+		                        {% endif %}
+		                    {% else %}
+		                            Not member 
+		                                <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
+		                                    <input type="submit"   value="+ join group" class="join_group join" />
+		                                </form>
+		                                <div class="dialog">
+					                		Are you sure you what to join this group?<br>
+					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a><br>
+					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+					                		
+					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+					                	</div>
+		                            
+		                    {% endif %}
+	                    	</div>
+	                    </td>
+	                    <td><a href="#" class="more-info" title="more info">+ more info</a></td>
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
                     <td colspan="7" class="info-td">
@@ -167,22 +186,22 @@
 	   </div>
       <!-- Group listing -->
        {% else %}
-            {{ q }}
+       		{% if not form %}
             {% with page|concat:sorting as args %}
             {% with q|paginate:args as page_obj %}
         	 
 	      	    <div >
 					<form method="GET" class="minimal" action="#allGroups">
 						<div class="form-row">
-						    <select name="all_sorting" onchange="this.form.submit();">
+						    <select name="sorting" onchange="this.form.submit();">
 							    <option value="">Sort by</option>
-							    <option value="groupname" {% if all_sorting == 'groupname' %}selected{% endif %}>Name</option>
-					            <option value="kindname" {% if all_sorting == 'kindname' %}selected{% endif %}>Type</option>			
-					            <option value="issue_date" {% if all_sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
-					            <option value="expiration_date" {% if all_sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
-					            <option value="approved_members_num" {% if all_sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
-					            <option value="is_enabled" {% if all_sorting == 'is_enabled' %}selected{% endif %}>Status</option>
-					            <option value="moderation_enabled" {% if all_sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
+							    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
+					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			
+					            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
+					            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
+					            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
+					            <option value="is_enabled" {% if sorting == 'is_enabled' %}selected{% endif %}>Status</option>
+					            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
 							</select>
 						</div>
 					</form>
@@ -191,7 +210,7 @@
 			            <thead>
 			              <tr>
 			                <th>Name</th>
-			                <th>Type</th>
+			                <!--th>Type</th-->
 			                <th>Issued</th>
 			                <th>Expires</th>
 			                <th>Enrolled</th>
@@ -205,15 +224,44 @@
 			              {% for o in page_obj.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
 			                <td><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a></td>
-			                <td>{{o.kindname|capfirst}}</td>
+			                <!--td>{{o.kindname|capfirst}}</td-->
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td>{{o.expiration_date|date:"d/m/Y"}}</td>
 			                <td>{{ o.approved_members_num }}</td>
 			                <td>
-			                	{% if o.is_enabled %}Active{% else %}Pending{% endif %}
+			                	<div class="msg-wrap">
+			                 	{% if user.email = o.groupowner %}
+			                		{% if o.is_enabled %}
+			                			Owner
+			                		{% else %}
+			                			Pending
+			                		{% endif %}
+			                	{% else %}
+			                		{% if o.is_enabled %}
+			                			{% if o.membership_status %}
+						                    Registered
+					                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+					                             <input type="submit"  value="x leave" class="leave" />
+					                        </form>	
+					                        <div class="dialog">
+						                		Are you sure you what to leave this group?<br>
+						                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a><br>
+						                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+						                		
+						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+						                	</div>
+						                {% else %}
+						                    Pending
+						                {% endif %}
+			                		{% else %}
+			                			-
+			                		{% endif %}
+			                	{% endif %}
+			                	
+			                	</div>
 			                </td>
 			                <td>{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
-			                <td><a href="#" class="more-info" title="more info">+ more</a></td>
+			                <td><a href="#" class="more-info" title="more info">+ more info </a></td>
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
 			                <td colspan="8" class="info-td">
@@ -248,12 +296,14 @@
 		 
         	{% endwith %} 
 	      	{% endwith %} 
-	      	
-            {% if q %}
-                <h2>No groups found!</h2>
-            {% endif %}
+	      	{% endif %}
+	      	{% if form %}
+	            {% if q %}
+	                <h2>No groups found!</h2>
+	            {% endif %}
+	        {% endif %}
       {% endif %}
     {% endwith %}
 </div>
-</div>
+</div>  
 {% endblock %}

@@ -53,7 +53,7 @@
 		 <h3>DETAILS:</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
-		 	<dd>{{object.name}}&nbsp;</dd>
+		 	<dd>{{ object.name|strip_http }}&nbsp;</dd>
 		 	<!--<dt>Type</dt>
 		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>-->
 		 	<dt>Issue date:</dt>
@@ -81,15 +81,32 @@
 	 </div>
 	 
      <div class="full-dotted">
-		 <h3>RESOURCES:</h3>
+		 <h3>RESOURCES:</h3>		 
 		 {% if quota %}
 		 <dl class="alt-style">
 		 	 
 		 	{% for k in quota|dkeys %}
-                
-                <dt>{{ k }}</dt>
-                <dd>{{ quota|lookup:k }}&nbsp;</dd>
-                  
+			 	{% with resource_catalog|lookup:'resources' as resources %}
+			 		{% with resources|lookup_uni:k as info %}
+			 		{% with resource_presentation|lookup_uni:k as resource_info %}
+			 		 
+						<dt>
+	           				Max {% if resource_info.is_abbreviation %}{{ info.resource|upper }}{% else %}{{ r.resource }}{% endif %}{% if not info.unit %}s {% endif  %}  per user
+	           			</dt>		                
+						<dd>
+						{% with quota|lookup:k as uplimit%}	
+		           			 {% if uplimit == "inf" %}
+		           			 	unlimited
+		           			 {% else %}
+		           			 	{{ uplimit }}
+		           			 {% endif %}
+		           			 
+	           			{% endwith%}
+	           			</dd>
+	           		 
+	                {% endwith%}
+	                {% endwith %}
+                {% endwith %}
             {% endfor %}
 		</dl>
 		{% else %}

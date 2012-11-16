@@ -43,7 +43,7 @@ EMAIL_CHANGED                           =   'Account email has been changed succ
 EMAIL_CHANGE_REGISTERED                 =   'Change email request has been registered succefully. \
                                                You are going to receive a verification email in the new address.'
 
-OBJECT_CREATED                          =   'The %(verbose_names was created successfully.'
+OBJECT_CREATED                          =   'The %(verbose_name)s was created successfully.'
 MEMBER_JOINED_GROUP                     =   '%(realnames has been successfully joined the group.'
 MEMBER_REMOVED                          =   '%(realnames has been successfully removed from the group.'
 BILLING_ERROR                           =   'Service response status: %(status)d' 

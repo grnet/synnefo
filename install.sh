@@ -15,4 +15,5 @@ rm -rf ./build
 #	python2.7 ./setup.py install
 #fi
 
-python ./setup.py install
+python ./setup_commissioning.py install
+python ./setup_quotaholder.py install

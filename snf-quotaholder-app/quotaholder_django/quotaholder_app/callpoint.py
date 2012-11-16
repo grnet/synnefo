@@ -35,7 +35,8 @@ from synnefo.lib.quotaholder.api import (
                             QuotaholderAPI,
                             InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
-                            ExportLimitError, ImportLimitError)
+                            ExportLimitError, ImportLimitError,
+                            DuplicateError)
 
 from synnefo.lib.commissioning import \
     Callpoint, CorruptedError, InvalidDataError
@@ -349,7 +350,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         commission = create(entity_id=target, clientkey=clientkey, name=name)
         serial = commission.serial
 
+        checked = []
         for entity, resource, quantity in provisions:
+
+            ent_res = entity, resource
+            if ent_res in checked:
+                m = "Duplicate provision for %s.%s" % ent_res
+                raise DuplicateError(m)
+            checked.append(ent_res)
+
             try:
                 e = Entity.objects.get(entity=entity)
             except Entity.DoesNotExist:

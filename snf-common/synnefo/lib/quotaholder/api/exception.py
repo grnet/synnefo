@@ -61,3 +61,7 @@ class ExportLimitError(CommissionException):
 @register_exception
 class ImportLimitError(CommissionException):
     pass
+
+@register_exception
+class DuplicateError(CommissionException):
+    pass

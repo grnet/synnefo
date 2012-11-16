@@ -1,5 +1,16 @@
 import sys
 
+def show(x):
+    if isinstance(x, dict):
+        for k in x:
+            print "%s: %s" % (k, x[k])
+    elif isinstance(x, list):
+        for i, e in enumerate(x):
+            print "[%s] %s" % (i, e)
+    else:
+        print x
+
+
 def isstr(s):
     return issubclass(type(s), basestring)
 
@@ -51,6 +62,8 @@ def check_attribute_name(name, label='simple_name'):
         raise Exception("'%s' is not a valid attribute name (contains '/')")
     if name.find(' ') >= 0:
         raise Exception("'%s' is not a valid attribute name (contains ' ')")
+    if name.find(':') >= 0:
+        raise Exception("'%s' is not a valid attribute name (contains ':')")
 
 def check_relative_name(relative_name, label='relative_name'):
     check_string(label, relative_name)
@@ -78,9 +91,23 @@ def check_abs_resource_name(abs_resource_name,
     """
     check_abs_name(abs_resource_name, label)
     if not abs_resource_name.startswith(NameOfResourcesNode):
-        raise Exception("'%s' is not a global resource name" % (abs_resource_name,))
+        raise Exception("'%s' is not a resource name. It must be under '%s'" % (
+                abs_resource_name, NameOfResourcesNode))
         
     return abs_resource_name
+
+
+def check_abs_group_name(abs_group_name,
+                            label='abs_group_name'):
+    """
+    ``abs_group_name`` must always be a in absolute form.
+    """
+    check_abs_name(abs_group_name, label)
+    if not abs_group_name.startswith(NameOfGroupsNode):
+        raise Exception("'%s' is not a group name. It must be under '%s'" % (
+                abs_group_name, NameOfGroupsNode))
+        
+    return abs_group_name
 
 
 def check_node_key(node_key):
@@ -92,6 +119,18 @@ def check_node_key(node_key):
 def is_system_node(node_name):
     check_string('node_name', node_name)
     return node_name == 'system'
+
+
+def is_abs_resource_name(name):
+    return name.startswith(NameOfResourcesNode)
+
+
+def is_abs_group_name(name):
+    return name.startswith(NameOfGroupsNode)
+
+
+def is_abs_user_name(name):
+    return name.startswith(NameOfUsersNode)
 
 
 def level_of_node(node_name):

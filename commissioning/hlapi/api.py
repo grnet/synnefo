@@ -12,6 +12,7 @@ from util import make_abs_group_name
 from util import make_abs_user_name
 from util import reparent_child_name_under
 from util import check_abs_resource_name
+from util import check_abs_group_name
 from util import parent_abs_name_of
 from util import relative_child_name_under
 from util import make_rel_global_resource_name
@@ -21,7 +22,11 @@ from util import check_name
 from util import check_attribute_name
 from util import level_of_node
 from util import check_abs_name
-from commissioning.hlapi.util import check_relative_name
+from util import check_relative_name
+from util import is_abs_resource_name
+from util import is_abs_group_name
+from util import is_abs_user_name
+
 
 class Quota(object):
     def __init__(self):
@@ -36,17 +41,33 @@ class Quota(object):
         self.returned = None
         self.released = None
         self.flags = Quota.default_flags()
+        self.current_amount = self.__current_amount()
+        
+    
+    def __current_amount(self):
+        def num(x):
+            if x is None:
+                return 0
+            else:
+                return x
+        
+        return  num(self.quantity) + \
+                num(self.imported) - \
+                num(self.exported) + \
+                num(self.returned) - \
+                num(self.released)
 
-    def is_unknown(self):
-        return \
-            self.entity is None and \
-            self.resource is None and \
-            self.quantity is None and \
-            self.capacity is None and \
-            self.import_limit is None and \
-            self.export_limit is None and \
-            self.returned is None and \
-            self.released is None
+#    def is_unknown(self):
+#        return \
+#            self.entity is None and \
+#            self.resource is None and \
+#            self.quantity is None and \
+#            self.capacity is None and \
+#            self.import_limit is None and \
+#            self.export_limit is None and \
+#            self.returned is None and \
+#            self.released is None and \
+#            (self.flags is None or self.flags == 0)
             
     @classmethod
     def default_flags(cls):
@@ -65,6 +86,7 @@ class Quota(object):
         q.exported = quota[7]
         q.returned = quota[8]
         q.released = quota[9]
+        q.current_amount = q.__current_amount()
         q.flags = quota[10]
         return q
     
@@ -81,6 +103,7 @@ class Quota(object):
         q.exported = d.get('exported') or None
         q.returned = d.get('returned') or None
         q.released = d.get('released') or None
+        q.current_amount = q.__current_amount()
         q.flags = d.get('flags') or Quota.default_flags()
         return q
         
@@ -95,35 +118,42 @@ class Quota(object):
                 'exported': self.exported,
                 'returned': self.returned,
                 'released': self.released,
+                'current_amount': self.current_amount,
                 'flags': self.flags
                 }
 
     def to_dict(self):
-        d={}
-        def add(key, value):
-            if value is not None:
-                d[key] = value
-        add('entity', self.entity)
-        add('resource', self.resource)
-        add('quantity', self.quantity)
-        add('capacity', self.capacity)
-        add('import_limit', self.import_limit)
-        add('export_limit', self.export_limit)
-        add('imported', self.imported)
-        add('exported', self.exported)
-        add('returned', self.returned)
-        add('released', self.released)
-        add('flags', self.flags)
-        return d
+#        d={}
+#        def add(key, value):
+#            if value is not None:
+#                d[key] = value
+#        add('entity', self.entity)
+#        add('resource', self.resource)
+#        add('quantity', self.quantity)
+#        add('capacity', self.capacity)
+#        add('import_limit', self.import_limit)
+#        add('export_limit', self.export_limit)
+#        add('imported', self.imported)
+#        add('exported', self.exported)
+#        add('returned', self.returned)
+#        add('released', self.released)
+#        add('current_amount', self.current_amount)
+#        if (self.flags is not None) and (self.flags != 0):
+#            d['flags'] = self.flags
+#        return d
+        return self.to_full_dict()
 
         
+    def get_attribute_value(self):
+        # We always use capacity as the value of an attribute
+        return self.capacity
+    
     def __str__(self):
         return str(self.to_dict())
         
     def __repr__(self):
         return self.__str__()
-    
-
+        
 class HighLevelAPI(object):
     """
     High-level Quota Holder API that supports definitions of resources,
@@ -236,8 +266,10 @@ class HighLevelAPI(object):
                 
         abs_resource_name = make_abs_resource_name(resource_name)
                 
-        computed_attribute_name = '%s_%s' % (attribute_name,
-                                             abs_resource_name)
+        computed_attribute_name = self.make_full_attribute_name(
+            attribute_name,
+            node_name,
+            abs_resource_name)
         
         return self.set_quota(
             entity=node_name,
@@ -299,23 +331,30 @@ class HighLevelAPI(object):
                               capacity,
                               import_limit,
                               export_limit,
-                              None, None, None, None,
+                              0, 0, 0, 0,
                               flags))
         return q
         
     
-    def qh_create_entity(self, entity, owner, key='', owner_key=''):
-        key = key or self.__node_keys.get(entity) or ''
-        owner_key = key or self.__node_keys.get(owner) or ''
+    def qh_create_entity(self,
+                         entity,
+                         owner,
+                         key='',
+                         owner_key='',
+                         entity_label='entity'):
+        key = self.get_cached_node_key(entity, entity_label)
+        owner_key = self.get_cached_node_key(owner)
+        
         rejected = self.__qh.create_entity(context=self.__context,
                                     create_entity=[(entity,
                                                     owner,
                                                     key,
                                                     owner_key)])
         if len(rejected) > 0:
-            raise Exception("Could not create entity '%s' under '%s'" % (
-                    entity, owner))
+            raise Exception("Could not create %s='%s' under '%s'. Probably it already exists?" % (
+                    entity_label, entity, owner))
         return entity
+        
         
     def qh_get_entity(self, entity, key=''):
         key = key or self.__node_keys.get(entity) or ''
@@ -371,6 +410,7 @@ class HighLevelAPI(object):
     #+++##########################################
 
     def get_quota(self, entity, resource):
+        check_abs_name(entity, 'entity')
         return self.qh_get_quota(entity,
                                  resource,
                                  self.get_cached_node_key(entity))
@@ -379,6 +419,7 @@ class HighLevelAPI(object):
     def set_quota(self, entity, resource,
                      quantity, capacity,
                      import_limit, export_limit, flags):
+        check_abs_name(entity)
         return self.qh_set_quota(entity=entity,
                                  resource=resource,
                                  key=self.get_cached_node_key(entity),
@@ -393,14 +434,25 @@ class HighLevelAPI(object):
         check_abs_name(target_entity, 'target_entity')
         check_abs_name(source_entity, 'source_entity')
         
-        return self.qh_issue_one_commission(
-            target_entity=target_entity,
-            target_entity_key=self.get_cached_node_key(target_entity),
-            owner='', # We ignore the owner. Everything must exist
-            owner_key='',
-            source_entity=source_entity,
-            resource=resource,
-            quantity=quantity)
+#        owner=parent_abs_name_of(target_entity, 'parent_target_entity')
+#        owner_key = self.get_cached_node_key(owner, 'owner')
+        owner = '' # Ignore the owner here. Everything must be set up OK
+        owner_key = ''
+        try:
+            return self.qh_issue_one_commission(
+                target_entity=target_entity,
+                target_entity_key=self.get_cached_node_key(target_entity),
+                owner=owner,
+                owner_key=owner_key,
+                source_entity=source_entity,
+                resource=resource,
+                quantity=quantity)
+        except Exception, e:
+            raise Exception(
+                    "Could not transfer %s from '%s' to '%s' for resource '%s'. Original error is %s: %s" % (
+                        quantity, source_entity, target_entity, resource,
+                        type(e).__name__, str(e)))
+
 
     def get_cached_node_key(self, node_name, node_label='node_name'):
         check_abs_name(node_name, node_label)
@@ -436,7 +488,7 @@ class HighLevelAPI(object):
         return self.get_node_children(NameOfSystemNode)
     
         
-    def get_global_resources(self):
+    def get_resources(self):
         self.ensure_resources_node()
         return self.get_node_children(NameOfResourcesNode)
     
@@ -452,7 +504,7 @@ class HighLevelAPI(object):
     
 
     def ensure_node(self, abs_node_name, label='abs_node_name'):
-        if not self.has_node(abs_node_name, label):
+        if not self.node_exists(abs_node_name, label):
             return self.create_node(abs_node_name, label)
         else:
             return abs_node_name
@@ -485,9 +537,9 @@ class HighLevelAPI(object):
         return self.ensure_node(NameOfUsersNode, 'NameOfGroupsNode')
 
 
-    def has_node(self, abs_node_name, label='abs_node_name'):
+    def node_exists(self, abs_node_name, label='abs_node_name'):
         """
-        Checks if an entity with the absolute name ``abs_node_name`` exists.
+        Checks if a node with the absolute name ``abs_node_name`` exists.
         
         Returns ``True``/``False`` accordingly.
         """
@@ -500,19 +552,19 @@ class HighLevelAPI(object):
         return len(entity_owner_list) == 1 # TODO: any other check here?
 
 
-    def has_group(self, group_name):
+    def group_exists(self, group_name):
         abs_group_name = make_abs_group_name(group_name)
-        return self.has_node(abs_group_name, 'abs_group_name')
+        return self.node_exists(abs_group_name, 'abs_group_name')
 
 
-    def has_global_resource(self, resource_name):
+    def resource_exists(self, resource_name):
         abs_resource_name = make_abs_resource_name(resource_name)
-        return self.has_node(abs_resource_name, 'abs_resource_name')
+        return self.node_exists(abs_resource_name, 'abs_resource_name')
 
 
-    def has_user(self, user_name):
+    def user_exists(self, user_name):
         abs_user_name = make_abs_user_name(user_name)
-        return self.has_node(abs_user_name, 'abs_user_name')
+        return self.node_exists(abs_user_name, 'abs_user_name')
     
     
     def create_node(self, node_name, node_label):
@@ -526,7 +578,7 @@ class HighLevelAPI(object):
         
         The implementation maps a node to a Quota Holder entity.
         """
-        print "Creating %s=%s" % (node_label, node_name)
+#        print "Creating %s=%s" % (node_label, node_name)
         check_abs_name(node_name, node_label)
         
         if is_system_node(node_name):
@@ -540,24 +592,67 @@ class HighLevelAPI(object):
 
         node_key = self.get_cached_node_key(node_name)
         parent_node_key = self.get_cached_node_key(parent_node_name)
+        
+        return self.qh_create_entity(entity=node_name,
+                                     owner=parent_node_name,
+                                     key=node_key,
+                                     owner_key=parent_node_key,
+                                     entity_label=node_label)
 
-        rejected = self.__qh.create_entity(
-            context=self.__context,
-            create_entity=[
-                (
-                    node_name,
-                    parent_node_name,
-                    node_key,
-                    parent_node_key
-                    )
-            ]
-        )
-        if len(rejected) > 0:
-            raise Exception("Could not create %s='%s'. Maybe it already exists? Is 'system' entity defined?" % (node_label, node_name,))
+
+    def make_full_attribute_name(self, attribute_name, parent_node, for_node=''):
+        if (for_node == '') or (for_node is None):
+            for_node = parent_node
+        check_attribute_name(attribute_name)
+        check_abs_name(parent_node, 'parent_node')        
+        check_abs_name(for_node, 'attribute_for_node')
+        
+        if parent_node == for_node:
+            return "%s::%s" % (attribute_name, parent_node)
         else:
-            return node_name
+            return "%s::%s::%s" % (attribute_name, parent_node, for_node)
 
 
+    def split_full_attribute_name(self, name):
+        data = name.split("::")
+        if len(data) == 2:
+            return (data[0], data[1], data[1])
+        elif len(data) == 3:
+            return (data[0], data[1], data[2])
+        else:
+            raise Exception("Bad form of attribute name: '%s'" % (name))
+
+
+    def get_resource_info(self, name):
+        if not self.resource_exists(name):
+            raise Exception("Unknown resource '%s'" % (name))
+        
+        abs_resource_name = make_abs_resource_name(name)
+        
+        
+        resource_quota = self.get_quota(entity=abs_resource_name,
+                                        resource=abs_resource_name)
+        
+        rdef_user_quota_name = self.make_full_attribute_name(
+            'user', abs_resource_name)
+        rdef_user_quota = self.get_quota(
+            entity=abs_resource_name, resource=rdef_user_quota_name)
+
+        rdef_user_max_quota_name = self.make_full_attribute_name(
+            'user_max', abs_resource_name)
+        rdef_user_max_quota = self.get_quota(
+            entity=abs_resource_name, resource=rdef_user_max_quota_name)
+
+        rdef_group_max_quota_name = self.make_full_attribute_name(
+            'group_max', abs_resource_name)
+        rdef_group_max_quota = self.get_quota(
+            entity=abs_resource_name, resource=rdef_group_max_quota_name)
+        
+        return {'resource_quota': resource_quota,
+                'user_quota': rdef_user_quota,
+                'user_max_quota': rdef_user_max_quota,
+                'group_max_quota': rdef_group_max_quota}
+        
     def define_resource(self,
                         name,
                         total_quota,
@@ -574,6 +669,9 @@ class HighLevelAPI(object):
         (so this is equivalent to a node in the high-level API but an extra
         check is made to ensure the resource is under 'system/resources').
         """
+        ## TODO: Check total_quota is greater than the other quotas.
+        ## TODO: Check user_max_quota >= user_quota
+
         # If the name is not in absolute form, make it so.
         # E.g. if it is 'pithos+' make it 'system/resources/pithos+'
         abs_resource_name = make_abs_resource_name(name)
@@ -586,8 +684,8 @@ class HighLevelAPI(object):
         # absolute name
         resource_quota = self.set_quota(entity=abs_resource_name,
             resource=abs_resource_name,
-            quantity=0,
-            capacity=total_quota,
+            quantity=total_quota,
+            capacity=None, # Grow to infinity
             import_limit=None,
             export_limit=None,
             flags=0)
@@ -620,10 +718,11 @@ class HighLevelAPI(object):
             flags=0)
         
 
-        return [resource_quota,
-                rdef_user_quota,
-                rdef_user_max_quota,
-                rdef_group_max_quota] 
+        return {'resource_quota': resource_quota,
+                'user_quota': rdef_user_quota,
+                'user_max_quota': rdef_user_max_quota,
+                'group_max_quota': rdef_group_max_quota
+                }
         
     
     def define_attribute_of_resource(self,
@@ -647,8 +746,6 @@ class HighLevelAPI(object):
         the node (Quota Holder entity) named ``global_resource_name``. The
         respective value is defined via Quota Holder quotas. 
         """
-        check_attribute_name(attribute_name)
-        
         return self.__create_attribute_of_node_for_resource(
             node_name=abs_resource_name,
             node_label='abs_resource_name',
@@ -657,7 +754,7 @@ class HighLevelAPI(object):
             # The attribute name goes next
             # The absolute resource name goes next
             #    (will be added by the called method)
-            attribute_name='rdef_%s' % (attribute_name),
+            attribute_name=attribute_name,
             quantity=quantity,
             capacity=capacity,
             import_limit=import_limit,
@@ -666,7 +763,7 @@ class HighLevelAPI(object):
 
             
     
-    def define_group(self, group_name, group_node_key=''):
+    def define_group(self, group_name):
         """
         Creates a new group under 'system/groups'.
 
@@ -680,100 +777,106 @@ class HighLevelAPI(object):
         most authoritative value instead of the one passed as a parameter.
 
         No further resource assignment is done, you must use
-        ``define_group_resource``.
+        ``define_resource_of_group``.
 
         The implementation maps a group to a Quota Holder entity.
         """
-        check_node_key(group_node_key)
-
         self.ensure_groups_node()
         # get name in absolute form
         abs_group_name = make_abs_group_name(group_name)
-
+        
         # Create hierarchy on demand
         self.create_node(abs_group_name, 'abs_group_name')
-        self.set_cached_node_key(abs_group_name, group_node_key)
         return abs_group_name
     
 
     
     def define_attribute_of_group_for_resource(self,
-                                               group_name,
+                                               abs_group_name,
+                                               abs_resource_name,
                                                attribute_name,
-                                               resource_name,
                                                quantity,
                                                capacity,
                                                import_limit,
                                                export_limit,
                                                flags):
+        check_abs_group_name(abs_group_name)
+        check_abs_resource_name(abs_resource_name)
         
         return self.__create_attribute_of_node_for_resource(
-            node_name=group_name,
-            intended_parent_node_name=NameOfGroupsNode,
-            resource_name=resource_name,
-            # g means we define for G
-            # The attribute name goes next
-            # The relative resource name goes next
-            #    (will be added by the called method)
-            attribute_name='g_%s' % (attribute_name),
+            node_name=abs_group_name,
+            node_label='abs_group_name',
+            resource_name=abs_resource_name,
+            attribute_name=attribute_name,
             quantity=quantity,
             capacity=capacity,
             import_limit=import_limit,
             export_limit=export_limit,
             flags=flags)
+        
 
-
-    def define_group_resource(self,
-                              group_name,
-                              resource_name,
-                              group_quota,
-                              group_import_limit,
-                              group_export_limit,
-                              group_flags,
-                              per_user_quota,
-                              operational_quantity,
-                              operational_capacity,
-                              operational_import_limit,
-                              operational_export_limit,
-                              operational_flags):
+    def define_resource_of_group(self,
+                                 group_name,
+                                 resource_name,
+                                 # How much the group gets in total
+                                 resource_amount,
+                                 # How much the group gives to the user
+                                 user_quota,
+                                 resource_amount_is_ondemand = False):
         """
         Defines a resource that a group provides to its users.
         """
         abs_group_name = make_abs_group_name(group_name)
         abs_resource_name = make_abs_resource_name(resource_name)
         
-        if not self.has_global_resource(abs_resource_name):
+        # Not implemented yet
+        if resource_amount_is_ondemand:
+            raise Exception(
+                    "On demand group capacity is not supported for group %s" % (
+                        group_name))
+        
+        if not self.resource_exists(abs_resource_name):
             raise Exception(
                 "Cannot define resource '%s' for group '%s' because the global resource '%s' does not exist" %(
                     resource_name,
                     group_name,
                     abs_resource_name))
             
-        if not self.has_node(abs_group_name):
+        if not self.node_exists(abs_group_name):
             raise Exception(
                 "Cannot define resource '%s' for group '%s' because the group does not exist" %(
                     resource_name,
                     group_name))
 
         # Define the resource quotas for the group (initially empty)
-        # and do the quota transfer from the global resource
         group_resource_quota = self.set_quota(
             entity=abs_group_name,
             resource=abs_resource_name,
             quantity=0,
-            capacity=0,
-            import_limit=group_import_limit,
-            export_limit=group_export_limit,
-            flags=group_flags)
-
+            capacity=resource_amount,
+            import_limit=None,
+            export_limit=None,
+            flags=0)
+        # ... and do the quota transfer from the resource node
         self.issue_one_commission(
             target_entity=abs_group_name,
             source_entity=abs_resource_name,
             resource=abs_resource_name,
-            quantity=group_quota)
+            quantity=resource_amount)
         
-        return self.get_quota(entity=abs_group_name,
-                              resource=abs_resource_name)
+        # Other definitions
+        user_quota = self.define_attribute_of_group_for_resource(
+                        abs_group_name=abs_group_name,
+                        abs_resource_name=abs_resource_name,
+                        attribute_name='user',
+                        quantity=0,
+                        capacity=user_quota,
+                        import_limit=0,
+                        export_limit=0,
+                        flags=0)
+        
+        return {'group_resource_quota': group_resource_quota,
+                'user_quota': user_quota}
 
 
     #+++##########################################

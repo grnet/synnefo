@@ -37,7 +37,7 @@ from synnefo.logic.backend import (get_physical_resources,
                                    update_resources,
                                    create_network_synced,
                                    connect_network_synced)
-from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
+from synnefo.management.common import check_backend_credentials
 
 
 class Command(BaseCommand):
@@ -74,23 +74,7 @@ class Command(BaseCommand):
 
         # Ensure correctness of credentials
         if options['check']:
-            self.stdout.write('Checking connectivity and credentials.\n')
-            try:
-                client = GanetiRapiClient(clustername, port, username, password)
-                # This command will raise an exception if there is no
-                # write-access
-                client.ModifyCluster()
-            except GanetiApiError as e:
-                self.stdout.write('Check failed:\n%s\n' % e)
-                return
-            else:
-                self.stdout.write('Check passed.\n')
-
-        info = client.GetInfo()
-        info_name = info['name']
-        if info_name != clustername:
-            raise CommandError("Invalid clustername value. Please use the"
-                               " Ganeti Cluster name: %s" % info_name)
+            check_backend_credentials(clustername, port, username, password)
 
         # Create the new backend in database
         try:

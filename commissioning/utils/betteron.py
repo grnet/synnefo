@@ -197,5 +197,7 @@ def betteron_decode_args(inputf):
             m = "EOF while scanning for ']'"
             raise ValueError(m)
         else:
+            if key is not None:
+                append((None, key))
             key, s = betteron_decode(inputf, s=s)
 

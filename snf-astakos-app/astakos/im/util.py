@@ -36,7 +36,7 @@ import datetime
 import time
 
 from urllib import quote
-from urlparse import urlsplit, urlunsplit
+from urlparse import urlsplit, urlunsplit, urlparse
 
 from datetime import tzinfo, timedelta
 from django.http import HttpResponse, HttpResponseBadRequest, urlencode
@@ -47,8 +47,10 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
-from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, \
-    COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
+from astakos.im.settings import (
+    INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE,
+    FORCE_PROFILE_UPDATE, LOGGING_LEVEL
+)
 from astakos.im.functions import login
 
 logger = logging.getLogger(__name__)
@@ -96,6 +98,51 @@ def get_invitation(request):
         raise ValueError(_('Email: %s is reserved' % invitation.username))
     return invitation
 
+def restrict_next(url, domain=None, allowed_schemes=()):
+    """
+    Return url if having the supplied ``domain`` (if present) or one of the ``allowed_schemes``.
+    Otherwise return None.
+    
+    >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
+    /im/feedback
+    >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    pithos.okeanos.grnet.gr/im/feedback
+    >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    https://pithos.okeanos.grnet.gr/im/feedback
+    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
+    pithos://127.0.0,1
+    >>> print restrict_next('node1.example.com', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('//node1.example.com', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('https://node1.example.com', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('https://node1.example.com')
+    https://node1.example.com
+    >>> print restrict_next('//node1.example.com')
+    //node1.example.com
+    >>> print restrict_next('node1.example.com')
+    node1.example.com
+    """
+    if not url:
+        return
+    parts = urlparse(url, scheme='http')
+    if not parts.netloc:
+        # fix url if does not conforms RFC 1808
+        url = '//%s' % url
+        parts = urlparse(url, scheme='http')
+    # TODO more scientific checks?
+    if not parts.netloc:    # internal url
+        return url
+    elif not domain:
+        return url
+    elif parts.netloc.endswith(domain):
+        return url
+    elif parts.scheme in allowed_schemes:
+        return url
+
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
        as 'X-Auth-User' and 'X-Auth-Token' headers,
@@ -114,6 +161,8 @@ def prepare_response(request, user, next='', renew=False):
             user.save()
         except ValidationError, e:
             return HttpResponseBadRequest(e) 
+    
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
     
     if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''

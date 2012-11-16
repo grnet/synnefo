@@ -37,7 +37,9 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import (
+    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+)
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_http_methods
 
@@ -45,7 +47,7 @@ from urllib import quote
 from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
-from astakos.im.util import set_cookie
+from astakos.im.util import set_cookie, restrict_next
 from astakos.im.functions import login as auth_login, logout
 
 import logging
@@ -65,6 +67,10 @@ def login(request):
     next = request.GET.get('next')
     if not next:
         return HttpResponseBadRequest(_('No next parameter'))
+    if not restrict_next(
+        next, domain=COOKIE_DOMAIN, allowed_schemes=('pithos',)
+    ):
+        return HttpResponseForbidden(_('Not allowed next parameter'))
     force = request.GET.get('force', None)
     response = HttpResponse()
     if force == '':

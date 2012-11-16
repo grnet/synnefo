@@ -56,7 +56,9 @@ from django.views.decorators.http import require_http_methods
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im.util import get_context, prepare_response, set_cookie, get_query
+from astakos.im.util import (
+    get_context, prepare_response, set_cookie, get_query, restrict_next
+)
 from astakos.im.forms import *
 from astakos.im.functions import (send_greeting, send_feedback, SendMailError,
     invite as invite_func, logout as auth_logout, activate as activate_func
@@ -268,7 +270,10 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                 user = form.save()
                 reset_cookie = user.auth_token != prev_token
                 form = ProfileForm(instance=user)
-                next = request.POST.get('next')
+                next = restrict_next(
+                    request.POST.get('next'),
+                    domain=COOKIE_DOMAIN
+                )
                 if next:
                     return redirect(next)
                 msg = _('<p>Profile has been updated successfully</p>')
@@ -419,7 +424,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            feedback_form = form,
                            context_instance = get_context(request, extra_context))
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET"])
 def logout(request, template='registration/logged_out.html', extra_context={}):
     """
     Wraps `django.contrib.auth.logout` and delete the cookie.
@@ -431,7 +436,10 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
         msg = 'Cookie deleted for %s' % email
         logger._log(LOGGING_LEVEL, msg, [])
-    next = request.GET.get('next')
+    next = restrict_next(
+        request.GET.get('next'),
+        domain=COOKIE_DOMAIN
+    )
     if next:
         response['Location'] = next
         response.status_code = 302
@@ -506,7 +514,10 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
     terms = f.read()
 
     if request.method == 'POST':
-        next = request.POST.get('next')
+        next = restrict_next(
+            request.POST.get('next'),
+            domain=COOKIE_DOMAIN
+        )
         if not next:
             next = reverse('astakos.im.views.index')
         form = SignApprovalTermsForm(request.POST, instance=request.user)

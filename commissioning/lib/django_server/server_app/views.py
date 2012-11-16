@@ -27,8 +27,6 @@ def view(request, appname=None, version=None, callname=None):
     body = _get_body(request)
     try:
         body = callpoint.make_call_from_json(callname, body)
-        if body is None:
-            body = ''
         status = 200
     except Exception, e:
         status = 450

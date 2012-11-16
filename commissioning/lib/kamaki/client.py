@@ -4,7 +4,7 @@ from commissioning import Callpoint, CallError
 from commissioning.utils.debug import debug
 from kamaki.clients import Client
 
-from json import dumps as json_dumps
+from json import loads as json_loads, dumps as json_dumps
 
 class Kamaki_plugin(Callpoint):
 
@@ -22,19 +22,20 @@ class Kamaki_plugin(Callpoint):
 
         path = api_call
         json_data = json_dumps(data)
-        debug("%s %s\n%s\n<<<\n", method, path, json_data)
+        debug("%s %s\n%s\n<<<\n", method.func_name, path, json_data)
         
         resp = method(path, data=json_data)
         debug(">>>\nStatus: %s", resp.status_code)
         
+        body = resp.text
+        debug("\n%s\n<<<\n", body[:128] if body else None)
+
         status = int(resp.status_code)
         if status == 200:
-            body = resp.json
-            debug("\n%s\n<<<\n", body[:128] if body else None)
-            return body
+            return json_loads(body)
         else:
             try:
-                error = resp.json()
+                error = json_loads(body)
             except ValueError, e:
                 exc = CallError(body, call_error='ValueError')
             else:

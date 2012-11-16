@@ -106,7 +106,7 @@ class Callpoint(object):
             data = None
 
         data = self.make_call(call_name, data)
-        json_data = self.json_dumps(data) if data is not None else None
+        json_data = self.json_dumps(data)
         return json_data
 
     def make_call(self, call_name, data):

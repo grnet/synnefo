@@ -60,7 +60,8 @@ from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
-from ganeti.cli import GetClient
+from ganeti.ssconf import SimpleConfigReader
+
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
@@ -250,8 +251,13 @@ class JobFileHandler(pyinotify.ProcessEvent):
                # 'network_mode': get_field(input, 'network_mode'),
                # 'network_link': get_field(input, 'network_link'),
                'gateway':      get_field(input, 'gateway'),
-               # 'reserved_ips': get_field(input, 'reserved_ips'),
                'group_name':   get_field(input, 'group_name')}
+
+        if op_id == "OP_NETWORK_SET_PARAMS":
+            msg.update(
+                {'add_reserved_ips':    get_field(input, 'add_reserved_ips'),
+                 'remove_reserved_ips': get_field(input, 'remove_reserved_ips')
+                })
 
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 
@@ -269,8 +275,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 def find_cluster_name():
     global handler_logger
     try:
-        cl = GetClient()
-        name = cl.QueryClusterInfo()['name']
+        scr = SimpleConfigReader()
+        name = scr.GetClusterName()
     except Exception as e:
         handler_logger.error('Can not get the name of the Cluster: %s' % e)
         raise e

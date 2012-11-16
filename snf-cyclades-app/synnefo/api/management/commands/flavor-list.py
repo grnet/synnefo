@@ -34,10 +34,11 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import format_bool, filter_results
 
 from synnefo.db.models import Flavor
 
-from ._common import format_bool
+FIELDS = Flavor._meta.get_all_field_names()
 
 
 class Command(BaseCommand):
@@ -49,6 +50,17 @@ class Command(BaseCommand):
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
+        make_option('--deleted',
+            action='store_true',
+            dest='deleted',
+            default=False,
+            help="Include deleted flavors"),
+         make_option('--filter-by',
+            dest='filter_by',
+            help="Filter results. Comma seperated list of key=val pairs"
+                 " that displayed entries must satisfy. e.g."
+                 " --filter-by \"cpu=1,ram!=1024\"."
+                 "Available keys are: %s" % ", ".join(FIELDS))
         )
 
     def handle(self, *args, **options):
@@ -64,7 +76,17 @@ class Command(BaseCommand):
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
-        for flavor in Flavor.objects.all().order_by('id'):
+        if options['deleted']:
+            flavors = Flavor.objects.all()
+        else:
+            flavors = Flavor.objects.filter(deleted=False)
+
+        filter_by = options['filter_by']
+        if filter_by:
+            flavors = filter_results(flavors, filter_by)
+
+
+        for flavor in flavors.order_by('id'):
             id = str(flavor.id)
             cpu = str(flavor.cpu)
             ram = str(flavor.ram)

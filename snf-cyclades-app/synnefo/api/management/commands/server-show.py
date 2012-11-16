@@ -32,11 +32,9 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
-
-from synnefo.api.util import get_image
-from synnefo.db.models import VirtualMachine
-
-from ._common import format_bool, format_date
+from synnefo.management.common import (format_bool, format_date,
+                                       format_vm_state, get_vm,
+                                       get_image)
 
 
 class Command(BaseCommand):
@@ -47,11 +45,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        try:
-            server_id = int(args[0])
-            server = VirtualMachine.objects.get(id=server_id)
-        except (ValueError, VirtualMachine.DoesNotExist):
-            raise CommandError("Invalid server ID")
+        server = get_vm(args[0])
 
         flavor = '%s (%s)' % (server.flavor.id, server.flavor.name)
         userid = server.userid
@@ -64,7 +58,7 @@ class Command(BaseCommand):
         image = '%s (%s)' % (imageid, image_name)
 
         kv = {
-            'id': server_id,
+            'id': server.id,
             'name': server.name,
             'owner': userid,
             'created': format_date(server.created),
@@ -74,7 +68,7 @@ class Command(BaseCommand):
             'flavor': flavor,
             'deleted': format_bool(server.deleted),
             'suspended': format_bool(server.suspended),
-            'state': server.operstate
+            'state': format_vm_state(server)
         }
 
         for key, val in sorted(kv.items()):

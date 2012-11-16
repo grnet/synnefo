@@ -34,14 +34,14 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import get_flavor
 
-from synnefo.db.models import Flavor
 
 
 class Command(BaseCommand):
     args = "<flavor id>"
     help = "Modify a flavor"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('--set-deleted',
             action='store_true',
@@ -52,20 +52,17 @@ class Command(BaseCommand):
             dest='undeleted',
             help="Mark a server as not deleted"),
         )
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")
-        
-        try:
-            flavor_id = int(args[0])
-            flavor = Flavor.objects.get(id=flavor_id)
-        except (ValueError, Flavor.DoesNotExist):
-            raise CommandError("Invalid flavor ID")
-        
+
+
+        flavor = get_flavor(args[0])
+
         if options.get('deleted'):
             flavor.deleted = True
         elif options.get('undeleted'):
             flavor.deleted = False
-        
+
         flavor.save()

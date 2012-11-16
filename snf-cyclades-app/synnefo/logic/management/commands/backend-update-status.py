@@ -29,7 +29,9 @@
 #
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
+from synnefo.management.common import get_backend
+
 from synnefo import settings
 import datetime
 
@@ -48,22 +50,21 @@ class Command(BaseCommand):
                    help="Update statistics of only this backend"),
         make_option('--older-than', dest='older_than', metavar="MINUTES",
                    help="Update only backends that have not been updated for\
-                   MINUTES. Set to 0 to force update.")
+                   MINUTES. Set to 0 to force update."),
+        make_option('--include-drained', dest='drained',
+                    default=False,
+                    action='store_true',
+                    help="Also update statistics of drained backends")
         )
 
     def handle(self, **options):
 
         if options['backend_id']:
-            try:
-                backend_id = int(options['backend_id'])
-                backends = [Backend.objects.get(id=backend_id)]
-            except ValueError:
-                raise CommandError("Wrong backend ID")
-            except Backend.DoesNotExist:
-                raise CommandError("Backend not found in DB")
+            backends = [get_backend(options['backend_id'])]
         else:
-            # XXX:filter drained ?
-            backends = Backend.objects.all()
+            backends = Backend.objects.filter(offline=False)
+            if not options['drained']:
+                backends = backends.filter(drained=False)
 
         now = datetime.datetime.now()
         if options['older_than'] is not None:

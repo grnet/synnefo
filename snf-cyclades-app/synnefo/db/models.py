@@ -157,6 +157,11 @@ class Backend(models.Model):
         else:
             # ON_DELETE = SET NULL
             self.virtual_machines.all().backend = None
+            # Remove BackendNetworks of this Backend.
+            # Do not use networks.all().delete(), since delete() method of
+            # BackendNetwork will not be called!
+            for net in self.networks.all():
+                net.delete()
             super(Backend, self).delete(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
@@ -256,7 +261,8 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
-    userid = models.CharField('User ID of the owner', max_length=100)
+    userid = models.CharField('User ID of the owner', max_length=100,
+                              db_index=True)
     backend = models.ForeignKey(Backend, null=True,
                                 related_name="virtual_machines",)
     backend_hash = models.CharField(max_length=128, null=True, editable=False)
@@ -265,7 +271,7 @@ class VirtualMachine(models.Model):
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
-    deleted = models.BooleanField('Deleted', default=False)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
 
@@ -289,11 +295,19 @@ class VirtualMachine(models.Model):
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
 
+    objects = ForUpdateManager()
+
     def get_client(self):
         if self.backend:
             return self.backend.get_client()
         else:
             raise ServiceUnavailable
+
+    def get_last_diagnostic(self, **filters):
+        try:
+            return self.diagnostics.filter()[0]
+        except IndexError:
+            return None
 
     @staticmethod
     def put_client(client):
@@ -405,7 +419,8 @@ class Network(models.Model):
     )
 
     name = models.CharField('Network Name', max_length=128)
-    userid = models.CharField('User ID of the owner', max_length=128, null=True)
+    userid = models.CharField('User ID of the owner', max_length=128,
+                              null=True, db_index=True)
     subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
     subnet6 = models.CharField('IPv6 Subnet', max_length=64, null=True)
     gateway = models.CharField('Gateway', max_length=32, null=True)
@@ -415,10 +430,10 @@ class Network(models.Model):
                             default='PRIVATE_PHYSICAL_VLAN')
     link = models.CharField('Network Link', max_length=128, null=True)
     mac_prefix = models.CharField('MAC Prefix', max_length=32, null=False)
-    public = models.BooleanField(default=False)
+    public = models.BooleanField(default=False, db_index=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    deleted = models.BooleanField('Deleted', default=False)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True)
     state = models.CharField(choices=OPER_STATES, max_length=32,
                              default='PENDING')
     machines = models.ManyToManyField(VirtualMachine,
@@ -459,6 +474,9 @@ class Network(models.Model):
 
         def __str__(self):
             return repr(str(self._action))
+
+    class DeletedError(Exception):
+        pass
 
     @property
     def backend_id(self):
@@ -697,3 +715,55 @@ def pooled_rapi_client(obj):
             yield client
         finally:
             put_rapi_client(client)
+
+
+class VirtualMachineDiagnosticManager(models.Manager):
+    """
+    Custom manager for :class:`VirtualMachineDiagnostic` model.
+    """
+
+    # diagnostic creation helpers
+    def create_for_vm(self, vm, level, message, **kwargs):
+        attrs = {'machine': vm, 'level': level, 'message': message}
+        attrs.update(kwargs)
+        # update instance updated time
+        self.create(**attrs)
+        vm.save()
+
+    def create_error(self, vm, **kwargs):
+        self.create_for_vm(vm, 'ERROR', **kwargs)
+
+    def create_debug(self, vm, **kwargs):
+        self.create_for_vm(vm, 'DEBUG', **kwargs)
+
+    def since(self, vm, created_since, **kwargs):
+        return self.get_query_set().filter(vm=vm, created__gt=created_since,
+                **kwargs)
+
+
+class VirtualMachineDiagnostic(models.Model):
+    """
+    Model to store backend information messages that relate to the state of
+    the virtual machine.
+    """
+
+    TYPES = (
+        ('ERROR', 'Error'),
+        ('WARNING', 'Warning'),
+        ('INFO', 'Info'),
+        ('DEBUG', 'Debug'),
+    )
+
+    objects = VirtualMachineDiagnosticManager()
+
+    created = models.DateTimeField(auto_now_add=True)
+    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics")
+    level = models.CharField(max_length=20, choices=TYPES)
+    source = models.CharField(max_length=100)
+    source_date = models.DateTimeField(null=True)
+    message = models.CharField(max_length=255)
+    details = models.TextField(null=True)
+
+    class Meta:
+        ordering = ['-created']
+

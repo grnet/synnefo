@@ -34,8 +34,9 @@
 import json
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import get_network
 
-from synnefo.db.models import (Backend, Network, BackendNetwork,
+from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
 from util import pool_map_chunks
@@ -47,15 +48,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a network ID.")
-        try:
-            net_id = int(args[0])
-        except ValueError:
-            raise CommandError("Invalid network ID.")
 
-        try:
-            net = Network.objects.get(id=net_id)
-        except Network.DoesNotExist:
-            raise CommandError("Network not found in DB.")
+        net = get_network(args[0])
 
         sep = '-' * 80 + '\n'
         labels = ('name', 'backend-name', 'state', 'owner', 'subnet', 'gateway',

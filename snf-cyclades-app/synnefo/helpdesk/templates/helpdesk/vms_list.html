@@ -1,0 +1,100 @@
+{% load helpdesk_tags %}
+<div class="object-anchor" id="vm-{{vm.pk}}"></div>
+<div class="vm-details object-details {{ rowcls }}">
+  <h4><em><img src="{{ UI_MEDIA_URL }}images/icons/os/{{ vm|get_os }}.png" />{{ vm|get_os }}</em><i class="icon-tasks"></i>{{ vm.name }}<span class="badge">&nbsp;</span></h4>
+  {{ vm|vm_status_badge|safe }}
+  <span class="badge badge-inverse">ID: {{ vm.pk }}</span>
+  <span class="badge badge-inverse">{{ vm|vm_public_ip }}</span>
+  {% if vm.suspended %}
+  <span class="badge badge-important">SUSPENDED</span>
+  {% endif %}
+  <span class="badge badge-inverse flavor">
+    <span class="cpu">{{ vm.flavor.cpu }}x</span>
+    <span class="ram">{{ vm.flavor.ram}}MB</span>
+    <span class="disk">{{ vm.flavor.disk }}GB</span>
+  </span>
+  <div class="vm-details-content object-details-content">
+
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#details{{ vm.pk }}" data-toggle="tab">Details</a></li>
+      <li><a href="#metadata{{ vm.pk }}" data-toggle="tab">Metadata</a></li>
+      <li><a href="#backend{{ vm.pk }}" data-toggle="tab">Backend info</a></li>
+      <li><a href="#network{{ vm.pk }}" data-toggle="tab">Network interfaces</a></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane active" id="details{{ vm.pk }}">
+        <dl class="dl-horizontal well">
+          <dt>ID</dt><dd>{{ vm.pk }}</dd>
+          <dt>Name</dt><dd>{{ vm.name }}</dd>
+          <dt>User id</dt><dd>{{ vm.userid }}</dd>
+          <dt>Created</dt><dd>{{ vm.created }} ({{ vm.created|timesince }} <strong>ago</strong>)</dd>
+          <dt>Updated</dt><dd>{{ vm.updated }} ({{ vm.updated|timesince }} <strong>ago</strong>)</dd>
+          <dt>Suspended</dt><dd>{{ vm.suspended }}</dd>
+          <dt>Deleted</dt><dd>{{ vm.deleted }}</dd>
+          <dt>Image id</dt><dd>{{ vm.imageid }}</dd>
+          <dt>Flavor</dt><dd>{{ vm.flavor.cpu }},
+          {{ vm.flavor.disk }},
+          {{ vm.flavor.ram }},
+          {{ vm.flavor.disk_template }}</dd>
+        </dl>
+      </div>
+      <div class="tab-pane" id="metadata{{ vm.pk }}">
+        <dl class="dl-horizontal well">
+          {% for meta in vm.metadata.all %}  
+          <dt>{{ meta.meta_key }}</dt><dd>{{ meta.meta_value }}</dd>
+          {% empty %}
+          <dt>No metadata</dt>
+          {% endfor %}
+        </dl>
+      </div>
+      <div class="tab-pane" id="backend{{ vm.pk }}">
+        <dl class="dl-horizontal well">
+          <dt>Action</dt><dd>{{ vm.get_action_display }} ({{ vm.action }})</dd>
+          <dt>Operstate</dt><dd>{{ vm.get_operstate_display }} ({{ vm.operstate }})</dd>
+          <dt>Backend job id</dt><dd>{{ vm.backendjobid }}</dd>
+          <dt>Backend op code</dt><dd>{{ vm.get_backendopcode_display }} ({{ vm.backendopcode }})</dd>
+          <dt>Backend log msg</dt><dd>{{ vm.backendlogmsg }}</dd>
+          <dt>Build backendjobstatus</dt><dd>{{ vm.backendjobstatus }}</dd>
+          <dt>Build percentage</dt><dd>{{ vm.buildpercentage }}</dd>
+        </dl>
+      </div>
+      <div class="tab-pane" id="network{{ vm.pk }}">
+        <table class="table well">
+          <thead>
+            <td>ID</td>
+            <td>Network (ID)</td>
+            <td>Created</td>
+            <td>Updated</td>
+            <td>Index</td>
+            <td>MAC</td>
+            <td>IPv4</td>
+            <td>IPv6</td>
+            <td>Firewall</td>
+          </thead>
+          <tbody>
+            {% for nic in vm.nics.all %}
+            <tr>
+              <td>{{ nic.pk }}</td>
+              <td>{{ nic.network }} ({{ nic.network.pk }})</td>
+              <td>{{ nic.created }}</td>
+              <td>{{ nic.updated }}</td>
+              <td>{{ nic.index }}</td>
+              <td>{{ nic.mac }}</td>
+              <td>{{ nic.ipv4 }}</td>
+              <td>{{ nic.ipv6 }}</td>
+              <td>{{ nic.get_firewall_profile_display }} ({{nic.firewall_profile}})</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan=9>No network interface available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>        
+  </div>
+  <div class="vm-suspend-form {% if vm.suspended %}suspended{% endif %}">
+    {% include "helpdesk/_suspend.html" %}
+  </div>
+</div>

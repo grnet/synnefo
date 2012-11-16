@@ -41,5 +41,6 @@ urlpatterns = patterns('',
         name='ui_machines_connect'),
     (r'^api/', include('synnefo.api.urls')),
     (r'^plankton/', include('synnefo.plankton.urls')),
+    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
 )
 

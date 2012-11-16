@@ -44,6 +44,7 @@ import logging
 
 from puka import Client
 from puka import spec_exceptions
+import socket
 from socket import error as socket_error
 from time import sleep
 from random import shuffle
@@ -51,7 +52,7 @@ from functools import wraps
 from ordereddict import OrderedDict
 from synnefo import settings
 
-logger = logging.getLogger()
+logger = logging.getLogger("amqp")
 
 
 def reconnect_decorator(func):
@@ -65,7 +66,6 @@ def reconnect_decorator(func):
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             logger.error('Connection Closed while in %s: %s', func.__name__, e)
-            self.consume_promises = []
             self.connect()
 
     return wrapper
@@ -128,7 +128,20 @@ class AMQPPukaClient(object):
 
         logger.info('Successfully connected to host: %s', host)
 
+        # Setup TCP keepalive option
+        self.client.sd.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        # Keepalive time
+        self.client.sd.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 20)
+        # Keepalive interval
+        self.client.sd.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 2)
+        # Keepalive retry
+        self.client.sd.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 10)
+
         logger.info('Creating channel')
+
+        # Clear consume_promises each time connecting, since they are related
+        # to the connection object
+        self.consume_promises = []
 
         if self.unacked:
             self._resend_unacked_messages()
@@ -145,6 +158,11 @@ class AMQPPukaClient(object):
             self.exchanges = []
             for exchange, type in exchanges:
                 self.exchange_declare(exchange, type)
+
+    @reconnect_decorator
+    def reconnect(self):
+        self.close()
+        self.connect()
 
     def exchange_declare(self, exchange, type='direct'):
         """Declare an exchange
@@ -164,7 +182,8 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def queue_declare(self, queue, exclusive=False,
-                      mirrored=True, mirrored_nodes='all'):
+                      mirrored=True, mirrored_nodes='all',
+                      dead_letter_exchange=None):
         """Declare a queue
 
         @type queue: string
@@ -194,6 +213,9 @@ class AMQPPukaClient(object):
         else:
             arguments = {}
 
+        if dead_letter_exchange:
+            arguments['x-dead-letter-exchange'] = dead_letter_exchange
+
         promise = self.client.queue_declare(queue=queue, durable=True,
                                             exclusive=exclusive,
                                             auto_delete=False,
@@ -208,9 +230,9 @@ class AMQPPukaClient(object):
         self.client.wait(promise)
 
     @reconnect_decorator
-    def basic_publish(self, exchange, routing_key, body):
+    def basic_publish(self, exchange, routing_key, body, headers={}):
         """Publish a message with a specific routing key """
-        self._publish(exchange, routing_key, body)
+        self._publish(exchange, routing_key, body, headers)
 
         self.flush_buffer()
 
@@ -231,9 +253,8 @@ class AMQPPukaClient(object):
         if self.confirms:
             self.get_confirms()
 
-    def _publish(self, exchange, routing_key, body):
+    def _publish(self, exchange, routing_key, body, headers={}):
         # Persisent messages by default!
-        headers = {}
         headers['delivery_mode'] = 2
         promise = self.client.basic_publish(exchange=exchange,
                                             routing_key=routing_key,
@@ -311,9 +332,9 @@ class AMQPPukaClient(object):
 
         """
         if promise is not None:
-            self.client.wait(promise, timeout)
+            return self.client.wait(promise, timeout)
         else:
-            self.client.wait(self.consume_promises)
+            return self.client.wait(self.consume_promises, timeout)
 
     @reconnect_decorator
     def basic_get(self, queue):
@@ -337,11 +358,21 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def basic_nack(self, message):
-        #TODO:
-        pass
+        self.client.basic_ack(message)
+
+    @reconnect_decorator
+    def basic_reject(self, message, requeue=False):
+        """Reject a message.
+
+        If requeue option is False and a dead letter exchange is associated
+        with the queue, the message will be routed to the dead letter exchange.
+
+        """
+        self.client.basic_reject(message, requeue=requeue)
 
     def close(self):
         """Check that messages have been send and close the connection."""
+        logger.debug("Closing connection to %s", self.client.host)
         try:
             if self.confirms:
                 self.get_confirms()

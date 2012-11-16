@@ -35,22 +35,35 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Network
+from synnefo.db.models import Network, pooled_rapi_client
+from synnefo.management.common import validate_network_info, get_network
+
+HELP_MSG = \
+"""Modify a network.
+
+This management command will only modify the state of the network in Cyclades
+DB. The state of the network in the Ganeti backends will remain unchanged. You
+should manually modify the network in all the backends, to synchronize the
+state of DB and Ganeti.
+
+The only exception is add_reserved_ips and remove_reserved_ips options, which
+modify the IP pool in the Ganeti backends.
+"""
 
 
 class Command(BaseCommand):
     args = "<network id>"
-    help = "Modify a network"
+    help = HELP_MSG
+    output_transaction = True
 
     option_list = BaseCommand.option_list + (
         make_option('--name',
             dest='name',
             metavar='NAME',
             help="Set network's name"),
-        make_option('--owner',
-            dest='owner',
-            metavar='USER_ID',
-            help="Set network's owner"),
+        make_option('--userid',
+            dest='userid',
+            help="Set the userid of the network owner"),
         make_option('--subnet',
             dest='subnet',
             help="Set network's subnet"),
@@ -69,53 +82,59 @@ class Command(BaseCommand):
         make_option('--state',
             dest='state',
             metavar='STATE',
-            help="Set network's state")
+            help="Set network's state"),
+        make_option('--link',
+            dest='link',
+            help="Set the connectivity link"),
+        make_option('--mac-prefix',
+            dest="mac_prefix",
+            help="Set the MAC prefix"),
+        make_option('--add-reserved-ips',
+            dest="add_reserved_ips",
+            help="Comma seperated list of IPs to externally reserve."),
+        make_option('--remove-reserved-ips',
+            dest="remove_reserved_ips",
+            help="Comma seperated list of IPs to externally release."),
+
     )
 
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a network ID")
 
-        try:
-            network_id = int(args[0])
-            network = Network.objects.get(id=network_id)
-        except (ValueError, Network.DoesNotExist):
-            raise CommandError("Invalid network id")
+        network = get_network(args[0])
 
-        name = options.get('name')
-        if name is not None:
-            network.name = name
+        # Validate subnet
+        if options.get('subnet'):
+            validate_network_info(options)
 
-        owner = options.get('owner')
-        if owner is not None:
-            network.userid = owner
-
-        subnet = options.get('subnet')
-        if subnet is not None:
-            network.subnet = subnet
-
-        gateway = options.get('gateway')
-        if gateway is not None:
-            network.gateway = gateway
-
-        subnet6 = options.get('subnet6')
-        if subnet6 is not None:
-            network.subnet6 = subnet6
-
-        gateway6 = options.get('gateway6')
-        if gateway6 is not None:
-            network.gateway6 = gateway6
-
-        dhcp = options.get('dhcp')
-        if dhcp is not None:
-            network.dhcp = dhcp
-
+        # Validate state
         state = options.get('state')
-        if state is not None:
+        if state:
             allowed = [x[0] for x in Network.OPER_STATES]
             if state not in allowed:
                 msg = "Invalid state, must be one of %s" % ', '.join(allowed)
                 raise CommandError(msg)
-            network.state = state
+
+        fields = ('name', 'userid', 'subnet', 'gateway', 'subnet6', 'gateway6',
+                  'dhcp', 'state', 'link', 'mac_prefix')
+        for field in fields:
+            value = options.get(field, None)
+            if value:
+                network.__setattr__(field, value)
+
+        add_reserved_ips = options.get('add_reserved_ips')
+        remove_reserved_ips = options.get('remove_reserved_ips')
+        if add_reserved_ips or remove_reserved_ips:
+            if add_reserved_ips:
+                add_reserved_ips = add_reserved_ips.split(",")
+            if remove_reserved_ips:
+                remove_reserved_ips = remove_reserved_ips.split(",")
+
+        for bnetwork in network.backend_networks.all():
+            with pooled_rapi_client(bnetwork.backend) as c:
+                c.ModifyNetwork(network=network.backend_id,
+                                add_reserved_ips=add_reserved_ips,
+                                remove_reserved_ips=remove_reserved_ips)
 
         network.save()

@@ -34,16 +34,15 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import get_vm
 
 from synnefo.db.models import VirtualMachine
-
-from ._common import format_bool, format_date
 
 
 class Command(BaseCommand):
     args = "<server ID>"
     help = "Modify a server"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('--name',
             dest='name',
@@ -74,25 +73,21 @@ class Command(BaseCommand):
             dest='unsuspended',
             help="Mark a server as not suspended")
         )
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
-        
-        try:
-            server_id = int(args[0])
-            server = VirtualMachine.objects.get(id=server_id)
-        except (ValueError, VirtualMachine.DoesNotExist):
-            raise CommandError("Invalid server ID")
-        
+
+        server = get_vm(args[0])
+
         name = options.get('name')
         if name is not None:
             server.name = name
-        
+
         owner = options.get('owner')
         if owner is not None:
             server.userid = owner
-        
+
         state = options.get('state')
         if state is not None:
             allowed = [x[0] for x in VirtualMachine.OPER_STATES]
@@ -100,15 +95,15 @@ class Command(BaseCommand):
                 msg = "Invalid state, must be one of %s" % ', '.join(allowed)
                 raise CommandError(msg)
             server.operstate = state
-        
+
         if options.get('deleted'):
             server.deleted = True
         elif options.get('undeleted'):
             server.deleted = False
-        
+
         if options.get('suspended'):
             server.suspended = True
         elif options.get('unsuspended'):
             server.suspended = False
-        
+
         server.save()

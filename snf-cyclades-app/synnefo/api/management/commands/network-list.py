@@ -34,10 +34,10 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-
+from synnefo.management.common import format_bool, filter_results
 from synnefo.db.models import Network
 
-from ._common import format_bool
+FIELDS = Network._meta.get_all_field_names()
 
 
 class Command(BaseCommand):
@@ -53,7 +53,7 @@ class Command(BaseCommand):
             action='store_true',
             dest='deleted',
             default=False,
-            help="List only deleted networks"),
+            help="Include deleted networks"),
         make_option('--public',
             action='store_true',
             dest='public',
@@ -64,20 +64,30 @@ class Command(BaseCommand):
             dest='ipv6',
             default=False,
             help="Show IPv6 information of the network"),
+        make_option('--filter-by',
+            dest='filter_by',
+            help="Filter results. Comma seperated list of key 'cond' val pairs"
+                 " that displayed entries must satisfy. e.g."
+                 " --filter-by \"name=Network-1,link!=prv0\"."
+                 " Available keys are: %s" % ", ".join(FIELDS))
+
         )
 
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        networks = Network.objects.all()
         if options['deleted']:
-            networks = networks.filter(deleted=True)
+            networks = Network.objects.all()
         else:
-            networks = networks.exclude(deleted=True)
+            networks = Network.objects.filter(deleted=False)
 
         if options['public']:
             networks = networks.filter(public=True)
+
+        filter_by = options['filter_by']
+        if filter_by:
+            networks = filter_results(networks, filter_by)
 
         labels = ['id', 'name', 'type', 'owner',
                   'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']

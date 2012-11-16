@@ -1,6 +1,5 @@
 {% load i18n %}
 <div id="createvm-overlay-content" class="hidden create-vm">
-
     <div class="steps-history clearfix">
         <div class="steps-history-cont step1h completed step-header"
             id="vm-create-step-history-1">
@@ -79,6 +78,13 @@
             </div>
         </div>
     </div>
+    <div class="image-warning">
+      <p>
+      {% blocktrans %}You have selected a user-provided Image, which is not
+      officially endorsed by ~okeanos. Please make sure it is from a
+      trustworthy source.{% endblocktrans %}
+      </p>
+    </div>
     <div class="steps-container clearfix">
         <div class="step-1 select-image wide create-step-cont clearfix">
             <div class="clearfix step-header">
@@ -108,7 +114,17 @@
                     </h4>
                     <ul class="images-list">
                     </ul>
-                    <span class="empty">{% trans "no images available" %}</span>
+                    <span class="empty">
+                      {% trans "No images available" %}.
+                    </span>
+                    {% if custom_image_help_url %}
+                    <span class="custom-image-help" style="display:none">
+                      <br /><br />
+                      {% blocktrans with custom_image_help_url as url %}
+                      Consult <a href="{{ url }}">this guide</a> if you want to create a custom OS image
+                      {% endblocktrans %}
+                    </span>
+                    {% endif %}
                     <span class="loading hidden">{% trans "loading..." %}</span>
                 </div>
                 <div class="images-info-cont content-cont">

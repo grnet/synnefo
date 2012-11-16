@@ -75,14 +75,14 @@ INSTALL_REQUIRES = [
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',
-    'snf-common>0.9.14',
+    'snf-common>0.11',
     'vncauthproxy>=1.2',
     'south>=0.7, <=0.7.3',
-    'snf-pithos-backend>=0.9.1',
+    'snf-pithos-backend>=0.11',
     'lockfile>=0.8, <0.9',
     'ipaddr',
     'setproctitle>=1.0.1',
-    'bitarray'
+    'bitarray>=0.8'
 ]
 
 EXTRAS_REQUIRES = {

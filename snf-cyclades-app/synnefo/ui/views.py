@@ -59,6 +59,7 @@ COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
+CHANGES_SINCE_ALIGNMENT = getattr(settings, "UI_CHANGES_SINCE_ALIGNMENT", 0)
 UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE", 500)
 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
                                 "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT",
@@ -67,7 +68,7 @@ UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
 
 # predefined values settings
-VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
+VM_IMAGE_COMMON_METADATA = getattr(settings, "UI_VM_IMAGE_COMMON_METADATA", ["OS", "users"])
 SUGGESTED_FLAVORS_DEFAULT = {}
 SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS",
                             SUGGESTED_FLAVORS_DEFAULT)
@@ -95,9 +96,12 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
+VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
+                                    'snf-%(id)s.vm.okeanos.grnet.gr')
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
 SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
+CUSTOM_IMAGE_HELP_URL = getattr(settings, "UI_CUSTOM_IMAGE_HELP_URL", None)
 
 # MEDIA PATHS
 UI_MEDIA_URL = getattr(settings, "UI_MEDIA_URL",
@@ -119,6 +123,8 @@ ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
 FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
+DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
+                'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
 # network settings
 DEFAULT_NETWORK_TYPES = {'PRIVATE_MAC_FILTERED': 'mac-filtering'}
@@ -133,6 +139,11 @@ NETWORK_STRICT_DESTROY = getattr(settings,
                     'UI_NETWORK_STRICT_DESTROY', False)
 NETWORK_ALLOW_MULTIPLE_DESTROY = getattr(settings,
                     'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
+AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
+                                         'UI_AUTOMATIC_NETWORK_RANGE_FORMAT',
+                                        "192.168.%d.0/24").replace("%d", "{0}")
+GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
+GROUPED_PUBLIC_NETWORK_NAME = getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -163,6 +174,7 @@ def home(request):
                'update_interval_increase_after_calls': UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
+               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
@@ -184,13 +196,19 @@ def home(request):
                'use_glance': json.dumps(ENABLE_GLANCE),
                'glance_api_url': json.dumps(GLANCE_API_URL),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
+               'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
                'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
                'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
                'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
                'network_available_types': json.dumps(NETWORK_TYPES),
                'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
                'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
-               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY)
+               'network_allow_multiple_destroy': json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
+               'automatic_network_range_format': json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
+               'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
+               'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
+               'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
+               'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT % {'id':'{0}'})
     }
     return template('home', request, context)
 
@@ -205,6 +223,19 @@ def machines_console(request):
     context = {'host': host, 'port': port, 'password': password,
                'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', request, context)
+
+def user_quota(request):
+    get_user(request, settings.ASTAKOS_URL)
+    vms_limit_for_user = \
+        settings.VMS_USER_QUOTA.get(request.user_uniq,
+                settings.MAX_VMS_PER_USER)
+
+    networks_limit_for_user = \
+        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                settings.MAX_NETWORKS_PER_USER)
+    return HttpResponse('{"vms_quota":%d, "networks_quota":%d}' % (vms_limit_for_user,
+                                                               networks_limit_for_user),
+                        mimetype="application/json")
 
 def js_tests(request):
     return template('tests', request, {})
@@ -230,9 +261,9 @@ CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already
 CONNECT_WINDOWS_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
 established using Remote Desktop. Click on the following link, and if asked
 open it using "Remote Desktop Connection".
-IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
-after its creation.""")
-CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use""")
+<br /><span class="important">IMPORTANT: It may take up to 15 minutes for your Windows VM to become available
+after its creation.</span>""")
+CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use.""")
 
 # info/subinfo for all os combinations
 #
@@ -243,15 +274,22 @@ CONNECT_PROMPT_MESSAGES = {
     'linux': {
             'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
             'windows': [CONNECT_LINUX_WINDOWS_MESSAGE,
-                        CONNECT_LINUX_WINDOWS_SUBMESSAGE]
-        },
+                        CONNECT_LINUX_WINDOWS_SUBMESSAGE],
+            'ssh_message': "ssh %(user)s@%(hostname)s"
+    },
     'windows': {
             'linux': [CONNECT_WINDOWS_LINUX_MESSAGE,
                       CONNECT_WINDOWS_LINUX_SUBMESSAGE],
             'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE,
-                        CONNECT_WINDOWS_WINDOWS_SUBMESSAGE]
-        }
-    }
+                        CONNECT_WINDOWS_WINDOWS_SUBMESSAGE],
+            'ssh_message': "%(user)s@%(hostname)s"
+    },
+}
+
+APPEND_CONNECT_PROMPT_MESSAGES = getattr(settings, 'UI_CONNECT_PROMPT_MESSAGES',
+                                       {})
+for k, v in APPEND_CONNECT_PROMPT_MESSAGES.iteritems():
+    CONNECT_PROMPT_MESSAGES[k].update(v)
 
 # retrieve domain prefix from settings
 DOMAIN_PREFIX = getattr(settings, 'MACHINE_DOMAIN_PREFIX', getattr(settings,
@@ -262,6 +300,7 @@ DOMAIN_TPL = "%s%%s" % DOMAIN_PREFIX
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
+    hostname = request.GET.get('hostname','')
     operating_system = metadata_os = request.GET.get('os','')
     server_id = request.GET.get('srv', 0)
     host_os = request.GET.get('host_os','Linux').lower()
@@ -294,29 +333,52 @@ def machines_connect(request):
 
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
+        EXTRA_RDP_CONTENT = getattr(settings, 'UI_EXTRA_RDP_CONTENT', '')
+        if callable(EXTRA_RDP_CONTENT):
+            extra_rdp_content = EXTRA_RDP_CONTENT(server_id, ip_address,
+                                                  hostname, username)
+        else:
+            extra_rdp_content = EXTRA_RDP_CONTENT % {
+                    'server_id':server_id,
+                    'ip_address': ip_address,
+                    'hostname': hostname,
+                    'user': username
+                  }
+
         rdp_context = {
                 'username': username,
                 'domain': domain,
-                'ip_address': ip_address
+                'ip_address': ip_address,
+                'extra_content': extra_rdp_content
         }
 
         rdp_file_data = render_to_string("synnefo-windows.rdp", rdp_context)
         response = HttpResponse(rdp_file_data, mimetype='application/x-rdp')
 
         # proper filename, use server id and ip address
-        filename = "%d-%s.rdp" % (int(server_id), ip_address)
+        filename = "%d-%s.rdp" % (int(server_id), hostname)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        link_title = _("Remote desktop to %s") % ip_address
-        link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" % (
-                reverse("ui_machines_connect"), ip_address, operating_system,int(server_id), username, domain)
-
+        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get('ssh_message')
+        if host_os == 'windows':
+            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get('ssh_message')
+        if callable(ssh_message):
+            link_title = ssh_message(server_id, ip_address, hostname, username)
+        else:
+            link_title = ssh_message % {
+                    'server_id':server_id,
+                    'ip_address': ip_address,
+                    'hostname': hostname,
+                    'user': username
+                  }
         if (operating_system != "windows"):
-            link_title = "ssh %s@%s" % (username, ip_address)
             link_url = None
 
-            if host_os == "windows":
-                link_title = "%s@%s" % (username, ip_address)
+        else:
+            link_title = _("Remote desktop to %s") % ip_address
+            link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s&hostname=%s" % (
+                    reverse("ui_machines_connect"), ip_address,
+                    operating_system, int(server_id), username, domain, hostname)
 
         # try to find a specific message
         try:

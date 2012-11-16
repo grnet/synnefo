@@ -44,7 +44,7 @@ from django.utils import simplejson as json
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (BadRequest, Unauthorized,
+from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
                                 NetworkInUse, OverLimit)
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
@@ -96,7 +96,8 @@ def network_to_dict(network, user_id, detail=True):
         d['public'] = network.public
 
         attachments = [util.construct_nic_id(nic)
-                       for nic in network.nics.filter(machine__userid=user_id)]
+                       for nic in network.nics.filter(machine__userid=user_id)\
+                                              .order_by('machine')]
         d['attachments'] = {'values': attachments}
     return d
 
@@ -131,7 +132,7 @@ def list_networks(request, detail=False):
         user_networks = user_networks.filter(deleted=False)
 
     networks = [network_to_dict(network, request.user_uniq, detail)
-                for network in user_networks]
+                for network in user_networks.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {
@@ -152,6 +153,7 @@ def create_network(request):
     #                       unauthorized (401),
     #                       badMediaType(415),
     #                       badRequest (400),
+    #                       forbidden (403)
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
@@ -172,15 +174,23 @@ def create_network(request):
         raise BadRequest('Malformed request.')
 
     if public:
-        raise Unauthorized('Can not create a public network.')
+        raise Forbidden('Can not create a public network.')
 
-    if net_type not in ('PRIVATE_MAC_FILTERED', 'PRIVATE_PHYSICAL_VLAN'):
-        raise Unauthorized('Can not create a network of type %s.' % net_type)
+    if net_type not in ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
+                        'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
+                        'CUSTOM_BRIDGED']:
+        raise BadRequest("Invalid network type: %s", net_type)
+    if net_type not in settings.ENABLED_NETWORKS:
+        raise Forbidden("Can not create %s network" % net_type)
+
+    networks_user_limit = \
+        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                                         settings.MAX_NETWORKS_PER_USER)
 
     user_networks = len(Network.objects.filter(userid=request.user_uniq,
                                                deleted=False))
 
-    if user_networks >= settings.MAX_NETWORKS_PER_USER:
+    if user_networks >= networks_user_limit:
         raise OverLimit('Network count limit exceeded for your account.')
 
     cidr_block = int(subnet.split('/')[1])
@@ -206,7 +216,9 @@ def create_network(request):
                 action='CREATE',
                 state='PENDING')
     except EmptyPool:
-        raise OverLimit('Network count limit exceeded.')
+        log.error("Failed to allocate resources for network of type: %s",
+                  net_type)
+        raise ServiceUnavailable("Failed to allocate resources for network")
 
     # Create BackendNetwork entries for each Backend
     network.create_backend_network()
@@ -241,6 +253,7 @@ def update_network_name(request, network_id):
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
     #                       badRequest (400),
+    #                       forbidden (403)
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
@@ -255,7 +268,9 @@ def update_network_name(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Unauthorized('Can not rename the public network.')
+        raise Forbidden('Can not rename the public network.')
+    if net.deleted:
+        raise Network.DeletedError
     net.name = name
     net.save()
     return HttpResponse(status=204)
@@ -268,17 +283,21 @@ def delete_network(request, network_id):
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
+    #                       forbidden (403)
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       overLimit (413)
 
     log.info('delete_network %s', network_id)
     net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
-        raise Unauthorized('Can not delete the public network.')
+        raise Forbidden('Can not delete the public network.')
+
+    if net.deleted:
+        raise Network.DeletedError
 
     if net.machines.all():  # Nics attached on network
         raise NetworkInUse('Machines are connected to network.')
+
 
     net.action = 'DESTROY'
     net.save()
@@ -296,12 +315,13 @@ def network_action(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Unauthorized('Can not modify the public network.')
-
-    key = req.keys()[0]
-    val = req[key]
+        raise Forbidden('Can not modify the public network.')
+    if net.deleted:
+        raise Network.DeletedError
 
     try:
+        key = req.keys()[0]
+        val = req[key]
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])
     except KeyError:

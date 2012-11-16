@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,20 +31,36 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import datetime
+from django.conf import settings
+from django.core.exceptions import MiddlewareNotUsed
 
-from django.utils.timesince import timesince, timeuntil
+from django.core import mail
+from django.views import debug
 
+import re
 
-def format_bool(b):
-    return 'YES' if b else 'NO'
+def mail_admins_safe(subject, message, fail_silently=False, connection=None):
+    '''
+    Wrapper function to cleanse email body from sensitive content before
+    sending it
+    '''
 
+    HIDDEN_ALL = settings.HIDDEN_SETTINGS + "|" + settings.HIDDEN_COOKIES
+    message = re.sub("((\S+)?(%s)(\S+)?(:|\=)( )?)('|\"?)\S+('|\"?)" \
+                % HIDDEN_ALL, r"\1*******", message)
 
-def format_date(d):
-    if not d:
-        return ''
+    return mail.mail_admins_plain(subject, message, fail_silently, connection)
 
-    if d < datetime.now():
-        return timesince(d) + ' ago'
-    else:
-        return 'in ' + timeuntil(d)
+class CleanseSettingsMiddleware(object):
+    def __init__(self):
+        '''
+        Prevent django from printing sensitive information (paswords, tokens
+        etc), when handling server errors (for both DEBUG and no-DEBUG
+        deployments.
+        '''
+        debug.HIDDEN_SETTINGS = re.compile(settings.HIDDEN_SETTINGS)
+
+        mail.mail_admins_plain = mail.mail_admins
+        mail.mail_admins = mail_admins_safe
+
+        raise MiddlewareNotUsed('cleanse settings')

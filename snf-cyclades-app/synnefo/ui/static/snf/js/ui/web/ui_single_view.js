@@ -226,7 +226,6 @@
         
         // vm specific event handlers
         set_vm_handlers: function(vm) {
-            var el = this.vm(vm);
         },
         
         // handle selected vm
@@ -265,8 +264,14 @@
             this.menu.find(".server-name").remove();
 
             _.each(storage.vms.models, function(vm, index) {
-                this.menu.append('<div class="server-name" id="'+this.link_id_tpl + index +'">' + 
-                               util.truncate(vm.escape("name"),16)+'</div>');
+                var el = $('<div class="server-name" id="'+this.link_id_tpl + index +'">' + 
+                               util.truncate(vm.escape("name"),16)+'</div>')
+                this.menu.append(el);
+
+                vm.bind("change:name", function(){
+                  el.html(util.truncate(vm.escape("name"), 16));
+                })
+
                 if (this.current_vm_instance && vm.id == this.current_vm_instance.id) {
                     this.current_vm = index;
                 }
@@ -292,6 +297,27 @@
             fix_v6_addresses();
         },
 
+        update_status_message: function(vm) {
+            var el = this.vm(vm);
+            var message = vm.get_status_message();
+            if (message) {
+                // update bulding progress
+                el.find("div.machine-ips").hide();
+                el.find("div.build-progress").show();
+                el.find("div.build-progress .message").text(message);
+                if (vm.in_error_state()) {
+                    el.find("div.build-progress .btn").show();
+                } else {
+                    el.find("div.build-progress .btn").hide();
+                }
+            } else {
+                // hide building progress
+                el.find("div.machine-ips").show()
+                el.find("div.build-progress").hide();
+                el.find("div.build-progress .btn").hide();
+            }
+        },
+
         // update vm details
         update_details: function(vm) {
             var el = this.vm(vm);
@@ -315,17 +341,7 @@
                 el.addClass("connectable");
             }
 
-            if (vm.get('status') == 'BUILD') {
-                // update bulding progress
-                el.find("span.build-progress").show().text(vm.get("progress_message"));
-            } else {
-                // hide building progress
-                el.find("span.build-progress").hide();
-            }
-
-            if (vm.state() == "DESTROY") {
-                el.find("span.build-progress").show().text("Terminating...");
-            }
+            this.update_status_message(vm);
 
             icon_state = vm.is_active() ? "on" : "off";
             set_machine_os_image(el, "single", icon_state, this.get_vm_icon_os(vm));

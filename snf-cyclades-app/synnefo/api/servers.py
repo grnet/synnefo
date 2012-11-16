@@ -64,6 +64,7 @@ urlpatterns = patterns('synnefo.api.servers',
     (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
     (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
     (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
+    (r'^/(\d+)/diagnostics(?:.json)?$', 'get_server_diagnostics'),
 )
 
 
@@ -130,15 +131,50 @@ def vm_to_dict(vm, detail=False):
         d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.imageid
+        d['suspended'] = vm.suspended
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
             d['metadata'] = {'values': metadata}
 
-        attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+        attachments = [nic_to_dict(nic) for nic in vm.nics.order_by('index')]
         if attachments:
             d['attachments'] = {'values': attachments}
+
+        # include the latest vm diagnostic, if set
+        diagnostic = vm.get_last_diagnostic()
+        if diagnostic:
+            d['diagnostics'] = diagnostics_to_dict([diagnostic])
+
     return d
+
+
+def diagnostics_to_dict(diagnostics):
+    """
+    Extract api data from diagnostics QuerySet.
+    """
+    entries = list()
+
+    for diagnostic in diagnostics:
+        # format source date if set
+        formatted_source_date = None
+        if diagnostic.source_date:
+            formatted_source_date = util.isoformat(diagnostic.source_date)
+
+        entry = {
+            'source': diagnostic.source,
+            'created': util.isoformat(diagnostic.created),
+            'message': diagnostic.message,
+            'details': diagnostic.details,
+            'level': diagnostic.level,
+        }
+
+        if formatted_source_date:
+            entry['source_date'] = formatted_source_date
+
+        entries.append(entry)
+
+    return entries
 
 
 def render_server(request, server, status=200):
@@ -149,6 +185,24 @@ def render_server(request, server, status=200):
     else:
         data = json.dumps({'server': server})
     return HttpResponse(data, status=status)
+
+
+def render_diagnostics(request, diagnostics_dict, status=200):
+    """
+    Render diagnostics dictionary to json response.
+    """
+    return HttpResponse(json.dumps(diagnostics_dict), status=status)
+
+
+@util.api_method('GET')
+def get_server_diagnostics(request, server_id):
+    """
+    Virtual machine diagnostics api view.
+    """
+    log.debug('server_diagnostics %s', server_id)
+    vm = util.get_vm(server_id, request.user_uniq)
+    diagnostics = diagnostics_to_dict(vm.diagnostics.all())
+    return render_diagnostics(request, diagnostics)
 
 
 @util.api_method('GET')
@@ -164,6 +218,7 @@ def list_servers(request, detail=False):
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
 
     since = util.isoparse(request.GET.get('changes-since'))
+
     if since:
         user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:
@@ -171,7 +226,8 @@ def list_servers(request, detail=False):
     else:
         user_vms = user_vms.filter(deleted=False)
 
-    servers = [vm_to_dict(server, detail) for server in user_vms]
+    servers = [vm_to_dict(server, detail)\
+               for server in user_vms.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_servers.xml', {
@@ -242,7 +298,8 @@ def create_server(request):
         image['metadata'] = dict((key.upper(), val) \
                                  for key, val in properties.items())
 
-        flavor = util.get_flavor(flavor_id)
+        # Ensure that request if for active flavor
+        flavor = util.get_flavor(flavor_id, include_deleted=False)
         password = util.random_password()
 
         count = VirtualMachine.objects.filter(userid=request.user_uniq,
@@ -261,7 +318,7 @@ def create_server(request):
 
         if backend is None:
             log.error("No available backends for VM with flavor %s", flavor)
-            raise Exception("No available backends")
+            raise faults.ServiceUnavailable("No available backends")
     except:
         transaction.rollback()
         raise
@@ -273,8 +330,8 @@ def create_server(request):
             (network, address) = util.allocate_public_address(backend)
             if address is None:
                 log.error("Public networks of backend %s are full", backend)
-                raise faults.OverLimit("Can not allocate IP for new machine."
-                                       " Public networks are full.")
+                msg = "Failed to allocate public IP for new VM"
+                raise faults.ServiceUnavailable(msg)
             nic = {'ip': address, 'network': network.backend_id}
         else:
             network = choice(list(util.backend_public_networks(backend)))
@@ -293,7 +350,8 @@ def create_server(request):
             backend=backend,
             userid=request.user_uniq,
             imageid=image_id,
-            flavor=flavor)
+            flavor=flavor,
+            action="CREATE")
 
         try:
             jobID = create_instance(vm, nic, flavor, image, password, personality)
@@ -363,7 +421,8 @@ def update_server_name(request, server_id):
     except (TypeError, KeyError):
         raise faults.BadRequest("Malformed request")
 
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_suspended=True)
     vm.name = name
     vm.save()
 
@@ -383,7 +442,9 @@ def delete_server(request, server_id):
     #                       overLimit (413)
 
     log.info('delete_server %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_suspended=True)
+    start_action(vm, 'DESTROY')
     delete_instance(vm)
     return HttpResponse(status=204)
 
@@ -392,20 +453,62 @@ def delete_server(request, server_id):
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq)
+
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")
 
-    key = req.keys()[0]
-    val = req[key]
+    # Do not allow any action on deleted or suspended VMs
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_deleted=True, non_suspended=True)
 
     try:
+        key = req.keys()[0]
+        if key != 'console':
+            start_action(vm, key_to_action(key))
+        val = req[key]
         assert isinstance(val, dict)
-        return server_actions[key](request, vm, req[key])
+        return server_actions[key](request, vm, val)
     except KeyError:
         raise faults.BadRequest("Unknown action")
     except AssertionError:
         raise faults.BadRequest("Invalid argument")
+
+
+def key_to_action(key):
+    """Map HTTP request key to a VM Action"""
+    if key == "shutdown":
+        return "STOP"
+    if key == "delete":
+        return "DESTROY"
+    if key == "console":
+        return None
+    else:
+        return key.upper()
+
+
+def start_action(vm, action):
+    log.debug("Applying action %s to VM %s", action, vm)
+    if not action:
+        return
+
+    if not action in [x[0] for x in VirtualMachine.ACTIONS]:
+        raise faults.ServiceUnavailable("Action %s not supported" % action)
+
+    # No actions to deleted VMs
+    if vm.deleted:
+        raise VirtualMachine.DeletedError
+
+    # No actions to machines being built. They may be destroyed, however.
+    if vm.operstate == 'BUILD' and action != 'DESTROY':
+        raise VirtualMachine.BuildingError
+
+    vm.action = action
+    vm.backendjobid = None
+    vm.backendopcode = None
+    vm.backendjobstatus = None
+    vm.backendlogmsg = None
+
+    vm.save()
 
 
 @util.api_method('GET')
@@ -481,7 +584,7 @@ def update_metadata(request, server_id):
 
     req = util.get_request_dict(request)
     log.info('update_server_metadata %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
         metadata = req['metadata']
         assert isinstance(metadata, dict)
@@ -530,7 +633,7 @@ def create_metadata_item(request, server_id, key):
 
     req = util.get_request_dict(request)
     log.info('create_server_metadata_item %s %s %s', server_id, key, req)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -564,7 +667,7 @@ def delete_metadata_item(request, server_id, key):
     #                       overLimit (413),
 
     log.info('delete_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()

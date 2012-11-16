@@ -34,9 +34,13 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-
+from synnefo.management.common import (format_vm_state, get_backend,
+                                       filter_results)
 from synnefo.api.util import get_image
-from synnefo.db.models import VirtualMachine, Backend
+from synnefo.db.models import VirtualMachine
+
+
+FIELDS = VirtualMachine._meta.get_all_field_names()
 
 
 class Command(BaseCommand):
@@ -48,16 +52,30 @@ class Command(BaseCommand):
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
+        make_option('--suspended',
+            action='store_true',
+            dest='suspended',
+            default=False,
+            help="List only suspended servers"),
         make_option('--build',
             action='store_true',
             dest='build',
             default=False,
             help="List only servers in the building state"),
-        make_option('--non-deleted', action='store_true', dest='non_deleted',
-                    default=False,
-                    help="List only non-deleted servers"),
-        make_option('--backend_id', dest='backend_id',
-                    help="List only servers of the specified backend")
+        make_option('--deleted',
+            action='store_true',
+            dest='deleted',
+            default=False,
+            help="Include deleted servers"),
+        make_option('--backend-id',
+            dest='backend_id',
+            help="List only servers of the specified backend"),
+        make_option('--filter-by',
+            dest='filter_by',
+            help="Filter results. Comma seperated list of key `cond` val pairs"
+                 " that displayed entries must satisfy. e.g."
+                 " --filter-by \"operstate=STARTED,id>=22\"."
+                 " Available keys are: %s" % ", ".join(FIELDS))
         )
 
     def handle(self, *args, **options):
@@ -65,21 +83,25 @@ class Command(BaseCommand):
             raise CommandError("Command doesn't accept any arguments")
 
         if options['backend_id']:
-            try:
-                servers = Backend.objects.get(id=options['backend_id'])\
-                                         .virtual_machines
-            except Backend.DoesNotExist:
-                raise CommandError("Backend not found in DB")
+            backend = get_backend(options['backend_id'])
+            servers = backend.virtual_machines
         else:
             servers = VirtualMachine.objects
 
-        if options['non_deleted']:
-            servers = servers.filter(deleted=False)
-        else:
+        if options['deleted']:
             servers = servers.all()
+        else:
+            servers = servers.filter(deleted=False)
+
+        if options['suspended']:
+            servers = servers.filter(suspended=True)
 
         if options['build']:
             servers = servers.filter(operstate='BUILD')
+
+        filter_by = options['filter_by']
+        if filter_by:
+            servers = filter_results(servers, filter_by)
 
         labels = ('id', 'name', 'owner', 'flavor', 'image', 'state',
                   'backend')
@@ -91,6 +113,8 @@ class Command(BaseCommand):
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
+        cache = ImageCache()
+
         for server in servers.order_by('id'):
             id = str(server.id)
             try:
@@ -99,10 +123,12 @@ class Command(BaseCommand):
                 name = server.name
             flavor = server.flavor.name
             try:
-                image = get_image(server.imageid, server.userid)['name']
+                image = cache.get_image(server.imageid, server.userid)['name']
             except:
                 image = server.imageid
-            fields = (id, name, server.userid, flavor, image, server.operstate,
+
+            state = format_vm_state(server)
+            fields = (id, name, server.userid, flavor, image, state,
                       str(server.backend))
 
             if options['csv']:
@@ -111,3 +137,13 @@ class Command(BaseCommand):
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
             self.stdout.write(line.encode('utf8') + '\n')
+
+
+class ImageCache(object):
+    def __init__(self):
+        self.images = {}
+
+    def get_image(self, imageid, userid):
+        if not imageid in self.images:
+            self.images[imageid] = get_image(imageid, userid)
+        return self.images[imageid]

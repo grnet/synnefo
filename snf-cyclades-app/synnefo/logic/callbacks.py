@@ -39,9 +39,7 @@ from synnefo.logic import utils, backend
 
 from synnefo.lib.utils import merge_time
 
-
-log = logging.getLogger()
-
+log = logging.getLogger(__name__)
 
 def handle_message_delivery(func):
     """ Generic decorator for handling messages.
@@ -58,13 +56,14 @@ def handle_message_delivery(func):
             client.basic_ack(message)
         except ValueError as e:
             log.error("Incoming message not in JSON format %s: %s", e, message)
-            client.basic_ack(message)
+            client.basic_nack(message)
         except KeyError as e:
             log.error("Malformed incoming JSON, missing attribute %s: %s",
                       e, message)
-            client.basic_ack(message)
+            client.basic_nack(message)
         except Exception as e:
             log.exception("Unexpected error: %s, msg: %s", e, msg)
+            client.basic_reject(message)
 
     return wrapper
 
@@ -78,7 +77,7 @@ def instance_from_msg(func):
     def wrapper(msg):
         try:
             vm_id = utils.id_from_instance_name(msg["instance"])
-            vm = VirtualMachine.objects.get(id=vm_id)
+            vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
             func(vm, msg)
         except VirtualMachine.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
@@ -196,9 +195,17 @@ def update_network(network, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    backend.process_network_status(network, event_time,
-                                   msg['jobId'], msg['operation'],
-                                   msg['status'], msg['logmsg'])
+    opcode = msg['operation']
+    status = msg['status']
+    jobid = msg['jobId']
+
+    if opcode == "OP_NETWORK_SET_PARAMS":
+        backend.process_network_modify(network, event_time, jobid, opcode,
+                                       status, msg['add_reserved_ips'],
+                                       msg['remove_reserved_ips'])
+    else:
+        backend.process_network_status(network, event_time, jobid, opcode,
+                                       status, msg['logmsg'])
 
     log.debug("Done processing ganeti-network-status msg for network %s.",
               msg['network'])
@@ -207,14 +214,60 @@ def update_network(network, msg, event_time):
 @instance_from_msg
 @if_update_required
 def update_build_progress(vm, msg, event_time):
-    """Process a create progress message"""
+    """
+    Process a create progress message. Update build progress, or create
+    appropriate diagnostic entries for the virtual machine instance.
+    """
     log.debug("Processing ganeti-create-progress msg: %s", msg)
 
-    if msg['type'] != "ganeti-create-progress":
+    if msg['type'] not in ('image-copy-progress', 'image-error', 'image-info',
+                           'image-warning', 'image-helper'):
         log.error("Message is of unknown type %s", msg['type'])
         return
 
-    backend.process_create_progress(vm, event_time, msg['rprogress'], None)
+    if msg['type'] == 'image-copy-progress':
+        backend.process_create_progress(vm, event_time, msg['progress'])
+        # we do not add diagnostic messages for copy-progress messages
+        return
+
+    # default diagnostic fields
+    source = msg['type']
+    level = 'DEBUG'
+    message = msg.get('messages', None)
+    if isinstance(message, list):
+        message = " ".join(message)
+
+    details = msg.get('stderr', None)
+
+    if msg['type'] == 'image-helper':
+        # for helper task events join subtype to diagnostic source and
+        # set task name as diagnostic message
+        if msg.get('subtype', None) and msg.get('subtype') in ['task-start',
+              'task-end']:
+            message = msg.get('task', message)
+            source = "%s-%s" % (source, msg.get('subtype'))
+
+        if msg.get('subtype', None) == 'warning':
+            level = 'WARNING'
+
+        if msg.get('subtype', None) == 'error':
+            level = 'ERROR'
+
+        if msg.get('subtype', None) == 'info':
+            level = 'INFO'
+
+    if msg['type'] == 'image-error':
+        level = 'ERROR'
+
+    if msg['type'] == 'image-warning':
+        level = 'WARNING'
+
+    if not message.strip():
+        message = " ".join(source.split("-")).capitalize()
+
+    # create the diagnostic entry
+    backend.create_instance_diagnostic(vm, message, source, level, event_time,
+        details=details)
 
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])

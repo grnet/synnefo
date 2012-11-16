@@ -62,15 +62,15 @@ import setproctitle
 
 from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
+from synnefo.logic import queues
 
 import logging
-log = logging.getLogger()
 
-# Queue names
-QUEUES = []
+log = logging.getLogger("dispatcher")
+log_amqp = logging.getLogger("amqp")
+log_logic = logging.getLogger("synnefo.logic")
 
-# Queue bindings to exchanges
-BINDINGS = []
+LOGGERS = [log, log_amqp, log_logic]
 
 
 class Dispatcher:
@@ -82,6 +82,7 @@ class Dispatcher:
 
     def wait(self):
         log.info("Waiting for messages..")
+        timeout = 600
         while True:
             try:
                 # Close the Django DB connection before processing
@@ -90,7 +91,12 @@ class Dispatcher:
                 # the dispatcher to recover from broken connections
                 # gracefully.
                 close_connection()
-                self.client.basic_wait()
+                msg = self.client.basic_wait(timeout=timeout)
+                if not msg:
+                    log.warning("Idle connection for %d seconds. Will connect"
+                                " to a different host. Verify that"
+                                " snf-ganeti-eventd is running!!", timeout)
+                    self.client.reconnect()
             except SystemExit:
                 break
             except Exception as e:
@@ -100,7 +106,6 @@ class Dispatcher:
         self.client.close()
 
     def _init(self):
-        global QUEUES, BINDINGS
         log.info("Initializing")
 
         self.client = AMQPClient()
@@ -108,78 +113,48 @@ class Dispatcher:
         self.client.connect()
 
         # Declare queues and exchanges
-        for exchange in settings.EXCHANGES:
-            self.client.exchange_declare(exchange=exchange,
-                                         type="topic")
+        exchange = settings.EXCHANGE_GANETI
+        exchange_dl = queues.convert_exchange_to_dead(exchange)
+        self.client.exchange_declare(exchange=exchange,
+                                     type="topic")
+        self.client.exchange_declare(exchange=exchange_dl,
+                                     type="topic")
 
-        for queue in QUEUES:
+        for queue in queues.QUEUES:
             # Queues are mirrored to all RabbitMQ brokers
-            self.client.queue_declare(queue=queue, mirrored=True)
-
-        bindings = BINDINGS
+            self.client.queue_declare(queue=queue, mirrored=True,
+                                      dead_letter_exchange=exchange_dl)
+            # Declare the corresponding dead-letter queue
+            queue_dl = queues.convert_queue_to_dead(queue)
+            self.client.queue_declare(queue=queue_dl, mirrored=True)
 
         # Bind queues to handler methods
-        for binding in bindings:
+        for binding in queues.BINDINGS:
             try:
                 callback = getattr(callbacks, binding[3])
             except AttributeError:
                 log.error("Cannot find callback %s", binding[3])
                 raise SystemExit(1)
+            queue = binding[0]
+            exchange = binding[1]
+            routing_key = binding[2]
 
-            self.client.queue_bind(queue=binding[0], exchange=binding[1],
-                                   routing_key=binding[2])
+            self.client.queue_bind(queue=queue, exchange=exchange,
+                                   routing_key=routing_key)
 
             self.client.basic_consume(queue=binding[0],
-                                                        callback=callback)
+                                      callback=callback,
+                                      prefetch_count=5)
+
+            queue_dl = queues.convert_queue_to_dead(queue)
+            exchange_dl = queues.convert_exchange_to_dead(exchange)
+            # Bind the corresponding dead-letter queue
+            self.client.queue_bind(queue=queue_dl,
+                                   exchange=exchange_dl,
+                                   routing_key=routing_key)
 
             log.debug("Binding %s(%s) to queue %s with handler %s",
-                      binding[1], binding[2], binding[0], binding[3])
-
-
-def _init_queues():
-    global QUEUES, BINDINGS
-
-    # Queue declarations
-    prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
-
-    QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
-    QUEUE_GANETI_EVENTS_NETWORK = "%s-events-network" % prefix
-    QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
-    QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
-    QUEUE_RECONC = "%s-reconciliation" % prefix
-    if settings.DEBUG is True:
-        QUEUE_DEBUG = "%s-debug" % prefix  # Debug queue, retrieves all messages
-
-    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NETWORK, QUEUE_GANETI_EVENTS_NET, QUEUE_RECONC,
-              QUEUE_GANETI_BUILD_PROGR)
-
-    # notifications of type "ganeti-op-status"
-    DB_HANDLER_KEY_OP = 'ganeti.%s.event.op' % prefix
-    # notifications of type "ganeti-network-status"
-    DB_HANDLER_KEY_NETWORK = 'ganeti.%s.event.network' % prefix
-    # notifications of type "ganeti-net-status"
-    DB_HANDLER_KEY_NET = 'ganeti.%s.event.net' % prefix
-    # notifications of type "ganeti-create-progress"
-    BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' % prefix
-    # reconciliation
-    RECONC_HANDLER = 'reconciliation.%s.*' % prefix
-
-    BINDINGS = [
-    # Queue                   # Exchange                # RouteKey              # Handler
-    (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
-    (QUEUE_GANETI_EVENTS_NETWORK, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NETWORK, 'update_network'),
-    (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
-    (QUEUE_GANETI_BUILD_PROGR, settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
-    ]
-
-    if settings.DEBUG is True:
-        BINDINGS += [
-            # Queue       # Exchange          # RouteKey  # Handler
-            (QUEUE_DEBUG, settings.EXCHANGE_GANETI, '#',  'dummy_proc'),
-            (QUEUE_DEBUG, settings.EXCHANGE_CRON,   '#',  'dummy_proc'),
-            (QUEUE_DEBUG, settings.EXCHANGE_API,    '#',  'dummy_proc'),
-        ]
-        QUEUES += (QUEUE_DEBUG,)
+                      exchange, routing_key, queue, binding[3])
 
 
 def parse_arguments(args):
@@ -212,16 +187,15 @@ def purge_queues():
     """
         Delete declared queues from RabbitMQ. Use with care!
     """
-    global QUEUES, BINDINGS
     client = AMQPClient(max_retries=120)
     client.connect()
 
-    print "Queues to be deleted: ", QUEUES
+    print "Queues to be deleted: ", queues.QUEUES
 
     if not get_user_confirmation():
         return
 
-    for queue in QUEUES:
+    for queue in queues.QUEUES:
         result = client.queue_delete(queue=queue)
         print "Deleting queue %s. Result: %s" % (queue, result)
 
@@ -230,31 +204,29 @@ def purge_queues():
 
 def purge_exchanges():
     """Delete declared exchanges from RabbitMQ, after removing all queues"""
-    global QUEUES, BINDINGS
     purge_queues()
 
     client = AMQPClient()
     client.connect()
 
-    print "Exchanges to be deleted: ", settings.EXCHANGES
+    exchanges = queues.EXCHANGES
+    print "Exchanges to be deleted: ", exchanges
 
     if not get_user_confirmation():
         return
 
-    for exchange in settings.EXCHANGES:
-        result = client.exchange_delete(exchange=exchange)
-        print "Deleting exchange %s. Result: %s" % (exchange, result)
-
+    for exch in exchanges:
+        result = client.exchange_delete(exchange=exch)
+        print "Deleting exchange %s. Result: %s" % (exch, result)
     client.close()
 
 
 def drain_queue(queue):
     """Strip a (declared) queue from all outstanding messages"""
-    global QUEUES, BINDINGS
     if not queue:
         return
 
-    if not queue in QUEUES:
+    if not queue in queues.QUEUES:
         print "Queue %s not configured" % queue
         return
 
@@ -306,17 +278,17 @@ def setup_logging(opts):
     import logging
     formatter = logging.Formatter("%(asctime)s %(name)s %(module)s [%(levelname)s] %(message)s")
     if opts.debug:
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
-        log.addHandler(stream_handler)
+        log_handler = logging.StreamHandler()
+        log_handler.setFormatter(formatter)
     else:
         import logging.handlers
         log_file = "/var/log/synnefo/dispatcher.log"
-        file_handler = logging.handlers.WatchedFileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        log.addHandler(file_handler)
+        log_handler = logging.handlers.WatchedFileHandler(log_file)
+        log_handler.setFormatter(formatter)
 
-    log.setLevel(logging.DEBUG)
+    for l in LOGGERS:
+        l.addHandler(log_handler)
+        l.setLevel(logging.DEBUG)
 
 
 def main():
@@ -328,9 +300,6 @@ def main():
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])
     setup_logging(opts)
-
-    # Init the global variables containing the queues
-    _init_queues()
 
     # Special case for the clean up queues action
     if opts.purge_queues:

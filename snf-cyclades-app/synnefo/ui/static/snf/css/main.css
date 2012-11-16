@@ -315,7 +315,7 @@ div.css-panes {
 }
 
 #console-header {
-    height: 67px;
+    height: 79px;
     margin-bottom:15px;
     background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
@@ -827,6 +827,30 @@ div.image-container {
     vertical-align: top;
 }
 
+.icon .build-progress {
+    margin-left: -3px;
+}
+
+#machinesview .build-progress .message {
+  padding: 3px;
+}
+
+#machinesview .build-progress .btn:hover {
+  background-color: #387693;
+}
+
+#machinesview .column1 .build-progress .btn {
+    margin-top: 5px;
+    display: inline-block;
+}
+
+#machinesview .build-progress .btn {
+    cursor: pointer;
+    background-color: #5e1616;
+    color: #FFF;
+    padding: 3px;
+}
+
 .ip-version-label {
     font-size: 0.8em;
     padding: 0.3em;
@@ -1106,9 +1130,15 @@ div.connect-border:hover {
     font-size: 75%;
 }
 
+.icon div.indicators {
+    float: right;
+}
+
 div.indicators {
     margin-right: 2px !important;
+    cursor: pointer;
 }
+
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #63cf1c;
     width:10px;
@@ -2549,6 +2579,13 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     margin-left: -15px;
 }
 
+.createbutton.disabled, #networkscreate.disabled {
+  background-color: #888 !important;
+  border-left-color: #aaa !important;
+  cursor: help !important;
+  color: #ccc !important;
+}
+
 #networkscreate:hover {
     background-color: #FF9955;
 }
@@ -3762,18 +3799,18 @@ div.single div.column3 div.server-name:hover {
 
 /* console css */
 .console-header-logo {
-    padding-top: 17px;
+    padding-top: 16px;
     margin-left: 30px;
     position: fixed;
 }
 
 #console-header div.help-text {
-    font-size: 75%;
+    font-size: 70%;
     font-weight:bold;
     color:#FFFFFF;
-    float:left;
     position: absolute;
-    margin: 45px 0 0 2px;
+    height: 20px;
+    top: 79px;
 }
 
 div.console-container {
@@ -3788,8 +3825,7 @@ div.console-container {
 .console-info {
     font-size:80%;
     color: white;
-    float:left;
-    position:relative;
+    position:absolute;
     margin: 15px 0 0 480px;
 }
 
@@ -4518,7 +4554,14 @@ table.list-machines .wave {
     color: #387693;
 }
 
-.overlay .overlay-content .description.subinfo {
+.overlay .diagnostics-list {
+    height: 400px;
+    overflow: scroll;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.overlay .overlay-content .description.subinfo, .overlay .extra-info {
     margin-bottom:0;
     border-bottom: none;
     padding-bottom:0;
@@ -4533,6 +4576,11 @@ table.list-machines .wave {
     color: #800000;
 }
 
+.overlay .overlay-content .description.noborder {
+  margin-bottom:0;
+  border:0;
+}
+
 .overlay .overlay-content .description {
     color: #444;
     border-bottom: 1px solid #64a6c4;
@@ -4541,6 +4589,7 @@ table.list-machines .wave {
     font-size: 0.9em;
     line-height: 1.6em;
 }
+
 .overlay .overlay-content .empty-message {
     margin-bottom: 5px;
 }
@@ -4702,6 +4751,60 @@ table.list-machines .wave {
     vertical-align: middle;
     margin-left: 10px;
     margin-bottom: 2px;
+}
+
+.overlay-info .msg-log-entry .src {
+    color: #4085A5;
+    float: right;
+    font-size: 0.9em;
+}
+
+.overlay-info .msg-log-entry .date {
+    font-style: italic;
+}
+
+.overlay-info .msg-log-entry pre {
+    color: #333;
+    width: 100%;
+    display: none;
+    margin: 10px 0;
+}
+
+.msg-log-entry.warning {
+    color: #E57F01;
+}
+
+.overlay-info .msg-log-entry.with-details .src {
+    margin-right: 15px;
+}
+
+.overlay-info .msg-log-entry.with-details {
+    cursor: pointer;
+}
+
+.overlay-info .msg-log-entry.with-details {
+    background-image: url("../images/plus-8-dark.png");
+    background-repeat: no-repeat;
+    background-position: 99% 9px;
+}
+
+.overlay-info .msg-log-entry.with-details.expanded {
+    background-image: url("../images/minus-8-dark.png");
+}
+
+.overlay-info .msg-log-entry .msg {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.overlay-info .msg-log-entry {
+    border-bottom: 1px solid #aaa;
+    padding: 5px;
+}
+
+.overlay-info .description.subinfo {
+    border: none !important;
+    padding-top: 0 !important;
 }
 
 .overlay-info .content {
@@ -5522,6 +5625,23 @@ table.list-machines .wave {
     padding-right: 15px;
 }
 
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title .custom {
+    display: inline-block;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title {
+    background-color: #999 !important;
+    border-color: #888 !important;
+}
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail .custom {
+    float: right;
+    display: none;
+    font-size: 0.8em;
+    margin-left: 10px;
+    color: #DDD;
+    margin-top: 2px;
+}
+
 .create-vm .select-image.wide .images-info-cont .extra-details .image-detail {
     padding: 0px;
     background-color: transparent;
@@ -5903,12 +6023,22 @@ table.list-machines .wave {
 }
 
 .create-vm .personalize-cont .confirm-params {
-    max-height: 190px;
+    max-height: 160px;
+    margin-right: 10px;
 }
 
 .create-vm .personalize-cont,
 .create-vm .confirm-cont {
     height: 250px;
+}
+
+.create-vm .image-warning {
+  display: none;
+  background-color: #987249;
+  color: #fff;
+  padding: 10px 15px;
+  font-size: 0.9em;
+  border-bottom: 1px solid #AAA;
 }
 
 .create-vm .create-step-cont .rename input.rename-field {
@@ -6847,4 +6977,35 @@ input.has-errors {
     background-color: transparent;
     border: none;
     color: #800;
+}
+
+.single .suspended-notice {
+  right: 180px;
+  top: 0px;
+  padding: 7px;
+  padding-bottom: 6px;
+}
+
+.icon .suspended-notice {
+  right: 192px;
+  top: 50px;
+}
+
+.suspended-notice {
+  display: inline-block;
+  padding: 4px;
+  background-color: #8f1915;
+  cursor: pointer;
+  position: absolute;
+  color: #fff;
+  font-size: 0.6em;
+  display: none;
+}
+
+.suspended .suspended-notice {
+  display: block;
+}
+
+.suspended .action-indicator {
+  display: none !important;
 }

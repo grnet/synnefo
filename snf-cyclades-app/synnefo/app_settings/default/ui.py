@@ -35,6 +35,10 @@ UI_UPDATE_INTERVAL_MAX = UI_UPDATE_INTERVAL * 3
 # Fast update interval
 UI_UPDATE_INTERVAL_FAST = UI_UPDATE_INTERVAL / 2
 
+# Miliseconds to remove from the previous server response time used in
+# consecutive API calls (aligning changes-since attribute).
+UI_CHANGES_SINCE_ALIGNMENT = 0
+
 # List of emails used for sending the feedback messages to (following the ADMINS format)
 FEEDBACK_CONTACTS = (
     # ('Contact Name', 'contact_email@domain.com'),
@@ -79,7 +83,7 @@ VM_CREATE_SUGGESTED_FLAVORS = {
 
 # A list of metadata keys to clone from image
 # to the virtual machine on its creation.
-VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain"]
+VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users", "remote"]
 
 # A list of suggested vm roles to display to user on create wizard
 VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
@@ -88,12 +92,41 @@ VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "W
 # vms. {0} gets replaced by the image OS value
 VM_CREATE_NAME_TPL = "My {0} server"
 
+# Template to use to build vm hostname
+UI_VM_HOSTNAME_FORMAT = 'snf-%(id)s.vm.okeanos.grnet.gr'
+
 # Name/description metadata for the available flavor disk templates
 # Dict key is the disk_template value as stored in database
 UI_FLAVORS_DISK_TEMPLATES_INFO = {
     'drbd': {'name': 'DRBD',
              'description': 'DRBD storage.'},
 }
+
+# Override default connect prompt messages. The setting gets appended to the
+# ui default values so you only need to modify parameters you need to alter.
+#
+# Indicative format:
+# {
+#    '<browser os1>': {
+#        '<vm os family1>': ['top message....', 'bottom message'],
+#        '<vm os family 2>': ['top message....', 'bottom message'],
+#        'ssh_message': 'ssh %(user)s@%(hostname)s'
+# }
+#
+# you may use the following parameters to format ssh_message:
+#
+# * server_id: the database pk of the vm
+# * ip_address: the ipv4 address of the public vm nic
+# * hostname: vm hostname
+# * user: vm username
+#
+# you may assign a callable python object to the ssh_message, if so the above
+# parameters get passed as arguments to the provided object.
+UI_CONNECT_PROMPT_MESSAGES = {}
+
+# extend rdp file content. May be a string with format parameters similar to
+# those used in UI_CONNECT_PROMPT_MESSAGES `ssh_message` or a callable object.
+UI_EXTRA_RDP_CONTENT = None
 
 
 #######################
@@ -137,13 +170,23 @@ UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'PRIVATE_MAC_FILTERED': 'mac-filtering'}
 # network with dhcp enabled
 UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.0/24', '192.168.0.0/24']
 
+# UI will use this setting to find an available network subnet if user requests
+# automatic subnet selection.
+UI_AUTOMATIC_NETWORK_RANGE_FORMAT = "192.168.%d.0/24"
+
 # Whether to display already connected vm's to the network connect overlay
 UI_NETWORK_ALLOW_DUPLICATE_VM_NICS = False
 
 # Whether to display destroy action on private networks that contain vms. If
 # set to True, destroy action will only get displayed if user disconnect all
 # virtual machines from the network.
-UI_NETWORK_STRICT_DESTROY = False
+UI_NETWORK_STRICT_DESTROY = True
+
+# Whether or not to group public networks nics in a single network view
+UI_GROUP_PUBLIC_NETWORKS = True
+
+# The name of the grouped network view
+UI_GROUPED_PUBLIC_NETWORK_NAME = 'Internet'
 
 
 ###############

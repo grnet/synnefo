@@ -39,7 +39,7 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client)
+                               pooled_rapi_client, VirtualMachineDiagnostic)
 from synnefo.logic import utils
 
 from logging import getLogger
@@ -77,6 +77,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
+
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
@@ -168,8 +169,7 @@ def release_instance_nics(vm):
 @transaction.commit_on_success
 def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     if status not in [x[0] for x in BACKEND_STATUSES]:
-        return
-        #raise Network.InvalidBackendMsgError(opcode, status)
+        raise Network.InvalidBackendMsgError(opcode, status)
 
     back_network.backendjobid = jobid
     back_network.backendjobstatus = status
@@ -198,15 +198,39 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 
 
 @transaction.commit_on_success
-def process_create_progress(vm, etime, rprogress, wprogress):
+def process_network_modify(back_network, etime, jobid, opcode, status,
+                           add_reserved_ips, remove_reserved_ips):
+    assert (opcode == "OP_NETWORK_SET_PARAMS")
+    if status not in [x[0] for x in BACKEND_STATUSES]:
+        raise Network.InvalidBackendMsgError(opcode, status)
 
-    # XXX: This only uses the read progress for now.
-    #      Explore whether it would make sense to use the value of wprogress
-    #      somewhere.
-    percentage = int(rprogress)
+    back_network.backendjobid = jobid
+    back_network.backendjobstatus = status
+    back_network.opcode = opcode
+
+    if add_reserved_ips or remove_reserved_ips:
+        net = back_network.network
+        pool = net.get_pool()
+        if add_reserved_ips:
+            for ip in add_reserved_ips:
+                pool.reserve(ip, external=True)
+        if remove_reserved_ips:
+            for ip in remove_reserved_ips:
+                pool.put(ip, external=True)
+        pool.save()
+
+    if status == 'success':
+        back_network.backendtime = etime
+    back_network.save()
+
+
+@transaction.commit_on_success
+def process_create_progress(vm, etime, progress):
+
+    percentage = int(progress)
 
     # The percentage may exceed 100%, due to the way
-    # snf-progress-monitor tracks bytes read by image handling processes
+    # snf-image:copy-progress tracks bytes read by image handling processes
     percentage = 100 if percentage > 100 else percentage
     if percentage < 0:
         raise ValueError("Percentage cannot be negative")
@@ -231,42 +255,20 @@ def process_create_progress(vm, etime, rprogress, wprogress):
     vm.save()
 
 
-def start_action(vm, action):
-    """Update the state of a VM when a new action is initiated."""
-    log.debug("Applying action %s to VM %s", action, vm)
+def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
+    details=None):
+    """
+    Create virtual machine instance diagnostic entry.
 
-    if not action in [x[0] for x in VirtualMachine.ACTIONS]:
-        raise VirtualMachine.InvalidActionError(action)
-
-    # No actions to deleted and no actions beside destroy to suspended VMs
-    if vm.deleted:
-        raise VirtualMachine.DeletedError
-
-    # No actions to machines being built. They may be destroyed, however.
-    if vm.operstate == 'BUILD' and action != 'DESTROY':
-        raise VirtualMachine.BuildingError
-
-    vm.action = action
-    vm.backendjobid = None
-    vm.backendopcode = None
-    vm.backendjobstatus = None
-    vm.backendlogmsg = None
-
-    # Update the relevant flags if the VM is being suspended or destroyed.
-    # Do not set the deleted flag here, see ticket #721.
-    #
-    # The deleted flag is set asynchronously, when an OP_INSTANCE_REMOVE
-    # completes successfully. Hence, a server may be visible for some time
-    # after a DELETE /servers/id returns HTTP 204.
-    #
-    if action == "DESTROY":
-        # vm.deleted = True
-        pass
-    elif action == "SUSPEND":
-        vm.suspended = True
-    elif action == "START":
-        vm.suspended = False
-    vm.save()
+    :param vm: VirtualMachine instance to create diagnostic for.
+    :param message: Diagnostic message.
+    :param source: Diagnostic source identifier (e.g. image-helper).
+    :param level: Diagnostic level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+    :param etime: The time the message occured (if available).
+    :param details: Additional details or debug information.
+    """
+    VirtualMachineDiagnostic.objects.create_for_vm(vm, level, source=source,
+            source_date=etime, message=message, details=details)
 
 
 def create_instance(vm, public_nic, flavor, image, password, personality):
@@ -322,7 +324,7 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
     #
-    # kw['pnode']=rapi.GetNodes()[0]
+    #kw['pnode'] = rapi.GetNodes()[0]
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {
@@ -350,7 +352,6 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
 
 
 def delete_instance(vm):
-    start_action(vm, 'DESTROY')
     with pooled_rapi_client(vm) as client:
         return client.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
@@ -363,13 +364,11 @@ def reboot_instance(vm, reboot_type):
 
 
 def startup_instance(vm):
-    start_action(vm, 'START')
     with pooled_rapi_client(vm) as client:
         return client.StartupInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def shutdown_instance(vm):
-    start_action(vm, 'STOP')
     with pooled_rapi_client(vm) as client:
         return client.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
@@ -428,7 +427,11 @@ def _create_network(network, backend):
     tags = network.backend_tag
     if network.dhcp:
         tags.append('nfdhcpd')
-    tags = ','.join(tags)
+
+    if network.public:
+        conflicts_check = True
+    else:
+        conflicts_check = False
 
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)
@@ -445,6 +448,7 @@ def _create_network(network, backend):
                                     gateway6=network.gateway6,
                                     network_type=network_type,
                                     mac_prefix=mac_prefix,
+                                    conflicts_check=conflicts_check,
                                     tags=tags)
 
 
@@ -454,15 +458,21 @@ def connect_network(network, backend, depend_job=None, group=None):
 
     mode = "routed" if "ROUTED" in network.type else "bridged"
 
+    if network.public:
+        conflicts_check = True
+    else:
+        conflicts_check = False
+
     depend_jobs = [depend_job] if depend_job else []
     with pooled_rapi_client(backend) as client:
         if group:
             client.ConnectNetwork(network.backend_id, group, mode,
-                                  network.link, depend_jobs)
+                                  network.link, conflicts_check, depend_jobs)
         else:
             for group in client.GetGroups():
                 client.ConnectNetwork(network.backend_id, group, mode,
-                                      network.link, depend_jobs)
+                                      network.link, conflicts_check,
+                                      depend_jobs)
 
 
 def delete_network(network, backends=None, disconnect=True):

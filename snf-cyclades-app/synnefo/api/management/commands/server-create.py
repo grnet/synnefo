@@ -34,30 +34,43 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management import common
 
-from synnefo.db.models import VirtualMachine, Backend, Flavor
+from synnefo.db.models import VirtualMachine
 from synnefo.logic.backend import create_instance
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.api.util import get_image, allocate_public_address
-from synnefo.api.faults import ItemNotFound
+from synnefo.api.util import allocate_public_address
+
+HELP_MSG = """
+
+Create a new VM without authenticating the user or checking the resource
+limits of the user. Also the allocator can be bypassed by specifing a
+backend-id.
+"""
 
 
 class Command(BaseCommand):
-    help = "Create a new VM."
+    help = "Create a new VM." + HELP_MSG
 
     output_transaction = True
 
     option_list = BaseCommand.option_list + (
             make_option("--backend-id", dest="backend_id",
-                        help="ID of the Ganeti backend"),
+                        help="Unique identifier of the Ganeti backend."
+                             " Use snf-manage backend-list to find out"
+                             " available backends."),
             make_option("--name", dest="name",
-                        help="Name of the server."),
+                        help="An arbitrary string for naming the server"),
             make_option("--user-id", dest="user_id",
-                        help="ID of the Owner of the server."),
+                        help="Unique identifier of the owner of the server"),
             make_option("--image-id", dest="image_id",
-                        help="ID of the image."),
+                        help="Unique identifier of the image."
+                             " Use snf-manage image-list to find out"
+                             " available images."),
             make_option("--flavor-id", dest="flavor_id",
-                        help="ID of the flavor"),
+                        help="Unique identifier of the flavor"
+                             " Use snf-manage flavor-list to find out"
+                             " available flavors."),
             make_option("--password", dest="password",
                         help="Password for the new server")
         )
@@ -82,22 +95,11 @@ class Command(BaseCommand):
 
         # Get Flavor
         if flavor_id:
-            try:
-                flavor_id = int(flavor_id)
-                flavor = Flavor.objects.get(id=flavor_id)
-            except ValueError:
-                raise CommandError("Invalid flavor-id")
-            except Flavor.DoesNotExist:
-                raise CommandError("Flavor not found")
-        else:
-            raise CommandError("flavor-id is mandatory")
+            flavor = common.get_flavor(flavor_id)
 
         # Get Image
         if image_id:
-            try:
-                img = get_image(image_id, user_id)
-            except ItemNotFound:
-                raise CommandError("Image not found")
+            img = common.get_image(image_id, user_id)
 
             properties = img.get('properties', {})
             image = {}
@@ -110,11 +112,7 @@ class Command(BaseCommand):
 
         # Get Backend
         if backend_id:
-            try:
-                backend_id = int(backend_id)
-                backend = Backend.objects.get(id=backend_id)
-            except (ValueError, Backend.DoesNotExist):
-                raise CommandError("Invalid Backend ID")
+            backend = common.get_backend(backend_id)
         else:
             ballocator = BackendAllocator()
             backend = ballocator.allocate(user_id, flavor)

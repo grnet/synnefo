@@ -34,13 +34,12 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import validate_network_info, get_backend
 
-from synnefo.db.models import Network, Backend
-from synnefo.api.util import net_resources, validate_network_size
+from synnefo.db.models import Network
 from synnefo.logic.backend import create_network
-from synnefo import settings
 
-import ipaddr
+from synnefo.api.util import net_resources
 
 NETWORK_TYPES = ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
                  'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
@@ -135,13 +134,7 @@ class Command(BaseCommand):
             raise CommandError("Can not override PHYSICAL_VLAN link")
 
         if backend_id:
-            try:
-                backend_id = int(backend_id)
-                backend = Backend.objects.get(id=backend_id)
-            except ValueError:
-                raise CommandError("Invalid backend ID")
-            except Backend.DoesNotExist:
-                raise CommandError("Backend not found in DB")
+            backend = get_backend(backend_id)
 
         default_link, default_mac_prefix = net_resources(net_type)
         if not link:
@@ -176,36 +169,3 @@ class Command(BaseCommand):
             # Create BackendNetwork entries for all Backends
             network.create_backend_network()
             create_network(network)
-
-
-def validate_network_info(options):
-    subnet = options['subnet']
-    gateway = options['gateway']
-    subnet6 = options['subnet6']
-    gateway6 = options['gateway6']
-
-    try:
-        net = ipaddr.IPv4Network(subnet)
-        prefix = net.prefixlen
-        if not validate_network_size(prefix):
-            raise CommandError("Unsupport network mask %d."
-                               " Must be in range (%s,29] "
-                               % (prefix, settings.MAX_CIDR_BLOCK))
-    except ValueError:
-        raise CommandError('Malformed subnet')
-    try:
-        gateway and ipaddr.IPv4Address(gateway) or None
-    except ValueError:
-        raise CommandError('Malformed gateway')
-
-    try:
-        subnet6 and ipaddr.IPv6Network(subnet6) or None
-    except ValueError:
-        raise CommandError('Malformed subnet6')
-
-    try:
-        gateway6 and ipaddr.IPv6Address(gateway6) or None
-    except ValueError:
-        raise CommandError('Malformed gateway6')
-
-    return subnet, gateway, subnet6, gateway6

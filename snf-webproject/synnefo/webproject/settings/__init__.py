@@ -66,7 +66,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'synnefo.lib.middleware.LoggingConfigMiddleware'
+    'synnefo.lib.middleware.LoggingConfigMiddleware',
+    'synnefo.lib.middleware.CleanseSettingsMiddleware'
 )
 MIDDLEWARE_CLASSES = extend_list_from_entry_point(MIDDLEWARE_CLASSES, \
         'synnefo', 'web_middleware')

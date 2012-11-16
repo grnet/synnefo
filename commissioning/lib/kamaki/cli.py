@@ -2,6 +2,7 @@
 
 from kamaki.cli.commands import _command_init
 from kamaki.cli import command
+from kamaki.cli.command_tree import CommandTree
 from kamaki.cli.errors import CLIError
 
 class cli_generator(object):
@@ -10,15 +11,18 @@ class cli_generator(object):
     appname = None
     plugin = None
     add_context = False
+    ctree = None
+    description = None
 
     def __init__(self):
         self.api_spec = self.plugin.api_spec
         self.appname = self.plugin.appname
+        self.ctree = CommandTree(self.appname, self.description)
 
     def generate_all(self):
         for f in self.api_spec.call_names():
             c = self.mkClass(f)
-            command()(c)
+            command(self.ctree)(c)
 
     def mkClass(self, method):
         class C(_command_init):

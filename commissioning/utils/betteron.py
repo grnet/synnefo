@@ -187,7 +187,6 @@ def betteron_decode_args(inputf):
                 value, s = betteron_decode(inputf)
                 append((key, value))
                 key = None
-            continue
         elif s == ' ':
             if key is not None:
                 append((None, key))

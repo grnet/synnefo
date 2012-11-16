@@ -268,7 +268,7 @@ def make_rel_group_name(group_name, label='group_name'):
                                      parent_label='NameOfGroupsNode')
     
 
-def make_rel_global_resource_name(resource_name, label='resource_name'):
+def make_rel_resource_name(resource_name, label='resource_name'):
     check_name(resource_name, label)
     return relative_child_name_under(child_name=resource_name,
                                      parent_name=NameOfResourcesNode,

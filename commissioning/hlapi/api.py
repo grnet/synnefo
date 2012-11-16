@@ -15,7 +15,7 @@ from util import check_abs_resource_name
 from util import check_abs_group_name
 from util import parent_abs_name_of
 from util import relative_child_name_under
-from util import make_rel_global_resource_name
+from util import make_rel_resource_name
 from util import make_rel_group_name
 from util import make_rel_user_name
 from util import check_name
@@ -153,7 +153,110 @@ class Quota(object):
         
     def __repr__(self):
         return self.__str__()
+
+
+class NodeAttr(object):
+    def __init__(self, name, value, parent_node, for_node, full_name, quota):
+        check_abs_name(parent_node, 'attribute_parent_node')
+        check_abs_name(for_node, 'attribute_for_node')
+        check_attribute_name(name, 'attribute_name')
+        if not isinstance(value, int):
+            raise Exception("Value %s of attribute %s is not an int" % (
+                    value, name))
+        if not isinstance(quota, Quota):
+            raise Exception("Quota %s of attribute %s is not a %s" %(
+                    quota, Quota.__name__))
         
+        self.__name = name
+        self.__value = value
+        self.__parent_node = parent_node
+        self.__for_node = for_node
+        self.__full_name = full_name
+        self.__quota = quota
+    
+    def name(self):
+        return self.__name
+    
+    def value(self):
+        return self.__value
+    
+    def parent_node(self):
+        return self.__parent_node
+    
+    def for_node(self):
+        return self.__for_node
+    
+    def full_name(self):
+        return self.__full_name
+    
+    def quota(self):
+        return self.__quota
+    
+    def __str__(self):
+        return "%s('%s', %s, %s)" % (self.__class__.__name__,
+                                     self.name(),
+                                     self.value(),
+                                     self.full_name())
+        
+    def __repr__(self):
+        return str(self)
+
+
+class ResourceDef(object):
+    """
+    Definition of a global resource and what it contains.
+    """
+    def __init__(self, abs_resource_name, quota_number, *attributes):
+        check_abs_resource_name(abs_resource_name)
+        if not isinstance(quota_number, int):
+            raise Exception("Quota %s for resource '%s' is not an int" % (
+                    quota_number, abs_resource_name))
+        self.__quota_number = quota_number
+        self.__abs_name = abs_resource_name
+        self.__rel_name = make_rel_resource_name(abs_resource_name)
+        for index, attribute in enumerate(attributes):
+            if not isinstance(attribute, NodeAttr):
+                raise Exception("Attribute at index %s is not a NodeAttr but %s" % (
+                        index, attribute))
+        self.__attributes = set(attributes)
+    
+    def quota_number(self):
+        return self.__quota_number
+    
+    def name(self):
+        return self.__abs_name
+    
+    def rel_name(self):
+        return self.__rel_name
+    
+    def attributes(self):
+        return self.__attributes.copy()
+    
+    def __str__(self):
+        return "%s('%s', %s, [%s])" %(self.__class__.__name__,
+                                      self.name(),
+                                      self.quota_number(),
+                                      ', '.join(str(a) for a in self.attributes()))
+        
+    def __repr__(self):
+        return str(self)
+
+
+class GroupResourceDef(object):
+    """
+    Definition of a resource provided by a group
+    """
+    def __init__(self, group_node, resource_node, resource_quota):
+        pass
+    
+
+class GroupDef(object):
+    """
+    Definition of a group, along with the resources it provides.
+    """
+    def __init__(self, group_node, *group_resources):
+        pass
+
 class HighLevelAPI(object):
     """
     High-level Quota Holder API that supports definitions of resources,
@@ -255,6 +358,7 @@ class HighLevelAPI(object):
                                                 node_label,
                                                 resource_name,
                                                 attribute_name,
+                                                attribute_value,
                                                 quantity,
                                                 capacity,
                                                 import_limit,
@@ -271,7 +375,7 @@ class HighLevelAPI(object):
             node_name,
             abs_resource_name)
         
-        return self.set_quota(
+        quota = self.set_quota(
             entity=node_name,
             resource=computed_attribute_name,
             quantity=quantity,
@@ -279,6 +383,9 @@ class HighLevelAPI(object):
             import_limit=import_limit,
             export_limit=export_limit,
             flags=flags)
+        
+        return NodeAttr(attribute_name, attribute_value, node_name,
+                        abs_resource_name, computed_attribute_name, quota)
 
 
     #+++##########################################
@@ -690,44 +797,45 @@ class HighLevelAPI(object):
             export_limit=None,
             flags=0)
         
-        rdef_user_quota = self.define_attribute_of_resource(
+        user_attr = self.define_attribute_of_resource(
             abs_resource_name=abs_resource_name,
             attribute_name='user',
+            attribute_value=user_quota,
             quantity=0,
             capacity=user_quota,
             import_limit=0,
             export_limit=0,
             flags=0)
 
-        rdef_user_max_quota = self.define_attribute_of_resource(
+        user_max_attr = self.define_attribute_of_resource(
             abs_resource_name=abs_resource_name,
             attribute_name='user_max',
+            attribute_value=user_max_quota,
             quantity=0,
             capacity=user_max_quota,
             import_limit=0,
             export_limit=0,
             flags=0)
 
-        rdef_group_max_quota = self.define_attribute_of_resource(
+        group_max_attr = self.define_attribute_of_resource(
             abs_resource_name=abs_resource_name,
             attribute_name='group_max',
+            attribute_value=group_max_quota,
             quantity=0,
             capacity=group_max_quota,
             import_limit=0,
             export_limit=0,
             flags=0)
         
-
-        return {'resource_quota': resource_quota,
-                'user_quota': rdef_user_quota,
-                'user_max_quota': rdef_user_max_quota,
-                'group_max_quota': rdef_group_max_quota
-                }
+        return ResourceDef(abs_resource_name,
+                           total_quota,
+                           user_attr, user_max_attr, group_max_attr)
         
     
     def define_attribute_of_resource(self,
                                      abs_resource_name,
                                      attribute_name,
+                                     attribute_value,
                                      quantity,
                                      capacity,
                                      import_limit,
@@ -755,6 +863,7 @@ class HighLevelAPI(object):
             # The absolute resource name goes next
             #    (will be added by the called method)
             attribute_name=attribute_name,
+            attribute_value=attribute_value,
             quantity=quantity,
             capacity=capacity,
             import_limit=import_limit,
@@ -795,6 +904,7 @@ class HighLevelAPI(object):
                                                abs_group_name,
                                                abs_resource_name,
                                                attribute_name,
+                                               attribute_value,
                                                quantity,
                                                capacity,
                                                import_limit,
@@ -808,6 +918,7 @@ class HighLevelAPI(object):
             node_label='abs_group_name',
             resource_name=abs_resource_name,
             attribute_name=attribute_name,
+            attribute_value=attribute_value,
             quantity=quantity,
             capacity=capacity,
             import_limit=import_limit,
@@ -869,6 +980,7 @@ class HighLevelAPI(object):
                         abs_group_name=abs_group_name,
                         abs_resource_name=abs_resource_name,
                         attribute_name='user',
+                        attribute_value=user_quota,
                         quantity=0,
                         capacity=user_quota,
                         import_limit=0,

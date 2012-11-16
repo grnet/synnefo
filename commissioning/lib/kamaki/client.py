@@ -24,7 +24,7 @@ class Kamaki_plugin(Callpoint):
         json_data = json_dumps(data)
         debug("%s %s\n%s\n<<<\n", method.func_name, path, json_data)
         
-        resp = method(path, data=json_data)
+        resp = method(path, data=json_data, success=(200,450,500))
         debug(">>>\nStatus: %s", resp.status_code)
         
         body = resp.text

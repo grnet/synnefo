@@ -50,9 +50,9 @@ class Command(BaseCommand):
                     ),
         make_option('--offset', dest='offset'),
         make_option('--base', dest='base'),
-        make_option('--add-reserved', dest='add-reserved-ips',
+        make_option('--add-reserved', dest='add-reserved',
                     help="Comma-seperated list of values to reserve"),
-        make_option('--remove-reserved', dest="remove-reserved-ips",
+        make_option('--remove-reserved', dest="remove-reserved",
                     help="Comma-seperated list of values to release"),
     )
 
@@ -60,8 +60,8 @@ class Command(BaseCommand):
         type_ = options['type']
         offset = options['offset']
         base = options['base']
-        add_reserved = options['add-reserved-ips']
-        remove_reserved = options['remove-reserved-ips']
+        add_reserved = options['add-reserved']
+        remove_reserved = options['remove-reserved']
 
         if not type_:
             raise CommandError("Type of pool is mandatory")

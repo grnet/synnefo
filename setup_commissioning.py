@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup   (
     name            =   'commissioning',
-    version         =   '0.3',
+    version         =   '0.4',
     packages        =   [
             'commissioning',
             'commissioning.lib',

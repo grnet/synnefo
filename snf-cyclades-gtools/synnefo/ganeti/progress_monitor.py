@@ -93,7 +93,10 @@ def main():
         msg['event_time'] = split_time(time.time())
         msg['instance'] = instance_name
 
-        # and send it over AMQP
+        # log to stderr
+        sys.stderr.write("[MONITOR] %s\n" % json.dumps(msg))
+
+        # then send it over AMQP
         amqp_client.basic_publish(exchange=settings.EXCHANGE_GANETI,
                                   routing_key=routekey,
                                   body=json.dumps(msg))

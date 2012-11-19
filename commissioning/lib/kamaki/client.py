@@ -6,10 +6,10 @@ from kamaki.clients import Client
 
 from json import loads as json_loads, dumps as json_dumps
 
-class Kamaki_plugin(Callpoint):
+class kamaki_client(Callpoint):
 
     def __init__(self, base_url, token):
-        super(Kamaki_plugin, self).__init__()
+        super(kamaki_client, self).__init__()
         self._kc = Client(base_url, token)
 
     def do_make_call(self, api_call, data):

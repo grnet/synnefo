@@ -212,6 +212,11 @@
                 } else {
                 }
             })
+
+            $(".image-warning .confirm").bind('click', function(){
+                $(".image-warning").hide();
+                $(".create-controls").show();
+            })
         },
 
         update_images: function(images) {
@@ -318,8 +323,10 @@
         display_warning_for_image: function(image) {
           if (image && !image.is_system_image() && !image.owned_by(synnefo.user)) {
             $(".create-vm .image-warning").show();
+            $(".create-controls").hide();
           } else {
             $(".create-vm .image-warning").hide();
+            $(".create-controls").show();
           }
         },
 

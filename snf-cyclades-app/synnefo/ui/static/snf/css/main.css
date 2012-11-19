@@ -6032,13 +6032,35 @@ table.list-machines .wave {
     height: 250px;
 }
 
+.create-vm .image-warning p {
+  width: 80%;
+  float: left;
+}
+
+.create-vm .image-warning .untrusted-image-confirm:hover {
+  background-color: #7D674E;
+}
+
+.create-vm .image-warning .untrusted-image-confirm {
+  display: inline-block;
+  padding: 5px;
+  background-color: #5C4D39;
+  color: #FFF;
+  width: 10%;
+  float: right;
+  margin-top: 4px;
+  margin-right: 2px;
+  cursor: pointer;
+  text-align: center;
+}
+
 .create-vm .image-warning {
   display: none;
   background-color: #987249;
   color: #fff;
   padding: 10px 15px;
   font-size: 0.9em;
-  border-bottom: 1px solid #AAA;
+  border-top: 1px solid #AAA;
 }
 
 .create-vm .create-step-cont .rename input.rename-field {

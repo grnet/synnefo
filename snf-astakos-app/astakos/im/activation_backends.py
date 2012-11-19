@@ -108,9 +108,6 @@ class ActivationBackend(object):
     ):
         """
         If the user is already active returns immediately.
-        If the user is not active and there is another account associated with
-        the specific email, it sends an informative email to the user whether
-        wants to switch to this account.
         If the user is preaccepted and the email is verified, the account is
         activated automatically. Otherwise, if the email is not verified,
         it sends a verification email to the user.
@@ -189,8 +186,8 @@ class InvitationsBackend(ActivationBackend):
 
     def _is_preaccepted(self, user):
         """
-        If there is a valid, not-consumed invitation code for the specific user
-        returns True else returns False.
+        Extends _is_preaccepted and if there is a valid, not-consumed invitation
+        code for the specific user returns True else returns False.
         """
         if super(InvitationsBackend, self)._is_preaccepted(user):
             return True

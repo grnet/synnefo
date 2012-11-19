@@ -75,7 +75,7 @@ class BurninTestResult(unittest.TextTestResult):
     def addSuccess(self, test):
         super(BurninTestResult, self).addSuccess(test)
         if self.showAll:
-            if test.result_dict:
+            if hasattr(test, 'result_dict'):
                 run_details = test.result_dict
 
                 self.stream.write("\n")
@@ -91,13 +91,13 @@ class BurninTestResult(unittest.TextTestResult):
         super(BurninTestResult, self).addError(test, err)
         if self.showAll:
             self.stream.writeln("ERROR")
+            if hasattr(test, 'result_dict'):
+                run_details = test.result_dict
 
-            run_details = test.result_dict
-
-            self.stream.write("\n")
-            for i in run_details:
-                self.stream.write("%s : %s \n" % (i, run_details[i]))
-            self.stream.write("\n")
+                self.stream.write("\n")
+                for i in run_details:
+                    self.stream.write("%s : %s \n" % (i, run_details[i]))
+                self.stream.write("\n")
 
         elif self.dots:
             self.stream.write('E')
@@ -107,13 +107,13 @@ class BurninTestResult(unittest.TextTestResult):
         super(BurninTestResult, self).addFailure(test, err)
         if self.showAll:
             self.stream.writeln("FAIL")
+            if hasattr(test, 'result_dict'):
+                run_details = test.result_dict
 
-            run_details = test.result_dict
-
-            self.stream.write("\n")
-            for i in run_details:
-                self.stream.write("%s : %s \n" % (i, run_details[i]))
-            self.stream.write("\n")
+                self.stream.write("\n")
+                for i in run_details:
+                    self.stream.write("%s : %s \n" % (i, run_details[i]))
+                self.stream.write("\n")
 
         elif self.dots:
             self.stream.write('F')
@@ -1470,6 +1470,53 @@ class TestRunnerProcess(Process):
             else:
                 raise Exception("Cannot handle msg: %s" % msg)
 
+def _run_cases_in_series(cases,image_folder):
+    """Run instances of TestCase in series"""
+
+    for case in cases:
+
+        test = case.__name__
+
+        log.info(yellow + '* Starting testcase: %s' %test + normal)
+        log_file = os.path.join(image_folder, 'details_' +
+                                (case.__name__) + "_" +
+                                TEST_RUN_ID + '.log')
+        fail_file = os.path.join(image_folder, 'failed_' +
+                                 (case.__name__) + "_" +
+                                 TEST_RUN_ID + '.log')
+        error_file = os.path.join(image_folder, 'error_' +
+                                  (case.__name__) + "_" +
+                                  TEST_RUN_ID + '.log')
+
+        f = open(log_file, "w")
+        fail = open(fail_file, "w")
+        error = open(error_file, "w")
+
+        suite = unittest.TestLoader().loadTestsFromTestCase(case)
+        runner = unittest.TextTestRunner(f, verbosity=2, failfast=True, resultclass=BurninTestResult)
+        result = runner.run(suite)
+
+        for res in result.errors:
+            log.error("snf-burnin encountered an error in " \
+                          "testcase: %s" %test)
+            log.error("See log for details")
+            error.write(str(res[0]) + '\n')
+            error.write(str(res[0].shortDescription()) + '\n')
+            error.write('\n')
+
+        for res in result.failures:
+            log.error("snf-burnin failed in testcase: %s" %test)
+            log.error("See log for details")
+            fail.write(str(res[0]) + '\n')
+            fail.write(str(res[0].shortDescription()) + '\n')
+            fail.write('\n')
+            if NOFAILFAST == False:
+                sys.exit()
+
+        if (len(result.failures) == 0) and (len(result.errors) == 0):
+                log.debug("Passed testcase: %s" %test)
+
+    
 
 def _run_cases_in_parallel(cases, fanout, image_folder):
     """Run instances of TestCase in parallel, in a number of distinct processes
@@ -1933,7 +1980,10 @@ def main():
         image_folder = os.path.join(test_folder, imageid)
         os.mkdir(image_folder)
 
-        _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
+        if opts.fanout>1:
+            _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
+        else:
+            _run_cases_in_series(seq_cases,image_folder)
 
 if __name__ == "__main__":
     sys.exit(main())

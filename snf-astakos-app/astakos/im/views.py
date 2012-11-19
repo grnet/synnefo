@@ -431,6 +431,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     Wraps `django.contrib.auth.logout` and delete the cookie.
     """
     response = HttpResponse()
+    msg = None
     if request.user.is_authenticated():
         email = request.user.email
         auth_logout(request)

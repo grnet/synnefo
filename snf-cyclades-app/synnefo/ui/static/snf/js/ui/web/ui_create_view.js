@@ -316,7 +316,7 @@
         },
         
         display_warning_for_image: function(image) {
-          if (!image.is_system_image() && !image.owned_by(synnefo.user)) {
+          if (image && !image.is_system_image() && !image.owned_by(synnefo.user)) {
             $(".create-vm .image-warning").show();
           } else {
             $(".create-vm .image-warning").hide();

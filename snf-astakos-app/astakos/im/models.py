@@ -57,7 +57,7 @@ from django.db.models import Q
 from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
                                  AUTH_TOKEN_DURATION, BILLING_FIELDS,
                                  EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL)
-from astakos.im.endpoints.quotaholder import (register_users, send_quota,
+from astakos.im.endpoints.qh import (register_users, send_quota,
                                               register_resources)
 from astakos.im.endpoints.aquarium.producer import report_user_event
 from astakos.im.functions import send_invitation

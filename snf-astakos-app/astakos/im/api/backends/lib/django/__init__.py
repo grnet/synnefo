@@ -45,7 +45,7 @@ from astakos.im.api.backends.errors import (
     ItemNotExists, ItemExists, MissingIdentifier, MultipleItemsExist
 )
 from astakos.im.util import reserved_email, model_to_dict
-from astakos.im.endpoints.quotaholder import get_quota
+from astakos.im.endpoints.qh import get_quota
 
 import logging
 
@@ -219,9 +219,7 @@ class DjangoBackend(BaseBackend):
     @safe
     def get_resource_usage(self, user_id):
         user = self._lookup_user(user_id)
-	r = get_quota((user,))
-	print '>>>', r 
-	c, data = r 
+        c, data = get_quota((user,))
         resources = []
         append = resources.append
         for t in data:

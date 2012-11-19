@@ -36,7 +36,7 @@ from celery.schedules import crontab
 
 from functools import wraps
 
-from astakos.im.endpoints.quotaholder import send_quota
+from astakos.im.endpoints.qh import send_quota
 from astakos.im.endpoints.aquarium.producer import (report_credits_event,
                                                     report_user_event
                                                     )

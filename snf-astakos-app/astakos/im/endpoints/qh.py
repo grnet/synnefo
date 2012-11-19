@@ -43,7 +43,7 @@ from django.utils.translation import ugettext as _
 from astakos.im.settings import QUOTA_HOLDER_URL, LOGGING_LEVEL
 
 if QUOTA_HOLDER_URL:
-    from commissioning.clients.quotaholder import QuotaholderHTTP
+    from quotaholder.clients.kamaki import quotaholder_client
 
 ENTITY_KEY = '1'
 
@@ -54,20 +54,20 @@ logger = logging.getLogger(__name__)
 inf = float('inf')
 
 def call(func_name):
-    """Decorator function for QuotaholderHTTP client calls."""
+    """Decorator function for Quotaholder client calls."""
     def decorator(payload_func):
         @wraps(payload_func)
         def wrapper(entities=(), client=None, **kwargs):
             if not entities:
-                return ()
+                return client, ()
 
             if not QUOTA_HOLDER_URL:
-                return ()
+                return client, ()
 
-            c = client or QuotaholderHTTP(QUOTA_HOLDER_URL)
+            c = client or quotaholder_client(QUOTA_HOLDER_URL)
             func = c.__dict__.get(func_name)
             if not func:
-                return c,
+                return c, ()
 
             data = payload_func(entities, client, **kwargs)
             if not data:
@@ -287,7 +287,7 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
         m = 'charge type %s not supported' % charge_type
         raise ValueError(m)
 
-    quotaholder = QuotaholderHTTP(QUOTA_HOLDER_URL)
+    quotaholder = quotaholder_client(QUOTA_HOLDER_URL)
     timeline = quotaholder.get_timeline(
         context={},
         after=after,

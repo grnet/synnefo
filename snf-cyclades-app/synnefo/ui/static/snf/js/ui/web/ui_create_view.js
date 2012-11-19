@@ -278,6 +278,11 @@
             this.reset_images();
             this.select_image(this.selected_image);
             this.hide_list_loading();
+            $(".custom-image-help").hide();
+            if (this.selected_type == 'personal' && !images.length) {
+                $(".custom-image-help").show();
+            }
+
         },
 
         select_type: function(type) {
@@ -289,11 +294,6 @@
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
-
-            $(".custom-image-help").hide();
-            if (type == 'personal') {
-                $(".custom-image-help").show();
-            }
 
             this.update_layout_for_type(type);
         },

@@ -80,6 +80,8 @@ def login(
     
     try:
         eppn = tokens[Tokens.SHIB_EPPN]
+        if not eppn:
+            raise KeyError
     except KeyError:
         return HttpResponseBadRequest("Missing unique token in request")
     

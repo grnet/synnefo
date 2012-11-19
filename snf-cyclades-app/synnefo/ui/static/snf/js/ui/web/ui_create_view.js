@@ -212,6 +212,11 @@
                 } else {
                 }
             })
+
+            $(".image-warning .confirm").bind('click', function(){
+                $(".image-warning").hide();
+                $(".create-controls").show();
+            })
         },
 
         update_images: function(images) {
@@ -278,6 +283,11 @@
             this.reset_images();
             this.select_image(this.selected_image);
             this.hide_list_loading();
+            $(".custom-image-help").hide();
+            if (this.selected_type == 'personal' && !images.length) {
+                $(".custom-image-help").show();
+            }
+
         },
 
         select_type: function(type) {
@@ -289,11 +299,6 @@
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
-
-            $(".custom-image-help").hide();
-            if (type == 'personal') {
-                $(".custom-image-help").show();
-            }
 
             this.update_layout_for_type(type);
         },
@@ -316,10 +321,12 @@
         },
         
         display_warning_for_image: function(image) {
-          if (!image.is_system_image() && !image.owned_by(synnefo.user)) {
+          if (image && !image.is_system_image() && !image.owned_by(synnefo.user)) {
             $(".create-vm .image-warning").show();
+            $(".create-controls").hide();
           } else {
             $(".create-vm .image-warning").hide();
+            $(".create-controls").show();
           }
         },
 

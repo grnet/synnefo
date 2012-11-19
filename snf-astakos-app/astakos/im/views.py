@@ -357,6 +357,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 return render_response(on_success,
                                        context_instance=get_context(request, extra_context))
             except SendMailError, e:
+                logger.exception(e)
                 status = messages.ERROR
                 message = e.message
                 messages.add_message(request, status, message)
@@ -435,7 +436,6 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         auth_logout(request)
         response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
         msg = 'Cookie deleted for %s' % email
-        logger._log(LOGGING_LEVEL, msg, [])
     next = restrict_next(
         request.GET.get('next'),
         domain=COOKIE_DOMAIN
@@ -443,14 +443,20 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     if next:
         response['Location'] = next
         response.status_code = 302
+        if msg:
+            logger._log(LOGGING_LEVEL, msg, [])
         return response
     elif LOGOUT_NEXT:
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
+        if msg:
+            logger._log(LOGGING_LEVEL, msg, [])
         return response
     messages.add_message(request, messages.SUCCESS, _('<p>You have successfully logged out.</p>'))
     context = get_context(request, extra_context)
     response.write(render_to_string(template, context_instance=context))
+    if msg:
+        logger._log(LOGGING_LEVEL, msg, [])
     return response
 
 @require_http_methods(["GET", "POST"])

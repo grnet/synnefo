@@ -106,7 +106,7 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
     /im/feedback
     >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
-    pithos.okeanos.grnet.gr/im/feedback
+    //pithos.okeanos.grnet.gr/im/feedback
     >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
     https://pithos.okeanos.grnet.gr/im/feedback
     >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr')
@@ -124,12 +124,12 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     >>> print restrict_next('//node1.example.com')
     //node1.example.com
     >>> print restrict_next('node1.example.com')
-    node1.example.com
+    //node1.example.com
     """
     if not url:
         return
     parts = urlparse(url, scheme='http')
-    if not parts.netloc:
+    if not parts.netloc and not parts.path.startswith('/'):
         # fix url if does not conforms RFC 1808
         url = '//%s' % url
         parts = urlparse(url, scheme='http')
@@ -180,7 +180,7 @@ def prepare_response(request, user, next='', renew=False):
     
     if not next:
         next = reverse('astakos.im.views.index')
-    
+        
     response['Location'] = next
     response.status_code = 302
     return response

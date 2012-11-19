@@ -1,13 +1,12 @@
 from quotaholder.api import QuotaholderAPI
-from commissioning import ( Callpoint, CommissionException,
-                            CorruptedError, InvalidDataError,
+from quotaholder.api import (
                             InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
                             ExportLimitError, ImportLimitError)
 
-
+from commissioning import Callpoint, CorruptedError, InvalidDataError
 from commissioning.utils.newname import newname
-from django.db.models import Model, BigIntegerField, CharField, ForeignKey, Q
+from django.db.models import Q
 from django.db import transaction, IntegrityError
 from .models import (Holder, Entity, Policy, Holding,
                      Commission, Provision, ProvisionLog, now)

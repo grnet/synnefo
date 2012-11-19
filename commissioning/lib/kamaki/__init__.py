@@ -1,2 +1,2 @@
-from .cli import cli_generator
-from .client import Kamaki_plugin
+from .cli import kamaki_cli
+from .client import kamaki_client

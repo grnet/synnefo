@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from quotaholder.api import QuotaholderAPI
-from commissioning.lib.kamaki import Kamaki_plugin
+from commissioning.lib.kamaki import kamaki_client
 
-class quotaholder_plugin(Kamaki_plugin):
+class quotaholder_client(kamaki_client):
 
     api_spec = QuotaholderAPI()
     appname = 'quotaholder'

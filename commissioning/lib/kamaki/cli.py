@@ -5,18 +5,18 @@ from kamaki.cli import command
 from kamaki.cli.command_tree import CommandTree
 from kamaki.cli.errors import CLIError
 
-class cli_generator(object):
+class kamaki_cli(object):
 
     api_spec = None
     appname = None
-    plugin = None
+    client = None
     add_context = False
     ctree = None
     description = None
 
     def __init__(self):
-        self.api_spec = self.plugin.api_spec
-        self.appname = self.plugin.appname
+        self.api_spec = self.client.api_spec
+        self.appname = self.client.appname
         self.ctree = CommandTree(self.appname, self.description)
 
     def generate_all(self):
@@ -34,7 +34,7 @@ class cli_generator(object):
                               this.config.get('global', 'token'))
                 this.base_url = (this.config.get(self.appname, 'url') or
                                  this.config.get('global', 'url'))
-                this.client = self.plugin(this.base_url, this.token)
+                this.client = self.client(this.base_url, this.token)
 
             def call(this, method, args):
                 ctx = '=null ' if self.add_context else ''

@@ -1,10 +1,5 @@
 
-from commissioning import ( Callpoint,
-                            CommissionException,
-                            CorruptedError, InvalidDataError,
-                            InvalidKeyError, NoEntityError,
-                            NoQuantityError, NoCapacityError    )
-
+from commissioning import CorruptedError
 
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey
 from django.db import transaction

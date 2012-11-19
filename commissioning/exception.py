@@ -47,31 +47,8 @@ class CallError(Exception):
         self = cls(*args, call_error=call_error)
         return self
 
-
-class CommissionException(CallError):
+class CorruptedError(CallError):
     pass
 
-class CorruptedError(CommissionException):
+class InvalidDataError(CallError):
     pass
-
-class InvalidDataError(CommissionException):
-    pass
-
-class InvalidKeyError(CommissionException):
-    pass
-
-class NoEntityError(CommissionException):
-    pass
-
-class NoQuantityError(CommissionException):
-    pass
-
-class NoCapacityError(CommissionException):
-    pass
-
-class ExportLimitError(CommissionException):
-    pass
-
-class ImportLimitError(CommissionException):
-    pass
-

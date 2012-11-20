@@ -1,4 +1,4 @@
-from commissioning.api.specificator import (
+from commissioning.specificator import (
     CanonifyException, SpecifyException,
     Specificator, Null, Integer, Text,
     Tuple, ListOf, Dict, Args)

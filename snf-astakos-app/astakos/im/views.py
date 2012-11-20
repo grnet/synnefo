@@ -85,7 +85,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
                                   switch_account_to_shibboleth,
                                   send_group_creation_notification,
                                   SendNotificationError)
-from astakos.im.endpoints.quotaholder import timeline_charge
+from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
                                  LOGGING_LEVEL, PAGINATE_BY)
 from astakos.im.tasks import request_billing

@@ -81,9 +81,10 @@ INSTALL_REQUIRES = [
     'recaptcha-client>=1.0.5',
     'django-ratelimit==0.1',
     'commissioning',
+    'quotaholder',
     'celery',
     'requests',
-    'inflect',
+    'inflect'
 #TODO add commissioning
 ]
 

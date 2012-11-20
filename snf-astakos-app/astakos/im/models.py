@@ -759,7 +759,7 @@ def create_astakos_user(u):
     except AstakosUser.DoesNotExist:
         extended_user = AstakosUser(user_ptr_id=u.pk)
         extended_user.__dict__.update(u.__dict__)
-        extended_user.renew_token()
+#         extended_user.renew_token()
         extended_user.save()
     except BaseException, e:
         logger.exception(e)
@@ -812,7 +812,7 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
-#     instance.renew_token()
+    instance.renew_token()
 
 
 def resource_post_save(sender, instance, created, **kwargs):

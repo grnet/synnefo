@@ -34,9 +34,9 @@ from synnefo.settings import QUOTAHOLDER_URL
 from synnefo.db.models import QuotaHolderSerial
 from synnefo.api.faults import OverLimit
 
-from commissioning.clients.quotaholder import QuotaholderHTTP
-from commissioning.api.exception import (NoCapacityError, NoQuantityError,
-                                         CallError)
+from quotaholder.clients.kamaki import quotaholder_client
+from quotaholder.api import (NoCapacityError, NoQuantityError)
+from commissioning import CallError
 
 import logging
 log = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 @contextmanager
 def get_quota_holder():
     """Context manager for using a QuotaHolder."""
-    quotaholder = QuotaholderHTTP(QUOTAHOLDER_URL)
+    quotaholder = quotaholder_client(QUOTAHOLDER_URL)
 
     try:
         yield quotaholder

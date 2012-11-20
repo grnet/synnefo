@@ -326,21 +326,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                 clientkey   =   None,
                                 target      =   None,
                                 key         =   None,
-                                owner       =   None,
-                                ownerkey    =   None,
                                 name        =   None,
                                 provisions  =   ()  ):
 
         try:
             t = Entity.objects.get(entity=target)
         except Entity.DoesNotExist:
-            create_entity = ((target, owner, key, ownerkey),)
-            rejected = self.create_entity(context       =   context,
-                                          create_entity =   create_entity)
-            if rejected:
-                raise NoEntityError("No target entity '%s'" % (target,))
-
-            t = Entity.objects.get(entity=target)
+            m = "No target entity '%s'" % (target,)
+            raise NoEntityError(m)
         else:
             if t.key != key:
                 m = "Invalid key for target entity '%s'" % (target,)

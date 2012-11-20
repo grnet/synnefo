@@ -200,8 +200,6 @@ class QuotaholderAPI(Specificator):
                 target      =   Entity,
                 key         =   Key,
                 clientkey   =   ClientKey,
-                owner       =   Owner,
-                ownerkey    =   OwnerKey,
                 name        =   Text(default=''),
                 provisions  =   ListOf(Entity, Resource, Quantity)
         ):

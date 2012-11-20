@@ -56,7 +56,7 @@ urlpatterns = patterns('astakos.im.views',
 if EMAILCHANGE_ENABLED:
     urlpatterns += patterns('astakos.im.views',
         url(r'^email_change/?$', 'change_email', {}, name='email_change'),
-        url(r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
+        url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
             name='email_change_confirm')
 )
     
@@ -88,7 +88,7 @@ if INVITATIONS_ENABLED:
 if 'shibboleth' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
         url(r'^login/shibboleth/?$', 'shibboleth.login'),
-        url(r'^login/shibboleth/signup/?$', 'shibboleth.signup')
+        url(r'^shibboleth/signup/(\w+)/?$', 'shibboleth.signup', {}, 'shibboleth_signup')
     )
 
 if 'twitter' in IM_MODULES:

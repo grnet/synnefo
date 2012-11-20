@@ -78,28 +78,30 @@ def login(
 
     tokens = request.META
     
-    try:
-        eppn = tokens.get(Tokens.SHIB_EPPN)
-        if not eppn:
-            raise KeyError(_('Missing unique token in request'))
-        if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
-        elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-        else:
-            raise KeyError(_('Missing user name in request'))
-    except KeyError, e:
-        extra_context['login_form'] = LoginForm(request=request)
-        messages.error(request, e)
-        return render_response(
-            login_template,
-            context_instance=get_context(request, extra_context)
-        )
+#     try:
+#         eppn = tokens.get(Tokens.SHIB_EPPN)
+#         if not eppn:
+#             raise KeyError(_('Missing unique token in request'))
+#         if Tokens.SHIB_DISPLAYNAME in tokens:
+#             realname = tokens[Tokens.SHIB_DISPLAYNAME]
+#         elif Tokens.SHIB_CN in tokens:
+#             realname = tokens[Tokens.SHIB_CN]
+#         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+#             realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+#         else:
+#             raise KeyError(_('Missing user name in request'))
+#     except KeyError, e:
+#         extra_context['login_form'] = LoginForm(request=request)
+#         messages.error(request, e)
+#         return render_response(
+#             login_template,
+#             context_instance=get_context(request, extra_context)
+#         )
+#     
+#     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+#     email = tokens.get(Tokens.SHIB_MAIL, '')
     
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    email = tokens.get(Tokens.SHIB_MAIL, '')
+    eppn, realname, affiliation, email = 'shibboleth1', 'shib Boleth', '', '' 
     
     try:
         user = AstakosUser.objects.get(
@@ -115,9 +117,20 @@ def login(
             message = _('Your request is pending activation')
             messages.error(request, message)
         else:
-            url = reverse('send_activation', kwargs={'user_id':user.id})
-            message = _('You have not followed the activation link. \
-            <a href="%s">Provide new email?</a>' % url)
+            urls = {}
+            urls['send_activation'] = reverse(
+                'send_activation',
+                kwargs={'user_id':user.id}
+            )
+            urls['signup'] = reverse(
+                'shibboleth_signup',
+                args= [user.username]
+            )   
+            message = _(
+                'You have not followed the activation link. \
+                <a href="%(send_activation)s">Resend activation email?</a> or \
+                <a href="%(signup)s">Provide new email?</a>' % urls
+            )
             messages.error(request, message)
         return render_response(login_template,
                                login_form = LoginForm(request=request),
@@ -143,15 +156,13 @@ def login(
         else:
             if not ENABLE_LOCAL_ACCOUNT_MIGRATION:
                 url = reverse(
-                    'astakos.im.target.shibboleth.signup'
+                    'shibboleth_signup',
+                    args= [user.username]
                 )
-                parts = list(urlsplit(url))
-                parts[3] = urlencode({'key': user.username})
-                url = urlunsplit(parts)
                 return HttpResponseRedirect(url)
             else:
                 template = signup_template
-                extra_context['key'] = user.username
+                extra_context['username'] = user.username
         
         extra_context['provider']='shibboleth'
         return render_response(
@@ -163,33 +174,34 @@ def login(
 @requires_anonymous
 def signup(
     request,
+    username,
     backend=None,
     on_creation_template='im/third_party_registration.html',
     extra_context=None
 ):
     extra_context = extra_context or {}
-    username = request.GET.get('key')
-    if not username:
-        return HttpResponseBadRequest(_('Missing key parameter.'))
     try:
         pending = PendingThirdPartyUser.objects.get(username=username)
     except BaseException, e:
-        logger.exception(e)
-        return HttpResponseBadRequest(_('Invalid key.'))
+        try:
+            user = AstakosUser.objects.get(username=username)
+        except BaseException, e:
+            logger.exception(e)
+            return HttpResponseBadRequest(_('Invalid key.'))
     else:
         d = pending.__dict__
         d.pop('_state', None)
         d.pop('id', None)
         user = AstakosUser(**d)
-        try:
-            backend = backend or get_backend(request)
-        except ImproperlyConfigured, e:
-            messages.error(request, e)
-        else:
-            extra_context['form'] = backend.get_signup_form(
-                provider='shibboleth',
-                instance=user
-            )
+    try:
+        backend = backend or get_backend(request)
+    except ImproperlyConfigured, e:
+        messages.error(request, e)
+    else:
+        extra_context['form'] = backend.get_signup_form(
+            provider='shibboleth',
+            instance=user
+        )
     extra_context['provider']='shibboleth'
     return render_response(
             on_creation_template,

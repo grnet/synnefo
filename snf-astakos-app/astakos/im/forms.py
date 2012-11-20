@@ -55,7 +55,7 @@ from astakos.im.models import (
 from astakos.im.settings import (INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL,
     BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL,
     RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT,
-    NEWPASSWD_INVALIDATE_TOKEN, THIRDPARTY_ACC_ADDITIONAL_FIELDS
+    NEWPASSWD_INVALIDATE_TOKEN
 )
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
@@ -193,7 +193,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
     )
     class Meta:
         model = AstakosUser
-        fields = ['email', 'third_party_identifier']
+        fields = ['email', 'third_party_identifier', 'first_name', 'last_name']
 
     def __init__(self, *args, **kwargs):
         """
@@ -219,16 +219,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
                     % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
                     mark_safe("I agree with %s" % terms_link_html)
-        
-        default = fields_for_model(
-            self._meta.model,
-            THIRDPARTY_ACC_ADDITIONAL_FIELDS.keys()
-        )
-        for fname, field in THIRDPARTY_ACC_ADDITIONAL_FIELDS.iteritems():
-            if field:
-                self.fields[fname] = field
-            self.fields.setdefault(fname, default.get(fname))
-            self.initial[fname] = getattr(self.instance, fname, None)
     
     def clean_email(self):
         email = self.cleaned_data['email']

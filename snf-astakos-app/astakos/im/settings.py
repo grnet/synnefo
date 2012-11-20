@@ -123,10 +123,3 @@ NEWPASSWD_INVALIDATE_TOKEN = getattr(settings, 'ASTAKOS_NEWPASSWD_INVALIDATE_TOK
 
 # Permit local account migration
 ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(settings, 'ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION', True)
-
-# A dictionary describing the additional user fields appearing during the second step of third party account creation
-from django import forms
-THIRDPARTY_ACC_ADDITIONAL_FIELDS = getattr(settings, 'ASTAKOS_THIRDPARTY_ACC_ADDITIONAL_FIELDS', {
-    'first_name':None,
-    'last_name':None,
-})

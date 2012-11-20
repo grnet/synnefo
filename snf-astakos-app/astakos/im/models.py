@@ -154,8 +154,8 @@ class AstakosUser(User):
             self.activation_sent = None
         super(AstakosUser, self).save(**kwargs)
         
-        # set group if does not exist
-        groupname = 'shibboleth' if self.provider == 'shibboleth' else 'default'
+        # set default group if does not exist
+        groupname = 'default'
         if groupname not in self.__groupnames:
             try:
                 group = Group.objects.get(name = groupname)

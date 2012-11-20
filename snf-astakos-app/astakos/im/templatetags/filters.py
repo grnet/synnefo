@@ -33,6 +33,7 @@
 
 import calendar
 import datetime
+import math
 
 from collections import defaultdict
 
@@ -40,7 +41,9 @@ from django import template
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
+
 from astakos.im.settings import PAGINATE_BY
+
 
 register = template.Library()
 
@@ -76,6 +79,7 @@ def monthssince(joined_date):
 
 @register.filter
 def lookup(d, key):
+    print d, key
     return d.get(key)
 
 @register.filter
@@ -165,16 +169,26 @@ unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 0, 0, 0])
 
 @register.filter
 def sizeof_fmt(num):
+    
     """Human friendly file size"""
+    if math.isinf(num):
+        return 'Unlimited'
     if num > 1:
         exponent = min(int(log(num, 1024)), len(unit_list) - 1)
         quotient = float(num) / 1024**exponent
         unit, num_decimals = unit_list[exponent]
-        format_string = '{:.%sf} {0}' % (num_decimals)
+        format_string = '{0:.%sf} {1}' % (num_decimals)
         return format_string.format(quotient, unit)
     if num == 0:
         return '0 bytes'
     if num == 1:
         return '1 byte'
     else:
-       return '';
+       return '0';
+   
+@register.filter
+def isinf(v):
+    if math.isinf(v):
+        return 'Unlimited'
+    else:
+        return v

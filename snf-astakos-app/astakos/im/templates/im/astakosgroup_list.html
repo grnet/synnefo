@@ -27,7 +27,7 @@
 		   <a href="{% url group_search %}">Join an existing one</a>
 		   or
 		   <!--<a href="{% url group_create_list %}">Create a new group</a>-->
-		   <a href="{% url group_add 'course' %}">create a new group</a>.
+		   <a href="{% url group_add 'default' %}">create a new group</a>.
 		</p>
 		
 		<div class="widjets"> 
@@ -39,7 +39,7 @@
 							<h2>WELCOME!</h2>
 							<p><a href="{% url group_add 'course' %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
 							<p class="txt">Connect with a world of people who share your passions.<br>With millions of groups at your fingertips, it's easy to find the group that's best for you -- no matter your interest.</p>
-							<p><a href="{% url group_add 'course' %}">create a group ></a></p>
+							<p><a href="{% url group_add 'default' %}">create a group ></a></p>
 							<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
 						</div>
 					</div>
@@ -65,7 +65,7 @@
         <div class="full-dotted">
         	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
-					<select name="sorting" onchange="this.form.submit();">
+					<select name="sorting" onchange="this.form.submit();" class="dropkicked">
 					    <option value="">Sort by</option>
 					    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
 			            <!--option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option-->			
@@ -191,9 +191,9 @@
             {% with q|paginate:args as page_obj %}
         	 
 	      	    <div >
-					<form method="GET" class="minimal" action="#allGroups">
+					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
-						    <select name="sorting" onchange="this.form.submit();">
+						    <select name="sorting"  class="dropkicked">
 							    <option value="">Sort by</option>
 							    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
 					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			

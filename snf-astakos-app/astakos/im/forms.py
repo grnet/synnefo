@@ -532,7 +532,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         label="",
         widget=forms.HiddenInput()
     )
-    name = forms.URLField(widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}))
+    name = forms.URLField(widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}), help_text="Name should be in the form of dns",)
     moderation_enabled = forms.BooleanField(
         help_text="Check if you want to approve members participation manually",
         required=False,

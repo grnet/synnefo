@@ -17,7 +17,7 @@
 				{% endif %}
 			</em>		
 		{% endif %}
-	 	<span>{{object.kindname|upper}}</span>
+	 	<span>{{ object.name|strip_http|upper }}</span>
 	 </h2>
 	 
 	 <div class="details">
@@ -84,22 +84,23 @@
 		 <h3>RESOURCES:</h3>		 
 		 {% if quota %}
 		 <dl class="alt-style">
-		 	 
 		 	{% for k in quota|dkeys %}
 			 	{% with resource_catalog|lookup:'resources' as resources %}
 			 		{% with resources|lookup_uni:k as info %}
 			 		{% with resource_presentation|lookup_uni:k as resource_info %}
-			 		 
 						<dt>
-	           				Max {% if resource_info.is_abbreviation %}{{ info.resource|upper }}{% else %}{{ r.resource }}{% endif %}{% if not info.unit %}s {% endif  %}  per user
+	           				Max {% if resource_info.is_abbreviation %}{{ info.name|upper }}{% else %}{{ info.name }}{% endif %}{% if not info.unit %}s {% endif  %}  per user
 	           			</dt>		                
 						<dd>
 						{% with quota|lookup:k as uplimit%}	
-		           			 {% if uplimit == "inf" %}
-		           			 	unlimited
-		           			 {% else %}
-		           			 	{{ uplimit }}
-		           			 {% endif %}
+		           			 {% if uplimit %}
+		           				 {% if info.unit %}
+		           				 	{{ uplimit|sizeof_fmt }}
+		           				 {% else %}
+		           				 	{{ uplimit|isinf }}
+		           				 {% endif %}
+		           			
+		           			{% endif %}
 		           			 
 	           			{% endwith%}
 	           			</dd>
@@ -119,7 +120,7 @@
             {% if membership %}
             <form method="GET" class="minimal" action="">
                 <div class="form-row">
-                    <select name="sorting" onchange="this.form.submit();">
+                    <select name="sorting" onchange="this.form.submit();" class="dropkicked">
                         <option value="">Sort by</option>
                         <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>User Id</option>
                         <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Name</option>

@@ -729,6 +729,7 @@ resource_presentation = {
 @login_required
 def group_add(request, kind_name='default'):
     result = callpoint.list_resources()
+    print '###', result
     resource_catalog = {'resources':defaultdict(defaultdict),
                         'groups':defaultdict(list)}
     if result.is_success:
@@ -764,6 +765,9 @@ def group_add(request, kind_name='default'):
         form_class=AstakosGroupCreationForm
     )
     
+    resources = resource_catalog['resources']
+    
+ 
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
@@ -772,8 +776,10 @@ def group_add(request, kind_name='default'):
                 context_instance=get_context(request),
                 form = AstakosGroupCreationSummaryForm(form.cleaned_data),
                 policies = form.policies(),
-                resource_catalog=resource_catalog,
-                resource_presentation=resource_presentation
+                resource_presentation=resource_presentation,
+                resource_catalog= resource_catalog,
+                resources = resources,
+            
             )
     else:
         now = datetime.now()
@@ -850,6 +856,7 @@ def group_add_complete(request):
 @login_required
 def group_list(request):
     none = request.user.astakos_groups.none()
+    sorting = request.GET.get('sorting')
     q = AstakosGroup.objects.raw("""
         SELECT auth_group.id,
         %s AS groupname,
@@ -875,7 +882,8 @@ def group_list(request):
             im_astakosuser_owner.astakosuser_id = owner.id)
         WHERE im_membership.person_id = %s
         """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id))
-    
+
+            
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
         q.model._meta.app_label,
@@ -968,7 +976,7 @@ def group_detail(request, group_id):
             group = r.get('group', '')
             unit = r.get('unit', '')
             fullname = '%s%s%s' % (service, RESOURCE_SEPARATOR, name)
-            resource_catalog['resources'][fullname] = dict(unit=unit)
+            resource_catalog['resources'][fullname] = dict(unit=unit, name=name)
             resource_catalog['groups'][group].append(fullname)
         
         resource_catalog = dict(resource_catalog)

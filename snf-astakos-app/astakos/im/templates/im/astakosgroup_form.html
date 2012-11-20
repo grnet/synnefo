@@ -8,14 +8,14 @@
 {% block page.body %}
  
 	
-<form action="" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
+<form action="#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 	 
-    <fieldset class="with-info">
+    <fieldset class="with-info" id="top">
     	<legend>
     		1. CREATE GROUP
 			<span class="info"> 
 		    	<em>more info</em>
-		    	<span>Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text</span>
+		    	<span>Fill in the required fields to create a group. Group details will be visible to the users of the group.</span>
 	    	</span>    		
     	</legend>
         
@@ -28,7 +28,7 @@
     		2. ADD RESOURCES
     		<span class="info"> 
 		    	<em>more info</em>
-		    	<span>Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text Help Text</span>
+		    	<span>You need to specify at least one resource</span>
 	    	</span>    
     	</legend>
 

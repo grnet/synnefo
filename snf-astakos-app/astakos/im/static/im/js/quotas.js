@@ -9,7 +9,10 @@ function group_form_show_resources(el){
 			$(this).find('input')[0].focus()
 		}
 	});
-	
+	if ($('.quotas-form .with-info .with-errors input[type="text"]')){
+		$(this)[0].focus();	
+	}
+
 }
 
 
@@ -116,7 +119,7 @@ $(document).ready(function() {
 			 	value = value.replace(",",".");
 			 	var num = parseFloat(value);
 			 	
-			 	if ( value && !num ) { flag = 1}
+			 	if ( value && !num ) { flag = 1 ; msg="Invalid format"}
 			 	
 			 	var bytes = num;
 		 		
@@ -148,14 +151,16 @@ $(document).ready(function() {
 				 		  bytes = num; 
 			 		}
 			 	} else {
-			 		if (value) {
-			 		 flag = 1;
-			 		}
+			 		if (num) {
+			 		 	flag = 1;
+			 		 	msg ="You must specify correct units" 
+			 		}  
 			 		 
 			 	}
 			 	
 			 	if ( flag == '1' ){ 
 			 		$(this).parents('.form-row').addClass('with-errors');
+			 		$(this).parents('.form-row').find('.error-msg').html(msg);
 			 		bytes = value;
 			 		$(this).focus();
 			 		
@@ -173,7 +178,7 @@ $(document).ready(function() {
 	
 		 		var is_int = value.match (new RegExp('^[0-9]*$'));
 		 		if ( !is_int ){ 
-		 			$(this).parents('.form-row').find('.error-msg').html('Enter a whole number');
+		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive intiger');
 			 		$(this).parents('.form-row').addClass('with-errors');
 			 		 
 			 	} else {

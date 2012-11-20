@@ -39,7 +39,7 @@ import logging
 import hashlib
 import binascii
 
-from commissioning.clients.quotaholder import QuotaholderHTTP
+from quotaholder.clients.kamaki import quotaholder_client
 
 from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend, \
     AccountExists, ContainerExists, AccountNotEmpty, ContainerNotEmpty, ItemNotExists, VersionNotExists
@@ -202,7 +202,7 @@ class ModularBackend(BaseBackend):
             self.queue = NoQueue()
 
         self.quotaholder_url = quotaholder_url
-        self.quotaholder = QuotaholderHTTP(quotaholder_url)
+        self.quotaholder = quotaholder_client(quotaholder_url)
         self.serials = []
         self.messages = []
 

@@ -359,9 +359,17 @@ class LoginForm(AuthenticationForm):
             raise forms.ValidationError(_('You have not entered the correct words'))
     
     def clean(self):
-        super(LoginForm, self).clean()
-        if self.user_cache and self.user_cache.provider not in ('local', ''):
-            raise forms.ValidationError(_('Local login is not the current authentication method for this account.'))
+        """
+        Override default behavior in order to check user's activation later
+        """
+        try:
+            super(LoginForm, self).clean()
+        except forms.ValidationError, e:
+            if self.user_cache is None:
+                raise
+            if self.request:
+                if not self.request.session.test_cookie_worked():
+                    raise
         return self.cleaned_data
 
 class ProfileForm(forms.ModelForm):

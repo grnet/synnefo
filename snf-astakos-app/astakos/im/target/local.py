@@ -81,14 +81,21 @@ def login(request, on_failure='im/login.html'):
     if not user:
         message = _('Cannot authenticate account')
     elif not user.is_active:
-        if user.sent_activation:
+        if not user.activation_sent:
             message = _('Your request is pending activation')
         else:
-            message = _('You have not followed the activation link')
+            url = reverse('send_activation', kwargs={'user_id':user.id})
+            message = _('You have not followed the activation link. \
+            <a href="%s">Provide new email?</a>' % url)
+    elif user.provider not in ('local', ''):
+        message = _(
+            'Local login is not the current authentication method for this account.'
+        )
+    
     if message:
-        messages.add_message(request, messages.ERROR, message)
+        messages.error(request, message)
         return render_to_response(on_failure,
-                                  {'form':form},
+                                  {'login_form':form},
                                   context_instance=RequestContext(request))
     
     # hook for switching account to use third party authentication

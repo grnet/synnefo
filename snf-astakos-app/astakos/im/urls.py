@@ -50,6 +50,7 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^password/?$', 'change_password', {}, name='password_change'),
+    url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation')
 )
 
 if EMAILCHANGE_ENABLED:

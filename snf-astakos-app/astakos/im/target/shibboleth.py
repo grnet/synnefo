@@ -70,8 +70,8 @@ class Tokens:
 @requires_anonymous
 def login(
     request,
-    on_login_template='im/login.html',
-    on_signup_template='im/third_party_check_local.html',
+    login_template='im/login.html',
+    signup_template='im/third_party_check_local.html',
     extra_context=None
 ):
     extra_context = extra_context or {}
@@ -79,24 +79,28 @@ def login(
     tokens = request.META
     
     try:
-        eppn = tokens[Tokens.SHIB_EPPN]
+        eppn = tokens.get(Tokens.SHIB_EPPN)
         if not eppn:
-            raise KeyError
-    except KeyError:
-        return HttpResponseBadRequest("Missing unique token in request")
-    
-    if Tokens.SHIB_DISPLAYNAME in tokens:
-        realname = tokens[Tokens.SHIB_DISPLAYNAME]
-    elif Tokens.SHIB_CN in tokens:
-        realname = tokens[Tokens.SHIB_CN]
-    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-    else:
-        return HttpResponseBadRequest("Missing user name in request")
+            raise KeyError(_('Missing unique token in request'))
+        if Tokens.SHIB_DISPLAYNAME in tokens:
+            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+        elif Tokens.SHIB_CN in tokens:
+            realname = tokens[Tokens.SHIB_CN]
+        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+        else:
+            raise KeyError(_('Missing user name in request'))
+    except KeyError, e:
+        extra_context['login_form'] = LoginForm(request=request)
+        messages.error(request, e)
+        return render_response(
+            login_template,
+            context_instance=get_context(request, extra_context)
+        )
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-        
+    
     try:
         user = AstakosUser.objects.get(
             provider='shibboleth',
@@ -107,12 +111,17 @@ def login(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
+        elif not user.activation_sent:
+            message = _('Your request is pending activation')
+            messages.error(request, message)
         else:
-            message = _('Inactive account')
-            messages.add_message(request, messages.ERROR, message)
-            return render_response(on_login_template,
-                                   login_form = LoginForm(request=request),
-                                   context_instance=RequestContext(request))
+            url = reverse('send_activation', kwargs={'user_id':user.id})
+            message = _('You have not followed the activation link. \
+            <a href="%s">Provide new email?</a>' % url)
+            messages.error(request, message)
+        return render_response(login_template,
+                               login_form = LoginForm(request=request),
+                               context_instance=RequestContext(request))
     except AstakosUser.DoesNotExist, e:
         # First time
         try:
@@ -128,7 +137,7 @@ def login(
             user.save()
         except BaseException, e:
             logger.exception(e)
-            template = on_login_template
+            template = login_template
             extra_context['login_form'] = LoginForm(request=request)
             messages.error(request, _('Something went wrong.'))
         else:
@@ -141,7 +150,7 @@ def login(
                 url = urlunsplit(parts)
                 return HttpResponseRedirect(url)
             else:
-                template = on_signup_template
+                template = signup_template
                 extra_context['key'] = user.username
         
         extra_context['provider']='shibboleth'

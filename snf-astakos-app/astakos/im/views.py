@@ -61,7 +61,8 @@ from astakos.im.util import (
 )
 from astakos.im.forms import *
 from astakos.im.functions import (send_greeting, send_feedback, SendMailError,
-    invite as invite_func, logout as auth_logout, activate as activate_func
+    invite as invite_func, logout as auth_logout, activate as activate_func,
+    send_activation as send_activation_func
 )
 from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL,
     COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
@@ -116,7 +117,7 @@ def signed_terms_required(func):
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
-def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context={}):
+def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context=None):
     """
     If there is logged on user renders the profile page otherwise renders login page.
 
@@ -138,6 +139,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     im/profile.html or im/login.html or ``template_name`` keyword argument.
 
     """
+    extra_context = extra_context or {}
     template_name = login_template_name
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
@@ -152,7 +154,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
 @login_required
 @signed_terms_required
 @transaction.commit_manually
-def invite(request, template_name='im/invitations.html', extra_context={}):
+def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
 
@@ -186,6 +188,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     * ASTAKOS_DEFAULT_CONTACT_EMAIL: service support email
     * ASTAKOS_DEFAULT_FROM_EMAIL: from email
     """
+    extra_context = extra_context or {}
     status = None
     message = None
     form = InvitationForm()
@@ -230,7 +233,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
 @require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
-def edit_profile(request, template_name='im/profile.html', extra_context={}):
+def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
 
@@ -259,6 +262,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
 
     * LOGIN_URL: login uri
     """
+    extra_context = extra_context or {}
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
     reset_cookie = False
@@ -290,7 +294,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
                                                           extra_context))
 
 @require_http_methods(["GET", "POST"])
-def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
+def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
 
@@ -325,6 +329,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     im/signup.html or ``template_name`` keyword argument.
     im/signup_complete.html or ``on_success`` keyword argument. 
     """
+    extra_context = extra_context or {}
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     
@@ -375,7 +380,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
 @require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
-def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
+def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
     """
     Allows a user to send feedback.
 
@@ -402,6 +407,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
     * LOGIN_URL: login uri
     * ASTAKOS_DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
+    extra_context = extra_context or {}
     if request.method == 'GET':
         form = FeedbackForm()
     if request.method == 'POST':
@@ -426,10 +432,11 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            context_instance = get_context(request, extra_context))
 
 @require_http_methods(["GET"])
-def logout(request, template='registration/logged_out.html', extra_context={}):
+def logout(request, template='registration/logged_out.html', extra_context=None):
     """
     Wraps `django.contrib.auth.logout` and delete the cookie.
     """
+    extra_context = extra_context or {}
     response = HttpResponse()
     msg = None
     if request.user.is_authenticated():
@@ -501,7 +508,8 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt', helpd
         return index(request)
 
 @require_http_methods(["GET", "POST"])
-def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context={}):
+def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context=None):
+    extra_context = extra_context or {}
     term = None
     terms = None
     if not term_id:
@@ -559,7 +567,8 @@ def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
                  form_template_name='registration/email_change_form.html',
                  confirm_template_name='registration/email_change_done.html',
-                 extra_context={}):
+                 extra_context=None):
+    extra_context = extra_context or {}
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
@@ -599,6 +608,28 @@ def change_email(request, activation_key=None,
             transaction.commit()
         messages.add_message(request, status, msg)
     return render_response(form_template_name,
-                           form = form,
-                           context_instance = get_context(request,
-                                                          extra_context))
+                           form = form,)
+
+
+def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
+    extra_context = extra_context or {}
+    try:
+        u = AstakosUser.objects.get(id=user_id)
+    except AstakosUser.DoesNotExist:
+        messages.error(request, _('Invalid user id'))
+    else:
+        try:
+            send_activation_func(u)
+            msg = _('Activation sent.')
+            messages.success(request, msg)
+        except SendMailError, e:
+            messages.error(request, e)
+    return render_response(
+        template_name,
+        login_form = LoginForm(request=request), 
+        context_instance = get_context(
+            request,
+            extra_context
+        )
+    )
+    

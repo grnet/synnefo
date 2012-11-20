@@ -78,13 +78,6 @@
             </div>
         </div>
     </div>
-    <div class="image-warning">
-      <p>
-      {% blocktrans %}You have selected a user-provided Image, which is not
-      officially endorsed by ~okeanos. Please make sure it is from a
-      trustworthy source.{% endblocktrans %}
-      </p>
-    </div>
     <div class="steps-container clearfix">
         <div class="step-1 select-image wide create-step-cont clearfix">
             <div class="clearfix step-header">
@@ -324,6 +317,14 @@
     </div>
 </div>
 
+<div class="image-warning clearfix">
+  <p>
+  {% blocktrans %}You have selected a user-provided Image, which is not
+  officially endorsed by ~okeanos. Please make sure it is from a
+  trustworthy source.{% endblocktrans %}
+  </p>
+  <span class="untrusted-image-confirm confirm">confirm</span>
+</div>
 <div class="create-controls clearfix">
     <div class="form-action cancel">{% trans "cancel" %}</div>
     <div class="form-action next">{% trans "next" %}</div>

@@ -98,6 +98,10 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
                                     'snf-%(id)s.vm.okeanos.grnet.gr')
+
+if isinstance(VM_HOSTNAME_FORMAT, basestring):
+  VM_HOSTNAME_FORMAT =  VM_HOSTNAME_FORMAT % {'id':'{0}'}
+
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
 SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
@@ -208,7 +212,7 @@ def home(request):
                'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
                'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
                'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
-               'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT % {'id':'{0}'})
+               'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
     }
     return template('home', request, context)
 
@@ -349,6 +353,7 @@ def machines_connect(request):
                 'username': username,
                 'domain': domain,
                 'ip_address': ip_address,
+                'hostname': hostname,
                 'extra_content': extra_rdp_content
         }
 

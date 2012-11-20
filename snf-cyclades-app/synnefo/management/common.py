@@ -43,9 +43,9 @@ from synnefo.api.util import get_image as backend_get_image
 from synnefo.api.faults import ItemNotFound
 from django.core.exceptions import FieldError
 
-
 from synnefo.api.util import validate_network_size
 from synnefo.settings import MAX_CIDR_BLOCK
+from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 
 
 def format_bool(b):
@@ -201,3 +201,19 @@ def filter_results(objects, filter_by):
         return objects.exclude(**exclude_dict)
     except FieldError as e:
         raise CommandError(e)
+
+
+def check_backend_credentials(clustername, port, username, password):
+    try:
+        client = GanetiRapiClient(clustername, port, username, password)
+        # This command will raise an exception if there is no
+        # write-access
+        client.ModifyCluster()
+    except GanetiApiError as e:
+        raise CommandError(e)
+
+    info = client.GetInfo()
+    info_name = info['name']
+    if info_name != clustername:
+        raise CommandError("Invalid clustername value. Please use the"
+                           " Ganeti Cluster name: %s" % info_name)

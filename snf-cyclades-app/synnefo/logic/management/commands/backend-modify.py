@@ -33,10 +33,11 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_backend
+from synnefo.management.common import get_backend, check_backend_credentials
 
 
 class Command(BaseCommand):
+    output_transaction = True
     args = "<backend ID>"
     help = "Modify a backend"
 
@@ -86,5 +87,13 @@ class Command(BaseCommand):
             value = options.get(field)
             if value is not None:
                 backend.__setattr__(field, value)
+
+        credentials = ('clustername', 'port', 'username', 'password')
+        for field in credentials:
+            if options.get(field):
+                # check credentials, if any of them changed!
+                check_backend_credentials(backend.clustername, backend.port,
+                                          backend.username, backend.password)
+                return
 
         backend.save()

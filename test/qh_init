@@ -1,0 +1,5 @@
+#!/bin/sh
+d=`dirname $0`
+export COMMISSIONING_CONF_DIR=$d
+quotaholder-manage syncdb
+quotaholder-manage runserver "$@" 2> $d/server_stderr &

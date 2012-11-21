@@ -1,6 +1,12 @@
 ### IMPORTS ###
 import sys
 import os
+import subprocess
+import time
+from socket import socket, AF_INET, SOCK_STREAM, IPPROTO_TCP, error as socket_error
+from errno import ECONNREFUSED
+from os.path import dirname
+
 # The following import is copied from snf-tools/syneffo_tools/burnin.py
 # Thank you John Giannelos <johngian@grnet.gr>
 # Use backported unittest functionality if Python < 2.7
@@ -11,20 +17,38 @@ except ImportError:
         raise Exception("The unittest2 package is required for Python < 2.7")
     import unittest
 
-from commissioning.clients.http import HTTP_API_Client
-from commissioning import QuotaholderAPI
+from quotaholder.clients.kamaki import quotaholder_client
+
 import random 
+
+def printf(fmt, *args):
+    print(fmt.format(*args))
+
+def environ_get(key, default_value = ''):
+    if os.environ.has_key(key):
+        return os.environ.get(key)
+    else:
+        return default_value
+
+# Use environ vars [TEST_]QH_{HOST, PORT}
+QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", "127.0.0.1"))
+QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8008"))
+
+assert QH_HOST != None
+assert QH_PORT != None
+
+printf("Will connect to QH_HOST = {0}", QH_HOST)
+printf("            and QH_PORT = {0}", QH_PORT)
+
+QH_SERVER = '{0}:{1}'.format(QH_HOST, QH_PORT)
+QH_URL = "http://{0}/api/quotaholder/v".format(QH_SERVER)
 
 ### DEFS ###
 def new_quota_holder_client():
     """
     Create a new quota holder api client
     """
-    class QuotaholderHTTP(HTTP_API_Client):
-        api_spec = QuotaholderAPI()
-
-    global QH_URL
-    return QuotaholderHTTP(QH_URL)
+    return quotaholder_client(QH_URL)
 
 def run_test_case(test_case):
     """
@@ -35,7 +59,8 @@ def run_test_case(test_case):
     printf("Running {0}", test_case)
     import sys
     suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
-    runner = unittest.TextTestRunner(stream = sys.stderr, verbosity = 2, failfast = True, buffer = False)
+    runner = unittest.TextTestRunner(stream=sys.stderr, verbosity=2,
+                                     failfast=True, buffer=False)
     return runner.run(suite)
 
 def run_test_cases(test_cases):
@@ -51,21 +76,37 @@ def rand_string():
     string += x
    return string
 
-def environ_get(key, default_value = ''):
-    if os.environ.has_key(key):
-        return os.environ.get(key)
-    else:
-        return default_value
+HERE = dirname(__file__)
 
-def printf(fmt, *args):
-    print(fmt.format(*args))
+def init_server():
+    p = subprocess.Popen(['setsid', HERE+'/qh_init', QH_SERVER])
+    s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+    while True:
+        try:
+            s.connect((QH_HOST, int(QH_PORT)))
+            break
+        except socket_error, e:
+            if e.errno != ECONNREFUSED:
+                raise
+            time.sleep(0.1)
+    return p.pid
 
 ### CLASSES ###
 class QHTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
+        self.server = init_server()
         self.qh = new_quota_holder_client()
+#        self.qh.create_entity(create_entity=[("pgerakios", "system", "key1", "")])
 
-    def tearDown(self):
+    def setUp(self):
+        print
+
+    @classmethod
+    def tearDownClass(self):
+        from signal import SIGTERM
+        os.kill(-self.server, SIGTERM)
+        os.remove('testdb')
         del self.qh
 
 
@@ -75,14 +116,3 @@ DefaultOrCustom = {
     False: "custom"
 }
 
-# Use environ vars [TEST_]QH_{HOST, PORT}
-QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", "127.0.0.1"))
-QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8008"))
-
-assert QH_HOST != None
-assert QH_PORT != None
-
-printf("Will connect to QH_HOST = {0}", QH_HOST)
-printf("            and QH_PORT = {0}", QH_PORT)
-
-QH_URL = "http://{0}:{1}/api/quotaholder/v".format(QH_HOST, QH_PORT)

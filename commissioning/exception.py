@@ -1,17 +1,25 @@
 
 class CallError(Exception):
 
-    def __init__(self, *args, **kw):
+    def __new__(cls, *args, **kw):
         call_error = kw.get('call_error', None)
         if call_error is None:
-            call_error = self.__class__.__name__
+            call_error = cls.__name__
         else:
             call_error = str(call_error)
-        self.call_error = call_error
-        self.args = tuple(str(a) for a in args)
+        cls = globals().get(call_error, cls)
+        self = Exception.__new__(cls, *args)
+        return self
+
+    def __init__(self, *args, **kw):
+        self.call_error = kw.get('call_error', self.__class__.__name__)
+        self.args = args
 
     def __str__(self):
     	return '\n--------\n'.join((self.call_error + ':',) + self.args)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, ','.join(self.args))
 
     @classmethod
     def from_exception(cls, exc):

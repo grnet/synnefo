@@ -274,7 +274,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 append(idx)
                 continue
 
-            self._set_full_holding(entity, resource, p,
+            self._set_full_holding(e, resource, p,
                                    imported, exported,
                                    returned, released,
                                    flags)

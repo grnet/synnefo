@@ -1,5 +1,6 @@
 
 class CallError(Exception):
+    exceptions = {}
 
     def __new__(cls, *args, **kw):
         call_error = kw.get('call_error', None)
@@ -7,7 +8,7 @@ class CallError(Exception):
             call_error = cls.__name__
         else:
             call_error = str(call_error)
-        cls = globals().get(call_error, cls)
+        cls = CallError.exceptions.get(call_error, cls)
         self = Exception.__new__(cls, *args)
         return self
 
@@ -16,7 +17,7 @@ class CallError(Exception):
         self.args = args
 
     def __str__(self):
-    	return '\n--------\n'.join((self.call_error + ':',) + self.args)
+        return '\n--------\n'.join(self.args)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, ','.join(self.args))
@@ -55,8 +56,24 @@ class CallError(Exception):
         self = cls(*args, call_error=call_error)
         return self
 
+def register_exceptions(*exceptions):
+    for exception in exceptions:
+        if not issubclass(exception, CallError):
+            m = "Registering '%s': is not a CallError subclass" % (exception,) 
+            raise ValueError(m)
+        CallError.exceptions[exception.__name__] = exception
+
+def register_exception(exc):
+    register_exceptions(exc)
+    return exc
+
+@register_exception
 class CorruptedError(CallError):
     pass
 
+@register_exception
 class InvalidDataError(CallError):
     pass
+
+register_exceptions(CorruptedError, InvalidDataError)
+

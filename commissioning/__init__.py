@@ -1,6 +1,7 @@
 
 # Import general commission framework
-from .exception         import CallError, CorruptedError, InvalidDataError
+from .exception         import (CallError, CorruptedError, InvalidDataError,
+				register_exception, register_exceptions)
 
 from .callpoint         import  Callpoint, get_callpoint, mkcallargs
 

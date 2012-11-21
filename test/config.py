@@ -18,6 +18,9 @@ except ImportError:
     import unittest
 
 from quotaholder.clients.kamaki import quotaholder_client
+from quotaholder.api import (InvalidKeyError, NoEntityError,
+                             NoQuantityError, NoCapacityError,
+                             ExportLimitError, ImportLimitError)
 
 import random 
 

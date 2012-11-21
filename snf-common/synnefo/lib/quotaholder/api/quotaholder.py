@@ -159,6 +159,17 @@ class QuotaholderAPI(Specificator):
         rejected = ListOf(Entity, Resource, Policy)
         return rejected
 
+    def set_full_holding (
+                self,
+                context          =   Context,
+                set_full_holding =   ListOf(Entity, Resource, Key, Policy,
+                                            Imported, Exported, Returned, Released,
+                                            Flags)
+        ):
+        """set_full_holding description"""
+        rejected = ListOf(Index)
+        return rejected
+
     def list_resources  (
                 self,
                 context     =   Context,

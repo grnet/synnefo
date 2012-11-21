@@ -230,6 +230,56 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return rejected
 
+    def _set_full_holding(self, entity, resource, policy,
+                          imported, exported, returned, released,
+                          flags):
+        try:
+            h = Holding.objects.get(entity=entity, resource=resource)
+        except Holding.DoesNotExist:
+            h = Holding(entity=entity, resource=resource)
+
+        h.policy = policy
+        h.flags = flags
+        h.imported=imported
+        h.importing=imported
+        h.exported=exported
+        h.exporting=exported
+        h.returned=returned
+        h.returning=returned
+        h.released=released
+        h.releasing=released
+        h.save()
+
+    def set_full_holding(self, context={}, set_full_holding=()):
+        rejected = []
+        append = rejected.append
+
+        for idx, sfh in enumerate(set_full_holding):
+            (entity, resource, key, policy,
+             imported, exported, returned, released,
+             flags) = sfh
+            try:
+                e = Entity.objects.get(entity=entity, key=key)
+            except Entity.DoesNotExist:
+                append(idx)
+                continue
+
+            if e.key != key:
+                append(idx)
+                continue
+
+            try:
+                p = Policy.objects.get(policy=policy)
+            except Policy.DoesNotExist:
+                append(idx)
+                continue
+
+            self._set_full_holding(entity, resource, p,
+                                   imported, exported,
+                                   returned, released,
+                                   flags)
+        return rejected
+
     def list_resources(self, context={}, entity=None, key=None):
         try:
             e = Entity.objects.get(entity=entity)

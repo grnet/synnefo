@@ -1,3 +1,9 @@
+snf-tools (0.12.0) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Wed, 21 Nov 2012 11:54:21 +0200
+
 snf-tools (0.11.0~rc15-1) stable; urgency=low
 
   * New upstream version

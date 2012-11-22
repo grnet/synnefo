@@ -35,7 +35,6 @@ import json
 
 from logging import getLogger
 from string import punctuation
-from StringIO import StringIO
 from urllib import unquote
 
 from django.conf import settings
@@ -272,7 +271,7 @@ def list_public_images(request, detail=False):
 
 
 @plankton_method('GET')
-def list_shared_images(request, member):
+def list_shared_images_with(request, member):
     """Request shared images
 
     Described in:
@@ -283,10 +282,11 @@ def list_shared_images(request, member):
         the users's images that are accessible by `member`.
     """
 
-    log.debug('list_shared_images %s', member)
+    log.debug('list_shared_images_with %s', member)
 
     images = []
-    for image_id in request.backend.iter_shared(member):
+    for image in request.backend.iter_shared(member):
+        image_id = image['id']
         images.append({'image_id': image_id, 'can_share': False})
 
     data = json.dumps({'shared_images': images}, indent=settings.DEBUG)
@@ -350,3 +350,38 @@ def update_image_members(request, image_id):
 
     request.backend.replace_users(image_id, members)
     return HttpResponse(status=204)
+
+
+@plankton_method('GET')
+def list_shared_images(request, detail=False):
+    def get_request_params(keys):
+        params = {}
+        for key in keys:
+            val = request.GET.get(key, None)
+            if val is not None:
+                params[key] = val
+        return params
+
+    log.debug('list_shared_images detail=%s, request %s', detail, request)
+
+    filters = get_request_params(FILTERS)
+    params = get_request_params(PARAMS)
+
+    params.setdefault('sort_key', 'created_at')
+    params.setdefault('sort_dir', 'desc')
+
+    assert params['sort_key'] in SORT_KEY_OPTIONS
+    assert params['sort_dir'] in SORT_DIR_OPTIONS
+
+    images = request.backend.list(filters, params)
+    images = filter(lambda x: not x['is_public'], images)
+
+    # Remove keys that should not be returned
+    fields = DETAIL_FIELDS if detail else LIST_FIELDS
+    for image in images:
+        for key in image.keys():
+            if key not in fields:
+                del image[key]
+
+    data = json.dumps(images, indent=settings.DEBUG)
+    return HttpResponse(data)

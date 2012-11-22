@@ -45,6 +45,7 @@ def demux(request):
     else:
         return HttpResponseNotAllowed(['GET', 'POST'])
 
+
 def demux_image(request, image_id):
     if request.method == 'GET':
         return views.get_image(request, image_id)
@@ -55,6 +56,7 @@ def demux_image(request, image_id):
     else:
         return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
 
+
 def demux_image_members(request, image_id):
     if request.method == 'GET':
         return views.list_image_members(request, image_id)
@@ -62,6 +64,7 @@ def demux_image_members(request, image_id):
         return views.update_image_members(request, image_id)
     else:
         return HttpResponseNotAllowed(['GET', 'PUT'])
+
 
 def demux_members(request, image_id, member):
     if request.method == 'DELETE':
@@ -77,6 +80,8 @@ urlpatterns = patterns('',
     (r'^images/detail$', views.list_public_images, {'detail': True}),
     (r'^images/([\w-]+)$', demux_image),
     (r'^images/([\w-]+)/members$', demux_image_members),
-    (r'^images/([\w-]+)/members/(\w+)$', demux_members),
-    (r'^shared-images/(\w+)$', views.list_shared_images)
+    (r'^images/([\w-]+)/members/([\w@._-]+)$', demux_members),
+    (r'^shared-images/$', views.list_shared_images),
+    (r'^shared-images/detail', views.list_shared_images, {'detail': True}),
+    (r'^shared-images/([\w@._-]+)$', views.list_shared_images_with)
 )

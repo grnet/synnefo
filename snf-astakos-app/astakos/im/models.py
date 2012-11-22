@@ -50,6 +50,7 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models.signals import post_save, post_syncdb
+from django.db.models import Q
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
     AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
@@ -190,9 +191,11 @@ class AstakosUser(User):
         """
         Implements a unique_together constraint for email and is_active fields.
         """
-        q = AstakosUser.objects.exclude(username = self.username)
+        q = AstakosUser.objects.all()
         q = q.filter(email = self.email)
         q = q.filter(is_active = self.is_active)
+        if self.id:
+            q = q.filter(~Q(id = self.id))
         if q.count() != 0:
             raise ValidationError({'__all__':[_('Another account with the same email & is_active combination found.')]})
     

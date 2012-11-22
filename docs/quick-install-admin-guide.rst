@@ -859,26 +859,55 @@ the above assumed setup by running on both nodes:
 
 .. code-block:: console
 
-   # apt-get install ganeti2
-   # apt-get install ganeti-htools
+   # apt-get install -t squeeze-backports ganeti2 ganeti-htools
    # modprobe drbd minor_count=255 usermode_helper=/bin/true
 
 Unfortunatelly, stock Ganeti doesn't support IP pool management yet (we are
 working hard to merge it upstream for Ganeti 2.7). Synnefo depends on the IP
 pool functionality of Ganeti, so you have to use GRNET's patches for now. To
-do so you have to build your own package from source:
+do so you have to build your own package from source. Please clone our local
+repo:
 
 .. code-block:: console
 
-   # apt-get install -t squeeze-backports python-bitarray
-   # apt-get install git-buildpackage
    # git clone https://code.grnet.gr/git/ganeti-local
-   # mkdir build-area
    # cd ganeti-local
-   # git checkout stable-2.6-grnet
-   # git checkout debian-2.6-grnet
-   # git-buildpackage --git-upstream-branch=stable-2.6-grnet \
-                   --git-debian-branch=debian-2.6-grnet \
+   # git checkout stable-2.6-ippool-hotplug-esi
+   # git checkout debian-2.6
+
+Then please check if you can complile ganeti:
+
+.. code-block:: console
+
+   # cd ganeti-local
+   # ./automake.sh
+   # ./configure
+   # make
+
+To do so you must have a correct build environment. Please refer to INSTALL
+file in the source tree. Most of the packages needed are refered here:
+
+.. code-block:: console
+
+   #  apt-get install graphviz automake lvm2 ssh bridge-utils iproute iputils-arping \
+                      ndisc6 python python-pyopenssl openssl \
+                      python-pyparsing python-simplejson \
+                      python-pyinotify python-pycurl socat \
+                      python-elementtree kvm qemu-kvm \
+                      ghc6 libghc6-json-dev libghc6-network-dev \
+                      libghc6-parallel-dev libghc6-curl-dev \
+                      libghc-quickcheck2-dev hscolour hlint
+                      python-support python-paramiko \
+                      python-fdsend python-ipaddr python-bitarray libjs-jquery fping
+
+Now let try to build the package:
+
+.. code-block:: console
+
+   # apt-get install git-buildpackage
+   # mkdir ../build-area
+   # git-buildpackage --git-upstream-branch=stable-2.6-ippool-hotplug-esi \
+                   --git-debian-branch=debian-2.6 \
                    --git-export=INDEX \
                    --git-ignore-new
 
@@ -887,7 +916,8 @@ nodes:
 
 .. code-block:: console
 
-   # dpkg -i build-area/\*deb
+   # dpkg -i ../build-area/snf-ganeti.*deb
+   # dpkg -i ../build-area/ganeti-htools.*deb
    # apt-get install -f
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on

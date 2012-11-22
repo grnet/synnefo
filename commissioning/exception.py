@@ -9,7 +9,7 @@ class CallError(Exception):
         else:
             call_error = str(call_error)
         cls = CallError.exceptions.get(call_error, cls)
-        self = Exception.__new__(cls, *args)
+        self = Exception.__new__(cls)
         return self
 
     def __init__(self, *args, **kw):
@@ -17,10 +17,11 @@ class CallError(Exception):
         self.args = args
 
     def __str__(self):
-        return '\n--------\n'.join(self.args)
+        return '\n--------\n'.join(str(x) for x in self.args)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ','.join(self.args))
+        return '%s(%s)' % (self.__class__.__name__,
+                           ','.join(str(x) for x in self.args))
 
     @classmethod
     def from_exception(cls, exc):
@@ -74,6 +75,3 @@ class CorruptedError(CallError):
 @register_exception
 class InvalidDataError(CallError):
     pass
-
-register_exceptions(CorruptedError, InvalidDataError)
-

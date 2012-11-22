@@ -39,6 +39,15 @@ For the rest of the documentation we will refer to the first physical node as
 are "node1.example.com" and "node2.example.com" and their IPs are "4.3.2.1" and
 "4.3.2.2" respectively.
 
+.. note:: It is import that the two machines are under the same domain name.
+    If they are not, you can do this by editting the file ``/etc/hosts``
+    on both machines, and add the following lines:
+
+    .. code-block:: console
+
+        4.3.2.1     node1.example.com
+        4.3.2.2     node2.example.com
+
 
 General Prerequisites
 =====================

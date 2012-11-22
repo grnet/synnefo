@@ -51,6 +51,7 @@ lines in your ``/etc/apt/sources.list`` file:
 
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
+| ``deb http://apt.dev.grnet.gr squeeze-backports main``
 
 and import the repo's GPG key:
 
@@ -869,7 +870,7 @@ do so you have to build your own package from source:
 
 .. code-block:: console
 
-   # apt-get install python-bitarray
+   # apt-get install -t squeeze-backports python-bitarray
    # apt-get install git-buildpackage
    # git clone https://code.grnet.gr/git/ganeti-local
    # mkdir build-area

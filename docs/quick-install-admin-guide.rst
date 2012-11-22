@@ -507,7 +507,7 @@ uncomment and edit the ``DATABASES`` block to reflect our database:
          # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
         'NAME': 'snf_apps',
         'USER': 'synnefo',                      # Not used with sqlite3.
-        'PASSWORD': 'examle_passw0rd',          # Not used with sqlite3.
+        'PASSWORD': 'example_passw0rd',         # Not used with sqlite3.
         # Set to empty string for localhost. Not used with sqlite3.
         'HOST': '4.3.2.1',
         # Set to empty string for default. Not used with sqlite3.
@@ -529,6 +529,8 @@ For astakos specific configuration, edit the following options in
 
 .. code-block:: console
 
+   ASTAKOS_DEFAULT_ADMIN_EMAIL = None
+
    ASTAKOS_IM_MODULES = ['local']
 
    ASTAKOS_COOKIE_DOMAIN = '.example.com'
@@ -542,6 +544,12 @@ For astakos specific configuration, edit the following options in
 ``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
 is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
 domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
+
+``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
+Every time a new account is created a notification is sent to this email.
+For this we need access to a running mail server, so we have disabled
+it for now by setting its value to None. For more informations on this,
+read the relative :ref:`section <mail-server>`.
 
 .. note:: For the purpose of this guide, we have disabled recaptcha authentication.
     If you would like to enable it you have to edit the following options:

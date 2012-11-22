@@ -60,6 +60,7 @@ lines in your ``/etc/apt/sources.list`` file:
 
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
+| ``deb http://apt.dev.grnet.gr squeeze-backports main``
 
 and import the repo's GPG key:
 
@@ -893,7 +894,7 @@ do so you have to build your own package from source:
 
 .. code-block:: console
 
-   # apt-get install python-bitarray
+   # apt-get install -t squeeze-backports python-bitarray
    # apt-get install git-buildpackage
    # git clone https://code.grnet.gr/git/ganeti-local
    # mkdir build-area
@@ -1640,9 +1641,15 @@ Add the Ganeti backend
 ----------------------
 
 In our installation we assume that we only have one Ganeti cluster, the one we
-setup earlier in the ``/etc/synnefo/20-snf-cyclades-app-backend.conf`` file.
-Cyclades will set up this backend automatically by looking at the above
-configuration file. You can see everything has been setup correctly by running:
+setup earlier.  At this point you have to add this backend (Ganeti cluster) to
+cyclades assuming that you have setup the :ref:`Rapi User <rapi-user>`
+correctly.
+
+.. code-block:: console
+
+   $ snf-manage backend-add --clustername=ganeti.example.com --user=cyclades --pass=example_rapi_passw0rd
+
+You can see everything has been setup correctly by running:
 
 .. code-block:: console
 
@@ -1664,12 +1671,8 @@ domain that resolves to the master IP, than the IP itself, to ensure Cyclades
 can talk to Ganeti even after a Ganeti master-failover.
 
 ``user`` and ``pass`` denote the RAPI user's username and the RAPI user's
-password. We set the above to reflect our :ref:`RAPI User setup <rapi-user>`.
-The port is already set to the default RAPI port; you need to change it, only
-if you have changed it in your Ganeti cluster setup.
-
-Once we setup the first backend to point at our Ganeti cluster, we update the
-Cyclades backends status by running:
+password.  Once we setup the first backend to point at our Ganeti cluster, we
+update the Cyclades backends status by running:
 
 .. code-block:: console
 

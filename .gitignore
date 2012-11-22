@@ -25,3 +25,6 @@ _build
 */synnefo/versions/*.py
 !*/synnefo/versions/__init__.py
 snf-tools/synnefo_tools/version.py
+
+*.iml
+*.graffle

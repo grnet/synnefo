@@ -1,0 +1,10 @@
+[
+    {
+        "model": "django_backend.entity",
+        "pk": "system",
+        "fields": {
+            "owner": "system",
+            "key": ""
+        }
+    }
+]

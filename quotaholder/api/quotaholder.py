@@ -25,9 +25,9 @@ Nothing             =   Null(classname='Nothing')
 
 Entity              =   Name(classname='Entity')
 Owner               =   Name(classname='Owner')
-Key                 =   Name(classname='Key')
-NewKey              =   Name(classname='Newkey')
-OwnerKey            =   Name(classname='OwnerKey')
+Key                 =   Text(classname='Key')
+NewKey              =   Text(classname='Newkey')
+OwnerKey            =   Text(classname='OwnerKey')
 Resource            =   Name(classname='Resource')
 Policy              =   Name(classname='Policy')
 

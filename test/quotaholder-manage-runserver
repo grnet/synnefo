@@ -1,0 +1,7 @@
+#!/bin/sh
+
+HERE=`dirname $0`
+
+echo COMMISSIONING_CONF_DIR=$HERE quotaholder-manage runserver $QH_HOST:$QH_PORT
+COMMISSIONING_CONF_DIR=$HERE quotaholder-manage runserver $QH_HOST:$QH_PORT
+

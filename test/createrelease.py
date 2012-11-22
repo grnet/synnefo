@@ -108,9 +108,9 @@ class CreateReleaseListAPITest(QHTestCase):
                          (e0,r1,q1,c1,i1,e1,f1))
 
         #    def issueCommission(self):
-#        self.qh.issue_commission
+        # self.qh.issue_commission
     def setUp(self):
-        super(CreateReleaseListAPITest,self).setUp()
+        self.qh.create_entity(create_entity=[("pgerakios", "system", "key1", "")])
         self.parentName = "pgerakios"
         self.parentKey = "key1"
 

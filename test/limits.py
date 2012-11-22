@@ -4,6 +4,8 @@ from config import printf
 from config import rand_string
 from random import randint
 
+from quotaholder.api import InvalidDataError
+
 class Data:
     def __init__(self, parent, **kwd):
         self.context  = kwd.get('context', parent.context)
@@ -92,8 +94,9 @@ class LimitsTest(QHTestCase):
         """
         Tests empty policy name
         """
-        self.helper_set_limits(policy = '', set_limits_has_rejected = False)
-        self.helper_get_limits(policy='', get_limits_expected_length = 1)
+        with self.assertRaises(InvalidDataError):
+            self.helper_set_limits(policy = '', set_limits_has_rejected = False)
+            self.helper_get_limits(policy = '', get_limits_expected_length = 1)
 
 
 if __name__ == "__main__":

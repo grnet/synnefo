@@ -3,10 +3,13 @@ Welcome to Synnefo's documentation
 
 .. image:: /images/synnefo-logo.png
 
-Synnefo is opensource software, used to create massively scalable IaaS clouds.
+| Synnefo is open source cloud software, used to create massively scalable IaaS
+  clouds.
+| Synnefo uses `Google Ganeti <http://code.google.com/p/ganeti/`_ for the low
+  level VM management part.
 
 | You can see Synnefo in action, powering GRNET's
-  `~okeanos cloud service <https://okeanos.grnet.gr>`_.
+  `~okeanos public cloud service <http://okeanos.io>`_.
 | It is a collection of components (snf-*), most of them written in python, that
   are used as the building bricks to provide the following services:
 

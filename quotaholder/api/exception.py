@@ -1,4 +1,5 @@
-from commissioning import CallError, register_exception
+from commissioning import (CallError, register_exception,
+                           InvalidDataError, CorruptedError)
 
 @register_exception
 class CommissionException(CallError):

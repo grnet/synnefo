@@ -334,10 +334,16 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     
     provider = get_query(request).get('provider', 'local')
+    id = get_query(request).get('id')
+    try:
+        instance = AstakosUser.objects.get(id=id) if id else None
+    except AstakosUser.DoesNotExist:
+        instance = None
+
     try:
         if not backend:
             backend = get_backend(request)
-        form = backend.get_signup_form(provider)
+        form = backend.get_signup_form(provider, instance)
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.add_message(request, messages.ERROR, e)
@@ -353,14 +359,22 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     additional_email = form.cleaned_data['additional_email']
                     if additional_email != user.email:
                         user.additionalmail_set.create(email=additional_email)
-                        msg = 'Additional email: %s saved for user %s.' % (additional_email, user.email)
+                        msg = 'Additional email: %s saved for user %s.' % (
+                            additional_email,
+                            user.email
+                        )
                         logger._log(LOGGING_LEVEL, msg, [])
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     return prepare_response(request, user, next=next)
                 messages.add_message(request, status, message)
-                return render_response(on_success,
-                                       context_instance=get_context(request, extra_context))
+                return render_response(
+                    on_success,
+                    context_instance=get_context(
+                        request,
+                        extra_context
+                    )
+                )
             except SendMailError, e:
                 logger.exception(e)
                 status = messages.ERROR

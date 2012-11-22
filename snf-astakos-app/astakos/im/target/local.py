@@ -86,7 +86,7 @@ def login(request, on_failure='im/login.html'):
         else:
             url = reverse('send_activation', kwargs={'user_id':user.id})
             message = _('You have not followed the activation link. \
-            <a href="%s">Provide new email?</a>' % url)
+            <a href="%s">Resend activation email?</a>' % url)
     elif user.provider not in ('local', ''):
         message = _(
             'Local login is not the current authentication method for this account.'

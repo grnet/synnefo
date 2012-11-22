@@ -78,30 +78,28 @@ def login(
 
     tokens = request.META
     
-#     try:
-#         eppn = tokens.get(Tokens.SHIB_EPPN)
-#         if not eppn:
-#             raise KeyError(_('Missing unique token in request'))
-#         if Tokens.SHIB_DISPLAYNAME in tokens:
-#             realname = tokens[Tokens.SHIB_DISPLAYNAME]
-#         elif Tokens.SHIB_CN in tokens:
-#             realname = tokens[Tokens.SHIB_CN]
-#         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-#             realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-#         else:
-#             raise KeyError(_('Missing user name in request'))
-#     except KeyError, e:
-#         extra_context['login_form'] = LoginForm(request=request)
-#         messages.error(request, e)
-#         return render_response(
-#             login_template,
-#             context_instance=get_context(request, extra_context)
-#         )
-#     
-#     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-#     email = tokens.get(Tokens.SHIB_MAIL, '')
+    try:
+        eppn = tokens.get(Tokens.SHIB_EPPN)
+        if not eppn:
+            raise KeyError(_('Missing unique token in request'))
+        if Tokens.SHIB_DISPLAYNAME in tokens:
+            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+        elif Tokens.SHIB_CN in tokens:
+            realname = tokens[Tokens.SHIB_CN]
+        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+        else:
+            raise KeyError(_('Missing user name in request'))
+    except KeyError, e:
+        extra_context['login_form'] = LoginForm(request=request)
+        messages.error(request, e)
+        return render_response(
+            login_template,
+            context_instance=get_context(request, extra_context)
+        )
     
-    eppn, realname, affiliation, email = 'shibboleth1', 'shib Boleth', '', '' 
+    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+    email = tokens.get(Tokens.SHIB_MAIL, '')
     
     try:
         user = AstakosUser.objects.get(
@@ -180,13 +178,14 @@ def signup(
     extra_context=None
 ):
     extra_context = extra_context or {}
+    if not username:
+        return HttpResponseBadRequest(_('Missing key parameter.'))
     try:
         pending = PendingThirdPartyUser.objects.get(username=username)
-    except BaseException, e:
+    except PendingThirdPartyUser.DoesNotExist:
         try:
             user = AstakosUser.objects.get(username=username)
-        except BaseException, e:
-            logger.exception(e)
+        except AstakosUser.DoesNotExist:
             return HttpResponseBadRequest(_('Invalid key.'))
     else:
         d = pending.__dict__

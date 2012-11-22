@@ -187,13 +187,18 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         return user
 
 class ThirdPartyUserCreationForm(forms.ModelForm):
+    id = forms.CharField(
+        widget=forms.HiddenInput(),
+        label='',
+        required=False
+    )
     third_party_identifier = forms.CharField(
         widget=forms.HiddenInput(),
         label=''
     )
     class Meta:
         model = AstakosUser
-        fields = ['email', 'third_party_identifier', 'first_name', 'last_name']
+        fields = ['id', 'email', 'third_party_identifier', 'first_name', 'last_name']
 
     def __init__(self, *args, **kwargs):
         """
@@ -280,11 +285,14 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
     
     def clean_email(self):
         email = self.cleaned_data['email']
-        for user in AstakosUser.objects.filter(email = email):
+        if self.instance:
+            if self.instance.email == email:
+                raise forms.ValidationError(_("This is your current email."))
+        for user in AstakosUser.objects.filter(email=email):
             if user.provider == 'shibboleth':
                 raise forms.ValidationError(_(
-                        "This email is already associated with another shibboleth \
-                        account."
+                        "This email is already associated with another \
+                         shibboleth account."
                     )
                 )
             else:

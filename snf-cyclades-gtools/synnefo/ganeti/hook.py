@@ -165,7 +165,8 @@ class GanetiHook():
         # FIXME: We need a reconciliation mechanism between the DB and
         #        Ganeti, for cases exactly like this.
         self.client = AMQPClient(hosts=settings.AMQP_HOSTS,
-                                 max_retries = 2 * len(settings.AMQP_HOSTS))
+                                 max_retries=2 * len(settings.AMQP_HOSTS),
+                                 logger=logger)
         self.client.connect()
 
     def on_master(self):

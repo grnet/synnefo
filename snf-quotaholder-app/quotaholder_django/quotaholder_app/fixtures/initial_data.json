@@ -1,6 +1,6 @@
 [
     {
-        "model": "django_backend.entity",
+        "model": "quotaholder_app.entity",
         "pk": "system",
         "fields": {
             "owner": "system",

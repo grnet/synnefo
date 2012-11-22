@@ -424,7 +424,7 @@
 
             vm.call("console", function(console_data) {
                 var url = vm.get_console_url(console_data);
-                snf.util.open_window(url, "VM_" + vm.get("id") + "_CONSOLE", {});
+                snf.util.open_window(url, "VM_" + vm.get("id") + "_CONSOLE", {'scrollbars': 1, 'fullscreen': 0});
             }, undefined, {async: use_async});
         }
 

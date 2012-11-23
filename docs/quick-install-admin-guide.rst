@@ -88,7 +88,7 @@ General Synnefo dependencies
  * postgresql (database)
  * rabbitmq (message queue)
 
-You can install the above by running:
+You can install apache2 and progresql by running:
 
 .. code-block:: console
 
@@ -107,6 +107,27 @@ python-psycopg2 package:
 .. code-block:: console
 
    # apt-get install python-psycopg2
+
+To install RabbitMQ>=2.8.4, use the RabbitMQ APT repository by adding the
+following line to ``/etc/apt/sources.list``:
+
+.. code-block:: console
+
+  deb http://www.rabbitmq.com/debian testing main
+
+Add RabbitMQ public key, to trusted key list:
+
+.. code-block:: console
+
+  # wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+  # apt-key add rabbitmq-signing-key-public.asc
+
+Finally, to install the package run:
+
+.. code-block:: console
+
+  # apt-get update
+  # apt-get install rabbitmq-server
 
 Database setup
 ~~~~~~~~~~~~~~

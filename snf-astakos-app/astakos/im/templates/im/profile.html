@@ -15,7 +15,13 @@
     </div>
 
 </form>
-<p style="font-size:1.154em;">
-	<a href="{% url password_change %}">Change Password</a>
-</p>
+
+<div class="two-cols-links">
+	<p><a href="{% url password_change %}">Change Password</a></p>
+	<p>
+		<a href="https://okeanos.grnet.gr/home/">Back to ~okeanos</a>
+		<a href="https://cyclades.okeanos.grnet.gr/ui/">Take me to cyclades</a>
+		<a href="https://pithos.okeanos.grnet.gr/ui/">Take me to pithos+</a>
+	</p>
+</div>
 {% endblock body %}

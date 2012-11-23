@@ -894,7 +894,7 @@ def group_list(request):
     if sorting:
         query = query+" ORDER BY %s ASC" %sorting    
     else:
-        query = query+" ORDER BY creation_date DESC"     
+        query = query+" ORDER BY groupname ASC"     
     q = AstakosGroup.objects.raw(query)
 
        
@@ -1061,6 +1061,8 @@ def group_search(request, extra_context=None, **kwargs):
         if sorting:
             # TODO check sorting value
             queryset = queryset.order_by(sorting)
+        else:
+            queryset = queryset.order_by("groupname")
 
     else:
         queryset = AstakosGroup.objects.none()
@@ -1108,6 +1110,9 @@ def group_all(request, extra_context=None, **kwargs):
     if sorting:
         # TODO check sorting value
         q = q.order_by(sorting)
+    else:
+        q = q.order_by("groupname")
+        
     return object_list(
         request,
         q,

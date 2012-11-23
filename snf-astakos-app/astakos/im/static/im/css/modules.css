@@ -376,7 +376,7 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
 .quotas-form legend								{ color:#55B577; font-size:1.308em; margin-bottom:3em; position:relative; }
 .quotas-form legend span						{ color:#222; font-size:0.867em; }
-form.quotas-form legend span.info				{ position:relative; display:inline-block; top:auto; left:auto;  margin-left:10px;}
+form.quotas-form legend span.info				{ position:relative; display:inline-block; top:auto; left:auto;  margin-left:10px; vertical-align:middle; margin-top:-2px;}
 form.quotas-form legend span.info em			{ position:static; }
 form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form .with-checkbox .checkbox-widget	{ margin-top:9px; } 
@@ -461,3 +461,10 @@ table.alt-style form.link-like					{ float:none }
 form.quotas-form span.error-msg span			{ display:block; color:red; }
 form.quotas-form span.error-msg em,
 form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
+.two-cols-links									{ margin:5em 0; }
+.two-cols-links p								{ width:auto; overflow:hidden; }
+.two-cols-links a								{ color:grey; display:block; margin-bottom:10px;}
+.two-cols-links a:hover							{ color:#F89A1C }
+.two-cols-links p:first-child					{ width:224px; float:left; overflow:auto }
+.two-cols-links p:first-child a					{ color:#222; }
+.two-cols-links p:first-child a:hover			{ color:#F89A1C }

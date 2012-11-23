@@ -37,7 +37,7 @@ from config import printf
 from config import rand_string
 from random import randint
 
-from quotaholder.api import InvalidDataError
+from synnefo.lib.quotaholder.api import InvalidDataError
 
 class Data:
     def __init__(self, parent, **kwd):

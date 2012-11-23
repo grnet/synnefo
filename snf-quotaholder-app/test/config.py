@@ -17,10 +17,10 @@ except ImportError:
         raise Exception("The unittest2 package is required for Python < 2.7")
     import unittest
 
-from quotaholder.clients.kamaki import quotaholder_client
-from quotaholder.api import (InvalidKeyError, NoEntityError,
-                             NoQuantityError, NoCapacityError,
-                             ExportLimitError, ImportLimitError)
+from kamaki.clients.quotaholder import QuotaholderClient
+from synnefo.lib.quotaholder.api import (InvalidKeyError, NoEntityError,
+                                         NoQuantityError, NoCapacityError,
+                                         ExportLimitError, ImportLimitError)
 
 import random 
 
@@ -51,7 +51,7 @@ def new_quota_holder_client():
     """
     Create a new quota holder api client
     """
-    return quotaholder_client(QH_URL)
+    return QuotaholderClient(QH_URL)
 
 def run_test_case(test_case):
     """

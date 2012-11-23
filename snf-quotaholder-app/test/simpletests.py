@@ -3,7 +3,7 @@ from config import run_test_case
 from config import rand_string
 from config import printf
 
-from commissioning import CallError
+from synnefo.lib.commissioning import CallError
 
 class QHAPITest(QHTestCase):
 

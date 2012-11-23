@@ -572,7 +572,8 @@ class Membership(models.Model):
 
     def approve(self):
         if self.group.max_participants:
-            assert len(self.group.approved_members) + 1 <= self.group.max_participants
+            assert len(self.group.approved_members) + 1 <= self.group.max_participants, \
+	    	'Maximum participant number has been reached.'
         self.date_joined = datetime.now()
         self.save()
         quota_disturbed.send(sender=self, users=(self.person,))

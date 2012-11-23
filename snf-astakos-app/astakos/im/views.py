@@ -781,7 +781,6 @@ def group_add(request, kind_name='default'):
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
-            print '!!!!!!!!!! CLEANED DATA', form.cleaned_data
             return render_response(
                 template='im/astakosgroup_form_summary.html',
                 context_instance=get_context(request),

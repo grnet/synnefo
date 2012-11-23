@@ -108,7 +108,7 @@ class Dispatcher:
     def _init(self):
         log.info("Initializing")
 
-        self.client = AMQPClient()
+        self.client = AMQPClient(logger=log_amqp)
         # Connect to AMQP host
         self.client.connect()
 

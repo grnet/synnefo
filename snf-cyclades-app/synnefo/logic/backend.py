@@ -308,14 +308,6 @@ def create_instance(vm, public_nic, flavor, image, password=None):
         metadata value should be a dictionary.
     """
 
-    if settings.IGNORE_FLAVOR_DISK_SIZES:
-        if image['backend_id'].find("windows") >= 0:
-            sz = 14000
-        else:
-            sz = 4000
-    else:
-        sz = flavor.disk * 1024
-
     # Handle arguments to CreateInstance() as a dictionary,
     # initialize it based on a deployment-specific value.
     # This enables the administrator to override deployment-specific
@@ -337,7 +329,7 @@ def create_instance(vm, public_nic, flavor, image, password=None):
         disk_template, provider = flavor.disk_template.split("_", 1)
 
     kw['disk_template'] = disk_template
-    kw['disks'] = [{"size": sz}]
+    kw['disks'] = [{"size": flavor.disk * 1024}]
     if provider:
         kw['disks'][0]['provider'] = provider
 

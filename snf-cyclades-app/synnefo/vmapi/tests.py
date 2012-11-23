@@ -66,7 +66,7 @@ class TestServerParams(TestCase):
         params = {'password': 'X^942Jjfdsa', 'personality': {}}
         uuid = create_server_params(sender=vm, created_vm_params=params)
 
-        self.assertEqual(vm.params_url, settings.BASE_URL + '/vmapi/server-params/%s' % uuid)
+        self.assertEqual(vm.config_url, settings.BASE_URL + '/vmapi/server-params/%s' % uuid)
         key = "vmapi_%s" % uuid
         self.assertEqual(type(backend.get(key)), str)
         data = json.loads(backend.get(key))

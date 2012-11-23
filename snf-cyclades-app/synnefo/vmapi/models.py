@@ -48,8 +48,8 @@ def create_server_params(sender, created_vm_params, **kwargs):
     log.info("Setting vmapi params with key %s for %s", key, sender)
     backend.set(key, json_value)
 
-    # inject sender (vm) with its parameters url
-    setattr(sender, 'params_url', "%s%s" % (settings.BASE_URL,
+    # inject sender (vm) with its configuration url
+    setattr(sender, 'config_url', "%s%s" % (settings.BASE_URL,
                                             reverse('vmapi_server_params',
                                                     args=[uuid])))
     return uuid

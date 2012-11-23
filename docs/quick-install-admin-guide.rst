@@ -718,7 +718,7 @@ has to do with snf-common or snf-webproject. Everything is set at node1. You
 only need to change settings that have to do with pithos+. Specifically:
 
 Edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``. There you need to set
-only the two options:
+this options:
 
 .. code-block:: console
 
@@ -923,15 +923,15 @@ a bridge interface on the host machines (e.g: br0). Then run on node1:
 
 .. code-block:: console
 
-   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init
-                                   --no-etc-hosts --vg-name=ganeti
-                                   --nic-parameters link=br0 --master-netdev eth0
+   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init \
+                                   --no-etc-hosts --vg-name=ganeti \
+                                   --nic-parameters link=br0 --master-netdev eth0 \
                                    ganeti.node1.example.com
    root@node1:~ # gnt-cluster modify --default-iallocator hail
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:kernel_path=
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:vnc_bind_address=0.0.0.0
 
-   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes
+   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes \
                                --vm-capable=yes node2.example.com
    root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
    root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default

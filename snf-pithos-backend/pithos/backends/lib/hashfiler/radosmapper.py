@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -33,35 +33,66 @@
 
 from binascii import hexlify
 
-from radosmapper import RadosMapper
-from filemapper import FileMapper
+from context_object import RadosObject, file_sync_read_chunks
+from rados import *
 
-class Mapper(object):
+CEPH_CONF_FILE="/etc/ceph/ceph.conf"
+
+class RadosMapper(object):
     """Mapper.
-       Required constructor parameters: mappath, namelen, mappool.
+       Required constructor parameters: mappath, namelen.
     """
 
+    mappool = None
+    namelen = None
+
     def __init__(self, **params):
-        params['mappool'] = 'maps'
-        self.rmap = RadosMapper(**params)
-        self.fmap = FileMapper(**params)
+        self.params = params
+        self.namelen = params['namelen']
+        mappool = params['mappool']
 
-#    def _get_rear_map(self, maphash, create=0):
-#        return self.fmap._get_rear_map(maphash, create)
+        rados = Rados(conffile=CEPH_CONF_FILE)
+        rados.connect()
+        if not rados.pool_exists(mappool):
+            rados.pool_create(mappool)
 
-#    def _check_rear_map(self, maphash):
-#        return self.rmap._check_rear_map(maphash)
-#        return self.rmap._check_rear_map(maphash) and
-#                self.fmap._check_rear_map(maphash)
+        ioctx = rados.open_ioctx(mappool)
+
+        self.mappool = mappool
+        self.rados = rados
+        self.ioctx = ioctx
+        self.mappool = mappool
+
+    def _get_rear_map(self, maphash, create=0):
+        name = hexlify(maphash)
+        return RadosObject(name, self.ioctx, create)
+
+    def _check_rear_map(self, maphash):
+        name = hexlify(maphash)
+        try:
+            self.ioctx.stat(name)
+            return True
+        except ObjectNotFound:
+            return False
 
     def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        return self.fmap.map_retr(maphash, blkoff, nr)
+        namelen = self.namelen
+        hashes = ()
+
+        with self._get_rear_map(maphash, 0) as rmap:
+            if rmap:
+                hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
+        return hashes
 
     def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""
-        self.rmap.map_stor(maphash, hashes, blkoff, create)
-        self.fmap.map_stor(maphash, hashes, blkoff, create)
+        namelen = self.namelen
+        if self._check_rear_map(maphash):
+            return
+        with self._get_rear_map(maphash, 1) as rmap:
+            rmap.sync_write_chunks(namelen, blkoff, hashes, None)
+

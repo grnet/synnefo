@@ -31,37 +31,64 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from os import makedirs, unlink
+from os.path import isdir, realpath, exists, join
 from binascii import hexlify
 
-from radosmapper import RadosMapper
-from filemapper import FileMapper
+from context_file import ContextFile
 
-class Mapper(object):
+
+class FileMapper(object):
     """Mapper.
-       Required constructor parameters: mappath, namelen, mappool.
+       Required constructor parameters: mappath, namelen.
     """
+    
+    mappath = None
+    namelen = None
 
     def __init__(self, **params):
-        params['mappool'] = 'maps'
-        self.rmap = RadosMapper(**params)
-        self.fmap = FileMapper(**params)
+        self.params = params
+        self.namelen = params['namelen']
+        mappath = realpath(params['mappath'])
+        if not isdir(mappath):
+            if not exists(mappath):
+                makedirs(mappath)
+            else:
+                raise ValueError("Variable mappath '%s' is not a directory" % (mappath,))
+        self.mappath = mappath
 
-#    def _get_rear_map(self, maphash, create=0):
-#        return self.fmap._get_rear_map(maphash, create)
+    def _get_rear_map(self, maphash, create=0):
+        filename = hexlify(maphash)
+        dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
+        if not exists(dir):
+            makedirs(dir)
+        name = join(dir, filename)
+        return ContextFile(name, create)
 
-#    def _check_rear_map(self, maphash):
-#        return self.rmap._check_rear_map(maphash)
-#        return self.rmap._check_rear_map(maphash) and
-#                self.fmap._check_rear_map(maphash)
+    def _check_rear_map(self, maphash):
+        filename = hexlify(maphash)
+        dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
+        name = join(dir, filename)
+        return exists(name)
 
     def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        return self.fmap.map_retr(maphash, blkoff, nr)
+        namelen = self.namelen
+        hashes = ()
+
+        with self._get_rear_map(maphash, 0) as rmap:
+            if rmap:
+                hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
+        return hashes
 
     def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""
-        self.rmap.map_stor(maphash, hashes, blkoff, create)
-        self.fmap.map_stor(maphash, hashes, blkoff, create)
+        namelen = self.namelen
+        if self._check_rear_map(maphash):
+            return
+        with self._get_rear_map(maphash, 1) as rmap:
+            rmap.sync_write_chunks(namelen, blkoff, hashes, None)
+

@@ -234,9 +234,9 @@ class AstakosGroup(Group):
     @transaction.commit_manually
     def approve_member(self, person):
         m, created = self.membership_set.get_or_create(person=person)
-        # update date_joined in any case
+	# update date_joined in any case
         try:
-            m.approve()
+	    m.approve()
         except:
             transaction.rollback()
             raise
@@ -571,6 +571,8 @@ class Membership(models.Model):
         return False
 
     def approve(self):
+    	if self.is_approved:
+		return
         if self.group.max_participants:
             assert len(self.group.approved_members) + 1 <= self.group.max_participants, \
 	    	'Maximum participant number has been reached.'

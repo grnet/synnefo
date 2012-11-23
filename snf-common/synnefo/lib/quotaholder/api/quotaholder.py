@@ -170,6 +170,15 @@ class QuotaholderAPI(Specificator):
         rejected = ListOf(Index)
         return rejected
 
+    def release_holding (
+                self,
+                context         =   Context,
+                release_holding =   ListOf(Entity, Resource, Key)
+        ):
+        """release_holding description"""
+        rejected = ListOf(Index)
+        return rejected
+
     def list_resources  (
                 self,
                 context     =   Context,

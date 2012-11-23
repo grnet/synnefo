@@ -198,6 +198,17 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return holdings
 
+    def _set_holding(self, entity, resource, policy, flags):
+        try:
+            h = Holding.objects.get(entity=entity, resource=resource)
+            h.policy = p
+            h.flags = flags
+            h.save()
+        except Holding.DoesNotExist:
+            h = Holding.objects.create( entity=e, resource=resource,
+                                        policy=p, flags=flags      )
+        return h
+
     def set_holding(self, context={}, set_holding=()):
         rejected = []
         append = rejected.append
@@ -278,6 +289,67 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                    imported, exported,
                                    returned, released,
                                    flags)
+        return rejected
+
+    def _check_pending(self, entity=None):
+        serials = []
+        try:
+            cs = Commission.objects.filter(entity=entity)
+            serials = [c.serial for c in cs]
+        except Commission.DoesNotExist:
+            pass
+
+        try:
+            ps = Provision.objects.filter(entity=entity)
+            serials += [p.serial.serial for p in ps]
+        except Provision.DoesNotExist:
+            pass
+        print 'PENDING are', serials
+        return serials
+
+    def _actual_quantity(self, holding):
+        hp = holding.policy
+        return hp.quantity + (holding.imported + holding.returned -
+                              holding.exported - holding.released)
+
+    def _new_policy_name(self):
+        return newname('policy_')
+
+    def _increase_resource(self, entity, resource, amount):
+        try:
+            h = Holding.objects.get(entity=entity, resource=resource)
+        except Holding.DoesNotExist:
+            h = Holding(entity=entity, resource=resource)
+            p = Policy.objects.create(policy=self._new_policy_name(),
+                                      quantity=0)
+            h.policy = p
+        h.imported += amount
+        h.save()
+
+    def release_holding(self, context={}, release_holding=()):
+        rejected = []
+        append = rejected.append
+
+        for idx, (entity, resource, key) in enumerate(release_holding):
+            try:
+                h = Holding.objects.get(entity=entity, resource=resource)
+            except Holding.DoesNotExist:
+                append(idx)
+                continue
+
+            if h.entity.key != key:
+                append(idx)
+                continue
+
+            if self._check_pending(entity):
+                append(idx)
+                continue
+
+            q = self._actual_quantity(h)
+            owner = h.entity.owner
+            self._increase_resource(owner, resource, q)
+            h.delete()
+
         return rejected
 
     def list_resources(self, context={}, entity=None, key=None):

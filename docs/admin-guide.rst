@@ -17,7 +17,8 @@ between them. It is a good idea to first go through the Quick Administrator's
 Guide before proceeding.
 
 .. image:: images/synnefo-architecture1.png
-   :width: 800px
+   :width: 100%
+   :target: _images/synnefo-architecture1.png
 
 
 Identity Service (Astakos)

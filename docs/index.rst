@@ -25,6 +25,7 @@ Welcome to Synnefo's documentation
    Volume Storage Service (codename: archipelago) <archipelago>
 
 .. image:: images/synnefo-overview.png
+   :target: _images/synnefo-overview.png
 
 There are also components for:
 
@@ -54,7 +55,8 @@ with multiple Ganeti clusters. Right click on the image and select "Open image
 in new tab" to be able to zoom in.
 
 .. image:: images/synnefo-architecture1.png
-   :width: 800px
+   :width: 100%
+   :target: _images/synnefo-architecture1.png
 
 
 Synnefo Guides

@@ -2,12 +2,12 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
-from commissioning.utils.betteron import betteron_decode
+from .utils.betteron import betteron_decode
 
 try:
     from collections import OrderedDict
 except ImportError:
-    from commissioning.utils.ordereddict import OrderedDict
+    from .utils.ordereddict import OrderedDict
 
 def shorts(s):
     if not isinstance(s, unicode):

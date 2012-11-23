@@ -2,7 +2,7 @@
 from django.http import HttpResponse
 from django.db import transaction 
 from django.conf import settings
-from commissioning import CallError, get_callpoint
+from synnefo.lib.commissioning import CallError, get_callpoint
 
 from .callpoint import API_Callpoint
 

@@ -1,7 +1,7 @@
 try:
     from collections import OrderedDict
 except ImportError:
-    from commissioning.utils.ordereddict import OrderedDict
+    from .ordereddict import OrderedDict
 from itertools import chain
 from cStringIO import StringIO
 

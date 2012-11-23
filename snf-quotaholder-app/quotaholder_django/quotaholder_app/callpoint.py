@@ -4,8 +4,10 @@ from synnefo.lib.quotaholder.api import (
                             NoQuantityError, NoCapacityError,
                             ExportLimitError, ImportLimitError)
 
-from commissioning import Callpoint, CorruptedError, InvalidDataError
-from commissioning.utils.newname import newname
+from synnefo.lib.commissioning import \
+    Callpoint, CorruptedError, InvalidDataError
+from synnefo.lib.commissioning.utils.newname import newname
+
 from django.db.models import Q
 from django.db import transaction, IntegrityError
 from .models import (Holder, Entity, Policy, Holding,

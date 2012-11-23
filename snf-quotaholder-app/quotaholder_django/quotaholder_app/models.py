@@ -1,5 +1,5 @@
 
-from commissioning import CorruptedError
+from synnefo.lib.commissioning import CorruptedError
 
 from django.db.models import Model, BigIntegerField, CharField, ForeignKey
 from django.db import transaction

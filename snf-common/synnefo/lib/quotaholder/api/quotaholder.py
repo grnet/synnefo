@@ -1,7 +1,7 @@
 
-from commissioning  import (CanonifyException, SpecifyException,
-                            Specificator, Null, Integer, Text,
-                            Tuple, ListOf, Dict, Args)
+from synnefo.lib.commissioning import (CanonifyException, SpecifyException,
+                                       Specificator, Null, Integer, Text,
+                                       Tuple, ListOf, Dict, Args)
 
 Context             =   Dict(classname='Context', null=True)
 

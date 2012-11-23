@@ -6,7 +6,6 @@
  
 {% with form.data as data %}	 	
 <div class="projects summary">
-	 
 	<form action="{% url group_add_complete %}" method="post" class="quotas-form">{% csrf_token %}
 		<legend>3. CONFIRM YOUR REQUEST</legend>
 <!-- 
@@ -39,41 +38,35 @@
 			 	<dd>{% if  data.max_participants %}{{ data.max_participants }}{% else %}Unlimited{% endif %}</dd>
 			 </dl>
 		 </div>
+		 
+		 
 		 <div class="full-dotted">
-			 <h3>RESOURCES:</h3>
-	           <dl class="alt-style">	           	
-	           	{% for r in policies %}
-	           		{% with r.service|add:'.'|add:r.resource as t %}
-	           		{% with resource_catalog|lookup:'resources' as resources %}
-	           		{% with resources|lookup:t as info %}
-	           		{% with resource_presentation|lookup:t as resource_info %}
-	           			<dt>
-	           				Max {% if resource_info.is_abbreviation %}{{ r.resource|upper }}{% else %}{{ r.resource }}{% endif %}{% if not info.unit %}s {% endif  %}  per user
-	           			</dt>
-	           			
-	           			<dd>
-	           			{% if r.uplimit %}
-	           				 {% if info.unit %}
-	           				 	{{ r.uplimit|sizeof_fmt }}
-	           				 {% else %}
-	           				 	{{ r.uplimit }}
-	           				 {% endif %}
-	           			{% else %}
-	           				Unlimited
-	           			{% endif %}
-	           			</dd>
-	           		{% endwith %}
-	           		{% endwith %}
-	           		{% endwith %}
-	           		{% endwith %}
-	           	{% endfor %}
-			 	
-			 </dl>
-	         
+			<h3>RESOURCES:</h3>
+		 	<dl class="alt-style">	
+		 		{% for p in policies %}
+			 		 
+			 		<dt>
+           				Max {% if p.is_abbreviation %}{{ p.name|upper }}{% else %}{{ p.name }}{% endif %}{% if not p.unit %}s {% endif  %}  per user
+           			</dt>
+			 		<dd>
+           			{% if p.uplimit %}
+           				 {% if p.unit %}
+           				 	{{ p.uplimit|sizeof_fmt }}
+           				 {% else %}
+           				 	{{ p.uplimit }}
+           				 {% endif %}
+           			{% else %}
+           				Unlimited
+           			{% endif %}
+           			</dd>
+		 		{% endfor %}
+		 	</dl>      
 		 </div>
+		 
 		 <div class="full-dotted">
 		 	 
 		 </div>
+		
 		 
 		 <div class="form-row submit">
 	   		<input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">

@@ -4,9 +4,9 @@
 
 {% block page.body %}
 {% with object.owners as owners %}
-{% with object.quota as quota %}
+ 
 <div class="projects">
-	
+
 	<h2>
 	 	{% if object.is_member %}
 			<em>
@@ -79,46 +79,38 @@
 		 	<dd>{% if object.max_participants%}{{object.max_participants}}{% else %}&nbsp;{% endif %}</dd>
 		 </dl>
 	 </div>
-	 
-     <div class="full-dotted">
+	 <div class="full-dotted">
 		 <h3>RESOURCES:</h3>		 
 		 {% if quota %}
-		 <dl class="alt-style">
-		 	{% for k in quota|dkeys %}
-			 	{% with resource_catalog|lookup:'resources' as resources %}
-			 		{% with resources|lookup_uni:k as info %}
-			 		{% with resource_presentation|lookup_uni:k as resource_info %}
-						<dt>
-	           				Max {% if resource_info.is_abbreviation %}{{ info.name|upper }}{% else %}{{ info.name }}{% endif %}{% if not info.unit %}s {% endif  %}  per user
-	           			</dt>		                
-						<dd>
-						{% with quota|lookup:k as uplimit%}	
-		           			 {% if uplimit %}
-		           				 {% if info.unit %}
-		           				 	{{ uplimit|sizeof_fmt }}
-		           				 {% else %}
-		           				 	{{ uplimit|isinf }}
-		           				 {% endif %}
-		           			
-		           			{% endif %}
-		           			 
-	           			{% endwith%}
-	           			</dd>
-	           		 
-	                {% endwith%}
-	                {% endwith %}
-                {% endwith %}
-            {% endfor %}
-		</dl>
+		 <dl class="alt-style">	
+	 		{% for q in quota %}
+		 		 
+		 		<dt>
+       				Max {% if q.is_abbreviation %}{{ q.verbose_name|upper }}{% else %}{{ q.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
+       			</dt>
+		 		<dd>
+       			{% if q.value %}
+       				 {% if q.unit %}
+       				 	{{ q.value|sizeof_fmt }}
+       				 {% else %}
+       				 	{{ q.value|isinf }}
+       				 {% endif %}
+       			{% else %}
+       				Unlimited
+       			{% endif %}
+       			</dd>
+	 		{% endfor %}
+	 	</dl>
 		{% else %}
-            <p>No policies</p>
+            <p>No resources</p>
         {% endif %} 
 	 </div>
+     
 	 <div class="full-dotted">
 	    {% with page|concat:sorting as args %}
 	    {% with object.membership_set.select_related.all|paginate:args as membership %}
             {% if membership %}
-            <form method="GET" class="minimal" action="">
+            <form method="GET" class="minimal" action="#members-table">
                 <div class="form-row">
                     <select name="sorting" onchange="this.form.submit();" class="dropkicked">
                         <option value="">Sort by</option>
@@ -128,7 +120,7 @@
                     </select>
                 </div>
             </form>
-             <table class="alt-style">
+             <table class="alt-style" id="members-table">
                 <caption>MEMBERS:</caption>
                 <thead>
                     <tr>
@@ -199,6 +191,6 @@
      
     
 </div>
-{% endwith %}
+ 
 {% endwith %}
 {% endblock %}

@@ -65,8 +65,8 @@
         <div class="full-dotted">
         	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
-					<select name="sorting" onchange="this.form.submit();" class="dropkicked">
-					    <option value="">Sort by</option>
+					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
+					    <option value="">Sort by Creation Date</option>
 					    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
 			            <!--option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option-->			
 			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
@@ -193,15 +193,14 @@
 	      	    <div >
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
-						    <select name="sorting"  class="dropkicked">
-							    <option value="">Sort by</option>
-							    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Name</option>
+						    <select name="sorting"  class="dropkicked"  tabindex="1">
+							    <option value="">Sort by Creation Date</option>
+							    <option value="groupname" {% if sorting == 'groupname' %}selected{% endif %}>Sort by Name</option>
 					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			
-					            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Issue date</option>			
-					            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Expiration Date</option>
-					            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Participants</option>
-					            <option value="is_enabled" {% if sorting == 'is_enabled' %}selected{% endif %}>Status</option>
-					            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Moderation</option>		
+					            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
+					            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
+					            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option>
+					            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Sort by Moderation</option>		
 							</select>
 						</div>
 					</form>

@@ -4,7 +4,7 @@ function group_form_show_resources(el){
 	var id = el.attr('id');
 	$('.quotas-form .group').each(function() {
 		if( $(this).hasClass(id) ) {
-			$(this).appendTo('.foo');
+			$(this).appendTo('.visible');
 			$(this).show('slow');
 			$(this).find('input')[0].focus()
 		}
@@ -68,7 +68,7 @@ $(document).ready(function() {
 		 
 		// hide relevant fieldset 
 		$(this).parents('.group').hide('slow', function() {
-		    $(this).appendTo('.not-foo');	
+		    $(this).appendTo('.not-visible');	
 		});
 		
 		group_class = $(this).parents('.group').attr('class').replace('group ', '');
@@ -114,49 +114,68 @@ $(document).ready(function() {
 		 	if ($(this).hasClass('dehumanize')){
 		 		
 		 		var flag = 0;
+
+				// check if the value is not float
+		 		var num_float = parseFloat(value);
+		 		num_float= String(num_float);
+
+		 		if (num_float.indexOf(".") == 1){
+		 			flag = 1 ; 
+		 			msg="Please enter an integer";
+		 		} else {
+		 			var num = parseInt(value);
+					if ( num == '0' ) { 
+						flag = 1 ; msg="zero"
+					} else {
+						if ( value && !num ) { flag = 1 ; msg="Invalid format"}
+				 	
+					 	var bytes = num;
+				 		
+						// remove any numbers and get suffix		 		
+				 		var suffix = value.replace( num, '');
+		
+				 		 // validate suffix. 'i' renders it case insensitive
+					 	var suf = suffix.match( new RegExp('^(GB|KB|MB|TB|bytes|G|K|M|T|byte)$', 'i'));
+					 	if (suf){
+					 		
+					 		suf = suf[0].toLowerCase(); 
+					 		suf = suf.substr(0,1);
+					 	
+						 	// transform to bytes
+						 	switch (suf){
+						 		case 'b': 
+						 		  bytes = num*Math.pow(1024,0);
+						 		  break;
+						 		case 'k':
+						 		  bytes = num*Math.pow(1024,1);
+						 		  break;
+						 		case 'm':
+						 		  bytes = num*Math.pow(1024,2);
+						 		  break;
+						 		case 'g':
+						 		  bytes = num*Math.pow(1024,3);
+						 		  break;
+						 		case 't':
+						 		  bytes = num*Math.pow(1024,4);
+						 		  break;    
+						 		default:
+						 		  bytes = num; 
+					 		}
+					 	} else {
+					 		if (num) {
+					 		 	flag = 1;
+					 		 	msg ="You must specify correct units" 
+					 		}  
+					 		 
+					 	}
+					}
+				 	
+		 			
+		 			
+		 		}
 		 		
-		 		// replace , with .  and get number 
-			 	value = value.replace(",",".");
-			 	var num = parseFloat(value);
+		 		 
 			 	
-			 	if ( value && !num ) { flag = 1 ; msg="Invalid format"}
-			 	
-			 	var bytes = num;
-		 		
-		 		 // get suffix. 'i' renders it case insensitive
-			 	var suf = value.match( new RegExp('GB|KB|MB|TB|bytes|G|K|M|T|byte', 'i'));
-			 	if (suf){
-			 		
-			 		suf = suf[0].toLowerCase(); 
-			 		suf = suf.substr(0,1);
-			 	
-				 	// transform to bytes
-				 	switch (suf){
-				 		case 'b': 
-				 		  bytes = num*Math.pow(1024,0);
-				 		  break;
-				 		case 'k':
-				 		  bytes = num*Math.pow(1024,1);
-				 		  break;
-				 		case 'm':
-				 		  bytes = num*Math.pow(1024,2);
-				 		  break;
-				 		case 'g':
-				 		  bytes = num*Math.pow(1024,3);
-				 		  break;
-				 		case 't':
-				 		  bytes = num*Math.pow(1024,4);
-				 		  break;    
-				 		default:
-				 		  bytes = num; 
-			 		}
-			 	} else {
-			 		if (num) {
-			 		 	flag = 1;
-			 		 	msg ="You must specify correct units" 
-			 		}  
-			 		 
-			 	}
 			 	
 			 	if ( flag == '1' ){ 
 			 		$(this).parents('.form-row').addClass('with-errors');
@@ -171,14 +190,15 @@ $(document).ready(function() {
 			 	
 			 	hidden_input.val(bytes);
 			 	
+			 	
 		 	}
 		 	 
-		 	// actions for int fields
+		 	// validation actions for int fields
 		 	else {
 	
 		 		var is_int = value.match (new RegExp('^[0-9]*$'));
 		 		if ( !is_int ){ 
-		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive intiger');
+		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive integer');
 			 		$(this).parents('.form-row').addClass('with-errors');
 			 		 
 			 	} else {
@@ -198,6 +218,7 @@ $(document).ready(function() {
 	 	} else {
 	 		hidden_input.removeAttr('value');
 	 	}
+	 	$('#icons span.info').removeClass('error-msg');
 	 	
 	 });
 	 

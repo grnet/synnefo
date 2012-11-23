@@ -36,7 +36,7 @@ ACCOUNT_INACTIVE                        =   'Inactive account.'
 ACCOUNT_ALREADY_ACTIVE                  =   'Account is already active.'
 TOKEN_UNKNOWN                           =   'There is no user matching this token.'
 
-INVITATION_SENT                         =   'Invitation sent to %(emails.'
+INVITATION_SENT                         =   'Invitation sent to %(email)s.'
 PROFILE_UPDATED                         =   'Profile has been updated successfully.'
 FEEDBACK_SENT                           =   'Feedback successfully sent.'
 EMAIL_CHANGED                           =   'Account email has been changed successfully.'
@@ -44,8 +44,8 @@ EMAIL_CHANGE_REGISTERED                 =   'Change email request has been regis
                                                You are going to receive a verification email in the new address.'
 
 OBJECT_CREATED                          =   'The %(verbose_name)s was created successfully.'
-MEMBER_JOINED_GROUP                     =   '%(realnames has been successfully joined the group.'
-MEMBER_REMOVED                          =   '%(realnames has been successfully removed from the group.'
+MEMBER_JOINED_GROUP                     =   '%(realname)s has been successfully joined the group.'
+MEMBER_REMOVED                          =   '%(realname)s has been successfully removed from the group.'
 BILLING_ERROR                           =   'Service response status: %(status)d' 
 LOGOUT_SUCCESS                          =   'You have successfully logged out.'
 
@@ -56,7 +56,7 @@ MAX_INVITATION_NUMBER_REACHED   =           'There are no invitations left.'
 GROUP_MAX_PARTICIPANT_NUMBER_REACHED    =   'Group maximum participant number has been reached.'
 NO_APPROVAL_TERMS                       =   'There are no approval terms.'
 PENDING_EMAIL_CHANGE_REQUEST            =   'There is already a pending change email request.'
-OBJECT_CREATED_FAILED                   =   'The %(verbose_names creation failed: %(reasons.'
+OBJECT_CREATED_FAILED                   =   'The %(verbose_name)s creation failed: %(reason)s.'
 GROUP_JOIN_FAILURE                      =   'Failed to join group.'
 GROUPKIND_UNKNOWN                       =   'There is no such a group kind'
 NOT_MEMBER                              =   'User is not member of the group.'
@@ -105,7 +105,7 @@ MISSING_NEXT_PARAMETER                  =   'No next parameter'
 VERIFICATION_SENT                       =   'Verification sent.'
 
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with another local account. \
-                                               To change this account to a shibboleth one follow the link in the verification email sent to %(emails. \
+                                               To change this account to a shibboleth one follow the link in the verification email sent to %(email)s. \
                                                Otherwise just ignore it.'
 NOTIFACATION_SENT                       =   'Your request for an account was successfully received and is now pending approval. \
                                                You will be notified by email in the next few days. \

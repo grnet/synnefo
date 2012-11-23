@@ -539,7 +539,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         initial=True
     )
     max_participants = forms.IntegerField(
-        required=False, min_value=1
+        required=True, min_value=1
     )
 
     class Meta:
@@ -661,9 +661,11 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         super(AstakosGroupCreationSummaryForm, self).clean()
         self.cleaned_data['policies'] = []
         append = self.cleaned_data['policies'].append
+        print '#', self.cleaned_data
         #tbd = [f for f in self.fields if (f.startswith('is_selected_') and (not f.endswith('_proxy')))]
         tbd = [f for f in self.fields if f.startswith('is_selected_')]
         for name, uplimit in self.cleaned_data.iteritems():
+            print '####', name, uplimit
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 tbd.append(name)
@@ -671,9 +673,10 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
                 
+                print '#### ####', resource
                 # keep only resource limits for selected resource groups
                 if self.cleaned_data.get(
-                    'is_selected_%s' % resource.group, True
+                    'is_selected_%s' % resource.group, False
                 ):
                     append(dict(service=s, resource=r, uplimit=uplimit))
         for name in tbd:

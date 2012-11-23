@@ -186,3 +186,68 @@ PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
 # Enforce token renewal on password change/reset
 NEWPASSWD_INVALIDATE_TOKEN = getattr(
     settings, 'ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN', True)
+
+
+RESOURCES_PRESENTATION_DATA = getattr(
+    settings, 'ASTAKOS_RESOURCES_PRESENTATION_DATA', {
+        'groups': {
+             'compute': {
+                'help_text':'group compute help text',
+                'is_abbreviation':False,
+                'report_desc':'',
+                 'verbose_name':'compute', 
+            },
+            'storage': {
+                'help_text':'group storage help text',
+                'is_abbreviation':False,
+                'report_desc':'',
+                 'verbose_name':'storage', 
+            },
+        },
+        'resources': {
+            'pithos+.diskspace': {
+                'help_text':'resource pithos+.diskspace help text',
+                'is_abbreviation':False,
+                'report_desc':'Pithos+ Diskspace',
+                'placeholder':'eg. 10GB',
+                'verbose_name':'diskspace', 
+            },
+            'cyclades.vm': {
+                'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
+                'is_abbreviation':True,
+                'report_desc':'Virtual Machines',
+                'placeholder':'eg. 2',
+                'verbose_name':'vm', 
+            },
+            'cyclades.disk': {
+                'help_text':'resource cyclades.disk help text',
+                'is_abbreviation':False,
+                'report_desc':'Disk',
+                'placeholder':'eg. 5GB, 2GB etc',
+                'verbose_name':'disk'
+            },
+            'cyclades.ram': {
+                'help_text':'resource cyclades.ram help text',
+                'is_abbreviation':True,
+                'report_desc':'RAM',
+                'placeholder':'eg. 4GB',
+                'verbose_name':'ram'
+            },
+            'cyclades.cpu': {
+                'help_text':'resource cyclades.cpu help text',
+                'is_abbreviation':True,
+                'report_desc':'CPUs',
+                'placeholder':'eg. 1',
+                'verbose_name':'cpu'
+            },
+            'cyclades.network.private': {
+                'help_text':'resource cyclades.network.private help text',
+                'is_abbreviation':False,
+                'report_desc':'Network',
+                'placeholder':'eg. 1',
+                'verbose_name':'private network'
+            }
+        
+        }
+        
+    })

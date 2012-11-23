@@ -87,7 +87,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
                                   SendNotificationError)
 from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
-                                 LOGGING_LEVEL, PAGINATE_BY)
+                                 LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA)
 from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
@@ -667,85 +667,98 @@ def change_email(request, activation_key=None,
                            context_instance=get_context(request,
                                                         extra_context))
 
-
-
-resource_presentation = {
-       'compute': {
-            'help_text':'group compute help text',
-            'is_abbreviation':False,
-            'report_desc':''
-        },
-        'storage': {
-            'help_text':'group storage help text',
-            'is_abbreviation':False,
-            'report_desc':''
-        },
-        'pithos+.diskspace': {
-            'help_text':'resource pithos+.diskspace help text',
-            'is_abbreviation':False,
-            'report_desc':'Pithos+ Diskspace',
-            'placeholder':'eg. 10GB'
-        },
-        'cyclades.vm': {
-            'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
-            'is_abbreviation':True,
-            'report_desc':'Virtual Machines',
-            'placeholder':'eg. 2'
-        },
-        'cyclades.disksize': {
-            'help_text':'resource cyclades.disksize help text',
-            'is_abbreviation':False,
-            'report_desc':'Disksize',
-            'placeholder':'eg. 5GB, 2GB etc'
-        },
-        'cyclades.disk': {
-            'help_text':'resource cyclades.disk help text',
-            'is_abbreviation':False,
-            'report_desc':'Disk',
-            'placeholder':'eg. 5GB, 2GB etc'
-        },
-        'cyclades.ram': {
-            'help_text':'resource cyclades.ram help text',
-            'is_abbreviation':True,
-            'report_desc':'RAM',
-            'placeholder':'eg. 4GB'
-        },
-        'cyclades.cpu': {
-            'help_text':'resource cyclades.cpu help text',
-            'is_abbreviation':True,
-            'report_desc':'CPUs',
-            'placeholder':'eg. 1'
-        },
-        'cyclades.network.private': {
-            'help_text':'resource cyclades.network.private help text',
-            'is_abbreviation':False,
-            'report_desc':'Network',
-            'placeholder':'eg. 1'
-        }
-    }
+class ResourcePresentation():
+    
+    def __init__(self, data):
+        self.data = data
+        
+    def update_from_result(self, result):
+        if result.is_success:
+            for r in result.data:
+                rname = '%s%s%s' % (r.get('service'), RESOURCE_SEPARATOR, r.get('name'))
+                if not rname in self.data['resources']:
+                    self.data['resources'][rname] = {}
+                    
+                self.data['resources'][rname].update(r)
+                self.data['resources'][rname]['id'] = rname
+                group = r.get('group')
+                if not group in self.data['groups']:
+                    self.data['groups'][group] = {}
+                    
+                self.data['groups'][r.get('group')].update({'name': r.get('group')})
+    
+    def test(self, quota_dict):
+        for k, v in quota_dict.iteritems():
+            rname = k
+            value = v
+            if not rname in self.data['resources']:
+                    self.data['resources'][rname] = {}
+                    
+ 
+            self.data['resources'][rname]['value'] = value
+            
+    
+    def update_from_result_report(self, result):
+        if result.is_success:
+            for r in result.data:
+                rname = r.get('name')
+                if not rname in self.data['resources']:
+                    self.data['resources'][rname] = {}
+                    
+                self.data['resources'][rname].update(r)
+                self.data['resources'][rname]['id'] = rname
+                group = r.get('group')
+                if not group in self.data['groups']:
+                    self.data['groups'][group] = {}
+                    
+                self.data['groups'][r.get('group')].update({'name': r.get('group')})
+                
+    def get_group_resources(self, group):
+        return dict(filter(lambda t: t[1].get('group') == group, self.data['resources'].iteritems()))
+    
+    def get_groups_resources(self):
+        for g in self.data['groups']:
+            yield g, self.get_group_resources(g)
+    
+    def get_quota(self, group_quotas):
+        print '!!!!!', group_quotas
+        for r, v in group_quotas.iteritems():
+            rname = str(r)
+            quota = self.data['resources'].get(rname)
+            quota['value'] = v
+            yield quota
+    
+    
+    def get_policies(self, policies_data):
+        for policy in policies_data:
+            rname = '%s%s%s' % (policy.get('service'), RESOURCE_SEPARATOR, policy.get('resource'))
+            policy.update(self.data['resources'].get(rname))
+            yield policy
+        
+    def __repr__(self):
+        return self.data.__repr__()
+                
+    def __iter__(self, *args, **kwargs):
+        return self.data.__iter__(*args, **kwargs)
+    
+    def __getitem__(self, *args, **kwargs):
+        return self.data.__getitem__(*args, **kwargs)
+    
+    def get(self, *args, **kwargs):
+        return self.data.get(*args, **kwargs)
+        
+        
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_add(request, kind_name='default'):
+    
     result = callpoint.list_resources()
-    print '###', result
-    resource_catalog = {'resources':defaultdict(defaultdict),
-                        'groups':defaultdict(list)}
-    if result.is_success:
-        for r in result.data:
-            service = r.get('service', '')
-            name = r.get('name', '')
-            group = r.get('group', '')
-            unit = r.get('unit', '')
-            fullname = '%s%s%s' % (service, RESOURCE_SEPARATOR, name)
-            resource_catalog['resources'][fullname] = dict(unit=unit)
-            resource_catalog['groups'][group].append(fullname)
-        
-        resource_catalog = dict(resource_catalog)
-        for k, v in resource_catalog.iteritems():
-            resource_catalog[k] = dict(v)
-    else:
+    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+    resource_catalog.update_from_result(result)
+    
+    if not result.is_success:
         messages.error(
             request,
             'Unable to retrieve system resources: %s' % result.reason
@@ -765,28 +778,24 @@ def group_add(request, kind_name='default'):
         form_class=AstakosGroupCreationForm
     )
     
-    resources = resource_catalog['resources']
-    
- 
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
+            print '!!!!!!!!!! CLEANED DATA', form.cleaned_data
             return render_response(
                 template='im/astakosgroup_form_summary.html',
                 context_instance=get_context(request),
                 form = AstakosGroupCreationSummaryForm(form.cleaned_data),
-                policies = form.policies(),
-                resource_presentation=resource_presentation,
+                policies = resource_catalog.get_policies(form.policies()),
                 resource_catalog= resource_catalog,
-                resources = resources,
-            
             )
+         
     else:
         now = datetime.now()
         data = {
             'kind': kind,
         }
-        for group, resources in resource_catalog['groups'].iteritems():
+        for group, resources in resource_catalog.get_groups_resources():
             data['is_selected_%s' % group] = False
             for resource in resources:
                 data['%s_uplimit' % resource] = ''
@@ -803,7 +812,6 @@ def group_add(request, kind_name='default'):
         'form': form,
         'kind': kind,
         'resource_catalog':resource_catalog,
-        'resource_presentation':resource_presentation,
     }, context_processors)
     return HttpResponse(t.render(c))
 
@@ -840,9 +848,9 @@ def group_add_complete(request):
             post_save_redirect = '/im/group/%(id)s/'
             return HttpResponseRedirect(post_save_redirect % new_object)
         else:
-            msg = _(astakos_messages.OBJECT_CREATED_FAILED) %\
-                {"verbose_name": model._meta.verbose_name,
+            d = {"verbose_name": model._meta.verbose_name,
                  "reason":result.reason}
+            msg = _(astakos_messages.OBJECT_CREATED_FAILED) % d 
             messages.error(request, msg, fail_silently=True)
     return render_response(
         template='im/astakosgroup_form_summary.html',
@@ -857,7 +865,7 @@ def group_add_complete(request):
 def group_list(request):
     none = request.user.astakos_groups.none()
     sorting = request.GET.get('sorting')
-    q = AstakosGroup.objects.raw("""
+    query = """
         SELECT auth_group.id,
         %s AS groupname,
         im_groupkind.name AS kindname,
@@ -880,10 +888,17 @@ def group_list(request):
             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
-        WHERE im_membership.person_id = %s
-        """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id))
+        WHERE im_membership.person_id = %s 
+        """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id)
+       
+    if sorting:
+        query = query+" ORDER BY %s ASC" %sorting    
+    else:
+        query = query+" ORDER BY creation_date DESC"     
+    q = AstakosGroup.objects.raw(query)
 
-            
+       
+       
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
         q.model._meta.app_label,
@@ -965,31 +980,28 @@ def group_detail(request, group_id):
         form = MembersSortForm({'sort_by': sorting})
         if form.is_valid():
             sorting = form.cleaned_data.get('sort_by')
-
-    result = callpoint.list_resources()
-    resource_catalog = {'resources':defaultdict(defaultdict),
-                        'groups':defaultdict(list)}
-    if result.is_success:
-        for r in result.data:
-            service = r.get('service', '')
-            name = r.get('name', '')
-            group = r.get('group', '')
-            unit = r.get('unit', '')
-            fullname = '%s%s%s' % (service, RESOURCE_SEPARATOR, name)
-            resource_catalog['resources'][fullname] = dict(unit=unit, name=name)
-            resource_catalog['groups'][group].append(fullname)
-        
-        resource_catalog = dict(resource_catalog)
-        for k, v in resource_catalog.iteritems():
-            resource_catalog[k] = dict(v)
     
-    print '####', resource_catalog, obj.quota
+ 
+    
+    result = callpoint.list_resources()
+    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+    resource_catalog.update_from_result(result)
+
+    
+    if not result.is_success:
+        messages.error(
+            request,
+            'Unable to retrieve system resources: %s' % result.reason
+    )
+    
+    print '######', obj.quota
+   
     extra_context = {'update_form': update_form,
                      'addmembers_form': addmembers_form,
                      'page': request.GET.get('page', 1),
                      'sorting': sorting,
                      'resource_catalog':resource_catalog,
-                     'resource_presentation':resource_presentation,}
+                     'quota':resource_catalog.get_quota(obj.quota)}
     for key, value in extra_context.items():
         if callable(value):
             c[key] = value()
@@ -1005,7 +1017,6 @@ def group_detail(request, group_id):
 @signed_terms_required
 @login_required
 def group_search(request, extra_context=None, **kwargs):
-    print '###', request
     q = request.GET.get('q')
     sorting = request.GET.get('sorting')
     if request.method == 'GET':
@@ -1050,6 +1061,7 @@ def group_search(request, extra_context=None, **kwargs):
         if sorting:
             # TODO check sorting value
             queryset = queryset.order_by(sorting)
+
     else:
         queryset = AstakosGroup.objects.none()
     return object_list(
@@ -1251,10 +1263,16 @@ def resource_list(request):
     else:
         data = None
         messages.error(request, result.reason)
+    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+    resource_catalog.update_from_result_report(result)
+    
+
+    
     return render_response('im/resource_list.html',
                            data=data,
-                           resource_presentation=resource_presentation,
-                           context_instance=get_context(request))
+                           context_instance=get_context(request),
+			               resource_catalog=resource_catalog,
+                           result=result)
 
 
 def group_create_list(request):

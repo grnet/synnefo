@@ -115,6 +115,7 @@ $(document).ready(function() {
 	$('select.dropkicked').dropkick({
 		change: function (value, label) {
 		    $(this).parents('form').submit();
+		    
 		}
 	});
     

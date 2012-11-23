@@ -46,6 +46,17 @@ ability to either deploy the above services independently and standalone, or
 interconnected with each other, in large configurations.
 
 
+Synnefo General Architecture
+============================
+
+The following graph shows the whole Synnefo architecture and how it interacts
+with multiple Ganeti clusters. Right click on the image and select "Open image
+in new tab" to be able to zoom in.
+
+.. image:: images/synnefo-architecture1.png
+   :width: 800px
+
+
 Synnefo Guides
 ==============
 
@@ -113,8 +124,10 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
 Contact
 =======
 
-You can contact the Synnefo team at: synnefo@lists.grnet.gr
+You can contact the Synnefo team at the following mailing lists:
 
+ * Users list: synnefo@googlegroups.com
+ * Developers list: synnefo-devel@googlegroups.com
 
 Indices and tables
 ==================

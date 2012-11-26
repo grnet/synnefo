@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -31,7 +32,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-# -*- coding: utf-8 -*-
 from random import random, choice, randint
 from math import log
 from inspect import isclass
@@ -50,7 +50,7 @@ def shorts(s):
         return s
 
     return s[:61] + '...'
-        
+
 
 class CanonifyException(Exception):
     pass
@@ -133,7 +133,7 @@ class Canonical(object):
 
     def _parse(self, item):
         raise NotImplementedError
-    
+
     def create(self):
         return None
 
@@ -170,7 +170,7 @@ class Canonical(object):
                     (k, v.tostring( depth=depth,
                                     showopts=showopts,
                                     multiline=multiline)))
-                                    
+
                                     for k, v in self.kw.items()]
         if showopts:
             args += [("%s=%s" % (k, str(v))) for k, v in self.opts.items()]
@@ -315,7 +315,7 @@ class Text(Canonical):
         if minlen is not None and itemlen < minlen:
             m = "%s: len('%s') < minlen=%d" % (self, shorts(item), minlen)
             raise CanonifyException(m)
-            
+
         matcher = self.matcher
         if matcher is not None:
             match = matcher.match(item)
@@ -414,7 +414,7 @@ class Bytes(Canonical):
         if minlen is not None and itemlen < minlen:
             m = "%s: len('%s') < minlen=%d" % (self, shorts(item), minlen)
             raise CanonifyException(m)
-            
+
         matcher = self.matcher
         if matcher is not None:
             match = matcher.match(item)
@@ -526,7 +526,7 @@ class ListOf(Canonical):
             raise CanonifyException(m)
 
         return canonified
-        
+
     def random_listof(self, kw):
         z = randint(1, 4)
         get_random = self.canonical.random
@@ -563,7 +563,7 @@ class Args(Canonical):
                 parsed[key] = self.kw[key].parse(v)
 
         return parsed
-        
+
     def _check(self, item):
         try:
             item = OrderedDict(item)
@@ -572,13 +572,13 @@ class Args(Canonical):
             raise CanonifyException(m)
 
         canonified = OrderedDict()
-        
+
         try:
             for n, c in self.kw.items():
                 t = item[n] if n in item else None
                 canonified[n] = c(t)
         except KeyError:
-            m = ("%s: Argument '%s' not found in '%s'" 
+            m = ("%s: Argument '%s' not found in '%s'"
                         % (self, shorts(n), shorts(item)))
             raise CanonifyException(m)
 
@@ -632,7 +632,7 @@ class Tuple(Canonical):
         g = (canonical.parse(element)
              for canonical, (k, element) in zip(self.args, item))
         return tuple(g)
-        
+
     def __add__(self, other):
         oargs = other.args if isinstance(other, Tuple) else (other,)
         args = self.args + oargs
@@ -661,7 +661,7 @@ class Dict(Canonical):
             if n not in item:
                 m = "%s: key '%s' not found" % (self, shorts(n))
                 raise CanonifyException(m)
-            canonified[n] = c(item[n])   
+            canonified[n] = c(item[n])
 
         strict = self.opts.get('strict', True)
         if strict and len(item) != len(canonical):
@@ -701,7 +701,7 @@ class Dict(Canonical):
             raise CanonifyException(m)
 
         return canonified
-        
+
     def random_dict(self, kw):
         item = {}
         for n, c in self.canonical.items():

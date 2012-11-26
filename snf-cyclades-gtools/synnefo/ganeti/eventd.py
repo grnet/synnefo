@@ -67,6 +67,7 @@ from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
 
 
+
 def get_time_from_status(op, job):
     """Generate a unique message identifier for a ganeti job.
 
@@ -125,7 +126,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         # Set max_retries to 0 for unlimited retries.
         self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25,
-                                 max_retries=0)
+                                 max_retries=0, logger=logger)
 
         handler_logger.info("Attempting to connect to RabbitMQ hosts")
 

@@ -5,17 +5,106 @@ Synnefo Administrator's Guide
 
 This is the complete Synnefo Administrator's Guide.
 
-Common administrative tasks
-===========================
-
-If you installed Synnefo successfully and have a working deployment, here are
-some common administrative tasks that you may find useful.
 
 
-.. _user_activation:
+General Synnefo Architecture
+============================
 
-User activation
----------------
+The following graph shows the whole Synnefo architecture and how it interacts
+with multiple Ganeti clusters. We hope that after reading the Administrator's
+Guide you will be able to understand every component and all the interactions
+between them. It is a good idea to first go through the Quick Administrator's
+Guide before proceeding.
+
+.. image:: images/synnefo-architecture1.png
+   :width: 100%
+   :target: _images/synnefo-architecture1.png
+
+
+Identity Service (Astakos)
+==========================
+
+
+Overview
+--------
+
+Authentication methods
+~~~~~~~~~~~~~~~~~~~~~~
+
+Local Authentication
+````````````````````
+
+LDAP Authentication
+```````````````````
+
+.. _shibboleth-auth:
+
+Shibboleth Authentication
+`````````````````````````
+
+Astakos can delegate user authentication to a Shibboleth federation.
+
+To setup shibboleth, install package::
+
+  apt-get install libapache2-mod-shib2
+
+Change appropriately the configuration files in ``/etc/shibboleth``.
+
+Add in ``/etc/apache2/sites-available/synnefo-ssl``::
+
+  ShibConfig /etc/shibboleth/shibboleth2.xml
+  Alias      /shibboleth-sp /usr/share/shibboleth
+
+  <Location /im/login/shibboleth>
+    AuthType shibboleth
+    ShibRequireSession On
+    ShibUseHeaders On
+    require valid-user
+  </Location>
+
+and before the line containing::
+
+  ProxyPass        / http://localhost:8080/ retry=0
+
+add::
+
+  ProxyPass /Shibboleth.sso !
+
+Then, enable the shibboleth module::
+
+  a2enmod shib2
+
+After passing through the apache module, the following tokens should be
+available at the destination::
+
+  eppn # eduPersonPrincipalName
+  Shib-InetOrgPerson-givenName
+  Shib-Person-surname
+  Shib-Person-commonName
+  Shib-InetOrgPerson-displayName
+  Shib-EP-Affiliation
+  Shib-Session-ID
+
+Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
+Architecture
+------------
+
+Prereqs
+-------
+
+Installation
+------------
+
+Configuration
+-------------
+
+Working with Astakos
+--------------------
+
+User activation methods
+~~~~~~~~~~~~~~~~~~~~~~~
 
 When a new user signs up, he/she is not marked as active. You can see his/her
 state by running (on the machine that runs the Astakos app):
@@ -28,7 +117,7 @@ There are two different ways to activate a new user. Both need access to a
 running :ref:`mail server <mail-server>`.
 
 Manual activation
-~~~~~~~~~~~~~~~~~
+`````````````````
 
 You can manually activate a new user that has already signed up, by sending
 him/her an activation email. The email will contain an approriate activation
@@ -39,11 +128,166 @@ email by running:
 
    $ snf-manage user-activation-send <user ID or email>
 
-Be sure to have already setup your mail server and defined it in your synnefo
+Be sure to have already setup your mail server and defined it in your Synnefo
 settings, before running the command.
 
 Automatic activation
-~~~~~~~~~~~~~~~~~~~~
+````````````````````
+
+FIXME: Describe Regex activation method
+
+Astakos advanced operations
+---------------------------
+
+Adding "Terms of Use"
+~~~~~~~~~~~~~~~~~~~~~
+
+Astakos supports versioned terms-of-use. First of all you need to create an
+html file that will contain your terms. For example, create the file
+``/usr/share/synnefo/sample-terms.html``, which contains the following:
+
+.. code-block:: console
+
+   <h1>~okeanos terms</h1>
+
+   These are the example terms for ~okeanos
+
+Then, add those terms-of-use with the snf-manage command:
+
+.. code-block:: console
+
+   $ snf-manage term-add /usr/share/synnefo/sample-terms.html
+
+Your terms have been successfully added and you will see the corresponding link
+appearing in the Astakos web pages' footer.
+
+
+
+File Storage Service (Pithos)
+=============================
+
+Overview
+--------
+
+Architecture
+------------
+
+Prereqs
+-------
+
+Installation
+------------
+
+Configuration
+-------------
+
+Working with Pithos
+-------------------
+
+Pithos advanced operations
+--------------------------
+
+
+
+Compute/Network/Image Service (Cyclades)
+========================================
+
+Compute Overview
+----------------
+
+Network Overview
+----------------
+
+Image Overview
+--------------
+
+Architecture
+------------
+
+Prereqs
+-------
+
+RabbitMQ
+~~~~~~~~
+
+RabbitMQ is used as a generic message broker for Cyclades. It should be
+installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high
+availability configuration as described here:
+
+    http://www.rabbitmq.com/pacemaker.html
+
+The values set for the user and password must be mirrored in the ``RABBIT_*``
+variables in your settings, as managed by :ref:`snf-common <snf-common>`.
+
+.. todo:: Document an active-active configuration based on the latest version
+   of RabbitMQ.
+
+Installation
+------------
+
+Configuration
+-------------
+
+Working with Cyclades
+---------------------
+
+Cyclades advanced operations
+----------------------------
+
+Reconciliation mechanism
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+On certain occasions, such as a Ganeti or RabbitMQ failure, the VM state in the
+system's database may differ from that in the Ganeti installation. The
+reconciliation process is designed to bring the system's database in sync with
+what Ganeti knows about each VM, and is able to detect the following three
+conditions:
+
+ * Stale DB servers without corresponding Ganeti instances
+ * Orphan Ganeti instances, without corresponding DB entries
+ * Out-of-sync operstate for DB entries wrt to Ganeti instances
+
+The reconciliation mechanism runs as a management command, e.g., as follows:
+[PYTHONPATH needs to contain the parent of the synnefo Django project
+directory]:
+
+.. code-block:: console
+
+   $ export PYTHONPATH=/srv:$PYTHONPATH
+   $ snf-manage reconcile --detect-all -v 2
+
+Please see ``snf-manage reconcile --help`` for all the details.
+
+The administrator can also trigger reconciliation of operating state manually,
+by issuing a Ganeti ``OP_INSTANCE_QUERY_DATA`` command on a Synnefo VM, using
+gnt-instance info.
+
+
+
+Block Storage Service (Archipelago)
+===================================
+
+Overview
+--------
+
+Architecture
+------------
+
+Prereqs
+-------
+
+Installation
+------------
+
+Configuration
+-------------
+
+Working with Archipelago
+------------------------
+
+Archipelago advanced operations
+-------------------------------
+
 
 .. _mail-server:
 
@@ -61,7 +305,7 @@ related constants. At least:
    EMAIL_PORT = "25"
 
 The "kamaki" API client
------------------------
+=======================
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
@@ -137,6 +381,10 @@ To verify that the image was registered successfully use:
    $ kamaki glance list -l
 
 
+
+Miscellaneous
+=============
+
 Admin tool: snf-manage
 ----------------------
 
@@ -151,58 +399,6 @@ change the type of a user to ADMIN, snf-admin can be used:
 .. code-block:: console
 
    $ snf-manage user-modify 42 --type ADMIN
-
-
-Adding Astakos "Terms of Use"
------------------------------
-
-Astakos supports versioned terms-of-use. First of all you need to create an
-html file that will contain your terms. For example, create the file
-``/usr/share/synnefo/sample-terms.html``, which contains the following:
-
-.. code-block:: console
-
-   <h1>~okeanos terms</h1>
-
-   These are the example terms for ~okeanos
-
-Then, add those terms-of-use with the snf-manage command:
-
-.. code-block:: console
-
-   $ snf-manage term-add /usr/share/synnefo/sample-terms.html
-
-Your terms have been successfully added and you will see the corresponding link
-appearing in the Astakos web pages' footer.
-
-
-Reconciliation mechanism
-------------------------
-
-On certain occasions, such as a Ganeti or RabbitMQ failure, the VM state in the
-system's database may differ from that in the Ganeti installation. The
-reconciliation process is designed to bring the system's database in sync with
-what Ganeti knows about each VM, and is able to detect the following three
-conditions:
-
- * Stale DB servers without corresponding Ganeti instances
- * Orphan Ganeti instances, without corresponding DB entries
- * Out-of-sync operstate for DB entries wrt to Ganeti instances
-
-The reconciliation mechanism runs as a management command, e.g., as follows:
-[PYTHONPATH needs to contain the parent of the synnefo Django project
-directory]:
-
-.. code-block:: console
-
-   $ export PYTHONPATH=/srv:$PYTHONPATH
-   $ snf-manage reconcile --detect-all -v 2
-
-Please see ``snf-manage reconcile --help`` for all the details.
-
-The administrator can also trigger reconciliation of operating state manually,
-by issuing a Ganeti ``OP_INSTANCE_QUERY_DATA`` command on a Synnefo VM, using
-gnt-instance info.
 
 Logging
 -------
@@ -240,57 +436,6 @@ Please note the following:
     may actually be stored in a longer-term logfile
 
 
-.. _shibboleth-auth:
-
-Authentication using Shibboleth
-===============================
-
-Astakos can delegate user authentication to a Shibboleth federation.
-
-To setup shibboleth, install package::
-
-  apt-get install libapache2-mod-shib2
-
-Change appropriately the configuration files in ``/etc/shibboleth``.
-
-Add in ``/etc/apache2/sites-available/synnefo-ssl``::
-
-  ShibConfig /etc/shibboleth/shibboleth2.xml
-  Alias      /shibboleth-sp /usr/share/shibboleth
-
-  <Location /im/login/shibboleth>
-    AuthType shibboleth
-    ShibRequireSession On
-    ShibUseHeaders On
-    require valid-user
-  </Location>
-
-and before the line containing::
-
-  ProxyPass        / http://localhost:8080/ retry=0
-
-add::
-
-  ProxyPass /Shibboleth.sso !
-
-Then, enable the shibboleth module::
-
-  a2enmod shib2
-
-After passing through the apache module, the following tokens should be
-available at the destination::
-
-  eppn # eduPersonPrincipalName
-  Shib-InetOrgPerson-givenName
-  Shib-Person-surname
-  Shib-Person-commonName
-  Shib-InetOrgPerson-displayName
-  Shib-EP-Affiliation
-  Shib-Session-ID
-
-Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
-inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
-
 
 Scaling up to multiple nodes
 ============================
@@ -324,20 +469,6 @@ Nodes of type :ref:`LOGIC <LOGIC_NODE>`
     :ref:`snf-webproject <snf-webproject>`,
     :ref:`snf-cyclades-app <snf-cyclades-app>`.
 
-RabbitMQ
---------
-
-RabbitMQ is used as a generic message broker for Cyclades. It should be
-installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high
-availability configuration as described here:
-
-    http://www.rabbitmq.com/pacemaker.html
-
-The values set for the user and password must be mirrored in the ``RABBIT_*``
-variables in your settings, as managed by :ref:`snf-common <snf-common>`.
-
-.. todo:: Document an active-active configuration based on the latest version
-   of RabbitMQ.
 
 
 Upgrade Notes

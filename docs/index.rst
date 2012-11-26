@@ -3,10 +3,13 @@ Welcome to Synnefo's documentation
 
 .. image:: /images/synnefo-logo.png
 
-Synnefo is opensource software, used to create massively scalable IaaS clouds.
+| Synnefo is open source cloud software, used to create massively scalable IaaS
+  clouds.
+| Synnefo uses `Google Ganeti <http://code.google.com/p/ganeti/>`_ for the low
+  level VM management part.
 
 | You can see Synnefo in action, powering GRNET's
-  `~okeanos cloud service <https://okeanos.grnet.gr>`_.
+  `~okeanos public cloud service <http://okeanos.io>`_.
 | It is a collection of components (snf-*), most of them written in python, that
   are used as the building bricks to provide the following services:
 
@@ -22,6 +25,7 @@ Synnefo is opensource software, used to create massively scalable IaaS clouds.
    Volume Storage Service (codename: archipelago) <archipelago>
 
 .. image:: images/synnefo-overview.png
+   :target: _images/synnefo-overview.png
 
 There are also components for:
 
@@ -41,6 +45,18 @@ cluster/s and Synnefo's overall architecture before you start deploying.
 All Synnefo components use an intuitive settings mechanism, that gives you the
 ability to either deploy the above services independently and standalone, or
 interconnected with each other, in large configurations.
+
+
+Synnefo General Architecture
+============================
+
+The following graph shows the whole Synnefo architecture and how it interacts
+with multiple Ganeti clusters. Right click on the image and select "Open image
+in new tab" to be able to zoom in.
+
+.. image:: images/synnefo-architecture1.png
+   :width: 100%
+   :target: _images/synnefo-architecture1.png
 
 
 Synnefo Guides
@@ -110,8 +126,10 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
 Contact
 =======
 
-You can contact the Synnefo team at: synnefo@lists.grnet.gr
+You can contact the Synnefo team at the following mailing lists:
 
+ * Users list: synnefo@googlegroups.com
+ * Developers list: synnefo-devel@googlegroups.com
 
 Indices and tables
 ==================

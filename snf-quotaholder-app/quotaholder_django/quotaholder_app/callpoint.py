@@ -241,7 +241,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return rejected
 
-    def _set_full_holding(self, entity, resource, policy,
+    def _init_holding(self, entity, resource, policy,
                           imported, exported, returned, released,
                           flags):
         try:
@@ -261,11 +261,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         h.releasing=released
         h.save()
 
-    def set_full_holding(self, context={}, set_full_holding=()):
+    def init_holding(self, context={}, init_holding=()):
         rejected = []
         append = rejected.append
 
-        for idx, sfh in enumerate(set_full_holding):
+        for idx, sfh in enumerate(init_holding):
             (entity, resource, key, policy,
              imported, exported, returned, released,
              flags) = sfh
@@ -285,7 +285,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 append(idx)
                 continue
 
-            self._set_full_holding(e, resource, p,
+            self._init_holding(e, resource, p,
                                    imported, exported,
                                    returned, released,
                                    flags)

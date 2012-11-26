@@ -304,7 +304,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             serials += [p.serial.serial for p in ps]
         except Provision.DoesNotExist:
             pass
-        print 'PENDING are', serials
         return serials
 
     def _actual_quantity(self, holding):

@@ -118,10 +118,32 @@ def process_net_status(vm, etime, nics):
     Update the state of the VM in the DB accordingly.
     """
 
+    ganeti_nics = process_ganeti_nics(nics)
+    if not nics_changed(vm.nics.order_by('index'), ganeti_nics):
+        log.debug("NICs for VM %s have not changed", vm)
+
     release_instance_nics(vm)
 
-    new_nics = enumerate(nics)
-    for i, new_nic in new_nics:
+    for nic in ganeti_nics:
+        ipv4 = nic.get('ipv4', '')
+        if ipv4:
+            net = nic['network']
+            net.reserve_address(ipv4)
+
+        nic['dirty'] = False
+        vm.nics.create(**nic)
+        # Dummy save the network, because UI uses changed-since for VMs
+        # and Networks in order to show the VM NICs
+        net.save()
+
+    vm.backendtime = etime
+    vm.save()
+
+
+def process_ganeti_nics(ganeti_nics):
+    """Process NIC dict from ganeti hooks."""
+    new_nics = []
+    for i, new_nic in enumerate(ganeti_nics):
         network = new_nic.get('network', '')
         n = str(network)
         pk = utils.id_from_network_name(n)
@@ -138,23 +160,31 @@ def process_net_status(vm, etime, nics):
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
-        if ipv4:
-            net.reserve_address(ipv4)
+        nic = {
+               'index': i,
+               'network': net,
+               'mac': mac,
+               'ipv4': ipv4,
+               'ipv6': ipv6,
+               'firewall_profile': firewall_profile}
 
-        vm.nics.create(
-            network=net,
-            index=i,
-            mac=mac,
-            ipv4=ipv4,
-            ipv6=ipv6,
-            firewall_profile=firewall_profile,
-            dirty=False)
-        # Dummy save the network, because UI uses changed-since for VMs
-        # and Networks in order to show the VM NICs
-        net.save()
+        new_nics.append(nic)
+    return new_nics
 
-    vm.backendtime = etime
-    vm.save()
+
+def nics_changed(old_nics, new_nics):
+    """Return True if NICs have changed in any way."""
+    if len(old_nics) != len(new_nics):
+        return True
+    for old_nic, new_nic in zip(old_nics, new_nics):
+        if not (old_nic.ipv4 == new_nic['ipv4'] and\
+                old_nic.ipv6 == new_nic['ipv6'] and\
+                old_nic.mac == new_nic['mac'] and\
+                old_nic.firewall_profile == new_nic['firewall_profile'] and\
+                old_nic.index == new_nic['index'] and\
+                old_nic.network == new_nic['network']):
+            return True
+    return False
 
 
 def release_instance_nics(vm):

@@ -31,40 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
+from synnefo.lib.commissioning import (CallError, register_exception,
+                                       InvalidDataError, CorruptedError)
 
-from synnefo.db.models import Backend
+@register_exception
+class CommissionException(CallError):
+    pass
 
+@register_exception
+class InvalidKeyError(CommissionException):
+    pass
 
-class Command(BaseCommand):
-    help = "List backends"
+@register_exception
+class NoEntityError(CommissionException):
+    pass
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+@register_exception
+class NoQuantityError(CommissionException):
+    pass
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+@register_exception
+class NoCapacityError(CommissionException):
+    pass
 
-        backends = Backend.objects.order_by('id')
+@register_exception
+class ExportLimitError(CommissionException):
+    pass
 
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+@register_exception
+class ImportLimitError(CommissionException):
+    pass

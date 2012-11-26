@@ -31,40 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
+from .quotaholder import QuotaholderAPI
+from .exception import ( InvalidKeyError, NoEntityError,
+                         NoQuantityError, NoCapacityError,
+                         ExportLimitError, ImportLimitError,
+                         CorruptedError, InvalidDataError)
 
-from synnefo.db.models import Backend
-
-
-class Command(BaseCommand):
-    help = "List backends"
-
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
-
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-
-        backends = Backend.objects.order_by('id')
-
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+API_Spec = QuotaholderAPI

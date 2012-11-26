@@ -31,6 +31,7 @@
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
+from synnefo.management.common import pprint_table
 from synnefo.plankton.backend import ImageBackend
 
 
@@ -42,19 +43,14 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         userid = options['userid']
-        write = self.stdout.write
 
         c = ImageBackend(userid) if userid else ImageBackend("")
         images = c.list()
         images.sort(key=lambda x: x['created_at'], reverse=True)
 
-        fields = ("id", "name", "owner", "public")
-        columns = (40, 30, 30, 7)
-        sep = "-" * 107
-        line = "".join(f.rjust(c) for f, c in zip(fields, columns))
-        write(line + "\n")
-        write(sep + "\n")
+        headers = ("id", "name", "owner", "public")
+        table = []
         for img in images:
-            fields = (img["id"], img["name"], img["owner"], img["is_public"])
-            line = "".join(str(f).rjust(c) for f, c in zip(fields, columns))
-            write(line + "\n")
+            fields = (img["id"], img["name"], img["owner"], str(img["is_public"]))
+            table.append(fields)
+        pprint_table(self.stdout, table, headers)

@@ -31,40 +31,25 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
+from config import QHTestCase
+from config import run_test_case
+from config import rand_string
+from config import printf
 
-from synnefo.db.models import Backend
+from synnefo.lib.commissioning import CallError
+
+class QHAPITest(QHTestCase):
+
+    def test_001(self):
+        r = self.qh.list_entities(entity='system', key='')
+        self.assertEqual(r, ['system'])
+
+    def test_002(self):
+        with self.assertRaises(CallError):
+            self.qh.list_entities(entity='systems', key='')
 
 
-class Command(BaseCommand):
-    help = "List backends"
-
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
-
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-
-        backends = Backend.objects.order_by('id')
-
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+if __name__ == "__main__":
+    import sys
+    printf("Using {0}", sys.executable)
+    run_test_case(QHAPITest)

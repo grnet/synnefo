@@ -255,27 +255,12 @@ class ImageBackend(object):
         location = get_location(account, container, object)
         return self._get_image(location)
 
-    def iter(self):
-        """Iter over all images available to the user"""
-
-        backend = self.backend
-        for account in backend.list_accounts(self.user):
-            for container in backend.list_containers(self.user, account,
-                                                     shared=True):
-                for path, version_id in backend.list_objects(self.user,
-                        account, container, domain=PLANKTON_DOMAIN):
-                    location = get_location(account, container, path)
-                    image = self._get_image(location)
-                    if image:
-                        yield image
-
-    def iter_public(self, filters=None):
+    def _iter(self, public=False, filters=None, shared_from=None):
         filters = filters or {}
-        backend = self.backend
 
+        # Fix keys
         keys = [PLANKTON_PREFIX + 'name']
         size_range = (None, None)
-
         for key, val in filters.items():
             if key == 'size_min':
                 size_range = (int(val), size_range[1])
@@ -284,41 +269,50 @@ class ImageBackend(object):
             else:
                 keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
 
-        for account in backend.list_accounts(None):
-            for container in backend.list_containers(None, account,
+        backend = self.backend
+        if shared_from:
+            # To get shared images, we connect as shared_from member and
+            # get the list shared by us
+            user = shared_from
+            accounts = [self.user]
+        else:
+            user = None if public else self.user
+            accounts = backend.list_accounts(user)
+
+        for account in accounts:
+            for container in backend.list_containers(user, account,
                                                      shared=True):
-                for path, version_id in backend.list_objects(None, account,
-                        container, domain=PLANKTON_DOMAIN, keys=keys,
-                        shared=True, size_range=size_range):
+                for path, _ in backend.list_objects(user, account, container,
+                                                    domain=PLANKTON_DOMAIN,
+                                                    keys=keys, shared=True,
+                                                    size_range=size_range):
                     location = get_location(account, container, path)
                     image = self._get_image(location)
                     if image:
                         yield image
 
-    def iter_shared(self, member):
-        """Iterate over image ids shared to this member"""
-
-        backend = self.backend
-
-        # To get the list we connect as member and get the list shared by us
-        for container in  backend.list_containers(member, self.user):
-            for object, version_id in backend.list_objects(member, self.user,
-                    container, domain=PLANKTON_DOMAIN):
-                try:
-                    location = get_location(self.user, container, object)
-                    meta = backend.get_object_meta(member, self.user,
-                            container, object, PLANKTON_DOMAIN)
-                    if PLANKTON_PREFIX + 'name' in meta:
-                        yield meta['uuid']
-                except (NameError, NotAllowedError):
-                    continue
-
-    def list(self):
+    def iter(self, filters=None):
         """Iter over all images available to the user"""
+        return self._iter(filters=filters)
 
-        return list(self.iter())
+    def iter_public(self, filters=None):
+        """Iter over public images"""
+        return self._iter(public=True, filters=filters)
 
-    def list_public(self, filters, params):
+    def iter_shared(self, filters=None, member=None):
+        """Iter over images shared to member"""
+        return self._iter(filters=filters)
+
+    def list(self, filters=None, params={}):
+        """Return all images available to the user"""
+        images = list(self.iter(filters))
+        key = itemgetter(params.get('sort_key', 'created_at'))
+        reverse = params.get('sort_dir', 'desc') == 'desc'
+        images.sort(key=key, reverse=reverse)
+        return images
+
+    def list_public(self, filters, params={}):
+        """Return public images"""
         images = list(self.iter_public(filters))
         key = itemgetter(params.get('sort_key', 'created_at'))
         reverse = params.get('sort_dir', 'desc') == 'desc'
@@ -385,7 +379,10 @@ class ImageBackend(object):
             raise BackendException("Invalid checksum")
 
         is_public = params.pop('is_public', False)
-        permissions = {'read': ['*']} if is_public else {}
+        if is_public:
+            permissions = {'read': ['*']}
+        else:
+            permissions = {'read': [self.user]}
 
         meta = {}
         meta['properties'] = params.pop('properties', {})

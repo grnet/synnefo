@@ -31,40 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
 
-from synnefo.db.models import Backend
+# Import general commission framework
+from .exception         import (CallError, CorruptedError, InvalidDataError,
+				register_exception, register_exceptions)
 
+from .callpoint         import  Callpoint, get_callpoint, mkcallargs
 
-class Command(BaseCommand):
-    help = "List backends"
+from .specificator      import (Specificator, SpecifyException,
+                                Canonifier, CanonifyException,
+                                Canonical,
+                                Null, Nothing, Integer, Serial,
+                                Text, Bytes, Tuple, ListOf, Dict, Args)
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
-
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-
-        backends = Backend.objects.order_by('id')
-
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+# Import standard implementations?

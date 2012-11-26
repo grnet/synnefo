@@ -36,6 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import format_bool, filter_results
 from synnefo.db.models import Network
+from synnefo.management.common import pprint_table
 
 FIELDS = Network._meta.get_all_field_names()
 
@@ -89,23 +90,15 @@ class Command(BaseCommand):
         if filter_by:
             networks = filter_results(networks, filter_by)
 
-        labels = ['id', 'name', 'type', 'owner',
+        headers = ['id', 'name', 'type', 'owner',
                   'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']
-        columns = [3, 16, 22, 30, 10, 6, 8, 12, 4, 6]
 
         if options['ipv6']:
-            labels.extend(['IPv6 Subnet', 'IPv6 Gateway'])
-            columns.extend([16, 16])
+            headers.extend(['IPv6 Subnet', 'IPv6 Gateway'])
         else:
-            labels.extend(['IPv4 Subnet', 'IPv4 Gateway'])
-            columns.extend([14, 14])
+            headers.extend(['IPv4 Subnet', 'IPv4 Gateway'])
 
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
+        table = []
         for network in networks.order_by("id"):
             fields = [str(network.id),
                       network.name,
@@ -122,10 +115,7 @@ class Command(BaseCommand):
                 fields.extend([network.subnet6 or '', network.gateway6 or ''])
             else:
                 fields.extend([network.subnet, network.gateway or ''])
+            table.append(fields)
 
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+        separator = " | " if options['csv'] else None
+        pprint_table(self.stdout, table, headers, separator)

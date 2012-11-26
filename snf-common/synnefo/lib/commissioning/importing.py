@@ -31,40 +31,51 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
+from imp import find_module, load_module
 
-from synnefo.db.models import Backend
+_modules = {}
+
+def imp_module(fullname):
+    if fullname in _modules:
+        return _modules[fullname]
+
+    components = fullname.split('.')
+    if not components:
+        raise ValueError('invalid module name')
+
+    module = None
+    modulepath = []
+
+    for name in components:
+        if not name:
+            raise ValueError("Relative paths not allowed")
+
+        modulepath.append(name)
+        modulename = '.'.join(modulepath)
+        if modulename in _modules:
+            module = _modules[modulename]
+
+        elif hasattr(module, name):
+            module = getattr(module, name)
+
+        elif not hasattr(module, '__path__'):
+            m = find_module(name)
+            module = load_module(modulename, *m)
+
+        else:
+            try:
+                m = find_module(name, module.__path__)
+                module = load_module(modulename, *m)
+            except ImportError:
+                m = "No module '%s' in '%s'" % (name, module.__path__)
+                raise ImportError(m)
+
+        _modules[modulename] = module
+
+    return module
 
 
-class Command(BaseCommand):
-    help = "List backends"
+def list_modules():
+    return sorted(_modules.keys())
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-
-        backends = Backend.objects.order_by('id')
-
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)

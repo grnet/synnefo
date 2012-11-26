@@ -27,25 +27,29 @@ class PoolManager(object):
     """
     def __init__(self, pool_table):
         self.pool_table = pool_table
-
+        self.pool_size = pool_table.size
         if pool_table.available_map:
             self.available = _bitarray_from_string(pool_table.available_map)
             self.reserved = _bitarray_from_string(pool_table.reserved_map)
         else:
-            size = self.pool_table.size
-            padding = find_padding(size)
-            size = size + padding
-            self.pool_size = size
-            self.available = self._create_empty_pool()
-            self.reserved = self._create_empty_pool()
-            for i in xrange(0, padding):
-                self._reserve(size - i - 1, external=True)
+            self.available = self._create_empty_pool(self.pool_size)
+            self.reserved = self._create_empty_pool(self.pool_size)
+            self.add_padding(self.pool_size)
 
-    def _create_empty_pool(self):
-        assert(self.pool_size % 8 == 0)
-        ba = bitarray(self.pool_size)
+    def _create_empty_pool(self, size):
+        ba = bitarray(size)
         ba.setall(AVAILABLE)
         return ba
+
+    def add_padding(self, pool_size):
+        bits = find_padding(pool_size)
+        self.available.extend([AVAILABLE] * bits)
+        self.reserved.extend([UNAVAILABLE] * bits)
+
+    def cut_padding(self, pool_size):
+        bits = find_padding(pool_size)
+        self.available = self.available[:-bits]
+        self.reserved = self.reserved[:-bits]
 
     @property
     def pool(self):
@@ -57,6 +61,7 @@ class PoolManager(object):
             raise EmptyPool
         # Get the first available index
         index = int(self.pool.index(AVAILABLE))
+        assert(index < self.pool_size)
         self._reserve(index)
         return self.index_to_value(index)
 
@@ -85,6 +90,7 @@ class PoolManager(object):
         return not self.pool.any()
 
     def size(self):
+        """Return the size of the bitarray(original size + padding)."""
         return self.pool.length()
 
     def _reserve(self, index, external=False):
@@ -106,10 +112,10 @@ class PoolManager(object):
         return self.pool.count(UNAVAILABLE)
 
     def count_reserved(self):
-        return self.reserved.count(UNAVAILABLE)
+        return self.reserved[:self.pool_size].count(UNAVAILABLE)
 
     def count_unreserved(self):
-        return self.size() - self.count_reserved()
+        return self.pool_size - self.count_reserved()
 
     def is_available(self, value, index=False):
         if not index:
@@ -126,10 +132,39 @@ class PoolManager(object):
         return self.reserved[idx] == UNAVAILABLE
 
     def to_01(self):
-        return self.pool.to01()
+        return self.pool[:self.pool_size].to01()
 
     def to_map(self):
         return self.to_01().replace("0", "X").replace("1", ".")
+
+    def extend(self, bits_num):
+        assert(bits_num >= 0)
+        self.resize(bits_num)
+
+    def shrink(self, bits_num):
+        assert(bits_num >= 0)
+        size = self.pool_size
+        tmp = self.available[(size - bits_num): size]
+        if tmp.count(UNAVAILABLE):
+            raise Exception("Can not shrink. In use")
+        self.resize(-bits_num)
+
+    def resize(self, bits_num):
+        if bits_num == 0:
+            return
+        # Cut old padding
+        self.cut_padding(self.pool_size)
+        # Do the resize
+        if bits_num > 0:
+            self.available.extend([AVAILABLE] * bits_num)
+            self.reserved.extend([AVAILABLE] * bits_num)
+        else:
+            self.available = self.available[:bits_num]
+            self.reserved = self.reserved[:bits_num]
+        # Add new padding
+        self.pool_size = self.pool_size + bits_num
+        self.add_padding(self.pool_size)
+        self.pool_table.size = self.pool_size
 
     def index_to_value(self, index):
         raise NotImplementedError
@@ -183,7 +218,7 @@ class MacPrefixPool(PoolManager):
         do_init = False if pool_table.available_map else True
         super(MacPrefixPool, self).__init__(pool_table)
         if do_init:
-            for i in xrange(1, self.size()):
+            for i in xrange(1, self.pool_size):
                 if not self.validate_mac(self.index_to_value(i)):
                     self._reserve(i, external=True)
             # Reserve the first mac-prefix for public-networks
@@ -221,7 +256,7 @@ class IPPool(PoolManager):
             self._reserve(0, external=True)
             if gateway:
                 self.reserve(gateway, external=True)
-            self._reserve(self.size() - 1, external=True)
+            self._reserve(self.pool_size - 1, external=True)
 
     def value_to_index(self, value):
         addr = ipaddr.IPAddress(value)

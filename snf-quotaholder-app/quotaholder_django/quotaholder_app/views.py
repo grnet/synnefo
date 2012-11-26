@@ -31,40 +31,42 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
 
-from synnefo.db.models import Backend
+from django.http import HttpResponse
+from django.db import transaction 
+from django.conf import settings
+from synnefo.lib.commissioning import CallError, get_callpoint
 
+from .callpoint import API_Callpoint
 
-class Command(BaseCommand):
-    help = "List backends"
+import json
+from traceback import format_exc
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+def _get_body(request):
+    body = request.raw_post_data
+    if body is None:
+        body = request.GET.get('body', None)
+    return body
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+callpoints = {('quotaholder', 'v'): API_Callpoint()}
 
-        backends = Backend.objects.order_by('id')
+@transaction.commit_on_success
+def view(request, appname=None, version=None, callname=None):
+    if (appname, version) not in callpoints:
+        return HttpResponse(status=404)
 
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
+    callpoint = callpoints[(appname, version)]
+    body = _get_body(request)
+    try:
+        body = callpoint.make_call_from_json(callname, body)
+        status = 200
+    except Exception, e:
+        status = 450
+        if not isinstance(e, CallError):
+            e.args += (''.join(format_exc()),)
+            e = CallError.from_exception(e)
+            status = 500
 
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+        body = json.dumps(e.to_dict())
+
+    return HttpResponse(status=status, content=body)

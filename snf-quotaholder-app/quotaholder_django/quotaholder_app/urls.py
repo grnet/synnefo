@@ -31,40 +31,29 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
+from django.conf.urls.defaults import *
+from django.conf import settings
+from views import view
 
-from synnefo.db.models import Backend
+# Uncomment the next two lines to enable the admin:
+# from django.contrib import admin
+# admin.autodiscover()
+
+app_ex = '(?P<appname>[^/]*)'
+ver_ex = '(?P<version>[^/]*)'
+call_ex = '(?P<callname>[_A-Za-z0-9]*)'
+#generic_pattern = (r'^%s/%s/%s' % (app_ex, ver_ex, call_ex), generic_view)
 
 
-class Command(BaseCommand):
-    help = "List backends"
+pats = [(r'%s/%s/%s' % (app_ex, ver_ex, call_ex), view)]
+                                                
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+urlpatterns = patterns('',
+    # Uncomment the admin/doc line below to enable admin documentation:
+    # (r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+    # Uncomment the next line to enable the admin:
+    # (r'^admin/', include(admin.site.urls)),
 
-        backends = Backend.objects.order_by('id')
-
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+    *pats
+)

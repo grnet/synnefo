@@ -64,7 +64,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
 from synnefo.db.pools import EmptyPool
 
 from synnefo.lib.astakos import get_user
-from synnefo.plankton.backend import ImageBackend
+from synnefo.plankton.backend import ImageBackend, NotAllowedError
 from synnefo.settings import MAX_CIDR_BLOCK
 
 
@@ -407,6 +407,10 @@ def api_method(http_method=None, atom_allowed=False):
                 return render_fault(request, fault)
             except VirtualMachine.BuildingError:
                 fault = BuildInProgress('Server is being built.')
+                return render_fault(request, fault)
+            except NotAllowedError:
+                # Image Backend Unathorized
+                fault = Forbidden('Request not allowed.')
                 return render_fault(request, fault)
             except Fault, fault:
                 if fault.code >= 500:

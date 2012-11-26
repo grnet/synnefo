@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
-
 from functools import wraps
 from logging import getLogger
 from traceback import format_exc
@@ -42,9 +40,8 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
                          HttpResponseServerError, HttpResponseForbidden)
 
 from synnefo.lib.astakos import get_user
-from synnefo.plankton.backend import ImageBackend, BackendException
-
-from pithos.backends.base import NotAllowedError
+from synnefo.plankton.backend import (ImageBackend, BackendException,
+                                      NotAllowedError)
 
 log = getLogger('synnefo.plankton')
 

@@ -48,34 +48,32 @@ def union(a, b):
 
 class Blocker(object):
     """Blocker.
-       Required constructor parameters: blocksize, blockpath, hashtype,
-       blockpool.
+       Required constructor parameters: blocksize, blockpath, hashtype.
+       Optional blockpool.
     """
 
     def __init__(self, **params):
-        params['blockpool'] = 'blocks'
-        self.rblocker = RadosBlocker(**params)
+        self.rblocker = None
+        try:
+            if params['blockpool']:
+                self.rblocker = RadosBlocker(**params)
+        except:
+            pass
+
         self.fblocker = FileBlocker(**params)
-        self.hashlen = self.rblocker.hashlen
-
-#    def _get_rear_block(self, blkhash, create=0):
-#        return self.rblocker._get_rear_block(blkhash, create)
-
-#    def _check_rear_block(self, blkhash):
-#        return self.rblocker._check_rear_block(blkhash)
-#        return self.rblocker._check_rear_block(blkhash) and
-#                self.fblocker._check_rear_block(blkhash)
+        self.hashlen = self.fblocker.hashlen
 
     def block_hash(self, data):
         """Hash a block of data"""
-        return self.rblocker.block_hash(data)
+        return self.fblocker.block_hash(data)
 
     def block_ping(self, hashes):
         """Check hashes for existence and
            return those missing from block storage.
         """
-#        return self.rblocker.block_ping(hashes)
-        r = self.rblocker.block_ping(hashes)
+        r = []
+        if self.rblocker:
+            r = self.rblocker.block_ping(hashes)
         f = self.fblocker.block_ping(hashes)
         return union(r, f)
 
@@ -89,9 +87,10 @@ class Blocker(object):
            missing is a list of indices in that list indicating
            which blocks were missing from the store.
         """
-#        return self.rblocker.block_stor(blocklist)
-        (hashes, r_missing) = self.rblocker.block_stor(blocklist)
-        (_, f_missing) = self.fblocker.block_stor(blocklist)
+        r_missing = []
+        (hashes, f_missing) = self.fblocker.block_stor(blocklist)
+        if self.rblocker:
+            (_, r_missing) = self.rblocker.block_stor(blocklist)
         return (hashes, union(r_missing, f_missing))
 
 
@@ -100,13 +99,14 @@ class Blocker(object):
            and a data 'patch' applied at offset. Return:
            (the hash of the new block, if the block already existed)
         """
-#        return self.rblocker.block_delta(blkhash, offset, data)
-
+        r_hash = None
+        r_existed = True
         (f_hash, f_existed) = self.fblocker.block_delta(blkhash, offset, data)
-        (r_hash, r_existed) = self.rblocker.block_delta(blkhash, offset, data)
+        if self.rblocker:
+            (r_hash, r_existed) = self.rblocker.block_delta(blkhash, offset, data)
         if not r_hash and not f_hash:
             return None, None
-        if not r_hash:
+        if self.rblocker and not r_hash:
             block = self.fblocker.block_retr((blkhash,))
             if not block:
                 return None, None

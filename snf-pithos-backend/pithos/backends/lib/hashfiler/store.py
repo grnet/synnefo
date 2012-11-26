@@ -38,7 +38,8 @@ from mapper import Mapper
 
 class Store(object):
     """Store.
-       Required constructor parameters: path, block_size, hash_algorithm, umask.
+       Required constructor parameters: path, block_size, hash_algorithm,
+       umask, blockpool, mappool.
     """
 
     def __init__(self, **params):
@@ -54,10 +55,12 @@ class Store(object):
 
         p = {'blocksize': params['block_size'],
              'blockpath': os.path.join(path + '/blocks'),
-             'hashtype': params['hash_algorithm']}
+             'hashtype': params['hash_algorithm'],
+	     'blockpool': params['blockpool']}
         self.blocker = Blocker(**p)
         p = {'mappath': os.path.join(path + '/maps'),
-             'namelen': self.blocker.hashlen}
+             'namelen': self.blocker.hashlen,
+	     'mappool': params['mappool']}
         self.mapper = Mapper(**p)
 
     def map_get(self, name):

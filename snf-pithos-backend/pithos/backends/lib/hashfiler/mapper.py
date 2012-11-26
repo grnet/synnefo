@@ -38,21 +38,19 @@ from filemapper import FileMapper
 
 class Mapper(object):
     """Mapper.
-       Required constructor parameters: mappath, namelen, mappool.
+       Required constructor parameters: mappath, namelen.
+       Optional mappool.
     """
 
     def __init__(self, **params):
-        params['mappool'] = 'maps'
-        self.rmap = RadosMapper(**params)
+        self.rmap = None
+        try:
+            if params['mappool']:
+                self.rmap = RadosMapper(**params)
+        except:
+            pass
+
         self.fmap = FileMapper(**params)
-
-#    def _get_rear_map(self, maphash, create=0):
-#        return self.fmap._get_rear_map(maphash, create)
-
-#    def _check_rear_map(self, maphash):
-#        return self.rmap._check_rear_map(maphash)
-#        return self.rmap._check_rear_map(maphash) and
-#                self.fmap._check_rear_map(maphash)
 
     def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
@@ -63,5 +61,6 @@ class Mapper(object):
 
     def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""
-        self.rmap.map_stor(maphash, hashes, blkoff, create)
+        if self.rmap:
+            self.rmap.map_stor(maphash, hashes, blkoff, create)
         self.fmap.map_stor(maphash, hashes, blkoff, create)

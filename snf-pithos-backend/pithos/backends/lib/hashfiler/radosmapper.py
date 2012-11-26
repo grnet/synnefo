@@ -61,7 +61,6 @@ class RadosMapper(object):
         self.mappool = mappool
         self.rados = rados
         self.ioctx = ioctx
-        self.mappool = mappool
 
     def _get_rear_map(self, maphash, create=0):
         name = hexlify(maphash)

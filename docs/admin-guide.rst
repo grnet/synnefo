@@ -167,6 +167,32 @@ Then, add those terms-of-use with the snf-manage command:
 Your terms have been successfully added and you will see the corresponding link
 appearing in the Astakos web pages' footer.
 
+Enabling reCAPTCHA
+~~~~~~~~~~~~~~~~~~
+
+Astakos supports the `reCAPTCHA <http://www.google.com/recaptcha>`_ feature.
+If enabled, it protects the Astakos forms from bots. To enable the feature, go
+to https://www.google.com/recaptcha/admin/create and create your own reCAPTCHA
+key pair. Then edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` and set
+the corresponding variables to reflect your newly created key pair. Finally, set
+the ``ASTAKOS_RECAPTCHA_ENABLED`` variable to ``True``:
+
+.. code-block:: console
+
+   ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
+   ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
+
+   ASTAKOS_RECAPTCHA_ENABLED = True
+
+Restart the service on the Astakos node(s) and you are ready:
+
+.. code-block:: console
+
+   # /etc/init.d/gunicorn restart
+
+Checkout your new Sign up page. If you see the reCAPTCHA box, you have setup
+everything correctly.
+
 
 
 File Storage Service (Pithos)

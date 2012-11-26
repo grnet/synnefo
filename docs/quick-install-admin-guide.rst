@@ -542,25 +542,14 @@ For astakos specific configuration, edit the following options in
 
 .. code-block:: console
 
-   ASTAKOS_IM_MODULES = ['local']
-
    ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
    ASTAKOS_BASEURL = 'https://node1.example.com'
 
    ASTAKOS_SITENAME = '~okeanos demo example'
 
-   ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
-   ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
-
-   ASTAKOS_RECAPTCHA_USE_SSL = True
-
-``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
-is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
-domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
-
-For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
-go to https://www.google.com/recaptcha/admin/create and create your own pair.
+The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
+services). ``ASTAKOS_BASEURL`` is the astakos home page.
 
 Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 

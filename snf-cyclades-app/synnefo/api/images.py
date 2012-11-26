@@ -40,6 +40,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from contextlib import contextmanager
+
 from synnefo.api import util
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
@@ -104,6 +106,14 @@ def image_to_dict(image, detail=True):
     return d
 
 
+@contextmanager
+def image_backend(userid):
+    backend = ImageBackend(userid)
+    try:
+        yield backend
+    finally:
+        backend.close()
+
 @api_method('GET')
 def list_images(request, detail=False):
     # Normal Response Codes: 200, 203
@@ -114,19 +124,18 @@ def list_images(request, detail=False):
     #                       overLimit (413)
 
     log.debug('list_images detail=%s', detail)
-    backend = ImageBackend(request.user_uniq)
-
-    since = isoparse(request.GET.get('changes-since'))
-    if since:
-        images = []
-        for image in backend.iter():
-            updated = dateutil.parser.parse(image['updated_at'])
-            if updated >= since:
-                images.append(image)
-        if not images:
-            return HttpResponse(status=304)
-    else:
-        images = backend.list()
+    with image_backend(request.user_uniq) as backend:
+        since = isoparse(request.GET.get('changes-since'))
+        if since:
+            images = []
+            for image in backend.iter():
+                updated = dateutil.parser.parse(image['updated_at'])
+                if updated >= since:
+                    images.append(image)
+            if not images:
+                return HttpResponse(status=304)
+        else:
+            images = backend.list()
 
     images = sorted(images, key=lambda x: x['id'])
     reply = [image_to_dict(image, detail) for image in images]
@@ -190,9 +199,8 @@ def delete_image(request, image_id):
     #                       overLimit (413)
 
     log.info('delete_image %s', image_id)
-    backend = ImageBackend(request.user_uniq)
-    backend.delete(image_id)
-    backend.close()
+    with image_backend(request.user_uniq) as backend:
+        backend.delete(image_id)
     log.info('User %s deleted image %s', request.user_uniq, image_id)
     return HttpResponse(status=204)
 
@@ -235,9 +243,8 @@ def update_metadata(request, image_id):
     properties = image['properties']
     properties.update(metadata)
 
-    backend = ImageBackend(request.user_uniq)
-    backend.update(image_id, dict(properties=properties))
-    backend.close()
+    with image_backend(request.user_uniq) as backend:
+        backend.update(image_id, dict(properties=properties))
 
     return util.render_metadata(request, properties, status=201)
 
@@ -287,9 +294,8 @@ def create_metadata_item(request, image_id, key):
     properties = image['properties']
     properties[key] = val
 
-    backend = ImageBackend(request.user_uniq)
-    backend.update(image_id, dict(properties=properties))
-    backend.close()
+    with image_backend(request.user_uniq) as backend:
+        backend.update(image_id, dict(properties=properties))
 
     return util.render_meta(request, {key: val}, status=201)
 
@@ -311,8 +317,7 @@ def delete_metadata_item(request, image_id, key):
     properties = image['properties']
     properties.pop(key, None)
 
-    backend = ImageBackend(request.user_uniq)
-    backend.update(image_id, dict(properties=properties))
-    backend.close()
+    with image_backend(request.user_uniq) as backend:
+        backend.update(image_id, dict(properties=properties))
 
     return HttpResponse(status=204)

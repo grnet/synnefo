@@ -78,7 +78,8 @@ data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this
 directory should have at least 50GB of free space. During this guide, we will
 assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
-to node2. Node2 has this directory mounted under ``/srv/pithos``, too.
+to node2 (be sure to set no_root_squash flag). Node2 has this directory
+mounted under ``/srv/pithos``, too.
 
 Before starting the synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe

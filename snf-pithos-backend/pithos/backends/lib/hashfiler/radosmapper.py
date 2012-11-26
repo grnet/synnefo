@@ -54,7 +54,7 @@ class RadosMapper(object):
         rados = Rados(conffile=CEPH_CONF_FILE)
         rados.connect()
         if not rados.pool_exists(mappool):
-            rados.pool_create(mappool)
+            rados.create_pool(mappool)
 
         ioctx = rados.open_ioctx(mappool)
 

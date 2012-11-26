@@ -55,7 +55,7 @@ class RadosBlocker(object):
         rados = Rados(conffile=CEPH_CONF_FILE)
         rados.connect()
         if not rados.pool_exists(blockpool):
-            rados.pool_create(blockpool)
+            rados.create_pool(blockpool)
 
         ioctx = rados.open_ioctx(blockpool)
 

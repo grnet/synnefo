@@ -57,11 +57,11 @@ class Store(object):
         p = {'blocksize': params['block_size'],
              'blockpath': os.path.join(path + '/blocks'),
              'hashtype': params['hash_algorithm'],
-	     'blockpool': params['blockpool']}
+             'blockpool': params['blockpool']}
         self.blocker = Blocker(**p)
         p = {'mappath': os.path.join(path + '/maps'),
              'namelen': self.blocker.hashlen,
-	     'mappool': params['mappool']}
+             'mappool': params['mappool']}
         self.mapper = Mapper(**p)
 
     def map_get(self, name):

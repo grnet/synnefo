@@ -31,61 +31,53 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
+from sqlalchemy import Table, Column, String, MetaData
+from sqlalchemy.sql import select
+from sqlalchemy.exc import NoSuchTableError
 
-from blocker import Blocker
-from mapper import Mapper
+from dbworker import DBWorker
 
+def create_tables(engine):
+    metadata = MetaData()
+    columns = []
+    columns.append(Column('key', String(256), primary_key=True))
+    columns.append(Column('value', String(256)))
+    config = Table('config', metadata, *columns, mysql_engine='InnoDB')
+    
+    metadata.create_all(engine)
+    return metadata.sorted_tables
 
-class Store(object):
-    """Store.
-       Required constructor parameters: path, block_size, hash_algorithm,
-       umask, blockpool, mappool.
+class Config(DBWorker):
+    """Config are properties holding persistent information about system state.
     """
 
     def __init__(self, **params):
-        umask = params['umask']
-        if umask is not None:
-            os.umask(umask)
+        DBWorker.__init__(self, **params)
+        try:
+            metadata = MetaData(self.engine)
+            self.config = Table('config', metadata, autoload=True)
+        except NoSuchTableError:
+            tables = create_tables(self.engine)
+            map(lambda t: self.__setattr__(t.name, t), tables)
 
-        path = params['path']
-        if path and not os.path.exists(path):
-            os.makedirs(path)
-        if not os.path.isdir(path):
-            raise RuntimeError("Cannot open path '%s'" % (path,))
+    def get_value(self, key):
+        """Return configuration value for key."""
 
-        p = {'blocksize': params['block_size'],
-             'blockpath': os.path.join(path + '/blocks'),
-             'hashtype': params['hash_algorithm'],
-	     'blockpool': params['blockpool']}
-        self.blocker = Blocker(**p)
-        p = {'mappath': os.path.join(path + '/maps'),
-             'namelen': self.blocker.hashlen,
-	     'mappool': params['mappool']}
-        self.mapper = Mapper(**p)
+        s = select([self.config.c.value])
+        s = s.where(self.config.c.key == key)
+        r = self.conn.execute(s)
+        row = r.fetchone()
+        r.close()
+        if row:
+            return row[0]
+        return None
+    
+    def set_value(self, key, value):
+        """Set a configuration entry.
+        """
 
-    def map_get(self, name):
-        return self.mapper.map_retr(name)
-
-    def map_put(self, name, map):
-        self.mapper.map_stor(name, map)
-
-    def map_delete(self, name):
-        pass
-
-    def block_get(self, hash):
-        blocks = self.blocker.block_retr((hash,))
-        if not blocks:
-            return None
-        return blocks[0]
-
-    def block_put(self, data):
-        hashes, absent = self.blocker.block_stor((data,))
-        return hashes[0]
-
-    def block_update(self, hash, offset, data):
-        h, e = self.blocker.block_delta(hash, offset, data)
-        return h
-
-    def block_search(self, map):
-        return self.blocker.block_ping(map)
+        s = self.config.insert()
+        r = self.conn.execute(s, key=key, value=value)
+        inserted_primary_key = r.inserted_primary_key[0]
+        r.close()
+        return inserted_primary_key

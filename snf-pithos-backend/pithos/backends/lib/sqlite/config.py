@@ -31,12 +31,38 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from dbwrapper import DBWrapper
-from node import Node, ROOTNODE, SERIAL, HASH, SIZE, TYPE, MTIME, MUSER, UUID, CHECKSUM, CLUSTER, MATCH_PREFIX, MATCH_EXACT
-from permissions import Permissions, READ, WRITE
-from config import Config
-from quotaholder_serials import QuotaholderSerial
+# from collections import defaultdict
+# 
+from dbworker import DBWorker
 
-__all__ = ["DBWrapper",
-           "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "TYPE", "MTIME", "MUSER", "UUID", "CHECKSUM", "CLUSTER", "MATCH_PREFIX", "MATCH_EXACT",
-           "Permissions", "READ", "WRITE", "Config", "QuotaholderSerial"]
+
+class Config(DBWorker):
+    """Config are properties holding persistent information about system state.
+    """
+
+    def __init__(self, **params):
+        DBWorker.__init__(self, **params)
+        execute = self.execute
+
+        execute(""" create table if not exists config
+                          ( key text primary key,
+                            value text ) """)
+    
+
+    def get_value(self, key):
+        """Return configuration value for key."""
+
+        q = "select value from config where key = ?"
+        self.execute(q, (key,))
+        r = self.fetchone()
+        if r is not None:
+            return r[0]
+        return None
+    
+    def set_value(self, key, value):
+        """Set configuration entry.
+        """
+
+        q = "insert into config (key, value) values (?, ?)"
+        id = self.execute(q, (key, value)).lastrowid
+        return id

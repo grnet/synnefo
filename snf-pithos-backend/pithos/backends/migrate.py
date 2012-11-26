@@ -66,19 +66,20 @@ except ImportError:
 import sqlalchemy as sa
 
 DEFAULT_ALEMBIC_INI_PATH = os.path.join(
-        os.path.abspath(os.path.dirname(sqlalchemy_backend.__file__)),
-        'alembic.ini')
+    os.path.abspath(os.path.dirname(sqlalchemy_backend.__file__)),
+    'alembic.ini')
 
 
 def initialize_db():
     alembic_cfg = Config(DEFAULT_ALEMBIC_INI_PATH)
 
-    db = alembic_cfg.get_main_option("sqlalchemy.url", PITHOS_BACKEND_DB_CONNECTION)
+    db = alembic_cfg.get_main_option(
+        "sqlalchemy.url", PITHOS_BACKEND_DB_CONNECTION)
     alembic_cfg.set_main_option("sqlalchemy.url", db)
 
     engine = sa.engine_from_config(
-                alembic_cfg.get_section(alembic_cfg.config_ini_section),
-                prefix='sqlalchemy.')
+        alembic_cfg.get_section(alembic_cfg.config_ini_section),
+        prefix='sqlalchemy.')
 
     node.create_tables(engine)
     groups.create_tables(engine)
@@ -88,7 +89,6 @@ def initialize_db():
     # then, load the Alembic configuration and generate the
     # version table, "stamping" it with the most recent rev:
     command.stamp(alembic_cfg, "head")
-
 
 
 def main(argv=None, **kwargs):
@@ -104,15 +104,12 @@ def main(argv=None, **kwargs):
         print "DB initialized."
         exit(1)
 
-
     # default config arg, if not already set
     if not '-c' in argv:
         argv.insert(0, DEFAULT_ALEMBIC_INI_PATH)
         argv.insert(0, '-c')
 
-
     alembic_main(argv, **kwargs)
 if __name__ == '__main__':
     import sys
     main(sys.argv)
-

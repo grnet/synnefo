@@ -43,8 +43,9 @@ USAGE_LIMIT = 500
 class PithosBackendPool(ObjectPool):
     def __init__(self, size=None, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
-                 queue_module=None, queue_connection=None,
-                 block_params=None):
+                 queue_module=None, queue_hosts=None,
+                 queue_exchange=None, quotaholder_url=None,
+                 free_versioning=True, block_params=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection
@@ -52,8 +53,11 @@ class PithosBackendPool(ObjectPool):
         self.block_path = block_path
         self.block_umask = block_umask
         self.queue_module = queue_module
-        self.queue_connection = queue_connection
         self.block_params = block_params
+        self.queue_hosts = queue_hosts
+        self.queue_exchange = queue_exchange
+	self.quotaholder_url = quotaholder_url
+        self.free_versioning = free_versioning
 
     def _pool_create(self):
         backend = connect_backend(db_module=self.db_module,
@@ -62,8 +66,11 @@ class PithosBackendPool(ObjectPool):
                                   block_path=self.block_path,
                                   block_umask=self.block_umask,
                                   queue_module=self.queue_module,
-                                  queue_connection=self.queue_connection,
-                                  block_params=self.block_params)
+                                  block_params=self.block_params,
+                                  queue_hosts=self.queue_hosts,
+                                  queue_exchange=self.queue_exchange,
+                                  quotaholder_url=self.quotaholder_url,
+                                  free_versioning=self.free_versioning)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,

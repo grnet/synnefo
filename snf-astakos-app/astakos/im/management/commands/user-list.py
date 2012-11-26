@@ -65,7 +65,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
         
-        users = AstakosUser.objects.all()
+        users = AstakosUser.objects.all().order_by('id')
         if options['pending']:
             users = users.filter(is_active=False)
         elif options['pending_send_mail']:

@@ -52,7 +52,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        services = Service.objects.all()
+        services = Service.objects.all().order_by('id')
 
         labels = ('id', 'name', 'url', 'auth_token', 'icon')
         columns = (3, 12, 40, 20, 20)

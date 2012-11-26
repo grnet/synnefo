@@ -56,7 +56,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
         
-        groups = Group.objects.all()
+        groups = Group.objects.all().order_by('id')
         
         labels = ('id', 'name', 'permissions')
         columns = (3, 12, 50)

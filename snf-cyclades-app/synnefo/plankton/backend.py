@@ -54,11 +54,12 @@ import json
 import warnings
 
 from operator import itemgetter
-from time import gmtime, strftime, time
+from time import gmtime, strftime
+from functools import wraps
 
 from django.conf import settings
 
-from pithos.backends.base import NotAllowedError
+from pithos.backends.base import NotAllowedError as PithosNotAllowedError
 
 
 PLANKTON_DOMAIN = 'plankton'
@@ -86,6 +87,10 @@ class BackendException(Exception):
     pass
 
 
+class NotAllowedError(BackendException):
+    pass
+
+
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
 _pithos_backend_pool = \
@@ -96,6 +101,16 @@ _pithos_backend_pool = \
 
 def get_pithos_backend():
     return _pithos_backend_pool.pool_get()
+
+
+def handle_backend_exceptions(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except PithosNotAllowedError:
+            raise NotAllowedError()
+    return wrapper
 
 
 class ImageBackend(object):
@@ -109,6 +124,7 @@ class ImageBackend(object):
         self.backend = get_pithos_backend()
         warnings.filters = original_filters     # Restore warnings
 
+    @handle_backend_exceptions
     def _get_image(self, location):
         def format_timestamp(t):
             return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
@@ -159,6 +175,7 @@ class ImageBackend(object):
 
         return image
 
+    @handle_backend_exceptions
     def _get_meta(self, location, version=None):
         account, container, object = split_location(location)
         try:
@@ -167,12 +184,14 @@ class ImageBackend(object):
         except NameError:
             return None
 
+    @handle_backend_exceptions
     def _get_permissions(self, location):
         account, container, object = split_location(location)
         action, path, permissions = self.backend.get_object_permissions(
                 self.user, account, container, object)
         return permissions
 
+    @handle_backend_exceptions
     def _store(self, f, size=None):
         """Breaks data into blocks and stores them in the backend"""
 
@@ -193,6 +212,7 @@ class ImageBackend(object):
 
         return hashmap, bytes
 
+    @handle_backend_exceptions
     def _update(self, location, size, hashmap, meta, permissions):
         account, container, object = split_location(location)
         self.backend.update_object_hashmap(self.user, account, container,
@@ -200,6 +220,7 @@ class ImageBackend(object):
                 permissions=permissions)
         self._update_meta(location, meta, replace=True)
 
+    @handle_backend_exceptions
     def _update_meta(self, location, meta, replace=False):
         account, container, object = split_location(location)
 
@@ -213,11 +234,13 @@ class ImageBackend(object):
         self.backend.update_object_meta(self.user, account, container, object,
                 PLANKTON_DOMAIN, prefixed, replace)
 
+    @handle_backend_exceptions
     def _update_permissions(self, location, permissions):
         account, container, object = split_location(location)
         self.backend.update_object_permissions(self.user, account, container,
                 object, permissions)
 
+    @handle_backend_exceptions
     def add_user(self, image_id, user):
         image = self.get_image(image_id)
         assert image, "Image not found"
@@ -232,11 +255,13 @@ class ImageBackend(object):
     def close(self):
         self.backend.close()
 
+    @handle_backend_exceptions
     def delete(self, image_id):
         image = self.get_image(image_id)
         account, container, object = split_location(image['location'])
         self.backend.delete_object(self.user, account, container, object)
 
+    @handle_backend_exceptions
     def get_data(self, location):
         account, container, object = split_location(location)
         size, hashmap = self.backend.get_object_hashmap(self.user, account,
@@ -245,6 +270,7 @@ class ImageBackend(object):
         assert len(data) == size
         return data
 
+    @handle_backend_exceptions
     def get_image(self, image_id):
         try:
             account, container, object = self.backend.get_uuid(self.user,
@@ -255,6 +281,7 @@ class ImageBackend(object):
         location = get_location(account, container, object)
         return self._get_image(location)
 
+    @handle_backend_exceptions
     def iter(self):
         """Iter over all images available to the user"""
 
@@ -269,6 +296,7 @@ class ImageBackend(object):
                     if image:
                         yield image
 
+    @handle_backend_exceptions
     def iter_public(self, filters=None):
         filters = filters or {}
         backend = self.backend
@@ -295,6 +323,7 @@ class ImageBackend(object):
                     if image:
                         yield image
 
+    @handle_backend_exceptions
     def iter_shared(self, member):
         """Iterate over image ids shared to this member"""
 
@@ -313,11 +342,13 @@ class ImageBackend(object):
                 except (NameError, NotAllowedError):
                     continue
 
+    @handle_backend_exceptions
     def list(self):
         """Iter over all images available to the user"""
 
         return list(self.iter())
 
+    @handle_backend_exceptions
     def list_public(self, filters, params):
         images = list(self.iter_public(filters))
         key = itemgetter(params.get('sort_key', 'created_at'))
@@ -325,6 +356,7 @@ class ImageBackend(object):
         images.sort(key=key, reverse=reverse)
         return images
 
+    @handle_backend_exceptions
     def list_users(self, image_id):
         image = self.get_image(image_id)
         assert image, "Image not found"
@@ -332,6 +364,7 @@ class ImageBackend(object):
         permissions = self._get_permissions(image['location'])
         return [user for user in permissions.get('read', []) if user != '*']
 
+    @handle_backend_exceptions
     def put(self, name, f, params):
         assert 'checksum' not in params, "Passing a checksum is not supported"
         assert 'id' not in params, "Passing an ID is not supported"
@@ -359,6 +392,7 @@ class ImageBackend(object):
         self._update(location, size, hashmap, meta, permissions)
         return self._get_image(location)
 
+    @handle_backend_exceptions
     def register(self, name, location, params):
         assert 'id' not in params, "Passing an ID is not supported"
         assert location.startswith('pithos://'), "Invalid location"
@@ -395,6 +429,7 @@ class ImageBackend(object):
         self._update_permissions(location, permissions)
         return self._get_image(location)
 
+    @handle_backend_exceptions
     def remove_user(self, image_id, user):
         image = self.get_image(image_id)
         assert image, "Image not found"
@@ -407,6 +442,7 @@ class ImageBackend(object):
             return      # User did not have access anyway
         self._update_permissions(location, permissions)
 
+    @handle_backend_exceptions
     def replace_users(self, image_id, users):
         image = self.get_image(image_id)
         assert image, "Image not found"
@@ -418,6 +454,7 @@ class ImageBackend(object):
             permissions['read'].append('*')
         self._update_permissions(location, permissions)
 
+    @handle_backend_exceptions
     def update(self, image_id, params):
         image = self.get_image(image_id)
         assert image, "Image not found"
@@ -440,4 +477,3 @@ class ImageBackend(object):
 
         self._update_meta(location, meta)
         return self.get_image(image_id)
-

@@ -38,7 +38,7 @@ from django.core.management.base import BaseCommand, CommandError
 from astakos.im.models import Service
 
 class Command(BaseCommand):
-    help = "List g"
+    help = "List services"
 
     option_list = BaseCommand.option_list + (
         make_option('-c',

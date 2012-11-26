@@ -51,6 +51,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models.signals import post_save, post_syncdb
 from django.db.models import Q
+from django.conf import settings
 
 from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
     AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
@@ -166,6 +167,7 @@ class AstakosUser(User):
     
     def renew_token(self):
         md5 = hashlib.md5()
+        md5.update(settings.SECRET_KEY)
         md5.update(self.username)
         md5.update(self.realname.encode('ascii', 'ignore'))
         md5.update(asctime())
@@ -361,6 +363,7 @@ class Service(models.Model):
     
     def renew_token(self):
         md5 = hashlib.md5()
+        md5.update(settings.SECRET_KEY)
         md5.update(self.name.encode('ascii', 'ignore'))
         md5.update(self.url.encode('ascii', 'ignore'))
         md5.update(asctime())

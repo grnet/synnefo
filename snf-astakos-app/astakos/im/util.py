@@ -45,6 +45,7 @@ from django.utils.translation import ugettext as _
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
+from django.contrib.sessions.backends.base import SessionBase
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.settings import (
@@ -186,6 +187,9 @@ def prepare_response(request, user, next='', renew=False):
     return response
 
 def set_cookie(response, user):
+    if not user.is_authenticated():
+        return
+    
     expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
     cookie_value = quote(user.email + '|' + user.auth_token)
     response.set_cookie(COOKIE_NAME, value=cookie_value,

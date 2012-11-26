@@ -36,9 +36,12 @@ from synnefo.plankton.backend import ImageBackend
 
 
 class Command(BaseCommand):
+    help = "List public images or images available to a user."
     option_list = BaseCommand.option_list + (
         make_option('--user-id', dest='userid',
-            help="List all images available to that user"),
+            help="List all images available to that user."\
+                 " If no user is specified, only public images"\
+                 " are displayed."),
         )
 
     def handle(self, **options):

@@ -80,12 +80,9 @@ INSTALL_REQUIRES = [
     'snf-common>=0.9.0',
     'recaptcha-client>=1.0.5',
     'django-ratelimit==0.1',
-    'commissioning',
-    'quotaholder',
     'celery',
     'requests',
     'inflect'
-#TODO add commissioning
 ]
 
 EXTRAS_REQUIRES = {

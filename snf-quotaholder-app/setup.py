@@ -88,9 +88,9 @@ setup(
     package_data = {
         'quotaholder_django.quotaholder_app': ['fixtures/*.json']
     },
-    scripts = [
-        'quotaholder_django/quotaholder-manage',
-    ],
+    #scripts = [
+    #    'quotaholder_django/quotaholder-manage',
+    #],
     zip_safe = False,
     install_requires = INSTALL_REQUIRES,
     dependency_links = ['http://docs.dev.grnet.gr/pypi'],

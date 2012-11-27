@@ -31,4 +31,4 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-apps = ['south', 'quotaholder_django']
+apps = ['south', 'quotaholder_django.quotaholder_app']

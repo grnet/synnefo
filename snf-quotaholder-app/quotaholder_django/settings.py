@@ -66,7 +66,3 @@ INSTALLED_APPS = (
 
 ROOT_URLCONF = 'quotaholder_django.urls'
 
-try:
-    from local_settings import *
-except ImportError:
-    pass

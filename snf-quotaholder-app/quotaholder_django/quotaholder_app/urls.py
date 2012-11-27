@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import *
-from django.conf import settings
 from views import view
 
 # Uncomment the next two lines to enable the admin:

@@ -45,11 +45,12 @@ from astakos.im.settings import (
 logger = logging.getLogger(__name__)
 
 class Cookie():
-    def __init__(self, request):
+    def __init__(self, request, response):
         cookies = getattr(request, 'COOKIES', {})
         cookie = unquote(cookies.get(COOKIE_NAME, ''))
         self.email, sep, self.auth_token = cookie.partition('|')
         self.request = request
+        self.response = response
     
     @property
     def is_set(self):
@@ -80,10 +81,10 @@ class Cookie():
         msg = 'Cookie deleted for %(email)s' % self.__dict__
         logger._log(LOGGING_LEVEL, msg, [])
     
-    def fix(self, response):
+    def fix(self):
         if self.user.is_authenticated():
             if not self.is_set or not self.is_valid:
-                self.__set(response)
+                self.__set(self.response)
         else:
             if self.is_set:
-                self.__delete(response)
+                self.__delete(self.response)

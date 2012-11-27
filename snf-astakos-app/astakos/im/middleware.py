@@ -35,5 +35,5 @@ from astakos.im.cookie import Cookie
 
 class CookieAuthenticationMiddleware(object):
     def process_response(self, request, response):
-        Cookie(request).fix(response)
+        Cookie(request, response).fix()
         return response

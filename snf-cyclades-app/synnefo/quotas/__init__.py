@@ -30,7 +30,7 @@
 from functools import wraps
 from contextlib import contextmanager
 
-from synnefo.settings import (QUOTAHOLDER_URL, USE_QUOTAHOLDER,
+from synnefo.settings import (CYCLADES_QUOTAHOLDER_URL, USE_QUOTAHOLDER,
                               VMS_USER_QUOTA, MAX_VMS_PER_USER,
                               NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 

@@ -44,7 +44,8 @@ call_ex = '(?P<callname>[_A-Za-z0-9]*)'
 #generic_pattern = (r'^%s/%s/%s' % (app_ex, ver_ex, call_ex), generic_view)
 
 
-pats = [(r'%s/%s/%s' % (app_ex, ver_ex, call_ex), view)]
+#pats = [(r'%s/%s/%s' % (app_ex, ver_ex, call_ex), view)]
+pats = [(r'%s/%s' % (ver_ex, call_ex), view)]
                                                 
 
 urlpatterns = patterns('',

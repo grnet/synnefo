@@ -34,5 +34,5 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',
-    (r'^api/quotas/', include('quotaholder_django.quotaholder_app.urls')),
+    (r'^quotaholder/', include('quotaholder_django.quotaholder_app.urls')),
 )

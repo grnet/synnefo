@@ -50,7 +50,7 @@ def _get_body(request):
 callpoints = {('quotaholder', 'v'): API_Callpoint()}
 
 @transaction.commit_on_success
-def view(request, appname=None, version=None, callname=None):
+def view(request, appname='quotaholder', version=None, callname=None):
     if (appname, version) not in callpoints:
         return HttpResponse(status=404)
 

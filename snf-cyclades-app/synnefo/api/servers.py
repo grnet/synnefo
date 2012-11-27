@@ -296,8 +296,10 @@ def create_server(serials, request):
         nic = {'ip': address, 'network': network.backend_id}
     except:
         transaction.rollback()
+        raise
     else:
         transaction.commit()
+
 
     try:
         # Issue commission

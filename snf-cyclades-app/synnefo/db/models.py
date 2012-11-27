@@ -533,6 +533,12 @@ class Network(models.Model):
         def __str__(self):
             return repr(str(self._action))
 
+    class DeletedError(Exception):
+        pass
+
+    class BuildingError(Exception):
+        pass
+
 
 class BackendNetwork(models.Model):
     OPER_STATES = (

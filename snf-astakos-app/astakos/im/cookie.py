@@ -66,25 +66,26 @@ class Cookie():
     def user(self):
         return getattr(self.request, 'user', AnonymousUser())
     
-    def __set(self, response):
+    def __set(self):
         user = self.user
         expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
         cookie_value = quote(user.email + '|' + user.auth_token)
-        response.set_cookie(COOKIE_NAME, value=cookie_value,
-                            expires=expire_fmt, path='/',
-                            domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
+        self.response.set_cookie(
+            COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
+            domain=COOKIE_DOMAIN, secure=COOKIE_SECURE
+        )
         msg = 'Cookie [expiring %(auth_token_expires)s] set for %(email)s' % user.__dict__
         logger._log(LOGGING_LEVEL, msg, [])
     
-    def __delete(self, response):
-        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
+    def __delete(self):
+        self.response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
         msg = 'Cookie deleted for %(email)s' % self.__dict__
         logger._log(LOGGING_LEVEL, msg, [])
     
     def fix(self):
         if self.user.is_authenticated():
             if not self.is_set or not self.is_valid:
-                self.__set(self.response)
+                self.__set()
         else:
             if self.is_set:
-                self.__delete(self.response)
+                self.__delete()

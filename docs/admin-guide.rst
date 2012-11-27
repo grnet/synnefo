@@ -611,30 +611,16 @@ http://docs.python.org/release/2.7.1/library/logging.html#logging-config-dictsch
 Note that this is a feature of Python 2.7 that we have backported for use in
 Python 2.6.
 
-The logging configuration dictionary is defined in settings.d/00-logging.conf
-and is broken in 4 separate dictionaries:
+The logging configuration dictionary is defined in
+`/etc/synnefo/10-snf-webproject-logging.conf`
 
-  * LOGGING is the logging configuration used by the web app. By default all
-    loggers fall back to the main 'synnefo' logger. The subloggers can be
-    changed accordingly for finer logging control. e.g. To disable debug
-    messages from the API set the level of 'synnefo.api' to 'INFO'.
-  
-  * DISPATCHER_LOGGING is the logging configuration of the logic/dispatcher.py
-    command line tool.
-  
-  * SNFADMIN_LOGGING is the logging configuration of the snf-admin tool.
-    Consider using matching configuration for snf-admin and the synnefo.admin
-    logger of the web app.
+The administrator can have finer logging control by modifying the `LOGGING_SETUP`
+dictionary, and defining subloggers with different handlers and log levels.
+e.g. To enable debug messages only for the API set the level of 'synnefo.api'
+to 'DEBUG'
 
-Please note the following:
-
-  * As of Synnefo v0.7, by default the Django webapp logs to syslog, the
-    dispatcher logs to /var/log/synnefo/dispatcher.log and the console,
-    snf-admin logs to the console.
-  * Different handlers can be set to different logging levels:
-    for example, everything may appear to the console, but only INFO and higher
-    may actually be stored in a longer-term logfile
-
+By default the Django webapp and snf-manage logs to syslog, while
+snf-dispatcher logs to `/var/log/synnefo/dispatcher.log`.
 
 
 Scaling up to multiple nodes

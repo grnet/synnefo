@@ -49,8 +49,7 @@ from django.contrib.sessions.backends.base import SessionBase
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.settings import (
-    INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE,
-    FORCE_PROFILE_UPDATE, LOGGING_LEVEL
+    INVITATIONS_PER_LEVEL, COOKIE_DOMAIN, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
 )
 from astakos.im.functions import login
 
@@ -176,7 +175,6 @@ def prepare_response(request, user, next='', renew=False):
     # authenticate before login
     user = authenticate(email=user.email, auth_token=user.auth_token)
     login(request, user)
-    set_cookie(response, user)
     request.session.set_expiry(user.auth_token_expires)
     
     if not next:
@@ -185,18 +183,6 @@ def prepare_response(request, user, next='', renew=False):
     response['Location'] = next
     response.status_code = 302
     return response
-
-def set_cookie(response, user):
-    if not user.is_authenticated():
-        return
-    
-    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    cookie_value = quote(user.email + '|' + user.auth_token)
-    response.set_cookie(COOKIE_NAME, value=cookie_value,
-                        expires=expire_fmt, path='/',
-                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
-    msg = 'Cookie [expiring %s] set for %s' % (user.auth_token_expires, user.email)
-    logger._log(LOGGING_LEVEL, msg, [])
 
 class lazy_string(object):
     def __init__(self, function, *args, **kwargs):

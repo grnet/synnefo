@@ -48,7 +48,7 @@ from django.core.urlresolvers import reverse
 
 from astakos.im.api.faults import *
 from astakos.im.models import AstakosUser, Service
-from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
+from astakos.im.settings import INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 from astakos.im.util import epoch
 from astakos.im.api import _get_user_by_email, _get_user_by_username
 
@@ -190,17 +190,8 @@ def get_menu(request, with_extra_links=False, with_signout=True):
     index_url = reverse('index')
     absolute = lambda (url): request.build_absolute_uri(url)
     l = [{ 'url': absolute(index_url), 'name': "Sign in"}]
-    cookie = urllib.unquote(request.COOKIES.get(COOKIE_NAME, ''))
-    email = cookie.partition('|')[0]
-    try:
-        if not email:
-            raise ValueError
-        user = AstakosUser.objects.get(email=email, is_active=True)
-    except AstakosUser.DoesNotExist:
-        pass
-    except ValueError:
-        pass
-    else:
+    user = request.user
+    if user.is_authenticated():
         l = []
         l.append({ 'url': absolute(reverse('astakos.im.views.index')),
                   'name': user.email})

@@ -46,8 +46,8 @@ from django.views.decorators.http import require_http_methods
 from urllib import quote
 from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
 
-from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
-from astakos.im.util import set_cookie, restrict_next
+from astakos.im.settings import COOKIE_DOMAIN
+from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
 
 import logging
@@ -75,7 +75,6 @@ def login(request):
     response = HttpResponse()
     if force == '':
         logout(request)
-        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
     if request.user.is_authenticated():
         # if user has not signed the approval terms
         # redirect to approval terms with next the request path
@@ -105,7 +104,6 @@ def login(request):
             # authenticate before login
             user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
             auth_login(request, user)
-            set_cookie(response, user)
             logger.info('Token reset for %s' % request.user.email)
         parts = list(urlsplit(next))
         parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})

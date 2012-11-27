@@ -39,7 +39,9 @@ from urllib import quote
 from functools import wraps
 
 from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import (
+    HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+)
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
@@ -48,7 +50,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.utils.http import urlencode
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
 from django.core.exceptions import ValidationError
@@ -57,20 +58,21 @@ from django.views.decorators.http import require_http_methods
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.util import (
-    get_context, prepare_response, set_cookie, get_query, restrict_next
+    get_context, prepare_response, get_query, restrict_next
 )
 from astakos.im.forms import *
 from astakos.im.functions import (send_greeting, send_feedback, SendMailError,
     invite as invite_func, logout as auth_logout, activate as activate_func,
     send_activation as send_activation_func
 )
-from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL,
-    COOKIE_NAME, COOKIE_DOMAIN, IM_MODULES, SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
+from astakos.im.settings import (
+    DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_DOMAIN, IM_MODULES,
+    SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
 )
 
 logger = logging.getLogger(__name__)
 
-def render_response(template, tab=None, status=200, reset_cookie=False, context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
     keyword argument and returns an ``django.http.HttpResponse`` with the
@@ -81,8 +83,6 @@ def render_response(template, tab=None, status=200, reset_cookie=False, context_
     kwargs.setdefault('tab', tab)
     html = render_to_string(template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
-    if reset_cookie:
-        set_cookie(response, context_instance['request'].user)
     return response
 
 
@@ -265,14 +265,12 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     extra_context = extra_context or {}
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
-    reset_cookie = False
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             try:
                 prev_token = request.user.auth_token
                 user = form.save()
-                reset_cookie = user.auth_token != prev_token
                 form = ProfileForm(instance=user)
                 next = restrict_next(
                     request.POST.get('next'),
@@ -288,7 +286,6 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
         request.user.is_verified = True
         request.user.save()
     return render_response(template_name,
-                           reset_cookie = reset_cookie,
                            profile_form = form,
                            context_instance = get_context(request,
                                                           extra_context))
@@ -448,16 +445,13 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
 @require_http_methods(["GET"])
 def logout(request, template='registration/logged_out.html', extra_context=None):
     """
-    Wraps `django.contrib.auth.logout` and delete the cookie.
+    Wraps `django.contrib.auth.logout`.
     """
     extra_context = extra_context or {}
     response = HttpResponse()
-    msg = None
     if request.user.is_authenticated():
         email = request.user.email
         auth_logout(request)
-        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
-        msg = 'Cookie deleted for %s' % email
     next = restrict_next(
         request.GET.get('next'),
         domain=COOKIE_DOMAIN
@@ -465,20 +459,13 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
     if next:
         response['Location'] = next
         response.status_code = 302
-        if msg:
-            logger._log(LOGGING_LEVEL, msg, [])
-        return response
     elif LOGOUT_NEXT:
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
-        if msg:
-            logger._log(LOGGING_LEVEL, msg, [])
-        return response
-    messages.add_message(request, messages.SUCCESS, _('<p>You have successfully logged out.</p>'))
-    context = get_context(request, extra_context)
-    response.write(render_to_string(template, context_instance=context))
-    if msg:
-        logger._log(LOGGING_LEVEL, msg, [])
+    else:
+        messages.add_message(request, messages.SUCCESS, _('<p>You have successfully logged out.</p>'))
+        context = get_context(request, extra_context)
+        response.write(render_to_string(template, context_instance=context))
     return response
 
 @require_http_methods(["GET", "POST"])
@@ -565,13 +552,6 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
                                terms = terms,
                                approval_terms_form = form,
                                context_instance = get_context(request, extra_context))
-
-@require_http_methods(["GET", "POST"])
-@signed_terms_required
-def change_password(request):
-    return password_change(request,
-                            post_change_redirect=reverse('astakos.im.views.edit_profile'),
-                            password_change_form=ExtendedPasswordChangeForm)
 
 @require_http_methods(["GET", "POST"])
 @login_required

@@ -262,32 +262,47 @@ Cyclades advanced operations
 
 Reconciliation mechanism
 ~~~~~~~~~~~~~~~~~~~~~~~~
+On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
+Cyclades database may differ from the real state of VMs and networks in the
+Ganeti backends. The reconciliation process is designed to synchronize
+the state of the Cyclades DB with Ganeti. There are two management commands
+for reconciling VMs and Networks
 
-On certain occasions, such as a Ganeti or RabbitMQ failure, the VM state in the
-system's database may differ from that in the Ganeti installation. The
-reconciliation process is designed to bring the system's database in sync with
-what Ganeti knows about each VM, and is able to detect the following three
-conditions:
-
+Reconciling VirtualMachine
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Reconciliation of VMs detects the following conditions:
  * Stale DB servers without corresponding Ganeti instances
  * Orphan Ganeti instances, without corresponding DB entries
- * Out-of-sync operstate for DB entries wrt to Ganeti instances
+ * Out-of-sync state for DB entries wrt to Ganeti instances
 
-The reconciliation mechanism runs as a management command, e.g., as follows:
-[PYTHONPATH needs to contain the parent of the synnefo Django project
-directory]:
-
+To detect all inconsistencies you can just run:
 .. code-block:: console
+  $ snf-manage reconcile --detect-all
 
-   $ export PYTHONPATH=/srv:$PYTHONPATH
-   $ snf-manage reconcile --detect-all -v 2
+Adding the `--fix-all` option, will do the actual synchronization:
+.. code-block:: console
+  $ snf-manage reconcile --detect-all --fix-all
 
 Please see ``snf-manage reconcile --help`` for all the details.
 
-The administrator can also trigger reconciliation of operating state manually,
-by issuing a Ganeti ``OP_INSTANCE_QUERY_DATA`` command on a Synnefo VM, using
-gnt-instance info.
 
+Reconciling Networks
+~~~~~~~~~~~~~~~~~~~~
+Reconciliation of Networks detects the following conditions:
+  * Stale DB networks without corresponding Ganeti networks
+  * Orphan Ganeti networks, without corresponding DB entries
+  * Private networks that are not created to all Ganeti backends
+  * Unsynchronized IP pools
+
+To detect all inconsistencies you can just run:
+.. code-block:: console
+  $ snf-manage reconcile-networks
+
+Adding the `--fix-all` option, will do the actual synchronization:
+.. code-block:: console
+  $ snf-manage reconcile-networks --fix-all
+
+Please see ``snf-manage reconcile-networks --help`` for all the details.
 
 
 Block Storage Service (Archipelago)

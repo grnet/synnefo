@@ -257,6 +257,90 @@ Configuration
 Working with Cyclades
 ---------------------
 
+Managing Ganeti Backends
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since v0.11 Synnefo is able to manage multiple Ganeti clusters (backends)
+making it capable to scale to thousand of VMs. Backends can be dynamically be
+added or removed via `snf-manage` commands.
+
+From the VM perspective, each VM that is created is allocated to a Ganeti
+backend by Cyclades backend allocator. The VM is "pinned" to this backend, and
+can not change through its lifetime. The backend allocator decides in which
+backend to spawn the VM based of the available resources of its backend, trying
+to balance the load between them.
+
+Handling of Networks, as far as backends are concerned, is based on whether the
+network is public or not. Public networks are created through `snf-manage
+network-create` command, and are only created to one backend. Private networks
+are created in all backends in order to ensure that VMs in all backends can
+be connected to the same private network.
+
+Listing existing backend
+^^^^^^^^^^^^^^^^^^^^^^^^
+To find out the available Ganeti backends, run:
+.. code-block:: console
+
+   $ snf-manage backend-list
+
+Adding a new Ganeti backend
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Backends are dynamically added under the control of Synnefo with `snf-manage
+backend-add` command. In this section it is assumed that a Ganeti cluster,
+named cluster.example.com is already up and running and configured to be able
+to host Synnefo VMs.
+
+To add the Ganeti cluster, run:
+.. code-block:: console
+
+   $ snf-manage backend-add --clustername=cluster.example.com --user="synnefo_user" --pass="synnefo_pass"
+
+where clustername is the DNS resolvable address of the Ganeti cluster, and user
+and pass are the credentials for the Ganeti RAPI user. All of the backends
+attributes can also be changed dynamically with `snf-manage backend-modify`
+command.
+
+This command will also create all private networks to the new Backend. You can
+verify that the backend is added, by running `snf-manage backend-list` command.
+
+Note that no VMs will be spawned to this backend, until a public network is
+associated with it.
+
+Removing an existing Ganeti backend
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In order to remove an existing backend, run:
+.. code-block:: console
+
+   # snf-manage backend-remove ID
+
+This command will fail if there are active VMs to the backend. Also, the
+backend is not cleaned before removing it, so all of Synnefo private networks
+will be left.
+
+Allocation of VMS in Ganneti backends
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As already mentioned, the backend allocator is responsible allocating new VMs
+to backends. This allocator is not concerned about the Ganeti node that will
+host the VM, which is chosen by the Ganeti allocator.
+
+The decision about which backend will host a VM is based on the available
+resources. The allocator computes a score for each backend, that shows its load
+factor, and the one with the minimum score is chosen. The admin can exclude
+backends from the allocation phase by marking them as drained by running:
+.. code-block:: console
+
+   $ snf-manage backend-modify --drained ID
+
+The backend resources are periodically updated, at a period defined by
+`BACKEND_REFRESH_MIN` setting or by running `snf-manage backend-update-status`
+command. It is advised to have a cron job running this command at a smaller
+interval than `BACKEND_REFRESH_MIN` in order to remove the load of refreshing
+the backends stats from the VM creation phase.
+
+Finally, the admin can decide to have a user VMs in a specific backend, with
+the `BACKEND_PER_USER` setting.
+
+
 Cyclades advanced operations
 ----------------------------
 

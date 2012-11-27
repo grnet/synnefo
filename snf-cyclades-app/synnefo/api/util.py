@@ -260,7 +260,7 @@ def get_public_ip(backend):
 
     """
     address = None
-    if settings.PUBLIC_ROUTED_USE_POOL:
+    if settings.PUBLIC_USE_POOL:
         (network, address) = allocate_public_address(backend)
     else:
         for net in list(backend_public_networks(backend)):

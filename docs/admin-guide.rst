@@ -372,6 +372,49 @@ the backends stats from the VM creation phase.
 Finally, the admin can decide to have a user VMs in a specific backend, with
 the `BACKEND_PER_USER` setting.
 
+Managing Network Resources
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Proper operation of of Cyclades Network Service depends on unique assignment of
+specific resources to each virtual network. Specifically, these resources are:
+
+* IP addresses. Cyclades creates a Pool of IPs for each Network, and assignes a
+  unique IP address for each VM connecting to a Network. You can see the IP pool
+  of each network by running `snf-manage network-inspect <network_ID>`. IP pools
+  are automatically created and managed by Cyclades, depending of the subnet of
+  the network.
+* Bridges corresponding to phycal VLANs, which are required for networks of
+  `PRIVATE_PHYSICAL_VLAN` type, to guarantee isolation between networks and
+  MAC prefixes, which are required to guarantee isolation between networks
+  of `PRIVATE_MAC_PREFIX` type. Cyclades allocates these two resources from
+  pools that are created by the administrator with `snf-manage pool-create`
+  management command.
+
+Creating a new Pool
+^^^^^^^^^^^^^^^^^^^
+
+Pools are created using the `snf-manage pool-create` command.
+.. code-block:: console
+
+   # snf-manage pool-create --type=bridge --base=prv --size=20
+
+will create a pool of bridges, containing bridges prv1, prv2,..prv21.
+
+You can verify the creation of the pool, and check its contents by running:
+.. code-block:: console
+
+   # snf-manage pool-list
+   # snf-manage pool-show --type=bridge 1
+
+With the same commands you can handle the pool of MAC prefixes. For example:
+.. code-block:: console
+
+   # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
+
+will create a pool of mac-prefixes from aa:00:1 to b9:ff:f. The MAC prefix pool
+is responsible from providing only unicast and locally administered MAC
+addresses, so many of these prefixes will be externally reserved, to exclude
+from allocation.
 
 Cyclades advanced operations
 ----------------------------

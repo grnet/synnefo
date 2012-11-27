@@ -132,7 +132,7 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(
 QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
 
 # Set the cloud service properties
-SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
+SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     'cyclades': {
         'url': 'https://node1.example.com/ui/',
         'resources': [{
@@ -159,7 +159,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES',{
             'desc': 'Virtual machines'
             },{
             'name':'network.private',
-            'group':'compute',
+            'group':'network',
             'uplimit':1,
             'desc': 'Private networks'
             }

@@ -35,7 +35,8 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
-from .utils.argmap import argmap_decode, argmap_check, argmap_dict_to_list
+from .utils.argmap import (argmap_decode, argmap_check, argmap_dict_to_list,
+                           argmap_list_to_dict)
 
 try:
     from collections import OrderedDict

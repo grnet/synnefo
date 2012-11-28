@@ -291,20 +291,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                    flags)
         return rejected
 
-    def _check_pending(self, entity=None):
-        serials = []
-        try:
-            cs = Commission.objects.filter(entity=entity)
-            serials = [c.serial for c in cs]
-        except Commission.DoesNotExist:
-            pass
+    def _check_pending(self, entity, resource):
+        cs = Commission.objects.filter(entity=entity)
+        cs = [c for c in cs if c.provisions.filter(resource=resource)]
+        as_target = [c.serial for c in cs]
 
-        try:
-            ps = Provision.objects.filter(entity=entity)
-            serials += [p.serial.serial for p in ps]
-        except Provision.DoesNotExist:
-            pass
-        return serials
+        ps = Provision.objects.filter(entity=entity, resource=resource)
+        as_source = [p.serial.serial for p in ps]
+
+        return as_target + as_source
 
     def _actual_quantity(self, holding):
         hp = holding.policy
@@ -340,7 +335,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 append(idx)
                 continue
 
-            if self._check_pending(entity):
+            if self._check_pending(entity, resource):
                 append(idx)
                 continue
 

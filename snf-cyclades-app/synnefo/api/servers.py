@@ -33,6 +33,7 @@
 
 from base64 import b64decode
 
+from django import dispatch
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.db import transaction
@@ -50,6 +51,8 @@ from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
 from random import choice
 
+# server creation signal
+server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 from logging import getLogger
 log = getLogger('synnefo.api')
@@ -300,7 +303,6 @@ def create_server(request):
 
         # Ensure that request if for active flavor
         flavor = util.get_flavor(flavor_id, include_deleted=False)
-        password = util.random_password()
 
         count = VirtualMachine.objects.filter(userid=request.user_uniq,
                                               deleted=False).count()
@@ -353,8 +355,29 @@ def create_server(request):
             flavor=flavor,
             action="CREATE")
 
+        password = util.random_password()
+
+        # TODO: Just copied code from backend.py to fix the images backend_id
+        # for archipelagos. Find a better way and remove double checks
+        img_id = image['backend_id']
+        provider = None
+        disk_template = flavor.disk_template
+        if flavor.disk_template.startswith("ext"):
+            disk_template, provider = flavor.disk_template.split("_", 1)
+            if provider == 'vlmc':
+                img_id = 'null'
+
+        # dispatch server created signal
+        server_created.send(sender=vm, created_vm_params={
+            'img_id': img_id,
+            'img_passwd': password,
+            'img_format': str(image['format']),
+            'img_personality': str(personality),
+            'img_properties': str(image['metadata']),
+        })
+
         try:
-            jobID = create_instance(vm, nic, flavor, image, password, personality)
+            jobID = create_instance(vm, nic, flavor, image)
         except GanetiApiError:
             vm.delete()
             raise

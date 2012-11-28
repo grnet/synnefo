@@ -1,0 +1,17 @@
+README
+=======
+snf-cyclades-gtools installs a Python collectd plugin, which collects stats
+about the Ganeti VMs running on the host.
+
+The plugin is installed under /usr/lib/snf-cyclades-gtools/collectd/.
+
+The necessary plugin configuration is performed by
+/etc/collectd/ganeti-stats.conf.
+
+To enable the plugin, add in your original collectd configuration file the
+following line:
+ 
+ Include /etc/collectd/ganeti-stats.conf
+
+An example collectd configuration, which enables the plugin, is also installed
+in /usr/shared/doc/snf-cyclades-gtools/examples/ganeti-stats-collectd.conf.

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,17 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from logging import getLogger
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^vmapi/', include('synnefo.vmapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
-)
+from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
+
+from synnefo.api.servers import server_created
+from synnefo.vmapi import backend, get_key, get_uuid, settings
+
+log = getLogger('synnefo.vmapi')
+
+def create_server_params(sender, created_vm_params, **kwargs):
+    json_value = json.dumps(created_vm_params)
+    uuid = get_uuid()
+    key = get_key(uuid)
+    log.info("Setting vmapi params with key %s for %s", key, sender)
+    backend.set(key, json_value)
+
+    # inject sender (vm) with its configuration url
+    setattr(sender, 'config_url', "%s%s" % (settings.BASE_URL,
+                                            reverse('vmapi_server_params',
+                                                    args=[uuid])))
+    return uuid
+
+server_created.connect(create_server_params)
 

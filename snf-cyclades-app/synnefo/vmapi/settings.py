@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,17 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.conf import settings
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^vmapi/', include('synnefo.vmapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
-)
-
+CACHE_BACKEND = getattr(settings, 'VMAPI_CACHE_BACKEND',
+    settings.CACHE_BACKEND)
+CACHE_KEY_PREFIX = getattr(settings, 'VMAPI_CACHE_KEY_PREFIX',
+    'vmapi')
+RESET_PARAMS = getattr(settings, 'VMAPI_RESET_PARAMS', True)
+BASE_URL = getattr(settings, 'VMAPI_BASE_URL',
+                       'https://cyclades.okeanos.grnet.gr/')

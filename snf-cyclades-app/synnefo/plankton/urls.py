@@ -39,7 +39,7 @@ from synnefo.plankton import views
 
 def demux(request):
     if request.method == 'GET':
-        return views.list_public_images(request)
+        return views.list_images(request)
     elif request.method == 'POST':
         return views.add_image(request)
     else:
@@ -77,11 +77,9 @@ def demux_members(request, image_id, member):
 
 urlpatterns = patterns('',
     (r'^images/$', demux),
-    (r'^images/detail$', views.list_public_images, {'detail': True}),
+    (r'^images/detail$', views.list_images, {'detail': True}),
     (r'^images/([\w-]+)$', demux_image),
     (r'^images/([\w-]+)/members$', demux_image_members),
     (r'^images/([\w-]+)/members/([\w@._-]+)$', demux_members),
-    (r'^shared-images/$', views.list_shared_images),
-    (r'^shared-images/detail', views.list_shared_images, {'detail': True}),
-    (r'^shared-images/([\w@._-]+)$', views.list_shared_images_with)
+    (r'^shared-images/([\w@._-]+)$', views.list_shared_images)
 )

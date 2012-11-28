@@ -301,20 +301,12 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
             source_date=etime, message=message, details=details)
 
 
-def create_instance(vm, public_nic, flavor, image, password, personality):
+def create_instance(vm, public_nic, flavor, image, password=None):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
         metadata value should be a dictionary.
     """
-
-    if settings.IGNORE_FLAVOR_DISK_SIZES:
-        if image['backend_id'].find("windows") >= 0:
-            sz = 14000
-        else:
-            sz = 4000
-    else:
-        sz = flavor.disk * 1024
 
     # Handle arguments to CreateInstance() as a dictionary,
     # initialize it based on a deployment-specific value.
@@ -337,7 +329,7 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
         disk_template, provider = flavor.disk_template.split("_", 1)
 
     kw['disk_template'] = disk_template
-    kw['disks'] = [{"size": sz}]
+    kw['disks'] = [{"size": flavor.disk * 1024}]
     if provider:
         kw['disks'][0]['provider'] = provider
 
@@ -351,31 +343,36 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False
     kw['name_check'] = False
+
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
-    #
     #kw['pnode'] = rapi.GetNodes()[0]
+
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {
-        'auto_balance': True,
-        'vcpus': flavor.cpu,
-        'memory': flavor.ram}
+       'auto_balance': True,
+       'vcpus': flavor.cpu,
+       'memory': flavor.ram}
+
+    if provider == 'vlmc':
+        image_id = 'null'
+    else:
+        image_id = image['backend_id']
 
     kw['osparams'] = {
-        'img_id': image['backend_id'],
-        'img_passwd': password,
+        'config_url': vm.config_url,
+        # Store image id and format to Ganeti
+        'img_id': image_id,
         'img_format': image['format']}
-    if personality:
-        kw['osparams']['img_personality'] = json.dumps(personality)
 
-    if provider != None and provider == 'vlmc':
-        kw['osparams']['img_id'] = 'null'
-
-    kw['osparams']['img_properties'] = json.dumps(image['metadata'])
+    if password:
+        # Only for admin created VMs !!
+        kw['osparams']['img_passwd'] = password
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
+
     log.debug("Creating instance %s", utils.hide_pass(kw))
     with pooled_rapi_client(vm) as client:
         return client.CreateInstance(**kw)

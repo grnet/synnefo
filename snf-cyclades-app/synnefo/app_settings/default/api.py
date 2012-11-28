@@ -92,12 +92,6 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 # our REST API would prefer to be explicit about trailing slashes
 APPEND_SLASH = False
 
-# Ignore disk size specified by flavor, always build the
-# machine with a 4GB (in the case of Windows: 14GB) disk.
-# This setting is helpful in development setups.
-#
-IGNORE_FLAVOR_DISK_SIZES = False
-
 # Fixed mapping of user VMs to a specific backend.
 # e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
 BACKEND_PER_USER = {}

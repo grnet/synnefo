@@ -31,17 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import include, patterns, url
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^vmapi/', include('synnefo.vmapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
+urlpatterns = patterns('synnefo.vmapi.views',
+    url(r'^server-params/(?P<uuid>.*)$', 'server_params', name="vmapi_server_params"),
 )
-

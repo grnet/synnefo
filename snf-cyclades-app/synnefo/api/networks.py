@@ -90,7 +90,7 @@ def network_to_dict(network, user_id, detail=True):
         d['gateway'] = network.gateway
         d['gateway6'] = network.gateway6
         d['dhcp'] = network.dhcp
-        d['type'] = network.type
+        d['type'] = network.flavor
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
@@ -169,7 +169,7 @@ def create_network(serials, request):
         subnet6 = d.get('cidr6', None)
         gateway = d.get('gateway', None)
         gateway6 = d.get('gateway6', None)
-        net_type = d.get('type', 'PRIVATE_MAC_FILTERED')
+        flavor = d.get('type', 'MAC_FILTERED')
         public = d.get('public', False)
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
@@ -178,12 +178,11 @@ def create_network(serials, request):
     if public:
         raise Forbidden('Can not create a public network.')
 
-    if net_type not in ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
-                        'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
-                        'CUSTOM_BRIDGED']:
-        raise BadRequest("Invalid network type: %s", net_type)
-    if net_type not in settings.ENABLED_NETWORKS:
-        raise Forbidden("Can not create %s network" % net_type)
+    if flavor not in Network.FLAVORS.keys():
+        raise BadRequest("Invalid network flavors %s" % flavor)
+
+    if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+        raise Forbidden("Can not create %s network" % flavor)
 
     cidr_block = int(subnet.split('/')[1])
     if not util.validate_network_size(cidr_block):
@@ -198,10 +197,7 @@ def create_network(serials, request):
     serial.save()
 
     try:
-        link, mac_prefix = util.net_resources(net_type)
-        if not link:
-            raise Exception("Can not create network. No connectivity link.")
-
+        mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
         network = Network.objects.create(
                 name=name,
                 userid=user_id,
@@ -210,15 +206,17 @@ def create_network(serials, request):
                 gateway=gateway,
                 gateway6=gateway6,
                 dhcp=dhcp,
-                type=net_type,
+                flavor=flavor,
+                mode=mode,
                 link=link,
                 mac_prefix=mac_prefix,
+                tags=tags,
                 action='CREATE',
                 state='PENDING',
                 serial=serial)
     except EmptyPool:
         log.error("Failed to allocate resources for network of type: %s",
-                  net_type)
+                  flavor)
         raise ServiceUnavailable("Failed to allocate resources for network")
 
     # Create BackendNetwork entries for each Backend

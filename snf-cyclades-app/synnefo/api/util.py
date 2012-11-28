@@ -462,29 +462,6 @@ def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
 
-def net_resources(net_type):
-    mac_prefix = settings.MAC_POOL_BASE
-    if net_type == 'PRIVATE_MAC_FILTERED':
-        link = settings.PRIVATE_MAC_FILTERED_BRIDGE
-        mac_pool = MacPrefixPoolTable.get_pool()
-        mac_prefix = mac_pool.get()
-        mac_pool.save()
-    elif net_type == 'PRIVATE_PHYSICAL_VLAN':
-        pool = BridgePoolTable.get_pool()
-        link = pool.get()
-        pool.save()
-    elif net_type == 'CUSTOM_ROUTED':
-        link = settings.CUSTOM_ROUTED_ROUTING_TABLE
-    elif net_type == 'CUSTOM_BRIDGED':
-        link = settings.CUSTOM_BRIDGED_BRIDGE
-    elif net_type == 'PUBLIC_ROUTED':
-        link = settings.PUBLIC_ROUTED_ROUTING_TABLE
-    else:
-        raise BadRequest('Unknown network type')
-
-    return link, mac_prefix
-
-
 def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
@@ -520,3 +497,53 @@ def get_flavor_provider(flavor):
     if disk_template.startswith("ext"):
         disk_template, provider = disk_template.split("_", 1)
     return disk_template, provider
+
+def values_from_flavor(flavor):
+    """Get Ganeti connectivity info from flavor type.
+
+    If link or mac_prefix equals to "pool", then the resources
+    are allocated from the corresponding Pools.
+
+    """
+    try:
+        flavor = Network.FLAVORS[flavor]
+    except KeyError:
+        raise BadRequest("Unknown network flavor")
+
+    mode = flavor.get("mode")
+
+    link = flavor.get("link")
+    if link == "pool":
+        link = allocate_resource("bridge")
+
+    mac_prefix = flavor.get("mac_prefix")
+    if mac_prefix == "pool":
+        mac_prefix = allocate_resource("mac_prefix")
+
+    tags = flavor.get("tags")
+
+    return mode, link, mac_prefix, tags
+
+
+def allocate_resource(res_type):
+    table = get_pool_table(res_type)
+    pool = table.get_pool()
+    value = pool.get()
+    pool.save()
+    return value
+
+
+def release_resource(res_type, value):
+    table = get_pool_table(res_type)
+    pool = table.get_pool()
+    pool.put(value)
+    pool.save()
+
+
+def get_pool_table(res_type):
+    if res_type == "bridge":
+        return BridgePoolTable
+    elif res_type == "mac_prefix":
+        return MacPrefixPoolTable
+    else:
+        raise Exception("Unknown resource type")

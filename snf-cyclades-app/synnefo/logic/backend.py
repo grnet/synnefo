@@ -43,6 +43,7 @@ from synnefo.db.models import (Backend, VirtualMachine, Network,
                                MacPrefixPoolTable, VirtualMachineDiagnostic)
 from synnefo.logic import utils
 from synnefo import quotas
+from synnefo.api.util import release_resource
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -255,15 +256,13 @@ def update_network_state(serials, network):
         log.info("Network %r deleted. Releasing link %r mac_prefix %r",
                  network.id, network.mac_prefix, network.link)
         network.deleted = True
-        if network.mac_prefix and network.type == 'PRIVATE_MAC_FILTERED':
-            mac_pool = MacPrefixPoolTable.get_pool()
-            mac_pool.put(network.mac_prefix)
-            mac_pool.save()
-
-        if network.link and network.type == 'PRIVATE_VLAN':
-            bridge_pool = BridgePoolTable.get_pool()
-            bridge_pool.put(network.link)
-            bridge_pool.save()
+        if network.mac_prefix:
+            if network.FLAVORS[network.flavor]["mac_prefix"] == "pool":
+                release_resource(res_type="mac_prefix",
+                                 value=network.mac_prefix)
+        if network.link:
+            if network.FLAVORS[network.flavor]["link"] == "pool":
+                release_resource(res_type="bridge", value=network.link)
 
         # Issue commission
         serial = quotas.issue_network_commission(network.userid, delete=True)
@@ -518,8 +517,6 @@ def connect_network(network, backend, depend_job=None, group=None):
     """Connect a network to nodegroups."""
     log.debug("Connecting network %s to backend %s", network, backend)
 
-    mode = "routed" if "ROUTED" in network.type else "bridged"
-
     if network.public:
         conflicts_check = True
     else:
@@ -528,11 +525,11 @@ def connect_network(network, backend, depend_job=None, group=None):
     depend_jobs = [depend_job] if depend_job else []
     with pooled_rapi_client(backend) as client:
         if group:
-            client.ConnectNetwork(network.backend_id, group, mode,
+            client.ConnectNetwork(network.backend_id, group, network.mode,
                                   network.link, conflicts_check, depend_jobs)
         else:
             for group in client.GetGroups():
-                client.ConnectNetwork(network.backend_id, group, mode,
+                client.ConnectNetwork(network.backend_id, group, network.mode,
                                       network.link, conflicts_check,
                                       depend_jobs)
 
@@ -723,14 +720,10 @@ def _create_network_synced(network, backend):
 
 
 def connect_network_synced(network, backend):
-    if network.type in ('PUBLIC_ROUTED', 'CUSTOM_ROUTED'):
-        mode = 'routed'
-    else:
-        mode = 'bridged'
     with pooled_rapi_client(backend) as client:
         for group in client.GetGroups():
-            job = client.ConnectNetwork(network.backend_id, group, mode,
-                                        network.link)
+            job = client.ConnectNetwork(network.backend_id, group,
+                                        network.mode, network.link)
             result = wait_for_job(client, job)
             if result[0] != 'success':
                 return result

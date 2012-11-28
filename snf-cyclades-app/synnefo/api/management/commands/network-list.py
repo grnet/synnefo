@@ -90,7 +90,7 @@ class Command(BaseCommand):
         if filter_by:
             networks = filter_results(networks, filter_by)
 
-        headers = ['id', 'name', 'type', 'owner',
+        headers = ['id', 'name', 'flavor', 'owner',
                   'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']
 
         if options['ipv6']:
@@ -102,7 +102,7 @@ class Command(BaseCommand):
         for network in networks.order_by("id"):
             fields = [str(network.id),
                       network.name,
-                      network.type,
+                      network.flavor,
                       network.userid or '',
                       network.mac_prefix or '',
                       str(network.dhcp),

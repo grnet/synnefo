@@ -426,13 +426,40 @@ class Network(models.Model):
         'ERROR': 'ERROR'
     }
 
-    NETWORK_TYPES = (
-        ('PUBLIC_ROUTED', 'Public routed network'),
-        ('PRIVATE_PHYSICAL_VLAN', 'Private vlan network'),
-        ('PRIVATE_MAC_FILTERED', 'Private network with mac-filtering'),
-        ('CUSTOM_ROUTED', 'Custom routed network'),
-        ('CUSTOM_BRIDGED', 'Custom bridged network')
-    )
+    FLAVORS = {
+        'CUSTOM': {
+             'mode': 'bridged',
+             'link': settings.DEFAULT_BRIDGE,
+             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+             'tags': None,
+             'desc': "Basic flavor used for a bridged network",
+        },
+        'IP_LESS_ROUTED': {
+             'mode': 'routed',
+             'link': settings.DEFAULT_ROUTING_TABLE,
+             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+             'tags': 'ip-less-routed',
+             'desc': "Flavor used for an IP-less routed network using"
+                     " Proxy ARP",
+        },
+        'MAC_FILTERED': {
+             'mode': 'bridged',
+             'link': settings.DEFAULT_MAC_FILTERED_BRIDGE,
+             'mac_prefix': 'pool',
+             'tags': 'private-filtered',
+             'desc': "Flavor used for bridged networks that offer isolation"
+                     " via filtering packets based on their src "
+                     " MAC (ebtables)",
+        },
+        'PHYSICAL_VLAN': {
+             'mode': 'bridged',
+             'link': 'pool',
+             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+             'tags': 'physical-vlan',
+             'desc': "Flavor used for bridged network that offer isolation"
+                     " via dedicated physical vlan",
+        },
+    }
 
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128,
@@ -442,10 +469,11 @@ class Network(models.Model):
     gateway = models.CharField('Gateway', max_length=32, null=True)
     gateway6 = models.CharField('IPv6 Gateway', max_length=64, null=True)
     dhcp = models.BooleanField('DHCP', default=True)
-    type = models.CharField(choices=NETWORK_TYPES, max_length=50,
-                            default='PRIVATE_PHYSICAL_VLAN')
-    link = models.CharField('Network Link', max_length=128, null=True)
+    flavor = models.CharField('Flavor', max_length=32, null=False)
+    mode = models.CharField('Network Mode', max_length=16, null=True)
+    link = models.CharField('Network Link', max_length=32, null=True)
     mac_prefix = models.CharField('MAC Prefix', max_length=32, null=False)
+    tags = models.CharField('Network Tags', max_length=128, null=True)
     public = models.BooleanField(default=False, db_index=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -482,7 +510,10 @@ class Network(models.Model):
         """Return the network tag to be used in backend
 
         """
-        return getattr(snf_settings, self.type + '_TAGS')
+        if self.tags:
+            return self.tags.split(',')
+        else:
+            return []
 
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""

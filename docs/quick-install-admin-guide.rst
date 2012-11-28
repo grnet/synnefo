@@ -604,6 +604,17 @@ node1 which is where we have installed Astakos.
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
 
+.. note:: Because Cyclades and Astakos are running on the same machine
+    in our example, we have to deactivate the CSRF verification. We can do so
+    by adding to
+    ``/etc/synnefo/99-local.conf``:
+
+    .. code-block:: console
+
+        MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
+        TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
+
+
 Database Initialization
 -----------------------
 
@@ -1963,19 +1974,6 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
                            --property description="Debian Squeeze Base System" \
                            --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
                            --property sortorder=1 --property USERS=root --property OS=debian
-
-.. note:: Because Plankton and Astakos are running on the same machine
-    in our example, we have to deactivate the CSRF verification for
-    the above command to work. We can do so by adding to
-    ``/etc/synnefo/99-local.conf``:
-
-    .. code-block:: console
-
-        MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
-        TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
-
-    and then restart gunicorn.
-
 
 This command registers the Pithos+ file
 ``pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump`` as an

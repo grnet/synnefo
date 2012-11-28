@@ -316,7 +316,7 @@ To add the Ganeti cluster, run:
 
    $ snf-manage backend-add --clustername=cluster.example.com --user="synnefo_user" --pass="synnefo_pass"
 
-where clustername is the DNS resolvable address of the Ganeti cluster, and user
+where clustername is the Cluster hostname of the Ganeti cluster, and user
 and pass are the credentials for the Ganeti RAPI user. All of the backends
 attributes can also be changed dynamically with `snf-manage backend-modify`
 command.

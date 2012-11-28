@@ -62,7 +62,7 @@ class SpecifyException(Exception):
 
 class Canonical(object):
 
-    random_choice = None
+    _random_choice = None
 
     def __init__(self, *args, **kw):
         self.args = []
@@ -131,7 +131,7 @@ class Canonical(object):
         return None
 
     def random(self, **kw):
-        random_choice = self.random_choice
+        random_choice = self._random_choice
         if random_choice is None:
             return None
 
@@ -228,7 +228,7 @@ class Integer(Canonical):
 
         return num
 
-    def random_integer(self, kw):
+    def _random_choice(self, kw):
         optget = self.opts.get
         kwget = kw.get
         minimum = kwget('minimum', optget('minimum', -4294967296L))
@@ -241,8 +241,6 @@ class Integer(Canonical):
         if minimum <= 0 and maximum >= 0 and r < 0.3:
             return 0L
         return long(minimum + r * (maximum - minimum))
-
-    random_choice = random_integer
 
 
 
@@ -326,7 +324,7 @@ class Text(Canonical):
 
     default_alphabet = '0123456789αβγδεζ'.decode('utf8')
 
-    def random_string(self, kw):
+    def _random_choice(self, kw):
         opts = self.opts
         if 'regex' in opts:
             m = 'Unfortunately, random for regex strings not supported'
@@ -350,8 +348,6 @@ class Text(Canonical):
             s += choice(alphabet)
 
         return s
-
-    random_choice = random_string
 
 
 class Bytes(Canonical):
@@ -422,7 +418,7 @@ class Bytes(Canonical):
 
     default_alphabet = '0123456789abcdef'
 
-    def random_bytes(self, kw):
+    def _random_choice(self, kw):
         opts = self.opts
         if 'regex' in opts:
             m = 'Unfortunately, random for regex strings not supported'
@@ -446,8 +442,6 @@ class Bytes(Canonical):
             s += choice(alphabet)
 
         return s
-
-    random_choice = random_bytes
 
 
 class ListOf(Canonical):
@@ -496,13 +490,11 @@ class ListOf(Canonical):
 
         return canonified
 
-    def random_listof(self, kw):
+    def _random_choice(self, kw):
         z = randint(1, 4)
         get_random = self.canonical.random
 
         return [get_random() for _ in xrange(z)]
-
-    random_choice = random_listof
 
     def _show(self):
         return '[ ' + self.canonical.show() + ' ... ]'
@@ -562,13 +554,11 @@ class Args(Canonical):
         strings = [x for x in [c.show() for n, c in self.kw.items()] if x]
         return ' '.join(strings)
 
-    def random_args(self, kw):
+    def _random_choice(self, kw):
         args = {}
         for n, c in self.kw.items():
             args[n] = c.random()
         return args
-
-    random_choice = random_args
 
 
 class Tuple(Canonical):
@@ -597,10 +587,8 @@ class Tuple(Canonical):
         args = self.args + oargs
         return self.__class__(*args)
 
-    def random_tuple(self, kw):
+    def _random_choice(self, kw):
         return tuple(c.random() for c in self.args)
-
-    random_choice = random_tuple
 
     def _show(self):
         canonicals = self.args
@@ -637,14 +625,12 @@ class Dict(Canonical):
 
         return canonified
 
-    def random_dict(self, kw):
+    def _random_choice(self, kw):
         item = {}
-        for n, c in self.canonical.items():
+        for n, c in self.kw.items():
             item[n] = c.random()
 
         return item
-
-    random_choice = random_dict
 
 
 class Canonifier(object):

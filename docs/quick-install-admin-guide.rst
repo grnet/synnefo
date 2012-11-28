@@ -102,7 +102,7 @@ You can install apache2 and progresql by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql rabbitmq-server
+   # apt-get install apache2 postgresql
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:

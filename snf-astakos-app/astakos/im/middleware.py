@@ -31,9 +31,36 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from urllib import unquote
+from urlparse import urlunsplit, urlsplit
+
+from django.http import HttpResponse
+from django.utils.http import urlencode
+
 from astakos.im.cookie import Cookie
+from astakos.im.settings import COOKIE_NAME
+from astakos.im.util import get_query
 
 class CookieAuthenticationMiddleware(object):
+    def process_request(self, request):
+        if request.user.is_authenticated():
+            return
+        
+        cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
+        if not cookie:
+            return
+        
+        response = HttpResponse(status=302)
+        
+        parts = list(urlsplit(request.path))
+        params = get_query(request)
+        parts[3] = urlencode(params)
+        url = urlunsplit(parts)
+        
+        response['Location'] = url
+        Cookie(request, response).fix()
+        return response
+    
     def process_response(self, request, response):
         Cookie(request, response).fix()
         return response

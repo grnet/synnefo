@@ -443,13 +443,14 @@ def delete_server(request, server_id):
     return HttpResponse(status=204)
 
 
+# additional server actions
+ARBITRARY_ACTIONS = ['console', 'firewallProfile']
+
 @util.api_method('POST')
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
 
-    # additional server actions
-    ARBITRARY_ACTIONS = ['console', 'firewallProfile']
 
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")

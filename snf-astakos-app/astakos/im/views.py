@@ -263,15 +263,25 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     * LOGIN_URL: login uri
     """
     extra_context = extra_context or {}
-    form = ProfileForm(instance=request.user)
+    form = ProfileForm(
+        instance=request.user,
+        session_key=request.session.session_key
+    )
     extra_context['next'] = request.GET.get('next')
     if request.method == 'POST':
-        form = ProfileForm(request.POST, instance=request.user)
+        form = ProfileForm(
+            request.POST,
+            instance=request.user,
+            session_key=request.session.session_key
+        )
         if form.is_valid():
             try:
                 prev_token = request.user.auth_token
                 user = form.save()
-                form = ProfileForm(instance=user)
+                form = ProfileForm(
+                    instance=user,
+                    session_key=request.session.session_key
+                )
                 next = restrict_next(
                     request.POST.get('next'),
                     domain=COOKIE_DOMAIN

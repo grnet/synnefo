@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth import authenticate
@@ -40,11 +40,12 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
 
 from astakos.im.util import prepare_response, get_query
-from astakos.im.views import requires_anonymous
+from astakos.im.views import requires_anonymous, signed_terms_required
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
-from astakos.im.forms import LoginForm
+from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm
 from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION
 
@@ -124,3 +125,25 @@ def login(request, on_failure='im/login.html'):
                 _('Account successfully switched to %(provider)s' % user.__dict__)
             )
     return prepare_response(request, user, next)
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def password_change(request, template_name='registration/password_change_form.html',
+                    post_change_redirect=None, password_change_form=ExtendedPasswordChangeForm):
+    if post_change_redirect is None:
+        post_change_redirect = reverse('django.contrib.auth.views.password_change_done')
+    if request.method == "POST":
+        form = password_change_form(
+            user=request.user,
+            data=request.POST,
+            session_key=request.session.session_key
+        )
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(post_change_redirect)
+    else:
+        form = password_change_form(user=request.user)
+    return render_to_response(template_name, {
+        'form': form,
+    }, context_instance=RequestContext(request))

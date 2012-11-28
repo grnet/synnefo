@@ -49,13 +49,16 @@ from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models.signals import post_save, post_syncdb
+from django.db.models.signals import post_save, pre_save, post_syncdb
 from django.db.models import Q
 from django.conf import settings
+from django.utils.importlib import import_module
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
-    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME, \
+from astakos.im.settings import (
+    DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
+    AUTH_TOKEN_DURATION, BILLING_FIELDS, QUEUE_CONNECTION, SITENAME,
     EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
+)
 
 QUEUE_CLIENT_ID = 3 # Astakos.
 
@@ -165,19 +168,36 @@ class AstakosUser(User):
             except Group.DoesNotExist, e:
                 logger.exception(e)
     
-    def renew_token(self):
+    def renew_token(self, flush_sessions=False, current_key=None):
         md5 = hashlib.md5()
         md5.update(settings.SECRET_KEY)
         md5.update(self.username)
         md5.update(self.realname.encode('ascii', 'ignore'))
         md5.update(asctime())
-
+        
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
+        if flush_sessions:
+            self.flush_sessions(current_key)
         msg = 'Token renewed for %s' % self.email
         logger._log(LOGGING_LEVEL, msg, [])
+
+    def flush_sessions(self, current_key=None):
+        q = self.sessions
+        if current_key:
+            q = q.exclude(session_key=current_key)
+        
+        keys = q.values_list('session_key', flat=True)
+        if keys:
+            msg = 'Flushing sessions: %s' % ','.join(keys)
+            logger._log(LOGGING_LEVEL, msg, [])
+        engine = import_module(settings.SESSION_ENGINE)
+        for k in keys:
+            s = engine.SessionStore(k)
+            s.flush()
+#         q.all().delete()
 
     def __unicode__(self):
         return self.username
@@ -355,12 +375,6 @@ class Service(models.Model):
     auth_token_created = models.DateTimeField('Token creation date', null=True)
     auth_token_expires = models.DateTimeField('Token expiration date', null=True)
     
-    def save(self, **kwargs):
-        if not self.id:
-            self.renew_token()
-        self.full_clean()
-        super(Service, self).save(**kwargs)
-    
     def renew_token(self):
         md5 = hashlib.md5()
         md5.update(settings.SECRET_KEY)
@@ -372,6 +386,8 @@ class Service(models.Model):
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=AUTH_TOKEN_DURATION)
+        msg = 'Token renewed for %s' % self.name
+        logger._log(LOGGING_LEVEL, msg, [])
 
 class AdditionalMail(models.Model):
     """
@@ -419,13 +435,16 @@ class PendingThirdPartyUser(models.Model):
                     self.username = username
         super(PendingThirdPartyUser, self).save(**kwargs)
 
+class SessionCatalog(models.Model):
+    session_key = models.CharField(_('session key'), max_length=40)
+    user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
+
 def create_astakos_user(u):
     try:
         AstakosUser.objects.get(user_ptr=u.pk)
     except AstakosUser.DoesNotExist:
         extended_user = AstakosUser(user_ptr_id=u.pk)
         extended_user.__dict__.update(u.__dict__)
-        extended_user.renew_token()
         extended_user.save()
     except:
         pass
@@ -443,4 +462,14 @@ def superuser_post_save(sender, instance, **kwargs):
     if instance.is_superuser:
         create_astakos_user(instance)
 
+def astakosuser_post_save(sender, instance, **kwargs):
+    pass
+
 post_save.connect(superuser_post_save, sender=User)
+
+def renew_token(sender, instance, **kwargs):
+    if not instance.id:
+        instance.renew_token()
+
+pre_save.connect(renew_token, sender=AstakosUser)
+pre_save.connect(renew_token, sender=Service)

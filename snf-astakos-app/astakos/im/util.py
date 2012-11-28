@@ -156,7 +156,10 @@ def prepare_response(request, user, next='', renew=False):
     renew = renew or (not user.auth_token)
     renew = renew or (user.auth_token_expires and user.auth_token_expires < datetime.datetime.now())
     if renew:
-        user.renew_token()
+        user.renew_token(
+            flush_sessions=True,
+            current_key=request.session.session_key
+        )
         try:
             user.save()
         except ValidationError, e:

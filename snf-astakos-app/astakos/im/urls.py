@@ -49,7 +49,6 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^activate/?$', 'activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
-    url(r'^password/?$', 'change_password', {}, name='password_change'),
     url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation')
 )
 
@@ -66,7 +65,12 @@ urlpatterns += patterns('astakos.im.target',
 
 if 'local' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-        url(r'^local/?$', 'local.login')
+        url(r'^local/?$', 'local.login'),
+        url(r'^password_change/?$', 'local.password_change', {
+            'post_change_redirect':'profile',
+            'password_change_form':ExtendedPasswordChangeForm
+            },
+            name='password_change')
     )
     urlpatterns += patterns('django.contrib.auth.views',
         url(r'^local/password_reset/?$', 'password_reset',
@@ -75,9 +79,7 @@ if 'local' in IM_MODULES:
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
          'password_reset_confirm', {'set_password_form':ExtendedSetPasswordForm}),
-        url(r'^local/password/reset/complete/?$', 'password_reset_complete'),
-        url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile',
-            'password_change_form':ExtendedPasswordChangeForm})
+        url(r'^local/password/reset/complete/?$', 'password_reset_complete')
     )
 
 if INVITATIONS_ENABLED:

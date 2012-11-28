@@ -99,7 +99,6 @@ class Command(BaseCommand):
                            email=email, affiliation=affiliation,
                            provider='local')
         user.set_password(password)
-        user.renew_token()
         
         if options['active']:
             user.is_active = True

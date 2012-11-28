@@ -40,7 +40,11 @@ from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.template import Context, loader
-from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth import (
+    login as auth_login,
+    logout as auth_logout,
+    SESSION_KEY
+)
 from django.http import HttpRequest
 
 from urllib import quote
@@ -49,12 +53,14 @@ from smtplib import SMTPException
 from datetime import datetime
 from functools import wraps
 
-from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, \
-    SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL, \
-    VERIFICATION_EMAIL_SUBJECT, ADMIN_NOTIFICATION_EMAIL_SUBJECT, \
-    HELPDESK_NOTIFICATION_EMAIL_SUBJECT, INVITATION_EMAIL_SUBJECT, \
+from astakos.im.settings import (
+    DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL,
+    SITENAME, BASEURL, DEFAULT_ADMIN_EMAIL, LOGGING_LEVEL,
+    VERIFICATION_EMAIL_SUBJECT, ADMIN_NOTIFICATION_EMAIL_SUBJECT,
+    HELPDESK_NOTIFICATION_EMAIL_SUBJECT, INVITATION_EMAIL_SUBJECT,
     GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT, EMAIL_CHANGE_EMAIL_SUBJECT
-from astakos.im.models import Invitation, AstakosUser
+)
+from astakos.im.models import Invitation, AstakosUser, SessionCatalog
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +81,12 @@ def logged(func, msg):
         return r
     return with_logging
 
-login = logged(auth_login, '%s logged in.')
+
+def login(request, user):
+    auth_login(request, user)
+    SessionCatalog(session_key=request.session.session_key, user=user).save()
+
+login = logged(login, '%s logged in.')
 logout = logged(auth_logout, '%s logged out.')
 
 def send_verification(user, template_name='im/activation_email.txt'):

@@ -89,9 +89,8 @@ class LocalUserCreationForm(UserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        request = kwargs.get('request', None)
+        request = kwargs.pop('request', None)
         if request:
-            kwargs.pop('request')
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP', None))
 
@@ -150,7 +149,6 @@ class LocalUserCreationForm(UserCreationForm):
         save behavior is complete.
         """
         user = super(LocalUserCreationForm, self).save(commit=False)
-        user.renew_token()
         if commit:
             user.save()
             logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
@@ -240,7 +238,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
-        user.renew_token()
         user.provider = get_query(self.request).get('provider')
         if commit:
             user.save()
@@ -385,6 +382,7 @@ class ProfileForm(forms.ModelForm):
         fields = ('email', 'first_name', 'last_name', 'auth_token', 'auth_token_expires')
 
     def __init__(self, *args, **kwargs):
+        self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
         ro_fields = ('email', 'auth_token', 'auth_token_expires')
@@ -396,7 +394,10 @@ class ProfileForm(forms.ModelForm):
         user = super(ProfileForm, self).save(commit=False)
         user.is_verified = True
         if self.cleaned_data.get('renew'):
-            user.renew_token()
+            user.renew_token(
+                flush_sessions=True,
+                current_key=self.session_key
+            )
         if commit:
             user.save()
         return user
@@ -523,11 +524,17 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
                                    help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
+        self.session_key = kwargs.pop('session_key', None)
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
 
     def save(self, commit=True):
-        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            self.user.renew_token()
+        try:
+            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+                self.user.renew_token()
+            self.user.flush_sessions(current_key=self.session_key)
+        except AttributeError:
+            # if user model does has not such methods
+            pass
         return super(ExtendedPasswordChangeForm, self).save(commit=commit)
 
 class ExtendedSetPasswordForm(SetPasswordForm):
@@ -536,15 +543,23 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     to optionally renew also the token.
     """
     if not NEWPASSWD_INVALIDATE_TOKEN:
-        renew = forms.BooleanField(label='Renew token', required=False,
-                                   initial=True,
-                                   help_text='Unsetting this may result in security risk.')
+        renew = forms.BooleanField(
+            label='Renew token',
+            required=False,
+            initial=True,
+            help_text='Unsetting this may result in security risk.'
+        )
     
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
     
     def save(self, commit=True):
-        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            if isinstance(self.user, AstakosUser):
+        try:
+            self.user = AstakosUser.objects.get(id=self.user.id)
+            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
                 self.user.renew_token()
+            self.user.flush_sessions()
+        except BaseException, e:
+            logger.exception(e)
+            pass
         return super(ExtendedSetPasswordForm, self).save(commit=commit)

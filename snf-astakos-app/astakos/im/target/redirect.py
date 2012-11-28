@@ -96,7 +96,10 @@ def login(request):
             return response
         renew = request.GET.get('renew', None)
         if renew == '':
-            request.user.renew_token()
+            request.user.renew_token(
+                flush_sessions=True,
+                current_key=request.session.session_key
+            )
             try:
                 request.user.save()
             except ValidationError, e:

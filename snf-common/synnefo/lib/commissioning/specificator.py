@@ -191,6 +191,12 @@ class Canonical(object):
     def __repr__(self):
         return self.tostring(multiline=0, showopts=1)
 
+    def show(self):
+        showable = self.opts.get('show', True)
+        return self._show() if showable else ''
+
+    def _show(self):
+        return self.name
 
 class Null(Canonical):
 
@@ -535,6 +541,8 @@ class ListOf(Canonical):
 
     random_choice = random_listof
 
+    def _show(self):
+        return '[ ' + self.canonical.show() + ' ... ]'
 
 class Args(Canonical):
 
@@ -577,6 +585,10 @@ class Args(Canonical):
                 canonified[key] = kw[key].check(v)
 
         return canonified
+
+    def _show(self):
+        strings = [x for x in [c.show() for n, c in self.kw.items()] if x]
+        return ' '.join(strings)
 
     def random_args(self, kw):
         args = {}
@@ -637,6 +649,10 @@ class Tuple(Canonical):
 
     random_choice = random_tuple
 
+    def _show(self):
+        canonicals = self.args
+        strings = [x for x in [c.show() for c in canonicals] if x]
+        return '[ ' + ' '.join(strings) + ' ]'
 
 class Dict(Canonical):
 
@@ -752,6 +768,9 @@ class Canonifier(object):
 
     def canonify_output(self, name, the_output):
         return self.output_canonical(name)(the_output)
+
+    def show_input_canonical(self, name):
+        return self.input_canonical(name).show()
 
     def parse(self, method, arglist):
         args, rest = argmap_decode(arglist)

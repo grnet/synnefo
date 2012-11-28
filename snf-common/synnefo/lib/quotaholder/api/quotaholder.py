@@ -36,7 +36,7 @@ from synnefo.lib.commissioning import (CanonifyException, SpecifyException,
                                        Specificator, Null, Integer, Text,
                                        Tuple, ListOf, Dict, Args)
 
-Context             =   Dict(classname='Context', null=True)
+Context             =   Dict(classname='Context', null=True, show=False)
 
 class Name(Text):
     def init(self):

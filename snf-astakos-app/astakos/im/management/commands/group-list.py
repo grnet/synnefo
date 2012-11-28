@@ -42,7 +42,7 @@ from ._common import format_bool
 
 
 class Command(BaseCommand):
-    help = "List g"
+    help = "List groups"
     
     option_list = BaseCommand.option_list + (
         make_option('-c',

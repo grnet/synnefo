@@ -388,6 +388,25 @@ commands are available:
 Managing Virtual Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Cyclades is able to create and manage Virtual Networks. Networking is desployment
+specific and must be customized based on the specific needs of the system
+administrator. For better understanding networking please refer to :ref:`Network <networks>`
+section.
+
+Exactly as Cyclades VMs can be handled like Ganeti instances, Cyclades Networks
+can also by handled as Ganeti networks, via `gnt-network commands`. All Ganeti
+networks that belong to Synnefo are named with a prefix
+`${BACKEND_PREFIX_ID}-net-`.
+
+There are also the following snf-manage commands for managing networks:
+
+* snf-manage network-list: List networks
+* snf-manage network-show: Show information about network from Cyclades DB
+* snf-manage network-inspect: Inspect the state of the network in DB and Ganeti backends
+* snf-manage network-modify: Modify the state of the network in Cycldes DB
+* snf-manage network-create: Create a new network
+* snf-manage network-remove: Remove a network
+
 Managing Network Resources
 ```````````````````````````
 

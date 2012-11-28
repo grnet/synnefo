@@ -549,8 +549,9 @@ class Args(Canonical):
                     if not key in canonified.keys():
                         position = i + 1
                         break
-                else: # exhausted
-                    raise Exception("shouldn't happen")
+                else:
+                    m = "Formal arguments exhausted"
+                    raise AssertionError(m)
                 canonified[key] = kw[key].check(v)
 
         return canonified

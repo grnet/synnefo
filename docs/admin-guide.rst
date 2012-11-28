@@ -363,8 +363,33 @@ the backends stats from the VM creation phase.
 Finally, the admin can decide to have a user VMs in a specific backend, with
 the `BACKEND_PER_USER` setting.
 
+
+Managing Virtual Machines
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As mentioned, Cyclades relies on Ganeti for management of VMs. The
+administrator can handle Cyclades VMs just like any other Ganeti instance, via
+`gnt-instance` commands. All Ganeti instances that belong to Synnefo, are
+separated from others by a prefix in their names. This prefix is defined in
+`BACKEND_PREFIX_ID` setting in `/etc/synnefo/20-snf-cyclades-app-backend.conf`.
+
+
+Apart from handling instances directly in Ganeti level, a number of snf-manage
+commands are available:
+
+* snf-manage server-list: List servers
+* snf-manage server-show: Show information about server from Cyclades DB
+* snf-manage server-inspect: Inspect the state of the server in DB and Ganeti
+* snf-manage server-modify: Modify the state of the server in Cycldes DB
+* snf-manage server-create: Create a new server
+* snf-manage server-import: Import an existing Ganeti instance under control of Cyclades
+
+
+Managing Virtual Networks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Managing Network Resources
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+```````````````````````````
 
 Proper operation of of Cyclades Network Service depends on unique assignment of
 specific resources to each virtual network. Specifically, these resources are:
@@ -374,15 +399,13 @@ specific resources to each virtual network. Specifically, these resources are:
   of each network by running `snf-manage network-inspect <network_ID>`. IP pools
   are automatically created and managed by Cyclades, depending of the subnet of
   the network.
-* Bridges corresponding to phycal VLANs, which are required for networks of
+* Bridges corresponding to physical VLANs, which are required for networks of
   `PRIVATE_PHYSICAL_VLAN` type, to guarantee isolation between networks and
   MAC prefixes, which are required to guarantee isolation between networks
   of `PRIVATE_MAC_PREFIX` type. Cyclades allocates these two resources from
   pools that are created by the administrator with `snf-manage pool-create`
   management command.
 
-Creating a new Pool
-```````````````````
 
 Pools are created using the `snf-manage pool-create` command.
 

@@ -249,7 +249,8 @@ master using the `Ganeti RAPI <http://docs.ganeti.org/ganeti/2.2/html/rapi.html>
 
 While Ganeti executes the job, snf-ganeti-eventd, snf-ganeti-hook and
 snf-progress-monitor are monitoring the progress of the job and send
-corresponding messages to the RabbitMQ servers. Specially,
+corresponding messages to the RabbitMQ servers. These components are part
+of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially,
 
 * *snf-ganeti-eventd* sends messages about operations affecting the operating
   state of instances and networks. Works by monitoring Ganeti job queue.
@@ -267,11 +268,17 @@ Cyclades API, will retrieve the updated state from the DB.
 Prereqs
 -------
 
+Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+
 Installation
 ------------
 
+Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+
 Configuration
 -------------
+
+Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
 
 Working with Cyclades
 ---------------------

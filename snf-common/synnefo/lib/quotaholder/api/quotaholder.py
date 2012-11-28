@@ -40,7 +40,7 @@ Context             =   Dict(classname='Context', null=True, show=False)
 
 class Name(Text):
     def init(self):
-        self.opts.update({'regex': "[\w.:@+/]+", 'maxlen':512})
+        self.opts.update({'regex': "[\w.:@+/-]+", 'maxlen':512})
         Text.init(self)
 
 class Nonnegative(Integer):

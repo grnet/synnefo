@@ -340,8 +340,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             q = self._actual_quantity(h)
-            owner = h.entity.owner
-            self._increase_resource(owner, resource, q)
+            if q > 0:
+                owner = h.entity.owner
+                self._increase_resource(owner, resource, q)
+
             h.delete()
 
         return rejected

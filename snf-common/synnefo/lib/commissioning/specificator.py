@@ -129,20 +129,6 @@ class Canonical(object):
             return argmap[None]
         return argmap
 
-    def parse(self, item):
-        opts = self.opts
-        if item is None and 'default' in opts:
-            item = opts['default']
-
-        can_be_null = opts.get('null', False)
-        if item is None and can_be_null:
-            return None
-
-        return self._parse(item)
-
-    def _parse(self, item):
-        raise NotImplementedError
-
     def create(self):
         return None
 
@@ -244,9 +230,6 @@ class Integer(Canonical):
 
         return num
 
-    def _parse(self, item):
-        return self.check(item)
-
     def random_integer(self, kw):
         optget = self.opts.get
         kwget = kw.get
@@ -342,9 +325,6 @@ class Text(Canonical):
                     raise CanonifyException(m)
 
         return item
-
-    def _parse(self, item):
-        return self.check(item)
 
     default_alphabet = '0123456789αβγδεζ'.decode('utf8')
 
@@ -518,30 +498,6 @@ class ListOf(Canonical):
 
         return canonified
 
-    def _parse(self, item):
-        if item is None:
-            item = ()
-
-        try:
-            items = iter(item)
-        except TypeError, e:
-            m = "%s: %s is not iterable" % (self, shorts(item))
-            raise CanonifyException(m)
-
-        canonical = self.canonical
-        canonified = []
-        append = canonified.append
-
-        for k, v in items:
-            item = canonical.parse(v)
-            append(item)
-
-        if not canonified and self.opts.get('nonempty', False):
-            m = "%s: must be nonempty" % (self,)
-            raise CanonifyException(m)
-
-        return canonified
-
     def random_listof(self, kw):
         z = randint(1, 4)
         get_random = self.canonical.random
@@ -632,25 +588,6 @@ class Tuple(Canonical):
 
         return tuple(g)
 
-    def _parse(self, item):
-        try:
-            items = list(item)
-        except TypeError, e:
-            m = "%s: %s is not iterable" % (self, shorts(item))
-            raise CanonifyException(m)
-
-        canonicals = self.args
-        zi = len(items)
-        zc = len(canonicals)
-
-        if zi != zc:
-            m = "%s: expecting %d elements, not %d (%s)" % (self, zc, zi, str(items))
-            raise CanonifyException(m)
-
-        g = (canonical.parse(element)
-             for canonical, (k, element) in zip(self.args, item))
-        return tuple(g)
-
     def __add__(self, other):
         oargs = other.args if isinstance(other, Tuple) else (other,)
         args = self.args + oargs
@@ -669,34 +606,6 @@ class Tuple(Canonical):
 class Dict(Canonical):
 
     def _check(self, item):
-
-        try:
-            item = dict(item)
-        except TypeError:
-            m = "%s: '%s' is not dict-able" % (self, shorts(item))
-            raise CanonifyException(m)
-
-        canonified = {}
-        canonical = self.kw
-
-        for n, c in canonical.items():
-            if n not in item:
-                m = "%s: key '%s' not found" % (self, shorts(n))
-                raise CanonifyException(m)
-            canonified[n] = c(item[n])
-
-        strict = self.opts.get('strict', True)
-        if strict and len(item) != len(canonical):
-            for k in sorted(item.keys()):
-                if k not in canonical:
-                    break
-
-            m = "%s: unexpected key '%s' (strict mode)" % (self, shorts(k))
-            raise CanonifyException(m)
-
-        return canonified
-
-    def _parse(self, item):
 
         try:
             item = dict(item)

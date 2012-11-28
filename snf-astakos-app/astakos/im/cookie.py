@@ -35,8 +35,9 @@ import logging
 
 from urllib import quote, unquote
 
-from django.http import HttpRequest
 from django.contrib.auth.models import AnonymousUser
+from django.http import HttpRequest
+from django.utils.translation import ugettext as _
 
 from astakos.im.settings import (
     COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, LOGGING_LEVEL
@@ -45,12 +46,20 @@ from astakos.im.settings import (
 logger = logging.getLogger(__name__)
 
 class Cookie():
-    def __init__(self, request, response):
+    def __init__(self, request, response=None):
         cookies = getattr(request, 'COOKIES', {})
         cookie = unquote(cookies.get(COOKIE_NAME, ''))
         self.email, sep, self.auth_token = cookie.partition('|')
         self.request = request
         self.response = response
+    
+    @property
+    def email(self):
+        return getattr(self, 'email', '')
+    
+    @property
+    def auth_token(self):
+        return getattr(self, 'auth_token', '')
     
     @property
     def is_set(self):
@@ -67,6 +76,8 @@ class Cookie():
         return getattr(self.request, 'user', AnonymousUser())
     
     def __set(self):
+        if not self.response:
+            raise ValueError(_('There is no response.'))
         user = self.user
         expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
         cookie_value = quote(user.email + '|' + user.auth_token)
@@ -78,11 +89,14 @@ class Cookie():
         logger._log(LOGGING_LEVEL, msg, [])
     
     def __delete(self):
+        if not self.response:
+            raise ValueError(_('There is no response.'))
         self.response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
         msg = 'Cookie deleted for %(email)s' % self.__dict__
         logger._log(LOGGING_LEVEL, msg, [])
     
-    def fix(self):
+    def fix(self, response=None):
+        self.response = response or self.response
         if self.user.is_authenticated():
             if not self.is_set or not self.is_valid:
                 self.__set()

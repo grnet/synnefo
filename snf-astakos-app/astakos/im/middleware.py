@@ -43,11 +43,8 @@ from astakos.im.util import get_query
 
 class CookieAuthenticationMiddleware(object):
     def process_request(self, request):
-        if request.user.is_authenticated():
-            return
-        
-        cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        if not cookie:
+        cookie = Cookie(request)
+        if cookie.is_valid:
             return
         
         response = HttpResponse(status=302)
@@ -58,7 +55,7 @@ class CookieAuthenticationMiddleware(object):
         url = urlunsplit(parts)
         
         response['Location'] = url
-        Cookie(request, response).fix()
+        cookie.fix(response)
         return response
     
     def process_response(self, request, response):

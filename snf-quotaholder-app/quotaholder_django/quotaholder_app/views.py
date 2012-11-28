@@ -41,6 +41,12 @@ from .callpoint import API_Callpoint
 import json
 from traceback import format_exc
 
+try:
+    from django.views.decorators.csrf import csrf_exempt
+except ImportError:
+    def csrf_exempt(func):
+        return func
+
 def _get_body(request):
     body = request.raw_post_data
     if body is None:
@@ -50,6 +56,7 @@ def _get_body(request):
 callpoints = {('quotaholder', 'v'): API_Callpoint()}
 
 @transaction.commit_on_success
+@csrf_exempt
 def view(request, appname='quotaholder', version=None, callname=None):
     if (appname, version) not in callpoints:
         return HttpResponse(status=404)

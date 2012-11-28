@@ -236,7 +236,11 @@ Synnefo uses Google Ganeti backends for VM cluster management. In order Cyclades
 to be able to handle thousand of user requests, Cyclades and Ganeti communicate
 asynchronously. Briefly, requests are submitted to Ganeti, and asynchronous
 notifications about the progress of jobs is received from the backends. The
-architecture and communication with a Ganeti backend is shown in Figure?.
+architecture and communication with a Ganeti backend is shown the below graph.
+
+.. image:: images/cyclades-ganeti-communication.png
+   :width: 50%
+   :target: _images/cyclades-ganeti-communication.png
 
 Cyclades API server is responsible for handling user requests. Read-only
 requests are directly served by looking up the Cyclades DB. If the request
@@ -262,21 +266,6 @@ Cyclades API, will retrieve the updated state from the DB.
 
 Prereqs
 -------
-
-RabbitMQ
-~~~~~~~~
-
-RabbitMQ is used as a generic message broker for Cyclades. It should be
-installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high
-availability configuration as described here:
-
-    http://www.rabbitmq.com/pacemaker.html
-
-The values set for the user and password must be mirrored in the ``RABBIT_*``
-variables in your settings, as managed by :ref:`snf-common <snf-common>`.
-
-.. todo:: Document an active-active configuration based on the latest version
-   of RabbitMQ.
 
 Installation
 ------------
@@ -498,21 +487,6 @@ Archipelago advanced operations
 -------------------------------
 
 
-.. _mail-server:
-
-Configure mail server
----------------------
-
-In order to be able to send email (for example activation emails),
-synnefo needs access to a running mail server. Your mail server should
-be defined in the ``/etc/synnefo/00-snf-common-admins.conf``
-related constants. At least:
-
-.. code-block:: console
-
-   EMAIL_HOST = "my_mail_server.example.com"
-   EMAIL_PORT = "25"
-
 The "kamaki" API client
 =======================
 
@@ -593,6 +567,91 @@ To verify that the image was registered successfully use:
 
 Miscellaneous
 =============
+
+.. RabbitMQ
+RabbitMQ Broker
+---------------
+
+Queue nodes run the RabbitMQ sofware, which provides AMQP functionality. To
+guarantee high-availability, more than one Queue nodes should be deployed, each
+of them belonging to the same `RabbitMQ cluster
+<http://www.rabbitmq.com/clustering.html>`_. Synnefo uses RabbitMQ
+active/active `High Available Queues <http://www.rabbitmq.com/ha.html>`_ that
+are mirrored on nodes within a RabbitMQ cluster.
+
+The RabbitMQ nodes that form the cluster, are declared to Synnefo through
+the `AMQP_HOSTS` setting. Each time a Synnefo component needs to connect
+RabbitMQ, one of this nodes is chosen in a random way. The client that
+synnefo uses to connect with RabbitMQ, silently handles connection failures
+and tries to reconnect to a different node. As long as one of these nodes
+are up and running, functionality of synnefo should no be downgraded by
+RabbitMQ node failures.
+
+All the queues that are being used are declared as durable, meaning that
+messages are persistently stored to RabbitMQ until are successfully processed
+by a client.
+
+Currently, RabbitMQ is used by the following components:
+
+* snf-ganeti-eventd, snf-ganeti-hook and snf-progress-monitor:
+  These components send messages concerning the status and progress of
+  jobs in the Ganeti backend.
+* snf-dispatcher: This daemon, consumes the messages that are send from
+  the above components, and updates the Cyclades DB.
+
+Installation
+````````````
+
+Please check RabbitMQ documentation which covers extensively the `installation
+of RabbitMQ server <http://www.rabbitmq.com/download.html>`_ and the setup of a
+`RabbitMQ cluster <http://www.rabbitmq.com/clustering.html>`_. Also, check out
+the `web management plugin <http://www.rabbitmq.com/management.html>`_ that can
+be useful for managing and monitoring RabbitMQ.
+
+For a basic installation of RabbitMQ on two nodes (node1 and node2) you can do
+the follow steps:
+
+On both nodes, install rabbitmq-server and create a synnefo user:
+
+.. code-block:: console
+
+  $ apt-get install rabbitmq-server
+  $ rabbitmqctl add_user synnefo "example_pass"
+  $ rabbitmqctl set_permissions synnefo  ".*" ".*" ".*"
+
+Also guarantee that two nodes share the same cookie, by running
+
+.. code-block:: console
+
+  $ scp node1:/var/lib/rabbitmq/.erlang.cookie node2:/var/lib/rabbitmq/.erlang.cookie
+
+and restart the nodes:
+
+.. code-block:: console
+
+  $ /etc/init.d/rabbitmq-server restart
+
+
+To setup the RabbitMQ cluster run:
+
+.. code-block:: console
+
+  root@node2: rabbitmqctl stop_app
+  root@node2: rabbitmqctl reset
+  root@node2: rabbitmqctl cluster rabbit@node1 rabbit@node2
+  root@node2: rabbitmqctl start_app
+
+You can verify that the cluster is set up correctly by running:
+
+.. code-block:: console
+
+  root@node2: rabbitmqctl cluster_status
+
+
+
+
+
+
 
 Admin tool: snf-manage
 ----------------------

@@ -231,7 +231,7 @@ Architecture
 ------------
 
 Asynchronous communication with Ganeti backends
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Synnefo uses Google Ganeti backends for VM cluster management. In order Cyclades
 to be able to handle thousand of user requests, Cyclades and Ganeti communicate
 asynchronously. Briefly, requests are submitted to Ganeti, and asynchronous
@@ -241,7 +241,7 @@ architecture and communication with a Ganeti backend is shown in Figure?.
 Cyclades API server is responsible for handling user requests. Read-only
 requests are directly served by looking up the Cyclades DB. If the request
 needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
-master using the Ganeti RAPI [1].
+master using the `Ganeti RAPI <http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
 
 While Ganeti executes the job, snf-ganeti-eventd, snf-ganeti-hook and
 snf-progress-monitor are monitoring the progress of the job and send
@@ -250,16 +250,14 @@ corresponding messages to the RabbitMQ servers. Specially,
 * *snf-ganeti-eventd* sends messages about operations affecting the operating
   state of instances and networks. Works by monitoring Ganeti job queue.
 * *snf-ganeti_hook* sends messages about the NIC of instances. It includes a
-  number of Ganeti hooks for customisation of operations[2].
+  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
+  for customisation of operations.
 * *snf-progress_monitor* sends messages about the progress of building a new
   instance and image deployment, triggered by snf-image.
 
 Snf-dispatcher consumes messages from the RabbitMQ queues, process these
 messages and properly updates the state of Cyclades DB. Subsequent requests in
 Cyclades API, will retrieve the updated state from the DB.
-
-[1]: http://docs.ganeti.org/ganeti/2.2/html/rapi.html
-[2]: http://docs.ganeti.org/ganeti/2.2/html/hooks.html
 
 
 Prereqs
@@ -290,7 +288,7 @@ Working with Cyclades
 ---------------------
 
 Managing Ganeti Backends
-^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Since v0.11 Synnefo is able to manage multiple Ganeti clusters (backends)
 making it capable to scale to thousand of VMs. Backends can be dynamically be
@@ -309,20 +307,22 @@ are created in all backends in order to ensure that VMs in all backends can
 be connected to the same private network.
 
 Listing existing backend
-^^^^^^^^^^^^^^^^^^^^^^^^
+````````````````````````
 To find out the available Ganeti backends, run:
+
 .. code-block:: console
 
    $ snf-manage backend-list
 
 Adding a new Ganeti backend
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```````````````````````````
 Backends are dynamically added under the control of Synnefo with `snf-manage
 backend-add` command. In this section it is assumed that a Ganeti cluster,
 named cluster.example.com is already up and running and configured to be able
 to host Synnefo VMs.
 
 To add the Ganeti cluster, run:
+
 .. code-block:: console
 
    $ snf-manage backend-add --clustername=cluster.example.com --user="synnefo_user" --pass="synnefo_pass"
@@ -339,8 +339,9 @@ Note that no VMs will be spawned to this backend, until a public network is
 associated with it.
 
 Removing an existing Ganeti backend
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```````````````````````````````````
 In order to remove an existing backend, run:
+
 .. code-block:: console
 
    # snf-manage backend-remove ID
@@ -350,7 +351,7 @@ backend is not cleaned before removing it, so all of Synnefo private networks
 will be left.
 
 Allocation of VMS in Ganneti backends
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+`````````````````````````````````````
 As already mentioned, the backend allocator is responsible allocating new VMs
 to backends. This allocator is not concerned about the Ganeti node that will
 host the VM, which is chosen by the Ganeti allocator.
@@ -359,6 +360,7 @@ The decision about which backend will host a VM is based on the available
 resources. The allocator computes a score for each backend, that shows its load
 factor, and the one with the minimum score is chosen. The admin can exclude
 backends from the allocation phase by marking them as drained by running:
+
 .. code-block:: console
 
    $ snf-manage backend-modify --drained ID
@@ -373,7 +375,7 @@ Finally, the admin can decide to have a user VMs in a specific backend, with
 the `BACKEND_PER_USER` setting.
 
 Managing Network Resources
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Proper operation of of Cyclades Network Service depends on unique assignment of
 specific resources to each virtual network. Specifically, these resources are:
@@ -391,9 +393,10 @@ specific resources to each virtual network. Specifically, these resources are:
   management command.
 
 Creating a new Pool
-^^^^^^^^^^^^^^^^^^^
+```````````````````
 
 Pools are created using the `snf-manage pool-create` command.
+
 .. code-block:: console
 
    # snf-manage pool-create --type=bridge --base=prv --size=20
@@ -401,12 +404,14 @@ Pools are created using the `snf-manage pool-create` command.
 will create a pool of bridges, containing bridges prv1, prv2,..prv21.
 
 You can verify the creation of the pool, and check its contents by running:
+
 .. code-block:: console
 
    # snf-manage pool-list
    # snf-manage pool-show --type=bridge 1
 
 With the same commands you can handle the pool of MAC prefixes. For example:
+
 .. code-block:: console
 
    # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
@@ -428,17 +433,19 @@ the state of the Cyclades DB with Ganeti. There are two management commands
 for reconciling VMs and Networks
 
 Reconciling VirtualMachine
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+``````````````````````````
 Reconciliation of VMs detects the following conditions:
  * Stale DB servers without corresponding Ganeti instances
  * Orphan Ganeti instances, without corresponding DB entries
  * Out-of-sync state for DB entries wrt to Ganeti instances
 
 To detect all inconsistencies you can just run:
+
 .. code-block:: console
   $ snf-manage reconcile --detect-all
 
 Adding the `--fix-all` option, will do the actual synchronization:
+
 .. code-block:: console
   $ snf-manage reconcile --detect-all --fix-all
 
@@ -446,7 +453,7 @@ Please see ``snf-manage reconcile --help`` for all the details.
 
 
 Reconciling Networks
-~~~~~~~~~~~~~~~~~~~~
+````````````````````
 Reconciliation of Networks detects the following conditions:
   * Stale DB networks without corresponding Ganeti networks
   * Orphan Ganeti networks, without corresponding DB entries
@@ -454,10 +461,12 @@ Reconciliation of Networks detects the following conditions:
   * Unsynchronized IP pools
 
 To detect all inconsistencies you can just run:
+
 .. code-block:: console
   $ snf-manage reconcile-networks
 
 Adding the `--fix-all` option, will do the actual synchronization:
+
 .. code-block:: console
   $ snf-manage reconcile-networks --fix-all
 

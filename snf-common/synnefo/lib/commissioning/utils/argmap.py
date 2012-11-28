@@ -203,7 +203,6 @@ def argmap_decode_atom(inputf):
 
 
 def argmap_decode_args(inputf):
-    args = [ARGMAP_MAGIC]
     append = args.append
     s = inputf(1)
     key = None
@@ -215,6 +214,7 @@ def argmap_decode_args(inputf):
         if s == ']':
             if key is not None:
                 append((None, key))
+	    args.append(ARGMAP_MAGIC)
             return args, None
 
         if s == '=':
@@ -243,7 +243,7 @@ def argmap_check(obj):
     if hasattr(obj, 'keys'):
         # this could cover both cases
         return ARGMAP_MAGIC in obj
-    return hasattr(obj, '__len__') and len(obj) and obj[0] == ARGMAP_MAGIC
+    return hasattr(obj, '__len__') and len(obj) and obj[-1] == ARGMAP_MAGIC
 
 def argmap_unzip_dict(argmap):
     if not hasattr(argmap, 'keys'):
@@ -258,7 +258,7 @@ def argmap_unzip_dict(argmap):
     return args, kw
 
 def argmap_unzip_list(argmap):
-    if not argmap or argmap[0] != ARGMAP_MAGIC:
+    if not argmap or argmap[-1] != ARGMAP_MAGIC:
         m = "argmap unzip list: magic not found"
         raise ValueError(m)
 
@@ -287,7 +287,7 @@ def argmap_unzip(argmap):
         raise ValueError(m)
 
 def argmap_zip_list(args, kw):
-    return [ARGMAP_MAGIC] + [(None, a) for a in args] + kw.items()
+    return [(None, a) for a in args] + kw.items() + [ARGMAP_MAGIC]
 
 def argmap_zip_dict(args, kw):
     argmap = OrderedDict()
@@ -297,4 +297,14 @@ def argmap_zip_dict(args, kw):
     return argmap
 
 argmap_zip = argmap_zip_list
+
+def argmap_list_to_dict(argmap):
+    args, kw = argmap_unzip_list(argmap)
+    kw[ARGMAP_MAGIC] = ARGMAP_MAGIC
+    kw[None] = args
+    return kw
+
+def argmap_dict_to_list(argmap):
+    args, kw = argmap_unzip_dict(argmap)
+    return args + kw.items() + [ARGMAP_MAGIC]
 

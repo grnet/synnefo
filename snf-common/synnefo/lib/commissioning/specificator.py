@@ -35,7 +35,7 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
-from .utils.argmap import argmap_decode
+from .utils.argmap import argmap_decode, argmap_check, argmap_dict_to_list
 
 try:
     from collections import OrderedDict
@@ -538,49 +538,43 @@ class ListOf(Canonical):
 
 class Args(Canonical):
 
-    def _parse(self, arglist):
-        formalslen = len(self.kw)
-        arglen = len(arglist)
-        if arglen != formalslen:
-            raise Exception('param inconsistent')
+    def _check(self, item):
+        if argmap_check(item):
+            if hasattr(item, 'keys') and callable(item.keys):
+                arglist = argmap_dict_to_list(item)[:-1]
+            else:
+                arglist = [(None, item[i]) for i in xrange(0, len(item)-1)]
+        else:
+            try:
+                arglist = OrderedDict(item).items()
+            except (TypeError, ValueError), e:
+                m = "%s: %s is not dict-able" % (self, shorts(item))
+                raise CanonifyException(m)
 
-        parsed = OrderedDict()
         keys = self.kw.keys()
+        kw = self.kw
+        arglen = len(arglist)
+        if arglen != len(keys):
+            m = "inconsistent number of parameters: %s != %s" % (
+                arglen, len(keys))
+            raise CanonifyException(m)
+
+        canonified = OrderedDict()
         position = 0
 
         for k, v in arglist:
             if k:
-                parsed[k] = self.kw[k].parse(v)
+                canonified[k] = kw[k].check(v)
             else:
                 # find the right position
                 for i in range(position, arglen):
                     key = keys[i]
-                    if not key in parsed.keys():
+                    if not key in canonified.keys():
                         position = i + 1
                         break
                 else: # exhausted
                     raise Exception("shouldn't happen")
-                parsed[key] = self.kw[key].parse(v)
-
-        return parsed
-
-    def _check(self, item):
-        try:
-            item = OrderedDict(item)
-        except TypeError, e:
-            m = "%s: %s is not dict-able" % (self, shorts(item))
-            raise CanonifyException(m)
-
-        canonified = OrderedDict()
-
-        try:
-            for n, c in self.kw.items():
-                t = item[n] if n in item else None
-                canonified[n] = c(t)
-        except KeyError:
-            m = ("%s: Argument '%s' not found in '%s'"
-                        % (self, shorts(n), shorts(item)))
-            raise CanonifyException(m)
+                canonified[key] = kw[key].check(v)
 
         return canonified
 

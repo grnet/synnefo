@@ -146,7 +146,7 @@ def argmap_encode(obj, output):
                 output('=')
             argmap_encode(v)
         output(']')
-        
+
     if hasattr(obj, '__iter__'):
         output('[')
         once = 1
@@ -203,6 +203,7 @@ def argmap_decode_atom(inputf):
 
 
 def argmap_decode_args(inputf):
+    args = []
     append = args.append
     s = inputf(1)
     key = None
@@ -240,7 +241,7 @@ def argmap_decode_args(inputf):
 
 
 def argmap_check(obj):
-    if hasattr(obj, 'keys'):
+    if hasattr(obj, 'keys') and callable(obj.keys):
         # this could cover both cases
         return ARGMAP_MAGIC in obj
     return hasattr(obj, '__len__') and len(obj) and obj[-1] == ARGMAP_MAGIC
@@ -258,23 +259,18 @@ def argmap_unzip_dict(argmap):
     return args, kw
 
 def argmap_unzip_list(argmap):
-    if not argmap or argmap[-1] != ARGMAP_MAGIC:
+    if not argmap or argmap.pop() != ARGMAP_MAGIC:
         m = "argmap unzip list: magic not found"
         raise ValueError(m)
-
-    iter_argmap = iter(argmap)
-    for magic in iter_argmap:
-        break
 
     args = []
     append = args.append
     kw = OrderedDict()
-    for k, v in iter_argmap:
+    for k, v in argmap:
         if k is None:
             append(v)
         else:
             kw[k] = v
-
     return args, kw
 
 def argmap_unzip(argmap):

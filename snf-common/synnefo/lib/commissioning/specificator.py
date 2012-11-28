@@ -115,10 +115,19 @@ class Canonical(object):
         if item is None and can_be_null:
             return None
 
+        if argmap_check(item):
+            item = self._unpack(item)
+
         return self._check(item)
 
     def _check(self, item):
         return item
+
+    def _unpack(self, item):
+        argmap = argmap_list_to_dict(item)
+        if len(argmap) == 2:
+            return argmap[None]
+        return argmap
 
     def parse(self, item):
         opts = self.opts
@@ -546,12 +555,15 @@ class ListOf(Canonical):
 
 class Args(Canonical):
 
+    def _unpack(self, arglist):
+        return arglist
+
     def _check(self, item):
         if argmap_check(item):
             if hasattr(item, 'keys') and callable(item.keys):
                 arglist = argmap_dict_to_list(item)[:-1]
             else:
-                arglist = [(None, item[i]) for i in xrange(0, len(item)-1)]
+                arglist = item[:-1]
         else:
             try:
                 arglist = OrderedDict(item).items()
@@ -571,7 +583,7 @@ class Args(Canonical):
         position = 0
 
         for k, v in arglist:
-            if k:
+            if k is not None:
                 canonified[k] = kw[k].check(v)
             else:
                 # find the right position
@@ -774,8 +786,7 @@ class Canonifier(object):
 
     def parse(self, method, arglist):
         args, rest = argmap_decode(arglist)
-        argdict = self.input_canonical(method).parse(args)
-        return argdict
+        return self.input_canonical(method).check(args)
 
 
 class Specificator(object):

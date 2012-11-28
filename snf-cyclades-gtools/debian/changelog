@@ -1,3 +1,10 @@
+snf-cyclades-gtools (0.13.0~rc1+stats2-1) unstable; urgency=low
+
+  * New upstream version
+  * Update debian pkg to be consistent with the new upstream version
+
+ -- Stratos Psomadakis <psomas@grnet.gr>  Wed, 28 Nov 2012 16:09:14 +0200
+
 snf-cyclades-gtools (0.13.0~rc1+stats-1) unstable; urgency=low
 
   * New upstream version

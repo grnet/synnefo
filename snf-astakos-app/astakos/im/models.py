@@ -197,7 +197,6 @@ class AstakosUser(User):
         for k in keys:
             s = engine.SessionStore(k)
             s.flush()
-#         q.all().delete()
 
     def __unicode__(self):
         return self.username

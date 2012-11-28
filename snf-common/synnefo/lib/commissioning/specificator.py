@@ -35,8 +35,8 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
-from .utils.argmap import (argmap_decode, argmap_check, argmap_dict_to_list,
-                           argmap_list_to_dict)
+from .utils.argmap import (argmap_decode, argmap_check, argmap_unpack_dict,
+                           argmap_unpack_list)
 
 try:
     from collections import OrderedDict
@@ -125,10 +125,7 @@ class Canonical(object):
         return item
 
     def _unpack(self, item):
-        argmap = argmap_list_to_dict(item)
-        if len(argmap) == 2:
-            return argmap[None]
-        return argmap
+        return argmap_unpack_list(item)
 
     def create(self):
         return None
@@ -517,10 +514,7 @@ class Args(Canonical):
 
     def _check(self, item):
         if argmap_check(item):
-            if hasattr(item, 'keys') and callable(item.keys):
-                arglist = argmap_dict_to_list(item)[:-1]
-            else:
-                arglist = item[:-1]
+            arglist = argmap_unpack_dict(item)
         else:
             try:
                 arglist = OrderedDict(item).items()

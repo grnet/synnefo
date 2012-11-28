@@ -304,3 +304,13 @@ def argmap_dict_to_list(argmap):
     args, kw = argmap_unzip_dict(argmap)
     return args + kw.items() + [ARGMAP_MAGIC]
 
+def argmap_unpack_list(argmap):
+    kw = argmap_list_to_dict(argmap)
+    if len(kw) == 2:
+        return kw[None]
+    return kw
+
+def argmap_unpack_dict(argmap):
+    if hasattr(argmap, 'keys') and callable(argmap.keys):
+        return argmap_dict_to_list(argmap)[:-1]
+    return argmap[:-1]

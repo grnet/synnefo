@@ -35,7 +35,7 @@
 from random import random, choice, randint
 from math import log
 from inspect import isclass
-from .utils.betteron import betteron_decode
+from .utils.argmap import argmap_decode
 
 try:
     from collections import OrderedDict
@@ -760,7 +760,7 @@ class Canonifier(object):
         return self.output_canonical(name)(the_output)
 
     def parse(self, method, arglist):
-        args, rest = betteron_decode(arglist)
+        args, rest = argmap_decode(arglist)
         argdict = self.input_canonical(method).parse(args)
         return argdict
 

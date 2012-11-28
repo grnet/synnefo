@@ -38,6 +38,8 @@ except ImportError:
 from itertools import chain
 from cStringIO import StringIO
 
+ARGMAP_MAGIC = '[=ARGMAP=]'
+
 class arguments(object):
     __slots__ = ('args', 'kw')
 
@@ -105,7 +107,7 @@ class arguments(object):
         self.args.append(value)
 
 
-def betteron_encode(obj, output):
+def argmap_encode(obj, output):
     if obj is None:
         output('[=null]')
         return
@@ -140,9 +142,9 @@ def betteron_encode(obj, output):
             else:
                 output(' ')
             if k is not None:
-                betteron_encode(k)
+                argmap_encode(k)
                 output('=')
-            betteron_encode(v)
+            argmap_encode(v)
         output(']')
         
     if hasattr(obj, '__iter__'):
@@ -153,13 +155,13 @@ def betteron_encode(obj, output):
                 once = 0
             else:
                 output(' ')
-            betteron_encode(item)
+            argmap_encode(item)
         output(']')
 
     m = "Unsupported type '%s'" % (type(obj))
 
 
-def betteron_decode(inputf, s=None):
+def argmap_decode(inputf, s=None):
     if isinstance(inputf, str):
         inputf = StringIO(inputf).read
 
@@ -182,7 +184,7 @@ def betteron_decode(inputf, s=None):
             item += s
             s = inputf(1)
     elif s == '[':
-        item, s = betteron_decode_args(inputf)
+        item, s = argmap_decode_args(inputf)
         return item, s
     else:
         while 1:
@@ -192,7 +194,7 @@ def betteron_decode(inputf, s=None):
                 return item, s
 
 
-def betteron_decode_atom(inputf):
+def argmap_decode_atom(inputf):
     s = inputf(4)
     if s != 'null':
         m = "Invalid atom '%s'" % (s,)
@@ -200,8 +202,8 @@ def betteron_decode_atom(inputf):
     return None, None
 
 
-def betteron_decode_args(inputf):
-    args = []
+def argmap_decode_args(inputf):
+    args = [ARGMAP_MAGIC]
     append = args.append
     s = inputf(1)
     key = None
@@ -217,10 +219,10 @@ def betteron_decode_args(inputf):
 
         if s == '=':
             if key is None:
-                atom, s = betteron_decode_atom(inputf)
+                atom, s = argmap_decode_atom(inputf)
                 append((None, atom))
             else:
-                value, s = betteron_decode(inputf)
+                value, s = argmap_decode(inputf)
                 append((key, value))
                 key = None
         elif s == ' ':
@@ -234,5 +236,65 @@ def betteron_decode_args(inputf):
         else:
             if key is not None:
                 append((None, key))
-            key, s = betteron_decode(inputf, s=s)
+            key, s = argmap_decode(inputf, s=s)
+
+
+def argmap_check(obj):
+    if hasattr(obj, 'keys'):
+        # this could cover both cases
+        return ARGMAP_MAGIC in obj
+    return hasattr(obj, '__len__') and len(obj) and obj[0] == ARGMAP_MAGIC
+
+def argmap_unzip_dict(argmap):
+    if not hasattr(argmap, 'keys'):
+        m = "argmap unzip dict: not a dict"
+        raise TypeError(m)
+    if ARGMAP_MAGIC not in argmap:
+        m = "argmap unzip dict: magic not found"
+        raise ValueError(m)
+    args = argmap.pop(None, [])
+    kw = OrderedDict(argmap)
+    del kw[ARGMAP_MAGIC]
+    return args, kw
+
+def argmap_unzip_list(argmap):
+    if not argmap or argmap[0] != ARGMAP_MAGIC:
+        m = "argmap unzip list: magic not found"
+        raise ValueError(m)
+
+    iter_argmap = iter(argmap)
+    for magic in iter_argmap:
+        break
+
+    args = []
+    append = args.append
+    kw = OrderedDict()
+    for k, v in iter_argmap:
+        if k is None:
+            append(v)
+        else:
+            kw[k] = v
+
+    return args, kw
+
+def argmap_unzip(argmap):
+    if hasattr(argmap, 'keys'):
+        return argmap_unzip_dict(argmap)
+    elif hasattr(argmap, '__iter__'):
+        return argmap_unzip_list(argmap)
+    else:
+        m = "argmap: cannot unzip type %s" % (type(argmap),)
+        raise ValueError(m)
+
+def argmap_zip_list(args, kw):
+    return [ARGMAP_MAGIC] + [(None, a) for a in args] + kw.items()
+
+def argmap_zip_dict(args, kw):
+    argmap = OrderedDict()
+    argmap.update(kw)
+    argmap[ARGMAP_MAGIC] = ARGMAP_MAGIC
+    argmap[None] = list(args) + (argmap[None] if None in argmap else [])
+    return argmap
+
+argmap_zip = argmap_zip_list
 

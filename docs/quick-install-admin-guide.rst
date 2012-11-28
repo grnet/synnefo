@@ -302,7 +302,7 @@ exchanges:
 
 .. code-block:: console
 
-   # rabbitmqctl add_user synnefo "examle_rabbitmq_passw0rd"
+   # rabbitmqctl add_user synnefo "example_rabbitmq_passw0rd"
    # rabbitmqctl set_permissions synnefo ".*" ".*" ".*"
 
 We do not need to initialize the exchanges. This will be done automatically,
@@ -1699,7 +1699,7 @@ correctly.
 
 .. code-block:: console
 
-   $ snf-manage backend-add --clustername=ganeti.example.com --user=cyclades --pass=example_rapi_passw0rd
+   $ snf-manage backend-add --clustername=ganeti.node1.example.com --user=cyclades --pass=example_rapi_passw0rd
 
 You can see everything has been setup correctly by running:
 
@@ -1745,12 +1745,12 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
 
 .. code-block:: console
 
-   $ snf-manage network-create --subnet=5.6.7.0/27
-                               --gateway=5.6.7.1
-                               --subnet6=2001:648:2FFC:1322::/64
-                               --gateway6=2001:648:2FFC:1322::1
-                               --public --dhcp --type=CUSTOM_BRIDGED
-                               --name=public_network
+   $ snf-manage network-create --subnet=5.6.7.0/27 \
+                               --gateway=5.6.7.1 \
+                               --subnet6=2001:648:2FFC:1322::/64 \
+                               --gateway6=2001:648:2FFC:1322::1 \
+                               --public --dhcp --type=CUSTOM_BRIDGED \
+                               --name=public_network \
                                --backend-id=1
 
 This will create the Public Network on both Cyclades and the Ganeti backend. To
@@ -1898,10 +1898,10 @@ installation. We do this by running:
 .. code-block:: console
 
    $ kamaki config set astakos.url "https://node1.example.com"
-   $ kamaki config set compute.url="https://node1.example.com/api/v1.1"
-   $ kamaki config set image.url "https://node1.examle.com/plankton"
-   $ kamaki config set storage.url "https://node2.example.com/v1"
-   $ kamaki config set storage.account "user@example.com"
+   $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
+   $ kamaki config set image.url "https://node1.example.com/plankton"
+   $ kamaki config set store.url "https://node2.example.com/v1"
+   $ kamaki config set global.account "user@example.com"
    $ kamaki config set global.token "bdY_example_user_tokenYUff=="
 
 The token at the last kamaki command is our user's (``user@example.com``) token,
@@ -1955,17 +1955,17 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 
 .. code-block:: console
 
-   $ kamaki image register "Debian Base"
-                           pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump
-                           --public
-                           --disk-format=diskdump
-                           --property OSFAMILY=linux --property ROOT_PARTITION=1
-                           --property description="Debian Squeeze Base System"
-                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI"
+   $ kamaki image register "Debian Base" \
+                           pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump \
+                           --public \
+                           --disk-format=diskdump \
+                           --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+                           --property description="Debian Squeeze Base System" \
+                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
                            --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos+ file
-``pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
+``pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
 Image in Plankton. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest

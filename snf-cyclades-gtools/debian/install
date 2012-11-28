@@ -1,3 +1,8 @@
 #kvm-vif-bridge /etc/ganeti
 conf/default/snf-ganeti-eventd /etc/default
 conf/init.d/snf-ganeti-eventd /etc/init.d
+
+collectd/plugins/ganeti-stats.py /usr/lib/snf-cyclades-gtools/collectd
+collectd/conf/ganeti-stats.conf /etc/collectd
+collectd/examples/ganeti-stats-collectd.conf /usr/share/doc/snf-cyclades-gtools/examples
+collectd/README /usr/share/doc/snf-cyclades-gtools/README.collectd

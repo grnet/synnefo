@@ -33,15 +33,15 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import Service
 
 
-class Command(BaseCommand):
+class Command(NoArgsCommand):
     help = "List services"
 
-    option_list = BaseCommand.option_list + (
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
                     action='store_true',
                     dest='csv',
@@ -49,8 +49,8 @@ class Command(BaseCommand):
                     help="Use pipes to separate values"),
     )
 
-    def handle(self, *args, **options):
-        services = Service.objects.all()
+    def handle_noargs(self, **options):
+        services = Service.objects.all().order_by('id')
 
         labels = ('id', 'name', 'url', 'auth_token', 'icon')
         columns = (3, 12, 40, 20, 20)

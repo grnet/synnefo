@@ -31,12 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import socket
 import logging
 import itertools
 
 from functools import wraps
-from itertools import tee
 
 from django.utils.translation import ugettext as _
 

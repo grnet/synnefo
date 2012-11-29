@@ -35,14 +35,16 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import (
+    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+)
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_http_methods
 
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
-from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
-from astakos.im.util import set_cookie
+from astakos.im.settings import COOKIE_DOMAIN
+from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
 
 import astakos.im.messages as astakos_messages
@@ -65,11 +67,14 @@ def login(request):
     next = request.GET.get('next')
     if not next:
         return HttpResponseBadRequest(_(astakos_messages.MISSING_NEXT_PARAMETER))
+    if not restrict_next(
+        next, domain=COOKIE_DOMAIN, allowed_schemes=('pithos',)
+    ):
+        return HttpResponseForbidden(_(astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)
     response = HttpResponse()
     if force == '':
         logout(request)
-        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
     if request.user.is_authenticated():
         # if user has not signed the approval terms
         # redirect to approval terms with next the request path
@@ -91,7 +96,10 @@ def login(request):
             return response
         renew = request.GET.get('renew', None)
         if renew == '':
-            request.user.renew_token()
+            request.user.renew_token(
+                flush_sessions=True,
+                current_key=request.session.session_key
+            )
             try:
                 request.user.save()
             except ValidationError, e:
@@ -101,7 +109,6 @@ def login(request):
                                 auth_token=request.user.auth_token
                                 )
             auth_login(request, user)
-            set_cookie(response, user)
             logger.info('Token reset for %s' % request.user.email)
         parts = list(urlsplit(next))
         parts[3] = urlencode({'user': request.user.email,

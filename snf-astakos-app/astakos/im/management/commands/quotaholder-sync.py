@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
 
 from astakos.im.models import AstakosUser, Resource
 from astakos.im.endpoints.qh import register_users, register_resources

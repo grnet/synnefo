@@ -1,5 +1,5 @@
 from django import template
-from django.core.urlresolvers import reverse, resolve
+from django.core.urlresolvers import resolve
 from django.conf import settings
 
 register = template.Library()

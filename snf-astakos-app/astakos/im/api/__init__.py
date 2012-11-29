@@ -156,18 +156,9 @@ def get_services(request):
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
-    if not isinstance(user, AstakosUser):
-        cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        email = cookie.partition('|')[0]
-        try:
-            if email:
-                user = AstakosUser.objects.get(email=email, is_active=True)
-        except AstakosUser.DoesNotExist:
-            pass
-    if not isinstance(user, AstakosUser):
-        index_url = reverse('index')
-        l = [{'url': absolute(request, index_url), 'name': "Sign in"}]
-    else:
+    index_url = reverse('index')
+    l = [{'url': absolute(request, index_url), 'name': "Sign in"}]
+    if user.is_authenticated():
         l = []
         append = l.append
         item = MenuItem
@@ -178,22 +169,18 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         append(item(url=absolute(request, reverse('edit_profile')),
                name="My account"))
         if with_extra_links:
-            """
             if user.has_usable_password() and user.provider in ('local', ''):
                 append(item(
                        url=absolute(request, reverse('password_change')),
                        name="Change password"))
-            """
             if EMAILCHANGE_ENABLED:
                 append(item(
                        url=absolute(request, reverse('email_change')),
                        name="Change email"))
-            """
             if INVITATIONS_ENABLED:
                 append(item(
                        url=absolute(request, reverse('invite')),
                        name="Invitations"))
-            """
             
             append(item(
                    url=absolute(request, reverse('group_list')),
@@ -216,14 +203,12 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(
                    url=absolute(request, reverse('feedback')),
                    name="Feedback"))
-            """
             append(item(
                    url=absolute(request, reverse('billing')),
                    name="Billing"))
             append(item(
                    url=absolute(request, reverse('timeline')),
                    name="Timeline"))
-            """
         if with_signout:
             append(item(
                    url=absolute(request, reverse('logout')),

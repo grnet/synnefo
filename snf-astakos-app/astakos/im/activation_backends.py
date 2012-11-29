@@ -36,13 +36,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser
-from astakos.im.forms import LocalUserCreationForm, ShibbolethUserCreationForm
 from astakos.im.util import get_invitation
-from astakos.im.functions import (send_verification, send_activation,
-                                  send_account_creation_notification,
-                                  send_group_creation_notification, activate)
-from astakos.im.settings import (INVITATIONS_ENABLED, MODERATION_ENABLED,
-    SITENAME, RE_USER_EMAIL_PATTERNS
+from astakos.im.functions import (
+    send_activation, send_account_creation_notification, activate
+)
+from astakos.im.settings import (
+    INVITATIONS_ENABLED, MODERATION_ENABLED, RE_USER_EMAIL_PATTERNS
 )
 
 import astakos.im.messages as astakos_messages
@@ -102,17 +101,14 @@ class ActivationBackend(object):
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
         return globals()[formclass](initial_data, instance=instance, request=request)
-
-    def handle_activation(self, user,
-                          activation_template_name='im/activation_email.txt',
-                          greeting_template_name='im/welcome_email.txt',
-                          admin_email_template_name='im/account_notification.txt',
-                          switch_accounts_email_template_name='im/switch_accounts_email.txt'):
+    
+    def handle_activation(
+        self, user, activation_template_name='im/activation_email.txt',
+        greeting_template_name='im/welcome_email.txt',
+        admin_email_template_name='im/admin_notification.txt'
+    ):
         """
         If the user is already active returns immediately.
-        If the user is not active and there is another account associated with
-        the specific email, it sends an informative email to the user whether
-        wants to switch to this account.
         If the user is preaccepted and the email is verified, the account is
         activated automatically. Otherwise, if the email is not verified,
         it sends a verification email to the user.
@@ -122,10 +118,7 @@ class ActivationBackend(object):
         try:
             if user.is_active:
                 return RegistationCompleted()
-            if user.conflicting_email():
-                send_verification(user, switch_accounts_email_template_name)
-                return SwitchAccountsVerificationSent(user.email)
-
+            
             if self._is_preaccepted(user):
                 if user.email_verified:
                     activate(user, greeting_template_name)
@@ -195,8 +188,8 @@ class InvitationsBackend(ActivationBackend):
 
     def _is_preaccepted(self, user):
         """
-        If there is a valid, not-consumed invitation code for the specific user
-        returns True else returns False.
+        Extends _is_preaccepted and if there is a valid, not-consumed invitation
+        code for the specific user returns True else returns False.
         """
         if super(InvitationsBackend, self)._is_preaccepted(user):
             return True
@@ -233,16 +226,9 @@ class VerificationSent(ActivationResult):
         message = _(astakos_messages.VERIFICATION_SENT)
         super(VerificationSent, self).__init__(message)
 
-
-class SwitchAccountsVerificationSent(ActivationResult):
-    def __init__(self, email):
-        message = _(astakos_messages.SWITCH_ACCOUNT_LINK_SENT)
-        super(SwitchAccountsVerificationSent, self).__init__(message)
-
-
 class NotificationSent(ActivationResult):
     def __init__(self):
-        message = _(astakos_messages.NOTIFACATION_SENT)
+        message = _(astakos_messages.NOTIFICATION_SENT)
         super(NotificationSent, self).__init__(message)
 
 

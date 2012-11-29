@@ -54,9 +54,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
-
-        invitations = Invitation.objects.all()
-
+        
+        invitations = Invitation.objects.all().order_by('id')
+        
         labels = ('id', 'inviter', 'email', 'real name', 'code', 'consumed')
         columns = (3, 24, 24, 24, 20, 4, 8)
 

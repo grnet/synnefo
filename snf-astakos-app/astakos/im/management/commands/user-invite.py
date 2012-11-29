@@ -36,7 +36,6 @@ from django.db.utils import IntegrityError
 from django.db import transaction
 
 from astakos.im.functions import SendMailError
-from astakos.im.models import Invitation
 
 from ._common import get_user
 

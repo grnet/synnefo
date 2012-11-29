@@ -206,8 +206,10 @@ class DjangoBackend(BaseBackend):
         rejected = []
         append = rejected.append
         for r in recipients:
+            email = r.get('email')
+            realname = r.get('realname')
             try:
-                user.invite(r.get('email'), r.get('realname'))
+                user.invite(email, realname)
             except (IntegrityError, SMTPException), e:
                 append((email, e))
         return rejected

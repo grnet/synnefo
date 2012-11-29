@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,32 +31,23 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from urlparse import urlunsplit, urlsplit
 
-from django.http import HttpResponse
-from django.utils.http import urlencode
+from django.core.management.base import NoArgsCommand
+from django.core.management import call_command
+from django.utils.importlib import import_module
+from django.conf import settings
 
-from astakos.im.cookie import Cookie
-from astakos.im.util import get_query
+from astakos.im.models import SessionCatalog
 
-
-class CookieAuthenticationMiddleware(object):
-    def process_request(self, request):
-        cookie = Cookie(request)
-        if cookie.is_valid:
-            return
+class Command(NoArgsCommand):
+    def handle_noargs(self, **options):
+        self.stdout.write('Cleanup sessions ...\n')
+        call_command('cleanup')
         
-        response = HttpResponse(status=302)
-        
-        parts = list(urlsplit(request.path))
-        params = get_query(request)
-        parts[3] = urlencode(params)
-        url = urlunsplit(parts)
-        
-        response['Location'] = url
-        cookie.fix(response)
-        return response
-    
-    def process_response(self, request, response):
-        Cookie(request, response).fix()
-        return response
+        self.stdout.write('Cleanup session catalog ...\n')
+        engine = import_module(settings.SESSION_ENGINE)
+        store = engine.SessionStore()
+        tbd = (entry for entry in SessionCatalog.objects.all() \
+            if not store.exists(entry.session_key))
+        for entry in tbd:
+            entry.delete()

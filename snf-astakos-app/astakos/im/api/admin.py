@@ -41,7 +41,8 @@ from django.utils import simplejson as json
 
 from astakos.im.api.faults import (
     Fault, Unauthorized, InternalServerError, BadRequest,
-    Forbidden)
+    Forbidden
+)
 from astakos.im.api import render_fault, _get_user_by_email, _get_user_by_username
 from astakos.im.models import AstakosUser
 from astakos.im.util import epoch

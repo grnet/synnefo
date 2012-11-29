@@ -39,88 +39,62 @@ from astakos.im.forms import (ExtendedPasswordResetForm,
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 
 urlpatterns = patterns('astakos.im.views',
-                       url(r'^$', 'index', {}, name='index'),
-                       url(r'^login/?$', 'index', {}, name='login'),
-                       url(r'^profile/?$',
-                           'edit_profile', {}, name='edit_profile'),
-                       url(r'^feedback/?$', 'feedback', {}, name='feedback'),
-                       url(r'^signup/?$', 'signup',
-                           {'on_success': 'im/login.html',
-                            'extra_context': {'login_form': LoginForm()}},
-                           name='signup'),
-                       url(r'^logout/?$', 'logout',
-                           {'template': 'im/login.html',
-                            'extra_context': {'login_form': LoginForm()}},
-                           name='logout'),
-                       url(r'^activate/?$', 'activate', {}, name='activate'),
-                       url(r'^approval_terms/?$',
-                           'approval_terms', {}, name='latest_terms'),
-                       url(r'^approval_terms/(?P<term_id>\d+)/?$',
-                           'approval_terms'),
-                       url(r'^password/?$',
-                           'change_password', {}, name='password_change'),
-                       url(r'^resources/?$',
-                           'resource_list', {}, name='resource_list'),
-                       url(r'^billing/?$', 'billing', {}, name='billing'),
-                       url(r'^timeline/?$', 'timeline', {}, name='timeline'),
-                       url(r'^group/add/complete/?$', 'group_add_complete', {},
-                           name='group_add_complete'),
-                        url(r'^group/add/(?P<kind_name>\w+)?$',
-                           'group_add', {}, name='group_add'),
-                       url(r'^group/list/?$',
-                           'group_list', {}, name='group_list'),
-                       url(r'^group/(?P<group_id>\d+)/?$', 'group_detail',
-                           {}, name='group_detail'),
-                       url(r'^group/search/?$',
-                           'group_search', {}, name='group_search'),
-                       url(r'^group/all/?$',
-                           'group_all', {}, name='group_all'),
-                       url(r'^group/(?P<group_id>\d+)/join/?$', 'group_join',
-                           {}, name='group_join'),
-                       url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave',
-                           {}, name='group_leave'),
-                       url(
-                           r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$',
-                           'approve_member', {}, name='approve_member'),
-                       url(
-                           r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$',
-                           'disapprove_member', {}, name='disapprove_member'),
-                       url(r'^group/create/?$', 'group_create_list', {},
-                           name='group_create_list'),
-                       )
+    url(r'^$', 'index', {}, name='index'),
+    url(r'^login/?$', 'index', {}, name='login'),
+    url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
+    url(r'^feedback/?$', 'feedback', {}, name='feedback'),
+    url(r'^signup/?$', 'signup', {'on_success': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
+    url(r'^logout/?$', 'logout', {'template': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='logout'),
+    url(r'^activate/?$', 'activate', {}, name='activate'),
+    url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
+    url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
+    url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation'),
+    url(r'^resources/?$', 'resource_list', {}, name='resource_list'),
+    url(r'^billing/?$', 'billing', {}, name='billing'),
+    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
+    url(r'^group/add/complete/?$', 'group_add_complete', {}, name='group_add_complete'),
+    url(r'^group/add/(?P<kind_name>\w+)?$', 'group_add', {}, name='group_add'),
+    url(r'^group/list/?$', 'group_list', {}, name='group_list'),
+    url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {}, name='group_detail'),
+    url(r'^group/search/?$', 'group_search', {}, name='group_search'),
+    url(r'^group/all/?$', 'group_all', {}, name='group_all'),
+    url(r'^group/(?P<group_id>\d+)/join/?$', 'group_join', {}, name='group_join'),
+    url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave', {}, name='group_leave'),
+    url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
+    url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
+    url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list')
+)
+
 
 if EMAILCHANGE_ENABLED:
     urlpatterns += patterns('astakos.im.views',
-                            url(r'^email_change/?$',
-                                'change_email', {}, name='email_change'),
-                            url(
-                            r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
-                            name='email_change_confirm')
-                            )
-
+        url(r'^email_change/?$', 'change_email', {}, name='email_change'),
+        url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
+            name='email_change_confirm')
+)
+    
 urlpatterns += patterns('astakos.im.target',
                         url(r'^login/redirect/?$', 'redirect.login')
                         )
 
 if 'local' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-                            url(r'^local/?$', 'local.login')
-                            )
+        url(r'^local/?$', 'local.login'),
+        url(r'^password_change/?$', 'local.password_change', {
+            'post_change_redirect':'profile',
+            'password_change_form':ExtendedPasswordChangeForm
+            },
+            name='password_change')
+    )
     urlpatterns += patterns('django.contrib.auth.views',
-                            url(r'^local/password_reset/?$', 'password_reset',
-                                {'email_template_name': 'registration/password_email.txt',
-                                 'password_reset_form': ExtendedPasswordResetForm}),
-                            url(r'^local/password_reset_done/?$',
-                                'password_reset_done'),
-                            url(
-                                r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
-                            'password_reset_confirm', {'set_password_form': ExtendedSetPasswordForm}),
-                            url(r'^local/password/reset/complete/?$',
-                                'password_reset_complete'),
-                            url(
-                            r'^password_change/?$', 'password_change', {'post_change_redirect': 'profile',
-                                                                        'password_change_form': ExtendedPasswordChangeForm})
-                            )
+        url(r'^local/password_reset/?$', 'password_reset',
+         {'email_template_name':'registration/password_email.txt',
+          'password_reset_form':ExtendedPasswordResetForm}),
+        url(r'^local/password_reset_done/?$', 'password_reset_done'),
+        url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
+         'password_reset_confirm', {'set_password_form':ExtendedSetPasswordForm}),
+        url(r'^local/password/reset/complete/?$', 'password_reset_complete')
+    )
 
 if INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
@@ -129,8 +103,9 @@ if INVITATIONS_ENABLED:
 
 if 'shibboleth' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-                            url(r'^login/shibboleth/?$', 'shibboleth.login')
-                            )
+        url(r'^login/shibboleth/?$', 'shibboleth.login'),
+        url(r'^shibboleth/signup/(\w+)/?$', 'shibboleth.signup', {}, 'shibboleth_signup')
+    )
 
 if 'twitter' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',

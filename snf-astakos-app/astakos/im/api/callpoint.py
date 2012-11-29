@@ -34,20 +34,9 @@
 from astakos.im.api.spec import AstakosAPI
 from astakos.im.api.backends import get_backend
 
-from commissioning import (Callpoint,
-                           #                             CommissionException,
-                           #                             CorruptedError, InvalidDataError,
-                           #                             InvalidKeyError, NoEntityError,
-                           #                             NoQuantityError, NoCapacityError,
-                           #                             ExportLimitError, ImportLimitError
-                           )
+from commissioning import CorruptedError
 
-
-# from commissioning.utils.newname import newname
-# from django.db.models import Model, BigIntegerField, CharField, ForeignKey, Q
-# from django.db import transaction, IntegrityError
-# from .models import (Holder, Entity, Policy, Holding,
-#                      Commission, Provision, ProvisionLog, now)
+from django.db import transaction
 
 class AstakosCallpoint():
 

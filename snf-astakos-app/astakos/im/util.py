@@ -35,21 +35,20 @@ import logging
 import datetime
 import time
 
-from urllib import quote
-
+from urlparse import urlparse
 from datetime import tzinfo, timedelta
+
 from django.http import HttpResponse, HttpResponseBadRequest, urlencode
 from django.template import RequestContext
-from django.utils.translation import ugettext as _
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db.models.fields import Field
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.settings import COOKIE_NAME, \
-    COOKIE_DOMAIN, COOKIE_SECURE, FORCE_PROFILE_UPDATE, LOGGING_LEVEL
+from astakos.im.settings import (
+    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE
+)
 from astakos.im.functions import login
 
 import astakos.im.messages as astakos_messages
@@ -101,9 +100,53 @@ def get_invitation(request):
         raise ValueError(_(astakos_messages.INVITATION_CONSUMED_ERR))
     if reserved_email(invitation.username):
         email = invitation.username
-        raise ValueError(_(astakos_messages.EMAIL_RESRVED) % locals())
+        raise ValueError(_(astakos_messages.EMAIL_RESERVED) % locals())
     return invitation
 
+def restrict_next(url, domain=None, allowed_schemes=()):
+    """
+    Return url if having the supplied ``domain`` (if present) or one of the ``allowed_schemes``.
+    Otherwise return None.
+    
+    >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
+    /im/feedback
+    >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    //pithos.okeanos.grnet.gr/im/feedback
+    >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    https://pithos.okeanos.grnet.gr/im/feedback
+    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
+    pithos://127.0.0,1
+    >>> print restrict_next('node1.example.com', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('//node1.example.com', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('https://node1.example.com', '.okeanos.grnet.gr')
+    None
+    >>> print restrict_next('https://node1.example.com')
+    https://node1.example.com
+    >>> print restrict_next('//node1.example.com')
+    //node1.example.com
+    >>> print restrict_next('node1.example.com')
+    //node1.example.com
+    """
+    if not url:
+        return
+    parts = urlparse(url, scheme='http')
+    if not parts.netloc and not parts.path.startswith('/'):
+        # fix url if does not conforms RFC 1808
+        url = '//%s' % url
+        parts = urlparse(url, scheme='http')
+    # TODO more scientific checks?
+    if not parts.netloc:    # internal url
+        return url
+    elif not domain:
+        return url
+    elif parts.netloc.endswith(domain):
+        return url
+    elif parts.scheme in allowed_schemes:
+        return url
 
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
@@ -118,12 +161,17 @@ def prepare_response(request, user, next='', renew=False):
     renew = renew or (not user.auth_token)
     renew = renew or (user.auth_token_expires < datetime.datetime.now())
     if renew:
-        user.renew_token()
+        user.renew_token(
+            flush_sessions=True,
+            current_key=request.session.session_key
+        )
         try:
             user.save()
         except ValidationError, e:
-            return HttpResponseBadRequest(e)
-
+            return HttpResponseBadRequest(e) 
+    
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    
     if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''
         if next:
@@ -135,29 +183,14 @@ def prepare_response(request, user, next='', renew=False):
     # authenticate before login
     user = authenticate(email=user.email, auth_token=user.auth_token)
     login(request, user)
-    set_cookie(response, user)
     request.session.set_expiry(user.auth_token_expires)
 
     if not next:
-        next = reverse('index')
-
+        next = reverse('astakos.im.views.index')
+        
     response['Location'] = next
     response.status_code = 302
     return response
-
-
-def set_cookie(response, user):
-    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    cookie_value = quote(user.email + '|' + user.auth_token)
-    response.set_cookie(COOKIE_NAME, value=cookie_value,
-                        expires=expire_fmt, path='/',
-                        domain=COOKIE_DOMAIN, secure=COOKIE_SECURE)
-    msg = 'Cookie [expiring %s] set for %s' % (
-        user.auth_token_expires,
-        user.email
-    )
-    logger.log(LOGGING_LEVEL, msg)
-
 
 class lazy_string(object):
     def __init__(self, function, *args, **kwargs):

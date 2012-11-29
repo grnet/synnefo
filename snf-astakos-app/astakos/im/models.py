@@ -46,23 +46,25 @@ from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.db.models.signals import (pre_save, post_save, post_syncdb,
-                                      post_delete)
+from django.db.models.signals import (
+    pre_save, post_save, post_syncdb, post_delete
+)
 from django.contrib.contenttypes.models import ContentType
 
 from django.dispatch import Signal
 from django.db.models import Q
+from django.conf import settings
+from django.utils.importlib import import_module
 
 from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
                                  AUTH_TOKEN_DURATION, BILLING_FIELDS,
                                  EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL)
-from astakos.im.endpoints.qh import (register_users, send_quota,
-                                              register_resources)
+from astakos.im.endpoints.qh import (
+    register_users, send_quota, register_resources
+)
 from astakos.im.endpoints.aquarium.producer import report_user_event
 from astakos.im.functions import send_invitation
 from astakos.im.tasks import propagate_groupmembers_quota
-from astakos.im.functions import send_invitation
 
 import astakos.im.messages as astakos_messages
 
@@ -87,11 +89,6 @@ class Service(models.Model):
     auth_token_created = models.DateTimeField('Token creation date', null=True)
     auth_token_expires = models.DateTimeField(
         'Token expiration date', null=True)
-
-    def save(self, **kwargs):
-        if not self.id:
-            self.renew_token()
-        super(Service, self).save(**kwargs)
 
     def renew_token(self):
         md5 = hashlib.md5()
@@ -234,9 +231,8 @@ class AstakosGroup(Group):
     @transaction.commit_manually
     def approve_member(self, person):
         m, created = self.membership_set.get_or_create(person=person)
-	# update date_joined in any case
         try:
-	    m.approve()
+            m.approve()
         except:
             transaction.rollback()
             raise
@@ -265,7 +261,6 @@ class AstakosGroup(Group):
     
     def add_policy(self, service, resource, uplimit, update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
-        print '#', locals()
         resource = Resource.objects.get(service__name=service, name=resource)
         if update:
             AstakosGroupQuota.objects.update_or_create(
@@ -494,19 +489,36 @@ class AstakosUser(User):
             self.activation_sent = None
 
         super(AstakosUser, self).save(**kwargs)
-
-    def renew_token(self):
+    
+    def renew_token(self, flush_sessions=False, current_key=None):
         md5 = hashlib.md5()
+        md5.update(settings.SECRET_KEY)
         md5.update(self.username)
         md5.update(self.realname.encode('ascii', 'ignore'))
         md5.update(asctime())
-
+        
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
-            timedelta(hours=AUTH_TOKEN_DURATION)
+                                  timedelta(hours=AUTH_TOKEN_DURATION)
+        if flush_sessions:
+            self.flush_sessions(current_key)
         msg = 'Token renewed for %s' % self.email
         logger.log(LOGGING_LEVEL, msg)
+
+    def flush_sessions(self, current_key=None):
+        q = self.sessions
+        if current_key:
+            q = q.exclude(session_key=current_key)
+        
+        keys = q.values_list('session_key', flat=True)
+        if keys:
+            msg = 'Flushing sessions: %s' % ','.join(keys)
+            logger.log(LOGGING_LEVEL, msg, [])
+        engine = import_module(settings.SESSION_ENGINE)
+        for k in keys:
+            s = engine.SessionStore(k)
+            s.flush()
 
     def __unicode__(self):
         return '%s (%s)' % (self.realname, self.email)
@@ -522,9 +534,11 @@ class AstakosUser(User):
         """
         Implements a unique_together constraint for email and is_active fields.
         """
-        q = AstakosUser.objects.exclude(username=self.username)
-        q = q.filter(email=self.email)
-        q = q.filter(is_active=self.is_active)
+        q = AstakosUser.objects.all()
+        q = q.filter(email = self.email)
+        q = q.filter(is_active = self.is_active)
+        if self.id:
+            q = q.filter(~Q(id = self.id))
         if q.count() != 0:
             raise ValidationError({'__all__': [_(astakos_messages.UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR)]})
 
@@ -545,7 +559,7 @@ class AstakosUser(User):
         return True
 
     def store_disturbed_quota(self, set=True):
-        self.disturbed_qutoa = set
+        self.disturbed_quota = set
         self.save()
 
 
@@ -571,11 +585,11 @@ class Membership(models.Model):
         return False
 
     def approve(self):
-    	if self.is_approved:
-		return
+        if self.is_approved:
+            return
         if self.group.max_participants:
             assert len(self.group.approved_members) + 1 <= self.group.max_participants, \
-	    	'Maximum participant number has been reached.'
+            'Maximum participant number has been reached.'
         self.date_joined = datetime.now()
         self.save()
         quota_disturbed.send(sender=self, users=(self.person,))
@@ -755,6 +769,49 @@ def get_latest_terms():
         pass
     return None
 
+class PendingThirdPartyUser(models.Model):
+    """
+    Model for registring successful third party user authentications
+    """
+    third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
+    provider = models.CharField('Provider', max_length=255, blank=True)
+    email = models.EmailField(_('e-mail address'), blank=True, null=True)
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
+    affiliation = models.CharField('Affiliation', max_length=255, blank=True)
+    username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
+    
+    class Meta:
+        unique_together = ("provider", "third_party_identifier")
+
+    @property
+    def realname(self):
+        return '%s %s' %(self.first_name, self.last_name)
+
+    @realname.setter
+    def realname(self, value):
+        parts = value.split(' ')
+        if len(parts) == 2:
+            self.first_name = parts[0]
+            self.last_name = parts[1]
+        else:
+            self.last_name = parts[0]
+    
+    def save(self, **kwargs):
+        if not self.id:
+            # set username
+            while not self.username:
+                username =  uuid.uuid4().hex[:30]
+                try:
+                    AstakosUser.objects.get(username = username)
+                except AstakosUser.DoesNotExist, e:
+                    self.username = username
+        super(PendingThirdPartyUser, self).save(**kwargs)
+
+class SessionCatalog(models.Model):
+    session_key = models.CharField(_('session key'), max_length=40)
+    user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
+
 
 def create_astakos_user(u):
     try:
@@ -762,11 +819,9 @@ def create_astakos_user(u):
     except AstakosUser.DoesNotExist:
         extended_user = AstakosUser(user_ptr_id=u.pk)
         extended_user.__dict__.update(u.__dict__)
-#         extended_user.renew_token()
         extended_user.save()
     except BaseException, e:
         logger.exception(e)
-        pass
 
 
 def fix_superusers(sender, **kwargs):
@@ -844,10 +899,14 @@ def send_quota_disturbed(sender, instance, **kwargs):
 
 
 def on_quota_disturbed(sender, users, **kwargs):
-    print '>>>', locals()
+#     print '>>>', locals()
     if not users:
         return
     send_quota(users)
+
+def renew_token(sender, instance, **kwargs):
+    if not instance.id:
+        instance.renew_token()
 
 post_syncdb.connect(fix_superusers)
 post_save.connect(user_post_save, sender=User)
@@ -864,3 +923,6 @@ post_save.connect(send_quota_disturbed, sender=AstakosUserQuota)
 post_delete.connect(send_quota_disturbed, sender=AstakosUserQuota)
 post_save.connect(send_quota_disturbed, sender=AstakosGroupQuota)
 post_delete.connect(send_quota_disturbed, sender=AstakosGroupQuota)
+
+pre_save.connect(renew_token, sender=AstakosUser)
+pre_save.connect(renew_token, sender=Service)

@@ -39,17 +39,13 @@ engine = inflect.engine()
 
 from urllib import quote
 from functools import wraps
-from datetime import datetime, timedelta
-from collections import defaultdict
+from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import password_change
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.db.models import Q
 from django.db.utils import IntegrityError
-from django.forms.fields import URLField
 from django.http import (HttpResponse, HttpResponseBadRequest,
                          HttpResponseForbidden, HttpResponseRedirect,
                          HttpResponseBadRequest, Http404)
@@ -57,36 +53,35 @@ from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
-from django.views.generic.create_update import (create_object, delete_object,
+from django.views.generic.create_update import (delete_object,
                                                 get_model_and_form_class)
-from django.views.generic.list_detail import object_list, object_detail
-from django.http import HttpResponseBadRequest
+from django.views.generic.list_detail import object_list
 from django.core.xheaders import populate_xheaders
 
-from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
-                               Resource, EmailChange, GroupKind, Membership,
-                               AstakosGroupQuota, RESOURCE_SEPARATOR)
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
-from django.db.models.query import QuerySet
-
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im.util import get_context, prepare_response, set_cookie, get_query
+
+from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
+                               EmailChange, GroupKind, Membership,
+                               RESOURCE_SEPARATOR)
+from astakos.im.util import get_context, prepare_response, get_query, restrict_next
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               FeedbackForm, SignApprovalTermsForm,
-                              ExtendedPasswordChangeForm, EmailChangeForm,
+                              EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
-                              AstakosGroupSortForm, MembersSortForm,
+                              MembersSortForm,
                               TimelineForm, PickResourceForm,
                               AstakosGroupCreationSummaryForm)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   logout as auth_logout,
                                   activate as activate_func,
-                                  switch_account_to_shibboleth,
+                                  send_activation as send_activation_func,
                                   send_group_creation_notification,
                                   SendNotificationError)
 from astakos.im.endpoints.qh import timeline_charge
-from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
+from astakos.im.settings import (COOKIE_DOMAIN, LOGOUT_NEXT,
                                  LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA)
 from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
@@ -95,14 +90,12 @@ import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
 
-
 DB_REPLACE_GROUP_SCHEME = """REPLACE(REPLACE("auth_group".name, 'http://', ''),
                                      'https://', '')"""
 
 callpoint = AstakosCallpoint()
 
-def render_response(template, tab=None, status=200, reset_cookie=False,
-                    context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
     keyword argument and returns an ``django.http.HttpResponse`` with the
@@ -114,8 +107,6 @@ def render_response(template, tab=None, status=200, reset_cookie=False,
     html = template_loader.render_to_string(
         template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
-    if reset_cookie:
-        set_cookie(response, context_instance['request'].user)
     return response
 
 
@@ -152,7 +143,7 @@ def signed_terms_required(func):
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
-def index(request, login_template_name='im/login.html', extra_context=None):
+def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context=None):
     """
     If there is logged on user renders the profile page otherwise renders login page.
 
@@ -174,12 +165,16 @@ def index(request, login_template_name='im/login.html', extra_context=None):
     im/profile.html or im/login.html or ``template_name`` keyword argument.
 
     """
+    extra_context = extra_context or {}
     template_name = login_template_name
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('edit_profile'))
-    return render_response(template_name,
-                           login_form=LoginForm(request=request),
-                           context_instance=get_context(request, extra_context))
+        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
+    
+    return render_response(
+        template_name,
+        login_form = LoginForm(request=request),
+        context_instance = get_context(request, extra_context)
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -217,8 +212,8 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     The view expectes the following settings are defined:
 
     * LOGIN_URL: login uri
-    * ASTAKOS_DEFAULT_CONTACT_EMAIL: service support email
     """
+    extra_context = extra_context or {}
     status = None
     message = None
     form = InvitationForm()
@@ -294,18 +289,29 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     * LOGIN_URL: login uri
     """
     extra_context = extra_context or {}
-    form = ProfileForm(instance=request.user)
+    form = ProfileForm(
+        instance=request.user,
+        session_key=request.session.session_key
+    )
     extra_context['next'] = request.GET.get('next')
-    reset_cookie = False
     if request.method == 'POST':
-        form = ProfileForm(request.POST, instance=request.user)
+        form = ProfileForm(
+            request.POST,
+            instance=request.user,
+            session_key=request.session.session_key
+        )
         if form.is_valid():
             try:
                 prev_token = request.user.auth_token
                 user = form.save()
-                reset_cookie = user.auth_token != prev_token
-                form = ProfileForm(instance=user)
-                next = request.POST.get('next')
+                form = ProfileForm(
+                    instance=user,
+                    session_key=request.session.session_key
+                )
+                next = restrict_next(
+                    request.POST.get('next'),
+                    domain=COOKIE_DOMAIN
+                )
                 if next:
                     return redirect(next)
                 msg = _(astakos_messages.PROFILE_UPDATED)
@@ -317,10 +323,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
             request.user.is_verified = True
             request.user.save()
     return render_response(template_name,
-                           reset_cookie=reset_cookie,
-                           profile_form=form,
-                           context_instance=get_context(request,
-                                                        extra_context))
+                           profile_form = form,
+                           context_instance = get_context(request,
+                                                          extra_context))
 
 
 @transaction.commit_manually
@@ -360,14 +365,21 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     im/signup.html or ``template_name`` keyword argument.
     im/signup_complete.html or ``on_success`` keyword argument.
     """
+    extra_context = extra_context or {}
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('edit_profile'))
 
     provider = get_query(request).get('provider', 'local')
+    id = get_query(request).get('id')
+    try:
+        instance = AstakosUser.objects.get(id=id) if id else None
+    except AstakosUser.DoesNotExist:
+        instance = None
+
     try:
         if not backend:
             backend = get_backend(request)
-        form = backend.get_signup_form(provider)
+        form = backend.get_signup_form(provider, instance)
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.error(request, e)
@@ -384,22 +396,31 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     if additional_email != user.email:
                         user.additionalmail_set.create(email=additional_email)
                         msg = 'Additional email: %s saved for user %s.' % (
-                            additional_email, user.email)
-                        logger.log(LOGGING_LEVEL, msg)
+                            additional_email,
+                            user.email
+                        )
+                        logger._log(LOGGING_LEVEL, msg, [])
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     response = prepare_response(request, user, next=next)
                     transaction.commit()
                     return response
                 messages.add_message(request, status, message)
-                transaction.commit()
-                return render_response(on_success,
-                                       context_instance=get_context(request, extra_context))
+                return render_response(
+                    on_success,
+                    context_instance=get_context(
+                        request,
+                        extra_context
+                    )
+                )
             except SendMailError, e:
+                logger.exception(e)
+                status = messages.ERROR
                 message = e.message
                 messages.error(request, message)
                 transaction.rollback()
             except BaseException, e:
+                logger.exception(e)
                 message = _(astakos_messages.GENERIC_ERROR)
                 messages.error(request, message)
                 logger.exception(e)
@@ -438,8 +459,8 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
     **Settings:**
 
     * LOGIN_URL: login uri
-    * ASTAKOS_DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
+    extra_context = extra_context or {}
     if request.method == 'GET':
         form = FeedbackForm()
     if request.method == 'POST':
@@ -462,32 +483,31 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
                            context_instance=get_context(request, extra_context))
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET"])
 @signed_terms_required
 def logout(request, template='registration/logged_out.html', extra_context=None):
     """
-    Wraps `django.contrib.auth.logout` and delete the cookie.
+    Wraps `django.contrib.auth.logout`.
     """
+    extra_context = extra_context or {}
     response = HttpResponse()
     if request.user.is_authenticated():
         email = request.user.email
         auth_logout(request)
-        response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
-        msg = 'Cookie deleted for %s' % email
-        logger.log(LOGGING_LEVEL, msg)
-    next = request.GET.get('next')
+    next = restrict_next(
+        request.GET.get('next'),
+        domain=COOKIE_DOMAIN
+    )
     if next:
         response['Location'] = next
         response.status_code = 302
-        return response
     elif LOGOUT_NEXT:
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
-        return response
-    messages.success(request, _(astakos_messages.LOGOUT_SUCCESS))
-    context = get_context(request, extra_context)
-    response.write(
-        template_loader.render_to_string(template, context_instance=context))
+    else:
+        messages.add_message(request, messages.SUCCESS, _(astakos_messages.LOGOUT_SUCCESS))
+        context = get_context(request, extra_context)
+        response.write(render_to_string(template, context_instance=context))
     return response
 
 
@@ -515,58 +535,27 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return index(request)
 
     try:
-        local_user = AstakosUser.objects.get(
-            ~Q(id=user.id),
-            email=user.email,
-            is_active=True
-        )
-    except AstakosUser.DoesNotExist:
-        try:
-            activate_func(
-                user,
-                greeting_email_template_name,
-                helpdesk_email_template_name,
-                verify_email=True
-            )
-            response = prepare_response(request, user, next, renew=True)
-            transaction.commit()
-            return response
-        except SendMailError, e:
-            message = e.message
-            messages.error(request, message)
-            transaction.rollback()
-            return index(request)
-        except BaseException, e:
-            message = _(astakos_messages.GENERIC_ERROR)
-            messages.error(request, message)
-            logger.exception(e)
-            transaction.rollback()
-            return index(request)
-    else:
-        try:
-            user = switch_account_to_shibboleth(
-                user,
-                local_user,
-                greeting_email_template_name
-            )
-            response = prepare_response(request, user, next, renew=True)
-            transaction.commit()
-            return response
-        except SendMailError, e:
-            message = e.message
-            messages.error(request, message)
-            transaction.rollback()
-            return index(request)
-        except BaseException, e:
-            message = _(astakos_messages.GENERIC_ERROR)
-            messages.error(request, message)
-            logger.exception(e)
-            transaction.rollback()
-            return index(request)
+        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+        response = prepare_response(request, user, next, renew=True)
+        transaction.commit()
+        return response
+    except SendMailError, e:
+        message = e.message
+        messages.add_message(request, messages.ERROR, message)
+        transaction.rollback()
+        return index(request)
+    except BaseException, e:
+        status = messages.ERROR
+        message = _(astakos_messages.GENERIC_ERROR)
+        messages.add_message(request, messages.ERROR, message)
+        logger.exception(e)
+        transaction.rollback()
+        return index(request)
 
 
 @require_http_methods(["GET", "POST"])
 def approval_terms(request, term_id=None, template_name='im/approval_terms.html', extra_context=None):
+    extra_context = extra_context or {}
     term = None
     terms = None
     if not term_id:
@@ -587,7 +576,10 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
     terms = f.read()
 
     if request.method == 'POST':
-        next = request.POST.get('next')
+        next = restrict_next(
+            request.POST.get('next'),
+            domain=COOKIE_DOMAIN
+        )
         if not next:
             next = reverse('index')
         form = SignApprovalTermsForm(request.POST, instance=request.user)
@@ -609,22 +601,15 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-def change_password(request):
-    return password_change(request,
-                           post_change_redirect=reverse('edit_profile'),
-                           password_change_form=ExtendedPasswordChangeForm)
-
-
-@require_http_methods(["GET", "POST"])
-@signed_terms_required
 @login_required
+@signed_terms_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
                  form_template_name='registration/email_change_form.html',
                  confirm_template_name='registration/email_change_done.html',
                  extra_context=None):
+    extra_context = extra_context or {}
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
@@ -662,10 +647,34 @@ def change_email(request, activation_key=None,
             msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)
             transaction.commit()
-    return render_response(form_template_name,
-                           form=form,
-                           context_instance=get_context(request,
-                                                        extra_context))
+    return render_response(
+        form_template_name,
+        form=form,
+        context_instance=get_context(request, extra_context)
+    )
+
+
+def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
+    extra_context = extra_context or {}
+    try:
+        u = AstakosUser.objects.get(id=user_id)
+    except AstakosUser.DoesNotExist:
+        messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
+    else:
+        try:
+            send_activation_func(u)
+            msg = _(astakos_messages.ACTIVATION_SENT)
+            messages.success(request, msg)
+        except SendMailError, e:
+            messages.error(request, e)
+    return render_response(
+        template_name,
+        login_form = LoginForm(request=request),
+        context_instance = get_context(
+            request,
+            extra_context
+        )
+    )
 
 class ResourcePresentation():
     
@@ -692,7 +701,7 @@ class ResourcePresentation():
             rname = k
             value = v
             if not rname in self.data['resources']:
-                    self.data['resources'][rname] = {}
+                self.data['resources'][rname] = {}
                     
  
             self.data['resources'][rname]['value'] = value
@@ -721,7 +730,6 @@ class ResourcePresentation():
             yield g, self.get_group_resources(g)
     
     def get_quota(self, group_quotas):
-        print '!!!!!', group_quotas
         for r, v in group_quotas.iteritems():
             rname = str(r)
             quota = self.data['resources'].get(rname)
@@ -993,8 +1001,6 @@ def group_detail(request, group_id):
             'Unable to retrieve system resources: %s' % result.reason
     )
     
-    print '######', obj.quota
-   
     extra_context = {'update_form': update_form,
                      'addmembers_form': addmembers_form,
                      'page': request.GET.get('page', 1),
@@ -1153,7 +1159,7 @@ def group_leave(request, group_id):
             group__id=group_id,
             person=request.user)
     except Membership.DoesNotExist:
-        return HttpResponseBadRequest(_(astakos_messages.NOT_A_MEMBER))
+        return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
     if request.user in m.group.owner.all():
         return HttpResponseForbidden(_(astakos_messages.OWNER_CANNOT_LEAVE_GROUP))
     return delete_object(
@@ -1211,7 +1217,7 @@ def disapprove_member(request, membership):
     try:
         membership.disapprove()
         realname = membership.person.realname
-        msg = MEMBER_REMOVED % realname
+        msg = astakos_messages.MEMBER_REMOVED % realname
         messages.success(request, msg)
     except BaseException, e:
         logger.exception(e)
@@ -1224,32 +1230,14 @@ def disapprove_member(request, membership):
 @signed_terms_required
 @login_required
 def resource_list(request):
-#     if request.method == 'POST':
-#         form = PickResourceForm(request.POST)
-#         if form.is_valid():
-#             r = form.cleaned_data.get('resource')
-#             if r:
-#                 groups = request.user.membership_set.only('group').filter(
-#                     date_joined__isnull=False)
-#                 groups = [g.group_id for g in groups]
-#                 q = AstakosGroupQuota.objects.select_related().filter(
-#                     resource=r, group__in=groups)
-#     else:
-#         form = PickResourceForm()
-#         q = AstakosGroupQuota.objects.none()
-#
-#     return object_list(request, q,
-#                        template_name='im/astakosuserquota_list.html',
-#                        extra_context={'form': form, 'data':data})
-
     def with_class(entry):
         entry['load_class'] = 'red'
         max_value = float(entry['maxValue'])
         curr_value = float(entry['currValue'])
         if max_value > 0 :
-           entry['ratio'] = (curr_value / max_value) * 100
-        else: 
-           entry['ratio'] = 0 
+            entry['ratio'] = (curr_value / max_value) * 100
+        else:
+            entry['ratio'] = 0 
         if entry['ratio'] < 66:
             entry['load_class'] = 'yellow'
         if entry['ratio'] < 33:
@@ -1275,7 +1263,7 @@ def resource_list(request):
     return render_response('im/resource_list.html',
                            data=data,
                            context_instance=get_context(request),
-			               resource_catalog=resource_catalog,
+                           resource_catalog=resource_catalog,
                            result=result)
 
 
@@ -1294,7 +1282,6 @@ def billing(request):
 
     today = datetime.today()
     month_last_day = calendar.monthrange(today.year, today.month)[1]
-    data['resources'] = map(with_class, data['resources'])
     start = request.POST.get('datefrom', None)
     if start:
         today = datetime.fromtimestamp(int(start))
@@ -1314,8 +1301,6 @@ def billing(request):
             messages.error(request, _(astakos_messages.BILLING_ERROR) % status)
     except:
         messages.error(request, r.result)
-
-    print type(start)
 
     return render_response(
         template='im/billing.html',

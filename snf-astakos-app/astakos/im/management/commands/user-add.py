@@ -34,8 +34,6 @@
 import socket
 
 from optparse import make_option
-from uuid import uuid4
-from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
@@ -43,9 +41,6 @@ from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
 from astakos.im.api.callpoint import AstakosCallpoint
-
-from ._common import add_user_permission
-
 
 def filter_custom_options(options):
     base_dests = list(

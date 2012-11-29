@@ -36,14 +36,22 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
 from django.views.decorators.http import require_http_methods
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
+from django.core.exceptions import ImproperlyConfigured
 
 from astakos.im.util import prepare_response, get_context
 from astakos.im.views import requires_anonymous, render_response
-from astakos.im.models import AstakosUser
+from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION
+from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
-from astakos.im.activation_backends import get_backend, SimpleBackend
+from astakos.im.activation_backends import get_backend
 
 import astakos.im.messages as astakos_messages
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -59,58 +67,137 @@ class Tokens:
 
 @require_http_methods(["GET", "POST"])
 @requires_anonymous
-def login(request, backend=None, on_login_template='im/login.html',
-          on_creation_template='im/third_party_registration.html',
-          extra_context=None):
+def login(
+    request,
+    login_template='im/login.html',
+    signup_template='im/third_party_check_local.html',
+    extra_context=None
+):
+    extra_context = extra_context or {}
+
     tokens = request.META
 
     try:
-        eppn = tokens[Tokens.SHIB_EPPN]
-    except KeyError:
-        return HttpResponseBadRequest("Missing unique token in request")
-
-    if Tokens.SHIB_DISPLAYNAME in tokens:
-        realname = tokens[Tokens.SHIB_DISPLAYNAME]
-    elif Tokens.SHIB_CN in tokens:
-        realname = tokens[Tokens.SHIB_CN]
-    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-    else:
-        return HttpResponseBadRequest("Missing user name in request")
-
+        eppn = tokens.get(Tokens.SHIB_EPPN)
+        if not eppn:
+            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN))
+        if Tokens.SHIB_DISPLAYNAME in tokens:
+            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+        elif Tokens.SHIB_CN in tokens:
+            realname = tokens[Tokens.SHIB_CN]
+        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+        else:
+            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
+    except KeyError, e:
+        extra_context['login_form'] = LoginForm(request=request)
+        messages.error(request, e)
+        return render_response(
+            login_template,
+            context_instance=get_context(request, extra_context)
+        )
+    
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    email = tokens.get(Tokens.SHIB_MAIL, None)
-
+    email = tokens.get(Tokens.SHIB_MAIL, '')
+    
     try:
-        user = AstakosUser.objects.get(provider='shibboleth',
-                                       third_party_identifier=eppn)
+        user = AstakosUser.objects.get(
+            provider='shibboleth',
+            third_party_identifier=eppn
+        )
         if user.is_active:
             return prepare_response(request,
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-        else:
-            message = _(astakos_messages.ACCOUNT_INACTIVE)
+        elif not user.activation_sent:
+            message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
             messages.error(request, message)
-            return render_response(on_login_template,
-                                   login_form=LoginForm(request=request),
-                                   context_instance=RequestContext(request))
+        else:
+            urls = {}
+            urls['send_activation_url'] = reverse(
+                'send_activation',
+                kwargs={'user_id':user.id}
+            )
+            urls['signup_url'] = reverse(
+                'shibboleth_signup',
+                args= [user.username]
+            )   
+            message = _(astakos_messages.INACTIVE_ACCOUNT_CHANGE_EMAIL) % urls
+            messages.error(request, message)
+        return render_response(login_template,
+                               login_form = LoginForm(request=request),
+                               context_instance=RequestContext(request))
     except AstakosUser.DoesNotExist, e:
-        user = AstakosUser(third_party_identifier=eppn, realname=realname,
-                           affiliation=affiliation, provider='shibboleth',
-                           email=email)
+        # First time
         try:
-            if not backend:
-                backend = get_backend(request)
-            form = backend.get_signup_form(
-                provider='shibboleth', instance=user)
-        except Exception, e:
-            form = SimpleBackend(request).get_signup_form(
+            user, created = PendingThirdPartyUser.objects.get_or_create(
+                third_party_identifier=eppn,
                 provider='shibboleth',
-                instance=user)
-            messages.error(request, e)
-        return render_response(on_creation_template,
-                               signup_form=form,
-                               provider='shibboleth',
-                               context_instance=get_context(request,
-                                                            extra_context))
+                defaults=dict(
+                    realname=realname,
+                    affiliation=affiliation,
+                    email=email
+                )
+            )
+            user.save()
+        except BaseException, e:
+            logger.exception(e)
+            template = login_template
+            extra_context['login_form'] = LoginForm(request=request)
+            messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        else:
+            if not ENABLE_LOCAL_ACCOUNT_MIGRATION:
+                url = reverse(
+                    'shibboleth_signup',
+                    args= [user.username]
+                )
+                return HttpResponseRedirect(url)
+            else:
+                template = signup_template
+                extra_context['username'] = user.username
+        
+        extra_context['provider']='shibboleth'
+        return render_response(
+            template,
+            context_instance=get_context(request, extra_context)
+        )
+
+@require_http_methods(["GET"])
+@requires_anonymous
+def signup(
+    request,
+    username,
+    backend=None,
+    on_creation_template='im/third_party_registration.html',
+    extra_context=None
+):
+    extra_context = extra_context or {}
+    if not username:
+        return HttpResponseBadRequest(_(astakos_messages.MISSING_KEY_PARAMETER))
+    try:
+        pending = PendingThirdPartyUser.objects.get(username=username)
+    except PendingThirdPartyUser.DoesNotExist:
+        try:
+            user = AstakosUser.objects.get(username=username)
+        except AstakosUser.DoesNotExist:
+            return HttpResponseBadRequest(_(astakos_messages.INVALID_KEY_PARAMETER))
+    else:
+        d = pending.__dict__
+        d.pop('_state', None)
+        d.pop('id', None)
+        user = AstakosUser(**d)
+    try:
+        backend = backend or get_backend(request)
+    except ImproperlyConfigured, e:
+        messages.error(request, e)
+    else:
+        extra_context['form'] = backend.get_signup_form(
+            provider='shibboleth',
+            instance=user
+        )
+    extra_context['provider']='shibboleth'
+    return render_response(
+            on_creation_template,
+            context_instance=get_context(request, extra_context)
+    )

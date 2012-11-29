@@ -33,17 +33,17 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import AstakosUser
 
 from ._common import format_bool
 
 
-class Command(BaseCommand):
+class Command(NoArgsCommand):
     help = "List users"
 
-    option_list = BaseCommand.option_list + (
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
                     action='store_true',
                     dest='csv',
@@ -61,11 +61,8 @@ class Command(BaseCommand):
                     help="List only users who have not received activation"),
     )
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-
-        users = AstakosUser.objects.all()
+    def handle_noargs(self, **options):
+        users = AstakosUser.objects.all().order_by('id')
         if options['pending']:
             users = users.filter(is_active=False)
         elif options['pending_send_mail']:
@@ -85,7 +82,8 @@ class Command(BaseCommand):
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
             fields = (
-                id, user.email, user.realname, active, admin, user.provider)
+                id, user.email, user.realname, active, admin, user.provider
+            )
 
             if options['csv']:
                 line = '|'.join(fields)

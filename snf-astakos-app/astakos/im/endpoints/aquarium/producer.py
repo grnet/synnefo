@@ -54,7 +54,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
 logger = logging.getLogger('endpoint.aquarium')
 
 
-def wrapper(func):
+def call(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not QUEUE_CONNECTION:
@@ -73,7 +73,7 @@ def wrapper(func):
     return wrapper
 
 
-@wrapper
+@call
 def report_user_event(user, create=False):
     eventType = 'create' if not create else 'modify'
     body = UserEvent(QUEUE_CLIENT_ID, user.email, user.is_active, eventType, {}
@@ -82,7 +82,7 @@ def report_user_event(user, create=False):
     return body, routing_key
 
 
-@wrapper
+@call
 def report_user_credits_event(user):
     body = Receipt(QUEUE_CLIENT_ID, user.email, INSTANCE_ID, RESOURCE,
                    DEFAULT_CREDITS, details={}

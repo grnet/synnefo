@@ -31,9 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-    LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES, \
+from astakos.im.settings import (
+    IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL,
+    LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES,
     GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
+)
 from astakos.im.api import get_menu
 from astakos.im.util import get_query
 from astakos.im.models import GroupKind

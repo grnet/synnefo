@@ -33,17 +33,17 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import AstakosGroup
 
 from ._common import format_bool
 
 
-class Command(BaseCommand):
+class Command(NoArgsCommand):
     help = "List groups"
-
-    option_list = BaseCommand.option_list + (
+    
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
                     action='store_true',
                     dest='csv',
@@ -56,7 +56,7 @@ class Command(BaseCommand):
                     help="List only groups pending enable"),
     )
 
-    def handle(self, *args, **options):
+    def handle_noargs(self, **options):
         groups = AstakosGroup.objects.all()
 
         if options.get('pending'):

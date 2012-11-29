@@ -1,7 +1,6 @@
 from commissioning.specificator import (
-    CanonifyException, SpecifyException,
-    Specificator, Null, Integer, Text,
-    Tuple, ListOf, Dict, Args)
+    Specificator, Integer, Text, ListOf
+)
 
 
 class Name(Text):
@@ -411,10 +410,10 @@ class AstakosAPI(Specificator):
     def list_resource_units(self):
         return ListOf(Name)
 
-    def get_approval_terms(term=Nonnegative):
+    def get_approval_terms(self, term=Nonnegative):
         return Text()
 
-    def add_approval_terms(location=Filepath):
+    def add_approval_terms(self, location=Filepath):
         return Nonnegative
 
 #     def change_emails():

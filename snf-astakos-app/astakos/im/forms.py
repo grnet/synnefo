@@ -44,17 +44,17 @@ from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
-from django.forms.extras.widgets import SelectDateWidget
 from django.conf import settings
 
-from astakos.im.models import (AstakosUser, EmailChange, AstakosGroup,
-                               Invitation, Membership, GroupKind, Resource,
-                               get_latest_terms, RESOURCE_SEPARATOR)
-from astakos.im.settings import (INVITATIONS_PER_LEVEL, BASEURL, SITENAME,
-                                 RECAPTCHA_PRIVATE_KEY, RECAPTCHA_ENABLED,
-                                 DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
-                                 PASSWORD_RESET_EMAIL_SUBJECT,
-                                 NEWPASSWD_INVALIDATE_TOKEN)
+from astakos.im.models import (
+    AstakosUser, EmailChange, AstakosGroup, Invitation, GroupKind,
+    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR
+)
+from astakos.im.settings import (
+    INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
+    RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
+    PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN
+)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
@@ -91,9 +91,8 @@ class LocalUserCreationForm(UserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        request = kwargs.get('request', None)
+        request = kwargs.pop('request', None)
         if request:
-            kwargs.pop('request')
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP', None))
 
@@ -152,7 +151,6 @@ class LocalUserCreationForm(UserCreationForm):
         save behavior is complete.
         """
         user = super(LocalUserCreationForm, self).save(commit=False)
-        user.renew_token()
         if commit:
             user.save()
             logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
@@ -190,10 +188,18 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
 
 
 class ThirdPartyUserCreationForm(forms.ModelForm):
+    id = forms.CharField(
+        widget=forms.HiddenInput(),
+        label='',
+        required=False
+    )
+    third_party_identifier = forms.CharField(
+        widget=forms.HiddenInput(),
+        label=''
+    )
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name",
-                  "third_party_identifier", "has_signed_terms")
+        fields = ['id', 'email', 'third_party_identifier', 'first_name', 'last_name']
 
     def __init__(self, *args, **kwargs):
         """
@@ -202,24 +208,24 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         self.request = kwargs.get('request', None)
         if self.request:
             kwargs.pop('request')
+                
+        latest_terms = get_latest_terms()
+        if latest_terms:
+            self._meta.fields.append('has_signed_terms')
+        
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email', 'first_name', 'last_name',
-                                'third_party_identifier']
-        if get_latest_terms():
+        
+        if latest_terms:
             self.fields.keyOrder.append('has_signed_terms')
-        #set readonly form fields
-        ro = ["third_party_identifier"]
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
-
+        
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
             terms_link_html = '<a href="%s" target="_blank">%s</a>' \
                 % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
-                mark_safe("I agree with %s" % terms_link_html)
-
+                    mark_safe("I agree with %s" % terms_link_html)
+    
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
@@ -235,7 +241,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
-        user.renew_token()
         user.provider = get_query(self.request).get('provider')
         if commit:
             user.save()
@@ -277,22 +282,41 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder.append('additional_email')
         # copy email value to additional_mail in case user will change it
         name = 'email'
         field = self.fields[name]
-        self.initial['additional_email'] = self.initial.get(name,
-                                                            field.initial)
-
+        self.initial['additional_email'] = self.initial.get(name, field.initial)
+        self.initial['email'] = None
+    
     def clean_email(self):
         email = self.cleaned_data['email']
+        if self.instance:
+            if self.instance.email == email:
+                raise forms.ValidationError(_("This is your current email."))
         for user in AstakosUser.objects.filter(email=email):
             if user.provider == 'shibboleth':
-                raise forms.ValidationError(_(astakos_messages.SHIBBOLETH_EMAIL_USED))
-            elif not user.is_active:
-                raise forms.ValidationError(_(astakos_messages.SHIBBOLETH_INACTIVE_ACC))
+                raise forms.ValidationError(_(
+                        "This email is already associated with another \
+                         shibboleth account."
+                    )
+                )
+            else:
+                raise forms.ValidationError(_("This email is already used"))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
+    
+    def save(self, commit=True):
+        user = super(ShibbolethUserCreationForm, self).save(commit=False)
+        try:
+            p = PendingThirdPartyUser.objects.get(
+                provider=user.provider,
+                third_party_identifier=user.third_party_identifier
+            )
+        except:
+            pass
+        else:
+            p.delete()
+        return user
 
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
@@ -344,11 +368,19 @@ class LoginForm(AuthenticationForm):
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
             raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
-
+    
     def clean(self):
-        super(LoginForm, self).clean()
-        if self.user_cache and self.user_cache.provider not in ('local', ''):
-            raise forms.ValidationError(_(astakos_messages.SUSPENDED_LOCAL_ACC))
+        """
+        Override default behavior in order to check user's activation later
+        """
+        try:
+            super(LoginForm, self).clean()
+        except forms.ValidationError, e:
+            if self.user_cache is None:
+                raise
+            if self.request:
+                if not self.request.session.test_cookie_worked():
+                    raise
         return self.cleaned_data
 
 
@@ -369,6 +401,7 @@ class ProfileForm(forms.ModelForm):
                   'auth_token_expires')
 
     def __init__(self, *args, **kwargs):
+        self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
         ro_fields = ('email', 'auth_token', 'auth_token_expires')
@@ -380,7 +413,10 @@ class ProfileForm(forms.ModelForm):
         user = super(ProfileForm, self).save(commit=False)
         user.is_verified = True
         if self.cleaned_data.get('renew'):
-            user.renew_token()
+            user.renew_token(
+                flush_sessions=True,
+                current_key=self.session_key
+            )
         if commit:
             user.save()
         return user
@@ -518,11 +554,17 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
                                    help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
+        self.session_key = kwargs.pop('session_key', None)
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
 
     def save(self, commit=True):
-        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            self.user.renew_token()
+        try:
+            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+                self.user.renew_token()
+            self.user.flush_sessions(current_key=self.session_key)
+        except AttributeError:
+            # if user model does has not such methods
+            pass
         return super(ExtendedPasswordChangeForm, self).save(commit=commit)
 
 
@@ -594,7 +636,6 @@ class AstakosGroupCreationForm(forms.ModelForm):
                 resource = Resource.objects.get(service__name=s, name=r)
  
                 # keep only resource limits for selected resource groups
-                print '###', resource.group, s, r, uplimit, self.cleaned_data
                 if self.cleaned_data.get(
                     'is_selected_%s' % resource.group, False
                 ):
@@ -661,11 +702,9 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         super(AstakosGroupCreationSummaryForm, self).clean()
         self.cleaned_data['policies'] = []
         append = self.cleaned_data['policies'].append
-        print '#', self.cleaned_data
         #tbd = [f for f in self.fields if (f.startswith('is_selected_') and (not f.endswith('_proxy')))]
         tbd = [f for f in self.fields if f.startswith('is_selected_')]
         for name, uplimit in self.cleaned_data.iteritems():
-            print '####', name, uplimit
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 tbd.append(name)
@@ -673,7 +712,6 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
                 
-                print '#### ####', resource
                 # keep only resource limits for selected resource groups
                 if self.cleaned_data.get(
                     'is_selected_%s' % resource.group, False
@@ -719,8 +757,6 @@ class AstakosGroupSearchForm(forms.Form):
 
 
 class TimelineForm(forms.Form):
-#    entity = forms.CharField(
-#        widget=forms.HiddenInput(), label='')
     entity = forms.ModelChoiceField(
         queryset=AstakosUser.objects.filter(is_active=True)
     )
@@ -791,15 +827,22 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     to optionally renew also the token.
     """
     if not NEWPASSWD_INVALIDATE_TOKEN:
-        renew = forms.BooleanField(label='Renew token', required=False,
-                                   initial=True,
-                                   help_text='Unsetting this may result in security risk.')
-
+        renew = forms.BooleanField(
+            label='Renew token',
+            required=False,
+            initial=True,
+            help_text='Unsetting this may result in security risk.'
+        )
+    
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
 
     def save(self, commit=True):
-        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            if isinstance(self.user, AstakosUser):
+        try:
+            self.user = AstakosUser.objects.get(id=self.user.id)
+            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
                 self.user.renew_token()
+            self.user.flush_sessions()
+        except BaseException, e:
+            logger.exception(e)
         return super(ExtendedSetPasswordForm, self).save(commit=commit)

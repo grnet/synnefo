@@ -32,11 +32,14 @@
 # or implied, of GRNET S.A.
 
 ACCOUNT_AUTHENTICATION_FAILED           =   'Cannot authenticate account.'
-ACCOUNT_INACTIVE                        =   'Inactive account.'
 ACCOUNT_ALREADY_ACTIVE                  =   'Account is already active.'
+ACCOUNT_PENDING_ACTIVATION              =   'Your request is pending activation.'
+ACCOUNT_RESEND_ACTIVATION               =   'You have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email?</a>'
+INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' or <a href="%(signup_url)s">Provide new email?</a>'])
+
+ACCOUNT_UNKNOWN                         =   'There is no such account.'
 TOKEN_UNKNOWN                           =   'There is no user matching this token.'
 
-INVITATION_SENT                         =   'Invitation sent to %(email)s.'
 PROFILE_UPDATED                         =   'Profile has been updated successfully.'
 FEEDBACK_SENT                           =   'Feedback successfully sent.'
 EMAIL_CHANGED                           =   'Account email has been changed successfully.'
@@ -69,6 +72,8 @@ EMAIL_USED                              =   'This email address is already in us
 SHIBBOLETH_EMAIL_USED                   =   'This email is already associated with another shibboleth account.'
 SHIBBOLETH_INACTIVE_ACC                 =   'This email is already associated with an inactive account. \
                                                You need to wait to be activated before being able to switch to a shibboleth account.'   
+SHIBBOLETH_MISSING_EPPN                 =   'Missing unique token in request.'
+SHIBBOLETH_MISSING_NAME                 =   'Missing user name in request.'
 
 SIGN_TERMS                              =   'You have to agree with the terms.'
 CAPTCHA_VALIDATION_ERR                  =   'You have not entered the correct words.'
@@ -83,6 +88,10 @@ UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR    =   'Another account with the same email
 INVALID_ACTIVATION_KEY                  =   'Invalid activation key.'
 NEW_EMAIL_ADDR_RESERVED                 =   'The new email address is reserved.'
 EMAIL_RESERVED                          =   'Email: %(email)s is reserved'
+NO_LOCAL_AUTH                           =   'Local login is not the current authentication method for this account.'
+SWITCH_ACCOUNT_FAILURE                  =   'Account failed to switch. Invalid parameters.'
+SWITCH_ACCOUNT_SUCCESS_WITH_PROVIDER    =   'Account failed to switch to %(provider)s.' 
+SWITCH_ACCOUNT_SUCCESS                  =   'Account successfully switched to %(provider)s.'
 
 # Field help text
 ADD_GROUP_MEMBERS_Q_HELP                =   'Add comma separated user emails, eg. user1@user.com, user2@user.com'
@@ -99,15 +108,21 @@ FEEDBACK_SEND_ERR                       =   EMAIL_SEND_ERR % 'feedback'
 CHANGE_EMAIL_SEND_ERR                   =   EMAIL_SEND_ERR % 'feedback'
 NOTIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'notification'
 
-
 MISSING_NEXT_PARAMETER                  =   'No next parameter'
 
+INVITATION_SENT                         =   'Invitation sent to %(email)s.'
 VERIFICATION_SENT                       =   'Verification sent.'
-
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with another local account. \
                                                To change this account to a shibboleth one follow the link in the verification email sent to %(email)s. \
                                                Otherwise just ignore it.'
-NOTIFACATION_SENT                       =   'Your request for an account was successfully received and is now pending approval. \
+NOTIFICATION_SENT                       =   'Your request for an account was successfully received and is now pending approval. \
                                                You will be notified by email in the next few days. \
                                                Thanks for your interest in ~okeanos! The GRNET team.'
+ACTIVATION_SENT                         =   'Activation sent.'
+
 REGISTRATION_COMPLETED                  =   'Registration completed. You can now login.'
+
+NO_RESPONSE                             =   'There is no response.'
+NOT_ALLOWED_NEXT_PARAM                  =   'Not allowed next parameter.'
+MISSING_KEY_PARAMETER                   =   'Missing key parameter.'
+INVALID_KEY_PARAMETER                   =   'Invalid key.'

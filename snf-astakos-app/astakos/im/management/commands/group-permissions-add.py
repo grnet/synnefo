@@ -31,14 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser
 from ._common import add_group_permission
 
 

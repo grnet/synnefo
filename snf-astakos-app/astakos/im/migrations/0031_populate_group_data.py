@@ -22,7 +22,7 @@ class Migration(DataMigration):
 
         def _create_astakogroup(name):
             try:
-                groups[name] = orm.AstakosGroup.objects.get(name=name)
+                groups[name] = orm['im.AstakosGroup'].objects.get(name=name)
             except orm.AstakosGroup.DoesNotExist:
                 try:
                     g = orm['auth.Group'].objects.get(name=name)

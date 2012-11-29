@@ -38,10 +38,11 @@ from django.utils.translation import ugettext as _
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
-from django.core.exceptions import ValidationError
 from django.template import Context, loader
-from django.contrib.auth import login as auth_login, logout as auth_logout
-from django.http import HttpRequest
+from django.contrib.auth import (
+    login as auth_login,
+    logout as auth_logout
+)
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 
@@ -51,17 +52,15 @@ from smtplib import SMTPException
 from datetime import datetime
 from functools import wraps
 
-from astakos.im.settings import (DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL,
-                                 LOGGING_LEVEL, VERIFICATION_EMAIL_SUBJECT,
-                                 ACCOUNT_CREATION_SUBJECT,
-                                 GROUP_CREATION_SUBJECT,
-                                 HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
-                                 INVITATION_EMAIL_SUBJECT,
-                                 GREETING_EMAIL_SUBJECT,
-                                 FEEDBACK_EMAIL_SUBJECT,
-                                 EMAIL_CHANGE_EMAIL_SUBJECT)
-import astakos.im.models
+from astakos.im.settings import (
+    DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
+    VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
+    GROUP_CREATION_SUBJECT, HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
+    INVITATION_EMAIL_SUBJECT, GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT,
+    EMAIL_CHANGE_EMAIL_SUBJECT
+)
 import astakos.im.messages as astakos_messages
+import astakos.im.models
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +81,14 @@ def logged(func, msg):
         return r
     return with_logging
 
-login = logged(auth_login, '%s logged in.')
+
+def login(request, user):
+    auth_login(request, user)
+    astakos.im.models.SessionCatalog(
+        session_key=request.session.session_key,
+        user=user).save()
+
+login = logged(login, '%s logged in.')
 logout = logged(auth_logout, '%s logged out.')
 
 
@@ -202,7 +208,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     else:
         msg = 'Sent invitation %s' % invitation
         logger.log(LOGGING_LEVEL, msg)
-        invitation.inviter.invitations = max(0, self.invitations - 1)
+        invitation.inviter.invitations = max(0, invitation.inviter.invitations - 1)
         invitation.inviter.save()
 
 

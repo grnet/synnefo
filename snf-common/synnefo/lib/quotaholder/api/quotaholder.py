@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -35,6 +37,7 @@
 from synnefo.lib.commissioning import (CanonifyException, SpecifyException,
                                        Specificator, Null, Integer, Text,
                                        Tuple, ListOf, Dict, Args)
+from random import choice, randint
 
 Context             =   Dict(classname='Context', null=True, show=False)
 
@@ -42,6 +45,11 @@ class Name(Text):
     def init(self):
         self.opts.update({'regex': "[\w.:@+/-]+", 'maxlen':512})
         Text.init(self)
+
+    def _random_choice(self, kw):
+        alphabet = u'abcdef_1233490.:@/-αβγδεζ'
+        length = randint(0, 48)
+        return ''.join(choice(alphabet) for _ in xrange(length))
 
 class Nonnegative(Integer):
     def init(self):

@@ -77,7 +77,7 @@ printf("Will connect to QH_HOST = {0}", QH_HOST)
 printf("            and QH_PORT = {0}", QH_PORT)
 
 QH_SERVER = '{0}:{1}'.format(QH_HOST, QH_PORT)
-QH_URL = "http://{0}/api/quotaholder/v".format(QH_SERVER)
+QH_URL = "http://{0}/quotaholder/v".format(QH_SERVER)
 
 ### DEFS ###
 def new_quota_holder_client():

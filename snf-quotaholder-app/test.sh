@@ -1,4 +1,4 @@
 #!/bin/sh
 
 d=`dirname $0`
-python $d/test
+python $d/quotaholder_django/test

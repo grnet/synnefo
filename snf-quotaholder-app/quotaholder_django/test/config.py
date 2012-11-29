@@ -133,7 +133,6 @@ class QHTestCase(unittest.TestCase):
     def setUpClass(self):
         self.server = init_server()
         self.qh = new_quota_holder_client()
-#        self.qh.create_entity(create_entity=[("pgerakios", "system", "key1", "")])
 
     def setUp(self):
         print
@@ -143,7 +142,6 @@ class QHTestCase(unittest.TestCase):
         from signal import SIGTERM
         os.kill(-self.server, SIGTERM)
         os.remove('/tmp/qh_testdb')
-        del self.qh
 
 
 ### VARS ###

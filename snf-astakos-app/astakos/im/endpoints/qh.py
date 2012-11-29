@@ -43,7 +43,7 @@ from django.utils.translation import ugettext as _
 from astakos.im.settings import QUOTA_HOLDER_URL, LOGGING_LEVEL
 
 if QUOTA_HOLDER_URL:
-    from quotaholder.clients.kamaki import quotaholder_client
+    from kamaki.clients.quotaholder import QuotaholderClient
 
 ENTITY_KEY = '1'
 
@@ -64,7 +64,7 @@ def call(func_name):
             if not QUOTA_HOLDER_URL:
                 return client, ()
 
-            c = client or quotaholder_client(QUOTA_HOLDER_URL)
+            c = client or QuotaholderClient(QUOTA_HOLDER_URL)
             func = c.__dict__.get(func_name)
             if not func:
                 return c, ()
@@ -287,7 +287,7 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
         m = 'charge type %s not supported' % charge_type
         raise ValueError(m)
 
-    quotaholder = quotaholder_client(QUOTA_HOLDER_URL)
+    quotaholder = QuotaholderClient(QUOTA_HOLDER_URL)
     timeline = quotaholder.get_timeline(
         context={},
         after=after,

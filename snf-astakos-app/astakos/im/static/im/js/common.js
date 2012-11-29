@@ -228,7 +228,7 @@ $(document).ready(function() {
 	$('.projects .details .edit').click( function(e){
 		e.preventDefault();
 		$(this).parents('.details').children('.data').hide();
-		$(this).parents('.details').children('.editable').show();
+		$(this).parents('.details').children('.editable').slideDown(500, 'linear');
 		$(this).hide();
 	});
 	

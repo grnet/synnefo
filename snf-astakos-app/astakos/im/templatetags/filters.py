@@ -192,3 +192,12 @@ def isinf(v):
         return 'Unlimited'
     else:
         return v
+    
+@register.filter
+def truncatename(v):
+    max = 18
+    length = len(v)
+    if length>max:
+        return v[:max]+'...'
+    else:
+        return v[:20]

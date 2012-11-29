@@ -48,7 +48,7 @@
     </div>
     <div class="not-visible">
     	{% for gname, resources in resource_catalog.get_groups_resources %}
-	    	<div class="group {{'group_'|add:gname}}" id="{{ g }}">
+	    	<div class="group {{'group_'|add:gname}}" id="{{ gname }}">
 	    		<a href="#icons" class="delete">X remove resource</a>	
 	    		{% for rname, rdata in resources.items %}
 	    		<fieldset class="quota">

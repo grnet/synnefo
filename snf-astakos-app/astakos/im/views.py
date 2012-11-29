@@ -87,7 +87,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
                                   SendNotificationError)
 from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (COOKIE_NAME, COOKIE_DOMAIN, LOGOUT_NEXT,
-                                 LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA)
+                                 LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL)
 from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
@@ -980,7 +980,8 @@ def group_detail(request, group_id):
         if form.is_valid():
             sorting = form.cleaned_data.get('sort_by')
     
- 
+    else:
+        form = MembersSortForm({'sort_by': 'person_first_name'})
     
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
@@ -1068,7 +1069,7 @@ def group_search(request, extra_context=None, **kwargs):
     return object_list(
         request,
         queryset,
-        paginate_by=PAGINATE_BY,
+        paginate_by=PAGINATE_BY_ALL,
         page=request.GET.get('page') or 1,
         template_name='im/astakosgroup_list.html',
         extra_context=dict(form=form,
@@ -1115,7 +1116,7 @@ def group_all(request, extra_context=None, **kwargs):
     return object_list(
         request,
         q,
-        paginate_by=PAGINATE_BY,
+        paginate_by=PAGINATE_BY_ALL,
         page=request.GET.get('page') or 1,
         template_name='im/astakosgroup_list.html',
         extra_context=dict(form=AstakosGroupSearchForm(),

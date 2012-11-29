@@ -7,22 +7,24 @@
 {% with form.data as data %}	 	
 <div class="projects summary">
 	<form action="{% url group_add_complete %}" method="post" class="quotas-form">{% csrf_token %}
-		<legend>3. CONFIRM YOUR REQUEST</legend>
+		<legend>CONFIRMATION REQUEST</legend>
+		<P>These are the specifications of the Project you want to create. If you hit the "Submit" button this form will be officially sent to GRNET for review. Please make sure the following reflect exactly your request. After submitting, there is no way to modify your Project request. </P>
 <!-- 
  		{% for k,v in data.iteritems %}
  			<input type="hidden" name="{{ k }}" value="{{ v }}">
  		{% endfor %}
  -->
         {% include "im/form_render.html" %}
-		
-		<p>{{ data.desc|safe }}</p>
-		<dl class="alt-style">			    
-			<dt>Homepage Url</dt>
-			<dd>{{ data.homepage }}&nbsp;</dd>
-		</dl>
-		
 		<div class="full-dotted">
-			 <h3>DETAILS:</h3>
+			<h3>GENERAL INFO</h3>
+			<p class="restricted">{{ data.desc|safe }}</p>
+			<dl class="alt-style">			    
+				<dt>Homepage Url</dt>
+				<dd>{{ data.homepage }}&nbsp;</dd>
+			</dl>
+		</div>
+		<div class="full-dotted">
+			 <h3>DETAILS</h3>
 			 <dl class="alt-style">			    
 			    <dt>Name</dt>
 			 	<dd>{{ data.name|strip_http }}&nbsp;</dd>
@@ -41,7 +43,8 @@
 		 
 		 
 		 <div class="full-dotted">
-			<h3>RESOURCES:</h3>
+			<h3>RESOURCES</h3>
+			<p>The following ~okeanos resources will be granted to each member of this Project:</p>
 		 	<dl class="alt-style">	
 		 		{% for p in policies %}
 			 		 
@@ -59,6 +62,8 @@
            				Unlimited
            			{% endif %}
            			</dd>
+           		{% empty %}
+           			No resources
 		 		{% endfor %}
 		 	</dl>      
 		 </div>

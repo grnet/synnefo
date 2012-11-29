@@ -197,7 +197,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             
             append(item(
                    url=absolute(request, reverse('group_list')),
-                   name="Groups",
+                   name="Projects",
                    submenu=(item(
                             url=absolute(request,
                                          reverse('group_list')),

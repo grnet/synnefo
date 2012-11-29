@@ -194,8 +194,9 @@ a.button 										{ border:0 none;  color: #FFFFFF;  display: inline-block;  te
 a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}*/
 
 /*pagination*/
-.pagination .next-prev                          { float:left; }
-.pagination .nums                               { text-align:right;}
+.pagination .next-prev                          { float:right; }
+.pagination .next-prev a						{ margin-left:15px; }
+.pagination .nums                               { text-align:left;}
 .pagination .nums span                          { color:#000;}
                     
 .two-cols .lt .clients-wrapper p				{ padding:0; }
@@ -236,7 +237,7 @@ table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 }
 dl.alt-style  									{ width:500px; }
 dl.alt-style dt									{ width:50%; float:left; color:#3582AC; font-weight:normal;}
 dl.alt-style dt:nth-child(2n)					{ background:black; }
-.projects										{ padding-bottom:30px; }
+.projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}
 .projects h2 em									{ float:right; }
 .projects h3									{ font-size:1.154em; }
@@ -304,7 +305,7 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .widjets li div .wrap							{ background:url(../images/dots.jpg) repeat-x bottom ; }
 .widjets li:first-child div 					{ margin-right:20px; margin-left:0; }
 .widjets li div img								{ max-width:100%; margin:2em 0; }
-.widjets li div .txt							{ height:100px; }
+.widjets li div .txt							{ height:130px; }
 .widjets .widjet-x								{ position:absolute; right:0;top:0; font-weight:bold; font-size:1.5em; }
 .widjets .widjet-x:hover						{ text-decoration:none; color:#000; }
 .widjets li.create h2, 
@@ -312,7 +313,7 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .widjets li.join h2, 
 .widjets li.join a								{ color: #F24E53}
 .widjets li a									{ font-size:1.154em; }
-
+.widjets .wrap p:first-child                    { height:200px;margin-bottom:2em; }
 
 /* billing styles */
 .alt-style .table-div							{ border:1px dashed #000; }
@@ -366,7 +367,7 @@ table.alt-style tr td.info-td					{ padding:5px; }
 table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
  
 
-.projects .details a.edit						{ float:right; margin-left:20px;  }
+.projects .details a.edit						{ margin-left:20px;  }
 .projects .details .data						{ overflow:hidden; }
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
 
@@ -468,3 +469,6 @@ form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
 .two-cols-links p:first-child					{ width:224px; float:left; overflow:auto }
 .two-cols-links p:first-child a					{ color:#222; }
 .two-cols-links p:first-child a:hover			{ color:#F89A1C }
+
+.summary .quotas-form legend					{ margin-bottom:1em; }
+.projects  p.restricted							{ width:524px; }

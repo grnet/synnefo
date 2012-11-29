@@ -509,44 +509,52 @@ class ListOf(Canonical):
 
 class Args(Canonical):
 
-    def _unpack(self, arglist):
-        return arglist
-
-    def _check(self, item):
-        if argmap_check(item):
-            arglist = argmap_unpack_dict(item)
-        else:
-            try:
-                arglist = OrderedDict(item).items()
-            except (TypeError, ValueError), e:
-                m = "%s: %s is not dict-able" % (self, shorts(item))
-                raise CanonifyException(m)
-
+    def _unpack(self, item):
+        arglist = argmap_unpack_dict(item)
         keys = self.kw.keys()
-        kw = self.kw
         arglen = len(arglist)
         if arglen != len(keys):
             m = "inconsistent number of parameters: %s != %s" % (
-                arglen, len(keys))
+            arglen, len(keys))
             raise CanonifyException(m)
 
-        canonified = OrderedDict()
         position = 0
+        named_args = OrderedDict()
 
         for k, v in arglist:
             if k is not None:
-                canonified[k] = kw[k].check(v)
+                named_args[k] = v
             else:
                 # find the right position
                 for i in range(position, arglen):
                     key = keys[i]
-                    if not key in canonified.keys():
-                        position = i + 1
-                        break
+                    if not key in named_args.keys():
+                       position = i + 1
+                       break
                 else:
                     m = "Formal arguments exhausted"
                     raise AssertionError(m)
-                canonified[key] = kw[key].check(v)
+                named_args[key] = v
+
+        return named_args
+
+    def _check(self, item):
+        try:
+            arglist = OrderedDict(item).items()
+        except (TypeError, ValueError), e:
+            m = "%s: %s is not dict-able" % (self, shorts(item))
+            raise CanonifyException(m)
+
+        canonified = OrderedDict()
+
+        try:
+            for n, c in self.kw.items():
+                t = item[n] if n in item else None
+                canonified[n] = c.check(t)
+        except KeyError:
+            m = ("%s: Argument '%s' not found in '%s'"
+                 % (self, shorts(n), shorts(item)))
+            raise CanonifyException(m)
 
         return canonified
 

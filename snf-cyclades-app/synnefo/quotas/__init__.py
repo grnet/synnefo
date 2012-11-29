@@ -93,7 +93,7 @@ class DummyQuotaholderClient(object):
 def get_quota_holder():
     """Context manager for using a QuotaHolder."""
     if USE_QUOTAHOLDER:
-        quotaholder = QuotaholderClient(QUOTAHOLDER_URL)
+        quotaholder = QuotaholderClient(CYCLADES_QUOTAHOLDER_URL)
     else:
         quotaholder = DummyQuotaholderClient()
 
@@ -241,8 +241,8 @@ def create_commission(user, resources, delete=False):
              "target":     user,
              "key":        "1",
              "clientkey":  "cyclades",
-             "owner":      "",
-             "ownerkey":   "",
+             #"owner":      "",
+             #"ownerkey":   "1",
              "name":       "",
              "provisions": provisions}
 

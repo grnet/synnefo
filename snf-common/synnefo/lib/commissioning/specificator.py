@@ -652,11 +652,15 @@ class Canonifier(object):
             yield call_name, call_doc
 
     def get_doc(self, name):
-        if name not in self.doc_strings:
+        doc_strings = self.doc_strings
+        if name not in doc_strings:
             m = "%s: Invalid method name '%s'" % (self.name, name)
             raise CanonifyException(m)
 
-        return self.doc_strings[name]
+        docstring = doc_strings[name]
+        if not docstring:
+            docstring = self.input_canonical(name).tostring()
+        return docstring
 
     def call_attrs(self):
         for call_name, canonical in self.input_canonicals.iteritems():

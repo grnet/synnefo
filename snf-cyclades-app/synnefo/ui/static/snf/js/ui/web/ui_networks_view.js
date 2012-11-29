@@ -1100,8 +1100,8 @@
         },
 
         // fix left border position
-        fix_left_border: function() {
-            if (!this.nics_visible) { return };
+        fix_left_border: function(force) {
+            if (!this.nics_visible && !force) { return };
             
             var imgheight = 2783;
             var opened_vm_height = 133 + 18;
@@ -1137,9 +1137,14 @@
         
         initialize: function(network, view) {
           views.PublicNetworkView.__super__.initialize.call(this, network, view);
+          this.fix_left_border(1);
         },
 
-        init_handlers: function(vm) {}
+        init_handlers: function(vm) {
+          $(window).bind("resize", _.bind(function() {
+              this.fix_left_border();
+          }, this));
+        }
     });
 
     views.GroupedPublicNetworkView = views.PublicNetworkView.extend({

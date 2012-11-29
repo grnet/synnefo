@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,17 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from logging import getLogger
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^vmapi/', include('synnefo.vmapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
-)
+from django.http import Http404, HttpResponse
+
+from synnefo.vmapi import backend, get_key
+from synnefo.vmapi import settings
+
+log = getLogger('synnefo.vmapi')
+
+def server_params(request, uuid):
+    if not uuid:
+        raise Http404
+
+    cache_key = get_key(uuid)
+    params = backend.get(cache_key)
+    if not params:
+        log.error('Request vmapi params key not found: %s', cache_key)
+        raise Http404
+
+    if settings.RESET_PARAMS:
+        backend.set(cache_key, None)
+
+    return HttpResponse(params, content_type="application/json")
 

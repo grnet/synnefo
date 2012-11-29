@@ -31,6 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from base64 import b64decode
+
+from django import dispatch
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.db import transaction
@@ -48,6 +51,8 @@ from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo import quotas
 
+# server creation signal
+server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 from logging import getLogger
 log = getLogger('synnefo.api')
@@ -274,10 +279,32 @@ def create_server(serials, request):
         if len(personality) > settings.MAX_PERSONALITY:
             raise faults.OverLimit("Maximum number of personalities exceeded")
 
-        util.verify_personality(personality)
-        image = util.get_image_dict(image_id, user_id)
-        flavor = util.get_flavor(flavor_id)
-        password = util.random_password()
+        for p in personality:
+            # Verify that personalities are well-formed
+            try:
+                assert isinstance(p, dict)
+                keys = set(p.keys())
+                allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
+                assert keys.issubset(allowed)
+                contents = p['contents']
+                if len(contents) > settings.MAX_PERSONALITY_SIZE:
+                    # No need to decode if contents already exceed limit
+                    raise faults.OverLimit("Maximum size of personality exceeded")
+                if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
+                    raise faults.OverLimit("Maximum size of personality exceeded")
+            except AssertionError:
+                raise faults.BadRequest("Malformed personality in request")
+
+        image = {}
+        img = util.get_image(image_id, request.user_uniq)
+        properties = img.get('properties', {})
+        image['backend_id'] = img['location']
+        image['format'] = img['disk_format']
+        image['metadata'] = dict((key.upper(), val) \
+                                 for key, val in properties.items())
+
+        # Ensure that request if for active flavor
+        flavor = util.get_flavor(flavor_id, include_deleted=False)
 
         backend_allocator = BackendAllocator()
         backend = backend_allocator.allocate(request.user_uniq, flavor)
@@ -321,9 +348,29 @@ def create_server(serials, request):
             action="CREATE",
             serial=serial)
 
+        password = util.random_password()
+
+        # TODO: Just copied code from backend.py to fix the images backend_id
+        # for archipelagos. Find a better way and remove double checks
+        img_id = image['backend_id']
+        provider = None
+        disk_template = flavor.disk_template
+        if flavor.disk_template.startswith("ext"):
+            disk_template, provider = flavor.disk_template.split("_", 1)
+            if provider == 'vlmc':
+                img_id = 'null'
+
+        # dispatch server created signal
+        server_created.send(sender=vm, created_vm_params={
+            'img_id': img_id,
+            'img_passwd': password,
+            'img_format': str(image['format']),
+            'img_personality': str(personality),
+            'img_properties': str(image['metadata']),
+        })
+
         try:
-            jobID = create_instance(vm, nic, flavor, image, password,
-                                    personality)
+            jobID = create_instance(vm, nic, flavor, image)
         except GanetiApiError:
             vm.delete()
             raise

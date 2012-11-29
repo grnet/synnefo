@@ -644,7 +644,11 @@ class Canonifier(object):
         return self.input_canonicals.keys()
 
     def call_docs(self):
+        get_input_canonical = self.input_canonical
         for call_name, call_doc in self.doc_strings.iteritems():
+            if not call_doc:
+                canonical = get_input_canonical(call_name)
+                call_doc = canonical.tostring(showopts=1, multiline=1)
             yield call_name, call_doc
 
     def get_doc(self, name):

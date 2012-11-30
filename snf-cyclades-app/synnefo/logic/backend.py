@@ -369,7 +369,7 @@ def create_instance(vm, public_nic, flavor, image, password=None):
 
     kw['disk_template'] = flavor.disk_template
     kw['disks'] = [{"size": flavor.disk * 1024}]
-    provider = flavor.provider
+    provider = flavor.disk_provider
     if provider:
         kw['disks'][0]['provider'] = provider
 

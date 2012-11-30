@@ -277,7 +277,7 @@ def create_server(serials, request):
             raise faults.BadRequest("Malformed request")
 
         # Verify that personalities are well-formed
-        util.verify_personalitity(personality)
+        util.verify_personality(personality)
         # Get image information
         image = util.get_image_dict(image_id, user_id)
         # Get flavor (ensure it is active)
@@ -335,6 +335,8 @@ def create_server(serials, request):
             if provider == 'vlmc':
                 flavor.disk_origin = image['backend_id']
                 image['backend_id'] = 'null'
+        else:
+            flavor.disk_provider = None
 
         # dispatch server created signal
         server_created.send(sender=vm, created_vm_params={

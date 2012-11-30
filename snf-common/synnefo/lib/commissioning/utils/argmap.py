@@ -244,7 +244,10 @@ def argmap_check(obj):
     if hasattr(obj, 'keys') and callable(obj.keys):
         # this could cover both cases
         return ARGMAP_MAGIC in obj
-    return hasattr(obj, '__len__') and len(obj) and obj[-1] == ARGMAP_MAGIC
+    if hasattr(obj, '__len__'):
+        length = len(obj)
+        return length and obj[length-1] == ARGMAP_MAGIC
+    return False
 
 def argmap_unzip_dict(argmap):
     if not hasattr(argmap, 'keys'):

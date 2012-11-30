@@ -38,6 +38,8 @@ import logging
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
+from urlparse import urlparse
+from urllib import quote
 from random import randint
 from collections import defaultdict
 
@@ -53,8 +55,12 @@ from django.contrib.contenttypes.models import ContentType
 
 from django.dispatch import Signal
 from django.db.models import Q
+from django.core.urlresolvers import reverse
+from django.utils.http import int_to_base36
+from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
+from django.core.validators import email_re
 
 from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
                                  AUTH_TOKEN_DURATION, BILLING_FIELDS,
@@ -62,6 +68,7 @@ from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
 )
+from astakos.im import auth_providers
 from astakos.im.endpoints.aquarium.producer import report_user_event
 from astakos.im.functions import send_invitation
 from astakos.im.tasks import propagate_groupmembers_quota
@@ -112,7 +119,7 @@ class Service(models.Model):
     def resources(self, resources):
         for s in resources:
             self.resource_set.create(**s)
-    
+
     def add_resource(self, service, resource, uplimit, update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
         resource = Resource.objects.get(service__name=service, name=resource)
@@ -188,7 +195,7 @@ class AstakosGroup(Group):
         null=True,
         blank=True
     )
-    
+
     @property
     def is_disabled(self):
         if not self.approval_date:
@@ -246,7 +253,7 @@ class AstakosGroup(Group):
     def members(self):
         q = self.membership_set.select_related().all()
         return [m.person for m in q]
-    
+
     @property
     def approved_members(self):
         q = self.membership_set.select_related().all()
@@ -258,7 +265,7 @@ class AstakosGroup(Group):
         for q in self.astakosgroupquota_set.select_related().all():
             d[q.resource] += q.uplimit or inf
         return d
-    
+
     def add_policy(self, service, resource, uplimit, update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
         resource = Resource.objects.get(service__name=service, name=resource)
@@ -271,7 +278,7 @@ class AstakosGroup(Group):
         else:
             q = self.astakosgroupquota_set
             q.create(resource=resource, uplimit=uplimit)
-    
+
     @property
     def policies(self):
         return self.astakosgroupquota_set.select_related().all()
@@ -284,7 +291,7 @@ class AstakosGroup(Group):
             uplimit = p.get('uplimit', 0)
             update = p.get('update', True)
             self.add_policy(service, resource, uplimit, update)
-    
+
     @property
     def owners(self):
         return self.owner.all()
@@ -299,6 +306,18 @@ class AstakosGroup(Group):
         map(self.approve_member, l)
 
 
+
+class AstakosUserManager(models.Manager):
+
+    def get_auth_provider_user(self, provider, **kwargs):
+        """
+        Retrieve AstakosUser instance associated with the specified third party
+        id.
+        """
+        kwargs = dict(map(lambda x: ('auth_providers__%s' % x[0], x[1]),
+                          kwargs.iteritems()))
+        return self.get(auth_providers__module=provider, **kwargs)
+
 class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
@@ -306,8 +325,18 @@ class AstakosUser(User):
     # Use UserManager to get the create_user method, etc.
     objects = UserManager()
 
-    affiliation = models.CharField('Affiliation', max_length=255, blank=True)
-    provider = models.CharField('Provider', max_length=255, blank=True)
+    affiliation = models.CharField('Affiliation', max_length=255, blank=True,
+                                   null=True)
+
+    # DEPRECATED FIELDS: provider, third_party_identifier moved in
+    #                    AstakosUserProvider model.
+    provider = models.CharField('Provider', max_length=255, blank=True,
+                                null=True)
+    # ex. screen_name for twitter, eppn for shibboleth
+    third_party_identifier = models.CharField('Third-party identifier',
+                                              max_length=255, null=True,
+                                              blank=True)
+
 
     #for invitations
     user_level = DEFAULT_USER_LEVEL
@@ -323,10 +352,6 @@ class AstakosUser(User):
 
     updated = models.DateTimeField('Update date')
     is_verified = models.BooleanField('Is verified?', default=False)
-
-    # ex. screen_name for twitter, eppn for shibboleth
-    third_party_identifier = models.CharField(
-        'Third-party identifier', max_length=255, null=True, blank=True)
 
     email_verified = models.BooleanField('Email verified?', default=False)
 
@@ -351,6 +376,7 @@ class AstakosUser(User):
     disturbed_quota = models.BooleanField('Needs quotaholder syncing',
                                            default=False, db_index=True)
 
+    objects = AstakosUserManager()
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
 
@@ -475,28 +501,26 @@ class AstakosUser(User):
         if not self.id:
             # set username
             while not self.username:
-                username = uuid.uuid4().hex[:30]
+                username =  self.email
                 try:
                     AstakosUser.objects.get(username=username)
                 except AstakosUser.DoesNotExist:
                     self.username = username
-            if not self.provider:
-                self.provider = 'local'
-            self.email = self.email.lower()
+
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent
             self.activation_sent = None
 
         super(AstakosUser, self).save(**kwargs)
-    
+
     def renew_token(self, flush_sessions=False, current_key=None):
         md5 = hashlib.md5()
         md5.update(settings.SECRET_KEY)
         md5.update(self.username)
         md5.update(self.realname.encode('ascii', 'ignore'))
         md5.update(asctime())
-        
+
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
@@ -510,7 +534,7 @@ class AstakosUser(User):
         q = self.sessions
         if current_key:
             q = q.exclude(session_key=current_key)
-        
+
         keys = q.values_list('session_key', flat=True)
         if keys:
             msg = 'Flushing sessions: %s' % ','.join(keys)
@@ -525,7 +549,7 @@ class AstakosUser(User):
 
     def conflicting_email(self):
         q = AstakosUser.objects.exclude(username=self.username)
-        q = q.filter(email=self.email)
+        q = q.filter(email__iexact=self.email)
         if q.count() != 0:
             return True
         return False
@@ -558,9 +582,175 @@ class AstakosUser(User):
             return False
         return True
 
-    def store_disturbed_quota(self, set=True):
-        self.disturbed_quota = set
-        self.save()
+    def set_invitations_level(self):
+        """
+        Update user invitation level
+        """
+        level = self.invitation.inviter.level + 1
+        self.level = level
+        self.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+
+    def can_login_with_auth_provider(self, provider):
+        if not self.has_auth_provider(provider):
+            return False
+        else:
+            return auth_providers.get_provider(provider).is_available_for_login()
+
+    def can_add_auth_provider(self, provider, **kwargs):
+        provider_settings = auth_providers.get_provider(provider)
+        if not provider_settings.is_available_for_login():
+            return False
+
+        if self.has_auth_provider(provider) and \
+           provider_settings.one_per_user:
+            return False
+
+        if 'identifier' in kwargs:
+            try:
+                # provider with specified params already exist
+                existing_user = AstakosUser.objects.get_auth_provider_user(provider,
+                                                                   **kwargs)
+            except AstakosUser.DoesNotExist:
+                return True
+            else:
+                return False
+
+        return True
+
+    def can_remove_auth_provider(self, provider):
+        if len(self.get_active_auth_providers()) <= 1:
+            return False
+        return True
+
+    def can_change_password(self):
+        return self.has_auth_provider('local', auth_backend='astakos')
+
+    def has_auth_provider(self, provider, **kwargs):
+        return bool(self.auth_providers.filter(module=provider,
+                                               **kwargs).count())
+
+    def add_auth_provider(self, provider, **kwargs):
+        if self.can_add_auth_provider(provider, **kwargs):
+            self.auth_providers.create(module=provider, active=True, **kwargs)
+        else:
+            raise Exception('Cannot add provider')
+
+    def add_pending_auth_provider(self, pending):
+        """
+        Convert PendingThirdPartyUser object to AstakosUserAuthProvider entry for
+        the current user.
+        """
+        if not isinstance(pending, PendingThirdPartyUser):
+            pending = PendingThirdPartyUser.objects.get(token=pending)
+
+        provider = self.add_auth_provider(pending.provider,
+                               identifier=pending.third_party_identifier)
+
+        if email_re.match(pending.email) and pending.email != self.email:
+            self.additionalmail_set.get_or_create(email=pending.email)
+
+        pending.delete()
+        return provider
+
+    def remove_auth_provider(self, provider, **kwargs):
+        self.auth_providers.get(module=provider, **kwargs).delete()
+
+    # user urls
+    def get_resend_activation_url(self):
+        return reverse('send_activation', {'user_id': self.pk})
+
+    def get_activation_url(self, nxt=False):
+        url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
+                                 quote(self.auth_token))
+        if nxt:
+            url += "&next=%s" % quote(nxt)
+        return url
+
+    def get_password_reset_url(self, token_generator=default_token_generator):
+        return reverse('django.contrib.auth.views.password_reset_confirm',
+                          kwargs={'uidb36':int_to_base36(self.id),
+                                  'token':token_generator.make_token(self)})
+
+    def get_auth_providers(self):
+        return self.auth_providers.all()
+
+    def get_available_auth_providers(self):
+        """
+        Returns a list of providers available for user to connect to.
+        """
+        providers = []
+        for module, provider_settings in auth_providers.PROVIDERS.iteritems():
+            if self.can_add_auth_provider(module):
+                providers.append(provider_settings(self))
+
+        return providers
+
+    def get_active_auth_providers(self):
+        providers = []
+        for provider in self.auth_providers.active():
+            if auth_providers.get_provider(provider.module).is_available_for_login():
+                providers.append(provider)
+        return providers
+
+    @property
+    def auth_providers_display(self):
+        return ",".join(map(lambda x:unicode(x), self.auth_providers.active()))
+
+
+class AstakosUserAuthProviderManager(models.Manager):
+
+    def active(self):
+        return self.filter(active=True)
+
+
+class AstakosUserAuthProvider(models.Model):
+    """
+    Available user authentication methods.
+    """
+    affiliation = models.CharField('Affiliation', max_length=255, blank=True,
+                                   null=True, default=None)
+    user = models.ForeignKey(AstakosUser, related_name='auth_providers')
+    module = models.CharField('Provider', max_length=255, blank=False,
+                                default='local')
+    identifier = models.CharField('Third-party identifier',
+                                              max_length=255, null=True,
+                                              blank=True)
+    active = models.BooleanField(default=True)
+    auth_backend = models.CharField('Backend', max_length=255, blank=False,
+                                   default='astakos')
+
+    objects = AstakosUserAuthProviderManager()
+
+    class Meta:
+        unique_together = (('identifier', 'module', 'user'), )
+
+    @property
+    def settings(self):
+        return auth_providers.get_provider(self.module)
+
+    @property
+    def details_display(self):
+        return self.settings.details_tpl % self.__dict__
+
+    def can_remove(self):
+        return self.user.can_remove_auth_provider(self.module)
+
+    def delete(self, *args, **kwargs):
+        ret = super(AstakosUserAuthProvider, self).delete(*args, **kwargs)
+        self.user.set_unusable_password()
+        self.user.save()
+        return ret
+
+    def __repr__(self):
+        return '<AstakosUserAuthProvider %s:%s>' % (self.module, self.identifier)
+
+    def __unicode__(self):
+        if self.identifier:
+            return "%s:%s" % (self.module, self.identifier)
+        if self.auth_backend:
+            return "%s:%s" % (self.module, self.auth_backend)
+        return self.module
+
 
 
 class Membership(models.Model):
@@ -712,7 +902,7 @@ class EmailChangeManager(models.Manager):
                 raise EmailChange.DoesNotExist
             # is there an active user with this address?
             try:
-                AstakosUser.objects.get(email=email_change.new_email_address)
+                AstakosUser.objects.get(email__iexact=email_change.new_email_address)
             except AstakosUser.DoesNotExist:
                 pass
             else:
@@ -780,7 +970,9 @@ class PendingThirdPartyUser(models.Model):
     last_name = models.CharField(_('last name'), max_length=30, blank=True)
     affiliation = models.CharField('Affiliation', max_length=255, blank=True)
     username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
-    
+    token = models.CharField('Token', max_length=255, null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
     class Meta:
         unique_together = ("provider", "third_party_identifier")
 
@@ -796,7 +988,7 @@ class PendingThirdPartyUser(models.Model):
             self.last_name = parts[1]
         else:
             self.last_name = parts[0]
-    
+
     def save(self, **kwargs):
         if not self.id:
             # set username
@@ -807,6 +999,11 @@ class PendingThirdPartyUser(models.Model):
                 except AstakosUser.DoesNotExist, e:
                     self.username = username
         super(PendingThirdPartyUser, self).save(**kwargs)
+
+    def generate_token(self):
+        self.password = self.third_party_identifier
+        self.last_login = datetime.now()
+        self.token = default_token_generator.make_token(self)
 
 class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)

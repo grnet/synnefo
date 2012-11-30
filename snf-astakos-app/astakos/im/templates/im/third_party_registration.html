@@ -21,6 +21,8 @@
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value={{ provider|default:"local" }}>
+            <input type="hidden" name="third_party_token" value={{ third_party_token }}>
+
             {% include "im/form_render.html" %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SUBMIT" />

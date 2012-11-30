@@ -50,7 +50,7 @@ class Command(BaseCommand):
         if email_or_id.isdigit():
             users = AstakosUser.objects.filter(id=int(email_or_id))
         else:
-            users = AstakosUser.objects.filter(email=email_or_id)
+            users = AstakosUser.objects.filter(email__iexact=email_or_id)
         if users.count() == 0:
             field = 'id' if email_or_id.isdigit() else 'email'
             msg = "Unknown user with %s '%s'" % (field, email_or_id)
@@ -71,13 +71,12 @@ class Command(BaseCommand):
                 'token expiration': format_date(user.auth_token_expires),
                 'invitations': user.invitations,
                 'invitation level': user.level,
-                'provider': user.provider,
+                'providers': user.auth_providers_display,
                 'verified': format_bool(user.is_verified),
                 'has_credits': format_bool(user.has_credits),
                 'groups': [elem.name for elem in user.astakos_groups.all()],
                 'permissions': [elem.codename for elem in user.user_permissions.all()],
                 'group_permissions': user.get_group_permissions(),
-                'third_party_identifier': user.third_party_identifier,
                 'email_verified': format_bool(user.email_verified),
                 'username': user.username,
                 'activation_sent_date': format_date(user.activation_sent),

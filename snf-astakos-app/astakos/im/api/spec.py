@@ -1,4 +1,4 @@
-from commissioning.specificator import (
+from synnefo.lib.commissioning.specificator import (
     Specificator, Integer, Text, ListOf
 )
 

@@ -53,6 +53,7 @@ context_processors = [
     'django.core.context_processors.csrf',
     'astakos.im.context_processors.media',
     'astakos.im.context_processors.im_modules',
+    'astakos.im.context_processors.auth_providers',
     'astakos.im.context_processors.next',
     'astakos.im.context_processors.code',
     'astakos.im.context_processors.invitations',
@@ -81,9 +82,10 @@ loggers = {
 static_files = {'astakos.im': ''}
 
 # The following settings will replace the default django settings
-AUTHENTICATION_BACKENDS = ('django_auth_ldap.backend.LDAPBackend',
-			   'astakos.im.auth_backends.EmailBackend',
-                           'astakos.im.auth_backends.TokenBackend')
+AUTHENTICATION_BACKENDS = (
+#     'django_auth_ldap.backend.LDAPBackend',
+	'astakos.im.auth_backends.EmailBackend',
+    'astakos.im.auth_backends.TokenBackend')
 LOGIN_URL = '/im'
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'

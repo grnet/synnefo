@@ -79,7 +79,6 @@ def monthssince(joined_date):
 
 @register.filter
 def lookup(d, key):
-    print d, key
     return d.get(key)
 
 @register.filter

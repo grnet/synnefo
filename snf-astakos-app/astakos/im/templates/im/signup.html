@@ -18,6 +18,9 @@
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value={{ provider|default:"local" }}>
+            {% if third_party_token %}
+            <input type="hidden" name="third_party_token" value={{ third_party_token }}>
+            {% endif %}
             {% with signup_form as form %}
             {% include "im/form_render.html" %}
             {% endwith %}

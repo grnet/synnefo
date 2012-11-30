@@ -39,13 +39,18 @@ from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
+from django.shortcuts import get_object_or_404
+
+from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context
-from astakos.im.views import requires_anonymous, render_response
-from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION
+from astakos.im.views import requires_anonymous, render_response, \
+        requires_auth_provider
+from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
-from astakos.im.activation_backends import get_backend
+from astakos.im.activation_backends import get_backend, SimpleBackend
+from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
 
@@ -64,13 +69,11 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
-
+@requires_auth_provider('local', login=True)
 @require_http_methods(["GET", "POST"])
-@requires_anonymous
 def login(
     request,
-    login_template='im/login.html',
-    signup_template='im/third_party_check_local.html',
+    template='im/third_party_check_local.html',
     extra_context=None
 ):
     extra_context = extra_context or {}
@@ -90,103 +93,103 @@ def login(
         else:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
     except KeyError, e:
-        extra_context['login_form'] = LoginForm(request=request)
-        messages.error(request, e)
-        return render_response(
-            login_template,
-            context_instance=get_context(request, extra_context)
-        )
-    
+        # invalid shibboleth headers, redirect to login, display message
+        messages.error(request, e.message)
+        return HttpResponseRedirect(reverse('login'))
+
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-    
+
+    # an existing user accessed the view
+    if request.user.is_authenticated():
+        if request.user.has_auth_provider('shibboleth', identifier=eppn):
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+        # automatically add eppn provider to user
+        user = request.user
+        if not request.user.can_add_auth_provider('shibboleth',
+                                                  identifier=eppn):
+            messages.error(request, 'Account already exists.')
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+        user.add_auth_provider('shibboleth', identifier=eppn)
+        return HttpResponseRedirect(reverse('edit_profile'))
+
     try:
-        user = AstakosUser.objects.get(
-            provider='shibboleth',
-            third_party_identifier=eppn
+        # astakos user exists ?
+        user = AstakosUser.objects.get_auth_provider_user(
+            'shibboleth',
+            identifier=eppn
         )
         if user.is_active:
+            # authenticate user
             return prepare_response(request,
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
         elif not user.activation_sent:
-            message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
+            message = _('Your request is pending activation')
+			#TODO: use astakos_messages
+            if not settings.MODERATION_ENABLED:
+                url = user.get_resend_activation_url()
+                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
+                message = message + u' ' + msg_extra
+
             messages.error(request, message)
+            return HttpResponseRedirect(reverse('login'))
+
         else:
-            urls = {}
-            urls['send_activation_url'] = reverse(
-                'send_activation',
-                kwargs={'user_id':user.id}
-            )
-            urls['signup_url'] = reverse(
-                'shibboleth_signup',
-                args= [user.username]
-            )   
-            message = _(astakos_messages.INACTIVE_ACCOUNT_CHANGE_EMAIL) % urls
+			#TODO: use astakos_messages
+            message = _(u'Account disabled. Please contact support')
             messages.error(request, message)
-        return render_response(login_template,
-                               login_form = LoginForm(request=request),
-                               context_instance=RequestContext(request))
+            return HttpResponseRedirect(reverse('login'))
+
     except AstakosUser.DoesNotExist, e:
-        # First time
-        try:
-            user, created = PendingThirdPartyUser.objects.get_or_create(
-                third_party_identifier=eppn,
-                provider='shibboleth',
-                defaults=dict(
-                    realname=realname,
-                    affiliation=affiliation,
-                    email=email
-                )
-            )
-            user.save()
-        except BaseException, e:
-            logger.exception(e)
-            template = login_template
-            extra_context['login_form'] = LoginForm(request=request)
-            messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        else:
-            if not ENABLE_LOCAL_ACCOUNT_MIGRATION:
-                url = reverse(
-                    'shibboleth_signup',
-                    args= [user.username]
-                )
-                return HttpResponseRedirect(url)
-            else:
-                template = signup_template
-                extra_context['username'] = user.username
-        
-        extra_context['provider']='shibboleth'
+		#TODO: use astakos_messages
+        # eppn not stored in astakos models, create pending profile
+        user, created = PendingThirdPartyUser.objects.get_or_create(
+            third_party_identifier=eppn,
+            provider='shibboleth',
+        )
+        # update pending user
+        user.realname = realname
+        user.affiliation = affiliation
+        user.email = email
+        user.generate_token()
+        user.save()
+
+        extra_context['provider'] = 'shibboleth'
+        extra_context['token'] = user.token
+
         return render_response(
             template,
             context_instance=get_context(request, extra_context)
         )
 
+
+@requires_auth_provider('local', login=True, create=True)
 @require_http_methods(["GET"])
 @requires_anonymous
 def signup(
     request,
-    username,
+    token,
     backend=None,
     on_creation_template='im/third_party_registration.html',
-    extra_context=None
-):
+    extra_context=None):
+
     extra_context = extra_context or {}
-    if not username:
-        return HttpResponseBadRequest(_(astakos_messages.MISSING_KEY_PARAMETER))
-    try:
-        pending = PendingThirdPartyUser.objects.get(username=username)
-    except PendingThirdPartyUser.DoesNotExist:
-        try:
-            user = AstakosUser.objects.get(username=username)
-        except AstakosUser.DoesNotExist:
-            return HttpResponseBadRequest(_(astakos_messages.INVALID_KEY_PARAMETER))
-    else:
-        d = pending.__dict__
-        d.pop('_state', None)
-        d.pop('id', None)
-        user = AstakosUser(**d)
+    if not token:
+		#TODO: use astakos_messages
+        return HttpResponseBadRequest(_('Missing key parameter.'))
+
+    pending = get_object_or_404(PendingThirdPartyUser, token=token)
+    d = pending.__dict__
+    d.pop('_state', None)
+    d.pop('id', None)
+    d.pop('token', None)
+    d.pop('created', None)
+    user = AstakosUser(**d)
+
     try:
         backend = backend or get_backend(request)
     except ImproperlyConfigured, e:
@@ -196,7 +199,9 @@ def signup(
             provider='shibboleth',
             instance=user
         )
-    extra_context['provider']='shibboleth'
+
+    extra_context['provider'] = 'shibboleth'
+    extra_context['third_party_token'] = token
     return render_response(
             on_creation_template,
             context_instance=get_context(request, extra_context)

@@ -45,6 +45,8 @@ from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
 from django.conf import settings
+from django.forms.models import fields_for_model
+from django.db import transaction
 
 from astakos.im.models import (
     AstakosUser, EmailChange, AstakosGroup, Invitation, GroupKind,
@@ -53,7 +55,8 @@ from astakos.im.models import (
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
-    PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN
+    PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
+    MODERATION_ENABLED
 )
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
@@ -69,8 +72,23 @@ from random import random
 
 logger = logging.getLogger(__name__)
 
+class StoreUserMixin(object):
 
-class LocalUserCreationForm(UserCreationForm):
+    @transaction.commit_on_success
+    def store_user(self, user, request):
+        user.save()
+        self.post_store_user(user, request)
+        return user
+
+    def post_store_user(self, user, request):
+        """
+        Interface method for descendant backends to be able to do stuff within
+        the transaction enabled by store_user.
+        """
+        pass
+
+
+class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
     """
     Extends the built in UserCreationForm in several ways:
 
@@ -115,7 +133,7 @@ class LocalUserCreationForm(UserCreationForm):
                 mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email']
+        email = self.cleaned_data['email'].lower()
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
@@ -145,12 +163,21 @@ class LocalUserCreationForm(UserCreationForm):
         if not check.is_valid:
             raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
 
+    def post_store_user(self, user, request):
+        """
+        Interface method for descendant backends to be able to do stuff within
+        the transaction enabled by store_user.
+        """
+        user.add_auth_provider('local', auth_backend='astakos')
+        user.set_password(self.cleaned_data['password1'])
+
     def save(self, commit=True):
         """
         Saves the email, first_name and last_name properties, after the normal
         save behavior is complete.
         """
         user = super(LocalUserCreationForm, self).save(commit=False)
+        user.renew_token()
         if commit:
             user.save()
             logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
@@ -178,16 +205,14 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
 
     def save(self, commit=True):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
-        level = user.invitation.inviter.level + 1
-        user.level = level
-        user.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        user.update_invitations_level()
         user.email_verified = True
         if commit:
             user.save()
         return user
 
 
-class ThirdPartyUserCreationForm(forms.ModelForm):
+class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     id = forms.CharField(
         widget=forms.HiddenInput(),
         label='',
@@ -208,16 +233,16 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         self.request = kwargs.get('request', None)
         if self.request:
             kwargs.pop('request')
-                
+
         latest_terms = get_latest_terms()
         if latest_terms:
             self._meta.fields.append('has_signed_terms')
-        
+
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-        
+
         if latest_terms:
             self.fields.keyOrder.append('has_signed_terms')
-        
+
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
@@ -225,9 +250,9 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
                 % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
                     mark_safe("I agree with %s" % terms_link_html)
-    
+
     def clean_email(self):
-        email = self.cleaned_data['email']
+        email = self.cleaned_data['email'].lower()
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         return email
@@ -238,10 +263,18 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
+    def post_store_user(self, user, request):
+        pending = PendingThirdPartyUser.objects.get(
+                                token=request.POST.get('third_party_token'),
+                                third_party_identifier= \
+            self.cleaned_data.get('third_party_identifier'))
+        return user.add_pending_auth_provider(pending)
+
+
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
-        user.provider = get_query(self.request).get('provider')
+        user.renew_token()
         if commit:
             user.save()
             logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
@@ -265,11 +298,8 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
             self.fields[f].widget.attrs['readonly'] = True
 
     def save(self, commit=True):
-        user = super(
-            InvitedThirdPartyUserCreationForm, self).save(commit=False)
-        level = user.invitation.inviter.level + 1
-        user.level = level
-        user.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        user = super(InvitedThirdPartyUserCreationForm, self).save(commit=False)
+        user.set_invitation_level()
         user.email_verified = True
         if commit:
             user.save()
@@ -287,13 +317,13 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         field = self.fields[name]
         self.initial['additional_email'] = self.initial.get(name, field.initial)
         self.initial['email'] = None
-    
+
     def clean_email(self):
-        email = self.cleaned_data['email']
+        email = self.cleaned_data['email'].lower()
         if self.instance:
             if self.instance.email == email:
                 raise forms.ValidationError(_("This is your current email."))
-        for user in AstakosUser.objects.filter(email=email):
+        for user in AstakosUser.objects.filter(email__iexact=email):
             if user.provider == 'shibboleth':
                 raise forms.ValidationError(_(
                         "This email is already associated with another \
@@ -304,19 +334,6 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
                 raise forms.ValidationError(_("This email is already used"))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
-    
-    def save(self, commit=True):
-        user = super(ShibbolethUserCreationForm, self).save(commit=False)
-        try:
-            p = PendingThirdPartyUser.objects.get(
-                provider=user.provider,
-                third_party_identifier=user.third_party_identifier
-            )
-        except:
-            pass
-        else:
-            p.delete()
-        return user
 
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
@@ -368,7 +385,7 @@ class LoginForm(AuthenticationForm):
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
             raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
-    
+
     def clean(self):
         """
         Override default behavior in order to check user's activation later
@@ -452,10 +469,15 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email=email, is_active=True)
+            user = AstakosUser.objects.get(email__iexact=email, is_active=True)
             if not user.has_usable_password():
                 raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
-        except AstakosUser.DoesNotExist:
+
+            if not user.can_change_password():
+                raise forms.ValidationError(_('Password change for this account'
+                                              ' is not supported.'))
+
+        except AstakosUser.DoesNotExist, e:
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
 
@@ -466,11 +488,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         Generates a one-use only link for resetting password and sends to the user.
         """
         for user in self.users_cache:
-            url = reverse('django.contrib.auth.views.password_reset_confirm',
-                          kwargs={'uidb36': int_to_base36(user.id),
-                                  'token': token_generator.make_token(user)
-                                  }
-                          )
+            url = user.astakosuser.get_password_reset_url(token_generator)
             url = urljoin(BASEURL, url)
             t = loader.get_template(email_template_name)
             c = {
@@ -595,10 +613,10 @@ class AstakosGroupCreationForm(forms.ModelForm):
         members_uplimit = qd.pop('members_uplimit', None)
 #         max_participants = None if members_unlimited else members_uplimit
 #         qd['max_participants']= max_participants.pop(0) if max_participants else None
-        
+
         #substitue QueryDict
         args.insert(0, qd)
-        
+
         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
                                 'issue_date', 'expiration_date',
@@ -613,7 +631,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
         )
-        
+
         def add_fields((k, v)):
             self.fields[k] = forms.BooleanField(
                 required=False,
@@ -622,19 +640,19 @@ class AstakosGroupCreationForm(forms.ModelForm):
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
         )
-    
+
     def policies(self):
         self.clean()
         policies = []
         append = policies.append
         for name, uplimit in self.cleaned_data.iteritems():
-            
+
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 prefix, suffix = subs
                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
- 
+
                 # keep only resource limits for selected resource groups
                 if self.cleaned_data.get(
                     'is_selected_%s' % resource.group, False
@@ -669,10 +687,10 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         members_uplimit = qd.pop('members_uplimit', None)
 #         max_participants = None if members_unlimited else members_uplimit
 #         qd['max_participants']= max_participants.pop(0) if max_participants else None
-        
+
         #substitue QueryDict
         args.insert(0, qd)
-        
+
         super(AstakosGroupCreationSummaryForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
                                 'issue_date', 'expiration_date',
@@ -686,7 +704,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         map(add_fields,
             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
         )
-        
+
         def add_fields((k, v)):
             self.fields[k] = forms.BooleanField(
                 required=False,
@@ -711,7 +729,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
                 prefix, suffix = subs
                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)
-                
+
                 # keep only resource limits for selected resource groups
                 if self.cleaned_data.get(
                     'is_selected_%s' % resource.group, False
@@ -833,16 +851,20 @@ class ExtendedSetPasswordForm(SetPasswordForm):
             initial=True,
             help_text='Unsetting this may result in security risk.'
         )
-    
+
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
 
+    @transaction.commit_on_success()
     def save(self, commit=True):
         try:
             self.user = AstakosUser.objects.get(id=self.user.id)
             if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
                 self.user.renew_token()
-            self.user.flush_sessions()
+            #self.user.flush_sessions()
+            if not self.user.has_auth_provider('local'):
+                self.user.add_auth_provider('local', auth_backend='astakos')
+
         except BaseException, e:
             logger.exception(e)
         return super(ExtendedSetPasswordForm, self).save(commit=commit)

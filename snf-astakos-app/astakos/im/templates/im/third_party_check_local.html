@@ -13,8 +13,8 @@
     {% if "local" in im_modules %}
       <div class="form-stacked">
         <h2><span>Already have an account?</span></h2>
-        <a href="{% url astakos.im.views.index %}?key={{username}}">YES</a>
-        <a href="{% url shibboleth_signup username %}">NO</a>
+        <a href="{% url astakos.im.views.index %}?key={{ token }}">YES</a>
+        <a href="{% url shibboleth_signup token %}">NO</a>
       </div>
     {% endif %}
 {% endblock %}

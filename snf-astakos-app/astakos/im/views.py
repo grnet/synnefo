@@ -1365,6 +1365,21 @@ def timeline(request):
                            timeline_body=timeline_body)
     return data
 
+# TODO: action only on POST and user should confirm the removal
+@require_http_methods(["GET", "POST"])
+@login_required
+@signed_terms_required
+def remove_auth_provider(request, pk):
+    try:
+        provider = request.user.auth_providers.get(pk=pk)
+    except AstakosUserAuthProvider.DoesNotExist:
+        raise Http404
+
+    if provider.can_remove():
+        provider.delete()
+        return HttpResponseRedirect(reverse('edit_profile'))
+    else:
+        raise PermissionDenied
 
 def how_it_works(request):
     return render_response(

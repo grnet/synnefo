@@ -39,6 +39,7 @@ from astakos.im.settings import (
 from astakos.im.api import get_menu
 from astakos.im.util import get_query
 from astakos.im.models import GroupKind
+from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
 from django.utils import simplejson as json
 
@@ -46,6 +47,9 @@ from django.utils import simplejson as json
 def im_modules(request):
     return {'im_modules': IM_MODULES}
 
+def auth_providers(request):
+    return {'auth_providers': filter(lambda p:p.module_enabled,
+                                     AUTH_PROVIDERS.itervalues())}
 
 def next(request):
     return {'next': get_query(request).get('next', '')}

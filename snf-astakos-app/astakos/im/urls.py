@@ -63,6 +63,8 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
     url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list'),
+    url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {},
+        name='remove_auth_provider'),
     url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works')
 )
 

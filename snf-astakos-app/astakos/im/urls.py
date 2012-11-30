@@ -42,14 +42,17 @@ from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENA
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
     url(r'^login/?$', 'index', {}, name='login'),
-    url(r'^profile/?$', 'edit_profile'),
+    url(r'^profile/?$', 'edit_profile', name='edit_profile'),
     url(r'^feedback/?$', 'feedback'),
     url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
     url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
     url(r'^activate/?$', 'activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
-    url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation')
+    url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {},
+        name='send_activation'),
+    url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {},
+        name='remove_auth_provider')
 )
 
 if EMAILCHANGE_ENABLED:
@@ -75,7 +78,7 @@ if 'local' in IM_MODULES:
     urlpatterns += patterns('django.contrib.auth.views',
         url(r'^local/password_reset/?$', 'password_reset',
          {'email_template_name':'registration/password_email.txt',
-          'password_reset_form':ExtendedPasswordResetForm}),
+          'password_reset_form':ExtendedPasswordResetForm}, name='password_reset'),
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
          'password_reset_confirm', {'set_password_form':ExtendedSetPasswordForm}),
@@ -90,7 +93,7 @@ if INVITATIONS_ENABLED:
 if 'shibboleth' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
         url(r'^login/shibboleth/?$', 'shibboleth.login'),
-        url(r'^shibboleth/signup/(\w+)/?$', 'shibboleth.signup', {}, 'shibboleth_signup')
+        url(r'^shibboleth/signup/([\w-]+)/?$', 'shibboleth.signup', {}, 'shibboleth_signup')
     )
 
 if 'twitter' in IM_MODULES:

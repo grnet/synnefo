@@ -52,7 +52,7 @@ from django.db import transaction
 from django.utils.http import urlencode
 from django.db.utils import IntegrityError
 from django.contrib.auth.views import password_change
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.views.decorators.http import require_http_methods
 
 from astakos.im.models import AstakosUser, Invitation, ApprovalTerms
@@ -69,6 +69,8 @@ from astakos.im.settings import (
     DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_DOMAIN, IM_MODULES,
     SITENAME, LOGOUT_NEXT, LOGGING_LEVEL
 )
+from astakos.im import settings
+from astakos.im import auth_providers
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +86,26 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     html = render_to_string(template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
     return response
+
+def requires_auth_provider(provider_id, **perms):
+    """
+    """
+    def decorator(func, *args, **kwargs):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            provider = auth_providers.get_provider(provider_id)
+
+            if not provider or not provider.is_active():
+                raise PermissionDenied
+
+            if provider:
+                for pkey, value in perms.iteritems():
+                    attr = 'is_available_for_%s' % pkey.lower()
+                    if getattr(provider, attr)() != value:
+                        raise PermissionDenied
+            return func(request, *args)
+        return wrapper
+    return decorator
 
 
 def requires_anonymous(func):
@@ -295,8 +317,17 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     elif request.method == "GET":
         request.user.is_verified = True
         request.user.save()
+
+    # existing providers
+    user_providers = request.user.get_active_auth_providers()
+
+    # providers that user can add
+    user_available_providers = request.user.get_available_auth_providers()
+
     return render_response(template_name,
                            profile_form = form,
+                           user_providers = user_providers,
+                           user_available_providers = user_available_providers,
                            context_instance = get_context(request,
                                                           extra_context))
 
@@ -341,6 +372,9 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
     
     provider = get_query(request).get('provider', 'local')
+    if not auth_providers.get_provider(provider).is_available_for_create():
+        raise PermissionDenied
+
     id = get_query(request).get('id')
     try:
         instance = AstakosUser.objects.get(id=id) if id else None
@@ -361,7 +395,9 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 result = backend.handle_activation(user)
                 status = messages.SUCCESS
                 message = result.message
-                user.save()
+
+                form.store_user(user, request)
+
                 if 'additional_email' in form.cleaned_data:
                     additional_email = form.cleaned_data['additional_email']
                     if additional_email != user.email:
@@ -616,6 +652,10 @@ def change_email(request, activation_key=None,
 
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
+
+    if settings.MODERATION_ENABLED:
+        raise PermissionDenied
+
     extra_context = extra_context or {}
     try:
         u = AstakosUser.objects.get(id=user_id)
@@ -630,10 +670,23 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             messages.error(request, e)
     return render_response(
         template_name,
-        login_form = LoginForm(request=request), 
+        login_form = LoginForm(request=request),
         context_instance = get_context(
             request,
             extra_context
         )
     )
-    
+
+@require_http_methods(["GET", "POST"])
+@login_required
+@signed_terms_required
+def remove_auth_provider(request, pk):
+    provider = request.user.auth_providers.get(pk=pk)
+    print provider
+    if provider.can_remove():
+        provider.delete()
+        return HttpResponseRedirect(reverse('edit_profile'))
+    else:
+        messages.error(_('Authentication method cannot be removed'))
+        return HttpResponseRedirect(reverse('edit_profile'))
+

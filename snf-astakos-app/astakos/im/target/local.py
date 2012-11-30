@@ -43,17 +43,21 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 
 from astakos.im.util import prepare_response, get_query
-from astakos.im.views import requires_anonymous, signed_terms_required
+from astakos.im.views import requires_anonymous, signed_terms_required, \
+        requires_auth_provider
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
-from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm
-from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
-from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION
+from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
+        ExtendedSetPasswordForm
+from astakos.im.settings import (RATELIMIT_RETRIES_ALLOWED,
+                                ENABLE_LOCAL_ACCOUNT_MIGRATION)
+from astakos.im import settings
 
 from ratelimit.decorators import ratelimit
 
 retries = RATELIMIT_RETRIES_ALLOWED-1
 rate = str(retries)+'/m'
 
+@requires_auth_provider('local', login=True)
 @require_http_methods(["GET", "POST"])
 @csrf_exempt
 @requires_anonymous
@@ -65,14 +69,14 @@ def login(request, on_failure='im/login.html'):
     was_limited = getattr(request, 'limited', False)
     form = LoginForm(data=request.POST, was_limited=was_limited, request=request)
     next = get_query(request).get('next', '')
-    username = get_query(request).get('key')
-    
+    third_party_token = get_query(request).get('key', False)
+
     if not form.is_valid():
         return render_to_response(
             on_failure,
             {'login_form':form,
              'next':next,
-             'key':username},
+             'key': third_party_token},
             context_instance=RequestContext(request)
         )
     # get the user from the cash
@@ -86,59 +90,62 @@ def login(request, on_failure='im/login.html'):
             message = _('Your request is pending activation')
         else:
             url = reverse('send_activation', kwargs={'user_id':user.id})
-            message = _('You have not followed the activation link. \
-            <a href="%s">Resend activation email?</a>' % url)
-    elif user.provider not in ('local', ''):
+            msg = _('You have not followed the activation link.')
+            if settings.MODERATION_ENABLED:
+                msg_extra = ' ' + _('Please contact support.')
+            else:
+                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
+
+            message = msg + msg_extra
+    elif not user.can_login_with_auth_provider('local'):
         message = _(
             'Local login is not the current authentication method for this account.'
         )
-    
+
     if message:
         messages.error(request, message)
         return render_to_response(on_failure,
-                                  {'login_form':form},
+                                  {'login_form': form},
                                   context_instance=RequestContext(request))
-    
-    # hook for switching account to use third party authentication
-    if ENABLE_LOCAL_ACCOUNT_MIGRATION and username:
+
+    response = prepare_response(request, user, next)
+    if third_party_token:
+        # use requests to assign the account he just authenticated with with
+        # a third party provider account
         try:
-            new = PendingThirdPartyUser.objects.get(
-                username=username)
-        except:
-            messages.error(
-                request,
-                _('Account failed to switch to %(provider)s' % locals())
-            )
-            return render_to_response(
-                on_failure,
-                {'login_form':form,
-                 'next':next},
-                context_instance=RequestContext(request)
-            )
-        else:
-            user.provider = new.provider
-            user.third_party_identifier = new.third_party_identifier
-            user.save()
-            new.delete()
-            messages.success(
-                request,
-                _('Account successfully switched to %(provider)s' % user.__dict__)
-            )
-    return prepare_response(request, user, next)
+          request.user.add_pending_auth_provider(third_party_token)
+          messages.success(request, _('Your new login method has been added'))
+        except PendingThirdPartyUser.DoesNotExist:
+          messages.error(request, _('Account method assignment failed'))
+
+    return response
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
+@requires_auth_provider('local', login=True)
 def password_change(request, template_name='registration/password_change_form.html',
                     post_change_redirect=None, password_change_form=ExtendedPasswordChangeForm):
+
+    create_password = False
+
+    # no local backend user wants to create a password
+    if not request.user.has_auth_provider('local'):
+        create_password = True
+        password_change_form = ExtendedSetPasswordForm
+
     if post_change_redirect is None:
-        post_change_redirect = reverse('django.contrib.auth.views.password_change_done')
+        post_change_redirect = reverse('edit_profile')
+
     if request.method == "POST":
-        form = password_change_form(
+        form_kwargs = dict(
             user=request.user,
             data=request.POST,
-            session_key=request.session.session_key
         )
+        if not create_password:
+            form_kwargs['session_key'] = session_key=request.session.session_key
+
+        form = password_change_form(**form_kwargs)
         if form.is_valid():
             form.save()
             return HttpResponseRedirect(post_change_redirect)

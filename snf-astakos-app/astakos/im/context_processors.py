@@ -36,6 +36,7 @@ from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, 
         GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
 from astakos.im.api.admin import get_menu
 from astakos.im.util import get_query
+from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -43,6 +44,10 @@ from django.utils import simplejson as json
 
 def im_modules(request):
     return {'im_modules': IM_MODULES}
+
+def auth_providers(request):
+    return {'auth_providers': filter(lambda p:p.module_enabled,
+                                     AUTH_PROVIDERS.itervalues())}
 
 def next(request):
     return {'next' : get_query(request).get('next', '')}

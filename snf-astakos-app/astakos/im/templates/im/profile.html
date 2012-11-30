@@ -14,5 +14,48 @@
         <input type="submit" class="submit altcol" value="UPDATE" />
     </div>
 
+    <div class="auth_methods">
+      <br /><br />
+        <div class="assigned">
+          <h4>Authentication methods</h4>
+          <p>You can login to your account using the following methods</p>
+          <ul class="auth_providers">
+            {% for provider in user_providers %}
+            <li>
+            <h2>
+                {{ provider.settings.title }}
+                <span class="actions" style="margin-left: 40px">
+                  {% for name, url in provider.settings.extra_actions %}
+                  <a href="{{ url }}" title="{{ name }}">{{ name }}</a>
+                  {% endfor %}
+                  {% if provider.can_remove %}
+                      <a href="{% url remove_auth_provider provider.pk %}" title="disble">Remove</a>
+                  {% endif %}
+                </span>
+            </h2>
+            <p>{{ provider.details_display }}</p>
+            <br />
+            </li>
+            {% empty %}
+            <li>No available authentication methods</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="notassigned">
+          <p>You can add the following authentication methods to your account </p>
+          <ul class="auth_providers">
+            {% for provider in user_available_providers %}
+            <li>
+            <h2><a href="{{ provider.add_url }}">{{ provider.title }}</a></h2>
+            <p>{{ provider.add_description }}</p>
+            <br />
+            </li>
+            {% empty %}
+            No available providers.
+            {% endfor %}
+          </ul>
+        </div>
+    </div>
+
 </form>
 {% endblock body %}

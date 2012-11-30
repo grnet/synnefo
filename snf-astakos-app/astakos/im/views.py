@@ -406,6 +406,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     transaction.commit()
                     return response
                 messages.add_message(request, status, message)
+                transaction.commit()
                 return render_response(
                     on_success,
                     context_instance=get_context(

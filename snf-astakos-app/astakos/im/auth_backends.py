@@ -48,7 +48,7 @@ class TokenBackend(ModelBackend):
     """
     def authenticate(self, email=None, auth_token=None):
         try:
-            user = AstakosUser.objects.get(email=email, is_active=True)
+            user = AstakosUser.objects.get(email__iexact=email, is_active=True)
             if user.auth_token == auth_token:
                 return user
         except AstakosUser.DoesNotExist:
@@ -74,7 +74,7 @@ class EmailBackend(ModelBackend):
     def authenticate(self, username=None, password=None):
         #If username is an email address, then try to pull it up
         if email_re.search(username):
-            users = AstakosUser.objects.filter(email=username)
+            users = AstakosUser.objects.filter(email__iexact=username)
             if not users:
                 return None
             for user in users:

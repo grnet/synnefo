@@ -50,7 +50,7 @@ class Command(BaseCommand):
         if email_or_id.isdigit():
             users = AstakosUser.objects.filter(id=int(email_or_id))
         else:
-            users = AstakosUser.objects.filter(email=email_or_id)
+            users = AstakosUser.objects.filter(email__iexact=email_or_id)
         if users.count() == 0:
             field = 'id' if email_or_id.isdigit() else 'email'
             msg = "Unknown user with %s '%s'" % (field, email_or_id)

@@ -102,9 +102,9 @@ def todate(value, arg=''):
     return datetime.datetime.fromtimestamp(secs)
 
 
-@register.filter
-def rcut(value, chars='/'):
-    return value.rstrip(chars)
+# @register.filter
+# def rcut(value, chars='/'):
+#     return value.rstrip(chars)
 
 
 @register.filter

@@ -276,36 +276,13 @@ def create_server(serials, request):
         except (KeyError, AssertionError):
             raise faults.BadRequest("Malformed request")
 
-        if len(personality) > settings.MAX_PERSONALITY:
-            raise faults.OverLimit("Maximum number of personalities exceeded")
-
-        for p in personality:
-            # Verify that personalities are well-formed
-            try:
-                assert isinstance(p, dict)
-                keys = set(p.keys())
-                allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
-                assert keys.issubset(allowed)
-                contents = p['contents']
-                if len(contents) > settings.MAX_PERSONALITY_SIZE:
-                    # No need to decode if contents already exceed limit
-                    raise faults.OverLimit("Maximum size of personality exceeded")
-                if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
-                    raise faults.OverLimit("Maximum size of personality exceeded")
-            except AssertionError:
-                raise faults.BadRequest("Malformed personality in request")
-
-        image = {}
-        img = util.get_image(image_id, request.user_uniq)
-        properties = img.get('properties', {})
-        image['backend_id'] = img['location']
-        image['format'] = img['disk_format']
-        image['metadata'] = dict((key.upper(), val) \
-                                 for key, val in properties.items())
-
-        # Ensure that request if for active flavor
+        # Verify that personalities are well-formed
+        util.verify_personalitity(personality)
+        # Get image information
+        image = util.get_image_dict(image_id, user_id)
+        # Get flavor (ensure it is active)
         flavor = util.get_flavor(flavor_id, include_deleted=False)
-
+        # Allocate VM to backend
         backend_allocator = BackendAllocator()
         backend = backend_allocator.allocate(request.user_uniq, flavor)
 
@@ -318,6 +295,7 @@ def create_server(serials, request):
     else:
         transaction.commit()
 
+    # Allocate IP from public network
     try:
         (network, address) = util.get_public_ip(backend)
         nic = {'ip': address, 'network': network.backend_id}
@@ -326,7 +304,6 @@ def create_server(serials, request):
         raise
     else:
         transaction.commit()
-
 
     try:
         # Issue commission

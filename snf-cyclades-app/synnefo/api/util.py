@@ -486,6 +486,10 @@ def net_resources(net_type):
 
 
 def verify_personality(personality):
+    """Verify that a a list of personalities is well formed"""
+    if len(personality) > settings.max_personality:
+        raise OverLimit("Maximum number of personalities"
+                               " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
         try:

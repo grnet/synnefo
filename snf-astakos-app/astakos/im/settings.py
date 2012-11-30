@@ -129,7 +129,8 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(
     'Password reset on %s alpha2 testing' % SITENAME)
 
 # Set the quota holder component URI
-QUOTA_HOLDER_URL = getattr(settings, 'ASTAKOS_QUOTA_HOLDER_URL', '')
+QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
+QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_Token', '')
 
 # Set the cloud service properties
 SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {

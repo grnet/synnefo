@@ -38,9 +38,10 @@ from functools import wraps
 
 from django.utils.translation import ugettext as _
 
-from astakos.im.settings import QUOTA_HOLDER_URL, LOGGING_LEVEL
+from astakos.im.settings import (
+	QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
 
-if QUOTA_HOLDER_URL:
+if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
 
 ENTITY_KEY = '1'
@@ -59,10 +60,10 @@ def call(func_name):
             if not entities:
                 return client, ()
 
-            if not QUOTA_HOLDER_URL:
+            if not QUOTAHOLDER_URL:
                 return client, ()
 
-            c = client or QuotaholderClient(QUOTA_HOLDER_URL)
+            c = client or QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
             func = c.__dict__.get(func_name)
             if not func:
                 return c, ()
@@ -285,7 +286,7 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
         m = 'charge type %s not supported' % charge_type
         raise ValueError(m)
 
-    quotaholder = QuotaholderClient(QUOTA_HOLDER_URL)
+    quotaholder = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
     timeline = quotaholder.get_timeline(
         context={},
         after=after,

@@ -737,8 +737,9 @@ class AstakosUserAuthProvider(models.Model):
 
     def delete(self, *args, **kwargs):
         ret = super(AstakosUserAuthProvider, self).delete(*args, **kwargs)
-        self.user.set_unusable_password()
-        self.user.save()
+        if self.module == 'local':
+            self.user.set_unusable_password()
+            self.user.save()
         return ret
 
     def __repr__(self):

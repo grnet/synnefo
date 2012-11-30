@@ -71,7 +71,6 @@ class Tokens:
 
 @requires_auth_provider('local', login=True)
 @require_http_methods(["GET", "POST"])
-@requires_anonymous
 def login(
     request,
     template='im/third_party_check_local.html',
@@ -108,8 +107,13 @@ def login(
 
         # automatically add eppn provider to user
         user = request.user
-        user.add_provider('shibboleth', identifier=eppn)
-        return HttpResponseRedirect('edit_profile')
+        if not request.user.can_add_auth_provider('shibboleth',
+                                                  identifier=eppn):
+            messages.error(request, 'Account already exists.')
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+        user.add_auth_provider('shibboleth', identifier=eppn)
+        return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
         # astakos user exists ?

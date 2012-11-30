@@ -65,7 +65,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 
 from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
                                EmailChange, GroupKind, Membership,
-                               RESOURCE_SEPARATOR)
+                               RESOURCE_SEPARATOR, AstakosUserAuthProvider)
 from astakos.im.util import get_context, prepare_response, get_query, restrict_next
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               FeedbackForm, SignApprovalTermsForm,
@@ -1406,14 +1406,19 @@ def timeline(request):
                            timeline_body=timeline_body)
     return data
 
+# TODO: action only on POST and user should confirm the removal
 @require_http_methods(["GET", "POST"])
 @login_required
 @signed_terms_required
 def remove_auth_provider(request, pk):
-    provider = request.user.auth_providers.get(pk=pk)
+    try:
+        provider = request.user.auth_providers.get(pk=pk)
+    except AstakosUserAuthProvider.DoesNotExist:
+        raise Http404
+
     if provider.can_remove():
         provider.delete()
         return HttpResponseRedirect(reverse('edit_profile'))
     else:
-        messages.error(_('Authentication method cannot be removed'))
-        return HttpResponseRedirect(reverse('edit_profile'))
+        raise PermissionDenied
+

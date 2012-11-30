@@ -44,7 +44,8 @@ from django.contrib.auth.decorators import login_required
 from astakos.im.util import prepare_response, get_query
 from astakos.im.views import requires_anonymous, signed_terms_required
 from astakos.im.models import PendingThirdPartyUser
-from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm
+from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
+                             ExtendedSetPasswordForm
 from astakos.im.settings import (RATELIMIT_RETRIES_ALLOWED,
                                 ENABLE_LOCAL_ACCOUNT_MIGRATION)
 import astakos.im.messages as astakos_messages
@@ -156,3 +157,4 @@ def password_change(request, template_name='registration/password_change_form.ht
     return render_to_response(template_name, {
         'form': form,
     }, context_instance=RequestContext(request))
+

@@ -269,7 +269,62 @@ class ShibbolethTests(TestCase):
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertFalse(r.context['request'].user.is_authenticated())
 
-        user2 = get_local_user('kpap@grnet.gr')
+        # lets remove local password
+        user = AstakosUser.objects.get(username="kpap@grnet.gr",
+                                       email="kpap@grnet.gr")
+        provider_pk = user.auth_providers.get(module='local').pk
+        provider_shib_pk = user.auth_providers.get(module='shibboleth').pk
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn", cn="1")
+        r = client.get("/im/login/shibboleth?", follow=True)
+        client.reset_tokens()
+        r = client.get("/im/remove_auth_provider/%d" % provider_pk)
+        self.assertEqual(user.auth_providers.count(), 1)
+        r = client.get("/im/remove_auth_provider/%d" % provider_pk)
+        self.assertEqual(r.status_code, 404)
+        r = client.get("/im/remove_auth_provider/%d" % provider_shib_pk)
+        self.assertEqual(r.status_code, 403)
+
+        self.client.logout()
+        post_data = {'password': 'password',
+                     'username': 'kpap@grnet.gr'}
+        r = self.client.post('/im/local', post_data, follow=True)
+        self.assertFalse(r.context['request'].user.is_authenticated())
+
+        r = client.get("/im/password_change", follow=True)
+        r = client.post("/im/password_change", {'new_password1':'111',
+                                                'new_password2': '111'},
+                        follow=True)
+        user = r.context['request'].user
+        self.assertTrue(user.has_auth_provider('local'))
+        self.assertTrue(user.has_auth_provider('shibboleth'))
+        self.assertTrue(user.check_password('111'))
+        self.assertTrue(user.has_usable_password())
+        self.client.logout()
+        post_data = {'password': '111',
+                     'username': 'kpap@grnet.gr'}
+        r = self.client.post('/im/local', post_data, follow=True)
+        self.assertTrue(r.context['request'].user.is_authenticated())
+
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn", cn="1")
+        r = client.get("/im/login/shibboleth?", follow=True)
+        r = client.get("/im/login/shibboleth?", follow=True)
+        user = AstakosUser.objects.get(username="kpap@grnet.gr",
+                                       email="kpap@grnet.gr")
+
+        user2 = get_local_user('another@grnet.gr')
+        user2.add_auth_provider('shibboleth', identifier='existingeppn')
+
+        self.assertEqual(user.auth_providers.count(), 2) # local and 1 shibboleth
+        client.set_tokens(mail="kpap_second@shibboleth.gr", eppn="kpapeppn2", cn="1")
+        r = client.get("/im/login/shibboleth?", follow=True)
+        self.assertEqual(user.auth_providers.count(), 3) # local and 2 shibboleth
+
+        client.set_tokens(mail="kpap_second@shibboleth.gr", eppn="kpapeppn2", cn="1")
+        r = client.get("/im/login/shibboleth?", follow=True)
+
+        client.set_tokens(mail="kpap_second@shibboleth.gr", eppn="existingeppn", cn="1")
+        r = client.get("/im/login/shibboleth?", follow=True)
+        self.assertContains(r, 'Account already exists')
 
 
 class LocalUserTests(TestCase):

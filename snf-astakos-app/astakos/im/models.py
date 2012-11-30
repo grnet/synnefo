@@ -596,13 +596,25 @@ class AstakosUser(User):
         else:
             return auth_providers.get_provider(provider).is_available_for_login()
 
-    def can_add_provider(self, provider, **kwargs):
+    def can_add_auth_provider(self, provider, **kwargs):
         provider_settings = auth_providers.get_provider(provider)
         if not provider_settings.is_available_for_login():
             return False
+
         if self.has_auth_provider(provider) and \
            provider_settings.one_per_user:
             return False
+
+        if 'identifier' in kwargs:
+            try:
+                # provider with specified params already exist
+                existing_user = AstakosUser.objects.get_auth_provider_user(provider,
+                                                                   **kwargs)
+            except AstakosUser.DoesNotExist:
+                return True
+            else:
+                return False
+
         return True
 
     def can_remove_auth_provider(self, provider):
@@ -618,7 +630,10 @@ class AstakosUser(User):
                                                **kwargs).count())
 
     def add_auth_provider(self, provider, **kwargs):
-        self.auth_providers.create(module=provider, active=True, **kwargs)
+        if self.can_add_auth_provider(provider, **kwargs):
+            self.auth_providers.create(module=provider, active=True, **kwargs)
+        else:
+            raise Exception('Cannot add provider')
 
     def add_pending_auth_provider(self, pending):
         """
@@ -665,7 +680,7 @@ class AstakosUser(User):
         """
         providers = []
         for module, provider_settings in auth_providers.PROVIDERS.iteritems():
-            if self.can_add_provider(module):
+            if self.can_add_auth_provider(module):
                 providers.append(provider_settings(self))
 
         return providers
@@ -721,6 +736,9 @@ class AstakosUserAuthProvider(models.Model):
         self.user.set_unusable_password()
         self.user.save()
         return ret
+
+    def __repr__(self):
+        return '<AstakosUserAuthProvider %s:%s>' % (self.module, self.identifier)
 
 
 class Membership(models.Model):

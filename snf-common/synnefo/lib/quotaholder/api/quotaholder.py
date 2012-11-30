@@ -48,7 +48,7 @@ class Name(Text):
 
     def _random_choice(self, kw):
         alphabet = u'abcdef_1233490.:@/-αβγδεζ'
-        length = randint(0, 48)
+        length = randint(1, 48)
         return ''.join(choice(alphabet) for _ in xrange(length))
 
 class Nonnegative(Integer):

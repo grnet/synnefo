@@ -103,7 +103,7 @@ ARCHIPELAGOS_BACKENDS = []
 #
 # Set to True to use the Quotaholder service. Otherwise, static
 # limits are used
-USE_QUOTAHOLDER = False
+CYCLADES_USE_QUOTAHOLDER = False
 # Maximum number of VMs a user is allowed to have.
 MAX_VMS_PER_USER = 3
 

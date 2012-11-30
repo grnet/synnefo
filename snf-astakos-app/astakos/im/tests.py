@@ -171,7 +171,7 @@ class ShibbolethTests(TestCase):
 
         r = client.get('/im/shibboleth/signup/%s' % token)
         form = r.context['form']
-        post_data = {'email': 'kpap@grnet.gr',
+        post_data = {'email': 'kpap',
                      'third_party_identifier': pending_user.third_party_identifier,
                      'first_name': 'Kostas',
                      'third_party_token': token,
@@ -179,6 +179,9 @@ class ShibbolethTests(TestCase):
                      'additional_email': 'kpap@grnet.gr',
                      'provider': 'shibboleth'
                     }
+        r = client.post('/im/signup', post_data)
+        self.assertContains(r, token)
+        post_data['email'] = 'kpap@grnet.gr'
         r = client.post('/im/signup', post_data)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(AstakosUser.objects.count(), 1)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from commissioning.clients.http import main, HTTP_API_Client
+from synnefo.lib.commssioning.clients.http import main, HTTP_API_Client
 from astakos.im.api.spec import AstakosAPI
 
 

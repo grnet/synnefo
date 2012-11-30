@@ -34,7 +34,7 @@
 from astakos.im.api.spec import AstakosAPI
 from astakos.im.api.backends import get_backend
 
-from commissioning import CorruptedError
+from synnefo.lib.commissioning import CorruptedError
 
 from django.db import transaction
 

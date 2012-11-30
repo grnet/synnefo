@@ -96,6 +96,9 @@ APPEND_SLASH = False
 # e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
 BACKEND_PER_USER = {}
 
+# List of backend IDs used *only* for archipelagos.
+ARCHIPELAGOS_BACKENDS = []
+
 # Quota
 #
 # Set to True to use the Quotaholder service. Otherwise, static

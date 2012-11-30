@@ -34,6 +34,7 @@
 
 from django.http import HttpResponse
 from django.db import transaction 
+from django.conf import settings
 from synnefo.lib.commissioning import CallError, get_callpoint
 
 from .callpoint import API_Callpoint
@@ -60,6 +61,10 @@ callpoints = {('quotaholder', 'v'): API_Callpoint()}
 def view(request, appname='quotaholder', version=None, callname=None):
     if (appname, version) not in callpoints:
         return HttpResponse(status=404)
+
+    if hasattr(settings, 'QUOTAHOLDER_TOKEN'):
+        if request.META['HTTP_X_AUTH_TOKEN'] != settings.QUOTAHOLDER_TOKEN:
+            return HttpResponse(status=403, content='invalid token')
 
     callpoint = callpoints[(appname, version)]
     body = _get_body(request)

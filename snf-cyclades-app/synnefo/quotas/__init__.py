@@ -30,7 +30,9 @@
 from functools import wraps
 from contextlib import contextmanager
 
-from synnefo.settings import (CYCLADES_QUOTAHOLDER_URL, USE_QUOTAHOLDER,
+from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,
+                              CYCLADES_QUOTAHOLDER_URL,
+                              CYCLADES_QUOTAHOLDER_TOKEN,
                               VMS_USER_QUOTA, MAX_VMS_PER_USER,
                               NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 
@@ -92,8 +94,9 @@ class DummyQuotaholderClient(object):
 @contextmanager
 def get_quota_holder():
     """Context manager for using a QuotaHolder."""
-    if USE_QUOTAHOLDER:
-        quotaholder = QuotaholderClient(CYCLADES_QUOTAHOLDER_URL)
+    if CYCLADES_USE_QUOTAHOLDER:
+        quotaholder = QuotaholderClient(CYCLADES_QUOTAHOLDER_URL,
+                                        token=CYCLADES_QUOTAHOLDER_TOKEN)
     else:
         quotaholder = DummyQuotaholderClient()
 

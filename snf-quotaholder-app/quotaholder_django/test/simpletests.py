@@ -36,6 +36,7 @@ from config import run_test_case
 from config import rand_string
 from config import printf
 
+from synnefo.lib.commissioning import CallError
 from synnefo.lib.quotaholder.api import InvalidDataError, NoEntityError
 from synnefo.lib.quotaholder.api.quotaholder import (
     Name, Key, Quantity, Capacity, ImportLimit, ExportLimit, Resource, Flags)
@@ -56,6 +57,7 @@ class QHAPITest(QHTestCase):
         r = self.qh.create_entity(create_entity=[(e, 'system', k, '')])
         self.e_name = e
         self.e_key = k
+        self.client = self.rand_entity()
 
     @classmethod
     def rand_name(self, exclude=[]):
@@ -87,7 +89,7 @@ class QHAPITest(QHTestCase):
         return self.rand_name(self.used_resources)
 
     def rand_limits(self):
-        q = Quantity.random()
+        q = Capacity.random() # Nonnegative
         c = Capacity.random()
         il = ImportLimit.random()
         el = ExportLimit.random()
@@ -202,6 +204,34 @@ class QHAPITest(QHTestCase):
                                          (e, resource2, k)])
         self.assertEqual(r, [(e, resource) + limits1 +
                              DEFAULT_HOLDING + (f,)])
+
+    def new_quota(self, entity, key, resource):
+        limits = self.rand_limits()
+        f = self.rand_flags()
+        r = self.qh.set_quota(
+            set_quota=[(entity, resource, key) + limits + (f,)])
+        self.assertEqual(r, [])
+        return limits
+
+    def test_009_issue_commission(self):
+        e0, k0 = self.new_entity()
+        e1, k1 = self.new_entity()
+        resource = self.rand_resource()
+        q0, c0, il0, el0 = self.new_quota(e0, k0, resource)
+        q1, c1, il1, el1 = self.new_quota(e1, k1, resource)
+
+        most = max(0, min(c0, il0, q1, el1))
+        print 'limits', (c0, il0, q1, el1)
+        r = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
+                                     name='something',
+                                     provisions=[(e1, resource, most)])
+        self.assertEqual(r, 1)
+
+        with self.assertRaises(CallError):
+            self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
+                                     name='something',
+                                     provisions=[(e1, resource, 1)])
+
 
 if __name__ == "__main__":
     import sys

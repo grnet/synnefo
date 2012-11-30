@@ -724,7 +724,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
 class AstakosGroupUpdateForm(forms.ModelForm):
     class Meta:
         model = AstakosGroup
-        fields = ('homepage', 'desc')
+        fields = ( 'desc','homepage')
 
 
 class AddGroupMembersForm(forms.Form):
@@ -753,7 +753,7 @@ class AddGroupMembersForm(forms.Form):
 
 
 class AstakosGroupSearchForm(forms.Form):
-    q = forms.CharField(max_length=200, label='Search group')
+    q = forms.CharField(max_length=200, label='Search project')
 
 
 class TimelineForm(forms.Form):

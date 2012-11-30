@@ -4,6 +4,7 @@ function group_form_show_resources(el){
 	var id = el.attr('id');
 	$('.quotas-form .group').each(function() {
 		if( $(this).hasClass(id) ) {
+			 
 			$(this).appendTo('.visible');
 			$(this).show('slow');
 			$(this).find('input')[0].focus()

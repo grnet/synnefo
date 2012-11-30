@@ -21,11 +21,15 @@
 	 </h2>
 	 
 	 <div class="details">
-	 	{% if object.is_owner %}
-	 		<a href="#" class="edit">EDIT GROUP INFO</a>
-	 	{% endif %}
+	 	<h3>
+	 		GENERAL INFO
+		 	{% if object.is_owner %}
+		 		<a href="#" class="edit">EDIT</a>
+		 	{% endif %}
+	 	</h3>
+	 	
 	 	<div class="data">
-		 	<p>{{ object.desc }}</p>
+		 	<p class="restricted">{{ object.desc }}</p>
 		 	<dl class="alt-style">
 			 	<dt>Homepage url</dt>
 			 	<dd>
@@ -43,14 +47,14 @@
 	            {% with update_form as form %}
                     {% include "im/form_render.html" %}
                     <div class="form-row submit">
-                        <input type="submit" class="submit altcol" value="FINISHED EDITING" />
+                        <input type="submit" class="submit altcol" value="SAVE" />
                     </div>
 	            {% endwith %}
 	    </form>
 		</div>
 	 </div>
 	 <div class="full-dotted">
-		 <h3>DETAILS:</h3>
+		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
 		 	<dd>{{ object.name|strip_http }}&nbsp;</dd>
@@ -80,7 +84,7 @@
 		 </dl>
 	 </div>
 	 <div class="full-dotted">
-		 <h3>RESOURCES:</h3>		 
+		 <h3>RESOURCES</h3>		 
 		 {% if quota %}
 		 <dl class="alt-style">	
 	 		{% for q in quota %}
@@ -99,7 +103,11 @@
        				Unlimited
        			{% endif %}
        			</dd>
+       		{% empty %}
+       			No resources
 	 		{% endfor %}
+	 		
+	 		
 	 	</dl>
 		{% else %}
             <p>No resources</p>
@@ -113,10 +121,9 @@
             <form method="GET" class="minimal" action="#members-table">
                 <div class="form-row">
                     <select name="sorting" onchange="this.form.submit();" class="dropkicked">
-                        <option value="">Sort by</option>
-                        <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>User Id</option>
-                        <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Name</option>
-                        <option value="date_joined" {% if sorting == 'date_joined' %}selected{% endif %}>Status</option>
+                        <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>Sort by User Id</option>
+                        <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Sort by Name</option>
+                        <option value="date_joined" {% if sorting == 'date_joined' %}selected{% endif %}>Sort by Status</option>
                     </select>
                 </div>
             </form>

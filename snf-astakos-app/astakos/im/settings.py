@@ -183,6 +183,9 @@ AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
 
+# Set how many objects should be displayed per page in show all groups page
+PAGINATE_BY_ALL = getattr(settings, 'ASTAKOS_PAGINATE_BY_ALL', 15)
+
 # Enforce token renewal on password change/reset
 NEWPASSWD_INVALIDATE_TOKEN = getattr(
     settings, 'ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN', True)

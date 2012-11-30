@@ -367,22 +367,14 @@ def create_instance(vm, public_nic, flavor, image, password=None):
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
 
-    # Identify if provider parameter should be set in disk options.
-    # Current implementation support providers only fo ext template.
-    # To select specific provider for an ext template, template name
-    # should be formated as `ext_<provider_name>`.
-    provider = None
-    disk_template = flavor.disk_template
-    if flavor.disk_template.startswith("ext"):
-        disk_template, provider = flavor.disk_template.split("_", 1)
-
-    kw['disk_template'] = disk_template
+    kw['disk_template'] = flavor.disk_template
     kw['disks'] = [{"size": flavor.disk * 1024}]
+    provider = flavor.provider
     if provider:
         kw['disks'][0]['provider'] = provider
 
         if provider == 'vlmc':
-            kw['disks'][0]['origin'] = image['backend_id']
+            kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
     if settings.GANETI_USE_HOTPLUG:
@@ -403,15 +395,10 @@ def create_instance(vm, public_nic, flavor, image, password=None):
        'vcpus': flavor.cpu,
        'memory': flavor.ram}
 
-    if provider == 'vlmc':
-        image_id = 'null'
-    else:
-        image_id = image['backend_id']
-
     kw['osparams'] = {
         'config_url': vm.config_url,
         # Store image id and format to Ganeti
-        'img_id': image_id,
+        'img_id': image['backend_id'],
         'img_format': image['format']}
 
     if password:

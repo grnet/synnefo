@@ -327,19 +327,18 @@ def create_server(serials, request):
 
         password = util.random_password()
 
-        # TODO: Just copied code from backend.py to fix the images backend_id
-        # for archipelagos. Find a better way and remove double checks
-        img_id = image['backend_id']
-        provider = None
-        disk_template = flavor.disk_template
-        if flavor.disk_template.startswith("ext"):
-            disk_template, provider = flavor.disk_template.split("_", 1)
+        disk_template, provider = util.get_flavor_provider(flavor)
+        if provider:
+            flavor.disk_template = disk_template
+            flavor.disk_provider = provider
+            flavor.disk_origin = None
             if provider == 'vlmc':
-                img_id = 'null'
+                flavor.disk_origin = image['backend_id']
+                image['backend_id'] = 'null'
 
         # dispatch server created signal
         server_created.send(sender=vm, created_vm_params={
-            'img_id': img_id,
+            'img_id': image['backend_id'],
             'img_passwd': password,
             'img_format': str(image['format']),
             'img_personality': str(personality),

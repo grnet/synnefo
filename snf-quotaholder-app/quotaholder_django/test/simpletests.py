@@ -44,6 +44,7 @@ DEFAULT_IMPORTED = 0
 DEFAULT_EXPORTED = 0
 DEFAULT_RETURNED = 0
 DEFAULT_RELEASED = 0
+DEFAULT_HOLDING = (0, 0, 0, 0)
 
 class QHAPITest(QHTestCase):
 
@@ -184,10 +185,23 @@ class QHAPITest(QHTestCase):
         resource1 = self.rand_resource()
         r = self.qh.get_holding(get_holding=[(e, resource, k),
                                              (e, resource1, k)])
-        self.assertEqual(r, [(e, resource, p2,
-                              DEFAULT_IMPORTED, DEFAULT_EXPORTED,
-                              DEFAULT_RETURNED, DEFAULT_RELEASED,
-                              f2)])
+        self.assertEqual(r, [(e, resource, p2) + DEFAULT_HOLDING + (f2,)])
+
+    def test_008_get_set_quota(self):
+        e, k = self.new_entity()
+        resource = self.rand_resource()
+        limits = self.rand_limits()
+        limits1 = self.rand_limits()
+        f = self.rand_flags()
+        r = self.qh.set_quota(set_quota=[(e, resource, k) + limits + (f,),
+                                         (e, resource, k) + limits1 + (f,)])
+        self.assertEqual(r, [])
+
+        resource2 = self.rand_resource()
+        r = self.qh.get_quota(get_quota=[(e, resource, k),
+                                         (e, resource2, k)])
+        self.assertEqual(r, [(e, resource) + limits1 +
+                             DEFAULT_HOLDING + (f,)])
 
 if __name__ == "__main__":
     import sys

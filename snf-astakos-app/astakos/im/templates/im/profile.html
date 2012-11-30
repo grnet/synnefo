@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action={%url edit_profile %} method="post" class="withlabels">{% csrf_token %}
+<form action={%url edit_profile %} method="post" class="withlabels hidden-submit">{% csrf_token %}
     
     {% with profile_form as form %}
     {% include "im/form_render.html" %}

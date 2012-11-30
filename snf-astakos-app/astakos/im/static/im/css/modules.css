@@ -305,7 +305,6 @@ dl.alt-style dt:nth-child(2n)					{ background:black; }
 .widjets li div .wrap							{ background:url(../images/dots.jpg) repeat-x bottom ; }
 .widjets li:first-child div 					{ margin-right:20px; margin-left:0; }
 .widjets li div img								{ max-width:100%; margin:2em 0; }
-.widjets li div .txt							{ height:130px; }
 .widjets .widjet-x								{ position:absolute; right:0;top:0; font-weight:bold; font-size:1.5em; }
 .widjets .widjet-x:hover						{ text-decoration:none; color:#000; }
 .widjets li.create h2, 
@@ -472,3 +471,9 @@ form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
 
 .summary .quotas-form legend					{ margin-bottom:1em; }
 .projects  p.restricted							{ width:524px; }
+.hidden-submit .form-row.submit					{ display:none; }
+.how-it-works									{ position:relative; }
+.content .how-it-works a.submit					{ position:absolute; right:83px; bottom:50px;  background-color:#B3B3B3 }
+.content .how-it-works a.submit:hover			{ background:#55B577 }
+.content .how-it-works a.submit:focus			{ border-color: #B3B3B3}
+.content .how-it-works a.submit:focus:hover		{ border-color: #55B577}

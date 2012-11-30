@@ -157,8 +157,8 @@ $(document).ready(function() {
    
     
     
-    //if ($('.widjets'.length > 0)) {
-		///$('.widjets li div').equalHeights();
+    ///if ($('.widjets'.length > 0)) {
+		///$('.widjets li div .txt').equalHeights();
 	///}
     
     $(function() {
@@ -232,6 +232,13 @@ $(document).ready(function() {
 		$(this).hide();
 	});
 	
+	$('.editable .form-row').each(function() {
+			if ( $(this).hasClass('with-errors') ){
+				$('.editable').show();
+				$('.projects .details a.edit, .projects .details .data').hide();
+				
+			}
+		});
 	
 	$('.widjet-x').click(function(e){
 		e.preventDefault();
@@ -277,14 +284,15 @@ $(document).ready(function() {
 		$(this).parents('.dialog').siblings('form').submit();
 	})
     
+    $('.hidden-submit input[readonly!="True"]').focus(function () {
+         $('.hidden-submit .form-row.submit').show(500);
+    });
     
 });
 	
 $(window).resize(function() {
     
    setContainerMinHeight('.container .wrapper');
-   ///if ($('.widjets').length > 0) {
-		//$('.widjets  li div').equalHeights();
-	//}
+    
 
 });

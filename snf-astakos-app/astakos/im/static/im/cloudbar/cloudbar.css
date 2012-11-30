@@ -18,14 +18,14 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar .profile:hover						{ background:#5A97B8; }
 .cloudbar .profile a                            { text-decoration:none; color:#fff; display:block; width:100%;}
 .cloudbar .profile ul                           { position:absolute;   right:0; top:35px; padding:0; margin:0;  width:190px; display:none;	z-index:9; background:#fff;}
-.cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 20px;}
+.cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 45px 0  20px;}
 .cloudbar .profile ul li:hover a				{ color:#3582AC;}
-.cloudbar .profile .user a						{ padding-right:20px; width:auto; }
+.cloudbar .profile  a							{ padding-right:20px; width:auto; }
 .cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
 .cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }
 .cloudbar .profile .full a.open span			{ background-image:url(../images/arrow-up.png); }
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
-.cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:inline; width:auto;}
+.cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:block; width:100%;}
 .cloudbar ul.services                           { margin:0; padding:0; }
 .cloudbar ul.services li                        { float:left; height:35px; line-height:35px; text-align:center; padding: 0 30px; list-style:none outside;}
 .cloudbar ul.services li:first-child            { padding:0 5px;}

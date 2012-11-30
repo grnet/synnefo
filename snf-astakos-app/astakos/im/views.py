@@ -1364,3 +1364,9 @@ def timeline(request):
                            timeline_header=timeline_header,
                            timeline_body=timeline_body)
     return data
+
+
+def how_it_works(request):
+    return render_response(
+        template='im/how_it_works.html',
+        context_instance=get_context(request),)

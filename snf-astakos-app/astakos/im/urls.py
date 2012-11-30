@@ -62,7 +62,8 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave', {}, name='group_leave'),
     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
-    url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list')
+    url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list'),
+    url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works')
 )
 
 

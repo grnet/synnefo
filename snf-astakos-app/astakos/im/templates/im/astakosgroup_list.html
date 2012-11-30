@@ -5,7 +5,7 @@
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="projects">
-	    <h2>PROJECTS </h2>
+	    <h2>PROJECTS</h2>
 	    {% if form %}
 		    <p>Search for existing Projects and join the ones you like. Please search by Project name. </p>
 		    <form action="{% url group_search %}" method="post" class="withlabels signup submit-inline">{% csrf_token %}
@@ -23,9 +23,16 @@
 		    </form>
 		   <-->
 	    {% else %}
-    
-		<p>~okeanos gives the opportunity to Greek Academic or Research Organizations/Institutions/Faculty to run their own projects remotely on virtual infrastructure. Simple, fast and with minimal to no cost at all.
-</p>
+    	<div class="two-cols clearfix">
+			<div class="rt">
+				 &nbsp;
+			</div>
+			<div class="lt">
+				 <p>~okeanos gives the opportunity to Greek Academic or Research Organizations/Institutions/Faculty to run their own projects remotely on virtual infrastructure. Simple, fast and with minimal to no cost at all.</p>
+				 <p><a href="{% url how_it_works %}" style="font-size:1.154em;">How it works ></a></p>
+			</div>
+		</div>
+		
 		
 		<div class="widjets"> 
 			<!--<a href="#" class="widjet-x" title="remove boxes">X</a>-->
@@ -33,8 +40,8 @@
 				<li class="create">
 					<div>
 						<div class="wrap">
-							<p><a href="{% url group_add 'course' %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
-							<p class="txt">Create a new Project in seconds. Specify how many members it will have, which and how many virtual resources it will provide to its members. Describe its purpose. Submit your request and if accepted, you and your colleagues are ready to deploy! </p>
+							<p class="centered"><a href="{% url group_add 'course' %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
+							<p class="txt">Create a new Project in seconds. Specify how many members it will have, which and how many virtual resources it will provide to its members. Describe its purpose. Submit your request and if accepted, you and your colleagues are ready to deploy! <br><br></p>
 							<p><a href="{% url group_add 'default' %}">create a project ></a></p>
 							<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
 						</div>
@@ -43,7 +50,7 @@
 				<li class="join">
 					<div>
 						<div class="wrap">
-							<p><a href="{% url group_all %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+							<p class="centered"><a href="{% url group_all %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
 							<p class="txt">Become a member of an existing Project and instantly gain access to the resources it has to offer you. Search for open Projects and join for free. Contact the closed Projects administrators, if you think they will accept you. In two words: try to Join now. </p>
 							
 							<p><a href="{% url group_all %}">join a project ></a></p>

@@ -29,7 +29,7 @@
 	 	</h3>
 	 	
 	 	<div class="data">
-		 	<p class="restricted">{{ object.desc }}</p>
+		 	<p class="restricted">{{ object.desc|safe }}</p>
 		 	<dl class="alt-style">
 			 	<dt>Homepage url</dt>
 			 	<dd>
@@ -195,6 +195,15 @@
         </form>
     </div>
     {% endif %}
+    <div class="full-dotted">
+    	<p>
+    		<a href="{% url group_all %}">back to All Projects &gt;</a></li>
+    	</p>
+        <p>
+        	<a href="{% url group_list %}">back to My Projects &gt;</a>
+        </p>
+        </ul>
+    </div>
      
     
 </div>

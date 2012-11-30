@@ -68,7 +68,7 @@ def environ_get(key, default_value = ''):
 
 # Use environ vars [TEST_]QH_{HOST, PORT}
 QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", "127.0.0.1"))
-QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8008"))
+QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8888"))
 
 assert QH_HOST != None
 assert QH_PORT != None

@@ -525,7 +525,7 @@ class AstakosUser(User):
 
     def conflicting_email(self):
         q = AstakosUser.objects.exclude(username=self.username)
-        q = q.filter(email=self.email)
+        q = q.filter(email__iexact=self.email)
         if q.count() != 0:
             return True
         return False
@@ -712,7 +712,7 @@ class EmailChangeManager(models.Manager):
                 raise EmailChange.DoesNotExist
             # is there an active user with this address?
             try:
-                AstakosUser.objects.get(email=email_change.new_email_address)
+                AstakosUser.objects.get(email__iexact=email_change.new_email_address)
             except AstakosUser.DoesNotExist:
                 pass
             else:

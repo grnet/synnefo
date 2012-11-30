@@ -112,7 +112,7 @@ def _get_user_by_email(email):
     if not email:
         raise BadRequest('Email missing')
     try:
-        user = AstakosUser.objects.get(email=email)
+        user = AstakosUser.objects.get(email__iexact=email)
     except AstakosUser.DoesNotExist:
         raise ItemNotFound('Invalid email')
 

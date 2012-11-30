@@ -47,7 +47,7 @@ def get_user(email_or_id, **kwargs):
         if email_or_id.isdigit():
             return AstakosUser.objects.get(id=int(email_or_id))
         else:
-            return AstakosUser.objects.get(email=email_or_id, **kwargs)
+            return AstakosUser.objects.get(email__iexact=email_or_id, **kwargs)
     except AstakosUser.DoesNotExist, AstakosUser.MultipleObjectsReturned:
         return None
 

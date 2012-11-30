@@ -293,7 +293,7 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         if self.instance:
             if self.instance.email == email:
                 raise forms.ValidationError(_("This is your current email."))
-        for user in AstakosUser.objects.filter(email=email):
+        for user in AstakosUser.objects.filter(email__iexact=email):
             if user.provider == 'shibboleth':
                 raise forms.ValidationError(_(
                         "This email is already associated with another \
@@ -452,7 +452,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email=email, is_active=True)
+            user = AstakosUser.objects.get(email__iexact=email, is_active=True)
             if not user.has_usable_password():
                 raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
         except AstakosUser.DoesNotExist:

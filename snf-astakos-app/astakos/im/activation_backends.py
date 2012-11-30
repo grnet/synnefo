@@ -43,6 +43,7 @@ from astakos.im.functions import (
 from astakos.im.settings import (
     INVITATIONS_ENABLED, MODERATION_ENABLED, RE_USER_EMAIL_PATTERNS
 )
+from astakos.im.forms import *
 
 import astakos.im.messages as astakos_messages
 

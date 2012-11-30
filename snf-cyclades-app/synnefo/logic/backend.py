@@ -39,8 +39,10 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, VirtualMachineDiagnostic)
+                               pooled_rapi_client, BridgePoolTable,
+                               MacPrefixPoolTable, VirtualMachineDiagnostic)
 from synnefo.logic import utils
+from synnefo import quotas
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -54,8 +56,9 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
+@quotas.uses_commission
 @transaction.commit_on_success
-def process_op_status(vm, etime, jobid, opcode, status, logmsg):
+def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -78,13 +81,11 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
 
-
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
-    if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
+    if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
-
-    if opcode == 'OP_INSTANCE_REMOVE':
+    elif opcode == 'OP_INSTANCE_REMOVE':
         # Set the deleted flag explicitly, cater for admin-initiated removals
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
@@ -92,6 +93,13 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
         #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
+            # Issue commission
+            serial = quotas.issue_vm_commission(vm.userid, vm.flavor,
+                                                delete=True)
+            serials.append(serial)
+            vm.serial = serial
+            serial.accepted = True
+            serial.save()
             release_instance_nics(vm)
             vm.nics.all().delete()
             vm.deleted = True
@@ -225,6 +233,46 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     if status == 'success':
         back_network.backendtime = etime
     back_network.save()
+    # Also you must update the state of the Network!!
+    update_network_state(back_network.network)
+
+
+@quotas.uses_commission
+def update_network_state(serials, network):
+    old_state = network.state
+
+    backend_states = [s.operstate for s in network.backend_networks.all()]
+    if not backend_states:
+        network.state = 'PENDING'
+        network.save()
+        return
+
+    all_equal = len(set(backend_states)) <= 1
+    network.state = all_equal and backend_states[0] or 'PENDING'
+
+    # Release the resources on the deletion of the Network
+    if old_state != 'DELETED' and network.state == 'DELETED':
+        log.info("Network %r deleted. Releasing link %r mac_prefix %r",
+                 network.id, network.mac_prefix, network.link)
+        network.deleted = True
+        if network.mac_prefix and network.type == 'PRIVATE_MAC_FILTERED':
+            mac_pool = MacPrefixPoolTable.get_pool()
+            mac_pool.put(network.mac_prefix)
+            mac_pool.save()
+
+        if network.link and network.type == 'PRIVATE_VLAN':
+            bridge_pool = BridgePoolTable.get_pool()
+            bridge_pool.put(network.link)
+            bridge_pool.save()
+
+        # Issue commission
+        serial = quotas.issue_network_commission(network.userid, delete=True)
+        serials.append(serial)
+        network.serial = serial
+        serial.accepted = True
+        serial.save()
+
+    network.save()
 
 
 @transaction.commit_on_success

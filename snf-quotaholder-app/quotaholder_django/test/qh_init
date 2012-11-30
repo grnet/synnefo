@@ -1,0 +1,5 @@
+#!/bin/sh
+d=`dirname $0`
+export PYTHONPATH=$d
+snf-manage syncdb --all --noinput
+snf-manage runserver "$@" 2> $d/server_stderr &

@@ -99,9 +99,12 @@ class Cookie():
     
     def fix(self, response=None):
         self.response = response or self.response
-        if self.user.is_authenticated():
-            if not self.is_set or not self.is_valid:
-                self.__set()
-        else:
-            if self.is_set:
-                self.__delete()
+        try:
+	    if self.user.is_authenticated():
+                if not self.is_set or not self.is_valid:
+                    self.__set()
+            else:
+                if self.is_set:
+                    self.__delete()
+	except AttributeError:
+	    pass

@@ -91,8 +91,10 @@ ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT '%s alpha2 testing account activated
 ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT          'Email change on %s alpha2 testing' % SITENAME                                  Email change subject               
 ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT        'Password reset on %s alpha2 testing' % SITENAME                                Password change email subject
 
-ASTAKOS_QUOTA_HOLDER_URL                    ''                                                                              The quota holder URI
+ASTAKOS_QUOTAHOLDER_URL                     ''                                                                              The quotaholder URI
                                                                                                                             e.g. ``http://localhost:8080/api/quotaholder/v``
+ASTAKOS_QUOTAHOLDER_TOKEN                   ''                                                                              The secret token for accessing the quotaholder URI
+
 ASTAKOS_SERVICES                            {'cyclades': {'resources': [{'desc': 'Number of virtual machines',              Default cloud service information
                                             'group': 'compute',
                                             'name': 'vm',

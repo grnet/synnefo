@@ -274,7 +274,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
-        user.is_local = False
         user.renew_token()
         if commit:
             user.save()

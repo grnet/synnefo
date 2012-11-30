@@ -692,6 +692,10 @@ class AstakosUser(User):
                 providers.append(provider)
         return providers
 
+    @property
+    def auth_providers_display(self):
+        return ",".join(map(lambda x:unicode(x), self.auth_providers.active()))
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -739,6 +743,14 @@ class AstakosUserAuthProvider(models.Model):
 
     def __repr__(self):
         return '<AstakosUserAuthProvider %s:%s>' % (self.module, self.identifier)
+
+    def __unicode__(self):
+        if self.identifier:
+            return "%s:%s" % (self.module, self.identifier)
+        if self.auth_backend:
+            return "%s:%s" % (self.module, self.auth_backend)
+        return self.module
+
 
 
 class Membership(models.Model):

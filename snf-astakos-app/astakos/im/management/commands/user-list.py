@@ -68,7 +68,7 @@ class Command(NoArgsCommand):
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
 
-        labels = ('id', 'email', 'real name', 'active', 'admin', 'provider')
+        labels = ('id', 'email', 'real name', 'active', 'admin', 'providers')
         columns = (3, 24, 24, 6, 5, 12, 24)
 
         if not options['csv']:
@@ -82,7 +82,8 @@ class Command(NoArgsCommand):
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
             fields = (
-                id, user.email, user.realname, active, admin, user.provider
+                id, user.email, user.realname, active, admin, \
+                        user.auth_providers_display
             )
 
             if options['csv']:

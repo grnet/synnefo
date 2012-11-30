@@ -44,6 +44,8 @@ from astakos.im import settings as astakos_settings
 
 from urllib import quote
 
+from astakos.im import messages
+
 class ShibbolethClient(Client):
     """
     A shibboleth agnostic client.
@@ -142,11 +144,11 @@ class ShibbolethTests(TestCase):
         # shibboleth views validation
         # eepn required
         r = client.get('/im/login/shibboleth?', follow=True)
-        self.assertContains(r, 'Missing provider token')
+        self.assertContains(r, messages.SHIBBOLETH_MISSING_EPPN)
         client.set_tokens(eppn="kpapeppn")
         # shibboleth user info required
         r = client.get('/im/login/shibboleth?', follow=True)
-        self.assertContains(r, 'Missing provider user information')
+        self.assertContains(r, messages.SHIBBOLETH_MISSING_NAME)
 
         # shibboleth logged us in
         client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn", cn="1", )
@@ -267,10 +269,17 @@ class ShibbolethTests(TestCase):
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertFalse(r.context['request'].user.is_authenticated())
 
+        user2 = get_local_user('kpap@grnet.gr')
+
 
 class LocalUserTests(TestCase):
 
     fixtures = ['groups']
+
+    def setUp(self):
+        from django.conf import settings
+        settings.ADMINS = (('admin', 'support@cloud.grnet.gr'),)
+        settings.SERVER_EMAIL = 'no-reply@grnet.gr'
 
     def test_invitations(self):
         return
@@ -308,7 +317,7 @@ class LocalUserTests(TestCase):
                 'password2':'password', 'first_name': 'Kostas',
                 'last_name': 'Mitroglou', 'provider': 'local'}
         r = self.client.post("/im/signup", data)
-        self.assertContains(r, "This email is already used")
+        self.assertContains(r, messages.EMAIL_USED)
 
         # hmmm, email exists; lets get the password
         r = self.client.get('/im/local/password_reset')

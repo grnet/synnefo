@@ -32,9 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.core.urlresolvers import reverse
-from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
-from django.contrib import messages
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
 from django.http import (
@@ -43,16 +41,18 @@ from django.http import (
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_http_methods
 
-from urllib import quote
-from urlparse import urlunsplit, urlsplit, urlparse, parse_qsl
+from urlparse import urlunsplit, urlsplit, parse_qsl
 
 from astakos.im.settings import COOKIE_DOMAIN
 from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
 
+import astakos.im.messages as astakos_messages
+
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 @require_http_methods(["GET", "POST"])
 def login(request):
@@ -66,11 +66,11 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(_('No next parameter'))
+        return HttpResponseBadRequest(_(astakos_messages.MISSING_NEXT_PARAMETER))
     if not restrict_next(
         next, domain=COOKIE_DOMAIN, allowed_schemes=('pithos',)
     ):
-        return HttpResponseForbidden(_('Not allowed next parameter'))
+        return HttpResponseForbidden(_(astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)
     response = HttpResponse()
     if force == '':
@@ -78,17 +78,17 @@ def login(request):
     if request.user.is_authenticated():
         # if user has not signed the approval terms
         # redirect to approval terms with next the request path
-        if not request.user.signed_terms():
+        if not request.user.signed_terms:
             # first build next parameter
             parts = list(urlsplit(request.build_absolute_uri()))
             params = dict(parse_qsl(parts[3], keep_blank_values=True))
             # delete force parameter
             parts[3] = urlencode(params)
             next = urlunsplit(parts)
-            
+
             # build url location
             parts[2] = reverse('latest_terms')
-            params = {'next':next}
+            params = {'next': next}
             parts[3] = urlencode(params)
             url = urlunsplit(parts)
             response['Location'] = url
@@ -105,18 +105,23 @@ def login(request):
             except ValidationError, e:
                 return HttpResponseBadRequest(e)
             # authenticate before login
-            user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
+            user = authenticate(email=request.user.email,
+                                auth_token=request.user.auth_token
+                                )
             auth_login(request, user)
             logger.info('Token reset for %s' % request.user.email)
         parts = list(urlsplit(next))
-        parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
+        parts[3] = urlencode({'user': request.user.email,
+                              'token': request.user.auth_token
+                              }
+                             )
         url = urlunsplit(parts)
         response['Location'] = url
         response.status_code = 302
         return response
     else:
         # redirect to login with next the request path
-        
+
         # first build next parameter
         parts = list(urlsplit(request.build_absolute_uri()))
         params = dict(parse_qsl(parts[3], keep_blank_values=True))
@@ -125,10 +130,10 @@ def login(request):
             del params['force']
         parts[3] = urlencode(params)
         next = urlunsplit(parts)
-        
+
         # build url location
-        parts[2] = reverse('astakos.im.views.index')
-        params = {'next':next}
+        parts[2] = reverse('index')
+        params = {'next': next}
         parts[3] = urlencode(params)
         url = urlunsplit(parts)
         response['Location'] = url

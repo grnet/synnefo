@@ -85,10 +85,43 @@ ASTAKOS_INVITATION_EMAIL_SUBJECT            'Invitation to %s alpha2 testing' % 
 ASTAKOS_GREETING_EMAIL_SUBJECT              'Welcome to %s alpha2 testing' % SITENAME                                       Welcome email subject
 ASTAKOS_FEEDBACK_EMAIL_SUBJECT              'Feedback from %s alpha2 testing' % SITENAME                                    Feedback email subject
 ASTAKOS_VERIFICATION_EMAIL_SUBJECT          '%s alpha2 testing account activation is needed' % SITENAME                     Account activation email subject
-ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT    '%s alpha2 testing account created (%%(user)s)' % SITENAME                      Account creation admin notification email subject
+ASTAKOS_ACCOUNT_CREATION_SUBJECT            '%s alpha2 testing account created (%%(user)s)' % SITENAME                      Account creation email subject
+ASTAKOS_GROUP_CREATION_SUBJECT              '%s alpha2 testing group created (%%(group)s)' % SITENAME                       Group creation email subject
 ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT '%s alpha2 testing account activated (%%(user)s)' % SITENAME                    Account activation helpdesk notification email subject
 ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT          'Email change on %s alpha2 testing' % SITENAME                                  Email change subject               
 ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT        'Password reset on %s alpha2 testing' % SITENAME                                Password change email subject
+
+ASTAKOS_QUOTA_HOLDER_URL                    ''                                                                              The quota holder URI
+                                                                                                                            e.g. ``http://localhost:8080/api/quotaholder/v``
+ASTAKOS_SERVICES                            {'cyclades': {'resources': [{'desc': 'Number of virtual machines',              Default cloud service information
+                                            'group': 'compute',
+                                            'name': 'vm',
+                                            'uplimit': 2},
+                                            {'desc': 'Virtual machine disk size',
+                                            'group': 'compute',
+                                            'name': 'diskspace',
+                                            'unit': 'GB',
+                                            'uplimit': 5},
+                                            {'desc': 'Number of virtual machine processors',
+                                            'group': 'compute',
+                                            'name': 'cpu',
+                                            'uplimit': 1},
+                                            {'desc': 'Virtual machines',
+                                            'group': 'compute',
+                                            'name': 'ram',
+                                            'unit': 'MB',
+                                            'uplimit': 1024}],
+                                            'url': 'https://node1.example.com/ui/'},
+                                            'pithos+': {'resources': [{'desc': 'Pithos account diskspace',
+                                            'group': 'storage',
+                                            'name': 'diskspace',
+                                            'unit': 'bytes',
+                                            'uplimit': 5368709120}],
+                                            'url': 'https://node2.example.com/ui/'}}                                                                               
+ASTAKOS_AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
+                                                                                                                            e.g. ``http://localhost:8888/user``
+ASTAKOS_PAGINATE_BY                         10                                                                              Number of object to be displayed per page
+
 ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN          True                                                                            Enforce token renewal on password change/reset. If set to False, user can optionally decide
                                                                                                                             whether to renew the token or not.
 ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION      True                                                                            Permit local account migration to third party account
@@ -117,11 +150,4 @@ showuser         Show user info
 
 To update user credibility from the billing system (Aquarium), enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
 
-    pithos-dispatcher --exchange=aquarium --callback=astakos.im.queue.listener.on_creditevent
-
-Load groups:
-------------
-
-To set the initial user groups load the followind fixture:
-
-    snf-manage loaddata groups
+    pithos-dispatcher --exchange=aquarium --callback=astakos.im.endpoints.aquarium.consumer.on_creditevent

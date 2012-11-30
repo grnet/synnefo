@@ -35,14 +35,15 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Service
 
+
 class Command(BaseCommand):
     args = "<name>"
     help = "Renew service token"
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
-        
+
         try:
             service = Service.objects.get(name=args[0])
             service.renew_token()

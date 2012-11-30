@@ -10,7 +10,7 @@ div.cloudbar                                    { background:#000; color:#fff;	 
 
 div.cloudbar a, 
 div.cloudbar .profile span,
-div.cloudbar li {font-family:'Didact Gothic',Verdana,sans-serif !important; letter-spacing: 1px !important}
+div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-spacing: 1px !important}
 
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}

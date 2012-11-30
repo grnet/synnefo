@@ -42,15 +42,15 @@ from ._common import format_bool
 
 class Command(BaseCommand):
     help = "List invitations"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
-    
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
+    )
+
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
@@ -59,23 +59,24 @@ class Command(BaseCommand):
         
         labels = ('id', 'inviter', 'email', 'real name', 'code', 'consumed')
         columns = (3, 24, 24, 24, 20, 4, 8)
-        
+
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-        
+
         for invitation in invitations:
             id = str(invitation.id)
             code = str(invitation.code)
             consumed = format_bool(invitation.is_consumed)
-            fields = (id, invitation.inviter.email, invitation.username, invitation.realname,
-                      code, consumed)
-            
+            fields = (
+                id, invitation.inviter.email, invitation.username, invitation.realname,
+                code, consumed)
+
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
+
             self.stdout.write(line.encode('utf8') + '\n')

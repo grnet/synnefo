@@ -1,5 +1,10 @@
 Changelog
 ---------
+next
+^^^^
+
+- Setting ASTAKOS_DEFAULT_ADMIN_EMAIL has been deprecated. Use ADMINS django setting instead.
+- Setting ASTAKOS_DEFAULT_FROM_EMAIL has been deprecated. Use SERVER_EMAIL django setting instead.
 
 v0.7.5
 ^^^^^^

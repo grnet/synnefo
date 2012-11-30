@@ -6,3 +6,5 @@ docs/build
 .project
 .pydevproject
 snf-astakos-app/astakos/version.py
+snf-astakos-app/distribute-0.6.10-py2.6.egg
+snf-astakos-app/distribute-0.6.10.tar.gz

@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action={%url astakos.im.views.edit_profile %} method="post" class="withlabels">{% csrf_token %}
+<form action={%url edit_profile %} method="post" class="withlabels">{% csrf_token %}
     
     {% with profile_form as form %}
     {% include "im/form_render.html" %}
@@ -58,4 +58,13 @@
     </div>
 
 </form>
+
+<div class="two-cols-links">
+	<p><a href="{% url password_change %}">Change Password</a></p>
+	<p>
+		<a href="https://okeanos.grnet.gr/home/">Back to ~okeanos</a>
+		<a href="https://cyclades.okeanos.grnet.gr/ui/">Take me to cyclades</a>
+		<a href="https://pithos.okeanos.grnet.gr/ui/">Take me to pithos+</a>
+	</p>
+</div>
 {% endblock body %}

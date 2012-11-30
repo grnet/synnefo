@@ -37,12 +37,14 @@ Django settings metadata. To be used in setup.py snf-webproject entry points.
 """
 
 installed_apps = [
-        {'before': 'django.contrib.admin',
-         'insert': 'astakos.im',},
-        'django.contrib.auth',
-        'django.contrib.contenttypes',
-        'django.contrib.sessions',
-        'django.contrib.messages'
+    {'before': 'django.contrib.admin',
+     'insert': 'astakos.im', },
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+#    'djcelery',
+#    'debug_toolbar',
 ]
 
 context_processors = [
@@ -57,6 +59,7 @@ context_processors = [
     'astakos.im.context_processors.invitations',
     'astakos.im.context_processors.menu',
     'astakos.im.context_processors.custom_messages',
+    'astakos.im.context_processors.group_kinds',
     'synnefo.lib.context_processors.cloudbar'
 ]
 
@@ -65,22 +68,33 @@ middlware_classes = [
     'astakos.im.middleware.CookieAuthenticationMiddleware',
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.SecureMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware'
+    'django.middleware.csrf.CsrfViewMiddleware',
+#    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 loggers = {
-        'astakos': {
-            'handlers': ['console'],
-            'level': 'INFO'
-        }
+    'astakos': {
+        'handlers': ['console'],
+        'level': 'INFO'
+    }
 }
 
 static_files = {'astakos.im': ''}
 
 # The following settings will replace the default django settings
-AUTHENTICATION_BACKENDS = ('astakos.im.auth_backends.EmailBackend',
-                            'astakos.im.auth_backends.TokenBackend')
+AUTHENTICATION_BACKENDS = (
+#     'django_auth_ldap.backend.LDAPBackend',
+	'astakos.im.auth_backends.EmailBackend',
+    'astakos.im.auth_backends.TokenBackend')
 LOGIN_URL = '/im'
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
+#SOUTH_TESTS_MIGRATE = False
+
+import djcelery
+djcelery.setup_loader()
+
+BROKER_URL = ''
+
+# INTERNAL_IPS = ('127.0.0.1',)

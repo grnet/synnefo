@@ -1,0 +1,34 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+	<div class="stats clearfix">
+		<ul>
+			{% for rname, rdata in resource_catalog.resources.items %}
+		 		<li class="clearfix  {{ rdata.load_class }} {{ rdata.verbose_name}}">
+		 			<div class="img-wrap">&nbsp;</div>
+		 			<div class="info">
+						<h3>{{ rdata.report_desc }}</h3>
+						<p>
+						{{ rdata.ratio|floatformat }}% Used<br>
+						You are using 
+						{% if rdata.unit == 'bytes' %}
+							{{ rdata.currValue|sizeof_fmt  }} out of your {{ rdata.maxValue|sizeof_fmt }}
+						{% else %}
+							{{ rdata.currValue }} {{ rdata.unit }} out of your {{ rdata.maxValue }} {{ rdata.unit }}
+						{% endif %}		
+						{% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
+						</p>
+					</div>
+					<div class="bar">
+						<div><span style="width:{{ rdata.ratio|floatformat }}%;">{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</span></div>
+					</div>
+		 		</li>
+		 	{% endfor%}
+		</ul>
+			 
+	</div>    
+</div>
+{% endblock %}

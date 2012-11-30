@@ -33,47 +33,54 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosGroup
 
 from ._common import format_bool
 
 
-class Command(BaseCommand):
-    help = "List g"
+class Command(NoArgsCommand):
+    help = "List groups"
     
-    option_list = BaseCommand.option_list + (
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
+        make_option('-p',
+                    action='store_true',
+                    dest='pending',
+                    default=False,
+                    help="List only groups pending enable"),
     )
-    
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-        
-        groups = Group.objects.all().order_by('id')
-        
-        labels = ('id', 'name', 'permissions')
-        columns = (3, 12, 50)
-        
-        if not options['csv']:
+
+    def handle_noargs(self, **options):
+        groups = AstakosGroup.objects.all()
+
+        if options.get('pending'):
+            groups = filter(lambda g: g.is_disabled, groups)
+
+        labels = ('id', 'name', 'enabled', 'moderation', 'permissions')
+        columns = (3, 25, 12, 12, 50)
+
+        if not options.get('csv'):
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-        
+
         for group in groups:
-            fields = (str(group.id), group.name,
+            fields = (str(group.id),
+                      group.name,
+                      format_bool(group.is_enabled),
+                      format_bool(group.moderation_enabled),
                       ','.join(p.codename for p in group.permissions.all()))
-            
-            if options['csv']:
+
+            if options.get('csv'):
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
+
             self.stdout.write(line.encode('utf8') + '\n')

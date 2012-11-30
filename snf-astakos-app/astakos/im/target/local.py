@@ -31,10 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.contrib.auth import authenticate
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
@@ -43,19 +42,20 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 
 from astakos.im.util import prepare_response, get_query
-from astakos.im.views import requires_anonymous, signed_terms_required, \
-        requires_auth_provider
-from astakos.im.models import AstakosUser, PendingThirdPartyUser
-from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
-        ExtendedSetPasswordForm
+from astakos.im.views import requires_anonymous, signed_terms_required
+from astakos.im.models import PendingThirdPartyUser
+from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm
 from astakos.im.settings import (RATELIMIT_RETRIES_ALLOWED,
                                 ENABLE_LOCAL_ACCOUNT_MIGRATION)
+import astakos.im.messages as astakos_messages
+from astakos.im.views import requires_auth_provider
 from astakos.im import settings
 
 from ratelimit.decorators import ratelimit
 
-retries = RATELIMIT_RETRIES_ALLOWED-1
-rate = str(retries)+'/m'
+retries = RATELIMIT_RETRIES_ALLOWED - 1
+rate = str(retries) + '/m'
+
 
 @requires_auth_provider('local', login=True)
 @require_http_methods(["GET", "POST"])
@@ -67,7 +67,9 @@ def login(request, on_failure='im/login.html'):
     on_failure: the template name to render on login failure
     """
     was_limited = getattr(request, 'limited', False)
-    form = LoginForm(data=request.POST, was_limited=was_limited, request=request)
+    form = LoginForm(data=request.POST,
+                     was_limited=was_limited,
+                     request=request)
     next = get_query(request).get('next', '')
     third_party_token = get_query(request).get('key', False)
 
@@ -81,14 +83,15 @@ def login(request, on_failure='im/login.html'):
         )
     # get the user from the cash
     user = form.user_cache
-    
+
     message = None
     if not user:
-        message = _('Cannot authenticate account')
+        message = _(astakos_messages.ACCOUNT_AUTHENTICATION_FAILED)
     elif not user.is_active:
         if not user.activation_sent:
-            message = _('Your request is pending activation')
+            message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
         else:
+			# TODO: USE astakos_messages
             url = reverse('send_activation', kwargs={'user_id':user.id})
             msg = _('You have not followed the activation link.')
             if settings.MODERATION_ENABLED:
@@ -98,9 +101,7 @@ def login(request, on_failure='im/login.html'):
 
             message = msg + msg_extra
     elif not user.can_login_with_auth_provider('local'):
-        message = _(
-            'Local login is not the current authentication method for this account.'
-        )
+        message = _(astakos_messages.NO_LOCAL_AUTH)
 
     if message:
         messages.error(request, message)
@@ -112,6 +113,7 @@ def login(request, on_failure='im/login.html'):
     if third_party_token:
         # use requests to assign the account he just authenticated with with
         # a third party provider account
+        # TODO: USE astakos_messages
         try:
           request.user.add_pending_auth_provider(third_party_token)
           messages.success(request, _('Your new login method has been added'))

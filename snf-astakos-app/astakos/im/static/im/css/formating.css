@@ -29,7 +29,7 @@ a img, :link img, :visited img					{ border:none; }
 a span											{ cursor:pointer; }
 abbr[title], dfn[title]							{ border-bottom:1px dotted; cursor:help; }
 address											{ font-style:italic; margin:0 0 1.5em 0; }
-body											{ background:white; color:#222; font-family: 'Didact Gothic', Verdana, sans-serif;  font-style:normal; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px;}
+body											{ background:white; color:#222; font-family: 'Open Sans', sans-serif; font-style:normal; font-size:81.3%; line-height:1.5; text-align:left; letter-spacing:1px;}
 code, kbd, pre, samp							{ font-family:monospace, sans-serif; }
 del												{ text-decoration:line-through; }
 dl												{ margin:1em 0; }

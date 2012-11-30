@@ -33,28 +33,25 @@
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.contrib import messages
-from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
-from django.db import transaction
 
-from urlparse import urljoin
-
-from astakos.im.models import AstakosUser, Invitation
-from astakos.im.forms import *
+from astakos.im.models import AstakosUser
 from astakos.im.util import get_invitation
-from astakos.im.functions import send_verification, send_activation, \
-    send_admin_notification, activate, SendMailError
-from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, \
-    DEFAULT_FROM_EMAIL, MODERATION_ENABLED, SITENAME, DEFAULT_ADMIN_EMAIL, RE_USER_EMAIL_PATTERNS
+from astakos.im.functions import (
+    send_activation, send_account_creation_notification, activate
+)
+from astakos.im.settings import (
+    INVITATIONS_ENABLED, MODERATION_ENABLED, RE_USER_EMAIL_PATTERNS
+)
+from astakos.im.forms import *
 
-import socket
+import astakos.im.messages as astakos_messages
+
 import logging
 import re
 
 logger = logging.getLogger(__name__)
+
 
 def get_backend(request):
     """
@@ -68,31 +65,36 @@ def get_backend(request):
     """
     module = 'astakos.im.activation_backends'
     prefix = 'Invitations' if INVITATIONS_ENABLED else 'Simple'
-    backend_class_name = '%sBackend' %prefix
+    backend_class_name = '%sBackend' % prefix
     try:
         mod = import_module(module)
     except ImportError, e:
-        raise ImproperlyConfigured('Error loading activation backend %s: "%s"' % (module, e))
+        raise ImproperlyConfigured(
+            'Error loading activation backend %s: "%s"' % (module, e))
     try:
         backend_class = getattr(mod, backend_class_name)
     except AttributeError:
-        raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, attr))
+        raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, backend_class_name))
     return backend_class(request)
 
+
 class ActivationBackend(object):
+    def __init__(self, request):
+        self.request = request
+
     def _is_preaccepted(self, user):
         # return True if user email matches specific patterns
         for pattern in RE_USER_EMAIL_PATTERNS:
             if re.match(pattern, user.email):
                 return True
         return False
-    
+
     def get_signup_form(self, provider='local', instance=None):
         """
         Returns a form instance of the relevant class
         """
         main = provider.capitalize() if provider == 'local' else 'ThirdParty'
-        suffix  = 'UserCreationForm'
+        suffix = 'UserCreationForm'
         formclass = '%s%s' % (main, suffix)
         request = self.request
         initial_data = None
@@ -126,11 +128,15 @@ class ActivationBackend(object):
                     send_activation(user, activation_template_name)
                     return VerificationSent()
             else:
-                send_admin_notification(user, admin_email_template_name)
+                send_account_creation_notification(
+                    template_name=admin_email_template_name,
+                    dictionary={'user': user.__dict__, 'group_creation': True}
+                )
                 return NotificationSent()
         except BaseException, e:
             logger.exception(e)
             raise e
+
 
 class InvitationsBackend(ActivationBackend):
     """
@@ -140,14 +146,11 @@ class InvitationsBackend(ActivationBackend):
     account is created and the user is going to receive an email as soon as an
     administrator activates his/her account.
     """
-    def __init__(self, request):
-        self.request = request
-        super(InvitationsBackend, self).__init__()
 
     def get_signup_form(self, provider='local', instance=None):
         """
         Returns a form instance of the relevant class
-        
+
         raises Invitation.DoesNotExist and ValueError if invitation is consumed
         or invitation username is reserved.
         """
@@ -156,7 +159,7 @@ class InvitationsBackend(ActivationBackend):
         initial_data = self.get_signup_initial_data(provider)
         prefix = 'Invited' if invitation else ''
         main = provider.capitalize()
-        suffix  = 'UserCreationForm'
+        suffix = 'UserCreationForm'
         formclass = '%s%s%s' % (prefix, main, suffix)
         return globals()[formclass](initial_data, instance=instance, request=self.request)
 
@@ -173,12 +176,12 @@ class InvitationsBackend(ActivationBackend):
             if invitation:
                 # create a tmp user with the invitation realname
                 # to extract first and last name
-                u = AstakosUser(realname = invitation.realname)
-                initial_data = {'email':invitation.username,
-                                'inviter':invitation.inviter.realname,
-                                'first_name':u.first_name,
-                                'last_name':u.last_name,
-                                'provider':provider}
+                u = AstakosUser(realname=invitation.realname)
+                initial_data = {'email': invitation.username,
+                                'inviter': invitation.inviter.realname,
+                                'first_name': u.first_name,
+                                'last_name': u.last_name,
+                                'provider': provider}
         else:
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
@@ -199,16 +202,13 @@ class InvitationsBackend(ActivationBackend):
             return True
         return False
 
+
 class SimpleBackend(ActivationBackend):
     """
     A activation backend which implements the following workflow: a user
     supplies the necessary registation information, an incative user account is
     created and receives an email in order to activate his/her account.
     """
-    def __init__(self, request):
-        self.request = request
-        super(SimpleBackend, self).__init__()
-    
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):
             return True
@@ -216,23 +216,24 @@ class SimpleBackend(ActivationBackend):
             return False
         return True
 
+
 class ActivationResult(object):
     def __init__(self, message):
         self.message = message
 
+
 class VerificationSent(ActivationResult):
     def __init__(self):
-        message = _('Verification sent.')
+        message = _(astakos_messages.VERIFICATION_SENT)
         super(VerificationSent, self).__init__(message)
 
 class NotificationSent(ActivationResult):
     def __init__(self):
-        message = _('Your request for an account was successfully received and is now pending \
-                    approval. You will be notified by email in the next few days. Thanks for \
-                    your interest in ~okeanos! The GRNET team.')
+        message = _(astakos_messages.NOTIFICATION_SENT)
         super(NotificationSent, self).__init__(message)
+
 
 class RegistationCompleted(ActivationResult):
     def __init__(self):
-        message = _('Registration completed. You can now login.')
+        message = _(astakos_messages.REGISTRATION_COMPLETED)
         super(RegistationCompleted, self).__init__(message)

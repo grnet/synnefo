@@ -498,13 +498,8 @@ class AstakosUser(User):
 
         if not self.id:
             # set username
-            while not self.username:
-                username =  self.email
-                try:
-                    AstakosUser.objects.get(username=username)
-                except AstakosUser.DoesNotExist:
-                    self.username = username
-
+            self.username = self.email
+        
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent

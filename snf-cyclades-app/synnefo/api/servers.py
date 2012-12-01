@@ -343,8 +343,8 @@ def create_server(serials, request):
             'img_id': image['backend_id'],
             'img_passwd': password,
             'img_format': str(image['format']),
-            'img_personality': str(personality),
-            'img_properties': str(image['metadata']),
+            'img_personality': json.dumps(personality),
+            'img_properties': json.dumps(image['metadata']),
         })
 
         try:

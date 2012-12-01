@@ -17,7 +17,7 @@
 				{% endif %}
 			</em>		
 		{% endif %}
-	 	<span>{{ object.name|strip_http|upper }}</span>
+	 	<span>{{ object.name|upper }}</span>
 	 </h2>
 	 
 	 <div class="details">
@@ -57,7 +57,7 @@
 		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
-		 	<dd>{{ object.name|strip_http }}&nbsp;</dd>
+		 	<dd>{{ object.name }}&nbsp;</dd>
 		 	<!--<dt>Type</dt>
 		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>-->
 		 	<dt>Issue date:</dt>

@@ -158,9 +158,9 @@ def items(d):
 def get_value_after_dot(value):
     return value.split(".")[1]
 
-@register.filter
-def strip_http(value):
-    return value.replace('http://','')[:-1]
+# @register.filter
+# def strip_http(value):
+#     return value.replace('http://','')[:-1]
 
 
 from math import log

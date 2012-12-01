@@ -835,12 +835,14 @@ class AstakosGroupSortForm(forms.Form):
     )
 
 class MembersSortForm(forms.Form):
-    sort_by = forms.ChoiceField(label='Sort by',
-                                choices=(('person__email', 'User Id'),
-                                         ('person__first_name', 'Name'),
-                                         ('date_joined', 'Status')
-                                         ),
-                                required=False)
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(('person__email', 'User Id'),
+                 ('person__first_name', 'Name'),
+                 ('date_joined', 'Status')
+        ),
+        required=True
+    )
 
 class PickResourceForm(forms.Form):
     resource = forms.ModelChoiceField(

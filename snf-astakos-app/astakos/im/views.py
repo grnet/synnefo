@@ -1022,15 +1022,11 @@ def group_detail(request, group_id):
     }, context_processors)
 
     # validate sorting
-    sorting = request.GET.get('sorting')
-    if sorting:
-        form = MembersSortForm({'sort_by': sorting})
-        if form.is_valid():
-            sorting = form.cleaned_data.get('sort_by')
-
-    else:
-        form = MembersSortForm({'sort_by': 'person_first_name'})
-
+    sorting = 'person__email'
+    form = MembersSortForm(request.GET)
+    if form.is_valid():
+        sorting = form.cleaned_data.get('sorting')
+    
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)

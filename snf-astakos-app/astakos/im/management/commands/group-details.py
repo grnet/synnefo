@@ -31,29 +31,59 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from collections import defaultdict
 
-from astakos.im.api.callpoint import AstakosCallpoint
+from django.core.management.base import BaseCommand, CommandError
+from django.db import models
+
+from astakos.im.models import AstakosGroup
 
 class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
-    help = "Register a service"
+    args = "<group name>"
+    help = "Show group info"
 
     def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError("Invalid number of arguments")
+        if len(args) != 1:
+            raise CommandError("Please provide a group name")
 
-        s = {'name':args[0], 'url':args[1]}
-        if len(args) == 3:
-            s['icon'] = args[2]
+        group = AstakosGroup.objects
+        name_or_id = args[0].decode('utf8')
         try:
-            c = AstakosCallpoint()
-            r = c.add_services((s,)).next()
-        except Exception, e:
-            raise CommandError(e)
-        else:
-	        if r.is_success:
-                self.stdout.write(
-                    'Service created successfully\n')
+            if name_or_id.isdigit():
+                group = group.get(id=int(name_or_id))
             else:
-	    	    raise CommandError(r.reason)
+                group = group.get(name=name_or_id)
+        except AstakosGroup.DoesNotExist:
+            field = 'id' if name_or_id.isdigit() else 'name'
+            msg = "Unknown user with %s '%s'" % (field, name_or_id)
+            raise CommandError(msg)
+        
+        attrs = (
+            'id',
+            'name',
+            'kind',
+            'homepage', 
+            'desc',
+            'owners',
+            'is_enabled',
+            'max_participants',
+            'moderation_enabled',
+            'creation_date',
+            'issue_date',
+            'expiration_date',
+            'approval_date',
+            'members',
+            'approved_members',
+            'quota',
+            'permissions'
+        )
+
+        for attr in attrs:
+            val = getattr(group, attr)
+            if isinstance(val, defaultdict):
+                val = dict(val)
+            if isinstance(val, models.Manager):
+                val = val.all()
+            line = '%s: %s\n' % (attr.rjust(22), val)
+            self.stdout.write(line.encode('utf8'))
+        self.stdout.write('\n')

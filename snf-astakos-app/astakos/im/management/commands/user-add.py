@@ -49,18 +49,10 @@ def filter_custom_options(options):
 
 
 class Command(BaseCommand):
-    args = "<email>"
+    args = "<email> <first name> <last name>"
     help = "Create a user"
 
     option_list = BaseCommand.option_list + (
-        make_option('--first-name',
-                    dest='first_name',
-                    metavar='NAME',
-                    help="Set user's first name"),
-        make_option('--last-name',
-                    dest='last_name',
-                    metavar='NAME',
-                    help="Set user's last name"),
         make_option('--affiliation',
                     dest='affiliation',
                     metavar='AFFILIATION',
@@ -90,34 +82,37 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        if len(args) != 1:
+        if len(args) != 3:
             raise CommandError("Invalid number of arguments")
 
-        email = args[0].decode('utf8')
-
+        email, first_name, last_name = (args[i].decode('utf8') for i in range(3))
+        
         try:
             validate_email(email)
         except ValidationError:
             raise CommandError("Invalid email")
 
-        u = {'email': email}
+        u = {'email': email,
+             'first_name':first_name,
+             'last_name':last_name
+        }
         u.update(filter_custom_options(options))
         if not u.get('password'):
             u['password'] = AstakosUser.objects.make_random_password()
 
         try:
             c = AstakosCallpoint()
-            r = c.create_users((u,))
+            r = c.create_users((u,)).next()
         except socket.error, e:
             raise CommandError(e)
         except ValidationError, e:
             raise CommandError(e)
         else:
-            failed = (res for res in r if not res.is_success)
-            for r in failed:
-                if not r.is_success:
-                    raise CommandError(r.reason)
-            if not failed:
-                self.stdout.write('User created successfully')
-                if not u.get('password'):
-                    self.stdout.write('with password: %s' % u['password'])
+            if not r.is_success:
+                raise CommandError(r.reason)
+            else:
+                self.stdout.write('User created successfully ')
+                if not options.get('password'):
+                    self.stdout.write('with password: %s\n' % u['password'])
+                else:
+                    self.stdout.write('\n')

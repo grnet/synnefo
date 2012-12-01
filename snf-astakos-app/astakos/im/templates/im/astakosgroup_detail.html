@@ -39,6 +39,10 @@
 			 			Not set yet
 			 		{% endif %}
 			 	</dd>
+			 	<dt>Moderation</dt>
+			 	<dd>
+			 		{{ object.moderation_enabled }}
+			 	</dd>
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
@@ -64,8 +68,10 @@
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Expiration Date</dt>
 		 	<dd>{{object.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>Modaration</dt>
+<!--
+		 	<dt>Moderation</dt>
 		 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
+ -->
 		 	<dt>Activated</dt>
 		 	<dd>{% if object.is_enabled %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>

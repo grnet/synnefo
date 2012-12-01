@@ -756,7 +756,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
 class AstakosGroupUpdateForm(forms.ModelForm):
     class Meta:
         model = AstakosGroup
-        fields = ( 'desc','homepage')
+        fields = ( 'desc','homepage', 'moderation_enabled')
 
 
 class AddGroupMembersForm(forms.Form):

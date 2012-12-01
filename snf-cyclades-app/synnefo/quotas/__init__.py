@@ -67,8 +67,8 @@ class DummyQuotaholderClient(object):
                 user_vms = VirtualMachine.objects.filter(userid=userid,
                                                          deleted=False).count()
                 user_vm_limit = VMS_USER_QUOTA.get(userid, MAX_VMS_PER_USER)
-                log.warning("Users VMs %s User Limits %s", user_vms,
-                        user_vm_limit)
+                log.debug("Users VMs %s User Limits %s", user_vms,
+                          user_vm_limit)
                 if user_vms + size >= user_vm_limit:
                     raise NoQuantityError()
             if resource == "cyclades.network.private":
@@ -192,7 +192,7 @@ def issue_commission(**commission_info):
 
     if serial:
         return QuotaHolderSerial.objects.create(serial=serial)
-    elif not USE_QUOTAHOLDER:
+    elif not CYCLADES_USE_QUOTAHOLDER:
         return DummySerial()
     else:
         raise Exception("No serial")

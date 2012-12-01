@@ -61,7 +61,7 @@
         	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
 					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
-					    <option value="">Sort by Name</option>	
+					    <option value="groupname">Sort by Name</option>
 			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
 			            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
 			            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> 
@@ -217,7 +217,7 @@
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
 						    <select name="sorting"  class="dropkicked"  tabindex="1">
-							    <option value="">Sort by Name</option>
+							    <option value="groupname">Sort by Name</option>
 					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			
 					            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
 					            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>

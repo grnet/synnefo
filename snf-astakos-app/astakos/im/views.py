@@ -72,7 +72,7 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
-                              MembersSortForm,
+                              MembersSortForm, AstakosGroupSortForm,
                               TimelineForm, PickResourceForm,
                               AstakosGroupCreationSummaryForm)
 from astakos.im.functions import (send_feedback, SendMailError,
@@ -92,9 +92,6 @@ from astakos.im import settings
 from astakos.im import auth_providers
 
 logger = logging.getLogger(__name__)
-
-DB_REPLACE_GROUP_SCHEME = """REPLACE(REPLACE("auth_group".name, 'http://', ''),
-                                     'https://', '')"""
 
 callpoint = AstakosCallpoint()
 
@@ -912,10 +909,9 @@ def group_add_complete(request):
 @login_required
 def group_list(request):
     none = request.user.astakos_groups.none()
-    sorting = request.GET.get('sorting')
     query = """
         SELECT auth_group.id,
-        %s AS groupname,
+        auth_group.name AS groupname,
         im_groupkind.name AS kindname,
         im_astakosgroup.*,
         owner.email AS groupowner,
@@ -925,7 +921,7 @@ def group_list(request):
         (SELECT CASE WHEN(
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
-                    AND person_id = %s) IS NULL
+                    AND person_id = %(userid)s) IS NULL
                     THEN 0 ELSE 1 END) AS membership_status
         FROM im_astakosgroup
         INNER JOIN im_membership ON (
@@ -936,17 +932,19 @@ def group_list(request):
             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
-        WHERE im_membership.person_id = %s
-        """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id)
+        WHERE im_membership.person_id = %(userid)s
+        """
+    params = {'userid':request.user.id}
 
-    if sorting:
-        query = query+" ORDER BY %s ASC" %sorting
-    else:
-        query = query+" ORDER BY groupname ASC"
-    q = AstakosGroup.objects.raw(query)
-
-
-
+    # validate sorting
+    sorting = 'groupname'
+    sort_form = AstakosGroupSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    query = query+" ORDER BY %s ASC" %sorting
+    
+    q = AstakosGroup.objects.raw(query, params=params)
+    
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
         q.model._meta.app_label,
@@ -955,7 +953,7 @@ def group_list(request):
     extra_context = dict(
         is_search=False,
         q=q,
-        sorting=request.GET.get('sorting'),
+        sorting=sorting,
         page=request.GET.get('page', 1)
     )
     return render_response(template_name,
@@ -1065,19 +1063,20 @@ def group_detail(request, group_id):
 @login_required
 def group_search(request, extra_context=None, **kwargs):
     q = request.GET.get('q')
-    sorting = request.GET.get('sorting')
     if request.method == 'GET':
         form = AstakosGroupSearchForm({'q': q} if q else None)
     else:
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
+    
+    sorting = 'groupname'
     if q:
         queryset = AstakosGroup.objects.select_related()
         queryset = queryset.filter(name__contains=q)
         queryset = queryset.filter(approval_date__isnull=False)
         queryset = queryset.extra(select={
-                                  'groupname': DB_REPLACE_GROUP_SCHEME,
+                                  'groupname': "auth_group.name",
                                   'kindname': "im_groupkind.name",
                                   'approved_members_num': """
                     SELECT COUNT(*) FROM im_membership
@@ -1105,11 +1104,12 @@ def group_search(request, extra_context=None, **kwargs):
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,
                     })
-        if sorting:
-            # TODO check sorting value
-            queryset = queryset.order_by(sorting)
-        else:
-            queryset = queryset.order_by("groupname")
+        
+        # validate sorting
+        sort_form = AstakosGroupSortForm(request.GET)
+        if sort_form.is_valid():
+            sorting = sort_form.cleaned_data.get('sorting')
+        queryset = queryset.order_by(sorting)
 
     else:
         queryset = AstakosGroup.objects.none()
@@ -1132,7 +1132,7 @@ def group_all(request, extra_context=None, **kwargs):
     q = AstakosGroup.objects.select_related()
     q = q.filter(approval_date__isnull=False)
     q = q.extra(select={
-                'groupname': DB_REPLACE_GROUP_SCHEME,
+                'groupname': "auth_group.name",
                 'kindname': "im_groupkind.name",
                 'approved_members_num': """
                     SELECT COUNT(*) FROM im_membership
@@ -1153,13 +1153,16 @@ def group_all(request, extra_context=None, **kwargs):
                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,   })
-    sorting = request.GET.get('sorting')
-    if sorting:
-        # TODO check sorting value
-        q = q.order_by(sorting)
-    else:
-        q = q.order_by("groupname")
-
+    
+    # validate sorting
+    sorting = 'groupname'
+    print '>>>', sorting, request.GET
+    sort_form = AstakosGroupSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    print '<<<', sorting
+    q = q.order_by(sorting)
+    
     return object_list(
         request,
         q,

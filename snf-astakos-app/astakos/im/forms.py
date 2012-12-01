@@ -821,21 +821,18 @@ class TimelineForm(forms.Form):
 
 
 class AstakosGroupSortForm(forms.Form):
-    sort_by = forms.ChoiceField(label='Sort by',
-                                choices=(('groupname', 'Name'),
-                                         ('kindname', 'Type'),
-                                         ('issue_date', 'Issue Date'),
-                                         ('expiration_date',
-                                          'Expiration Date'),
-                                         ('approved_members_num',
-                                          'Participants'),
-                                         ('is_enabled', 'Status'),
-                                         ('moderation_enabled', 'Moderation'),
-                                         ('membership_status',
-                                          'Enrollment Status')
-                                         ),
-                                required=False)
-
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(
+            ('groupname', 'Name'),
+            ('issue_date', 'Issue Date'),
+            ('expiration_date', 'Expiration Date'),
+            ('approved_members_num', 'Participants'),
+            ('moderation_enabled', 'Moderation'),
+            ('membership_status', 'Enrollment Status')
+        ),
+        required=True
+    )
 
 class MembersSortForm(forms.Form):
     sort_by = forms.ChoiceField(label='Sort by',
@@ -844,7 +841,6 @@ class MembersSortForm(forms.Form):
                                          ('date_joined', 'Status')
                                          ),
                                 required=False)
-
 
 class PickResourceForm(forms.Form):
     resource = forms.ModelChoiceField(

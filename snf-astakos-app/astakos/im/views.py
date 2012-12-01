@@ -1259,7 +1259,7 @@ def disapprove_member(request, membership):
     try:
         membership.disapprove()
         realname = membership.person.realname
-        msg = astakos_messages.MEMBER_REMOVED % realname
+        msg = astakos_messages.MEMBER_REMOVED % locals()
         messages.success(request, msg)
     except BaseException, e:
         logger.exception(e)

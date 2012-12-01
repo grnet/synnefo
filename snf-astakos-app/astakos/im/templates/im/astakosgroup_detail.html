@@ -145,7 +145,11 @@
                     <td>Owner</td>
                     {% else %}
                         {% if m.is_approved %}
-                        <td>Approved</td>
+                        <td>Approved
+                            {% if object.is_owner %}
+                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
+                            {% endif %}
+                        </td>
                         {% else %}
                         <td>Pending
                             {% if object.is_owner %}

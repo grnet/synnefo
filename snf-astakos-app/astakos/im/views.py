@@ -827,14 +827,13 @@ def group_add(request, kind_name='default'):
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
+            policies = form.policies()
             return render_response(
                 template='im/astakosgroup_form_summary.html',
                 context_instance=get_context(request),
-                form = AstakosGroupCreationSummaryForm(form.cleaned_data),
-                policies = resource_catalog.get_policies(form.policies()),
-                resource_catalog= resource_catalog,
+                form=AstakosGroupCreationSummaryForm(form.cleaned_data),
+                policies=resource_catalog.get_policies(policies)
             )
-
     else:
         now = datetime.now()
         data = {
@@ -900,7 +899,9 @@ def group_add_complete(request):
     return render_response(
         template='im/astakosgroup_form_summary.html',
         context_instance=get_context(request),
-        form=form)
+        form=form,
+        policies=form.cleaned_data.get('policies')
+    )
 
 
 #@require_http_methods(["GET"])

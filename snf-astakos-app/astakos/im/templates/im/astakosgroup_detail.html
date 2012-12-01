@@ -46,7 +46,7 @@
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
-		<form action="" method="post"
+		<form action="{% url astakos.im.views.group_detail object.id %}" method="post"
 	            class="withlabels">{% csrf_token %}
 	            {% with update_form as form %}
                     {% include "im/form_render.html" %}
@@ -194,7 +194,7 @@
      
     {% if object.is_owner %}
     <div class="full-dotted">
-        <form action="" method="post" class="withlabels">{% csrf_token %}
+        <form action="{% url astakos.im.views.group_detail object.id %}" method="post" class="withlabels">{% csrf_token %}
             <h2>Enroll more members</h2>
                 {% with addmembers_form as form %}
                     {% include "im/form_render.html" %}

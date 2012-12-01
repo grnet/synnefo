@@ -94,7 +94,7 @@
                 <tbody>
                   {% for o in object_list %}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
-	                    <td style="width:22%"><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"|truncatename}}</a></td>
+	                    <td style="width:22%"><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|truncatename}}</a></td>
 	                    <!--td>{{o.kindname|capfirst}}</td-->
 	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 	                    <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
@@ -140,7 +140,7 @@
 			                            </form>
 			                            <div class="dialog">
 					                		Are you sure you what to leave this group?<br>
-					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a><br>
+					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
 					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
@@ -161,7 +161,7 @@
 		                                </form>
 		                                <div class="dialog">
 					                		Are you sure you what to join this group?<br>
-					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a><br>
+					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
 					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
@@ -245,14 +245,14 @@
 			            <tbody>
 			              {% for o in page_obj.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td style="width:22%"><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/"|truncatename }}</a></td>
+			                <td style="width:22%"><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|truncatename }}</a></td>
 			                <!--td>{{o.kindname|capfirst}}</td-->
 			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
 			                <td style="width:13%">{{ o.approved_members_num }}</td>
 			                <td style="width:15%">
 			                	<div class="msg-wrap">
-			                 	{% if user.email = o.groupowner %}
+			                	{% if user.email = o.groupowner %}
 			                		{% if o.is_enabled %}
 			                			Owner
 			                		{% else %}
@@ -290,7 +290,7 @@
 					                        </form>	
 					                        <div class="dialog">
 						                		Are you sure you what to leave this group?<br>
-						                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|rcut:"/" }}</a><br>
+						                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
 						                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
 						                		
 						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>

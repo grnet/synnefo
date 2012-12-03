@@ -393,6 +393,28 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         resources = [h.resource for h in holdings]
         return resources
 
+    def list_holdings(self, context={}, list_holdings=()):
+        rejected = []
+        reject = rejected.append
+        holdings_list = []
+        append = holdings_list.append
+
+        for entity, key in list_holdings:
+            try:
+                e = Entity.objects.get(entity=entity)
+                if e.key != key:
+                    raise Entity.DoesNotExist("wrong key")
+            except Entity.DoesNotExist:
+                reject(entity)
+                continue
+
+            holdings = e.holding_set.filter(entity=entity)
+            append([[entity, h.resource,
+                     h.imported, h.exported, h.returned, h.released]
+                        for h in holdings])
+
+        return holdings_list, rejected
+
     def get_quota(self, context={}, get_quota=()):
         quotas = []
         append = quotas.append

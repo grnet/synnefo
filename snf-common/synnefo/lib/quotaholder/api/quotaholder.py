@@ -195,6 +195,18 @@ class QuotaholderAPI(Specificator):
         resources = ListOf(Resource)
         return resources
 
+    def list_holdings   (
+                self,
+                context         =   Context,
+                list_holdings   =   ListOf(Entity, Key)
+        ):
+
+        rejected = ListOf(Entity)
+        holdings_list = ListOf(ListOf(Entity, Resource,
+                                      Imported, Exported,
+                                      Returned, Released))
+        return Tuple(holdings_list, rejected)
+
     def get_quota   (
                 self,
                 context     =   Context,

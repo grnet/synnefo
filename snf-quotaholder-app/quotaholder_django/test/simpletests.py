@@ -232,6 +232,40 @@ class QHAPITest(QHTestCase):
                                      name='something',
                                      provisions=[(e1, resource, 1)])
 
+    def test_010_list_holdings(self):
+        e0, k0 = ('list_holdings_one', '1')
+        e1, k1 = ('list_holdings_two', '1')
+        resource = 'list_holdings_resource'
+        sys = 'system'
+
+        r = self.qh.create_entity(create_entity=[(e0, sys, k0, ''),
+                                                 (e1, sys, k1, '')])
+        if r:
+            raise AssertionError("cannot create entities")
+
+        self.qh.set_quota(set_quota=[(sys, resource, '', 10, 0, None, None, 0),
+                                     (e0, resource, k0, 0, 10, None, None, 0),
+                                     (e1, resource, k1, 0, 10, None, None, 0)])
+
+        s0 = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
+                                      name='a commission',
+                                      provisions=[('system', resource, 3)])
+
+        s1 = self.qh.issue_commission(clientkey=self.client, target=e1, key=k1,
+                                      name='a commission',
+                                      provisions=[('system', resource, 4)])
+
+        self.qh.accept_commission(clientkey=self.client, serials=[s0, s1])
+
+        holdings_list, rejected = self.qh.list_holdings(list_holdings=[
+                                                        (e0, k0),
+                                                        (e1, k1),
+                                                        (e0+e1, k0+k1)])
+
+        self.assertEqual(rejected, [e0+e1])
+        self.assertEqual(holdings_list, [[(e0, resource, 3, 0, 0, 0)],
+                                         [(e1, resource, 4, 0, 0, 0)]])
+
 
     def test_010_pending_commissions(self):
         r = self.qh.get_pending_commissions(clientkey=self.client)

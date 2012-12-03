@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 from urlparse import urljoin
+from random import random
 
 from django import forms
 from django.utils.translation import ugettext as _
@@ -47,6 +48,8 @@ from django.utils.encoding import smart_str
 from django.conf import settings
 from django.forms.models import fields_for_model
 from django.db import transaction
+from django.utils.encoding import smart_unicode
+from django.core import validators
 
 from astakos.im.models import (
     AstakosUser, EmailChange, AstakosGroup, Invitation, GroupKind,
@@ -68,12 +71,16 @@ import astakos.im.messages as astakos_messages
 import logging
 import hashlib
 import recaptcha.client.captcha as captcha
-from random import random
+import re
 
 logger = logging.getLogger(__name__)
 
-class StoreUserMixin(object):
+DOMAIN_VALUE_REGEX = re.compile(
+    r'^(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.){0,126}(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?))$',
+    re.IGNORECASE
+)
 
+class StoreUserMixin(object):
     @transaction.commit_on_success
     def store_user(self, user, request):
         user.save()
@@ -592,7 +599,14 @@ class AstakosGroupCreationForm(forms.ModelForm):
         label="",
         widget=forms.HiddenInput()
     )
-    name = forms.URLField(widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}), help_text="Name should be in the form of dns",)
+    name = forms.CharField(
+        validators=[validators.RegexValidator(
+            DOMAIN_VALUE_REGEX,
+            _(astakos_messages.DOMAIN_VALUE_ERR), 'invalid'
+        )],
+        widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
+        help_text="Name should be in the form of dns"
+    )
     moderation_enabled = forms.BooleanField(
         help_text="Check if you want to approve members participation manually",
         required=False,
@@ -611,13 +625,12 @@ class AstakosGroupCreationForm(forms.ModelForm):
         qd = args.pop(0).copy()
         members_unlimited = qd.pop('members_unlimited', False)
         members_uplimit = qd.pop('members_uplimit', None)
-#         max_participants = None if members_unlimited else members_uplimit
-#         qd['max_participants']= max_participants.pop(0) if max_participants else None
 
         #substitue QueryDict
         args.insert(0, qd)
 
         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
+        
         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
                                 'issue_date', 'expiration_date',
                                 'moderation_enabled', 'max_participants']
@@ -666,7 +679,10 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         label="",
         widget=forms.HiddenInput()
     )
-    name = forms.URLField()
+    name = forms.CharField(
+        widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
+        help_text="Name should be in the form of dns"
+    )
     moderation_enabled = forms.BooleanField(
         help_text="Check if you want to approve members participation manually",
         required=False,
@@ -685,8 +701,6 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
         qd = args.pop(0).copy()
         members_unlimited = qd.pop('members_unlimited', False)
         members_uplimit = qd.pop('members_uplimit', None)
-#         max_participants = None if members_unlimited else members_uplimit
-#         qd['max_participants']= max_participants.pop(0) if max_participants else None
 
         #substitue QueryDict
         args.insert(0, qd)
@@ -742,7 +756,7 @@ class AstakosGroupCreationSummaryForm(forms.ModelForm):
 class AstakosGroupUpdateForm(forms.ModelForm):
     class Meta:
         model = AstakosGroup
-        fields = ( 'desc','homepage')
+        fields = ( 'desc','homepage', 'moderation_enabled')
 
 
 class AddGroupMembersForm(forms.Form):
@@ -807,30 +821,28 @@ class TimelineForm(forms.Form):
 
 
 class AstakosGroupSortForm(forms.Form):
-    sort_by = forms.ChoiceField(label='Sort by',
-                                choices=(('groupname', 'Name'),
-                                         ('kindname', 'Type'),
-                                         ('issue_date', 'Issue Date'),
-                                         ('expiration_date',
-                                          'Expiration Date'),
-                                         ('approved_members_num',
-                                          'Participants'),
-                                         ('is_enabled', 'Status'),
-                                         ('moderation_enabled', 'Moderation'),
-                                         ('membership_status',
-                                          'Enrollment Status')
-                                         ),
-                                required=False)
-
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(
+            ('groupname', 'Name'),
+            ('issue_date', 'Issue Date'),
+            ('expiration_date', 'Expiration Date'),
+            ('approved_members_num', 'Participants'),
+            ('moderation_enabled', 'Moderation'),
+            ('membership_status', 'Enrollment Status')
+        ),
+        required=True
+    )
 
 class MembersSortForm(forms.Form):
-    sort_by = forms.ChoiceField(label='Sort by',
-                                choices=(('person__email', 'User Id'),
-                                         ('person__first_name', 'Name'),
-                                         ('date_joined', 'Status')
-                                         ),
-                                required=False)
-
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(('person__email', 'User Id'),
+                 ('person__first_name', 'Name'),
+                 ('date_joined', 'Status')
+        ),
+        required=True
+    )
 
 class PickResourceForm(forms.Form):
     resource = forms.ModelChoiceField(

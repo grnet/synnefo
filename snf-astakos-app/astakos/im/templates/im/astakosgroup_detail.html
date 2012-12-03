@@ -17,7 +17,7 @@
 				{% endif %}
 			</em>		
 		{% endif %}
-	 	<span>{{ object.name|strip_http|upper }}</span>
+	 	<span>{{ object.name|upper }}</span>
 	 </h2>
 	 
 	 <div class="details">
@@ -39,10 +39,14 @@
 			 			Not set yet
 			 		{% endif %}
 			 	</dd>
+			 	<dt>Moderation</dt>
+			 	<dd>
+			 		{{ object.moderation_enabled }}
+			 	</dd>
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
-		<form action="" method="post"
+		<form action="{% url astakos.im.views.group_detail object.id %}" method="post"
 	            class="withlabels">{% csrf_token %}
 	            {% with update_form as form %}
                     {% include "im/form_render.html" %}
@@ -57,15 +61,17 @@
 		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
-		 	<dd>{{ object.name|strip_http }}&nbsp;</dd>
+		 	<dd>{{ object.name }}&nbsp;</dd>
 		 	<!--<dt>Type</dt>
 		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>-->
 		 	<dt>Issue date:</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Expiration Date</dt>
 		 	<dd>{{object.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>Modaration</dt>
+<!--
+		 	<dt>Moderation</dt>
 		 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
+ -->
 		 	<dt>Activated</dt>
 		 	<dd>{% if object.is_enabled %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>
@@ -145,7 +151,11 @@
                     <td>Owner</td>
                     {% else %}
                         {% if m.is_approved %}
-                        <td>Approved</td>
+                        <td>Approved
+                            {% if object.is_owner %}
+                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
+                            {% endif %}
+                        </td>
                         {% else %}
                         <td>Pending
                             {% if object.is_owner %}
@@ -184,7 +194,7 @@
      
     {% if object.is_owner %}
     <div class="full-dotted">
-        <form action="" method="post" class="withlabels">{% csrf_token %}
+        <form action="{% url astakos.im.views.group_detail object.id %}" method="post" class="withlabels">{% csrf_token %}
             <h2>Enroll more members</h2>
                 {% with addmembers_form as form %}
                     {% include "im/form_render.html" %}

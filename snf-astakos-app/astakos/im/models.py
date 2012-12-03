@@ -307,7 +307,7 @@ class AstakosGroup(Group):
 
 
 
-class AstakosUserManager(models.Manager):
+class AstakosUserManager(UserManager):
 
     def get_auth_provider_user(self, provider, **kwargs):
         """
@@ -322,9 +322,6 @@ class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
     """
-    # Use UserManager to get the create_user method, etc.
-    objects = UserManager()
-
     affiliation = models.CharField('Affiliation', max_length=255, blank=True,
                                    null=True)
 
@@ -377,6 +374,7 @@ class AstakosUser(User):
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
+    
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
 
@@ -500,13 +498,8 @@ class AstakosUser(User):
 
         if not self.id:
             # set username
-            while not self.username:
-                username =  self.email
-                try:
-                    AstakosUser.objects.get(username=username)
-                except AstakosUser.DoesNotExist:
-                    self.username = username
-
+            self.username = self.email
+        
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent

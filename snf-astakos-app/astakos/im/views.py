@@ -1274,7 +1274,7 @@ def disapprove_member(request, membership):
 @require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
-def resource_list(request):
+def resource_usage(request):
     def with_class(entry):
         entry['load_class'] = 'red'
         max_value = float(entry['maxValue'])
@@ -1293,7 +1293,7 @@ def resource_list(request):
         entry['plural'] = engine.plural(entry.get('name'))
         return entry
 
-    result = callpoint.get_user_status(request.user.id)
+    result = callpoint.get_user_usage(request.user.id)
     if result.is_success:
         backenddata = map(with_class, result.data)
         data = map(pluralize, result.data)
@@ -1302,10 +1302,7 @@ def resource_list(request):
         messages.error(request, result.reason)
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result_report(result)
-
-
-
-    return render_response('im/resource_list.html',
+    return render_response('im/resource_usage.html',
                            data=data,
                            context_instance=get_context(request),
                            resource_catalog=resource_catalog,

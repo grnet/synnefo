@@ -200,7 +200,7 @@ class AstakosAPI(Specificator):
             )
         )
 
-    def get_user_status(
+    def get_user_usage(
         self,
         user_id=Nonnegative
     ):

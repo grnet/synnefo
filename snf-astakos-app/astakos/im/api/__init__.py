@@ -185,21 +185,24 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(
                    url=absolute(request, reverse('group_list')),
                    name="Projects",
-                   submenu=(item(
-                            url=absolute(request,
-                                         reverse('group_list')),
-                            name="Overview"),
-                            item(
-                                url=absolute(request,
-                                             reverse('group_create_list')),
-                                name="Create"),
-                            item(
-                                url=absolute(request,
-                                             reverse('group_search')),
-                                name="Join"),)))
+#                    submenu=(item(
+#                             url=absolute(request,
+#                                          reverse('group_list')),
+#                             name="Overview"),
+#                             item(
+#                                 url=absolute(request,
+#                                              reverse('group_create_list')),
+#                                 name="Create"),
+#                             item(
+#                                 url=absolute(request,
+#                                              reverse('group_search')),
+#                                 name="Join"),
+#                     )
+                )
+            )
             append(item(
-                   url=absolute(request, reverse('resource_list')),
-                   name="Report"))
+                   url=absolute(request, reverse('resource_usage')),
+                   name="Usage"))
             append(item(
                    url=absolute(request, reverse('feedback')),
                    name="Feedback"))

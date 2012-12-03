@@ -71,7 +71,7 @@ from astakos.im.endpoints.qh import (
 from astakos.im import auth_providers
 from astakos.im.endpoints.aquarium.producer import report_user_event
 from astakos.im.functions import send_invitation
-from astakos.im.tasks import propagate_groupmembers_quota
+#from astakos.im.tasks import propagate_groupmembers_quota
 
 import astakos.im.messages as astakos_messages
 
@@ -223,10 +223,10 @@ class AstakosGroup(Group):
         self.approval_date = datetime.now()
         self.save()
         quota_disturbed.send(sender=self, users=self.approved_members)
-        propagate_groupmembers_quota.apply_async(
-            args=[self], eta=self.issue_date)
-        propagate_groupmembers_quota.apply_async(
-            args=[self], eta=self.expiration_date)
+        #propagate_groupmembers_quota.apply_async(
+        #    args=[self], eta=self.issue_date)
+        #propagate_groupmembers_quota.apply_async(
+        #    args=[self], eta=self.expiration_date)
 
     def disable(self):
         if self.is_disabled:

@@ -84,7 +84,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
 from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (COOKIE_DOMAIN, LOGOUT_NEXT,
                                  LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL)
-from astakos.im.tasks import request_billing
+#from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
 import astakos.im.messages as astakos_messages
@@ -1319,64 +1319,64 @@ def group_create_list(request):
         context_instance=get_context(request),)
 
 
-#@require_http_methods(["GET"])
-@require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
-def billing(request):
+##@require_http_methods(["GET"])
+#@require_http_methods(["POST", "GET"])
+#@signed_terms_required
+#@login_required
+#def billing(request):
+#
+#    today = datetime.today()
+#    month_last_day = calendar.monthrange(today.year, today.month)[1]
+#    start = request.POST.get('datefrom', None)
+#    if start:
+#        today = datetime.fromtimestamp(int(start))
+#        month_last_day = calendar.monthrange(today.year, today.month)[1]
+#
+#    start = datetime(today.year, today.month, 1).strftime("%s")
+#    end = datetime(today.year, today.month, month_last_day).strftime("%s")
+#    r = request_billing.apply(args=('pgerakios@grnet.gr',
+#                                    int(start) * 1000,
+#                                    int(end) * 1000))
+#    data = {}
+#
+#    try:
+#        status, data = r.result
+#        data = _clear_billing_data(data)
+#        if status != 200:
+#            messages.error(request, _(astakos_messages.BILLING_ERROR) % status)
+#    except:
+#        messages.error(request, r.result)
+#
+#    return render_response(
+#        template='im/billing.html',
+#        context_instance=get_context(request),
+#        data=data,
+#        zerodate=datetime(month=1, year=1970, day=1),
+#        today=today,
+#        start=int(start),
+#        month_last_day=month_last_day)
 
-    today = datetime.today()
-    month_last_day = calendar.monthrange(today.year, today.month)[1]
-    start = request.POST.get('datefrom', None)
-    if start:
-        today = datetime.fromtimestamp(int(start))
-        month_last_day = calendar.monthrange(today.year, today.month)[1]
 
-    start = datetime(today.year, today.month, 1).strftime("%s")
-    end = datetime(today.year, today.month, month_last_day).strftime("%s")
-    r = request_billing.apply(args=('pgerakios@grnet.gr',
-                                    int(start) * 1000,
-                                    int(end) * 1000))
-    data = {}
-
-    try:
-        status, data = r.result
-        data = _clear_billing_data(data)
-        if status != 200:
-            messages.error(request, _(astakos_messages.BILLING_ERROR) % status)
-    except:
-        messages.error(request, r.result)
-
-    return render_response(
-        template='im/billing.html',
-        context_instance=get_context(request),
-        data=data,
-        zerodate=datetime(month=1, year=1970, day=1),
-        today=today,
-        start=int(start),
-        month_last_day=month_last_day)
-
-
-def _clear_billing_data(data):
-
-    # remove addcredits entries
-    def isnotcredit(e):
-        return e['serviceName'] != "addcredits"
-
-    # separate services
-    def servicefilter(service_name):
-        service = service_name
-
-        def fltr(e):
-            return e['serviceName'] == service
-        return fltr
-
-    data['bill_nocredits'] = filter(isnotcredit, data['bill'])
-    data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
-    data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
-    data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
-
-    return data
+#def _clear_billing_data(data):
+#
+#    # remove addcredits entries
+#    def isnotcredit(e):
+#        return e['serviceName'] != "addcredits"
+#
+#    # separate services
+#    def servicefilter(service_name):
+#        service = service_name
+#
+#        def fltr(e):
+#            return e['serviceName'] == service
+#        return fltr
+#
+#    data['bill_nocredits'] = filter(isnotcredit, data['bill'])
+#    data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
+#    data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
+#    data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
+#
+#    return data
 
 
 #@require_http_methods(["GET"])

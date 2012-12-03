@@ -108,6 +108,9 @@ class Canonical(object):
         return self.check(item)
 
     def check(self, item):
+        if argmap_check(item):
+            item = self._unpack(item)
+
         opts = self.opts
         if item is None and 'default' in opts:
             item = opts['default']
@@ -115,9 +118,6 @@ class Canonical(object):
         can_be_null = opts.get('null', False)
         if item is None and can_be_null:
             return None
-
-        if argmap_check(item):
-            item = self._unpack(item)
 
         return self._check(item)
 

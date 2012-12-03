@@ -152,6 +152,20 @@ class ShibbolethAuthProvider(AuthProvider):
     login_prompt_template = 'im/auth/shibboleth_login_prompt.html'
 
 
+class TwitterAuthProvider(AuthProvider):
+    module = 'twitter'
+    title = _('Twitter')
+    description = _('Allows you to login to your account using your twitter '
+                    'account')
+    add_prompt = _('Connect with your Twitter account.')
+
+    @property
+    def add_url(self):
+        return reverse('astakos.im.target.twitter.login')
+
+    login_template = 'im/auth/twitter_login.html'
+    login_prompt_template = 'im/auth/twitter_login_prompt.html'
+
 def get_provider(id, user_obj=None, default=None):
     """
     Return a provider instance from the auth providers registry.

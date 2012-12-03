@@ -1415,27 +1415,6 @@ The above will do the following :
 You can run ``brctl show`` on both nodes to see if everything was setup
 correctly.
 
-Synnefo Setup
-~~~~~~~~~~~~~
-
-As long as those resourses have been provisioned, admin has to define two
-different pools in Synnefo:
-
- - MAC prefix Pool
- - Bridge Pool
-
-.. code-block:: console
-
-   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
-
-   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
-
-Change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
-
-.. code-block:: console
-
-   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
-
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1790,6 +1769,32 @@ Ganeti MASTER:
 
    $ gnt-network list
    $ gnt-network info <network_name>
+
+
+Create pools for Private Networks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To prevent duplicate assignment of resources to different private networks,
+Cyclades supports two types of pools:
+
+ - MAC prefix Pool
+ - Bridge Pool
+
+As long as those resourses have been provisioned, admin has to define two
+these pools in Synnefo:
+
+
+.. code-block:: console
+
+   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
+
+   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
+
+Also, change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
+
+.. code-block:: console
+
+   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
 
 Servers restart
 ---------------

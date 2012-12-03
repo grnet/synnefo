@@ -41,8 +41,9 @@ from astakos.im.functions import (
     send_activation, send_account_creation_notification, activate
 )
 from astakos.im.settings import (
-    INVITATIONS_ENABLED, MODERATION_ENABLED, RE_USER_EMAIL_PATTERNS
+    INVITATIONS_ENABLED, RE_USER_EMAIL_PATTERNS
 )
+from astakos.im import settings as astakos_settings
 from astakos.im.forms import *
 
 import astakos.im.messages as astakos_messages
@@ -102,7 +103,7 @@ class ActivationBackend(object):
             if provider == request.POST.get('provider', ''):
                 initial_data = request.POST
         return globals()[formclass](initial_data, instance=instance, request=request)
-    
+
     def handle_activation(
         self, user, activation_template_name='im/activation_email.txt',
         greeting_template_name='im/welcome_email.txt',
@@ -119,7 +120,7 @@ class ActivationBackend(object):
         try:
             if user.is_active:
                 return RegistationCompleted()
-            
+
             if self._is_preaccepted(user):
                 if user.email_verified:
                     activate(user, greeting_template_name)
@@ -196,7 +197,7 @@ class InvitationsBackend(ActivationBackend):
             return True
         invitation = self.invitation
         if not invitation:
-            return False
+            return not astakos_settings.MODERATION_ENABLED
         if invitation.username == user.email and not invitation.is_consumed:
             invitation.consume()
             return True
@@ -212,7 +213,7 @@ class SimpleBackend(ActivationBackend):
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):
             return True
-        if MODERATION_ENABLED:
+        if astakos_settings.MODERATION_ENABLED:
             return False
         return True
 

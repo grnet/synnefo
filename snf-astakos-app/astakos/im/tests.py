@@ -339,10 +339,8 @@ class LocalUserTests(TestCase):
         settings.ADMINS = (('admin', 'support@cloud.grnet.gr'),)
         settings.SERVER_EMAIL = 'no-reply@grnet.gr'
 
-    def test_invitations(self):
-        return
-
-    def test_local_provider(self):
+    def test_no_moderation(self):
+        astakos_settings.MODERATION_ENABLED = False
         r = self.client.get("/im/signup")
         self.assertEqual(r.status_code, 200)
 
@@ -356,6 +354,29 @@ class LocalUserTests(TestCase):
         self.assertEqual(user.username, 'kpap@grnet.gr')
         self.assertEqual(user.has_auth_provider('local'), True)
         self.assertFalse(user.is_active)
+
+        # user (not admin) gets notified
+        self.assertEqual(len(get_mailbox('support@cloud.grnet.gr')), 0)
+        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 1)
+        astakos_settings.MODERATION_ENABLED = True
+
+    def test_local_provider(self):
+        astakos_settings.MODERATION_ENABLED = True
+        r = self.client.get("/im/signup")
+        self.assertEqual(r.status_code, 200)
+
+        data = {'email':'kpap@grnet.gr', 'password1':'password',
+                'password2':'password', 'first_name': 'Kostas',
+                'last_name': 'Mitroglou', 'provider': 'local'}
+        r = self.client.post("/im/signup", data)
+        self.assertEqual(AstakosUser.objects.count(), 1)
+        user = AstakosUser.objects.get(username="kpap@grnet.gr",
+                                       email="kpap@grnet.gr")
+        self.assertEqual(user.username, 'kpap@grnet.gr')
+        self.assertEqual(user.has_auth_provider('local'), True)
+        self.assertFalse(user.is_active)
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.activation_sent)
 
         # admin gets notified
         self.assertEqual(len(get_mailbox('support@cloud.grnet.gr')), 1)

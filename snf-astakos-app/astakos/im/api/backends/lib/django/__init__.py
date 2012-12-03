@@ -306,6 +306,6 @@ class DjangoBackend(BaseBackend):
 
         g.permissions = permissions
         g.policies = policies
-        g.members = members
+#        g.members = members
         g.owners = owners
         return self._list(AstakosGroup, filter=(g.id,))

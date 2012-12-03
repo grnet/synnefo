@@ -58,11 +58,11 @@ from django.views.generic.create_update import (delete_object,
 from django.views.generic.list_detail import object_list
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
-
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
-from astakos.im.activation_backends import get_backend, SimpleBackend
+from django.db.models import Q
 
+from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
                                EmailChange, GroupKind, Membership,
                                RESOURCE_SEPARATOR, AstakosUserAuthProvider)
@@ -937,6 +937,7 @@ def group_list(request):
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
         WHERE im_membership.person_id = %(userid)s
+        AND im_groupkind.name != 'default'
         """
     params = {'userid':request.user.id}
 
@@ -1073,6 +1074,7 @@ def group_search(request, extra_context=None, **kwargs):
     sorting = 'groupname'
     if q:
         queryset = AstakosGroup.objects.select_related()
+        queryset = queryset.filter(~Q(kind__name='default'))
         queryset = queryset.filter(name__contains=q)
         queryset = queryset.filter(approval_date__isnull=False)
         queryset = queryset.extra(select={
@@ -1130,6 +1132,7 @@ def group_search(request, extra_context=None, **kwargs):
 @login_required
 def group_all(request, extra_context=None, **kwargs):
     q = AstakosGroup.objects.select_related()
+    q = q.filter(~Q(kind__name='default'))
     q = q.filter(approval_date__isnull=False)
     q = q.extra(select={
                 'groupname': "auth_group.name",

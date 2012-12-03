@@ -207,10 +207,12 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 .container ul.options li a:hover				{ text-decoration: none; }
 .container ul.options li a.red					{ color:#F24E53 }
 .container ul.options li a.red:hover			{ border-bottom:1px solid #F24E53; }
-.container ul.options li a.grey					{ color:#F89A1C }
-.container ul.options li a.grey:hover			{ border-bottom:1px solid #F89A1C; }
+.container ul.options li a.grey					{ color:grey; }
+.container ul.options li a.grey:hover			{ border-bottom:1px solid grey; }
 .container ul.options li a.blue					{ color:#3582AC }
 .container ul.options li a.blue:hover			{ border-bottom:1px solid #3582AC; }
+.container ul.options li a.yellow				{ color:#F89A1C; }
+.container ul.options li a.yellow:hover			{ border-bottom:1px solid #F89A1C; }
 
 /* homepage clouds animation */
 #animation                                      { width:94%; height:120px; padding:0 3%; background:url(../images/okeanos_landing.png) no-repeat; max-width:375px; }
@@ -374,7 +376,14 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 /* quotas-form  */
 
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
-.quotas-form legend								{ color:#55B577; font-size:1.308em; margin-bottom:3em; position:relative; }
+.quotas-form legend								{ color:#55B577; font-size:1.308em;   position:relative; }
+
+/* workaround for fixing bug with legend margin*/
+.quotas-form legend+div							{ margin-top:3em; -webkit-margin-top-collapse: separate; }
+.quotas-form fieldset#icons legend+ul			{ margin-top:3em; -webkit-margin-top-collapse: separate; }
+.quotas-form fieldset.quota legend+ul			{ margin-top:2em; -webkit-margin-top-collapse: separate; }
+/* end of workaround*/
+
 .quotas-form legend span						{ color:#222; font-size:0.867em; }
 form.quotas-form legend span.info				{ position:relative; display:inline-block; top:auto; left:auto;  margin-left:10px; vertical-align:middle; margin-top:-2px;}
 form.quotas-form legend span.info em			{ position:static; }
@@ -400,7 +409,7 @@ form.quotas-form legend span.info span			{ width:395px; }
 .quotas-form a.delete							{ position:absolute; right:0; top:0; color:#B3B3B3; z-index:2 }
 .quotas-form .group								{ display:none; position:relative; background:url(../images/dots.jpg) repeat-x scroll center bottom; margin-bottom:2em; padding-bottom:2em;}
 .quotas-form .group fieldset					{ background:transparent; margin-bottom:1em; padding-bottom:1em; }
-.quotas-form .group fieldset legend				{ margin-bottom:1em; padding-bottom:1em; }
+.quotas-form .group fieldset legend				{  }
 .quotas-form fieldset ul li.rel+li.rel			{ background:url(../images/quota-related-bg.png) no-repeat left center; }
 .quotas-form .double-checks label				{ font-size:1.077em; }
 .quotas-form .double-checks .form-row			{ float:left; margin-right:10px;}
@@ -477,3 +486,9 @@ form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
 .content .how-it-works a.submit:hover			{ background:#55B577 }
 .content .how-it-works a.submit:focus			{ border-color: #B3B3B3}
 .content .how-it-works a.submit:focus:hover		{ border-color: #55B577}
+
+.auth_methods									{ margin:3em 0; }
+.auth_methods .wrap								{   }
+.auth_methods h2								{ font-size:1.154em; }
+.auth_methods table								{ width:100%; color:#222; margin:1em 0; }
+.auth_methods table th							{ font-weight:normal; color:#3582AC }

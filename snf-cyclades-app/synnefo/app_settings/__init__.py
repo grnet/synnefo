@@ -9,6 +9,7 @@ synnefo_web_apps = [
     'synnefo.helpdesk',
     'synnefo.ui.userdata',
     'synnefo.helpdesk',
+    'synnefo.quotas',
 ]
 
 synnefo_web_middleware = []

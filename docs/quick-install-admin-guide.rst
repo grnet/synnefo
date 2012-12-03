@@ -39,6 +39,15 @@ For the rest of the documentation we will refer to the first physical node as
 are "node1.example.com" and "node2.example.com" and their IPs are "4.3.2.1" and
 "4.3.2.2" respectively.
 
+.. note:: It is import that the two machines are under the same domain name.
+    If they are not, you can do this by editting the file ``/etc/hosts``
+    on both machines, and add the following lines:
+
+    .. code-block:: console
+
+        4.3.2.1     node1.example.com
+        4.3.2.2     node2.example.com
+
 
 General Prerequisites
 =====================
@@ -69,7 +78,8 @@ data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this
 directory should have at least 50GB of free space. During this guide, we will
 assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
-to node2. Node2 has this directory mounted under ``/srv/pithos``, too.
+to node2 (be sure to set no_root_squash flag). Node2 has this directory
+mounted under ``/srv/pithos``, too.
 
 Before starting the synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe
@@ -92,7 +102,7 @@ You can install apache2 and progresql by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql rabbitmq-server
+   # apt-get install apache2 postgresql
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -292,7 +302,7 @@ exchanges:
 
 .. code-block:: console
 
-   # rabbitmqctl add_user synnefo "examle_rabbitmq_passw0rd"
+   # rabbitmqctl add_user synnefo "example_rabbitmq_passw0rd"
    # rabbitmqctl set_permissions synnefo ".*" ".*" ".*"
 
 We do not need to initialize the exchanges. This will be done automatically,
@@ -520,7 +530,7 @@ uncomment and edit the ``DATABASES`` block to reflect our database:
          # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
         'NAME': 'snf_apps',
         'USER': 'synnefo',                      # Not used with sqlite3.
-        'PASSWORD': 'examle_passw0rd',          # Not used with sqlite3.
+        'PASSWORD': 'example_passw0rd',         # Not used with sqlite3.
         # Set to empty string for localhost. Not used with sqlite3.
         'HOST': '4.3.2.1',
         # Set to empty string for default. Not used with sqlite3.
@@ -542,14 +552,40 @@ For astakos specific configuration, edit the following options in
 
 .. code-block:: console
 
+   ASTAKOS_DEFAULT_ADMIN_EMAIL = None
+
+   ASTAKOS_IM_MODULES = ['local']
+
    ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
    ASTAKOS_BASEURL = 'https://node1.example.com'
 
    ASTAKOS_SITENAME = '~okeanos demo example'
 
-The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
-services). ``ASTAKOS_BASEURL`` is the astakos home page.
+   ASTAKOS_RECAPTCHA_ENABLED = False
+
+``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
+is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
+domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
+
+``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
+Every time a new account is created a notification is sent to this email.
+For this we need access to a running mail server, so we have disabled
+it for now by setting its value to None. For more informations on this,
+read the relative :ref:`section <mail-server>`.
+
+.. note:: For the purpose of this guide, we have disabled recaptcha authentication.
+    If you would like to enable it you have to edit the following options:
+
+    .. code-block:: console
+
+        ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
+        ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
+        ASTAKOS_RECAPTCHA_USE_SSL = True
+        ASTAKOS_RECAPTCHA_ENABLED = True
+
+    For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
+    go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
 Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
@@ -567,6 +603,17 @@ node1 which is where we have installed Astakos.
 
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
+
+.. note:: Because Cyclades and Astakos are running on the same machine
+    in our example, we have to deactivate the CSRF verification. We can do so
+    by adding to
+    ``/etc/synnefo/99-local.conf``:
+
+    .. code-block:: console
+
+        MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
+        TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
+
 
 Database Initialization
 -----------------------
@@ -704,7 +751,7 @@ has to do with snf-common or snf-webproject. Everything is set at node1. You
 only need to change settings that have to do with pithos+. Specifically:
 
 Edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``. There you need to set
-only the two options:
+this options:
 
 .. code-block:: console
 
@@ -939,15 +986,15 @@ a bridge interface on the host machines (e.g: br0). Then run on node1:
 
 .. code-block:: console
 
-   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init
-                                   --no-etc-hosts --vg-name=ganeti
-                                   --nic-parameters link=br0 --master-netdev eth0
+   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init \
+                                   --no-etc-hosts --vg-name=ganeti \
+                                   --nic-parameters link=br0 --master-netdev eth0 \
                                    ganeti.node1.example.com
    root@node1:~ # gnt-cluster modify --default-iallocator hail
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:kernel_path=
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:vnc_bind_address=0.0.0.0
 
-   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes
+   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes \
                                --vm-capable=yes node2.example.com
    root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
    root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
@@ -1368,27 +1415,6 @@ The above will do the following :
 You can run ``brctl show`` on both nodes to see if everything was setup
 correctly.
 
-Synnefo Setup
-~~~~~~~~~~~~~
-
-As long as those resourses have been provisioned, admin has to define two
-different pools in Synnefo:
-
- - MAC prefix Pool
- - Bridge Pool
-
-.. code-block:: console
-
-   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
-
-   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
-
-Change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
-
-.. code-block:: console
-
-   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
-
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1663,7 +1689,7 @@ correctly.
 
 .. code-block:: console
 
-   $ snf-manage backend-add --clustername=ganeti.example.com --user=cyclades --pass=example_rapi_passw0rd
+   $ snf-manage backend-add --clustername=ganeti.node1.example.com --user=cyclades --pass=example_rapi_passw0rd
 
 You can see everything has been setup correctly by running:
 
@@ -1709,12 +1735,12 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
 
 .. code-block:: console
 
-   $ snf-manage network-create --subnet=5.6.7.0/27
-                               --gateway=5.6.7.1
-                               --subnet6=2001:648:2FFC:1322::/64
-                               --gateway6=2001:648:2FFC:1322::1
-                               --public --dhcp --type=CUSTOM_BRIDGED
-                               --name=public_network
+   $ snf-manage network-create --subnet=5.6.7.0/27 \
+                               --gateway=5.6.7.1 \
+                               --subnet6=2001:648:2FFC:1322::/64 \
+                               --gateway6=2001:648:2FFC:1322::1 \
+                               --public --dhcp --type=CUSTOM_BRIDGED \
+                               --name=public_network \
                                --backend-id=1
 
 This will create the Public Network on both Cyclades and the Ganeti backend. To
@@ -1743,6 +1769,32 @@ Ganeti MASTER:
 
    $ gnt-network list
    $ gnt-network info <network_name>
+
+
+Create pools for Private Networks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To prevent duplicate assignment of resources to different private networks,
+Cyclades supports two types of pools:
+
+ - MAC prefix Pool
+ - Bridge Pool
+
+As long as those resourses have been provisioned, admin has to define two
+these pools in Synnefo:
+
+
+.. code-block:: console
+
+   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
+
+   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
+
+Also, change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
+
+.. code-block:: console
+
+   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
 
 Servers restart
 ---------------
@@ -1862,10 +1914,10 @@ installation. We do this by running:
 .. code-block:: console
 
    $ kamaki config set astakos.url "https://node1.example.com"
-   $ kamaki config set compute.url="https://node1.example.com/api/v1.1"
-   $ kamaki config set image.url "https://node1.examle.com/plankton"
-   $ kamaki config set storage.url "https://node2.example.com/v1"
-   $ kamaki config set storage.account "user@example.com"
+   $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
+   $ kamaki config set image.url "https://node1.example.com/plankton"
+   $ kamaki config set store.url "https://node2.example.com/v1"
+   $ kamaki config set global.account "user@example.com"
    $ kamaki config set global.token "bdY_example_user_tokenYUff=="
 
 The token at the last kamaki command is our user's (``user@example.com``) token,
@@ -1919,17 +1971,17 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 
 .. code-block:: console
 
-   $ kamaki image register "Debian Base"
-                           pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump
-                           --public
-                           --disk-format=diskdump
-                           --property OSFAMILY=linux --property ROOT_PARTITION=1
-                           --property description="Debian Squeeze Base System"
-                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI"
+   $ kamaki image register "Debian Base" \
+                           pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump \
+                           --public \
+                           --disk-format=diskdump \
+                           --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+                           --property description="Debian Squeeze Base System" \
+                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
                            --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos+ file
-``pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
+``pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
 Image in Plankton. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest

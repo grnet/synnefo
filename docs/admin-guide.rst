@@ -114,13 +114,7 @@ state by running (on the machine that runs the Astakos app):
    $ snf-manage user-list
 
 There are two different ways to activate a new user. Both need access to a
-running mail server. Your mail server should be defined in the
-``/etc/synnefo/00-snf-common-admins.conf`` related constants. At least:
-
-.. code-block:: console
-
-   EMAIL_HOST = "my_mail_server.example.com"
-   EMAIL_PORT = "25"
+running :ref:`mail server <mail-server>`.
 
 Manual activation
 `````````````````
@@ -321,6 +315,20 @@ Archipelago advanced operations
 -------------------------------
 
 
+.. _mail-server:
+
+Configure mail server
+---------------------
+
+In order to be able to send email (for example activation emails),
+synnefo needs access to a running mail server. Your mail server should
+be defined in the ``/etc/synnefo/00-snf-common-admins.conf``
+related constants. At least:
+
+.. code-block:: console
+
+   EMAIL_HOST = "my_mail_server.example.com"
+   EMAIL_PORT = "25"
 
 The "kamaki" API client
 =======================

@@ -449,10 +449,14 @@ def delete_server(request, server_id):
     return HttpResponse(status=204)
 
 
+# additional server actions
+ARBITRARY_ACTIONS = ['console', 'firewallProfile']
+
 @util.api_method('POST')
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
+
 
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")
@@ -463,7 +467,7 @@ def server_action(request, server_id):
 
     try:
         key = req.keys()[0]
-        if key != 'console':
+        if key not in ARBITRARY_ACTIONS:
             start_action(vm, key_to_action(key))
         val = req[key]
         assert isinstance(val, dict)
@@ -480,7 +484,7 @@ def key_to_action(key):
         return "STOP"
     if key == "delete":
         return "DESTROY"
-    if key == "console":
+    if key in ARBITRARY_ACTIONS:
         return None
     else:
         return key.upper()

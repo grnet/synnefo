@@ -291,6 +291,36 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                    flags)
         return rejected
 
+    def reset_holding(self, context={}, reset_holding=()):
+        rejected = []
+        append = rejected.append
+
+        for idx, tpl in enumerate(reset_holding):
+            (entity, resource, key,
+             imported, exported, returned, released) = tpl
+            try:
+                e = Entity.objects.get(entity=entity, key=key)
+            except Entity.DoesNotExist:
+                append(idx)
+                continue
+
+            try:
+                h = Holding.objects.get(entity=entity, resource=resource)
+                h.imported=imported
+                h.importing=imported
+                h.exported=exported
+                h.exporting=exported
+                h.returned=returned
+                h.returning=returned
+                h.released=released
+                h.releasing=released
+                h.save()
+            except Holding.DoesNotExist:
+                append(idx)
+                continue
+
+        return rejected
+
     def _check_pending(self, entity, resource):
         cs = Commission.objects.filter(entity=entity)
         cs = [c for c in cs if c.provisions.filter(resource=resource)]

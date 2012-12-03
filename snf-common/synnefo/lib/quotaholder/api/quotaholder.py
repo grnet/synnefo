@@ -161,10 +161,19 @@ class QuotaholderAPI(Specificator):
 
     def init_holding (
                 self,
-                context          =   Context,
+                context      =   Context,
                 init_holding =   ListOf(Entity, Resource, Key, Policy,
                                         Imported, Exported, Returned, Released,
                                         Flags)
+        ):
+        rejected = ListOf(Index)
+        return rejected
+
+    def reset_holding (
+                self,
+                context       =   Context,
+                reset_holding =   ListOf(Entity, Resource, Key,
+                                        Imported, Exported, Returned, Released)
         ):
         rejected = ListOf(Index)
         return rejected

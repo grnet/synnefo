@@ -42,10 +42,6 @@ from synnefo.lib.quotaholder.api.quotaholder import (
     Name, Key, Quantity, Capacity, ImportLimit, ExportLimit, Resource, Flags,
     Imported, Exported, Returned, Released)
 
-DEFAULT_IMPORTED = 0
-DEFAULT_EXPORTED = 0
-DEFAULT_RETURNED = 0
-DEFAULT_RELEASED = 0
 DEFAULT_HOLDING = (0, 0, 0, 0)
 
 class QHAPITest(QHTestCase):
@@ -226,7 +222,6 @@ class QHAPITest(QHTestCase):
         q1, c1, il1, el1 = self.new_quota(e1, k1, resource)
 
         most = max(0, min(c0, il0, q1, el1))
-        print 'limits', (c0, il0, q1, el1)
         r = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
                                      name='something',
                                      provisions=[(e1, resource, most)])

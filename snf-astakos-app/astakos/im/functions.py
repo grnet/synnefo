@@ -60,7 +60,6 @@ from astakos.im.settings import (
     EMAIL_CHANGE_EMAIL_SUBJECT
 )
 import astakos.im.messages as astakos_messages
-import astakos.im.models
 
 logger = logging.getLogger(__name__)
 
@@ -84,9 +83,11 @@ def logged(func, msg):
 
 def login(request, user):
     auth_login(request, user)
-    astakos.im.models.SessionCatalog(
+    from astakos.im.models import SessionCatalog
+    SessionCatalog(
         session_key=request.session.session_key,
-        user=user).save()
+        user=user
+    ).save()
 
 login = logged(login, '%s logged in.')
 logout = logged(auth_logout, '%s logged out.')
@@ -155,7 +156,9 @@ def send_account_creation_notification(template_name, dictionary=None):
 
 
 def send_group_creation_notification(template_name, dictionary=None):
-    group = dictionary.get('group', astakos.im.models.AstakosGroup())
+    group = dictionary.get('group')
+    if not group:
+        return
     subject = _(GROUP_CREATION_SUBJECT) % {'group':group.get('name', '')}
     return _send_admin_notification(template_name, dictionary, subject=subject)
 

@@ -199,13 +199,13 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'help_text':'group compute help text',
                 'is_abbreviation':False,
                 'report_desc':'',
-                 'verbose_name':'compute', 
+                 'verbose_name':'compute',
             },
             'storage': {
                 'help_text':'group storage help text',
                 'is_abbreviation':False,
                 'report_desc':'',
-                 'verbose_name':'storage', 
+                 'verbose_name':'storage',
             },
         },
         'resources': {
@@ -214,14 +214,14 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'is_abbreviation':False,
                 'report_desc':'Pithos+ Diskspace',
                 'placeholder':'eg. 10GB',
-                'verbose_name':'diskspace', 
+                'verbose_name':'diskspace',
             },
             'cyclades.vm': {
                 'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
                 'is_abbreviation':True,
                 'report_desc':'Virtual Machines',
                 'placeholder':'eg. 2',
-                'verbose_name':'vm', 
+                'verbose_name':'vm',
             },
             'cyclades.disk': {
                 'help_text':'resource cyclades.disk help text',
@@ -251,9 +251,9 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'placeholder':'eg. 1',
                 'verbose_name':'private network'
             }
-        
+
         }
-        
+
     })
 
 # Permit local account migration

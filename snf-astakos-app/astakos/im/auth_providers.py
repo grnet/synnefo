@@ -34,15 +34,18 @@
 
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
+from django.utils.datastructures import SortedDict
 
-from astakos.im import settings
+from django.conf import settings
+from astakos.im import settings as astakos_settings
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 # providers registry
-PROVIDERS = {}
+PROVIDERS = SortedDict()
+_PROVIDERS = {}
 
 class AuthProviderBase(type):
 
@@ -52,12 +55,12 @@ class AuthProviderBase(type):
             type_id = dct.get('module')
             if type_id:
                 include = True
-            if type_id in settings.IM_MODULES:
+            if type_id in astakos_settings.IM_MODULES:
                 dct['module_enabled'] = True
 
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
         if include:
-            PROVIDERS[type_id] = newcls
+            _PROVIDERS[type_id] = newcls
         return newcls
 
 
@@ -73,8 +76,21 @@ class AuthProvider(object):
     def __init__(self, user=None):
         self.user = user
 
+    def __getattr__(self, key):
+        if not key.startswith('get_'):
+            return super(AuthProvider, self).__getattr__(key)
+
+        if key.endswith('_display') or key.endswith('template'):
+            attr = key.replace('_display', '').replace('get_','')
+            settings_attr = self.get_setting(attr.upper())
+            if not settings_attr:
+                return getattr(self, attr)
+            return settings_attr
+        else:
+            return super(AuthProvider, self).__getattr__(key)
+
     def get_setting(self, name, default=None):
-        attr = 'AUTH_PROVIDER_%s_%s' % (self.module.upper(), name.upper())
+        attr = 'ASTAKOS_AUTH_PROVIDER_%s_%s' % (self.module.upper(), name.upper())
         return getattr(settings, attr, default)
 
     def is_available_for_login(self):
@@ -93,23 +109,26 @@ class AuthProvider(object):
                                                    self.is_active())
 
     def is_active(self):
-        return self.module in settings.IM_MODULES
+        return self.module in astakos_settings.IM_MODULES
 
 
 class LocalAuthProvider(AuthProvider):
     module = 'local'
     title = _('Local password')
     description = _('Create a local password for your account')
+    create_prompt =  _('Create an account')
+    add_prompt =  _('Create a local password for your account')
 
 
     @property
     def add_url(self):
         return reverse('password_change')
 
-    add_description = _('Create a local password for your account')
-    login_template = 'auth/local_login_form.html'
-    add_template = 'auth/local_add_action.html'
     one_per_user = True
+
+    login_template = 'im/auth/local_login_form.html'
+    login_prompt_template = 'im/auth/local_login_prompt.html'
+    signup_prompt_template = 'im/auth/local_signup_prompt.html'
     details_tpl = _('You can login to your account using your'
                     ' %(auth_backend)s password.')
 
@@ -123,17 +142,14 @@ class ShibbolethAuthProvider(AuthProvider):
     title = _('Academic credentials (Shibboleth)')
     description = _('Allows you to login to your account using your academic '
                     'credentials')
+    add_prompt = _('Add academic credentials to your account.')
 
     @property
     def add_url(self):
         return reverse('astakos.im.target.shibboleth.login')
 
-    add_description = _('Allows you to login to your account using your academic '
-                    'credentials')
-    login_template = 'auth/shibboleth_login_form.html'
-    add_template = 'auth/shibboleth_add_action.html'
-    details_tpl = _('You can login to your account using your'
-                    ' shibboleth credentials. Shibboleth id: %(identifier)s')
+    login_template = 'im/auth/shibboleth_login.html'
+    login_prompt_template = 'im/auth/shibboleth_login_prompt.html'
 
 
 def get_provider(id, user_obj=None, default=None):
@@ -141,4 +157,9 @@ def get_provider(id, user_obj=None, default=None):
     Return a provider instance from the auth providers registry.
     """
     return PROVIDERS.get(id, default)(user_obj)
+
+
+for module in astakos_settings.IM_MODULES:
+    if module in _PROVIDERS:
+        PROVIDERS[module] = _PROVIDERS[module]
 

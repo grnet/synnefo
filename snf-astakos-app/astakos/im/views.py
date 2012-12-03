@@ -407,6 +407,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     except AstakosUser.DoesNotExist:
         instance = None
 
+    third_party_token = request.REQUEST.get('third_party_token', None)
+
     try:
         if not backend:
             backend = get_backend(request)
@@ -461,6 +463,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 transaction.rollback()
     return render_response(template_name,
                            signup_form=form,
+                           third_party_token=third_party_token,
                            provider=provider,
                            context_instance=get_context(request, extra_context))
 

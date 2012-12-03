@@ -212,7 +212,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
 
     def save(self, commit=True):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
-        user.update_invitations_level()
+        user.set_invitations_level()
         user.email_verified = True
         if commit:
             user.save()

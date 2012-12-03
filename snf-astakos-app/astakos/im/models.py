@@ -374,7 +374,7 @@ class AstakosUser(User):
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
-    
+
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
 
@@ -499,7 +499,7 @@ class AstakosUser(User):
         if not self.id:
             # set username
             self.username = self.email
-        
+
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent
@@ -639,7 +639,7 @@ class AstakosUser(User):
         provider = self.add_auth_provider(pending.provider,
                                identifier=pending.third_party_identifier)
 
-        if email_re.match(pending.email) and pending.email != self.email:
+        if email_re.match(pending.email or '') and pending.email != self.email:
             self.additionalmail_set.get_or_create(email=pending.email)
 
         pending.delete()

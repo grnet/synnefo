@@ -400,8 +400,8 @@ class LoginForm(AuthenticationForm):
         try:
             super(LoginForm, self).clean()
         except forms.ValidationError, e:
-            if self.user_cache is None:
-                raise
+#            if self.user_cache is None:
+#                raise
             if self.request:
                 if not self.request.session.test_cookie_worked():
                     raise

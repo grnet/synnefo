@@ -107,7 +107,8 @@ class ActivationBackend(object):
     def handle_activation(
         self, user, activation_template_name='im/activation_email.txt',
         greeting_template_name='im/welcome_email.txt',
-        admin_email_template_name='im/admin_notification.txt'
+        admin_email_template_name='im/account_creation_notification.txt',
+        helpdesk_email_template_name='im/helpdesk_notification.txt'
     ):
         """
         If the user is already active returns immediately.
@@ -123,10 +124,17 @@ class ActivationBackend(object):
 
             if self._is_preaccepted(user):
                 if user.email_verified:
-                    activate(user, greeting_template_name)
+                    activate(
+                        user,
+                        greeting_template_name,
+                        helpdesk_email_template_name
+                    )
                     return RegistationCompleted()
                 else:
-                    send_activation(user, activation_template_name)
+                    send_activation(
+                        user,
+                        activation_template_name
+                    )
                     return VerificationSent()
             else:
                 send_account_creation_notification(

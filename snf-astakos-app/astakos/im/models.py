@@ -1061,7 +1061,6 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
-    instance.renew_token()
 
 
 def resource_post_save(sender, instance, created, **kwargs):
@@ -1096,7 +1095,7 @@ def on_quota_disturbed(sender, users, **kwargs):
     send_quota(users)
 
 def renew_token(sender, instance, **kwargs):
-    if not instance.id:
+    if not instance.auth_token:
         instance.renew_token()
 
 post_syncdb.connect(fix_superusers)

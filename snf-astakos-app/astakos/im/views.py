@@ -1159,11 +1159,9 @@ def group_all(request, extra_context=None, **kwargs):
     
     # validate sorting
     sorting = 'groupname'
-    print '>>>', sorting, request.GET
     sort_form = AstakosGroupSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
-    print '<<<', sorting
     q = q.order_by(sorting)
     
     return object_list(

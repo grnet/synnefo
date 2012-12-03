@@ -925,7 +925,7 @@ def group_list(request):
         (SELECT CASE WHEN(
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
-                    AND person_id = %(userid)s) IS NULL
+                    AND person_id = %(id)s) IS NULL
                     THEN 0 ELSE 1 END) AS membership_status
         FROM im_astakosgroup
         INNER JOIN im_membership ON (
@@ -936,10 +936,9 @@ def group_list(request):
             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
-        WHERE im_membership.person_id = %(userid)s
+        WHERE im_membership.person_id = %(id)s
         AND im_groupkind.name != 'default'
-        """
-    params = {'userid':request.user.id}
+        """ % request.user.__dict__
 
     # validate sorting
     sorting = 'groupname'
@@ -948,7 +947,7 @@ def group_list(request):
         sorting = sort_form.cleaned_data.get('sorting')
     query = query+" ORDER BY %s ASC" %sorting
     
-    q = AstakosGroup.objects.raw(query, params=params)
+    q = AstakosGroup.objects.raw(query)
     
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (

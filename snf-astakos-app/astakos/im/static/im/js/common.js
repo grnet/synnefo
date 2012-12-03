@@ -288,6 +288,34 @@ $(document).ready(function() {
          $('.hidden-submit .form-row.submit').show(500);
     });
     
+     $('.auth_methods').find('li>a').click(function(e){
+     	e.preventDefault();
+     	$(this).siblings('.wrap').toggle('slow');
+     	$(this).toggleClass('up');
+     });
+     
+     $('.auth_methods a.red').click(function(e){
+     	e.preventDefault();
+     	$(this).siblings('.dialog').show();
+     })
+     
+      
+     $('.auth_methods .dialog .no').click( function(e){	 
+     	e.preventDefault();
+     	console.log($(this));
+     	$(this).parents('.dialog').hide();
+     })
+    
+    setTimeout(function() {
+      if ($('input#id_username').val()){ 
+      	$('input#id_username').siblings('label').css('opacity','0');
+      };
+      if ($('input#id_password').val()){ 
+      	$('input#id_password').siblings('label').css('opacity','0');
+      }
+	}, 100);
+    
+    
 });
 	
 $(window).resize(function() {

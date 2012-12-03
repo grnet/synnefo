@@ -13,58 +13,64 @@
         <input type="hidden" name="auth" value="{{ user.auth_token }}">
         <input type="submit" class="submit altcol" value="UPDATE" />
     </div>
-
-    <div class="auth_methods">
-      <br /><br />
-        <div class="assigned">
-          <h4>Authentication methods</h4>
-          <p>You can login to your account using the following methods</p>
-          <ul class="auth_providers">
-            {% for provider in user_providers %}
-            <li>
-            <h2>
-                {{ provider.settings.title }}
-                <span class="actions" style="margin-left: 40px">
-                  {% for name, url in provider.settings.extra_actions %}
-                  <a href="{{ url }}" title="{{ name }}">{{ name }}</a>
-                  {% endfor %}
-                  {% if provider.can_remove %}
-                      <a href="{% url remove_auth_provider provider.pk %}" title="disble">Remove</a>
-                  {% endif %}
-                </span>
-            </h2>
-            <p>{{ provider.details_display }}</p>
-            <br />
-            </li>
-            {% empty %}
-            <li>No available authentication methods</li>
-            {% endfor %}
-          </ul>
-        </div>
-        <div class="notassigned">
-          <p>You can add the following authentication methods to your account </p>
-          <ul class="auth_providers">
-            {% for provider in user_available_providers %}
-            <li>
-            <h2><a href="{{ provider.add_url }}">{{ provider.title }}</a></h2>
-            <p>{{ provider.add_description }}</p>
-            <br />
-            </li>
-            {% empty %}
-            No available providers.
-            {% endfor %}
-          </ul>
-        </div>
-    </div>
-
 </form>
 
-<div class="two-cols-links">
-	<p><a href="{% url password_change %}">Change Password</a></p>
-	<p>
-		<a href="https://okeanos.grnet.gr/home/">Back to ~okeanos</a>
-		<a href="https://cyclades.okeanos.grnet.gr/ui/">Take me to cyclades</a>
-		<a href="https://pithos.okeanos.grnet.gr/ui/">Take me to pithos+</a>
-	</p>
+<div class="full-dotted">
+	<div class="auth_methods">
+        <h2>ENABLED AUTHENTICATION METHODS</h2>
+        <ul>
+        	{% for provider in user_providers %}
+        	<li>
+        		<a href="#">{{ provider.settings.title }}</a>
+        		<div class="wrap">
+        			<p>{{ provider.details_display }}</p>
+        			<div class="actions">
+  
+		                  {% for name, url in provider.settings.extra_actions %}
+		                  <a href="{{ url }}" title="{{ name }}">{{ name }}</a>
+		                  {% endfor %}
+		                  {% if provider.can_remove %}
+		                      <div class="dialog-wrap">
+		                      	<a href="#" title="disable" class="red">
+		                      	Disable x</a>
+		                      	<div class="dialog">Are you sure you want to disable this method?
+		                      		<a href="{% url remove_auth_provider provider.pk %}" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+		                      	</div>	
+		                      </div>
+		                      	
+		                  {% endif %}
+        			</div>
+        		</div>
+        	</li>
+        	{% empty %}
+        	<li>No available authentication methods</li>
+        	{% endfor %}
+        	
+        </ul>
+        <ul class="notassigned">
+        	<li>
+        		<a href="#">+ Add new authentication method</a>
+        		
+        		<div class="wrap">
+        			{% for provider in user_available_providers %}
+        				<p><a href="{{ provider.add_url }}">{{ provider.title }}</a> ( {{ provider.add_description }})</p>
+        			{% empty %}
+	        		No available providers 
+	        		{% endfor %}	
+        		</div>
+        		
+        	</li>
+        </ul>
+		
+    </div>
+</div>
+
+<div class="full-dotted">
+	<ul class="options">
+		<li><a href="https://okeanos.grnet.gr/home/" class="blue">Back to ~okeanos ></a></li>
+		<li><a href="https://cyclades.okeanos.grnet.gr/ui/" class="blue">Take me to cyclades ></a></li>
+		<li><a href="https://pithos.okeanos.grnet.gr/ui/" class="blue">Take me to pithos+ ></a></li>
+	</ul>
+		 
 </div>
 {% endblock body %}

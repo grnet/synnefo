@@ -458,8 +458,6 @@ form.quotas-form legend span.info span			{ width:395px; }
 .stats .green .img-wrap							{ background-position: -263px 7px; }
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
 
-/* temp style to hide extra menu for groups */
-.navigation ul+ul								{ display:none; }
 
 table .msg-wrap									{ position:relative; }
 table .msg-wrap .dialog							{ position:absolute; border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; left:0; background:#fff; display:none; }
@@ -487,8 +485,17 @@ form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
 .content .how-it-works a.submit:focus			{ border-color: #B3B3B3}
 .content .how-it-works a.submit:focus:hover		{ border-color: #55B577}
 
-.auth_methods									{ margin:3em 0; }
-.auth_methods .wrap								{   }
-.auth_methods h2								{ font-size:1.154em; }
-.auth_methods table								{ width:100%; color:#222; margin:1em 0; }
-.auth_methods table th							{ font-weight:normal; color:#3582AC }
+.auth_methods ul								{ margin:1em 0; padding:0; list-style:none outside none; }
+.auth_methods ul li 							{ margin:0 0 1em 0; padding:0; list-style:none outside none; font-size:1.154em; }
+.auth_methods ul li>a							{ padding-right:20px; background:url(../images/arrow-down_green.png) no-repeat center right; color:#55B577 }
+.auth_methods ul li>a.up						{ background-image:url(../images/arrow-up_green.png); }
+.auth_methods ul li .wrap						{ font-size:0.867em; margin-top:1em; display:none; }
+.auth_methods ul li .actions a					{ margin-right:20px; }
+.auth_methods ul li a.red						{ color:#F24E53; }
+.auth_methods ul.notassigned					{ margin-top:3em; }
+.auth_methods ul.notassigned li>a				{ background:transparent; color: #F89A1C}
+.auth_methods .dialog-wrap						{ display:inline; position:relative; }
+.auth_methods .dialog							{ background:#fff; border:1px dashed #ccc; position:absolute; bottom:30px; left:0; padding:15px; width:220px; display:none;}
+.auth_methods .dialog .submit					{ min-width:30px; padding:5px 22px; }
+
+.content input:-webkit-autofill 							{ background: transparent; }

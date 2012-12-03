@@ -57,6 +57,7 @@ from django.views.generic.create_update import (delete_object,
                                                 get_model_and_form_class)
 from django.views.generic.list_detail import object_list
 from django.core.xheaders import populate_xheaders
+from django.core.exceptions import ValidationError, PermissionDenied
 
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
@@ -64,7 +65,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 
 from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
                                EmailChange, GroupKind, Membership,
-                               RESOURCE_SEPARATOR)
+                               RESOURCE_SEPARATOR, AstakosUserAuthProvider)
 from astakos.im.util import get_context, prepare_response, get_query, restrict_next
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               FeedbackForm, SignApprovalTermsForm,
@@ -87,6 +88,8 @@ from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
 import astakos.im.messages as astakos_messages
+from astakos.im import settings
+from astakos.im import auth_providers
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +111,26 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
         template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
     return response
+
+def requires_auth_provider(provider_id, **perms):
+    """
+    """
+    def decorator(func, *args, **kwargs):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            provider = auth_providers.get_provider(provider_id)
+
+            if not provider or not provider.is_active():
+                raise PermissionDenied
+
+            if provider:
+                for pkey, value in perms.iteritems():
+                    attr = 'is_available_for_%s' % pkey.lower()
+                    if getattr(provider, attr)() != value:
+                        raise PermissionDenied
+            return func(request, *args)
+        return wrapper
+    return decorator
 
 
 def requires_anonymous(func):
@@ -169,7 +192,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     template_name = login_template_name
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
-    
+
     return render_response(
         template_name,
         login_form = LoginForm(request=request),
@@ -319,11 +342,19 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
             except ValueError, ve:
                 messages.success(request, ve)
     elif request.method == "GET":
-        if not request.user.is_verified:
-            request.user.is_verified = True
-            request.user.save()
+        request.user.is_verified = True
+        request.user.save()
+
+    # existing providers
+    user_providers = request.user.get_active_auth_providers()
+
+    # providers that user can add
+    user_available_providers = request.user.get_available_auth_providers()
+
     return render_response(template_name,
                            profile_form = form,
+                           user_providers = user_providers,
+                           user_available_providers = user_available_providers,
                            context_instance = get_context(request,
                                                           extra_context))
 
@@ -370,6 +401,9 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         return HttpResponseRedirect(reverse('edit_profile'))
 
     provider = get_query(request).get('provider', 'local')
+    if not auth_providers.get_provider(provider).is_available_for_create():
+        raise PermissionDenied
+
     id = get_query(request).get('id')
     try:
         instance = AstakosUser.objects.get(id=id) if id else None
@@ -390,7 +424,9 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 result = backend.handle_activation(user)
                 status = messages.SUCCESS
                 message = result.message
-                user.save()
+
+                form.store_user(user, request)
+
                 if 'additional_email' in form.cleaned_data:
                     additional_email = form.cleaned_data['additional_email']
                     if additional_email != user.email:
@@ -406,6 +442,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     transaction.commit()
                     return response
                 messages.add_message(request, status, message)
+                transaction.commit()
                 return render_response(
                     on_success,
                     context_instance=get_context(
@@ -655,6 +692,10 @@ def change_email(request, activation_key=None,
 
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
+
+    if settings.MODERATION_ENABLED:
+        raise PermissionDenied
+
     extra_context = extra_context or {}
     try:
         u = AstakosUser.objects.get(id=user_id)
@@ -677,107 +718,107 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
     )
 
 class ResourcePresentation():
-    
+
     def __init__(self, data):
         self.data = data
-        
+
     def update_from_result(self, result):
         if result.is_success:
             for r in result.data:
                 rname = '%s%s%s' % (r.get('service'), RESOURCE_SEPARATOR, r.get('name'))
                 if not rname in self.data['resources']:
                     self.data['resources'][rname] = {}
-                    
+
                 self.data['resources'][rname].update(r)
                 self.data['resources'][rname]['id'] = rname
                 group = r.get('group')
                 if not group in self.data['groups']:
                     self.data['groups'][group] = {}
-                    
+
                 self.data['groups'][r.get('group')].update({'name': r.get('group')})
-    
+
     def test(self, quota_dict):
         for k, v in quota_dict.iteritems():
             rname = k
             value = v
             if not rname in self.data['resources']:
                 self.data['resources'][rname] = {}
-                    
- 
+
+
             self.data['resources'][rname]['value'] = value
-            
-    
+
+
     def update_from_result_report(self, result):
         if result.is_success:
             for r in result.data:
                 rname = r.get('name')
                 if not rname in self.data['resources']:
                     self.data['resources'][rname] = {}
-                    
+
                 self.data['resources'][rname].update(r)
                 self.data['resources'][rname]['id'] = rname
                 group = r.get('group')
                 if not group in self.data['groups']:
                     self.data['groups'][group] = {}
-                    
+
                 self.data['groups'][r.get('group')].update({'name': r.get('group')})
-                
+
     def get_group_resources(self, group):
         return dict(filter(lambda t: t[1].get('group') == group, self.data['resources'].iteritems()))
-    
+
     def get_groups_resources(self):
         for g in self.data['groups']:
             yield g, self.get_group_resources(g)
-    
+
     def get_quota(self, group_quotas):
         for r, v in group_quotas.iteritems():
             rname = str(r)
             quota = self.data['resources'].get(rname)
             quota['value'] = v
             yield quota
-    
-    
+
+
     def get_policies(self, policies_data):
         for policy in policies_data:
             rname = '%s%s%s' % (policy.get('service'), RESOURCE_SEPARATOR, policy.get('resource'))
             policy.update(self.data['resources'].get(rname))
             yield policy
-        
+
     def __repr__(self):
         return self.data.__repr__()
-                
+
     def __iter__(self, *args, **kwargs):
         return self.data.__iter__(*args, **kwargs)
-    
+
     def __getitem__(self, *args, **kwargs):
         return self.data.__getitem__(*args, **kwargs)
-    
+
     def get(self, *args, **kwargs):
         return self.data.get(*args, **kwargs)
-        
-        
+
+
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def group_add(request, kind_name='default'):
-    
+
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
-    
+
     if not result.is_success:
         messages.error(
             request,
             'Unable to retrieve system resources: %s' % result.reason
     )
-    
+
     try:
         kind = GroupKind.objects.get(name=kind_name)
     except:
         return HttpResponseBadRequest(_(astakos_messages.GROUPKIND_UNKNOWN))
-    
-    
+
+
 
     post_save_redirect = '/im/group/%(id)s/'
     context_processors = None
@@ -785,7 +826,7 @@ def group_add(request, kind_name='default'):
         model=None,
         form_class=AstakosGroupCreationForm
     )
-    
+
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
@@ -796,7 +837,7 @@ def group_add(request, kind_name='default'):
                 policies = resource_catalog.get_policies(form.policies()),
                 resource_catalog= resource_catalog,
             )
-         
+
     else:
         now = datetime.now()
         data = {
@@ -806,7 +847,7 @@ def group_add(request, kind_name='default'):
             data['is_selected_%s' % group] = False
             for resource in resources:
                 data['%s_uplimit' % resource] = ''
-        
+
         form = form_class(data)
 
     # Create the template, context, response
@@ -839,7 +880,7 @@ def group_add_complete(request):
             msg = _(astakos_messages.OBJECT_CREATED) %\
                 {"verbose_name": model._meta.verbose_name}
             messages.success(request, msg, fail_silently=True)
-            
+
             # send notification
             try:
                 send_group_creation_notification(
@@ -857,7 +898,7 @@ def group_add_complete(request):
         else:
             d = {"verbose_name": model._meta.verbose_name,
                  "reason":result.reason}
-            msg = _(astakos_messages.OBJECT_CREATED_FAILED) % d 
+            msg = _(astakos_messages.OBJECT_CREATED_FAILED) % d
             messages.error(request, msg, fail_silently=True)
     return render_response(
         template='im/astakosgroup_form_summary.html',
@@ -895,17 +936,17 @@ def group_list(request):
             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
-        WHERE im_membership.person_id = %s 
+        WHERE im_membership.person_id = %s
         """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id)
-       
+
     if sorting:
-        query = query+" ORDER BY %s ASC" %sorting    
+        query = query+" ORDER BY %s ASC" %sorting
     else:
-        query = query+" ORDER BY groupname ASC"     
+        query = query+" ORDER BY groupname ASC"
     q = AstakosGroup.objects.raw(query)
 
-       
-       
+
+
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
         q.model._meta.app_label,
@@ -987,21 +1028,21 @@ def group_detail(request, group_id):
         form = MembersSortForm({'sort_by': sorting})
         if form.is_valid():
             sorting = form.cleaned_data.get('sort_by')
-    
+
     else:
         form = MembersSortForm({'sort_by': 'person_first_name'})
-    
+
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
 
-    
+
     if not result.is_success:
         messages.error(
             request,
             'Unable to retrieve system resources: %s' % result.reason
     )
-    
+
     extra_context = {'update_form': update_form,
                      'addmembers_form': addmembers_form,
                      'page': request.GET.get('page', 1),
@@ -1062,7 +1103,7 @@ def group_search(request, extra_context=None, **kwargs):
                         SELECT id FROM im_astakosuser_owner
                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
                         AND astakosuser_id = %s)
-                        THEN 1 ELSE 0 END""" % request.user.id, 
+                        THEN 1 ELSE 0 END""" % request.user.id,
                     })
         if sorting:
             # TODO check sorting value
@@ -1118,7 +1159,7 @@ def group_all(request, extra_context=None, **kwargs):
         q = q.order_by(sorting)
     else:
         q = q.order_by("groupname")
-        
+
     return object_list(
         request,
         q,
@@ -1238,7 +1279,7 @@ def resource_list(request):
         if max_value > 0 :
             entry['ratio'] = (curr_value / max_value) * 100
         else:
-            entry['ratio'] = 0 
+            entry['ratio'] = 0
         if entry['ratio'] < 66:
             entry['load_class'] = 'yellow'
         if entry['ratio'] < 33:
@@ -1258,9 +1299,9 @@ def resource_list(request):
         messages.error(request, result.reason)
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result_report(result)
-    
 
-    
+
+
     return render_response('im/resource_list.html',
                            data=data,
                            context_instance=get_context(request),
@@ -1333,8 +1374,8 @@ def _clear_billing_data(data):
     data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
 
     return data
-     
-     
+
+
 #@require_http_methods(["GET"])
 @require_http_methods(["POST", "GET"])
 @signed_terms_required
@@ -1365,6 +1406,7 @@ def timeline(request):
                            timeline_body=timeline_body)
     return data
 
+
 # TODO: action only on POST and user should confirm the removal
 @require_http_methods(["GET", "POST"])
 @login_required
@@ -1381,7 +1423,9 @@ def remove_auth_provider(request, pk):
     else:
         raise PermissionDenied
 
+
 def how_it_works(request):
     return render_response(
         template='im/how_it_works.html',
         context_instance=get_context(request),)
+    

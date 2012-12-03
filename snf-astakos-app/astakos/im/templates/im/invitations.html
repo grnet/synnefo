@@ -1,7 +1,7 @@
 {% extends "im/account_base.html" %}
 
 {% block page.body %}
-<div class="full bottom-bordered clearfix">
+<div class="full  clearfix">
 	<div class="lt-div">
 		<p>Invite someone else</p>
 	</div>
@@ -22,7 +22,7 @@
 	 
 </div>
  
-	<div class="full {% block innerpage.class %}{% endblock %}">
+	<div class="full full-dotted">
 	    
 	    <h2>You have <em>{{ inviter.invitations }}</em> invitation{{ inviter.invitations|pluralize }} left.</h2>
 	    {% if sent|length %}

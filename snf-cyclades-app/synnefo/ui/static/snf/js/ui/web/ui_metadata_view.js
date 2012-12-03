@@ -153,10 +153,10 @@
             }
             
             // remove predefined for existing keys
-            var existing_keys = this.current_vm.get_meta();
+            var existing_keys = this.current_vm.get_meta_keys();
             if (!meta) {
                 this.editor.find(".predefined-meta-key").each(function(i, el){
-                    if (existing_keys[$(el).text()]) {
+                    if (_.contains(existing_keys, $(el).text())) {
                         $(el).hide();
                     } else {
                         $(el).show();

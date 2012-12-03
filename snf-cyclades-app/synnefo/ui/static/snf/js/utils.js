@@ -283,10 +283,9 @@
         return {del: removed, add: added};
     }
 
-    synnefo.util.open_window = function(url, name, specs) {
+    synnefo.util.open_window = function(url, name, opts) {
         // default specs
-        var opts = _.extend({
-            scrollbars: 'no',
+        opts = _.extend({
             menubar: 'no',
             toolbar: 'no',
             status: 'no',
@@ -300,7 +299,8 @@
             top: 0
         }, opts)
         
-        window.open(url, name, opts);
+        var specs = _.map(opts, function(v,k) {return k + "=" + v}).join(",");
+        window.open(url, name, specs);
     }
     
     synnefo.util.readFileContents = function(f, cb) {

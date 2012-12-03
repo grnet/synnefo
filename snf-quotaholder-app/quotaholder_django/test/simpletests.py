@@ -39,7 +39,8 @@ from config import printf
 from synnefo.lib.commissioning import CallError
 from synnefo.lib.quotaholder.api import InvalidDataError, NoEntityError
 from synnefo.lib.quotaholder.api.quotaholder import (
-    Name, Key, Quantity, Capacity, ImportLimit, ExportLimit, Resource, Flags)
+    Name, Key, Quantity, Capacity, ImportLimit, ExportLimit, Resource, Flags,
+    Imported, Exported, Returned, Released)
 
 DEFAULT_IMPORTED = 0
 DEFAULT_EXPORTED = 0
@@ -102,6 +103,10 @@ class QHAPITest(QHTestCase):
 
     def rand_flags(self):
         return Flags.random()
+
+    def rand_counters(self):
+        return (Imported.random(), Exported.random(),
+                Returned.random(), Released.random())
 
     def new_entity(self, parent='system', parent_key=''):
         e = self.rand_entity()
@@ -231,6 +236,60 @@ class QHAPITest(QHTestCase):
             self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
                                      name='something',
                                      provisions=[(e1, resource, 1)])
+
+
+    def test_010_pending_commissions(self):
+        r = self.qh.get_pending_commissions(clientkey=self.client)
+        self.assertEqual(r, [1])
+        r = self.qh.resolve_pending_commissions(clientkey=self.client,
+                                                max_serial=1, accept_set=[1])
+        r = self.qh.get_pending_commissions(clientkey=self.client)
+        self.assertEqual(r, [])
+
+    def test_011_release_empty(self):
+        e, k = self.new_entity()
+        e0, k0 = self.rand_entity(), Key.random()
+        r = self.qh.release_entity(release_entity=[(e, k), (e0, k0)])
+        self.assertEqual(r, [e0])
+        r = self.qh.get_entity(get_entity=[(e, k)])
+        self.assertEqual(r, [])
+
+    def test_012_release_nonempty(self):
+        e, k = self.new_entity()
+        e1, k1 = self.new_entity(e, k)
+        r = self.qh.release_entity(release_entity=[(e, k), (e1, k1)])
+        self.assertEqual(r, [e])
+        r = self.qh.get_entity(get_entity=[(e1, k1)])
+        self.assertEqual(r, [])
+        r = self.qh.release_entity(release_entity=[(e, k)])
+        self.assertEqual(r, [])
+
+    def test_013_release_nonempty(self):
+        e, k = self.new_entity()
+        resource = self.rand_resource()
+        limits = self.new_quota(e, k, resource)
+        r = self.qh.release_entity(release_entity=[(e, k)])
+        self.assertEqual(r, [e])
+        r = self.qh.release_holding(release_holding=[(e, resource, k)])
+        self.assertEqual(r, [])
+        r = self.qh.release_entity(release_entity=[(e, k)])
+        self.assertEqual(r, [])
+
+    def test_014_reset_holding(self):
+        e0, k0 = self.new_entity()
+        e1, k1 = self.new_entity()
+        resource = self.rand_resource()
+        p, _ = self.new_policy()
+        f = self.rand_flags()
+        r = self.qh.set_holding(set_holding=[(e1, resource, k1, p, f)])
+
+        counters = self.rand_counters()
+        r = self.qh.reset_holding(
+            reset_holding=[(e0, resource, k0) + counters,
+                           (e1, resource, k1) + counters])
+        self.assertEqual(r, [0])
+        r = self.qh.get_holding(get_holding=[(e1, resource, k1)])
+        self.assertEqual(r, [(e1, resource, p) + counters + (f,)])
 
 
 if __name__ == "__main__":

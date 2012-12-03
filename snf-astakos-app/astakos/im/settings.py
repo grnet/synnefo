@@ -130,7 +130,7 @@ PASSWORD_RESET_EMAIL_SUBJECT = getattr(
 
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
-QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_Token', '')
+QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_TOKEN', '')
 
 # Set the cloud service properties
 SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {

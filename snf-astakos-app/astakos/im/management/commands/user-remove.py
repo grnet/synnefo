@@ -31,44 +31,40 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import socket
+
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
+from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
-from ._common import remove_group_permission
+from astakos.im.api.callpoint import AstakosCallpoint
+
+def filter_custom_options(options):
+    base_dests = list(
+        getattr(o, 'dest', None) for o in BaseCommand.option_list)
+    return dict((k, v) for k, v in options.iteritems() if k not in base_dests)
 
 
 class Command(BaseCommand):
-    args = "<groupname> <permission> [<permissions> ...]"
-    help = "Remove group permissions"
+    args = "<user ID>"
+    help = "Remove a user"
 
     def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError(
-                "Please provide a group name and at least one permission")
+        if len(args) != 1:
+            raise CommandError("Invalid number of arguments")
 
-        group = None
+        id = args[0]
+        if not id.isdigit():
+            raise CommandError('ID must me an integer')
+        
         try:
-            if args[0].isdigit():
-                group = Group.objects.get(id=args[0])
-            else:
-                group = Group.objects.get(name=args[0])
-        except Group.DoesNotExist, e:
-            raise CommandError("Invalid group")
-
-        try:
-            for pname in args[1:]:
-                r = remove_group_permission(group, pname)
-                if r < 0:
-                    self.stdout.write(
-                        'Invalid permission codename: %s\n' % pname)
-                elif r == 0:
-                    self.stdout.write('Group has not permission: %s\n' % pname)
-                elif r > 0:
-                    self.stdout.write(
-                        'Permission: %s removed successfully\n' % pname)
-        except Exception, e:
-            raise CommandError(e)
+            user = AstakosUser.objects.get(id=int(id))
+        except:
+            msg = "Unknown user with id '%s'" % id
+            raise CommandError(msg)
+        else:
+            user.delete()
+            self.stdout.write('User deleted successfully\n')

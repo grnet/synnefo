@@ -48,8 +48,11 @@ def im_modules(request):
     return {'im_modules': IM_MODULES}
 
 def auth_providers(request):
-    return {'auth_providers': filter(lambda p:p.module_enabled,
-                                     AUTH_PROVIDERS.itervalues())}
+    active_auth_providers = filter(lambda p:p.module_enabled,
+                                     AUTH_PROVIDERS.itervalues())
+    auth_providers = map(lambda p: p(), active_auth_providers)
+    return {'auth_providers': auth_providers,
+            'master_auth_provider': auth_providers[0]}
 
 def next(request):
     return {'next': get_query(request).get('next', '')}

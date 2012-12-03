@@ -144,6 +144,10 @@ class DjangoBackend(BaseBackend):
         u.permissions = permissions
         u.policies = policies
         u.extended_groups = groups
+
+        if not u.has_auth_provider('local'):
+            u.add_auth_provider('local')
+
         return self._list(AstakosUser, filter=(u.id,))
 
     @safe
@@ -160,7 +164,7 @@ class DjangoBackend(BaseBackend):
             except (ObjectDoesNotExist, IntegrityError), e:
                 append((service, resource, e))
         return rejected
-    
+
     @safe
     def remove_policies(self, user_id, policies=()):
         user = self._lookup_user(user_id)
@@ -187,7 +191,7 @@ class DjangoBackend(BaseBackend):
             except IntegrityError, e:
                 append((p, e))
         return rejected
-    
+
     @safe
     def remove_permissions(self, user_id, permissions=()):
         user = self._lookup_user(user_id)
@@ -199,7 +203,7 @@ class DjangoBackend(BaseBackend):
             except (ObjectDoesNotExist, IntegrityError), e:
                 append((p, e))
         return rejected
-    
+
     @safe
     def invite_users(self, senderid, recipients=()):
         user = self._lookup_user(senderid)
@@ -213,7 +217,7 @@ class DjangoBackend(BaseBackend):
             except (IntegrityError, SMTPException), e:
                 append((email, e))
         return rejected
-    
+
     @safe
     def list_users(self, filter=()):
         return self._list(AstakosUser, filter=filter)
@@ -255,7 +259,7 @@ class DjangoBackend(BaseBackend):
         # TODO return information for unknown ids
         q = Service.objects.filter(id__in=ids)
         q.delete()
-    
+
     @safe
     def update_service(self, service_id, renew_token=False, **kwargs):
         s = self._update_object(Service, service_id, save=False, **kwargs)
@@ -283,14 +287,14 @@ class DjangoBackend(BaseBackend):
             except Exception, e:
                 append((r, e))
         return rejected
-    
+
     @safe
     def remove_resources(self, service_id, ids=()):
         # TODO return information for unknown ids
         q = Resource.objects.filter(service__id=service_id,
                                 id__in=ids)
         q.delete()
-    
+
     @safe
     def create_group(self, **kwargs):
         policies = kwargs.pop('policies', ())
@@ -302,6 +306,6 @@ class DjangoBackend(BaseBackend):
 
         g.permissions = permissions
         g.policies = policies
-#         g.members = members
+#        g.members = members
         g.owners = owners
         return self._list(AstakosGroup, filter=(g.id,))

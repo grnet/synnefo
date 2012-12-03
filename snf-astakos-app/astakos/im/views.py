@@ -58,11 +58,11 @@ from django.views.generic.create_update import (delete_object,
 from django.views.generic.list_detail import object_list
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
-
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
-from astakos.im.activation_backends import get_backend, SimpleBackend
+from django.db.models import Q
 
+from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
                                EmailChange, GroupKind, Membership,
                                RESOURCE_SEPARATOR, AstakosUserAuthProvider)
@@ -72,7 +72,7 @@ from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               EmailChangeForm,
                               AstakosGroupCreationForm, AstakosGroupSearchForm,
                               AstakosGroupUpdateForm, AddGroupMembersForm,
-                              MembersSortForm,
+                              MembersSortForm, AstakosGroupSortForm,
                               TimelineForm, PickResourceForm,
                               AstakosGroupCreationSummaryForm)
 from astakos.im.functions import (send_feedback, SendMailError,
@@ -84,7 +84,7 @@ from astakos.im.functions import (send_feedback, SendMailError,
 from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (COOKIE_DOMAIN, LOGOUT_NEXT,
                                  LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL)
-from astakos.im.tasks import request_billing
+#from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
 import astakos.im.messages as astakos_messages
@@ -92,9 +92,6 @@ from astakos.im import settings
 from astakos.im import auth_providers
 
 logger = logging.getLogger(__name__)
-
-DB_REPLACE_GROUP_SCHEME = """REPLACE(REPLACE("auth_group".name, 'http://', ''),
-                                     'https://', '')"""
 
 callpoint = AstakosCallpoint()
 
@@ -410,6 +407,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     except AstakosUser.DoesNotExist:
         instance = None
 
+    third_party_token = request.REQUEST.get('third_party_token', None)
+
     try:
         if not backend:
             backend = get_backend(request)
@@ -464,6 +463,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 transaction.rollback()
     return render_response(template_name,
                            signup_form=form,
+                           third_party_token=third_party_token,
                            provider=provider,
                            context_instance=get_context(request, extra_context))
 
@@ -830,14 +830,13 @@ def group_add(request, kind_name='default'):
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
         if form.is_valid():
+            policies = form.policies()
             return render_response(
                 template='im/astakosgroup_form_summary.html',
                 context_instance=get_context(request),
-                form = AstakosGroupCreationSummaryForm(form.cleaned_data),
-                policies = resource_catalog.get_policies(form.policies()),
-                resource_catalog= resource_catalog,
+                form=AstakosGroupCreationSummaryForm(form.cleaned_data),
+                policies=resource_catalog.get_policies(policies)
             )
-
     else:
         now = datetime.now()
         data = {
@@ -903,7 +902,9 @@ def group_add_complete(request):
     return render_response(
         template='im/astakosgroup_form_summary.html',
         context_instance=get_context(request),
-        form=form)
+        form=form,
+        policies=form.cleaned_data.get('policies')
+    )
 
 
 #@require_http_methods(["GET"])
@@ -912,10 +913,9 @@ def group_add_complete(request):
 @login_required
 def group_list(request):
     none = request.user.astakos_groups.none()
-    sorting = request.GET.get('sorting')
     query = """
         SELECT auth_group.id,
-        %s AS groupname,
+        auth_group.name AS groupname,
         im_groupkind.name AS kindname,
         im_astakosgroup.*,
         owner.email AS groupowner,
@@ -925,7 +925,7 @@ def group_list(request):
         (SELECT CASE WHEN(
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
-                    AND person_id = %s) IS NULL
+                    AND person_id = %(userid)s) IS NULL
                     THEN 0 ELSE 1 END) AS membership_status
         FROM im_astakosgroup
         INNER JOIN im_membership ON (
@@ -936,17 +936,20 @@ def group_list(request):
             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
-        WHERE im_membership.person_id = %s
-        """ % (DB_REPLACE_GROUP_SCHEME, request.user.id, request.user.id)
+        WHERE im_membership.person_id = %(userid)s
+        AND im_groupkind.name != 'default'
+        """
+    params = {'userid':request.user.id}
 
-    if sorting:
-        query = query+" ORDER BY %s ASC" %sorting
-    else:
-        query = query+" ORDER BY groupname ASC"
-    q = AstakosGroup.objects.raw(query)
-
-
-
+    # validate sorting
+    sorting = 'groupname'
+    sort_form = AstakosGroupSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    query = query+" ORDER BY %s ASC" %sorting
+    
+    q = AstakosGroup.objects.raw(query, params=params)
+    
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
         q.model._meta.app_label,
@@ -955,7 +958,7 @@ def group_list(request):
     extra_context = dict(
         is_search=False,
         q=q,
-        sorting=request.GET.get('sorting'),
+        sorting=sorting,
         page=request.GET.get('page', 1)
     )
     return render_response(template_name,
@@ -1023,15 +1026,11 @@ def group_detail(request, group_id):
     }, context_processors)
 
     # validate sorting
-    sorting = request.GET.get('sorting')
-    if sorting:
-        form = MembersSortForm({'sort_by': sorting})
-        if form.is_valid():
-            sorting = form.cleaned_data.get('sort_by')
-
-    else:
-        form = MembersSortForm({'sort_by': 'person_first_name'})
-
+    sorting = 'person__email'
+    form = MembersSortForm(request.GET)
+    if form.is_valid():
+        sorting = form.cleaned_data.get('sorting')
+    
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
@@ -1065,19 +1064,21 @@ def group_detail(request, group_id):
 @login_required
 def group_search(request, extra_context=None, **kwargs):
     q = request.GET.get('q')
-    sorting = request.GET.get('sorting')
     if request.method == 'GET':
         form = AstakosGroupSearchForm({'q': q} if q else None)
     else:
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
+    
+    sorting = 'groupname'
     if q:
         queryset = AstakosGroup.objects.select_related()
+        queryset = queryset.filter(~Q(kind__name='default'))
         queryset = queryset.filter(name__contains=q)
         queryset = queryset.filter(approval_date__isnull=False)
         queryset = queryset.extra(select={
-                                  'groupname': DB_REPLACE_GROUP_SCHEME,
+                                  'groupname': "auth_group.name",
                                   'kindname': "im_groupkind.name",
                                   'approved_members_num': """
                     SELECT COUNT(*) FROM im_membership
@@ -1105,11 +1106,12 @@ def group_search(request, extra_context=None, **kwargs):
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,
                     })
-        if sorting:
-            # TODO check sorting value
-            queryset = queryset.order_by(sorting)
-        else:
-            queryset = queryset.order_by("groupname")
+        
+        # validate sorting
+        sort_form = AstakosGroupSortForm(request.GET)
+        if sort_form.is_valid():
+            sorting = sort_form.cleaned_data.get('sorting')
+        queryset = queryset.order_by(sorting)
 
     else:
         queryset = AstakosGroup.objects.none()
@@ -1130,9 +1132,10 @@ def group_search(request, extra_context=None, **kwargs):
 @login_required
 def group_all(request, extra_context=None, **kwargs):
     q = AstakosGroup.objects.select_related()
+    q = q.filter(~Q(kind__name='default'))
     q = q.filter(approval_date__isnull=False)
     q = q.extra(select={
-                'groupname': DB_REPLACE_GROUP_SCHEME,
+                'groupname': "auth_group.name",
                 'kindname': "im_groupkind.name",
                 'approved_members_num': """
                     SELECT COUNT(*) FROM im_membership
@@ -1153,13 +1156,16 @@ def group_all(request, extra_context=None, **kwargs):
                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,   })
-    sorting = request.GET.get('sorting')
-    if sorting:
-        # TODO check sorting value
-        q = q.order_by(sorting)
-    else:
-        q = q.order_by("groupname")
-
+    
+    # validate sorting
+    sorting = 'groupname'
+    print '>>>', sorting, request.GET
+    sort_form = AstakosGroupSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    print '<<<', sorting
+    q = q.order_by(sorting)
+    
     return object_list(
         request,
         q,
@@ -1259,7 +1265,7 @@ def disapprove_member(request, membership):
     try:
         membership.disapprove()
         realname = membership.person.realname
-        msg = astakos_messages.MEMBER_REMOVED % realname
+        msg = astakos_messages.MEMBER_REMOVED % locals()
         messages.success(request, msg)
     except BaseException, e:
         logger.exception(e)
@@ -1316,64 +1322,64 @@ def group_create_list(request):
         context_instance=get_context(request),)
 
 
-#@require_http_methods(["GET"])
-@require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
-def billing(request):
+##@require_http_methods(["GET"])
+#@require_http_methods(["POST", "GET"])
+#@signed_terms_required
+#@login_required
+#def billing(request):
+#
+#    today = datetime.today()
+#    month_last_day = calendar.monthrange(today.year, today.month)[1]
+#    start = request.POST.get('datefrom', None)
+#    if start:
+#        today = datetime.fromtimestamp(int(start))
+#        month_last_day = calendar.monthrange(today.year, today.month)[1]
+#
+#    start = datetime(today.year, today.month, 1).strftime("%s")
+#    end = datetime(today.year, today.month, month_last_day).strftime("%s")
+#    r = request_billing.apply(args=('pgerakios@grnet.gr',
+#                                    int(start) * 1000,
+#                                    int(end) * 1000))
+#    data = {}
+#
+#    try:
+#        status, data = r.result
+#        data = _clear_billing_data(data)
+#        if status != 200:
+#            messages.error(request, _(astakos_messages.BILLING_ERROR) % status)
+#    except:
+#        messages.error(request, r.result)
+#
+#    return render_response(
+#        template='im/billing.html',
+#        context_instance=get_context(request),
+#        data=data,
+#        zerodate=datetime(month=1, year=1970, day=1),
+#        today=today,
+#        start=int(start),
+#        month_last_day=month_last_day)
 
-    today = datetime.today()
-    month_last_day = calendar.monthrange(today.year, today.month)[1]
-    start = request.POST.get('datefrom', None)
-    if start:
-        today = datetime.fromtimestamp(int(start))
-        month_last_day = calendar.monthrange(today.year, today.month)[1]
 
-    start = datetime(today.year, today.month, 1).strftime("%s")
-    end = datetime(today.year, today.month, month_last_day).strftime("%s")
-    r = request_billing.apply(args=('pgerakios@grnet.gr',
-                                    int(start) * 1000,
-                                    int(end) * 1000))
-    data = {}
-
-    try:
-        status, data = r.result
-        data = _clear_billing_data(data)
-        if status != 200:
-            messages.error(request, _(astakos_messages.BILLING_ERROR) % status)
-    except:
-        messages.error(request, r.result)
-
-    return render_response(
-        template='im/billing.html',
-        context_instance=get_context(request),
-        data=data,
-        zerodate=datetime(month=1, year=1970, day=1),
-        today=today,
-        start=int(start),
-        month_last_day=month_last_day)
-
-
-def _clear_billing_data(data):
-
-    # remove addcredits entries
-    def isnotcredit(e):
-        return e['serviceName'] != "addcredits"
-
-    # separate services
-    def servicefilter(service_name):
-        service = service_name
-
-        def fltr(e):
-            return e['serviceName'] == service
-        return fltr
-
-    data['bill_nocredits'] = filter(isnotcredit, data['bill'])
-    data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
-    data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
-    data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
-
-    return data
+#def _clear_billing_data(data):
+#
+#    # remove addcredits entries
+#    def isnotcredit(e):
+#        return e['serviceName'] != "addcredits"
+#
+#    # separate services
+#    def servicefilter(service_name):
+#        service = service_name
+#
+#        def fltr(e):
+#            return e['serviceName'] == service
+#        return fltr
+#
+#    data['bill_nocredits'] = filter(isnotcredit, data['bill'])
+#    data['bill_vmtime'] = filter(servicefilter('vmtime'), data['bill'])
+#    data['bill_diskspace'] = filter(servicefilter('diskspace'), data['bill'])
+#    data['bill_addcredits'] = filter(servicefilter('addcredits'), data['bill'])
+#
+#    return data
 
 
 #@require_http_methods(["GET"])

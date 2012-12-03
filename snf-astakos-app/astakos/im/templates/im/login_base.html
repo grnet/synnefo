@@ -9,50 +9,22 @@
 {% endblock body.left %}
     
 {% block body.right %} 
-	{% if "local" in im_modules %}
-    	<form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
-		    <h2>LOGIN</h2>
-		    {% with login_form as form %}
-		    	{% include "im/form_render.html" %}
-		    {% endwith %}
-		    <input type="hidden" name="next" value="{{ next }}">
-		    
-		    {% if key %}
-		        <input type="hidden" name="key" value="{{key}}">
-		    {% else %}
-		        {% if request.GET.key %}
-		            <input type="hidden" name="key" value="{{request.GET.key}}">
-		        {% endif %}
-		    {% endif %}
-		    
-		    <div class="form-row submit clearfix">
-		    	<input type="submit" class="submit altcol" value="SUBMIT" />
-		        <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
-		    </div>
-    	</form>
-    {% endif %}
+    
+    {% include master_auth_provider.login_template %}
+
     <div class="extralogin">
-         {% for o in im_modules %}
-    	<div>
-        {% if o != 'local' %}
-        LOGIN using
-            <a href="/im/login/{{ o }}?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
-            alt="{{ o|title }}">{{ o }}</a>
-        {% endif %}
-        </div>
-        {% endfor %}
+      {% for provider in auth_providers %}
+      {% if not provider == master_auth_provider %}
+        {% include provider.login_prompt_template %}
+      {% endif %}
+      {% endfor %}
     </div><br />
-    {% block body.signup %}
-	    {% for o in im_modules %}
-	        {% if o != 'local' %}
-	       
-	        {% endif %}
-	    {% endfor %}
-	    <div class="bottom">
-	        {% block body.login.signup %}
-	            new to okeanos ? <a href="{% url astakos.im.views.signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">CREATE ACCOUNT</a>
-	        {% endblock %}
-	    </div>
+    <div class="bottom">
+      {% block body.signup %}
+        {% for provider in auth_providers %}
+          {% include provider.signup_prompt_template %}
+        {% endfor %}
+    </div>
 	{% endblock body.signup %}
  
 {% endblock body.right%}

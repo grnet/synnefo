@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from django.contrib.auth.backends import ModelBackend
-from django.core.validators import email_re
 
 from astakos.im.models import AstakosUser
 from astakos.im.settings import LOGGING_LEVEL
@@ -72,21 +71,18 @@ class EmailBackend(ModelBackend):
     Used from ``astakos.im.forms.LoginForm`` to authenticate.
     """
     def authenticate(self, username=None, password=None):
-        #If username is an email address, then try to pull it up
-        if email_re.search(username):
-            users = AstakosUser.objects.filter(email__iexact=username)
-            if not users:
-                return None
-            for user in users:
-                if  user.check_password(password):
-                    return user
-        else:
-            #We have a non-email address username we
-            #should try username
-            try:
-                user = AstakosUser.objects.get(username=username)
-            except AstakosUser.DoesNotExist:
-                return None
+        # First check whether a user having this email exists
+        users = AstakosUser.objects.filter(email__iexact=username)
+        for user in users:
+            if  user.check_password(password):
+                return user
+        
+        # Since no user has been found by email try with the username
+        try:
+            user = AstakosUser.objects.get(username=username)
+        except AstakosUser.DoesNotExist:
+            return None
+        
         if user.check_password(password):
             return user
         else:

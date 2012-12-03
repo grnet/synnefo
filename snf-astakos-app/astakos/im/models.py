@@ -71,7 +71,7 @@ from astakos.im.endpoints.qh import (
 from astakos.im import auth_providers
 from astakos.im.endpoints.aquarium.producer import report_user_event
 from astakos.im.functions import send_invitation
-from astakos.im.tasks import propagate_groupmembers_quota
+#from astakos.im.tasks import propagate_groupmembers_quota
 
 import astakos.im.messages as astakos_messages
 
@@ -223,10 +223,10 @@ class AstakosGroup(Group):
         self.approval_date = datetime.now()
         self.save()
         quota_disturbed.send(sender=self, users=self.approved_members)
-        propagate_groupmembers_quota.apply_async(
-            args=[self], eta=self.issue_date)
-        propagate_groupmembers_quota.apply_async(
-            args=[self], eta=self.expiration_date)
+        #propagate_groupmembers_quota.apply_async(
+        #    args=[self], eta=self.issue_date)
+        #propagate_groupmembers_quota.apply_async(
+        #    args=[self], eta=self.expiration_date)
 
     def disable(self):
         if self.is_disabled:
@@ -307,7 +307,7 @@ class AstakosGroup(Group):
 
 
 
-class AstakosUserManager(models.Manager):
+class AstakosUserManager(UserManager):
 
     def get_auth_provider_user(self, provider, **kwargs):
         """
@@ -322,9 +322,6 @@ class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
     """
-    # Use UserManager to get the create_user method, etc.
-    objects = UserManager()
-
     affiliation = models.CharField('Affiliation', max_length=255, blank=True,
                                    null=True)
 
@@ -377,6 +374,7 @@ class AstakosUser(User):
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
+    
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
 
@@ -500,13 +498,8 @@ class AstakosUser(User):
 
         if not self.id:
             # set username
-            while not self.username:
-                username =  self.email
-                try:
-                    AstakosUser.objects.get(username=username)
-                except AstakosUser.DoesNotExist:
-                    self.username = username
-
+            self.username = self.email
+        
         self.validate_unique_email_isactive()
         if self.is_active and self.activation_sent:
             # reset the activation sent
@@ -737,8 +730,9 @@ class AstakosUserAuthProvider(models.Model):
 
     def delete(self, *args, **kwargs):
         ret = super(AstakosUserAuthProvider, self).delete(*args, **kwargs)
-        self.user.set_unusable_password()
-        self.user.save()
+        if self.module == 'local':
+            self.user.set_unusable_password()
+            self.user.save()
         return ret
 
     def __repr__(self):

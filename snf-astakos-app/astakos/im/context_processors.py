@@ -50,9 +50,9 @@ def im_modules(request):
 def auth_providers(request):
     active_auth_providers = []
     for module in IM_MODULES:
-        provider = AUTH_PROVIDERS.get(module)
+        provider = AUTH_PROVIDERS.get(module, None)
         if provider:
-            active_auth_providers.append(provider)
+            active_auth_providers.append(provider())
 
     return {'auth_providers': active_auth_providers,
             'master_auth_provider': active_auth_providers[0]}

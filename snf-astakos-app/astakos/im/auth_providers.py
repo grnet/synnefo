@@ -44,8 +44,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # providers registry
-PROVIDERS = SortedDict()
-_PROVIDERS = {}
+PROVIDERS = {}
 
 class AuthProviderBase(type):
 
@@ -60,7 +59,7 @@ class AuthProviderBase(type):
 
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
         if include:
-            _PROVIDERS[type_id] = newcls
+            PROVIDERS[type_id] = newcls
         return newcls
 
 
@@ -171,9 +170,4 @@ def get_provider(id, user_obj=None, default=None):
     Return a provider instance from the auth providers registry.
     """
     return PROVIDERS.get(id, default)(user_obj)
-
-
-for module in astakos_settings.IM_MODULES:
-    if module in _PROVIDERS:
-        PROVIDERS[module] = _PROVIDERS[module]
 

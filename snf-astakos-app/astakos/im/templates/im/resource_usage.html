@@ -3,7 +3,7 @@
 {% load filters %}
 
 {% block page.body %}
-<div class="maincol {% block innerpage.class %}{% endblock %}">
+<div class="maincol {% block innerpage.class %}{% endblock %}"> 
 	<div class="stats clearfix">
 		<ul>
 			{% for rname, rdata in resource_catalog.resources.items %}
@@ -23,7 +23,7 @@
 						</p>
 					</div>
 					<div class="bar">
-						<div><span style="width:{{ rdata.ratio|floatformat }}%;">{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</span></div>
+						<div><span style="width:{{ rdata.ratio_limited|floatformat }}%;">{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</span></div>
 					</div>
 		 		</li>
 		 	{% endfor%}

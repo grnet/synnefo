@@ -1,16 +1,9 @@
-{% extends 'im/base_two_cols.html' %}
+{% extends 'im/signup.html' %}
 
 
 {% block page.title %}
-    Welcome
+Signup using {{ provider }}
 {% endblock %}
-
-{% block body %}
-<div class="section">
-    <img class="pic" src="{{ IM_STATIC_URL }}images/pictures/signup_pic.png" />
-</div>
-{% comment %}{% include "im/services_description.html" %}{% endcomment %}
-{% endblock body %}
 
 {% block body.right %}
     {% if "local" in im_modules %}

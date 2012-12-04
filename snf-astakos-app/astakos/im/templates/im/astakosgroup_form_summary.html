@@ -21,6 +21,8 @@
 			<dl class="alt-style">			    
 				<dt>Homepage Url</dt>
 				<dd>{{ data.homepage }}&nbsp;</dd>
+				<dt>Modaration</dt>
+			 	<dd>{{ data.moderation_enabled|yesno:"Yes, No" }}</dd>
 			</dl>
 		</div>
 		<div class="full-dotted">
@@ -34,8 +36,6 @@
 			 	<dd>{{ data.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 			 	<dt>Expiration Date</dt>
 			 	<dd>{{ data.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
-			 	<dt>Modaration</dt>
-			 	<dd>{{ data.moderation_enabled|yesno:"Yes, No" }}</dd>
 			 	<dt>Max members per group</dt>
 			 	<dd>{% if  data.max_participants %}{{ data.max_participants }}{% else %}Unlimited{% endif %}</dd>
 			 </dl>

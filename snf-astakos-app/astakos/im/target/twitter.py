@@ -171,6 +171,7 @@ def authenticated(
 
         extra_context['provider'] = 'twitter'
         extra_context['token'] = user.token
+        extra_context['signup_url'] = reverse('twitter_signup', args=(user.token,))
 
         return render_response(
             template,

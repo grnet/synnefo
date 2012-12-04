@@ -160,6 +160,7 @@ def login(
 
         extra_context['provider'] = 'shibboleth'
         extra_context['token'] = user.token
+        extra_context['signup_url'] = reverse('shibboleth_signup', args=(user.token,))
 
         return render_response(
             template,

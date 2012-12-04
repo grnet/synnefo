@@ -39,7 +39,7 @@ from functools import wraps
 from django.utils.translation import ugettext as _
 
 from astakos.im.settings import (
-	QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
+        QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
 
 if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient

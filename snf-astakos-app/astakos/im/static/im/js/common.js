@@ -285,8 +285,10 @@ $(document).ready(function() {
 	})
     
     $('.hidden-submit input[readonly!="True"]').focus(function () {
-         $('.hidden-submit .form-row.submit').show(500);
+         $('.hidden-submit .form-row.submit').slideDown(500);
     });
+    
+    
     
      $('.auth_methods').find('li>a').click(function(e){
      	e.preventDefault();

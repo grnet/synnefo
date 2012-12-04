@@ -479,23 +479,24 @@ form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
 .summary .quotas-form legend					{ margin-bottom:1em; }
 .projects  p.restricted							{ width:524px; }
 .hidden-submit .form-row.submit					{ display:none; }
+form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .how-it-works									{ position:relative; }
 .content .how-it-works a.submit					{ position:absolute; right:83px; bottom:50px;  background-color:#B3B3B3 }
 .content .how-it-works a.submit:hover			{ background:#55B577 }
 .content .how-it-works a.submit:focus			{ border-color: #B3B3B3}
 .content .how-it-works a.submit:focus:hover		{ border-color: #55B577}
 
+.auth_methods									{ margin-top:2em; padding-bottom:1em; }
 .auth_methods ul								{ margin:1em 0; padding:0; list-style:none outside none; }
 .auth_methods ul li 							{ margin:0 0 1em 0; padding:0; list-style:none outside none; font-size:1.154em; }
 .auth_methods ul li>a							{ padding-right:20px; background:url(../images/arrow-down_green.png) no-repeat center right; color:#55B577 }
 .auth_methods ul li>a.up						{ background-image:url(../images/arrow-up_green.png); }
 .auth_methods ul li .wrap						{ font-size:0.867em; margin-top:1em; display:none; }
-.auth_methods ul li .actions a					{ margin-right:20px; }
+.auth_methods ul li .actions a		 			{ margin-right:20px; }
 .auth_methods ul li a.red						{ color:#F24E53; }
 .auth_methods ul.notassigned					{ margin-top:3em; }
 .auth_methods ul.notassigned li>a				{ background:transparent; color: #F89A1C}
 .auth_methods .dialog-wrap						{ display:inline; position:relative; }
 .auth_methods .dialog							{ background:#fff; border:1px dashed #ccc; position:absolute; bottom:30px; left:0; padding:15px; width:220px; display:none;}
-.auth_methods .dialog .submit					{ min-width:30px; padding:5px 22px; }
-
-.content input:-webkit-autofill 							{ background: transparent; }
+.auth_methods .dialog .submit					{ min-width:30px; padding:5px 22px; } 
+.right-align									{ text-align:right; }			

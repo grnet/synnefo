@@ -41,6 +41,11 @@
 	  el.addClass(className);	
 		
       el.click(function() {
+      	parentForm = $(this).parents('form');
+      	if ( parentForm.hasClass('hidden-submit') ){
+      		$('.hidden-submit .form-row.submit').slideDown(500);
+      	} 
+      	
 		if (isRadio && $this.attr('checked')){ return; }
         el.toggleClass("checked");
         $this.attr('checked', el.hasClass("checked"));

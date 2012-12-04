@@ -2,6 +2,7 @@
 
 {% block body %}
 
+<h2>GENERAL INFO</h2>
 <form action={%url edit_profile %} method="post" class="withlabels hidden-submit">{% csrf_token %}
     
     {% with profile_form as form %}
@@ -65,11 +66,11 @@
     </div>
 </div>
 
-<div class="full-dotted">
+<div class="full-dotted right-align">
 	<ul class="options">
-		<li><a href="https://okeanos.grnet.gr/home/" class="blue">Back to ~okeanos ></a></li>
 		<li><a href="https://cyclades.okeanos.grnet.gr/ui/" class="blue">Take me to cyclades ></a></li>
 		<li><a href="https://pithos.okeanos.grnet.gr/ui/" class="blue">Take me to pithos+ ></a></li>
+		<li><a href="https://okeanos.grnet.gr/home/" class="blue">~okeanos homepage ></a></li>
 	</ul>
 		 
 </div>

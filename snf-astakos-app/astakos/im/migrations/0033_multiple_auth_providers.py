@@ -22,10 +22,8 @@ class Migration(DataMigration):
     def backwards(self, orm):
         for user in orm.AstakosUser.objects.all():
             for auth_provider in user.auth_providers.all():
-                user.provider = auth_provider.provider
+                user.provider = auth_provider.module
                 user.third_party_identifier = auth_provider.identifier
-                if auth_provider.provider != 'local':
-                    user.set_unusable_password()
 
             user.save()
 

@@ -34,7 +34,8 @@
 
 from synnefo.lib.commissioning import CorruptedError
 
-from django.db.models import Model, BigIntegerField, CharField, ForeignKey
+from django.db.models import (Model, BigIntegerField, CharField,
+                              ForeignKey, AutoField)
 from django.db import transaction
 
 
@@ -43,23 +44,6 @@ class Holder(Model):
     attribute   =   CharField(max_length=4096, primary_key=True)
     intval      =   BigIntegerField()
     strval      =   CharField(max_length=4096)
-
-
-def alloc_serial(nr=1):
-    if nr < 0:
-        m = "Can only receive a positive argument, not %d" % (nr,)
-        raise CorruptedError(m)
-
-    try:
-        holder = Holder.objects.get(attribute='serial')
-    except Holder.DoesNotExist:
-        holder = Holder(attribute='serial', intval=1)
-
-    serial = holder.intval
-    holder.intval += nr
-    holder.save()
-
-    return serial
 
 
 class Entity(Model):
@@ -108,7 +92,7 @@ def now():
 
 class Commission(Model):
 
-    serial      =   BigIntegerField(primary_key=True, default=alloc_serial)
+    serial      =   AutoField(primary_key=True)
     entity      =   ForeignKey(Entity, to_field='entity')
     name        =   CharField(max_length=4096, null=True)
     clientkey   =   CharField(max_length=4096, null=False)

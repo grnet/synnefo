@@ -77,7 +77,7 @@ class AuthProvider(object):
 
     def __getattr__(self, key):
         if not key.startswith('get_'):
-            return super(AuthProvider, self).__getattr__(key)
+            return super(AuthProvider, self).__getattribute__(key)
 
         if key.endswith('_display') or key.endswith('template'):
             attr = key.replace('_display', '').replace('get_','')

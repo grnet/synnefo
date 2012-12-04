@@ -45,7 +45,7 @@ class Migration(SchemaMigration):
         db.delete_table('im_astakosuserauthprovider')
 
         # Changing field 'AstakosUser.affiliation'
-        db.alter_column('im_astakosuser', 'affiliation', self.gf('django.db.models.fields.CharField')(default='', max_length=255))
+        db.alter_column('im_astakosuser', 'affiliation', self.gf('django.db.models.fields.CharField')(default='', max_length=255, null=True))
 
         # Changing field 'AstakosUser.provider'
         db.alter_column('im_astakosuser', 'provider', self.gf('django.db.models.fields.CharField')(default='', max_length=255))

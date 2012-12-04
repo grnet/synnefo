@@ -4,24 +4,25 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
-
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-
+        
         # Adding field 'AstakosGroupQuota.uplimit'
         db.add_column('im_astakosgroupquota', 'uplimit', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
 
         # Adding field 'AstakosUserQuota.uplimit'
         db.add_column('im_astakosuserquota', 'uplimit', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
 
-    def backwards(self, orm):
 
+    def backwards(self, orm):
+        
         # Deleting field 'AstakosGroupQuota.uplimit'
         db.delete_column('im_astakosgroupquota', 'uplimit')
 
         # Deleting field 'AstakosUserQuota.uplimit'
         db.delete_column('im_astakosuserquota', 'uplimit')
+
 
     models = {
         'auth.group': {

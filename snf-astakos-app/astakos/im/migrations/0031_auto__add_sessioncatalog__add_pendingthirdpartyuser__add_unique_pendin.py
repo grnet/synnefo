@@ -8,14 +8,6 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'SessionCatalog'
-        db.create_table('im_sessioncatalog', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('session_key', self.gf('django.db.models.fields.CharField')(max_length=40)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='sessions', null=True, to=orm['im.AstakosUser'])),
-        ))
-        db.send_create_signal('im', ['SessionCatalog'])
-
         # Adding model 'PendingThirdPartyUser'
         db.create_table('im_pendingthirdpartyuser', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -32,17 +24,25 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'PendingThirdPartyUser', fields ['provider', 'third_party_identifier']
         db.create_unique('im_pendingthirdpartyuser', ['provider', 'third_party_identifier'])
 
+        # Adding model 'SessionCatalog'
+        db.create_table('im_sessioncatalog', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('session_key', self.gf('django.db.models.fields.CharField')(max_length=40)),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='sessions', null=True, to=orm['im.AstakosUser'])),
+        ))
+        db.send_create_signal('im', ['SessionCatalog'])
+
 
     def backwards(self, orm):
         
         # Removing unique constraint on 'PendingThirdPartyUser', fields ['provider', 'third_party_identifier']
         db.delete_unique('im_pendingthirdpartyuser', ['provider', 'third_party_identifier'])
 
-        # Deleting model 'SessionCatalog'
-        db.delete_table('im_sessioncatalog')
-
         # Deleting model 'PendingThirdPartyUser'
         db.delete_table('im_pendingthirdpartyuser')
+
+        # Deleting model 'SessionCatalog'
+        db.delete_table('im_sessioncatalog')
 
 
     models = {

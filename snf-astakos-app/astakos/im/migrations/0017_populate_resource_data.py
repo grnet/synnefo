@@ -2,16 +2,76 @@
 
 from south.v2 import DataMigration
 
+from astakos.im.settings import SERVICES
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        "Obsolete migration."
-        return
+        "Write your forwards methods here."
+
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
+
+        def create_policies(args):
+            sn, dict = args
+            url = dict.get('url')
+            resources = dict.get('resources') or ()
+            s, created = orm.Service.objects.get_or_create(
+                name=sn,
+                defaults={'url': url}
+            )
+            
+            for r in resources:
+                try:
+                    rn = r.pop('name', '')
+                    uplimit = r.pop('uplimit', None)
+                    r, created = orm.Resource.objects.get_or_create(
+                        service=s,
+                        name=rn,
+                        defaults=r)
+                except Exception, e:
+                    print "Cannot create resource ", rn
+                    continue
+                else:
+                    q, created = orm.AstakosGroupQuota.objects.get_or_create(
+                        group=default,
+                        resource=r,
+                        defaults={
+                            'uplimit':uplimit,
+                        }
+                    )
+        map(create_policies, SERVICES.iteritems())
 
     def backwards(self, orm):
-        "Obsolete migration."
-        return
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
+
+        def destroy_policies(args):
+            sn, dict = args
+            url = dict.get('url')
+            resources = dict.get('resources') or ()
+            for r in resources:
+                rn = r.get('name', '')
+                try:
+                    q = orm.AstakosGroupQuota.objects.get(
+                        group=default,
+                        resource__name=rn)
+                    q.delete()
+                    q = orm.Resource.objects.get(service__name=sn, name=rn)
+                    q.delete()
+                except Exception, e:
+                    print "Cannot create resource ", rn
+                    continue
+
+        map(destroy_policies, SERVICES.iteritems())
 
     models = {
         'auth.group': {

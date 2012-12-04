@@ -84,7 +84,7 @@ def new_quota_holder_client():
     """
     Create a new quota holder api client
     """
-    return QuotaholderClient(QH_URL)
+    return QuotaholderClient(QH_URL, 'test')
 
 def run_test_case(test_case):
     """

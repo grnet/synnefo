@@ -1020,6 +1020,8 @@ def fix_superusers(sender, **kwargs):
     admins = User.objects.filter(is_superuser=True)
     for u in admins:
         create_astakos_user(u)
+        if not u.has_auth_provider('local'):
+            u.add_auth_provider('local')
 
 
 def user_post_save(sender, instance, created, **kwargs):

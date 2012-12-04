@@ -102,7 +102,12 @@ def login(request, on_failure='im/login.html'):
 
             message = msg + msg_extra
     elif not user.can_login_with_auth_provider('local'):
-        message = _(astakos_messages.NO_LOCAL_AUTH)
+        # valid user logged in with no auth providers set, add local provider
+        # and let him log in
+        if user.auth_providers.count() == 0:
+            user.add_auth_provider('local')
+        else:
+            message = _(astakos_messages.NO_LOCAL_AUTH)
 
     if message:
         messages.error(request, message)

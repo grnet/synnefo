@@ -34,6 +34,7 @@
 import hashlib
 import uuid
 import logging
+import json
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -623,8 +624,14 @@ class AstakosUser(User):
                                                **kwargs).count())
 
     def add_auth_provider(self, provider, **kwargs):
+        info_data = ''
+        if 'provider_info' in kwargs:
+            info_data = json.dumps(kwargs.pop('provider_info'))
+
         if self.can_add_auth_provider(provider, **kwargs):
-            self.auth_providers.create(module=provider, active=True, **kwargs)
+            self.auth_providers.create(module=provider, active=True,
+                                       info_data=info_data,
+                                       **kwargs)
         else:
             raise Exception('Cannot add provider')
 
@@ -711,11 +718,22 @@ class AstakosUserAuthProvider(models.Model):
     active = models.BooleanField(default=True)
     auth_backend = models.CharField('Backend', max_length=255, blank=False,
                                    default='astakos')
+    info_data = models.TextField(default="", null=True, blank=True)
 
     objects = AstakosUserAuthProviderManager()
 
     class Meta:
         unique_together = (('identifier', 'module', 'user'), )
+
+    def __init__(self, *args, **kwargs):
+        super(AstakosUserAuthProvider, self).__init__(*args, **kwargs)
+        try:
+            self.info = json.loads(self.info_data)
+        except:
+            self.info = {}
+        for key,value in self.info.iteritems():
+            setattr(self, 'info_%s' % key, value)
+
 
     @property
     def settings(self):
@@ -723,7 +741,17 @@ class AstakosUserAuthProvider(models.Model):
 
     @property
     def details_display(self):
-        return self.settings.details_tpl % self.__dict__
+        return self.settings.get_details_tpl_display % self.__dict__
+
+    @property
+    def title_display(self):
+        title_tpl = self.settings.get_title_display
+        try:
+            if self.settings.get_user_title_display:
+                title_tpl = self.settings.get_user_title_display
+        except Exception, e:
+            pass
+        return title_tpl % self.__dict__
 
     def can_remove(self):
         return self.user.can_remove_auth_provider(self.module)
@@ -745,6 +773,9 @@ class AstakosUserAuthProvider(models.Model):
             return "%s:%s" % (self.module, self.auth_backend)
         return self.module
 
+    def save(self, *args, **kwargs):
+        self.info_data = json.dumps(self.info)
+        return super(AstakosUserAuthProvider, self).save(*args, **kwargs)
 
 
 class Membership(models.Model):

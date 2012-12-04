@@ -112,6 +112,7 @@ def authenticated(
 
     access_token = dict(cgi.parse_qsl(content))
     userid = access_token['user_id']
+    username = access_token.get('screen_name', userid)
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -125,7 +126,8 @@ def authenticated(
             messages.error(request, 'Account already exists.')
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('twitter', identifier=userid)
+        user.add_auth_provider('twitter', identifier=userid,
+                               provider_info={'screen_name': username})
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:

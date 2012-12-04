@@ -154,6 +154,9 @@ class ShibbolethAuthProvider(AuthProvider):
     description = _('Allows you to login to your account using your academic '
                     'credentials')
     add_prompt = _('Add academic credentials to your account.')
+    details_tpl = _('Shibboleth account %(identifier)s is connected with your '
+                    ' account.')
+    user_title = _('Academic credentials (%(identifier)s)')
 
     @property
     def add_url(self):
@@ -169,6 +172,8 @@ class TwitterAuthProvider(AuthProvider):
     description = _('Allows you to login to your account using your twitter '
                     'account')
     add_prompt = _('Connect with your Twitter account.')
+    details_tpl = _('Twitter screen name: %(info_screen_name)s')
+    user_title = _('Twitter (%(info_screen_name)s)')
 
     @property
     def add_url(self):

@@ -480,11 +480,17 @@ form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }
 .projects  p.restricted							{ width:524px; }
 .hidden-submit .form-row.submit					{ display:none; }
 form.withlabels.hidden-submit					{ margin-bottom:4em; }
-.how-it-works									{ position:relative; }
-.content .how-it-works a.submit					{ position:absolute; right:83px; bottom:50px;  background-color:#B3B3B3 }
+.how-it-works .wrap								{ position:relative; width:735px; height:1074px; margin:0 auto; }
+.content .how-it-works a.submit					{ position:absolute; right:36px; bottom:50px;  background-color:#B3B3B3 }
 .content .how-it-works a.submit:hover			{ background:#55B577 }
 .content .how-it-works a.submit:focus			{ border-color: #B3B3B3}
 .content .how-it-works a.submit:focus:hover		{ border-color: #55B577}
+.content .how-it-works .map						{ display:block; width:232px; height:261px; position:absolute; }
+.content .how-it-works .link-13					{ top:10px; right:14px; }
+.content .how-it-works .link-21					{ top:273px; left:14px; }
+.content .how-it-works .link-22					{ top:273px; left:251px; }
+.content .how-it-works .link-33					{ bottom:275px; right:14px; }
+.content .how-it-works .link-42					{ bottom:12px; left:251px; }
 
 .auth_methods									{ margin-top:2em; padding-bottom:1em; }
 .auth_methods ul								{ margin:1em 0; padding:0; list-style:none outside none; }

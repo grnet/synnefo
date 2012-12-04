@@ -981,6 +981,11 @@ def group_detail(request, group_id):
                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,
+        'is_active_member': """SELECT CASE WHEN(
+                        SELECT date_joined FROM im_membership
+                        WHERE group_id = im_astakosgroup.group_ptr_id
+                        AND person_id = %s) IS NULL
+                        THEN 0 ELSE 1 END""" % request.user.id,
         'kindname': """SELECT name FROM im_groupkind
                        WHERE id = im_astakosgroup.kind_id"""})
 
@@ -1279,6 +1284,7 @@ def resource_usage(request):
         entry['load_class'] = 'red'
         max_value = float(entry['maxValue'])
         curr_value = float(entry['currValue'])
+        entry['ratio_limited']= 0
         if max_value > 0 :
             entry['ratio'] = (curr_value / max_value) * 100
         else:
@@ -1287,6 +1293,13 @@ def resource_usage(request):
             entry['load_class'] = 'yellow'
         if entry['ratio'] < 33:
             entry['load_class'] = 'green'
+        if entry['ratio']<0:
+            entry['ratio'] = 0
+        if entry['ratio']>100:
+            entry['ratio_limited'] = 100
+        else:
+            entry['ratio_limited'] = entry['ratio']
+        
         return entry
 
     def pluralize(entry):

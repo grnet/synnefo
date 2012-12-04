@@ -163,7 +163,7 @@ def send_group_creation_notification(template_name, dictionary=None):
     return _send_admin_notification(template_name, dictionary, subject=subject)
 
 
-def send_helpdesk_notification(user, template_name='im/account_notification.txt'):
+def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
     """
     Send email to DEFAULT_CONTACT_EMAIL to notify for a new user activation.
 
@@ -275,8 +275,12 @@ def send_change_email(ec, request, email_template_name='registration/email_chang
         logger.log(LOGGING_LEVEL, msg)
 
 
-def activate(user, email_template_name='im/welcome_email.txt',
-             helpdesk_email_template_name='im/helpdesk_notification.txt', verify_email=False):
+def activate(
+    user,
+    email_template_name='im/welcome_email.txt',
+    helpdesk_email_template_name='im/helpdesk_notification.txt',
+    verify_email=False
+):
     """
     Activates the specific user and sends email.
 

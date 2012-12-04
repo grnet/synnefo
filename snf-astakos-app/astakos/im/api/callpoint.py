@@ -110,7 +110,7 @@ class AstakosCallpoint():
         b = get_backend()
         return b.list_users(filter)
 
-    def get_user_status(self, user_id):
+    def get_user_usage(self, user_id):
         b = get_backend()
         return b.get_resource_usage(user_id)
 

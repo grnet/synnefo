@@ -49,7 +49,7 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation'),
-    url(r'^resources/?$', 'resource_list', {}, name='resource_list'),
+    url(r'^resources/?$', 'resource_usage', {}, name='resource_usage'),
 #    url(r'^billing/?$', 'billing', {}, name='billing'),
     url(r'^timeline/?$', 'timeline', {}, name='timeline'),
     url(r'^group/add/complete/?$', 'group_add_complete', {}, name='group_add_complete'),
@@ -75,7 +75,7 @@ if EMAILCHANGE_ENABLED:
         url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
             name='email_change_confirm')
 )
-    
+
 urlpatterns += patterns('astakos.im.target',
                         url(r'^login/redirect/?$', 'redirect.login')
                         )
@@ -114,7 +114,9 @@ if 'twitter' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
                             url(r'^login/twitter/?$', 'twitter.login'),
                             url(r'^login/twitter/authenticated/?$',
-                                'twitter.authenticated')
+                                'twitter.authenticated'),
+                            url(r'^twitter/signup/([\w-]+)/?$',
+                                'twitter.signup', {}, 'twitter_signup')
                             )
 
 urlpatterns += patterns('astakos.im.api',

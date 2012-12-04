@@ -14,7 +14,7 @@
       <div class="form-stacked">
         <h2><span>Already have an account?</span></h2>
         <a href="{% url astakos.im.views.index %}?key={{ token }}">YES</a>
-        <a href="{% url shibboleth_signup token %}">NO</a>
+        <a href="{{ signup_url }}">NO</a>
       </div>
     {% endif %}
 {% endblock %}

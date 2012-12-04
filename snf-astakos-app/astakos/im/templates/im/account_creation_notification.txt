@@ -1,10 +1,6 @@
 --- A translation in English follows ---
 
-{% if group_creation %}
 Έχει δημιουργηθεί ο παρακάτω λογαριασμός:
-{% else %}
-Έχει ενεργοποιηθεί ο παρακάτω λογαριασμός:
-{% endif %}
 
 Email:          {{user.email}}
 First name:     {{user.first_name}}
@@ -13,16 +9,10 @@ Is active:      {{user.is_active}}
 Level:          {{user.level}}
 Invitations:    {{user.invitations}}
 
-{% if group_creation %}
-Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο snf-manage user_send_activation
-{% endif %}
+Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο snf-manage user-activation-send
 --
 
-{% if group_creation %}
 The following account has been created:
-{% else %}
-The following account has been activated:
-{% endif %}
 
 Email:          {{user.email}}
 First name:     {{user.first_name}}
@@ -31,6 +21,4 @@ Is active:      {{user.is_active}}
 Level:          {{user.level}}
 Invitations:    {{user.invitations}}
 
-{% if group_creation %}
-For its activation you can use the command line tool snf-manage user_send_activation
-{% endif %}
+For its activation you can use the command line tool snf-manage user-activation-send

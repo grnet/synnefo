@@ -58,68 +58,81 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class Tokens:
-    # these are mapped by the Shibboleth SP software
-    SHIB_EPPN = "HTTP_EPPN"  # eduPersonPrincipalName
-    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
-    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
-    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
-    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
-    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
-    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
-    SHIB_MAIL = "HTTP_SHIB_MAIL"
+import oauth2 as oauth
+import cgi
 
-@requires_auth_provider('local', login=True)
+consumer = oauth.Consumer(settings.TWITTER_TOKEN, settings.TWITTER_SECRET)
+client = oauth.Client(consumer)
+
+request_token_url = 'http://twitter.com/oauth/request_token'
+access_token_url = 'http://twitter.com/oauth/access_token'
+authenticate_url = 'http://twitter.com/oauth/authenticate'
+
+
+@requires_auth_provider('twitter', login=True)
 @require_http_methods(["GET", "POST"])
-def login(
+def login(request):
+    resp, content = client.request(request_token_url, "GET")
+    if resp['status'] != '200':
+        messages.error(request, 'Invalid Twitter response')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    request.session['request_token'] = dict(cgi.parse_qsl(content))
+    url = "%s?oauth_token=%s" % (authenticate_url,
+        request.session['request_token']['oauth_token'])
+
+    return HttpResponseRedirect(url)
+
+
+@requires_auth_provider('twitter', login=True)
+@require_http_methods(["GET", "POST"])
+def authenticated(
     request,
     template='im/third_party_check_local.html',
-    extra_context=None
+    extra_context={}
 ):
-    extra_context = extra_context or {}
 
-    tokens = request.META
+    if not 'request_token' in request.session:
+        messages.error(request, 'Twitter handshake failed')
+        return HttpResponseRedirect(reverse('edit_profile'))
 
-    try:
-        eppn = tokens.get(Tokens.SHIB_EPPN)
-        if not eppn:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN))
-        if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
-        elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-        else:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
-    except KeyError, e:
-        # invalid shibboleth headers, redirect to login, display message
-        messages.error(request, e.message)
-        return HttpResponseRedirect(reverse('login'))
+    token = oauth.Token(request.session['request_token']['oauth_token'],
+        request.session['request_token']['oauth_token_secret'])
+    client = oauth.Client(consumer, token)
 
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    email = tokens.get(Tokens.SHIB_MAIL, '')
+    # Step 2. Request the authorized access token from Twitter.
+    resp, content = client.request(access_token_url, "GET")
+    if resp['status'] != '200':
+        try:
+          del request.session['request_token']
+        except:
+          pass
+        messages.error(request, 'Invalid Twitter response')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    access_token = dict(cgi.parse_qsl(content))
+    userid = access_token['user_id']
 
     # an existing user accessed the view
     if request.user.is_authenticated():
-        if request.user.has_auth_provider('shibboleth', identifier=eppn):
+        if request.user.has_auth_provider('twitter', identifier=userid):
             return HttpResponseRedirect(reverse('edit_profile'))
 
         # automatically add eppn provider to user
         user = request.user
-        if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn):
+        if not request.user.can_add_auth_provider('twitter',
+                                                  identifier=userid):
             messages.error(request, 'Account already exists.')
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('shibboleth', identifier=eppn)
+        user.add_auth_provider('twitter', identifier=userid)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
         # astakos user exists ?
         user = AstakosUser.objects.get_auth_provider_user(
-            'shibboleth',
-            identifier=eppn
+            'twitter',
+            identifier=userid
         )
         if user.is_active:
             # authenticate user
@@ -148,19 +161,17 @@ def login(
 		#TODO: use astakos_messages
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
-            third_party_identifier=eppn,
-            provider='shibboleth',
+            third_party_identifier=userid,
+            provider='twitter',
         )
         # update pending user
-        user.realname = realname
-        user.affiliation = affiliation
-        user.email = email
+        user.affiliation = 'Twitter'
         user.generate_token()
         user.save()
 
-        extra_context['provider'] = 'shibboleth'
+        extra_context['provider'] = 'twitter'
         extra_context['token'] = user.token
-        extra_context['signup_url'] = reverse('shibboleth_signup', args=(user.token,))
+        extra_context['signup_url'] = reverse('twitter_signup', args=(user.token,))
 
         return render_response(
             template,
@@ -168,7 +179,7 @@ def login(
         )
 
 
-@requires_auth_provider('local', login=True, create=True)
+@requires_auth_provider('twitter', login=True, create=True)
 @require_http_methods(["GET"])
 @requires_anonymous
 def signup(
@@ -176,7 +187,7 @@ def signup(
     token,
     backend=None,
     on_creation_template='im/third_party_registration.html',
-    extra_context=None):
+    extra_context={}):
 
     extra_context = extra_context or {}
     if not token:
@@ -197,13 +208,14 @@ def signup(
         messages.error(request, e)
     else:
         extra_context['form'] = backend.get_signup_form(
-            provider='shibboleth',
+            provider='twitter',
             instance=user
         )
 
-    extra_context['provider'] = 'shibboleth'
+    extra_context['provider'] = 'twitter'
     extra_context['third_party_token'] = token
     return render_response(
             on_creation_template,
             context_instance=get_context(request, extra_context)
     )
+

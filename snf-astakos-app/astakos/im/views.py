@@ -925,7 +925,7 @@ def group_list(request):
         (SELECT CASE WHEN(
                     SELECT date_joined FROM im_membership
                     WHERE group_id = im_astakosgroup.group_ptr_id
-                    AND person_id = %(userid)s) IS NULL
+                    AND person_id = %(id)s) IS NULL
                     THEN 0 ELSE 1 END) AS membership_status
         FROM im_astakosgroup
         INNER JOIN im_membership ON (
@@ -936,10 +936,9 @@ def group_list(request):
             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
         LEFT JOIN auth_user as owner ON (
             im_astakosuser_owner.astakosuser_id = owner.id)
-        WHERE im_membership.person_id = %(userid)s
+        WHERE im_membership.person_id = %(id)s
         AND im_groupkind.name != 'default'
-        """
-    params = {'userid':request.user.id}
+        """ % request.user.__dict__
 
     # validate sorting
     sorting = 'groupname'
@@ -948,7 +947,7 @@ def group_list(request):
         sorting = sort_form.cleaned_data.get('sorting')
     query = query+" ORDER BY %s ASC" %sorting
     
-    q = AstakosGroup.objects.raw(query, params=params)
+    q = AstakosGroup.objects.raw(query)
     
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
@@ -1159,11 +1158,9 @@ def group_all(request, extra_context=None, **kwargs):
     
     # validate sorting
     sorting = 'groupname'
-    print '>>>', sorting, request.GET
     sort_form = AstakosGroupSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
-    print '<<<', sorting
     q = q.order_by(sorting)
     
     return object_list(
@@ -1277,7 +1274,7 @@ def disapprove_member(request, membership):
 @require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
-def resource_list(request):
+def resource_usage(request):
     def with_class(entry):
         entry['load_class'] = 'red'
         max_value = float(entry['maxValue'])
@@ -1296,7 +1293,7 @@ def resource_list(request):
         entry['plural'] = engine.plural(entry.get('name'))
         return entry
 
-    result = callpoint.get_user_status(request.user.id)
+    result = callpoint.get_user_usage(request.user.id)
     if result.is_success:
         backenddata = map(with_class, result.data)
         data = map(pluralize, result.data)
@@ -1305,10 +1302,7 @@ def resource_list(request):
         messages.error(request, result.reason)
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result_report(result)
-
-
-
-    return render_response('im/resource_list.html',
+    return render_response('im/resource_usage.html',
                            data=data,
                            context_instance=get_context(request),
                            resource_catalog=resource_catalog,

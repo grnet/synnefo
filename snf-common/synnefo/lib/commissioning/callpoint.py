@@ -45,7 +45,7 @@ class Callpoint(object):
     CorruptedError = CorruptedError
     InvalidDataError = InvalidDataError
 
-    original_calls = {}
+    original_calls = None
 
     def __init__(self, connection=None):
         from json import loads, dumps
@@ -53,10 +53,8 @@ class Callpoint(object):
         self.json_loads = loads
         self.json_dumps = dumps
         self.init_connection(connection)
-        original_calls = self.original_calls
-        if not original_calls:
-            original_calls = {}
-            self.original_calls = original_calls
+        original_calls = {}
+        self.original_calls = original_calls
         canonifier = self.api_spec
 
         if canonifier is None:

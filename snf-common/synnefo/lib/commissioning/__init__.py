@@ -36,7 +36,7 @@
 from .exception         import (CallError, CorruptedError, InvalidDataError,
 				register_exception, register_exceptions)
 
-from .callpoint         import  Callpoint, get_callpoint, mkcallargs
+from .callpoint         import  Callpoint, mkcallargs
 
 from .specificator      import (Specificator, SpecifyException,
                                 Canonifier, CanonifyException,

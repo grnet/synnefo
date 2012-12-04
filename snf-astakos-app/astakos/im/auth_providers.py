@@ -44,8 +44,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # providers registry
-PROVIDERS = SortedDict()
-_PROVIDERS = {}
+PROVIDERS = {}
 
 class AuthProviderBase(type):
 
@@ -60,7 +59,7 @@ class AuthProviderBase(type):
 
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
         if include:
-            _PROVIDERS[type_id] = newcls
+            PROVIDERS[type_id] = newcls
         return newcls
 
 
@@ -152,14 +151,23 @@ class ShibbolethAuthProvider(AuthProvider):
     login_prompt_template = 'im/auth/shibboleth_login_prompt.html'
 
 
+class TwitterAuthProvider(AuthProvider):
+    module = 'twitter'
+    title = _('Twitter')
+    description = _('Allows you to login to your account using your twitter '
+                    'account')
+    add_prompt = _('Connect with your Twitter account.')
+
+    @property
+    def add_url(self):
+        return reverse('astakos.im.target.twitter.login')
+
+    login_template = 'im/auth/twitter_login.html'
+    login_prompt_template = 'im/auth/twitter_login_prompt.html'
+
 def get_provider(id, user_obj=None, default=None):
     """
     Return a provider instance from the auth providers registry.
     """
     return PROVIDERS.get(id, default)(user_obj)
-
-
-for module in astakos_settings.IM_MODULES:
-    if module in _PROVIDERS:
-        PROVIDERS[module] = _PROVIDERS[module]
 

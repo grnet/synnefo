@@ -6,14 +6,23 @@
 {% with object.owners as owners %}
  
 <div class="projects">
+	
 
 	<h2>
 	 	{% if object.is_member %}
 			<em>
 				{% if object.is_owner %}
-					[ ADMINISTRATOR ]
+					{% if object.is_enabled %}
+						[ ADMINISTRATOR - ACTIVE ]
+					{% else %}
+						[ ADMINISTRATOR - PENDING ]
+					{% endif %}
 				{%  else %}
-					[ ENROLLED ]
+					{% if  object.is_active_member %}
+						[ ENROLLED - ACTIVE ]
+					{% else %}
+						[ ENROLLED - PENDING ]
+					{% endif %}
 				{% endif %}
 			</em>		
 		{% endif %}
@@ -119,7 +128,7 @@
             <p>No resources</p>
         {% endif %} 
 	 </div>
-     
+     {% if object.is_owner %}
 	 <div class="full-dotted">
 	    {% with page|concat:sorting as args %}
 	    {% with object.membership_set.select_related.all|paginate:args as membership %}
@@ -153,7 +162,7 @@
                         {% if m.is_approved %}
                         <td>Approved
                             {% if object.is_owner %}
-                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
+                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
                             {% endif %}
                         </td>
                         {% else %}
@@ -192,7 +201,7 @@
 	 </div>
      
      
-    {% if object.is_owner %}
+    
     <div class="full-dotted">
         <form action="{% url astakos.im.views.group_detail object.id %}#members-table" method="post" class="withlabels" >{% csrf_token %}
             <h2>Enroll more members</h2>

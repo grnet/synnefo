@@ -183,7 +183,7 @@ def sizeof_fmt(num):
     if num == 1:
         return '1 byte'
     else:
-       return '';
+       return '0';
    
 @register.filter
 def isinf(v):

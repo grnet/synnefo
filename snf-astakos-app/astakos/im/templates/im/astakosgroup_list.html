@@ -106,9 +106,9 @@
 	                    <!--td>{{o.kindname|capfirst}}</td-->
 	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 	                    <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
-	                    <td style="width:13%">{{o.approved_members_num}}</td>
+	                    <td style="width:11%">{{o.approved_members_num}}</td>
 	                    
-	                    <td style="width:15%">
+	                    <td style="width:17%">
 	                    	<div class="msg-wrap">
 	                    		 
 		                    {% if o.is_member %}
@@ -125,7 +125,7 @@
 		                            
 		
 		                        {% else %}
-		                            Pending
+		                            Activation pending
 		                        {% endif %}
 		                    {% else %}
 		                            Not member 
@@ -220,8 +220,8 @@
        		{% if not form %}
             {% with page|concat:sorting as args %}
             {% with q|paginate:args as page_obj %}
-        	 
-	      	    <div >
+        	 	{% if page_obj.object_list  %}
+	      	    <div>
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
 						    <select name="sorting"  class="dropkicked"  tabindex="1">
@@ -257,12 +257,12 @@
 			                <!--td>{{o.kindname|capfirst}}</td-->
 			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
-			                <td style="width:13%">{{ o.approved_members_num }}</td>
-			                <td style="width:15%">
+			                <td style="width:11%">{{ o.approved_members_num }}</td>
+			                <td style="width:17%">
 			                	<div class="msg-wrap">
 			                	{% if user.email = o.groupowner %}
 			                		{% if o.is_enabled %}
-			                			Owner
+			                			Active (Owner)
 			                		{% else %}
 			                			Pending
 			                		{% endif %}
@@ -272,7 +272,7 @@
 						                    Registered
 					                    	 
 						                {% else %}
-						                    Pending
+						                    Activation Pending
 						                {% endif %}
 			                		{% else %}
 			                			-
@@ -346,7 +346,7 @@
                         </span>
 					</p>
 			   </div>
-		 
+		 	{% endif %}
         	{% endwith %} 
 	      	{% endwith %} 
 	      	{% endif %}

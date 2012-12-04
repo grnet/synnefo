@@ -54,6 +54,9 @@ class Callpoint(object):
         self.json_dumps = dumps
         self.init_connection(connection)
         original_calls = self.original_calls
+        if not original_calls:
+            original_calls = {}
+            self.original_calls = original_calls
         canonifier = self.api_spec
 
         if canonifier is None:

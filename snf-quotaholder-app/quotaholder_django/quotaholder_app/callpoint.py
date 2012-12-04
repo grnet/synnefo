@@ -484,6 +484,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     h.policy = newp
                     h.flags = flags
 
+                # the order is intentionally reversed so that it
+                # would break if we are not within a transaction.
+                # Has helped before.
                 h.save()
                 newp.save()
 

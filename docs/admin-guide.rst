@@ -21,6 +21,7 @@ Guide before proceeding.
    :target: _images/synnefo-architecture1.png
 
 
+
 Identity Service (Astakos)
 ==========================
 
@@ -232,37 +233,40 @@ Architecture
 
 Asynchronous communication with Ganeti backends
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Synnefo uses Google Ganeti backends for VM cluster management. In order Cyclades
-to be able to handle thousand of user requests, Cyclades and Ganeti communicate
-asynchronously. Briefly, requests are submitted to Ganeti, and asynchronous
-notifications about the progress of jobs is received from the backends. The
-architecture and communication with a Ganeti backend is shown the below graph.
+Synnefo uses Google Ganeti backends for VM cluster management. In order for
+Cyclades to be able to handle thousands of user requests, Cyclades and Ganeti
+communicate asynchronously. Briefly, requests are submitted to Ganeti through
+Ganeti's RAPI/HTTP interface, and then asynchronous notifications about the
+progress of Ganeti jobs are being created and pushed upwards to Cyclades. The
+architecture and communication with a Ganeti backend is shown in the graph
+below:
 
 .. image:: images/cyclades-ganeti-communication.png
    :width: 50%
    :target: _images/cyclades-ganeti-communication.png
 
-Cyclades API server is responsible for handling user requests. Read-only
+The Cyclades API server is responsible for handling user requests. Read-only
 requests are directly served by looking up the Cyclades DB. If the request
 needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
-master using the `Ganeti RAPI <http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
+master using the `Ganeti RAPI interface
+<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
 
-While Ganeti executes the job, snf-ganeti-eventd, snf-ganeti-hook and
-snf-progress-monitor are monitoring the progress of the job and send
+While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
+`snf-progress-monitor` are monitoring the progress of the job and send
 corresponding messages to the RabbitMQ servers. These components are part
-of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially,
+of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
 
 * *snf-ganeti-eventd* sends messages about operations affecting the operating
-  state of instances and networks. Works by monitoring Ganeti job queue.
-* *snf-ganeti_hook* sends messages about the NIC of instances. It includes a
+  state of instances and networks. Works by monitoring the Ganeti job queue.
+* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
   number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
   for customisation of operations.
-* *snf-progress_monitor* sends messages about the progress of building a new
-  instance and image deployment, triggered by snf-image.
+* *snf-progress_monitor* sends messages about the progress of the Image deployment
+  phase which is done by the Ganeti OS Definition `snf-image`.
 
-Snf-dispatcher consumes messages from the RabbitMQ queues, process these
-messages and properly updates the state of Cyclades DB. Subsequent requests in
-Cyclades API, will retrieve the updated state from the DB.
+Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
+these messages and properly updates the state of the Cyclades DB. Subsequent
+requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
 Prereqs
@@ -286,25 +290,25 @@ Working with Cyclades
 Managing Ganeti Backends
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Since v0.11 Synnefo is able to manage multiple Ganeti clusters (backends)
-making it capable to scale to thousand of VMs. Backends can be dynamically be
-added or removed via `snf-manage` commands.
+Since v0.11, Synnefo is able to manage multiple Ganeti clusters (backends)
+making it capable to scale linearly to tens of thousands of VMs. Backends
+can be dynamically added or removed via `snf-manage` commands.
 
-From the VM perspective, each VM that is created is allocated to a Ganeti
-backend by Cyclades backend allocator. The VM is "pinned" to this backend, and
-can not change through its lifetime. The backend allocator decides in which
-backend to spawn the VM based of the available resources of its backend, trying
-to balance the load between them.
+Each newly created VM is allocated to a Ganeti backend by the Cyclades backend
+allocator. The VM is "pinned" to this backend, and can not change through its
+lifetime. The backend allocator decides in which backend to spawn the VM based
+on the available resources of each backend, trying to balance the load between
+them.
 
 Handling of Networks, as far as backends are concerned, is based on whether the
-network is public or not. Public networks are created through `snf-manage
-network-create` command, and are only created to one backend. Private networks
-are created in all backends in order to ensure that VMs in all backends can
-be connected to the same private network.
+network is public or not. Public networks are created through the `snf-manage
+network-create` command, and are only created on one backend. Private networks
+are created on all backends, in order to ensure that VMs residing on different
+backends can be connected to the same private network.
 
-Listing existing backend
-````````````````````````
-To find out the available Ganeti backends, run:
+Listing existing backends
+`````````````````````````
+To list all the Ganeti backends known to Synnefo, we run:
 
 .. code-block:: console
 
@@ -314,126 +318,142 @@ Adding a new Ganeti backend
 ```````````````````````````
 Backends are dynamically added under the control of Synnefo with `snf-manage
 backend-add` command. In this section it is assumed that a Ganeti cluster,
-named cluster.example.com is already up and running and configured to be able
-to host Synnefo VMs.
+named ``cluster.example.com`` is already up and running and configured to be
+able to host Synnefo VMs.
 
-To add the Ganeti cluster, run:
+To add this Ganeti cluster, we run:
 
 .. code-block:: console
 
    $ snf-manage backend-add --clustername=cluster.example.com --user="synnefo_user" --pass="synnefo_pass"
 
-where clustername is the Cluster hostname of the Ganeti cluster, and user
-and pass are the credentials for the Ganeti RAPI user. All of the backends
-attributes can also be changed dynamically with `snf-manage backend-modify`
+where ``clustername`` is the Cluster hostname of the Ganeti cluster, and ``user``
+and ``pass`` are the credentials for the Ganeti RAPI user. All backend
+attributes can be also changed dynamically using the `snf-manage backend-modify`
 command.
 
-This command will also create all private networks to the new Backend. You can
-verify that the backend is added, by running `snf-manage backend-list` command.
+``snf-manage backend-add`` will also create all existing private networks to
+the new backend. You can verify that the backend is added, by running
+`snf-manage backend-list`.
 
-Note that no VMs will be spawned to this backend, until a public network is
-associated with it.
+Note that no VMs will be spawned to this backend, since by default it is in a
+``drained`` state after addition and also it has no public network assigned to
+it.
 
-Removing an existing Ganeti backend
-```````````````````````````````````
-In order to remove an existing backend, run:
+So, first you need to create its public network, make sure everything works as
+expected and finally make it active by un-setting the ``drained`` flag. You can
+do this by running:
 
 .. code-block:: console
 
-   # snf-manage backend-remove ID
+   $ snf-manage backend-modify --no-drained <backend_id>
 
-This command will fail if there are active VMs to the backend. Also, the
-backend is not cleaned before removing it, so all of Synnefo private networks
-will be left.
+Removing an existing Ganeti backend
+```````````````````````````````````
+In order to remove an existing backend from Synnefo, we run:
 
-Allocation of VMS in Ganneti backends
-`````````````````````````````````````
-As already mentioned, the backend allocator is responsible allocating new VMs
-to backends. This allocator is not concerned about the Ganeti node that will
-host the VM, which is chosen by the Ganeti allocator.
+.. code-block:: console
+
+   # snf-manage backend-remove <backend_id>
+
+This command will fail if there are active VMs on the backend. Also, the
+backend is not cleaned before removal, so all the Synnefo private networks
+will be left on the Ganeti nodes. You need to remove them manually.
+
+Allocation of VMs in Ganeti backends
+````````````````````````````````````
+As already mentioned, the Cyclades backend allocator is responsible for
+allocating new VMs to backends. This allocator does not choose the exact Ganeti
+node that will host the VM but just the Ganeti backend. The exact node is
+chosen by the Ganeti cluster's allocator (hail).
 
 The decision about which backend will host a VM is based on the available
 resources. The allocator computes a score for each backend, that shows its load
 factor, and the one with the minimum score is chosen. The admin can exclude
-backends from the allocation phase by marking them as drained by running:
+backends from the allocation phase by marking them as ``drained`` by running:
 
 .. code-block:: console
 
-   $ snf-manage backend-modify --drained ID
+   $ snf-manage backend-modify --drained <backend_id>
 
 The backend resources are periodically updated, at a period defined by
-`BACKEND_REFRESH_MIN` setting or by running `snf-manage backend-update-status`
+the ``BACKEND_REFRESH_MIN`` setting, or by running `snf-manage backend-update-status`
 command. It is advised to have a cron job running this command at a smaller
-interval than `BACKEND_REFRESH_MIN` in order to remove the load of refreshing
+interval than ``BACKEND_REFRESH_MIN`` in order to remove the load of refreshing
 the backends stats from the VM creation phase.
 
-Finally, the admin can decide to have a user VMs in a specific backend, with
-the `BACKEND_PER_USER` setting.
+Finally, the admin can decide to have a user's VMs being allocated to a
+specific backend, with the ``BACKEND_PER_USER`` setting. This is a mapping
+between users and backends. If the user is found in ``BACKEND_PER_USER``, then
+Synnefo allocates all his/hers VMs to the specific backend set in the variable.
 
 
 Managing Virtual Machines
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As mentioned, Cyclades relies on Ganeti for management of VMs. The
-administrator can handle Cyclades VMs just like any other Ganeti instance, via
-`gnt-instance` commands. All Ganeti instances that belong to Synnefo, are
-separated from others by a prefix in their names. This prefix is defined in
-`BACKEND_PREFIX_ID` setting in `/etc/synnefo/20-snf-cyclades-app-backend.conf`.
+As mentioned, Cyclades uses Ganeti for management of VMs. The administrator can
+handle Cyclades VMs just like any other Ganeti instance, via `gnt-instance`
+commands. All Ganeti instances that belong to Synnefo, are separated from
+others, by a prefix in their names. This prefix is defined in
+``BACKEND_PREFIX_ID`` setting in
+``/etc/synnefo/20-snf-cyclades-app-backend.conf``.
 
-
-Apart from handling instances directly in Ganeti level, a number of snf-manage
+Apart from handling instances directly in the Ganeti level, a number of `snf-manage`
 commands are available:
 
-* snf-manage server-list: List servers
-* snf-manage server-show: Show information about server from Cyclades DB
-* snf-manage server-inspect: Inspect the state of the server in DB and Ganeti
-* snf-manage server-modify: Modify the state of the server in Cycldes DB
-* snf-manage server-create: Create a new server
-* snf-manage server-import: Import an existing Ganeti instance under control of Cyclades
+* ``snf-manage server-list``: List servers
+* ``snf-manage server-show``: Show information about a server in the Cyclades DB
+* ``snf-manage server-inspect``: Inspect the state of a server both in DB and Ganeti
+* ``snf-manage server-modify``: Modify the state of a server in the Cycldes DB
+* ``snf-manage server-create``: Create a new server
+* ``snf-manage server-import``: Import an existing Ganeti instance to Cyclades
 
 
 Managing Virtual Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cyclades is able to create and manage Virtual Networks. Networking is desployment
-specific and must be customized based on the specific needs of the system
-administrator. For better understanding networking please refer to :ref:`Network <networks>`
-section.
+Cyclades is able to create and manage Virtual Networks. Networking is
+desployment specific and must be customized based on the specific needs of the
+system administrator. For better understanding of networking please refer to
+the :ref:`Network <networks>` section.
 
 Exactly as Cyclades VMs can be handled like Ganeti instances, Cyclades Networks
 can also by handled as Ganeti networks, via `gnt-network commands`. All Ganeti
-networks that belong to Synnefo are named with a prefix
+networks that belong to Synnefo are named with the prefix
 `${BACKEND_PREFIX_ID}-net-`.
 
-There are also the following snf-manage commands for managing networks:
+There are also the following `snf-manage` commands for managing networks:
 
-* snf-manage network-list: List networks
-* snf-manage network-show: Show information about network from Cyclades DB
-* snf-manage network-inspect: Inspect the state of the network in DB and Ganeti backends
-* snf-manage network-modify: Modify the state of the network in Cycldes DB
-* snf-manage network-create: Create a new network
-* snf-manage network-remove: Remove a network
+* ``snf-manage network-list``: List networks
+* ``snf-manage network-show``: Show information about a network in the Cyclades DB
+* ``snf-manage network-inspect``: Inspect the state of the network in DB and Ganeti backends
+* ``snf-manage network-modify``: Modify the state of a network in the Cycldes DB
+* ``snf-manage network-create``: Create a new network
+* ``snf-manage network-remove``: Remove an existing network
 
 Managing Network Resources
-```````````````````````````
+``````````````````````````
 
-Proper operation of of Cyclades Network Service depends on unique assignment of
-specific resources to each virtual network. Specifically, these resources are:
+Proper operation of the Cyclades Network Service depends on the unique
+assignment of specific resources to each type of virtual network. Specifically,
+these resources are:
 
-* IP addresses. Cyclades creates a Pool of IPs for each Network, and assignes a
-  unique IP address for each VM connecting to a Network. You can see the IP pool
-  of each network by running `snf-manage network-inspect <network_ID>`. IP pools
-  are automatically created and managed by Cyclades, depending of the subnet of
-  the network.
+* IP addresses. Cyclades creates a Pool of IPs for each Network, and assigns a
+  unique IP address to each VM, thus connecting it to this Network. You can see
+  the IP pool of each network by running `snf-manage network-inspect
+  <network_ID>`. IP pools are automatically created and managed by Cyclades,
+  depending on the subnet of the Network.
 * Bridges corresponding to physical VLANs, which are required for networks of
-  `PRIVATE_PHYSICAL_VLAN` type, to guarantee isolation between networks and
-  MAC prefixes, which are required to guarantee isolation between networks
-  of `PRIVATE_MAC_PREFIX` type. Cyclades allocates these two resources from
-  pools that are created by the administrator with `snf-manage pool-create`
-  management command.
+  type `PRIVATE_PHYSICAL_VLAN`.
+* One Bridge corresponding to one physical VLAN which is required for networks of
+  type `PRIVATE_MAC_PREFIX`.
 
+Cyclades allocates those resources from pools that are created by the
+administrator with the `snf-manage pool-create` management command.
 
-Pools are created using the `snf-manage pool-create` command.
+Pool Creation
+`````````````
+Pools are created using the `snf-manage pool-create` command:
 
 .. code-block:: console
 
@@ -448,31 +468,34 @@ You can verify the creation of the pool, and check its contents by running:
    # snf-manage pool-list
    # snf-manage pool-show --type=bridge 1
 
-With the same commands you can handle the pool of MAC prefixes. For example:
+With the same commands you can handle a pool of MAC prefixes. For example:
 
 .. code-block:: console
 
    # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
 
-will create a pool of mac-prefixes from aa:00:1 to b9:ff:f. The MAC prefix pool
-is responsible from providing only unicast and locally administered MAC
-addresses, so many of these prefixes will be externally reserved, to exclude
-from allocation.
+will create a pool of MAC prefixes from ``aa:00:1`` to ``b9:ff:f``. The MAC
+prefix pool is responsible for providing only unicast and locally administered
+MAC addresses, so many of these prefixes will be externally reserved, to
+exclude from allocation.
 
 Cyclades advanced operations
 ----------------------------
 
 Reconciliation mechanism
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
 On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
 Cyclades database may differ from the real state of VMs and networks in the
 Ganeti backends. The reconciliation process is designed to synchronize
 the state of the Cyclades DB with Ganeti. There are two management commands
 for reconciling VMs and Networks
 
-Reconciling VirtualMachine
-``````````````````````````
+Reconciling Virtual Machines
+````````````````````````````
+
 Reconciliation of VMs detects the following conditions:
+
  * Stale DB servers without corresponding Ganeti instances
  * Orphan Ganeti instances, without corresponding DB entries
  * Out-of-sync state for DB entries wrt to Ganeti instances
@@ -480,19 +503,23 @@ Reconciliation of VMs detects the following conditions:
 To detect all inconsistencies you can just run:
 
 .. code-block:: console
-  $ snf-manage reconcile --detect-all
+
+  $ snf-manage reconcile-servers
 
 Adding the `--fix-all` option, will do the actual synchronization:
 
 .. code-block:: console
-  $ snf-manage reconcile --detect-all --fix-all
+
+  $ snf-manage reconcile --fix-all
 
 Please see ``snf-manage reconcile --help`` for all the details.
 
 
 Reconciling Networks
 ````````````````````
+
 Reconciliation of Networks detects the following conditions:
+
   * Stale DB networks without corresponding Ganeti networks
   * Orphan Ganeti networks, without corresponding DB entries
   * Private networks that are not created to all Ganeti backends
@@ -501,14 +528,17 @@ Reconciliation of Networks detects the following conditions:
 To detect all inconsistencies you can just run:
 
 .. code-block:: console
+
   $ snf-manage reconcile-networks
 
 Adding the `--fix-all` option, will do the actual synchronization:
 
 .. code-block:: console
+
   $ snf-manage reconcile-networks --fix-all
 
 Please see ``snf-manage reconcile-networks --help`` for all the details.
+
 
 
 Block Storage Service (Archipelago)
@@ -534,6 +564,7 @@ Working with Archipelago
 
 Archipelago advanced operations
 -------------------------------
+
 
 
 The "kamaki" API client
@@ -618,49 +649,50 @@ Miscellaneous
 =============
 
 .. RabbitMQ
+
 RabbitMQ Broker
 ---------------
 
 Queue nodes run the RabbitMQ sofware, which provides AMQP functionality. To
 guarantee high-availability, more than one Queue nodes should be deployed, each
 of them belonging to the same `RabbitMQ cluster
-<http://www.rabbitmq.com/clustering.html>`_. Synnefo uses RabbitMQ
-active/active `High Available Queues <http://www.rabbitmq.com/ha.html>`_ that
-are mirrored on nodes within a RabbitMQ cluster.
+<http://www.rabbitmq.com/clustering.html>`_. Synnefo uses the RabbitMQ
+active/active `High Available Queues <http://www.rabbitmq.com/ha.html>`_ which
+are mirrored between two nodes within a RabbitMQ cluster.
 
-The RabbitMQ nodes that form the cluster, are declared to Synnefo through
-the `AMQP_HOSTS` setting. Each time a Synnefo component needs to connect
-RabbitMQ, one of this nodes is chosen in a random way. The client that
-synnefo uses to connect with RabbitMQ, silently handles connection failures
-and tries to reconnect to a different node. As long as one of these nodes
-are up and running, functionality of synnefo should no be downgraded by
-RabbitMQ node failures.
+The RabbitMQ nodes that form the cluster, are declared to Synnefo through the
+`AMQP_HOSTS` setting. Each time a Synnefo component needs to connect to
+RabbitMQ, one of these nodes is chosen in a random way. The client that Synnefo
+uses to connect to RabbitMQ, handles connection failures transparently and
+tries to reconnect to a different node. As long as one of these nodes are up
+and running, functionality of Synnefo should not be downgraded by the RabbitMQ
+node failures.
 
 All the queues that are being used are declared as durable, meaning that
-messages are persistently stored to RabbitMQ until are successfully processed
-by a client.
+messages are persistently stored to RabbitMQ, until they get successfully
+processed by a client.
 
 Currently, RabbitMQ is used by the following components:
 
-* snf-ganeti-eventd, snf-ganeti-hook and snf-progress-monitor:
+* `snf-ganeti-eventd`, `snf-ganeti-hook` and `snf-progress-monitor`:
   These components send messages concerning the status and progress of
   jobs in the Ganeti backend.
-* snf-dispatcher: This daemon, consumes the messages that are send from
-  the above components, and updates the Cyclades DB.
+* `snf-dispatcher`: This daemon, consumes the messages that are sent from
+  the above components, and updates the Cyclades DB accordingly.
 
 Installation
 ````````````
-
-Please check RabbitMQ documentation which covers extensively the `installation
-of RabbitMQ server <http://www.rabbitmq.com/download.html>`_ and the setup of a
-`RabbitMQ cluster <http://www.rabbitmq.com/clustering.html>`_. Also, check out
-the `web management plugin <http://www.rabbitmq.com/management.html>`_ that can
-be useful for managing and monitoring RabbitMQ.
+Please check the RabbitMQ documentation which covers extensively the
+`installation of RabbitMQ server <http://www.rabbitmq.com/download.html>`_ and
+the setup of a `RabbitMQ cluster <http://www.rabbitmq.com/clustering.html>`_.
+Also, check out the `web management plugin
+<http://www.rabbitmq.com/management.html>`_ that can be useful for managing and
+monitoring RabbitMQ.
 
 For a basic installation of RabbitMQ on two nodes (node1 and node2) you can do
-the follow steps:
+the following:
 
-On both nodes, install rabbitmq-server and create a synnefo user:
+On both nodes, install rabbitmq-server and create a Synnefo user:
 
 .. code-block:: console
 
@@ -668,7 +700,7 @@ On both nodes, install rabbitmq-server and create a synnefo user:
   $ rabbitmqctl add_user synnefo "example_pass"
   $ rabbitmqctl set_permissions synnefo  ".*" ".*" ".*"
 
-Also guarantee that two nodes share the same cookie, by running
+Also guarantee that both nodes share the same cookie, by running:
 
 .. code-block:: console
 
@@ -695,8 +727,6 @@ You can verify that the cluster is set up correctly by running:
 .. code-block:: console
 
   root@node2: rabbitmqctl cluster_status
-
-
 
 
 
@@ -729,15 +759,15 @@ Note that this is a feature of Python 2.7 that we have backported for use in
 Python 2.6.
 
 The logging configuration dictionary is defined in
-`/etc/synnefo/10-snf-webproject-logging.conf`
+``/etc/synnefo/10-snf-webproject-logging.conf``
 
-The administrator can have finer logging control by modifying the `LOGGING_SETUP`
-dictionary, and defining subloggers with different handlers and log levels.
-e.g. To enable debug messages only for the API set the level of 'synnefo.api'
-to 'DEBUG'
+The administrator can have finer logging control by modifying the
+``LOGGING_SETUP`` dictionary, and defining subloggers with different handlers
+and log levels.  e.g. To enable debug messages only for the API set the level
+of 'synnefo.api' to ``DEBUG``
 
-By default the Django webapp and snf-manage logs to syslog, while
-snf-dispatcher logs to `/var/log/synnefo/dispatcher.log`.
+By default, the Django webapp and snf-manage logs to syslog, while
+`snf-dispatcher` logs to `/var/log/synnefo/dispatcher.log`.
 
 
 Scaling up to multiple nodes

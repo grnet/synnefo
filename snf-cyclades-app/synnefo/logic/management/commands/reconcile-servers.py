@@ -91,16 +91,16 @@ class Command(BaseCommand):
         keys_detect = [k for k in options.keys() if k.startswith('detect_')]
         keys_fix = [k for k in options.keys() if k.startswith('fix_')]
 
+        if not reduce(lambda x, y: x or y,
+                      map(lambda x: options[x], keys_detect)):
+            options['detect_all'] = True
+
         if options['detect_all']:
             for kd in keys_detect:
                 options[kd] = True
         if options['fix_all']:
             for kf in keys_fix:
                 options[kf] = True
-
-        if not reduce(lambda x, y: x or y,
-                      map(lambda x: options[x], keys_detect)):
-            raise CommandError("At least one of --detect-* must be specified")
 
         for kf in keys_fix:
             kd = kf.replace('fix_', 'detect_', 1)

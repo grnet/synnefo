@@ -52,6 +52,16 @@ def format_bool(b):
     return 'YES' if b else 'NO'
 
 
+def parse_bool(string):
+    if string == "True":
+        return True
+    elif string == "False":
+        return False
+    else:
+        raise Exception("Can not parse string %s to bool" % string)
+
+
+
 def format_date(d):
     if not d:
         return ''

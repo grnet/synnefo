@@ -62,7 +62,12 @@ in new tab" to be able to zoom in.
 Synnefo Guides
 ==============
 
-There are 4 guides for Synnefo.
+There are 5 guides for Synnefo.
+
+The installation overview walks through the synnefo components and defines roles
+per node so that each role can be installed separately. Please note that
+different roles can still coexist in the same node and there is also a posibility
+to install everything on one node. For the sake of scalability this is not recommended.
 
 The quick installation guide describes how to install the whole synnefo stack
 in just two physical nodes, for testing purposes. This guide is useful to those
@@ -80,10 +85,16 @@ Integrator's Guide targets developers, who want to actually
 extend/modify/change Synnefo itself, so describes Synnefo's indepth
 architecture and the internals of Synnefo components.
 
+
 .. toctree::
    :maxdepth: 1
 
-   Quick Installation Guide <quick-install-admin-guide>
+   Installation Guide/Overview <i-synnefo>
+
+.. toctree::
+   :maxdepth: 1
+
+   Installation Guide on two nodes <quick-install-admin-guide>
 
 .. toctree::
    :maxdepth: 2

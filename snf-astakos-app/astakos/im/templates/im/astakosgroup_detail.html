@@ -13,15 +13,15 @@
 			<em>
 				{% if object.is_owner %}
 					{% if object.is_enabled %}
-						[ ADMINISTRATOR - ACTIVE ]
+						[ ADMINISTRATOR ]
 					{% else %}
-						[ ADMINISTRATOR - PENDING ]
+						[ ADMINISTRATOR ] - ACTIVATION PENDING
 					{% endif %}
 				{%  else %}
 					{% if  object.is_active_member %}
-						[ ENROLLED - ACTIVE ]
+						[ ENROLLED ]
 					{% else %}
-						[ ENROLLED - PENDING ]
+						[ ACTIVATION PENDING ]
 					{% endif %}
 				{% endif %}
 			</em>		

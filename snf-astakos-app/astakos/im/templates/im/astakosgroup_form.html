@@ -10,10 +10,10 @@
 
     <fieldset class="with-info" id="top">
     	<legend>
-    		1. CREATE GROUP
+    		1. CREATE PROJECT
 			<span class="info"> 
 		    	<em>more info</em>
-		    	<span>Fill in the required fields to create a group. Group details will be visible to the users of the group.</span>
+		    	<span> To create a new Project, first enter the following required fields.<br> The information you enter will be visible to all ~okeanos users. </span>
 	    	</span>    		
     	</legend>
         
@@ -26,7 +26,7 @@
     		2. ADD RESOURCES
     		<span class="info"> 
 		    	<em>more info</em>
-		    	<span>You need to specify at least one resource</span>
+		    	<span> Here you add resources to your Project. Each resource you specify here, will be granted to *EACH* user of this Project. So the total resources will be: &lt;Total number of members&gt; * &lt;amount_of_resource&gt; for each resource. </span>
 	    	</span>    
     	</legend>
     	<ul class="clearfix">
@@ -78,7 +78,7 @@
 										{% endif  %}
 			       						/> 
 			    			<span class="extra-img">&nbsp;</span>
-			         		<span class="info"><em>more info</em><span>Leave this field blank if you don't want to specify this resource</span></span>
+			         		<span class="info"><em>more info</em><span>{{ rdata.help_text_input_each }}</span></span>
 			         		<p class="error-msg">Invalid format</p>
 			    		</p>
 			    		<p class="msg"></p>

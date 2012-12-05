@@ -604,16 +604,38 @@ class AstakosGroupCreationForm(forms.ModelForm):
             DOMAIN_VALUE_REGEX,
             _(astakos_messages.DOMAIN_VALUE_ERR), 'invalid'
         )],
-        widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
-        help_text="Name should be in the form of dns"
+        widget=forms.TextInput(attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
+        help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization "
+    )
+    homepage = forms.URLField(
+        label= 'Homepage Url',
+        widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
+        help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
+        required=False
+    )
+    desc = forms.CharField(
+        label= 'Description',
+        widget=forms.Textarea, 
+        help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "
+    )
+    issue_date = forms.DateTimeField(
+        label= 'Start date',
+        help_text= "Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date."
+    )
+    expiration_date = forms.DateTimeField(
+        label= 'End date',
+        help_text= "Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  "
     )
     moderation_enabled = forms.BooleanField(
-        help_text="Check if you want to approve members participation manually",
+        label= 'Moderated',
+        help_text="Select this to approve each member manually, before they become a part of your Project (default). Be sure you know what you are doing, if you uncheck this option. ",
         required=False,
         initial=True
     )
     max_participants = forms.IntegerField(
-        required=True, min_value=1
+        label='Total number of members',
+        required=True, min_value=1,
+        help_text="Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. "
     )
 
     class Meta:

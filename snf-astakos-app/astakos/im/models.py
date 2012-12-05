@@ -171,9 +171,9 @@ class AstakosGroup(Group):
         'Creation date',
         default=datetime.now()
     )
-    issue_date = models.DateTimeField('Issue date', null=True)
+    issue_date = models.DateTimeField('Start date', null=True)
     expiration_date = models.DateTimeField(
-        'Expiration date',
+        'End date',
          null=True
     )
     moderation_enabled = models.BooleanField(
@@ -1011,6 +1011,8 @@ def create_astakos_user(u):
         extended_user = AstakosUser(user_ptr_id=u.pk)
         extended_user.__dict__.update(u.__dict__)
         extended_user.save()
+        if not extended_user.has_auth_provider('local'):
+            extended_user.add_auth_provider('local')
     except BaseException, e:
         logger.exception(e)
 
@@ -1020,8 +1022,6 @@ def fix_superusers(sender, **kwargs):
     admins = User.objects.filter(is_superuser=True)
     for u in admins:
         create_astakos_user(u)
-        if not u.has_auth_provider('local'):
-            u.add_auth_provider('local')
 
 
 def user_post_save(sender, instance, created, **kwargs):

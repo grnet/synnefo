@@ -197,56 +197,68 @@ RESOURCES_PRESENTATION_DATA = getattr(
     settings, 'ASTAKOS_RESOURCES_PRESENTATION_DATA', {
         'groups': {
              'compute': {
-                'help_text':'group compute help text',
+                'help_text':'Compute resources (amount of VMs, CPUs, RAM, System disk) ',
                 'is_abbreviation':False,
                 'report_desc':'',
                  'verbose_name':'compute',
             },
             'storage': {
-                'help_text':'group storage help text',
+                'help_text':'Storage resources (amount of space to store files on Pithos) ',
                 'is_abbreviation':False,
                 'report_desc':'',
                  'verbose_name':'storage',
             },
+            'network': {
+                'help_text':' Network resources (amount of Private Networks)  ',
+                'is_abbreviation':False,
+                'report_desc':'',
+                'verbose_name':'network',
+            },
         },
         'resources': {
             'pithos+.diskspace': {
-                'help_text':'resource pithos+.diskspace help text',
+                'help_text':'This is the space on Pithos for storing files and VM Images. ',
+                'help_text_input_each':'This is the total amount of space on Pithos that will be granted to each user of this Project ',
                 'is_abbreviation':False,
                 'report_desc':'Pithos+ Diskspace',
                 'placeholder':'eg. 10GB',
-                'verbose_name':'diskspace',
+                'verbose_name':'Storage Space',
             },
             'cyclades.vm': {
-                'help_text':'resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text resource cyclades.vm help text',
+                'help_text':'These are the VMs one can create on the Cyclades UI ',
+                'help_text_input_each':'This is the total number of VMs that will be granted to each user of this Project ',
                 'is_abbreviation':True,
                 'report_desc':'Virtual Machines',
                 'placeholder':'eg. 2',
                 'verbose_name':'vm',
             },
             'cyclades.disk': {
-                'help_text':'resource cyclades.disk help text',
+                'help_text':'This is the System Disk that the VMs have that run the OS ',
+                'help_text_input_each':"This is the total amount of System Disk that will be granted to each user of this Project (this refers to the total System Disk of all VMs, not each VM's System Disk)  ",
                 'is_abbreviation':False,
                 'report_desc':'Disk',
                 'placeholder':'eg. 5GB, 2GB etc',
-                'verbose_name':'disk'
+                'verbose_name':'System Disk'
             },
             'cyclades.ram': {
-                'help_text':'resource cyclades.ram help text',
+                'help_text':'RAM used by VMs ',
+                'help_text_input_each':'This is the total amount of RAM that will be granted to each user of this Project (on all VMs)  ',
                 'is_abbreviation':True,
                 'report_desc':'RAM',
                 'placeholder':'eg. 4GB',
                 'verbose_name':'ram'
             },
             'cyclades.cpu': {
-                'help_text':'resource cyclades.cpu help text',
+                'help_text':'CPUs used by VMs ',
+                'help_text_input_each':'This is the total number of CPUs that will be granted to each user of this Project (on all VMs)  ',
                 'is_abbreviation':True,
                 'report_desc':'CPUs',
                 'placeholder':'eg. 1',
                 'verbose_name':'cpu'
             },
             'cyclades.network.private': {
-                'help_text':'resource cyclades.network.private help text',
+                'help_text':'These are the Private Networks one can create on the Cyclades UI. ',
+                'help_text_input_each':'This is the total number of Private Networks that will be granted to each user of this Project ',
                 'is_abbreviation':False,
                 'report_desc':'Network',
                 'placeholder':'eg. 1',

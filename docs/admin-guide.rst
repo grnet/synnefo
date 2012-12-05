@@ -327,10 +327,11 @@ To add this Ganeti cluster, we run:
 
    $ snf-manage backend-add --clustername=cluster.example.com --user="synnefo_user" --pass="synnefo_pass"
 
-where ``clustername`` is the Cluster hostname of the Ganeti cluster, and ``user``
-and ``pass`` are the credentials for the Ganeti RAPI user. All backend
-attributes can be also changed dynamically using the `snf-manage backend-modify`
-command.
+where ``clustername`` is the Cluster hostname of the Ganeti cluster, and
+``user`` and ``pass`` are the credentials for the `Ganeti RAPI user
+<http://docs.ganeti.org/ganeti/2.2/html/rapi.html#users-and-passwords>`_.  All
+backend attributes can be also changed dynamically using the `snf-manage
+backend-modify` command.
 
 ``snf-manage backend-add`` will also create all existing private networks to
 the new backend. You can verify that the backend is added, by running
@@ -346,7 +347,7 @@ do this by running:
 
 .. code-block:: console
 
-   $ snf-manage backend-modify --no-drained <backend_id>
+   $ snf-manage backend-modify --drained=False <backend_id>
 
 Removing an existing Ganeti backend
 ```````````````````````````````````
@@ -374,7 +375,7 @@ backends from the allocation phase by marking them as ``drained`` by running:
 
 .. code-block:: console
 
-   $ snf-manage backend-modify --drained <backend_id>
+   $ snf-manage backend-modify --drained=True <backend_id>
 
 The backend resources are periodically updated, at a period defined by
 the ``BACKEND_REFRESH_MIN`` setting, or by running `snf-manage backend-update-status`
@@ -385,7 +386,8 @@ the backends stats from the VM creation phase.
 Finally, the admin can decide to have a user's VMs being allocated to a
 specific backend, with the ``BACKEND_PER_USER`` setting. This is a mapping
 between users and backends. If the user is found in ``BACKEND_PER_USER``, then
-Synnefo allocates all his/hers VMs to the specific backend set in the variable.
+Synnefo allocates all his/hers VMs to the specific backend in the variable,
+even if is marked as drained (useful for testing).
 
 
 Managing Virtual Machines

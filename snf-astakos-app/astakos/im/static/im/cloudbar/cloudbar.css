@@ -19,7 +19,7 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar .profile a                            { text-decoration:none; color:#fff; display:block; width:100%;}
 .cloudbar .profile ul                           { position:absolute;   right:0; top:35px; padding:0; margin:0;  width:190px; display:none;	z-index:9; background:#fff;}
 .cloudbar .profile ul li                        { list-style:none outside; line-height:35px; padding:0 45px 0  20px;}
-.cloudbar .profile ul li:hover a				{ color:#3582AC;}
+.cloudbar .profile ul li a:hover				{ color:#3582AC;}
 .cloudbar .profile  a							{ padding-right:20px; width:auto; }
 .cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
 .cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }

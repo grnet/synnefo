@@ -387,7 +387,8 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 .quotas-form legend span						{ color:#222; font-size:0.867em; }
 form.quotas-form legend span.info				{ position:relative; display:inline-block; top:auto; left:auto;  margin-left:10px; vertical-align:middle; margin-top:-2px;}
 form.quotas-form legend span.info em			{ position:static; }
-form.quotas-form legend span.info span			{ width:395px; }
+form.quotas-form legend span.info span			{ width:500px; }
+form.quotas-form  span.info span				{ width:285px;  }
 .quotas-form .with-checkbox .checkbox-widget	{ margin-top:9px; } 
 .quotas-form .with-checkbox span.info 			{ top:12px; }
 .quotas-form .form-row.submit					{ text-align:center; }

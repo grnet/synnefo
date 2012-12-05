@@ -23,7 +23,17 @@
 						</p>
 					</div>
 					<div class="bar">
-						<div><span style="width:{{ rdata.ratio_limited|floatformat }}%;">{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</span></div>
+						<div>
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
+								 {% if rdata.ratio > 18  %}
+								 <em>{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</em>	
+							</span>
+								{% else%}
+								&nbsp;
+							</span>
+							<em>{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</em>
+								{% endif %}
+						</div>
 					</div>
 		 		</li>
 		 	{% endfor%}

@@ -214,7 +214,7 @@ class QHAPITest(QHTestCase):
         self.assertEqual(r, [])
         return limits
 
-    def test_009_issue_commission(self):
+    def test_009_commissions(self):
         e0, k0 = self.new_entity()
         e1, k1 = self.new_entity()
         resource = self.rand_resource()
@@ -231,6 +231,13 @@ class QHAPITest(QHTestCase):
             self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
                                      name='something',
                                      provisions=[(e1, resource, 1)])
+
+        r = self.qh.get_pending_commissions(clientkey=self.client)
+        self.assertEqual(r, [1])
+        r = self.qh.resolve_pending_commissions(clientkey=self.client,
+                                                max_serial=1, accept_set=[1])
+        r = self.qh.get_pending_commissions(clientkey=self.client)
+        self.assertEqual(r, [])
 
     def test_010_list_holdings(self):
         e0, k0 = ('list_holdings_one', '1')
@@ -266,14 +273,6 @@ class QHAPITest(QHTestCase):
         self.assertEqual(holdings_list, [[(e0, resource, 3, 0, 0, 0)],
                                          [(e1, resource, 4, 0, 0, 0)]])
 
-
-    def test_010_pending_commissions(self):
-        r = self.qh.get_pending_commissions(clientkey=self.client)
-        self.assertEqual(r, [1])
-        r = self.qh.resolve_pending_commissions(clientkey=self.client,
-                                                max_serial=1, accept_set=[1])
-        r = self.qh.get_pending_commissions(clientkey=self.client)
-        self.assertEqual(r, [])
 
     def test_011_release_empty(self):
         e, k = self.new_entity()

@@ -94,28 +94,25 @@ Ganeti Level section):
 
 Existing network flavors are the following:
 
- - ``DEFAULT``: { bridged, br0, aa:00:00, [] }
- - ``IP_LESS_ROUTED``: { routed, snf_public, aa:00:00, [ip-less-routed] }
- - ``MAC_FILTERED``: { bridged, br0, pool, [mac-filtered] }
- - ``PHYSICAL_VLAN``: { bridged, pool, aa:00:00, [physical-vlan] }
- - ``CUSTOM``: {}
+ - ``IP_LESS_ROUTED``: { routed, snf_public, aa:00:00, ip-less-routed }
+ - ``MAC_FILTERED``: { bridged, br0, pool, private-filtered }
+ - ``PHYSICAL_VLAN``: { bridged, pool, aa:00:00, physical-vlan }
+ - ``CUSTOM``: { bridged, br0, aa:00:00, None}
 
 The end-user is allowed to create only networks of flavor ``MAC_FILTERED`` and
-``PHYSICAL_VLAN``. The administrator is able to create any of the above flavors or
-explicitly define any of their options (mode, link, etc..) using the
-`snf-manage network-create` command. In this case the flavor of the network is
-marked as ``CUSTOM`` and cannot make use of existing pools. Because of that
-link or mac uniqueness cannot be guaranteed.
+``PHYSICAL_VLAN``. The administrator is able to create any of the above flavors
+and override their default values by explicitly passing mode, link, etc.. using
+the `snf-manage network-create` command. Currently only ``MAC_FILTERED`` and
+``PHYSICAL_VLAN`` can use existing pools and cannot be overriden. 
 
 Network @ Ganeti level
 ----------------------
 
-Currently, Ganeti does not support IP Pool management. However, we've been
-actively in touch with the official Ganeti team, who are reviewing a relatively
-big patchset that implements this functionality. We hope that the functionality
-will be merged to the Ganeti master branch soon and appear on Ganeti 2.7.
-You can find it in https://code.grnet.gr/git/ganeti-local stable-2.6-grnet
-(among with hotplug and external storage interface support).
+Currently, Ganeti does support IP Pool management. The functionality
+has been merged in the Ganeti master branch and will appear on Ganeti 2.7.
+If you want to use hotplug and external interface as well, you can clone
+our local repo https://code.grnet.gr/git/ganeti-local and checkout
+stable-2.6-ippool-hotplug-esi branch.
 
 Any network created in Synnefo is also created in one (for public networks) or
 all (for private networks) Ganeti backends. In Ganeti a network can have the
@@ -147,7 +144,7 @@ networks in Synnefo. According to which flavors you want to support, you should
 have already setup all your physical hosts correspondingly. This means you
 need:
 
- - one bridge for the ``DEFAULT`` flavor (br0, see Fig. 1)
+ - one bridge for the ``CUSTOM`` flavor (br0, see Fig. 1)
  - one bridge for the ``MAC_FILTERED`` flavor (prv0, see Fig. 2)
  - a number of bridges and their corresponding VLANs (bridged to them) for
    the ``PHYSICAL_VLAN`` flavor (prv1..prv100, see Fig. 3)
@@ -163,24 +160,27 @@ FLAVORS
 
 As mentioned earlier supported flavors are:
 
- - DEFAULT
+ - CUSTOM
  - IP_LESS_ROUTED
  - MAC_FILTERED
  - PHYSICAL_VLAN
- - CUSTOM
 
 In the following sections we mention what configuration imposes each flavor from
 Synnefo, Ganeti and Physical host perspective.
 
-DEFAULT
--------
 
 
+DEFAULT SCENARIO
+----------------
 
+In this case we will bridge all primary interfaces of the VMs on one bridge that must
+be the same collition domain with the router. The router sould then forward packets
+(if a public IPv4 Subnet is available) or do NAT in order to provide internet access to
+the VMs.
 
-To create a network with DEFAULT flavor run you have to pre-provision in each Ganeti
-node one bridge (e.g. ``br100``) that will be on the same collition domain with the
-router. To this end if we assume that ``eth0`` is the public interface run:
+To this end we will use the CUSTOM flavor and pre-provision in each Ganeti
+node one bridge (e.g. ``br100``). If we assume that ``eth1`` is the physical interface
+connected to the router, run:
 
 .. image:: images/network-bridged.png
    :align: right
@@ -190,14 +190,12 @@ router. To this end if we assume that ``eth0`` is the public interface run:
 .. code-block:: console
 
    # brctl addbr br100
-   # vconfig add eth0 100
-   # ip link set eth0.100 up
-   # brctl addif br100 eth0.100
+   # brctl addif br100 eth1
    # ip link set br100 up
 
    # brctl show
    bridge name bridge id         STP enabled interfaces
-   br100       8000.8a3c3ede3583 no          eth0.100
+   br100       8000.8a3c3ede3583 no          eth1
 
 
 
@@ -205,11 +203,11 @@ Then in Cyclades run:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp --flavor=DEFAULT --name=default --backend-id=1
+   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp --flavor=CUSTOM --link=br100 ----name=default --backend-id=1
 
    # snf-manage network-list
    id    name     flavor   owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet   IPv4 Gateway
-   1     default  DEFAULT                     True    ACTIVE        br100     True   5.6.7.0/27    5.6.7.1
+   1     default  CUSTOM                      True    ACTIVE        br100     True   5.6.7.0/27    5.6.7.1
 
 This will add a network in Synnefo DB and create a network in Ganeti backend by
 issuing:
@@ -225,11 +223,12 @@ issuing:
 
 
 To enable NAT in a Internal Router if you do not have a public IP range available
-but only a public routable IP (e.g 5.6.7.1):
+but only a public routable IP (e.g 1.2.3.4):
 
 .. code-block:: console
 
-   # iptables -t nat -A POSTROUTING -o eth0.100 --to-source 5.6.7.1 -j SNAT
+   # ip addr add 5.6.7.1/27 dev eth1
+   # iptables -t nat -A POSTROUTING -o eth1 --to-source 1.2.3.4 -j SNAT
 
 IP_LESS_ROUTED
 --------------
@@ -242,22 +241,17 @@ IP_LESS_ROUTED
 To create a network with IP_LESS_ROUTED flavor run you have to pre-provision in
 each Ganeti node one routing table (e.g. ``snf_public``) that will do all the
 routing from/to the VMs' taps. Additionally you must enable ``Proxy-ARP``
-support. All traffic will be on a single VLAN (e.g. ``.201``). To this end if
-we assume that ``eth0`` is the public interface run:
-
+support. All traffic will be on a single iterface (e.g. ``eth1``).
 
 .. code-block:: console
 
-   # vconfig add eth0 201
-   # ip link set eth0.201 up
-
    # echo 1 > /proc/sys/net/ipv4/conf/ip_fowarding
    # echo 10 snf_public >> /etc/iproute2/rt_tables
-   # ip route add 5.6.7.0/27 dev eth0.201 ??????
-   # ip route add 5.6.7.0/27 dev eth0.201 table snf_public
-   # ip route add default via 5.6.7.1 dev eth0.201 table snf_public
-   # ip rule add iif eth0.201 lookup snf_public
-   # arptables -A OUTPUT -o eth0.201 --opcode 1 --mangle-ip-s 5.6.7.30
+   # ip route add 5.6.7.0/27 dev eth1
+   # ip route add 5.6.7.0/27 dev eth1 table snf_public
+   # ip route add default via 5.6.7.1 dev eth1 table snf_public
+   # ip rule add iif eth1 lookup snf_public
+   # arptables -A OUTPUT -o eth1 --opcode 1 --mangle-ip-s 5.6.7.30  # last ip in Subnet
 
 Then in Cyclades run:
 
@@ -290,8 +284,8 @@ MAC_FILTERED
 
 
 To create a network with MAC_FILTERED flavor you have to pre-provision in each Ganeti
-node one bridge (e.g. ``prv0``) that will be bridged with one VLAN (e.g. ``.400``)
-across the whole cluster. To this end if we assume that ``eth0`` is the public interface run:
+node one bridge (e.g. ``prv0``) that will be bridged with one interface (e.g. ``eth2``)
+across the whole cluster.
 
 .. image:: images/network-mac.png
    :align: right
@@ -301,14 +295,12 @@ across the whole cluster. To this end if we assume that ``eth0`` is the public i
 .. code-block:: console
 
    # brctl addbr prv0
-   # vconfig add eth0 400
-   # ip link set eth0.400 up
-   # brctl addif prv0 eth0.400
+   # brctl addif prv0 eth2
    # ip link set prv0 up
 
    # brctl show
    bridge name bridge id         STP enabled interfaces
-   prv0        8000.8a3c3ede3583 no          eth0.400
+   prv0        8000.8a3c3ede3583 no          eth2
 
 
 
@@ -316,16 +308,18 @@ Then in Cyclades first create a pool for MAC prefixes by running:
 
 .. code-block:: console
 
-   # snf-manage pool-create --type=mac-prefix --base=aa:00:00 --size=65536
+   # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
 
 and the create the network:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=MAC_FILTERED --name=mac --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=MAC_FILTERED --link=prv0 --name=mac --backend-id=1
    # snf-manage network-list
    id    name     flavor       owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway
    3     mac      MAC_FILTERED       aa:00:01     True    ACTIVE        prv0      False  192.168.1.0/24 192.168.1.1
+
+Edit the synnefo setting `DEFAULT_MAC_FILTERED_BRIDGE` to `prv0`.
 
 This will add a network in Synnefo DB and create a network in Ganeti backend by
 issuing:
@@ -346,9 +340,11 @@ issuing:
 
 PHYSICAL_VLAN
 -------------
+
+
 To create a network with PHYSICAL_VALN flavor you have to pre-provision in each Ganeti
 node a range of bridges (e.g. ``prv1..20``) that will be bridged with the corresponding VLANs (e.g. ``401..420``)
-across the whole cluster. To this end if we assume that ``eth0`` is the public interface run:
+across the whole cluster. To this end if we assume that ``eth3`` is the interface to use, run:
 
 .. image:: images/network-vlan.png
    :align: right
@@ -359,15 +355,15 @@ across the whole cluster. To this end if we assume that ``eth0`` is the public i
 .. code-block:: console
 
    # for i in {1..20}; do
-      br=prv$i ; vlanid=$((400+i)) ; vlan=eth0.$vlanid
+      br=prv$i ; vlanid=$((400+i)) ; vlan=eth3.$vlanid
       brctl addbr $br ; ip link set $br up
       vconfig add eth0 vlanid ; ip link set vlan up
       brctl addif $br $vlan
    done
    # brctl show
    bridge name     bridge id               STP enabled     interfaces
-   prv1            8000.8a3c3ede3583       no              eth0.401
-   prv2            8000.8a3c3ede3583       no              eth0.402
+   prv1            8000.8a3c3ede3583       no              eth3.401
+   prv2            8000.8a3c3ede3583       no              eth3.402
    ...
 
 
@@ -401,8 +397,8 @@ issuing:
 
 
 
-CUSTOM
-------
+ADVANCED SCENARIO
+-----------------
 
 To create a network with CUSTOM flavor you have to pass your self mode, link,
 mac prefix, tags for the network. You are not allowed to use the existing pools
@@ -415,7 +411,7 @@ that he can access the VPN. Then we run in Cyclades:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --mode=bridge --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
 
    # snf-manage network-list
    id    name     flavor       owner              mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway

@@ -86,10 +86,10 @@
                   <tr>
                     <th>Name</th>
                     <!--<th>Type</th>-->
-                    <th>Issued</th>
-                    <th>Expires</th>
+                    <th>Start date</th>
+                    <th>End date</th>
                      
-                    <th>Enrolled</th>
+                    <th>Members</th>
                    
                      
                     <th>Status</th>
@@ -203,10 +203,14 @@
 	    <div class="pagination">
 			<p class="next-prev">
 		        {% if page_obj.has_previous %}
-	                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+	                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">< previous</a>
+	            {% else  %}
+                        	<a href="javascript:void()" class="disabled">< previous</a>    
 	            {% endif %}
 	            {% if page_obj.has_next %}
-	                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+	                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next ></a>
+	            {% else  %}
+                        	<a href="javascript:void()" class="disabled">next ></a>
 	            {% endif %}
 	    	</p>
 			<p class="nums">
@@ -240,9 +244,9 @@
 			              <tr>
 			                <th>Name</th>
 			                <!--th>Type</th-->
-			                <th>Issued</th>
-			                <th>Expires</th>
-			                <th>Enrolled</th>
+			                <th>Start date</th>
+			                <th>End date</th>
+			                <th>Members</th>
 			                <th>Status</th>
 			                <th>&nbsp;</th>
 			                <th class="centered">Moderated</th>
@@ -334,10 +338,14 @@
 				<div class="pagination">
 					<p class="next-prev">
 				        {% if page_obj.has_previous %}
-                            <a href="?page={{ page_obj.previous_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">previous</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">< previous</a>
+                        {% else  %}
+                        	<a href="javascript:void()" class="disabled">< previous</a>
                         {% endif %}
 			            {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">next</a>
+                            <a href="?page={{ page_obj.next_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">next ></a>
+                        {% else %}
+							<a href="javascript:void()" class="disabled">next ></a>
                         {% endif %}
 			    	</p>
 					<p class="nums">

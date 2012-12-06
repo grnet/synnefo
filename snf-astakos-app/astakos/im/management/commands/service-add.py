@@ -52,8 +52,7 @@ class Command(BaseCommand):
         except Exception, e:
             raise CommandError(e)
         else:
-	        if r.is_success:
-                self.stdout.write(
-                    'Service created successfully\n')
+            if r.is_success:
+                self.stdout.write('Service created successfully\n')
             else:
-	    	    raise CommandError(r.reason)
+                raise CommandError(r.reason)

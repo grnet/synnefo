@@ -10,23 +10,21 @@
 	
 
 	<h2>
-	 	{% if user in members %}
-			<em>
-				{% if user == object.owner %}
-					{% if object.is_active %}
-						[ ADMINISTRATOR - ACTIVE ]
-					{% else %}
-						[ ADMINISTRATOR - PENDING ]
-					{% endif %}
-				{%  else %}
-					{% if  user in approve_members %}
-						[ ENROLLED - ACTIVE ]
-					{% else %}
-						[ ENROLLED - PENDING ]
-					{% endif %}
-				{% endif %}
-			</em>		
-		{% endif %}
+        <em>
+            {% if user == object.owner %}
+                {% if object.is_active %}
+                    [ ADMINISTRATOR - ACTIVE ]
+                {% else %}
+                    [ ADMINISTRATOR - PENDING ]
+                {% endif %}
+            {%  else %}
+                {% if  user in approve_members %}
+                    [ ENROLLED - ACTIVE ]
+                {% else %}
+                    [ ENROLLED - PENDING ]
+                {% endif %}
+            {% endif %}
+        </em>
 	 	<span>{{ object.definition.name|upper }}</span>
 	 </h2>
 	 
@@ -49,9 +47,9 @@
 			 			Not set yet
 			 		{% endif %}
 			 	</dd>
-			 	<dt>Moderation</dt>
+			 	<dt>Member accept policy</dt>
 			 	<dd>
-			 		{{ object.definition.member_accept_policy.description }}
+			 		{{ object.definition.member_accept_policy }}
 			 	</dd>
 			 </dl>
 		</div>
@@ -85,11 +83,10 @@
 		 	<dt>Activated</dt>
 		 	<dd>{% if object.is_active %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>
-		 	{{ o.owner }}
-		 	<dd>{% if user == o.owner %}
+		 	<dd>{% if user == object.owner %}
                         Me
                 {% else%}
-                    {{o.owner.realname}} ({{o.owner.email}})
+                    {{object.owner.realname}} ({{object.owner.email}})
                 
                 {% endif %}
                 &nbsp;

@@ -201,6 +201,11 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                 )
             )
             append(item(
+                   url=absolute(request, reverse('project_list')),
+                   name="New Projects",
+                )
+            )
+            append(item(
                    url=absolute(request, reverse('resource_usage')),
                    name="Usage"))
             append(item(

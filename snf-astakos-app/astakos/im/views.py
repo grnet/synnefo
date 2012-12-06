@@ -1477,9 +1477,13 @@ def project_add(request):
 @signed_terms_required
 @login_required
 def project_list(request):
+    q = ProjectApplication.objects.filter(owner=request.user)
+    q |= ProjectApplication.objects.filter(
+        project__in=request.user.projectmembership_set.values_list('project', flat=True)
+    )
     return object_list(
         request,
-        ProjectApplication.objects.all(),
+        q,
         paginate_by=PAGINATE_BY_ALL,
         page=request.GET.get('page') or 1,
         template_name='im/projects/project_list.html',

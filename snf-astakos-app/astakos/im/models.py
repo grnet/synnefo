@@ -1111,8 +1111,8 @@ class Project(models.Model):
     )
     application = models.OneToOneField(ProjectApplication, related_name='project')
     creation_date = models.DateTimeField()
-    last_approval_date = models.DateTimeField()
-    termination_date = models.DateTimeField()
+    last_approval_date = models.DateTimeField(null=True)
+    termination_date = models.DateTimeField(null=True)
     members = models.ManyToManyField(AstakosUser, through='ProjectMembership')
     last_synced_application = models.OneToOneField(
         ProjectApplication, related_name='last_project', null=True, blank=True
@@ -1192,16 +1192,66 @@ class Project(models.Model):
     def sync(self):
         c, rejected = send_quota(self.approved_members)
         return rejected
+    
+    def add_member(self, user, request_user=None):
+        if isinstance(user, int):
+            user = _lookup_object(AstakosUser, id=user)
+        if request_user and \
+            (not self.owner == request_user and not request_user.is_superuser):
+            raise Exception(_(astakos_messages.NOT_ALLOWED))
+        if not self.is_alive:
+            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        if self.definition.member_accept_policy == 'closed':
+            raise Exception(_(astakos_messages.MEMBER_ACCEPT_POLICY_CLOSED))
+        if len(self.approved_members) + 1 > self.limit_on_members_number:
+            raise Exception(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
+        created, m = ProjectMembership.objects.get_or_create(
+            person=user, project=project
+        )
+        if m.is_accepted:
+            return
+        if created:
+            m.issue_date = datetime.now()
+        m.is_accepted = True
+        m.decision_date = datetime.now()
+        m.save()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [user.email],
+            _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__,
+            _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__
+        )
+        notification.send()
+
+    def remove_member(self, user, request_user=None):
+        if user.is_digit():
+            user = _lookup_object(AstakosUser, id=user)
+        if request_user and \
+            (not self.owner == request_user and not request_user.is_superuser):
+            raise Exception(_(astakos_messages.NOT_ALLOWED))
+        if not self.is_alive:
+            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        m = _lookup_object(ProjectMembership, person=user, project=project)
+        if not m.is_accepted:
+            return
+        m.is_accepted = False
+        m.decision_date = datetime.now()
+        m.save()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [user.email],
+            _('Your membership on project %(name)s has been removed.') % project.definition.__dict__,
+            _('Your membership on project %(name)s has been removed.') % project.definition.__dict__
+        )
+        notification.send()
+
 
 class ProjectMembership(models.Model):
     person = models.ForeignKey(AstakosUser)
     project = models.ForeignKey(Project)
     issue_date = models.DateField(default=datetime.now())
     decision_date = models.DateField(null=True, db_index=True)
-    is_accepted = models.BooleanField(
-        _('Whether the membership application is accepted'),
-        default=False
-    )
+    is_accepted = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("person", "project")
@@ -1253,7 +1303,7 @@ def _update_object(model, id, save=True, **kwargs):
     return o
 
 def list_applications():
-    return ProjectAppication.objects.all()
+    return ProjectApplication.objects.all()
 
 def submit_application(definition, applicant, comments, precursor_application=None, commit=True):
     if precursor_application:
@@ -1268,7 +1318,7 @@ def submit_application(definition, applicant, comments, precursor_application=No
     if commit:
         definition.save()
         application.save()
-        notification = build_notification(
+    notification = build_notification(
         settings.SERVER_EMAIL,
         [i[1] for i in settings.ADMINS],
         _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
@@ -1277,9 +1327,8 @@ def submit_application(definition, applicant, comments, precursor_application=No
     notification.send()
     return application
     
-def approve_application(serial):
-    app = _lookup_object(ProjectAppication, serial=serial)
-    notify = False
+def approve_application(serial, request_user=None):
+    app = _lookup_object(ProjectApplication, serial=serial)
     if not app.precursor_application:
         kwargs = {
             'application':app,
@@ -1287,6 +1336,7 @@ def approve_application(serial):
             'last_approval_date':datetime.now(),
         }
         project = _create_object(Project, **kwargs)
+        project.add_member(app.owner, request_user)
     else:
         project = app.precursor_application.project
         last_approval_date = project.last_approval_date
@@ -1327,51 +1377,6 @@ def list_projects(filter_property=None):
             filter_property
         )
     return Project.objects.all()
-
-def add_project_member(serial, user_id, request_user):
-    project = _lookup_object(Project, serial=serial)
-    user = _lookup_object(AstakosUser, id=user_id)
-    if not project.owner == request_user:
-        raise Exception(_(astakos_messages.NOT_PROJECT_OWNER))
-    
-    if not project.is_alive:
-        raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-    if len(project.members) + 1 > project.limit_on_members_number:
-        raise Exception(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
-    m = self._lookup_object(ProjectMembership, person=user, project=project)
-    if m.is_accepted:
-        return
-    m.is_accepted = True
-    m.decision_date = datetime.now()
-    m.save()
-    notification = build_notification(
-        settings.SERVER_EMAIL,
-        [user.email],
-        _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__, 
-        _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__,
-    )
-    notification.send()
-
-def remove_project_member(serial, user_id, request_user):
-    project = _lookup_object(Project, serial=serial)
-    if not project.is_alive:
-        raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-    if not project.owner == request_user:
-        raise Exception(_(astakos_messages.NOT_PROJECT_OWNER))
-    user = self.lookup_user(user_id)
-    m = _lookup_object(ProjectMembership, person=user, project=project)
-    if not m.is_accepted:
-        return
-    m.is_accepted = False
-    m.decision_date = datetime.now()
-    m.save()
-    notification = build_notification(
-        settings.SERVER_EMAIL,
-        [user.email],
-        _('Your membership on project %(name)s has been removed.') % project.definition.__dict__,
-        _('Your membership on project %(name)s has been removed.') % project.definition.__dict__
-    )
-    notification.send()    
 
 def suspend_project(serial):
     project = _lookup_object(Project, serial=serial)

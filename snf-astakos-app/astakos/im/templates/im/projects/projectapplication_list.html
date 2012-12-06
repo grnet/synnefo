@@ -1,0 +1,14 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="projects">
+	    <h2>PROJECTS</h2>
+    {% with page_obj.object_list as object_list %}
+        {{object_list}}
+    {% endwith %}
+    </div>
+</div>  
+{% endblock %}

@@ -113,11 +113,11 @@ MISSING_NEXT_PARAMETER                  =   'No next parameter'
 INVITATION_SENT                         =   'Invitation sent to %(email)s.'
 VERIFICATION_SENT                       =   'Verification sent.'
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with another local account. \
-                                               To change this account to a shibboleth one follow the link in the verification email sent to %(email)s. \
-                                               Otherwise just ignore it.'
+                                             To change this account to a shibboleth one follow the link in the verification email sent to %(email)s. \
+                                             Otherwise just ignore it.'
 NOTIFICATION_SENT                       =   'Your request for an account was successfully received and is now pending approval. \
-                                               You will be notified by email in the next few days. \
-                                               Thanks for your interest in ~okeanos! The GRNET team.'
+                                             You will be notified by email in the next few days. \
+                                             Thanks for your interest in ~okeanos! The GRNET team.'
 ACTIVATION_SENT                         =   'Activation sent.'
 
 REGISTRATION_COMPLETED                  =   'Registration completed. You can now login.'
@@ -127,3 +127,10 @@ NOT_ALLOWED_NEXT_PARAM                  =   'Not allowed next parameter.'
 MISSING_KEY_PARAMETER                   =   'Missing key parameter.'
 INVALID_KEY_PARAMETER                   =   'Invalid key.'
 DOMAIN_VALUE_ERR                        =   'Enter a valid domain.'
+QH_SYNC_ERROR                           =   'Failed to get synchronized with quotaholder.'
+UNIQUE_PROJECT_NAME_CONSTRAIN_ERR       =   'The project name (as specified in its application\'s definition) must be unique among all active projects.'
+INVALID_PROJECT                         =   'Project %(serial)s is invalid.'
+NOT_ALIVE_PROJECT                       =   'Project %(serial)s is not alive.'
+NOT_PROJECT_OWNER                       =   'Only project owner can perform this action.'
+MEMBER_NUMBER_LIMIT_REACHED             =   'Maximum participant number has been reached.'
+NO_APPLICANT                            =   'Project application requires an applicant. None found.'

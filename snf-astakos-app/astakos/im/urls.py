@@ -50,8 +50,10 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
     url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation'),
     url(r'^resources/?$', 'resource_usage', {}, name='resource_usage'),
+
 #    url(r'^billing/?$', 'billing', {}, name='billing'),
-    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
+#    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
+
     url(r'^group/add/complete/?$', 'group_add_complete', {}, name='group_add_complete'),
     url(r'^group/add/(?P<kind_name>\w+)?$', 'group_add', {}, name='group_add'),
     url(r'^group/list/?$', 'group_list', {}, name='group_list'),
@@ -63,9 +65,21 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
     url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list'),
-    url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {},
-        name='remove_auth_provider'),
-    url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works')
+    url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
+    
+    url(r'^project/add/?$', 'project_add', {}, name='project_add'),
+    url(r'^project/application/list/?$', 'project_application_list', {}, name='project_application_list'),
+    url(r'^project/list/?$', 'project_list', {}, name='project_list'),
+    url(r'^project/(?P<serial>\w+)/?$', 'project_detail', {}, name='project_detail'),
+    url(r'^project/search/?$', 'project_search', {}, name='project_search'),
+    url(r'^project/all/?$', 'project_all', {}, name='project_all'),
+    url(r'^project/(?P<serial>\w+)/join/?$', 'project_join', {}, name='project_join'),
+    url(r'^project/(?P<serial>\w+)/leave/?$', 'project_leave', {}, name='project_leave'),
+    url(r'^project/(?P<serial>\w+)/(?P<user_id>\d+)/approve/?$', 'project_approve_member', {}, name='project_approve_member'),
+    url(r'^project/(?P<serial>\w+)/(?P<user_id>\d+)/disapprove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    
+    url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
+    url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {}, name='remove_auth_provider'),
 )
 
 

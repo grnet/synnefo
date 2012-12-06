@@ -39,12 +39,12 @@ from django.db import models
 from astakos.im.models import AstakosGroup
 
 class Command(BaseCommand):
-    args = "<group name>"
+    args = "<group id or name>"
     help = "Show group info"
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a group name")
+            raise CommandError("Please provide a group id or name")
 
         group = AstakosGroup.objects
         name_or_id = args[0].decode('utf8')

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,22 +31,45 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-
-from astakos.im.models import AstakosUser, Resource
-from astakos.im.endpoints.qh import register_users, register_resources
-
 import logging
+import socket
+
+from django.conf import settings
+from django.core.mail import send_mail
+
+import astakos.im.messages as astakos_messages
+
 logger = logging.getLogger(__name__)
 
+def build_notification():
+    return EmailNotification(sender, recipients, subject, message)
 
-class Command(BaseCommand):
-    help = "Send user information and resource quota in the Quotaholder"
+class Notification(object):
+    def __init__(self, sender, recipients, subject, message):
+        self.sender = sender
+        self.recipients = recipients
+        self.subject = subject
+        self.message = message
+    
+    def send(self):
+        pass
 
-    def handle(self, *args, **options):
+class EmailNotification(Notification):
+    def send(self):
         try:
-            register_resources(Resource.objects.all())
-            register_users(AstakosUser.objects.all())
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Syncing failed.")
+            send_mail(
+                subject,
+                message,
+                sender,
+                recipients
+            )
+        except:
+            raise SendNotificationError()
+
+class SendMailError(Exception):
+    pass
+
+class SendNotificationError(SendMailError):
+    def __init__(self):
+        self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
+        super(SendNotificationError, self).__init__()

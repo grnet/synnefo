@@ -33,19 +33,28 @@
 
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 
 from functools import wraps
 from smtplib import SMTPException
 
 from astakos.im.models import (
-    AstakosUser, AstakosGroup, GroupKind, Resource, Service, RESOURCE_SEPARATOR
+    AstakosUser, AstakosGroup, GroupKind, Resource, Service, RESOURCE_SEPARATOR,
+    Project, ProjectApplication, ProjectMembership, filter_queryset_by_property
 )
 from astakos.im.api.backends.base import BaseBackend, SuccessResult, FailureResult
 from astakos.im.api.backends.errors import (
     ItemNotExists, ItemExists, MissingIdentifier, MultipleItemsExist
 )
+# from astakos.im.api.backends.lib.notifications import EmailNotification
+
 from astakos.im.util import reserved_email, model_to_dict
-from astakos.im.endpoints.qh import get_quota
+from astakos.im.endpoints.qh import get_quota, send_quota
+from astakos.im.settings import SITENAME
+try:
+    from astakos.im.messages import astakos_messages
+except:
+    pass
 
 import logging
 
@@ -56,7 +65,6 @@ DEFAULT_CONTENT_TYPE = None
 
 def safe(func):
     """Decorator function for views that implement an API method."""
-    @transaction.commit_manually
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         logger.debug('%s %s %s' % (func, args, kwargs))
@@ -64,10 +72,8 @@ def safe(func):
             data = func(self, *args, **kwargs) or ()
         except Exception, e:
             logger.exception(e)
-            transaction.rollback()
             return FailureResult(e)
         else:
-            transaction.commit()
             return SuccessResult(data)
     return wrapper
 
@@ -107,7 +113,10 @@ class DjangoBackend(BaseBackend):
         q = model.objects.all()
         if filter:
             q = q.filter(id__in=filter)
-        return map(lambda o: model_to_dict(o, exclude=[]), q)
+        return map(lambda o: self._details(o), q)
+
+    def _details(self, obj):
+        return model_to_dict(obj, exclude=[])
 
     def _create_object(self, model, **kwargs):
         o = model.objects.create(**kwargs)
@@ -136,6 +145,7 @@ class DjangoBackend(BaseBackend):
         permissions = kwargs.pop('permissions', ())
         groups = kwargs.pop('groups', ())
         password = kwargs.pop('password', None)
+        provider = kwargs.pop('provider', 'local')
 
         u = self._create_object(AstakosUser, **kwargs)
 
@@ -145,10 +155,10 @@ class DjangoBackend(BaseBackend):
         u.policies = policies
         u.extended_groups = groups
 
-        if not u.has_auth_provider('local'):
-            u.add_auth_provider('local')
+        if not u.has_auth_provider(provider):
+            u.add_auth_provider(provider)
 
-        return self._list(AstakosUser, filter=(u.id,))
+        return self._details(u)
 
     @safe
     def add_policies(self, user_id, update=False, policies=()):
@@ -180,6 +190,7 @@ class DjangoBackend(BaseBackend):
             except ObjectDoesNotExist, e:
                 append((service, resource, e))
         return rejected
+    
     @safe
     def add_permissions(self, user_id, permissions=()):
         user = self._lookup_user(user_id)
@@ -252,7 +263,7 @@ class DjangoBackend(BaseBackend):
         resources = kwargs.pop('resources', ())
         s = self._create_object(Service, **kwargs)
         s.resources = resources
-        return self._list(Service, filter=(s.id,))
+        return self._details(s)
 
     @safe
     def remove_services(self, ids=()):
@@ -308,4 +319,152 @@ class DjangoBackend(BaseBackend):
         g.policies = policies
 #        g.members = members
         g.owners = owners
-        return self._list(AstakosGroup, filter=(g.id,))
+        return self._details(g)
+    
+    
+    @safe
+    def submit_application(self, **kwargs):
+        app = self._create_object(ProjectApplication, **kwargs)
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [settings.ADMINS],
+            _(GROUP_CREATION_SUBJECT) % {'group':app.definition.name},
+            _('An new project application identified by %(serial)s has been submitted.') % app.serial
+        )
+        notification.send()
+    
+    @safe
+    def list_applications(self):
+        return self._list(ProjectAppication)
+    
+    @safe
+    def approve_application(self, serial):
+        app = self._lookup_object(ProjectAppication, serial=serial)
+        notify = False
+        if not app.precursor_application:
+            kwargs = {
+                'application':app,
+                'creation_date':datetime.now(),
+                'last_approval_date':datetime.now(),
+            }
+            project = self._create_object(Project, **kwargs)
+        else:
+            project = app.precursor_application.project
+            last_approval_date = project.last_approval_date
+            if project.is_valid:
+                project.application = app
+                project.last_approval_date = datetime.now()
+                project.save()
+            else:
+                raise Exception(_(astakos_messages.INVALID_PROJECT) % project.__dict__)
+        
+        r = _synchonize_project(project.serial)
+        if not r.is_success:
+            # revert to precursor
+            project.appication = app.precursor_application
+            if project.application:
+                project.last_approval_date = last_approval_date
+            project.save()
+            r = synchonize_project(project.serial)
+            if not r.is_success:
+                raise Exception(_(astakos_messages.QH_SYNC_ERROR))
+        else:
+            project.last_application_synced = app
+            project.save()
+            sender, recipients, subject, message
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [project.owner.email],
+                _('Project application has been approved on %s alpha2 testing' % SITENAME),
+                _('Your application request %(serial)s has been apporved.')
+            )
+            notification.send()
+    
+    
+    @safe
+    def list_projects(self, filter_property=None):
+        if filter_property:
+            q = filter_queryset_by_property(
+                Project.objects.all(),
+                filter_property
+            )
+            return map(lambda o: self._details(o), q)
+        return self._list(Project)
+        
+
+    
+    @safe
+    def add_project_member(self, serial, user_id, request_user):
+        project = self._lookup_object(Project, serial=serial)
+        user = self.lookup_user(user_id)
+        if not project.owner == request_user:
+            raise Exception(_(astakos_messages.NOT_PROJECT_OWNER))
+        
+        if not project.is_alive:
+            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        if len(project.members) + 1 > project.limit_on_members_number:
+            raise Exception(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
+        m = self._lookup_object(ProjectMembership, person=user, project=project)
+        if m.is_accepted:
+            return
+        m.is_accepted = True
+        m.decision_date = datetime.now()
+        m.save()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [user.email],
+            _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__, 
+            _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__,
+        )
+        notification.send()
+    
+    @safe
+    def remove_project_member(self, serial, user_id, request_user):
+        project = self._lookup_object(Project, serial=serial)
+        if not project.is_alive:
+            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        if not project.owner == request_user:
+            raise Exception(_(astakos_messages.NOT_PROJECT_OWNER))
+        user = self.lookup_user(user_id)
+        m = self._lookup_object(ProjectMembership, person=user, project=project)
+        if not m.is_accepted:
+            return
+        m.is_accepted = False
+        m.decision_date = datetime.now()
+        m.save()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [user.email],
+            _('Your membership on project %(name)s has been removed.') % project.definition.__dict__, 
+            _('Your membership on project %(name)s has been removed.') % project.definition.__dict__,
+        )
+        notification.send()    
+    
+    @safe
+    def suspend_project(self, serial):
+        project = self._lookup_object(Project, serial=serial)
+        project.suspend()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [project.owner.email],
+            _('Project %(name)s has been suspended on %s alpha2 testing' % SITENAME),
+            _('Project %(name)s has been suspended on %s alpha2 testing' % SITENAME)
+        )
+        notification.send()
+    
+    @safe
+    def terminate_project(self, serial):
+        project = self._lookup_object(Project, serial=serial)
+        project.termination()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [project.owner.email],
+            _('Project %(name)s has been terminated on %s alpha2 testing' % SITENAME),
+            _('Project %(name)s has been terminated on %s alpha2 testing' % SITENAME)
+        )
+        notification.send()
+    
+    @safe
+    def synchonize_project(self, serial):
+        project = self._lookup_object(Project, serial=serial)
+        project.sync()

@@ -33,17 +33,17 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand, CommandError
 
 from astakos.im.models import Invitation
 
 from ._common import format_bool
 
 
-class Command(BaseCommand):
+class Command(NoArgsCommand):
     help = "List invitations"
 
-    option_list = BaseCommand.option_list + (
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
                     action='store_true',
                     dest='csv',
@@ -51,10 +51,7 @@ class Command(BaseCommand):
                     help="Use pipes to separate values"),
     )
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-        
+    def handle_noargs(self, **options):
         invitations = Invitation.objects.all().order_by('id')
         
         labels = ('id', 'inviter', 'email', 'real name', 'code', 'consumed')

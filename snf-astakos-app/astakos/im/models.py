@@ -62,9 +62,11 @@ from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.validators import email_re
 
-from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
-                                 AUTH_TOKEN_DURATION, BILLING_FIELDS,
-                                 EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL)
+from astakos.im.settings import (
+    DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
+    AUTH_TOKEN_DURATION, BILLING_FIELDS,
+    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
+)
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
 )
@@ -72,6 +74,8 @@ from astakos.im import auth_providers
 from astakos.im.endpoints.aquarium.producer import report_user_event
 from astakos.im.functions import send_invitation
 #from astakos.im.tasks import propagate_groupmembers_quota
+
+from astakos.im.notifications import build_notification
 
 import astakos.im.messages as astakos_messages
 
@@ -88,14 +92,14 @@ RESOURCE_SEPARATOR = '.'
 inf = float('inf')
 
 class Service(models.Model):
-    name = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
     url = models.FilePathField()
     icon = models.FilePathField(blank=True)
-    auth_token = models.CharField('Authentication Token', max_length=32,
+    auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True)
-    auth_token_created = models.DateTimeField('Token creation date', null=True)
+    auth_token_created = models.DateTimeField(_('Token creation date'), null=True)
     auth_token_expires = models.DateTimeField(
-        'Token expiration date', null=True)
+        _('Token expiration date'), null=True)
 
     def renew_token(self):
         md5 = hashlib.md5()
@@ -133,24 +137,24 @@ class Service(models.Model):
 
 
 class ResourceMetadata(models.Model):
-    key = models.CharField('Name', max_length=255, unique=True, db_index=True)
-    value = models.CharField('Value', max_length=255)
+    key = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
+    value = models.CharField(_('Value'), max_length=255)
 
 
 class Resource(models.Model):
-    name = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
     meta = models.ManyToManyField(ResourceMetadata)
     service = models.ForeignKey(Service)
-    desc = models.TextField('Description', null=True)
-    unit = models.CharField('Name', null=True, max_length=255)
-    group = models.CharField('Group', null=True, max_length=255)
+    desc = models.TextField(_('Description'), null=True)
+    unit = models.CharField(_('Name'), null=True, max_length=255)
+    group = models.CharField(_('Group'), null=True, max_length=255)
 
     def __str__(self):
         return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
 
 
 class GroupKind(models.Model):
-    name = models.CharField('Name', max_length=255, unique=True, db_index=True)
+    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
 
     def __str__(self):
         return self.name
@@ -159,8 +163,8 @@ class GroupKind(models.Model):
 class AstakosGroup(Group):
     kind = models.ForeignKey(GroupKind)
     homepage = models.URLField(
-        'Homepage Url', max_length=255, null=True, blank=True)
-    desc = models.TextField('Description', null=True)
+        _('Homepage Url'), max_length=255, null=True, blank=True)
+    desc = models.TextField(_('Description'), null=True)
     policy = models.ManyToManyField(
         Resource,
         null=True,
@@ -168,30 +172,31 @@ class AstakosGroup(Group):
         through='AstakosGroupQuota'
     )
     creation_date = models.DateTimeField(
-        'Creation date',
+        _('Creation date'),
         default=datetime.now()
     )
     issue_date = models.DateTimeField('Start date', null=True)
     expiration_date = models.DateTimeField(
-        'End date',
+        _('Expiration date'),
+        null=True
          null=True
     )
     moderation_enabled = models.BooleanField(
-        'Moderated membership?',
+        _('Moderated membership?'),
         default=True
     )
     approval_date = models.DateTimeField(
-        'Activation date',
+        _('Activation date'),
         null=True,
         blank=True
     )
     estimated_participants = models.PositiveIntegerField(
-        'Estimated #members',
+        _('Estimated #members'),
         null=True,
         blank=True,
     )
     max_participants = models.PositiveIntegerField(
-        'Maximum numder of participants',
+        _('Maximum numder of participants'),
         null=True,
         blank=True
     )
@@ -235,19 +240,9 @@ class AstakosGroup(Group):
         self.save()
         quota_disturbed.send(sender=self, users=self.approved_members)
 
-    @transaction.commit_manually
     def approve_member(self, person):
         m, created = self.membership_set.get_or_create(person=person)
-        try:
-            m.approve()
-        except:
-            transaction.rollback()
-            raise
-        else:
-            transaction.commit()
-
-#     def disapprove_member(self, person):
-#         self.membership_set.remove(person=person)
+        m.approve()
 
     @property
     def members(self):
@@ -322,44 +317,44 @@ class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
     """
-    affiliation = models.CharField('Affiliation', max_length=255, blank=True,
+    affiliation = models.CharField(_('Affiliation'), max_length=255, blank=True,
                                    null=True)
 
     # DEPRECATED FIELDS: provider, third_party_identifier moved in
     #                    AstakosUserProvider model.
-    provider = models.CharField('Provider', max_length=255, blank=True,
+    provider = models.CharField(_('Provider'), max_length=255, blank=True,
                                 null=True)
     # ex. screen_name for twitter, eppn for shibboleth
-    third_party_identifier = models.CharField('Third-party identifier',
+    third_party_identifier = models.CharField(_('Third-party identifier'),
                                               max_length=255, null=True,
                                               blank=True)
 
 
     #for invitations
     user_level = DEFAULT_USER_LEVEL
-    level = models.IntegerField('Inviter level', default=user_level)
+    level = models.IntegerField(_('Inviter level'), default=user_level)
     invitations = models.IntegerField(
-        'Invitations left', default=INVITATIONS_PER_LEVEL.get(user_level, 0))
+        _('Invitations left'), default=INVITATIONS_PER_LEVEL.get(user_level, 0))
 
-    auth_token = models.CharField('Authentication Token', max_length=32,
+    auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True)
-    auth_token_created = models.DateTimeField('Token creation date', null=True)
+    auth_token_created = models.DateTimeField(_('Token creation date'), null=True)
     auth_token_expires = models.DateTimeField(
-        'Token expiration date', null=True)
+        _('Token expiration date'), null=True)
 
-    updated = models.DateTimeField('Update date')
-    is_verified = models.BooleanField('Is verified?', default=False)
+    updated = models.DateTimeField(_('Update date'))
+    is_verified = models.BooleanField(_('Is verified?'), default=False)
 
-    email_verified = models.BooleanField('Email verified?', default=False)
+    email_verified = models.BooleanField(_('Email verified?'), default=False)
 
-    has_credits = models.BooleanField('Has credits?', default=False)
+    has_credits = models.BooleanField(_('Has credits?'), default=False)
     has_signed_terms = models.BooleanField(
-        'I agree with the terms', default=False)
+        _('I agree with the terms'), default=False)
     date_signed_terms = models.DateTimeField(
-        'Signed terms date', null=True, blank=True)
+        _('Signed terms date'), null=True, blank=True)
 
     activation_sent = models.DateTimeField(
-        'Activation sent data', null=True, blank=True)
+        _('Activation sent data'), null=True, blank=True)
 
     policy = models.ManyToManyField(
         Resource, null=True, through='AstakosUserQuota')
@@ -370,7 +365,7 @@ class AstakosUser(User):
         through='Membership')
 
     __has_signed_terms = False
-    disturbed_quota = models.BooleanField('Needs quotaholder syncing',
+    disturbed_quota = models.BooleanField(_('Needs quotaholder syncing'),
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
@@ -700,16 +695,16 @@ class AstakosUserAuthProvider(models.Model):
     """
     Available user authentication methods.
     """
-    affiliation = models.CharField('Affiliation', max_length=255, blank=True,
+    affiliation = models.CharField(_('Affiliation'), max_length=255, blank=True,
                                    null=True, default=None)
     user = models.ForeignKey(AstakosUser, related_name='auth_providers')
-    module = models.CharField('Provider', max_length=255, blank=False,
+    module = models.CharField(_('Provider'), max_length=255, blank=False,
                                 default='local')
-    identifier = models.CharField('Third-party identifier',
+    identifier = models.CharField(_('Third-party identifier'),
                                               max_length=255, null=True,
                                               blank=True)
     active = models.BooleanField(default=True)
-    auth_backend = models.CharField('Backend', max_length=255, blank=False,
+    auth_backend = models.CharField(_('Backend'), max_length=255, blank=False,
                                    default='astakos')
 
     objects = AstakosUserAuthProviderManager()
@@ -779,10 +774,12 @@ class Membership(models.Model):
         quota_disturbed.send(sender=self, users=(self.person,))
 
     def disapprove(self):
+        approved = self.is_approved()
         self.delete()
-        quota_disturbed.send(sender=self, users=(self.person,))
+        if approved:
+            quota_disturbed.send(sender=self, users=(self.person,))
 
-class AstakosQuotaManager(models.Manager):
+class ExtendedManager(models.Manager):
     def _update_or_create(self, **kwargs):
         assert kwargs, \
             'update_or_create() must be passed at least one keyword argument'
@@ -812,9 +809,9 @@ class AstakosQuotaManager(models.Manager):
     update_or_create = _update_or_create
 
 class AstakosGroupQuota(models.Model):
-    objects = AstakosQuotaManager()
-    limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
-    uplimit = models.BigIntegerField('Up limit', null=True)
+    objects = ExtendedManager()
+    limit = models.PositiveIntegerField(_('Limit'), null=True)    # obsolete field
+    uplimit = models.BigIntegerField(_('Up limit'), null=True)
     resource = models.ForeignKey(Resource)
     group = models.ForeignKey(AstakosGroup, blank=True)
 
@@ -822,9 +819,9 @@ class AstakosGroupQuota(models.Model):
         unique_together = ("resource", "group")
 
 class AstakosUserQuota(models.Model):
-    objects = AstakosQuotaManager()
-    limit = models.PositiveIntegerField('Limit', null=True)    # obsolete field
-    uplimit = models.BigIntegerField('Up limit', null=True)
+    objects = ExtendedManager()
+    limit = models.PositiveIntegerField(_('Limit'), null=True)    # obsolete field
+    uplimit = models.BigIntegerField(_('Up limit'), null=True)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 
@@ -838,8 +835,8 @@ class ApprovalTerms(models.Model):
     """
 
     date = models.DateTimeField(
-        'Issue date', db_index=True, default=datetime.now())
-    location = models.CharField('Terms location', max_length=255)
+        _('Issue date'), db_index=True, default=datetime.now())
+    location = models.CharField(_('Terms location'), max_length=255)
 
 
 class Invitation(models.Model):
@@ -848,12 +845,12 @@ class Invitation(models.Model):
     """
     inviter = models.ForeignKey(AstakosUser, related_name='invitations_sent',
                                 null=True)
-    realname = models.CharField('Real name', max_length=255)
-    username = models.CharField('Unique ID', max_length=255, unique=True)
-    code = models.BigIntegerField('Invitation code', db_index=True)
-    is_consumed = models.BooleanField('Consumed?', default=False)
-    created = models.DateTimeField('Creation date', auto_now_add=True)
-    consumed = models.DateTimeField('Consumption date', null=True, blank=True)
+    realname = models.CharField(_('Real name'), max_length=255)
+    username = models.CharField(_('Unique ID'), max_length=255, unique=True)
+    code = models.BigIntegerField(_('Invitation code'), db_index=True)
+    is_consumed = models.BooleanField(_('Consumed?'), default=False)
+    created = models.DateTimeField(_('Creation date'), auto_now_add=True)
+    consumed = models.DateTimeField(_('Consumption date'), null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
         super(Invitation, self).__init__(*args, **kwargs)
@@ -957,14 +954,14 @@ class PendingThirdPartyUser(models.Model):
     """
     Model for registring successful third party user authentications
     """
-    third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
-    provider = models.CharField('Provider', max_length=255, blank=True)
+    third_party_identifier = models.CharField(_('Third-party identifier'), max_length=255, null=True, blank=True)
+    provider = models.CharField(_('Provider'), max_length=255, blank=True)
     email = models.EmailField(_('e-mail address'), blank=True, null=True)
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
     last_name = models.CharField(_('last name'), max_length=30, blank=True)
     affiliation = models.CharField('Affiliation', max_length=255, blank=True)
     username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
-    token = models.CharField('Token', max_length=255, null=True, blank=True)
+    token = models.CharField(_('Token'), max_length=255, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     class Meta:
@@ -1003,7 +1000,406 @@ class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
 
+class MemberAcceptPolicy(models.Model):
+    policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
+    description = models.CharField(_('Description'), max_length=80)
 
+    def __str__(self):
+        return self.policy
+
+try:
+    auto_accept = MemberAcceptPolicy.objects.get(policy='auto_accept')
+except:
+    auto_accept = None
+
+class ProjectDefinition(models.Model):
+    name = models.CharField(max_length=80)
+    homepage = models.URLField(max_length=255, null=True, blank=True)
+    description = models.TextField(null=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    member_accept_policy = models.ForeignKey(MemberAcceptPolicy)
+    limit_on_members_number = models.PositiveIntegerField(null=True,blank=True)
+    resource_grants = models.ManyToManyField(
+        Resource,
+        null=True,
+        blank=True,
+        through='ProjectResourceGrant'
+    )
+    
+    def save(self):
+        self.validate_name()
+        super(ProjectDefinition, self).save()
+    
+    def validate_name(self):
+        """
+        Validate name uniqueness among all active projects.
+        """
+        alive_projects = list(get_alive_projects())
+        q = filter(lambda p: p.definition.name==self.name, alive_projects)
+        if q:
+            raise ValidationError({'name': [_(astakos_messages.UNIQUE_PROJECT_NAME_CONSTRAIN_ERR)]})
+    
+    @property
+    def violated_resource_grants(self):
+        return False
+    
+    def add_resource_policy(self, service, resource, uplimit, update=True):
+        """Raises ObjectDoesNotExist, IntegrityError"""
+        resource = Resource.objects.get(service__name=service, name=resource)
+        if update:
+            ResourceGrant.objects.update_or_create(
+                project=self,
+                resource=resource,
+                defaults={'uplimit': uplimit}
+            )
+        else:
+            q = self.resource_grants_set
+            q.create(resource=resource, uplimit=uplimit)
+
+    @property
+    def resource_policies(self):
+        return self.resource_grants_set.select_related().all()
+
+    @resource_policies.setter
+    def resource_policies(self, policies):
+        for p in policies:
+            service = p.get('service', None)
+            resource = p.get('resource', None)
+            uplimit = p.get('uplimit', 0)
+            update = p.get('update', True)
+            self.add_resource_policy(service, resource, uplimit, update)
+
+
+class ProjectResourceGrant(models.Model):
+    objects = ExtendedManager()
+    member_limit = models.BigIntegerField(null=True)
+    project_limit = models.BigIntegerField(null=True)
+    resource = models.ForeignKey(Resource)
+    project_definition = models.ForeignKey(ProjectDefinition, blank=True)
+
+    class Meta:
+        unique_together = ("resource", "project_definition")
+
+class ProjectApplication(models.Model):
+    serial = models.CharField(
+        primary_key=True,
+        max_length=30,
+        unique=True,
+        default=uuid.uuid4().hex[:30]
+    )
+    applicant = models.ForeignKey(AstakosUser, related_name='my_project_applications')
+    owner = models.ForeignKey(AstakosUser, related_name='own_project_applications')
+    comments = models.TextField(null=True, blank=True)
+    definition = models.OneToOneField(ProjectDefinition)
+    issue_date = models.DateTimeField()
+    precursor_application = models.OneToOneField('ProjectApplication',
+        null=True,
+        blank=True
+    )
+
+class Project(models.Model):
+    serial = models.CharField(
+        _('username'),
+        primary_key=True,
+        max_length=30,
+        unique=True,
+        default=uuid.uuid4().hex[:30]
+    )
+    application = models.OneToOneField(ProjectApplication, related_name='project')
+    creation_date = models.DateTimeField()
+    last_approval_date = models.DateTimeField()
+    termination_date = models.DateTimeField()
+    members = models.ManyToManyField(AstakosUser, through='ProjectMembership')
+    last_synced_application = models.OneToOneField(
+        ProjectApplication, related_name='last_project', null=True, blank=True
+    )
+    
+    @property
+    def definition(self):
+        return self.application.definition
+    
+    @property
+    def is_valid(self):
+        try:
+            self.application.definition.validate_name()
+        except ValidationError:
+            return False
+        else:
+            return True
+    
+    @property
+    def is_active(self):
+        if not self.is_valid:
+            return False
+        if not self.last_approval_date:
+            return False
+        if self.termination_date:
+            return False
+        if self.definition.violated_resource_grants:
+            return False
+        return True
+    
+    @property
+    def is_terminated(self):
+        if not self.is_valid:
+            return False
+        if not self.termination_date:
+            return False
+        return True
+    
+    @property
+    def is_suspended(self):
+        if not self.is_valid:
+            return False
+        if not self.termination_date:
+            return False
+        if not self.last_approval_date:
+            if not self.definition.violated_resource_grants:
+                return False
+        return True
+    
+    @property
+    def is_alive(self):
+        return self.is_active or self.is_suspended
+    
+    @property
+    def is_inconsistent(self):
+        now = datetime.now()
+        if self.creation_date > now:
+            return True
+        if self.last_approval_date > now:
+            return True
+        if self.terminaton_date > now:
+            return True
+        return False
+    
+    @property
+    def approved_members(self):
+        return self.members.filter(is_accepted=True)
+    
+    def suspend(self):
+        self.last_approval_date = None
+        self.save()
+    
+    def terminate(self):
+        self.terminaton_date = datetime.now()
+        self.save()
+    
+    def sync(self):
+        c, rejected = send_quota(self.approved_members)
+        return rejected
+
+class ProjectMembership(models.Model):
+    person = models.ForeignKey(AstakosUser)
+    project = models.ForeignKey(Project)
+    issue_date = models.DateField(default=datetime.now())
+    decision_date = models.DateField(null=True, db_index=True)
+    is_accepted = models.BooleanField(
+        _('Whether the membership application is accepted'),
+        default=False
+    )
+
+    class Meta:
+        unique_together = ("person", "project")
+
+def filter_queryset_by_property(q, property):
+    """
+    Incorporate list comprehension for filtering querysets by property
+    since Queryset.filter() operates on the database level.
+    """
+    return (p for p in q if getattr(p, property, False))
+
+def get_alive_projects():
+    return filter_queryset_by_property(
+        Project.objects.all(),
+        'is_alive'
+    )
+
+def get_active_projects():
+    return filter_queryset_by_property(
+        Project.objects.all(),
+        'is_active'
+    )
+
+def _lookup_object(model, **kwargs):
+    """
+    Returns an object of the specific model matching the given lookup
+    parameters.
+    """
+    if not kwargs:
+        raise MissingIdentifier
+    try:
+        return model.objects.get(**kwargs)
+    except model.DoesNotExist:
+        raise ItemNotExists(model._meta.verbose_name, **kwargs)
+    except model.MultipleObjectsReturned:
+        raise MultipleItemsExist(model._meta.verbose_name, **kwargs)
+
+def _create_object(model, **kwargs):
+    o = model.objects.create(**kwargs)
+    o.save()
+    return o
+
+def _update_object(model, id, save=True, **kwargs):
+    o = self._lookup_object(model, id=id)
+    if kwargs:
+        o.__dict__.update(kwargs)
+    if save:
+        o.save()
+    return o
+
+def submit_application(**kwargs):
+    app = self._create_object(ProjectApplication, **kwargs)
+    notification = build_notification(
+        settings.SERVER_EMAIL,
+        [settings.ADMINS],
+        _(GROUP_CREATION_SUBJECT) % {'group':app.definition.name},
+        _('An new project application identified by %(serial)s has been submitted.') % app.serial
+    )
+    notification.send()
+
+def list_applications():
+    return ProjectAppication.objects.all()
+
+def create_application(definition, applicant, comments, precursor_application=None, commit=True):
+    if precursor_application:
+        application = precursor_application.copy()
+        application.precursor_application = precursor_application
+    else:
+        application = ProjectApplication(owner=applicant)
+    application.definition = definition
+    application.applicant = applicant
+    application.comments = comments
+    application.issue_date = datetime.now()
+    if commit:
+        definition.save()
+        application.save()
+    return application
+    
+def approve_application(serial):
+    app = _lookup_object(ProjectAppication, serial=serial)
+    notify = False
+    if not app.precursor_application:
+        kwargs = {
+            'application':app,
+            'creation_date':datetime.now(),
+            'last_approval_date':datetime.now(),
+        }
+        project = _create_object(Project, **kwargs)
+    else:
+        project = app.precursor_application.project
+        last_approval_date = project.last_approval_date
+        if project.is_valid:
+            project.application = app
+            project.last_approval_date = datetime.now()
+            project.save()
+        else:
+            raise Exception(_(astakos_messages.INVALID_PROJECT) % project.__dict__)
+    
+    rejected = synchonize_project(project.serial)
+    if rejected:
+        # revert to precursor
+        project.appication = app.precursor_application
+        if project.application:
+            project.last_approval_date = last_approval_date
+        project.save()
+        rejected = synchonize_project(project.serial)
+        if rejected:
+            raise Exception(_(astakos_messages.QH_SYNC_ERROR))
+    else:
+        project.last_application_synced = app
+        project.save()
+        sender, recipients, subject, message
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [project.owner.email],
+            _('Project application has been approved on %s alpha2 testing' % SITENAME),
+            _('Your application request %(serial)s has been apporved.')
+        )
+        notification.send()
+
+
+def list_projects(filter_property=None):
+    if filter_property:
+        return filter_queryset_by_property(
+            Project.objects.all(),
+            filter_property
+        )
+    return Project.objects.all()
+
+def add_project_member(serial, user_id, request_user):
+    project = _lookup_object(Project, serial=serial)
+    user = _lookup_object(AstakosUser, id=user_id)
+    if not project.owner == request_user:
+        raise Exception(_(astakos_messages.NOT_PROJECT_OWNER))
+    
+    if not project.is_alive:
+        raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+    if len(project.members) + 1 > project.limit_on_members_number:
+        raise Exception(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
+    m = self._lookup_object(ProjectMembership, person=user, project=project)
+    if m.is_accepted:
+        return
+    m.is_accepted = True
+    m.decision_date = datetime.now()
+    m.save()
+    notification = build_notification(
+        settings.SERVER_EMAIL,
+        [user.email],
+        _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__, 
+        _('Your membership on project %(name)s has been accepted.') % project.definition.__dict__,
+    )
+    notification.send()
+
+def remove_project_member(serial, user_id, request_user):
+    project = _lookup_object(Project, serial=serial)
+    if not project.is_alive:
+        raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+    if not project.owner == request_user:
+        raise Exception(_(astakos_messages.NOT_PROJECT_OWNER))
+    user = self.lookup_user(user_id)
+    m = _lookup_object(ProjectMembership, person=user, project=project)
+    if not m.is_accepted:
+        return
+    m.is_accepted = False
+    m.decision_date = datetime.now()
+    m.save()
+    notification = build_notification(
+        settings.SERVER_EMAIL,
+        [user.email],
+        _('Your membership on project %(name)s has been removed.') % project.definition.__dict__,
+        _('Your membership on project %(name)s has been removed.') % project.definition.__dict__
+    )
+    notification.send()    
+
+def suspend_project(serial):
+    project = _lookup_object(Project, serial=serial)
+    project.suspend()
+    notification = build_notification(
+        settings.SERVER_EMAIL,
+        [project.owner.email],
+        _('Project %(name)s has been suspended.') %  project.definition.__dict__,
+        _('Project %(name)s has been suspended.') %  project.definition.__dict__
+    )
+    notification.send()
+
+def terminate_project(serial):
+    project = _lookup_object(Project, serial=serial)
+    project.termination()
+    notification = build_notification(
+        settings.SERVER_EMAIL,
+        [project.owner.email],
+        _('Project %(name)s has been terminated.') %  project.definition.__dict__,
+        _('Project %(name)s has been terminated.') %  project.definition.__dict__
+    )
+    notification.send()
+
+def synchonize_project(serial):
+    project = _lookup_object(Project, serial=serial)
+    if project.app != project.last_application_synced:
+        return project.sync()
+     
 def create_astakos_user(u):
     try:
         AstakosUser.objects.get(user_ptr=u.pk)

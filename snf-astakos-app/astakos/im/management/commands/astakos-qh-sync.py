@@ -31,42 +31,22 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+from django.core.management.base import NoArgsCommand, CommandError
 
-from django.core.management.base import NoArgsCommand
+from astakos.im.models import AstakosUser, Resource
+from astakos.im.endpoints.qh import register_users, register_resources
 
-from astakos.im.models import Resource
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Command(NoArgsCommand):
-    help = "List resources"
-
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    help = "Send user information and resource quota in the Quotaholder"
 
     def handle_noargs(self, **options):
-        resources = Resource.objects.select_related().all()
-
-        labels = ('id', 'service', 'name')
-        columns = (3, 40, 40)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for r in resources:
-            fields = (str(r.id), r.service.name, r.name)
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+        try:
+            register_resources(Resource.objects.all())
+            register_users(AstakosUser.objects.all())
+        except BaseException, e:
+            logger.exception(e)
+            raise CommandError("Syncing failed.")

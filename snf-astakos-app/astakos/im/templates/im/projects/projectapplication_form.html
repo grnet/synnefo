@@ -1,0 +1,102 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+{% block headjs %}
+	{{ block.super }}	 
+	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
+{% endblock %}	
+{% block page.body %}
+<form action="#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
+
+    <fieldset class="with-info" id="top">
+    	<legend>
+    		1. CREATE GROUP
+			<span class="info"> 
+		    	<em>more info</em>
+		    	<span>Fill in the required fields to create a group. Group details will be visible to the users of the group.</span>
+	    	</span>    		
+    	</legend>
+        
+        {% include "im/form_render.html" %}
+
+    </fieldset>     
+    
+    <fieldset id="icons">
+    	<legend>
+    		2. ADD RESOURCES
+    		<span class="info"> 
+		    	<em>more info</em>
+		    	<span>You need to specify at least one resource</span>
+	    	</span>    
+    	</legend>
+    	<ul class="clearfix">
+            {% for g, group_info in resource_catalog.groups.items %}  
+            	{% if g %}
+	    		<li>
+	    			<a href="#{{ g }}" id="{{'group_'|add:g}}"><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
+	    			<input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}"  id="proxy_{{ 'id_is_selected_'|add:g }}">
+	    			<p class="msg">{{ group_info.help_text }}</p>
+	    		</li>
+	    		{% endif %}
+            {% endfor %}
+    	</ul>
+    	
+    </fieldset>
+   
+    <div class="visible">
+    	
+    </div>
+    <div class="not-visible">
+    	{% for gname, resources in resource_catalog.get_groups_resources %}
+	    	<div class="group {{'group_'|add:gname}}" id="{{ gname }}">
+	    		<a href="#icons" class="delete">X remove resource</a>	
+	    		{% for rname, rdata in resources.items %}
+	    		<fieldset class="quota">
+			    	
+			    	<legend>
+			    		{% if rdata.is_abbreviation %}
+			    			{{ rdata.verbose_name|upper }}
+			    		{% else %}
+			    			{{ rdata.verbose_name|capfirst }}
+			    		{% endif %}
+			    		<span class="info"> 
+					    	<em>more info</em>
+					    	<span>{{ rdata.help_text }}</span>
+				    	</span>  
+			    	</legend>
+			    	<div class="form-row">
+			    		<p class="clearfix">
+			    			<label for="{{'id_'|add:rname|add:'_uplimit'}}_proxy" >
+								Max {% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if not rdata.unit %}s {% endif  %} per user
+							</label>
+			    			<input 	type="text" 
+			       						id="{{'id_'|add:rname|add:'_uplimit'}}_proxy" 
+			       						name="{{rname|add:'_uplimit'}}_proxy" 
+			       						placeholder="{{ rdata.placeholder}} " 
+			       						{% if rdata.unit == 'bytes' %} 
+										 	class="dehumanize"
+										{% endif  %}
+			       						/> 
+			    			<span class="extra-img">&nbsp;</span>
+			         		<span class="info"><em>more info</em><span>Leave this field blank if you don't want to specify this resource</span></span>
+			         		<p class="error-msg">Invalid format</p>
+			    		</p>
+			    		<p class="msg"></p>
+			    	</div>
+				</fieldset>	
+				{% endfor %}
+	    	</div>
+	    	 
+	    {% endfor %}
+    </div>
+    <div class="form-row submit">
+   		<input type="submit" value="CONTINUE" class="submit altcol" autocomplete="off">
+	</div>  
+	<input type="hidden" name="user"  id="id_user" value="{{user.id}}">   
+</form>
+	 
+<script>
+	
+</script>	 
+ 
+{% endblock %}

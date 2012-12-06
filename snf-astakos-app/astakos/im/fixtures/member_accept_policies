@@ -1,0 +1,26 @@
+[
+    {
+        "model": "im.memberacceptpolicy",
+        "pk": 1,
+        "fields": {
+            "policy": "auto_accept",
+            "description": "new join requests are automatically accepted by the system"
+        }
+    },
+    {
+        "model": "im.memberacceptpolicy",
+        "pk": 2,
+        "fields": {
+            "policy": "owner_accepts",
+            "description": "new join requests must be accepted by the owner of the project"
+        }
+    },
+    {
+        "model": "im.memberacceptpolicy",
+        "pk": 3,
+        "fields": {
+            "policy": "closed",
+            "description": "no new members can join the project, even if old ones leave"
+        }
+    }
+]

@@ -35,9 +35,11 @@ from random import random
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import (UserCreationForm, AuthenticationForm,
-                                       PasswordResetForm, PasswordChangeForm,
-                                       SetPasswordForm)
+from django.contrib.auth.forms import (
+    UserCreationForm, AuthenticationForm,
+    PasswordResetForm, PasswordChangeForm,
+    SetPasswordForm
+)
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
@@ -50,10 +52,12 @@ from django.forms.models import fields_for_model
 from django.db import transaction
 from django.utils.encoding import smart_unicode
 from django.core import validators
+from django.contrib.auth.models import AnonymousUser
 
 from astakos.im.models import (
     AstakosUser, EmailChange, AstakosGroup, Invitation, GroupKind,
-    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR
+    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
+    ProjectDefinition, ProjectApplication, create_application
 )
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
@@ -902,3 +906,104 @@ class ExtendedSetPasswordForm(SetPasswordForm):
         except BaseException, e:
             logger.exception(e)
         return super(ExtendedSetPasswordForm, self).save(commit=commit)
+
+
+class ProjectApplicationForm(forms.ModelForm):
+    name = forms.CharField(
+        validators=[validators.RegexValidator(
+            DOMAIN_VALUE_REGEX,
+            _(astakos_messages.DOMAIN_VALUE_ERR),
+            'invalid'
+        )],
+        widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
+        help_text="Name should be in the form of dns"
+    )
+    comments = forms.CharField(widget=forms.Textarea, required=False)
+    
+    class Meta:
+        model = ProjectDefinition
+        exclude = ('resource_grants')
+    
+    def __init__(self, *args, **kwargs):
+        #update QueryDict
+        args = list(args)
+        qd = args.pop(0).copy()
+        members_unlimited = qd.pop('members_unlimited', False)
+        members_uplimit = qd.pop('members_uplimit', None)
+
+        #substitue QueryDict
+        args.insert(0, qd)
+
+        super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
+        
+        self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
+                                'issue_date', 'expiration_date',
+                                'moderation_enabled', 'max_participants']
+        def add_fields((k, v)):
+            k = k.partition('_proxy')[0]
+            self.fields[k] = forms.IntegerField(
+                required=False,
+                widget=forms.HiddenInput(),
+                min_value=1
+            )
+        map(add_fields,
+            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
+        )
+
+        def add_fields((k, v)):
+            self.fields[k] = forms.BooleanField(
+                required=False,
+                #widget=forms.HiddenInput()
+            )
+        map(add_fields,
+            ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
+        )
+
+    def clean(self):
+        userid = self.data.get('user', None)[0]
+        self.user = None
+        if userid:
+            try:
+                self.user = AstakosUser.objects.get(id=userid)
+            except AstakosUser.DoesNotExist:
+                pass
+        if not self.user:
+            raise forms.ValidationError(_(astakos_messages.NO_APPLICANT))
+        super(ProjectApplicationForm, self).clean()
+        return self.cleaned_data
+    
+    def resource_policies(self, clean=True):
+        if clean:
+            self.clean()
+        policies = []
+        append = policies.append
+        for name, uplimit in self.cleaned_data.iteritems():
+            subs = name.split('_uplimit')
+            if len(subs) == 2:
+                prefix, suffix = subs
+                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
+                resource = Resource.objects.get(service__name=s, name=r)
+
+                # keep only resource limits for selected resource groups
+                if self.cleaned_data.get(
+                    'is_selected_%s' % resource.group, False
+                ):
+                    append(dict(service=s, resource=r, uplimit=uplimit))
+        return policies
+
+    def save(self, commit=True):
+        definition = super(ProjectApplicationForm, self).save(commit=commit)
+        definition.resource_policies=self.resource_policies(clean=False)
+        applicant = self.user
+        comments = self.cleaned_data.pop('comments', None)
+        try:
+            precursor_application = self.instance.projectapplication
+        except:
+            precursor_application = None
+        return create_application(
+            definition,
+            applicant,
+            comments,
+            precursor_application,
+            commit
+        )

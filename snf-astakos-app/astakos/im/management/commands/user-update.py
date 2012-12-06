@@ -58,10 +58,6 @@ class Command(BaseCommand):
                     dest='password',
                     metavar='PASSWORD',
                     help="Set user's password"),
-        make_option('--provider',
-                    dest='provider',
-                    metavar='PROVIDER',
-                    help="Set user's provider"),
         make_option('--renew-token',
                     action='store_true',
                     dest='renew_token',
@@ -188,10 +184,6 @@ class Command(BaseCommand):
         password = options.get('password')
         if password is not None:
             user.set_password(password)
-
-        provider = options.get('provider')
-        if provider is not None:
-            user.provider = provider
 
         password = None
         if options['renew_password']:

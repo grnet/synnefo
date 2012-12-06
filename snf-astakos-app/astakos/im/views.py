@@ -53,8 +53,9 @@ from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
-from django.views.generic.create_update import (delete_object,
-                                                get_model_and_form_class)
+from django.views.generic.create_update import (
+    create_object, delete_object, get_model_and_form_class
+)
 from django.views.generic.list_detail import object_list
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -63,29 +64,36 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
-                               EmailChange, GroupKind, Membership,
-                               RESOURCE_SEPARATOR, AstakosUserAuthProvider)
+from astakos.im.models import (
+    AstakosUser, ApprovalTerms, AstakosGroup,
+    EmailChange, GroupKind, Membership,
+    RESOURCE_SEPARATOR, AstakosUserAuthProvider,
+    ProjectApplication
+)
 from astakos.im.util import get_context, prepare_response, get_query, restrict_next
-from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
-                              FeedbackForm, SignApprovalTermsForm,
-                              EmailChangeForm,
-                              AstakosGroupCreationForm, AstakosGroupSearchForm,
-                              AstakosGroupUpdateForm, AddGroupMembersForm,
-                              MembersSortForm, AstakosGroupSortForm,
-                              TimelineForm, PickResourceForm,
-                              AstakosGroupCreationSummaryForm)
+from astakos.im.forms import (
+    LoginForm, InvitationForm, ProfileForm,
+    FeedbackForm, SignApprovalTermsForm,
+    EmailChangeForm,
+    AstakosGroupCreationForm, AstakosGroupSearchForm,
+    AstakosGroupUpdateForm, AddGroupMembersForm,
+    MembersSortForm, AstakosGroupSortForm,
+    TimelineForm, PickResourceForm,
+    AstakosGroupCreationSummaryForm,
+    ProjectApplicationForm
+)
 from astakos.im.functions import (send_feedback, SendMailError,
                                   logout as auth_logout,
                                   activate as activate_func,
                                   send_activation as send_activation_func,
-                                  send_group_creation_notification,
+#                                   send_group_creation_notification,
                                   SendNotificationError)
 from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (COOKIE_DOMAIN, LOGOUT_NEXT,
                                  LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL)
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
+# from .generic_views import create_object
 
 import astakos.im.messages as astakos_messages
 from astakos.im import settings
@@ -802,7 +810,6 @@ class ResourcePresentation():
 @signed_terms_required
 @login_required
 def group_add(request, kind_name='default'):
-
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
@@ -863,10 +870,11 @@ def group_add(request, kind_name='default'):
     return HttpResponse(t.render(c))
 
 
-#@require_http_methods(["POST"])
+#@require_hsttp_methods(["POST"])
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
+@transaction.commit_manually
 def group_add_complete(request):
     model = AstakosGroup
     form = AstakosGroupCreationSummaryForm(request.POST)
@@ -876,10 +884,6 @@ def group_add_complete(request):
         result = callpoint.create_groups((d,)).next()
         if result.is_success:
             new_object = result.data[0]
-            msg = _(astakos_messages.OBJECT_CREATED) %\
-                {"verbose_name": model._meta.verbose_name}
-            messages.success(request, msg, fail_silently=True)
-
             # send notification
             try:
                 send_group_creation_notification(
@@ -892,8 +896,13 @@ def group_add_complete(request):
                 )
             except SendNotificationError, e:
                 messages.error(request, e, fail_silently=True)
-            post_save_redirect = '/im/group/%(id)s/'
-            return HttpResponseRedirect(post_save_redirect % new_object)
+                transaction.rollback()
+            else:
+                msg = _(astakos_messages.OBJECT_CREATED) %\
+                    {"verbose_name": model._meta.verbose_name}
+                message = _(astakos_messages.NOTIFICATION_SENT) % 'a project'
+                messages.success(request, msg, fail_silently=True)
+                transaction.commit()
         else:
             d = {"verbose_name": model._meta.verbose_name,
                  "reason":result.reason}
@@ -1389,35 +1398,35 @@ def group_create_list(request):
 #    return data
 
 
-#@require_http_methods(["GET"])
-@require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
-def timeline(request):
-#    data = {'entity':request.user.email}
-    timeline_body = ()
-    timeline_header = ()
-#    form = TimelineForm(data)
-    form = TimelineForm()
-    if request.method == 'POST':
-        data = request.POST
-        form = TimelineForm(data)
-        if form.is_valid():
-            data = form.cleaned_data
-            timeline_header = ('entity', 'resource',
-                               'event name', 'event date',
-                               'incremental cost', 'total cost')
-            timeline_body = timeline_charge(
-                data['entity'], data['resource'],
-                data['start_date'], data['end_date'],
-                data['details'], data['operation'])
-
-    return render_response(template='im/timeline.html',
-                           context_instance=get_context(request),
-                           form=form,
-                           timeline_header=timeline_header,
-                           timeline_body=timeline_body)
-    return data
+# #@require_http_methods(["GET"])
+# @require_http_methods(["POST", "GET"])
+# @signed_terms_required
+# @login_required
+# def timeline(request):
+# #    data = {'entity':request.user.email}
+#     timeline_body = ()
+#     timeline_header = ()
+# #    form = TimelineForm(data)
+#     form = TimelineForm()
+#     if request.method == 'POST':
+#         data = request.POST
+#         form = TimelineForm(data)
+#         if form.is_valid():
+#             data = form.cleaned_data
+#             timeline_header = ('entity', 'resource',
+#                                'event name', 'event date',
+#                                'incremental cost', 'total cost')
+#             timeline_body = timeline_charge(
+#                 data['entity'], data['resource'],
+#                 data['start_date'], data['end_date'],
+#                 data['details'], data['operation'])
+# 
+#     return render_response(template='im/timeline.html',
+#                            context_instance=get_context(request),
+#                            form=form,
+#                            timeline_header=timeline_header,
+#                            timeline_body=timeline_body)
+#     return data
 
 
 # TODO: action only on POST and user should confirm the removal
@@ -1441,4 +1450,83 @@ def how_it_works(request):
     return render_response(
         template='im/how_it_works.html',
         context_instance=get_context(request),)
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_add(request):
+    result = callpoint.list_resources()
+    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+    resource_catalog.update_from_result(result)
+
+    if not result.is_success:
+        messages.error(
+            request,
+            'Unable to retrieve system resources: %s' % result.reason
+    )
+    extra_context = {'resource_catalog':resource_catalog}
+    return create_object(request, template_name='im/projects/projectapplication_form.html',
+        extra_context=extra_context, post_save_redirect=request.path,
+        form_class=ProjectApplicationForm)
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+def project_application_list(request):
+    queryset = ProjectApplication.objects.all()
+    return object_list(
+        request,
+        queryset,
+        paginate_by=PAGINATE_BY_ALL,
+        page=request.GET.get('page') or 1,
+        template_name='im/projects/projectapplication_list.html')
+
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+def project_list(request):
+    pass
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_detail(request, serial):
+    pass
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_search(request):
+    pass
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+def project_all(request):
+    pass
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_join(request, serial):
+    pass
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_leave(request, serial):
+    pass
+
+@require_http_methods(["POST"])
+@signed_terms_required
+@login_required
+def project_approve_member(request, serial, user_id):
+    pass
+
+@require_http_methods(["POST"])
+@signed_terms_required
+@login_required
+def project_remove_member(request, serial, user_id):
+    pass
     

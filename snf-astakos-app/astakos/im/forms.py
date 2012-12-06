@@ -57,7 +57,7 @@ from django.contrib.auth.models import AnonymousUser
 from astakos.im.models import (
     AstakosUser, EmailChange, AstakosGroup, Invitation, GroupKind,
     Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
-    ProjectDefinition, ProjectApplication, create_application
+    ProjectDefinition, ProjectApplication, submit_application
 )
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
@@ -924,41 +924,7 @@ class ProjectApplicationForm(forms.ModelForm):
         model = ProjectDefinition
         exclude = ('resource_grants')
     
-    def __init__(self, *args, **kwargs):
-        #update QueryDict
-        args = list(args)
-        qd = args.pop(0).copy()
-        members_unlimited = qd.pop('members_unlimited', False)
-        members_uplimit = qd.pop('members_uplimit', None)
-
-        #substitue QueryDict
-        args.insert(0, qd)
-
-        super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-        
-        self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
-                                'issue_date', 'expiration_date',
-                                'moderation_enabled', 'max_participants']
-        def add_fields((k, v)):
-            k = k.partition('_proxy')[0]
-            self.fields[k] = forms.IntegerField(
-                required=False,
-                widget=forms.HiddenInput(),
-                min_value=1
-            )
-        map(add_fields,
-            ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
-        )
-
-        def add_fields((k, v)):
-            self.fields[k] = forms.BooleanField(
-                required=False,
-                #widget=forms.HiddenInput()
-            )
-        map(add_fields,
-            ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
-        )
-
+    
     def clean(self):
         userid = self.data.get('user', None)[0]
         self.user = None
@@ -972,12 +938,14 @@ class ProjectApplicationForm(forms.ModelForm):
         super(ProjectApplicationForm, self).clean()
         return self.cleaned_data
     
-    def resource_policies(self, clean=True):
-        if clean:
-            self.clean()
+    @property
+    def resource_policies(self):
         policies = []
         append = policies.append
-        for name, uplimit in self.cleaned_data.iteritems():
+        for name, value in self.data.iteritems():
+            if not value:
+                continue
+            uplimit = value[0]
             subs = name.split('_uplimit')
             if len(subs) == 2:
                 prefix, suffix = subs
@@ -985,22 +953,23 @@ class ProjectApplicationForm(forms.ModelForm):
                 resource = Resource.objects.get(service__name=s, name=r)
 
                 # keep only resource limits for selected resource groups
-                if self.cleaned_data.get(
-                    'is_selected_%s' % resource.group, False
-                ):
+#                 if self.data.get(
+#                     'is_selected_%s' % resource.group, False
+#                 ):
+                if uplimit:
                     append(dict(service=s, resource=r, uplimit=uplimit))
         return policies
 
     def save(self, commit=True):
         definition = super(ProjectApplicationForm, self).save(commit=commit)
-        definition.resource_policies=self.resource_policies(clean=False)
+        definition.resource_policies=self.resource_policies
         applicant = self.user
         comments = self.cleaned_data.pop('comments', None)
         try:
             precursor_application = self.instance.projectapplication
         except:
             precursor_application = None
-        return create_application(
+        return submit_application(
             definition,
             applicant,
             comments,

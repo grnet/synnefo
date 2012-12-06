@@ -56,7 +56,7 @@ from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
     create_object, delete_object, get_model_and_form_class
 )
-from django.views.generic.list_detail import object_list
+from django.views.generic.list_detail import object_list, object_detail
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.template.loader import render_to_string
@@ -82,15 +82,19 @@ from astakos.im.forms import (
     AstakosGroupCreationSummaryForm,
     ProjectApplicationForm
 )
-from astakos.im.functions import (send_feedback, SendMailError,
-                                  logout as auth_logout,
-                                  activate as activate_func,
-                                  send_activation as send_activation_func,
-#                                   send_group_creation_notification,
-                                  SendNotificationError)
+from astakos.im.functions import (
+    send_feedback, SendMailError,
+    logout as auth_logout,
+    activate as activate_func,
+    send_activation as send_activation_func,
+    send_group_creation_notification,
+    SendNotificationError)
 from astakos.im.endpoints.qh import timeline_charge
-from astakos.im.settings import (COOKIE_DOMAIN, LOGOUT_NEXT,
-                                 LOGGING_LEVEL, PAGINATE_BY, RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL)
+from astakos.im.settings import (
+    COOKIE_DOMAIN, LOGOUT_NEXT,
+    LOGGING_LEVEL, PAGINATE_BY,
+    RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL
+)
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 # from .generic_views import create_object
@@ -1466,33 +1470,44 @@ def project_add(request):
     )
     extra_context = {'resource_catalog':resource_catalog}
     return create_object(request, template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect=request.path,
+        extra_context=extra_context, post_save_redirect='/im/project/list/',
         form_class=ProjectApplicationForm)
 
 @require_http_methods(["GET"])
 @signed_terms_required
 @login_required
-def project_application_list(request):
-    queryset = ProjectApplication.objects.all()
+def project_list(request):
     return object_list(
         request,
-        queryset,
+        Project.objects.all(),
         paginate_by=PAGINATE_BY_ALL,
         page=request.GET.get('page') or 1,
-        template_name='im/projects/projectapplication_list.html')
+        template_name='im/projects/project_list.html')
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_list(request):
-    pass
+def project_application_detail(request, serial):
+    return object_detail(
+        request,
+        queryset=ProjectApplication.objects.select_related(), 
+        slug=serial,
+        slug_field='serial',
+        template_name='im/projects/projectapplication_detail.html'
+    )
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def project_detail(request, serial):
-    pass
+    return object_detail(
+        request,
+        queryset=Project.objects.select_related(), 
+        slug=serial,
+        slug_field='serial',
+        template_name='im/projects/project_detail.html'
+    )
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required

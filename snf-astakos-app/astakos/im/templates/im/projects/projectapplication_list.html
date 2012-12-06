@@ -7,7 +7,9 @@
     <div class="projects">
 	    <h2>PROJECTS</h2>
     {% with page_obj.object_list as object_list %}
-        {{object_list}}
+        {% for o in object_list%}
+            {{o.definition.name}} - {{o.issue_date}}
+        {% endfor %}
     {% endwith %}
     </div>
 </div>  

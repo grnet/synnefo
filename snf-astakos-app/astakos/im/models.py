@@ -179,7 +179,6 @@ class AstakosGroup(Group):
     expiration_date = models.DateTimeField(
         _('Expiration date'),
         null=True
-         null=True
     )
     moderation_enabled = models.BooleanField(
         _('Moderated membership?'),
@@ -1048,18 +1047,18 @@ class ProjectDefinition(models.Model):
         """Raises ObjectDoesNotExist, IntegrityError"""
         resource = Resource.objects.get(service__name=service, name=resource)
         if update:
-            ResourceGrant.objects.update_or_create(
-                project=self,
+            ProjectResourceGrant.objects.update_or_create(
+                project_definition=self,
                 resource=resource,
-                defaults={'uplimit': uplimit}
+                defaults={'member_limit': uplimit}
             )
         else:
-            q = self.resource_grants_set
-            q.create(resource=resource, uplimit=uplimit)
+            q = self.projectresourcegrant_set
+            q.create(resource=resource, member_limit=uplimit)
 
     @property
     def resource_policies(self):
-        return self.resource_grants_set.select_related().all()
+        return self.projectresourcegrant_set.all()
 
     @resource_policies.setter
     def resource_policies(self, policies):
@@ -1069,6 +1068,9 @@ class ProjectDefinition(models.Model):
             uplimit = p.get('uplimit', 0)
             update = p.get('update', True)
             self.add_resource_policy(service, resource, uplimit, update)
+    
+    def get_absolute_url(self):
+        return reverse('project_application_detail', args=(self.serial,))
 
 
 class ProjectResourceGrant(models.Model):
@@ -1249,20 +1251,10 @@ def _update_object(model, id, save=True, **kwargs):
         o.save()
     return o
 
-def submit_application(**kwargs):
-    app = self._create_object(ProjectApplication, **kwargs)
-    notification = build_notification(
-        settings.SERVER_EMAIL,
-        [settings.ADMINS],
-        _(GROUP_CREATION_SUBJECT) % {'group':app.definition.name},
-        _('An new project application identified by %(serial)s has been submitted.') % app.serial
-    )
-    notification.send()
-
 def list_applications():
     return ProjectAppication.objects.all()
 
-def create_application(definition, applicant, comments, precursor_application=None, commit=True):
+def submit_application(definition, applicant, comments, precursor_application=None, commit=True):
     if precursor_application:
         application = precursor_application.copy()
         application.precursor_application = precursor_application
@@ -1275,6 +1267,13 @@ def create_application(definition, applicant, comments, precursor_application=No
     if commit:
         definition.save()
         application.save()
+        notification = build_notification(
+        settings.SERVER_EMAIL,
+        [settings.ADMINS],
+        _(GROUP_CREATION_SUBJECT) % {'group':app.definition.name},
+        _('An new project application identified by %(serial)s has been submitted.') % app.serial
+    )
+    notification.send()
     return application
     
 def approve_application(serial):

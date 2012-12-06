@@ -168,6 +168,7 @@ def get_servers_from_db():
 def get_instances_from_ganeti():
     ganeti_instances = get_ganeti_instances(bulk=True)
     snf_instances = {}
+    snf_nics = {}
 
     prefix = settings.BACKEND_PREFIX_ID
     for i in ganeti_instances:
@@ -185,8 +186,9 @@ def get_instances_from_ganeti():
                 continue
 
             snf_instances[id] = i['oper_state']
+            snf_nics[id] = get_nics_from_instance(i)
 
-    return snf_instances
+    return snf_instances, snf_nics
 
 #
 # Nics
@@ -212,18 +214,22 @@ def get_nics_from_ganeti():
                     i['name'])
                 continue
 
-            ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
-            macs = zip(itertools.repeat('mac'), i['nic.macs'])
-            networks = zip(itertools.repeat('network'), i['nic.networks'])
-            # modes = zip(itertools.repeat('mode'), i['nic.modes'])
-            # links = zip(itertools.repeat('link'), i['nic.links'])
-            # nics = zip(ips,macs,modes,networks,links)
-            nics = zip(ips, macs, networks)
-            nics = map(lambda x:dict(x), nics)
-            nics = dict(enumerate(nics))
-            snf_instances_nics[id] = nics
+            snf_instances_nics[id] = get_nics_from_instance(i)
 
     return snf_instances_nics
+
+
+def get_nics_from_instance(i):
+    ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
+    macs = zip(itertools.repeat('mac'), i['nic.macs'])
+    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    # modes = zip(itertools.repeat('mode'), i['nic.modes'])
+    # links = zip(itertools.repeat('link'), i['nic.links'])
+    # nics = zip(ips,macs,modes,networks,links)
+    nics = zip(ips, macs, networks)
+    nics = map(lambda x: dict(x), nics)
+    nics = dict(enumerate(nics))
+    return nics
 
 
 def get_nics_from_db():

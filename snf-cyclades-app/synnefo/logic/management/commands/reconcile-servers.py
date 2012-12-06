@@ -113,10 +113,10 @@ class Command(BaseCommand):
         self._process_args(options)
 
         D = reconciliation.get_servers_from_db()
-        G = reconciliation.get_instances_from_ganeti()
+        G, GNics = reconciliation.get_instances_from_ganeti()
 
         DBNics = reconciliation.get_nics_from_db()
-        GNics = reconciliation.get_nics_from_ganeti()
+
         #
         # Detect problems
         #

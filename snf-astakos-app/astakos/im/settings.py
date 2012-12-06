@@ -220,7 +220,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'help_text':'This is the space on Pithos for storing files and VM Images. ',
                 'help_text_input_each':'This is the total amount of space on Pithos that will be granted to each user of this Project ',
                 'is_abbreviation':False,
-                'report_desc':'Pithos+ Diskspace',
+                'report_desc':'Storage Space',
                 'placeholder':'eg. 10GB',
                 'verbose_name':'Storage Space',
             },
@@ -236,7 +236,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'help_text':'This is the System Disk that the VMs have that run the OS ',
                 'help_text_input_each':"This is the total amount of System Disk that will be granted to each user of this Project (this refers to the total System Disk of all VMs, not each VM's System Disk)  ",
                 'is_abbreviation':False,
-                'report_desc':'Disk',
+                'report_desc':'System Disk',
                 'placeholder':'eg. 5GB, 2GB etc',
                 'verbose_name':'System Disk'
             },
@@ -260,7 +260,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'help_text':'These are the Private Networks one can create on the Cyclades UI. ',
                 'help_text_input_each':'This is the total number of Private Networks that will be granted to each user of this Project ',
                 'is_abbreviation':False,
-                'report_desc':'Network',
+                'report_desc':'Private Networks',
                 'placeholder':'eg. 1',
                 'verbose_name':'private network'
             }

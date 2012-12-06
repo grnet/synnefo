@@ -398,8 +398,8 @@ form.quotas-form  span.info span				{ width:285px;  }
 .quotas-form input[type="submit"]:focus			{ border-color: #B3B3B3}
 .quotas-form input[type="submit"]:focus:hover	{ border-color: #55B577}
 .quotas-form fieldset ul						{ padding:0; margin:0 0 1em; position:relative; }
-.quotas-form fieldset ul li						{ list-style:none outside none; float:left; padding:0 0 0 60px; margin:0; }
-.quotas-form fieldset ul li:first-child			{ padding-left:0; }
+.quotas-form fieldset ul li						{ list-style:none outside none; float:left; margin:0 0 0 60px; padding:0; }
+.quotas-form fieldset ul li:first-child			{ margin-left:0; }
 .quotas-form fieldset ul li a					{ display:block; width:82px; height:82px; overflow:hidden; }
 .quotas-form fieldset ul li a:hover	img			{ margin-top:-84px; }
 .quotas-form fieldset ul li a.selected img		{ margin-top:-168px; }
@@ -489,7 +489,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .content .how-it-works a.submit:hover			{ background:#55B577 }
 .content .how-it-works a.submit:focus			{ border-color: #B3B3B3}
 .content .how-it-works a.submit:focus:hover		{ border-color: #55B577}
-.content .how-it-works .map						{ display:block; width:232px; height:261px; position:absolute; }
+.content .how-it-works .map						{ display:block; width:232px; height:261px; position:absolute; text-decoration:none;}
 .content .how-it-works .link-13					{ top:10px; right:14px; }
 .content .how-it-works .link-21					{ top:273px; left:14px; }
 .content .how-it-works .link-22					{ top:273px; left:251px; }

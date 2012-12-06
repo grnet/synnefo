@@ -7,17 +7,17 @@
 	<div class="stats clearfix">
 		<ul>
 			{% for rname, rdata in resource_catalog.resources.items %}
-		 		<li class="clearfix  {{ rdata.load_class }} {{ rdata.verbose_name}}">
+		 		<li class="clearfix  {{ rdata.load_class }} {{ rname|get_value_after_dot }}">
 		 			<div class="img-wrap">&nbsp;</div>
 		 			<div class="info">
 						<h3>{{ rdata.report_desc }}</h3>
 						<p>
-						{{ rdata.ratio|floatformat }}% Used<br>
-						You are using 
+						 
+						 
 						{% if rdata.unit == 'bytes' %}
-							{{ rdata.currValue|sizeof_fmt  }} out of your {{ rdata.maxValue|sizeof_fmt }}
+							{{ rdata.currValue|sizeof_fmt  }} out of  {{ rdata.maxValue|sizeof_fmt }}
 						{% else %}
-							{{ rdata.currValue }} {{ rdata.unit }} out of your {{ rdata.maxValue }} {{ rdata.unit }}
+							{{ rdata.currValue }}  out of  {{ rdata.maxValue }} {{ rdata.unit }}
 						{% endif %}		
 						{% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
 						</p>

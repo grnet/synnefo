@@ -73,7 +73,7 @@ Level section):
  - assigning one physical VLAN per network
  - assigning one MAC prefix per network, so that every NIC attached to this
    network will have this prefix. Isolation is then achieved by filtering
-   rules (via `ebtables`) based on a specific mask (ff:ff:ff:00:00:00, see Node
+   rules (via `ebtables`) based on a specific mask (ff:ff:f0:00:00:00, see Node
    Level section for more details).
 
 Having this in mind and in order to prevent assignment of duplicate VLAN/MAC
@@ -94,16 +94,23 @@ Ganeti Level section):
 
 Existing network flavors are the following:
 
- - ``IP_LESS_ROUTED``: { routed, snf_public, aa:00:00, ip-less-routed }
- - ``MAC_FILTERED``: { bridged, br0, pool, private-filtered }
- - ``PHYSICAL_VLAN``: { bridged, pool, aa:00:00, physical-vlan }
- - ``CUSTOM``: { bridged, br0, aa:00:00, None}
+==============   =======   ===============================   ======================  ==================
+Flavor Name      Mode      Link                              MAC prefix              Tags
+==============   =======   ===============================   ======================  ==================
+IP_LESS_ROUTED   routed    ``DEFAULT_ROUTING_TABLE``         ``DEFAULT_MAC_PREFIX``  'ip-less-routed'
+MAC_FILTERED     bridged   ``DEFAULT_MAC_FILTERED_BRIDGE``   'pool'                  'private'filtered'
+PHYSICAL_VLAN    bridged   'pool'                            ``DEFAULT_MAC_PREFIX``  'physical-vlan'
+CUSTOM           bridged   ``DEFAULT_BRIDGE``                ``DEFAULT_MAC_PREFIX``
+==============   =======   ===============================   ======================  ==================
 
-The end-user is allowed to create only networks of flavor ``MAC_FILTERED`` and
-``PHYSICAL_VLAN``. The administrator is able to create any of the above flavors
+``DEFAULT_ROUTING_TABLE``, ``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``, ``DEFAULT_MAC_FILTERED_BRIDGE``
+are all configurable settings in ``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used
+to denote that a link or MAC prefix will be allocated from the corresponging Pool.
+
+The administrator is able to create any of the above flavors
 and override their default values by explicitly passing mode, link, etc.. using
 the `snf-manage network-create` command. Currently only ``MAC_FILTERED`` and
-``PHYSICAL_VLAN`` can use existing pools and cannot be overriden. 
+``PHYSICAL_VLAN`` can use existing pools and cannot be overriden.
 
 Network @ Ganeti level
 ----------------------

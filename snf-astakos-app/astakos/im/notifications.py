@@ -36,12 +36,13 @@ import socket
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils.translation import ugettext as _
 
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
 
-def build_notification():
+def build_notification(sender, recipients, subject, message):
     return EmailNotification(sender, recipients, subject, message)
 
 class Notification(object):
@@ -58,12 +59,13 @@ class EmailNotification(Notification):
     def send(self):
         try:
             send_mail(
-                subject,
-                message,
-                sender,
-                recipients
+                self.subject,
+                self.message,
+                self.sender,
+                self.recipients
             )
-        except:
+        except BaseException, e:
+            logger.exception(e)
             raise SendNotificationError()
 
 class SendMailError(Exception):

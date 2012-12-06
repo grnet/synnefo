@@ -8,20 +8,13 @@
 	    <h2>PROJECTS</h2>
 	    {% if form %}
 		    <p>Search for existing Projects and join the ones you like. Please search by Project name. </p>
-		    <form action="{% url group_search %}" method="post" class="withlabels signup submit-inline">{% csrf_token %}
+		    <form action="{% url project_search %}" method="post" class="withlabels signup submit-inline">{% csrf_token %}
 		            {% include "im/form_render.html" %}
 		        <div class="form-row submit">
 		                <input type="submit" class="submit altcol" value="SEARCH" />
-		                {% if q %}<a href="{% url group_all %}">clear</a>{% endif %}
+		                {% if q %}<a href="{% url project_all %}">clear</a>{% endif %}
 		        </div>
 		    </form>
-		    
-		    <!--<form action="{% url group_all %}" method="post" class="link-like alone">{% csrf_token %}
-		        <div class="form-row submit">
-		            <input type="submit" class="submit altcol" value="clear" />
-		        </div>
-		    </form>
-		   <-->
 	    {% else %}
     	<div class="two-cols clearfix">
 			<div class="rt">
@@ -41,20 +34,19 @@
 					<div>
 						<div class="wrap">
 
-							<p class="centered"><a href="{% url group_add 'project' %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
+							<p class="centered"><a href="{% url project_add %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
 							<p class="txt">Create a new Project in seconds. Specify how many members it will have, which and how many virtual resources it will provide to its members. Describe its purpose. Submit your request and if accepted, you and your colleagues are ready to deploy!<br><br> </p>
-							<p><a href="{% url group_add 'project' %}">create a project ></a></p>
-							<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
+							<p><a href="{% url project_add %}">create a project ></a></p>
 						</div>
 					</div>
 				</li>
 				<li class="join">
 					<div>
 						<div class="wrap">
-							<p class="centered"><a href="{% url group_all %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+							<p class="centered"><a href="{% url project_all %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
 							<p class="txt">Become a member of an existing Project and instantly gain access to the resources it has to offer you. Search for open Projects and join for free. Contact the closed Projects administrators, if you think they will accept you. In two words: try to Join now. </p>
 							
-							<p><a href="{% url group_all %}">join a project ></a></p>
+							<p><a href="{% url project_all %}">join a project ></a></p>
 						</div>
 					</div>
 				</li>
@@ -69,11 +61,12 @@
         	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
 					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
-					    <option value="groupname">Sort by Name</option>
+					    <option value="definition__name">Sort by Name</option>
 			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
-			            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
-			            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> 
-			            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Sort by Moderation</option> 
+			            <option value="definition__start_date" {% if sorting == 'definition__start_date' %}selected{% endif %}>Sort by Start Date</option>
+			            <option value="definition__end_date" {% if sorting == 'definition__end_date' %}selected{% endif %}>Sort by End Date</option>
+			            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> --> 
+			            <option value="definition__member_accept_policy" {% if sorting == 'definition__member_accept_policy' %}selected{% endif %}>Sort by Moderation</option> 
 					</select>
 					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
@@ -87,6 +80,7 @@
                     <th>Name</th>
                     <!--<th>Type</th>-->
                     <th>Issued</th>
+                    <th>Starts</th>
                     <th>Expires</th>
                      
                     <th>Enrolled</th>
@@ -100,22 +94,25 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for o in object_list %}
+                  {% for o in object_list %} 
+                  {% with o.project.members as members %}
+                  {% with o.project.approved_members as approved_members%}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
-	                    <td style="width:22%"><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|truncatename}}</a></td>
+	                    <td style="width:22%"><a href="{% url project_detail o.serial %}" title="visit group page">{{o.definition.name|truncatename}}</a></td>
 	                    <!--td>{{o.kindname|capfirst}}</td-->
 	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
-	                    <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
-	                    <td style="width:11%">{{o.approved_members_num}}</td>
+	                    <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
+	                    <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
+	                    <td style="width:11%">{{approved_members|length}}</td>
 	                    
 	                    <td style="width:17%">
 	                    	<div class="msg-wrap">
 	                    		 
-		                    {% if o.is_member %}
-		                        {% if o.membership_approval_date %}
+		                    {% if user in members %}
+		                        {% if user in approved_members %}
 		    
 		                        
-			                       	{% if not o.is_owner %}
+			                       	{% if not user == o.owner %}
 			                            Registered
 			                             
 			                        {% else %}
@@ -137,19 +134,19 @@
 	                    <td style="width:15%">
 	                    	<div class="msg-wrap">
 	                    		 
-		                    {% if o.is_member %}
-		                        {% if o.membership_approval_date %}
+		                    {% if user in members %}
+		                        {% if user in approved_members %}
 		    
 		                        
-			                       	{% if not o.is_owner %}
+			                       	{% if not user == o.owner %}
 			                             
-			                            <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+			                            <form action="{% url project_leave o.serial %}" method="post" class="link-like">{% csrf_token %}
 			                                 <input type="submit"  value="x leave group" class="leave"/>
 			                            </form>
 			                            <div class="dialog">
 					                		Are you sure you what to leave this group?<br>
-					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
-					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+					                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
+					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
@@ -164,13 +161,13 @@
 		                        {% endif %}
 		                    {% else %}
 		                             
-		                                <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
+		                                <form action="{% url project_join o.serial %}" method="post" class="link-like">{% csrf_token %}
 		                                    <input type="submit"   value="+ join group" class="join_group join" />
 		                                </form>
 		                                <div class="dialog">
 					                		Are you sure you what to join this group?<br>
-					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
-					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+					                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
+					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
@@ -185,14 +182,16 @@
                     <td colspan="7" class="info-td">
                         <div>
                             <p>{{o.desc}}</p>
-                            <p>{% if o.homepage%}
-                                Group's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.homepage }}</a>
+                            <p>{% if o.definition.homepage%}
+                                Project's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.definition.homepage }}</a>
                             
                             {% endif %}
                             </p>
                         </div>	
                     </td>
                   </tr>
+                  {% endwith %}
+                  {% endwith %}
                   {% endfor %}
                 </tbody>
             </table>
@@ -221,16 +220,19 @@
             {% with page|concat:sorting as args %}
             {% with q|paginate:args as page_obj %}
         	 	{% if page_obj.object_list  %}
+        	 	{% with o.project.members as members %}
+                {% with o.project.approved_members as approved_members %}  
 	      	    <div>
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
 						    <select name="sorting"  class="dropkicked"  tabindex="1">
-							    <option value="groupname">Sort by Name</option>
+							    <option value="definition__name">Sort by Name</option>
 					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			
-					            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
-					            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
-					            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option>
-					            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Sort by Moderation</option>		
+					            <option value="definition__start_date" {% if sorting == 'definition__start_date' %}selected{% endif %}>Sort by Start Date</option>
+			                    <option value="definition__issue_date" {% if sorting == 'definition__issue_date' %}selected{% endif %}>Sort by Issue date</option>			
+					            <option value="definition__expiration_date" {% if sorting == 'definition__expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
+					            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> -->
+					            <option value="definition__moderation_enabled" {% if sorting == 'definition__moderation_enabled' %}selected{% endif %}>Sort by Moderation</option>		
 							</select>
 						</div>
 					</form>
@@ -241,6 +243,7 @@
 			                <th>Name</th>
 			                <!--th>Type</th-->
 			                <th>Issued</th>
+			                <th>Starts</th>
 			                <th>Expires</th>
 			                <th>Enrolled</th>
 			                <th>Status</th>
@@ -253,22 +256,23 @@
 			            <tbody>
 			              {% for o in page_obj.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td style="width:22%"><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|truncatename }}</a></td>
+			                <td style="width:22%"><a  href="{% url project_detail o.serial %}" title="visit group page">{{o.definition.name|truncatename }}</a></td>
 			                <!--td>{{o.kindname|capfirst}}</td-->
 			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
-			                <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
-			                <td style="width:11%">{{ o.approved_members_num }}</td>
+			                <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
+			                <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
+			                <td style="width:11%">{{approved_members|length}}</td>
 			                <td style="width:17%">
 			                	<div class="msg-wrap">
-			                	{% if user.email = o.groupowner %}
-			                		{% if o.is_enabled %}
+			                	{% if user == o.owner %}
+			                		{% if o.is_active %}
 			                			Active (Owner)
 			                		{% else %}
 			                			Pending
 			                		{% endif %}
 			                	{% else %}
-			                		{% if o.is_enabled %}
-			                			{% if o.membership_status %}
+			                		{% if o.is_active %}
+			                			{% if user in members %}
 						                    Registered
 					                    	 
 						                {% else %}
@@ -283,23 +287,23 @@
 			                </td>
 			                <td style="width:15%">
 			                	<div class="msg-wrap">
-			                 	{% if user.email = o.groupowner %}
-			                		{% if o.is_enabled %}
+			                 	{% if user == o.owner %}
+			                		{% if o.is_active %}
 			                			&nbsp;
 			                		{% else %}
 			                			&nbsp;
 			                		{% endif %}
 			                	{% else %}
-			                		{% if o.is_enabled %}
-			                			{% if o.membership_status %}
+			                		{% if o.is_active %}
+			                			{% if user in approved_members %}
 						                    
-					                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+					                    	<form action="{% url project_leave o.serial %}" method="post" class="link-like">{% csrf_token %}
 					                             <input type="submit"  value="x leave" class="leave" />
 					                        </form>	
 					                        <div class="dialog">
-						                		Are you sure you what to leave this group?<br>
-						                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
-						                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+						                		Are you sure you want to leave this group?<br>
+						                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
+						                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 						                		
 						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 						                	</div>
@@ -313,15 +317,14 @@
 			                	
 			                	</div>
 			                </td>
-			                <td class="centered" style="width:9%">{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
 			               <!-- <td><a href="#" class="more-info" title="more info">+ more info </a></td>-->
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
 			                <td colspan="8" class="info-td">
 			                	<div>
-			                		<p>{{o.desc}}</p>
-					                <p>{% if o.homepage%}
-							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+			                		<p>{{o.definition.description}}</p>
+					                <p>{% if o.definition.homepage%}
+							 			Project's home page: <a href="{{ o.definition.homepage }}">{{ o.definition.homepage }}</a>
 							 		{% endif %}
 							 		</p>
 			                	</div>	
@@ -346,6 +349,8 @@
                         </span>
 					</p>
 			   </div>
+			    {% endwith %} 
+	      	    {% endwith %} 
 		 	{% endif %}
         	{% endwith %} 
 	      	{% endwith %} 

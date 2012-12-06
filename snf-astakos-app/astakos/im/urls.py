@@ -68,8 +68,6 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     
     url(r'^project/add/?$', 'project_add', {}, name='project_add'),
-    url(r'^project/application/list/?$', 'project_application_list', {}, name='project_application_list'),
-    url(r'^project/application/(?P<serial>\w+)/?$', 'project_application_detail', {}, name='project_application_detail'),
     url(r'^project/list/?$', 'project_list', {}, name='project_list'),
     url(r'^project/search/?$', 'project_search', {}, name='project_search'),
     url(r'^project/all/?$', 'project_all', {}, name='project_all'),

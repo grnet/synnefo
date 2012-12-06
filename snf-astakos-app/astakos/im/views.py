@@ -1479,10 +1479,15 @@ def project_add(request):
 def project_list(request):
     return object_list(
         request,
-        Project.objects.all(),
+        ProjectApplication.objects.all(),
         paginate_by=PAGINATE_BY_ALL,
         page=request.GET.get('page') or 1,
-        template_name='im/projects/project_list.html')
+        template_name='im/projects/project_list.html',
+        extra_context={
+            'is_search':False,
+            'sorting':request.GET.get('sorting'),
+        }
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -1503,10 +1508,13 @@ def project_application_detail(request, serial):
 def project_detail(request, serial):
     return object_detail(
         request,
-        queryset=Project.objects.select_related(), 
+        queryset=ProjectApplication.objects.select_related(),
         slug=serial,
         slug_field='serial',
-        template_name='im/projects/project_detail.html'
+        template_name='im/projects/project_detail.html',
+        extra_context={
+            'sorting':request.GET.get('sorting', request.POST.get('sorting')),
+        }
     )
 
 @require_http_methods(["GET", "POST"])

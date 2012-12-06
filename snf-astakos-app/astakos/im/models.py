@@ -65,7 +65,8 @@ from django.core.validators import email_re
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, BILLING_FIELDS,
-    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
+    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
+    GROUP_CREATION_SUBJECT
 )
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
@@ -1178,7 +1179,7 @@ class Project(models.Model):
     
     @property
     def approved_members(self):
-        return self.members.filter(is_accepted=True)
+        return [m.person for m in self.members.filter(is_accepted=True)]
     
     def suspend(self):
         self.last_approval_date = None
@@ -1269,9 +1270,9 @@ def submit_application(definition, applicant, comments, precursor_application=No
         application.save()
         notification = build_notification(
         settings.SERVER_EMAIL,
-        [settings.ADMINS],
-        _(GROUP_CREATION_SUBJECT) % {'group':app.definition.name},
-        _('An new project application identified by %(serial)s has been submitted.') % app.serial
+        [i[1] for i in settings.ADMINS],
+        _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
+        _('An new project application identified by %(serial)s has been submitted.') % application.__dict__
     )
     notification.send()
     return application

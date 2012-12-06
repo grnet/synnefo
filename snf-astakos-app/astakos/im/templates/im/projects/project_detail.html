@@ -3,22 +3,23 @@
 {% load filters %}
 
 {% block page.body %}
-{% with object.owners as owners %}
- 
+{% with object.project.members as members %}
+{% with object.project.approved_members as approved_members %}
+
 <div class="projects">
 	
 
 	<h2>
-	 	{% if object.is_member %}
+	 	{% if user in members %}
 			<em>
-				{% if object.is_owner %}
-					{% if object.is_enabled %}
+				{% if user == object.owner %}
+					{% if object.is_active %}
 						[ ADMINISTRATOR - ACTIVE ]
 					{% else %}
 						[ ADMINISTRATOR - PENDING ]
 					{% endif %}
 				{%  else %}
-					{% if  object.is_active_member %}
+					{% if  user in approve_members %}
 						[ ENROLLED - ACTIVE ]
 					{% else %}
 						[ ENROLLED - PENDING ]
@@ -26,36 +27,36 @@
 				{% endif %}
 			</em>		
 		{% endif %}
-	 	<span>{{ object.name|upper }}</span>
+	 	<span>{{ object.definition.name|upper }}</span>
 	 </h2>
 	 
 	 <div class="details">
 	 	<h3>
 	 		GENERAL INFO
-		 	{% if object.is_owner %}
+		 	{% if user == object.owner %}
 		 		<a href="#" class="edit">EDIT</a>
 		 	{% endif %}
 	 	</h3>
 	 	
 	 	<div class="data">
-		 	<p class="restricted">{{ object.desc|safe }}</p>
+		 	<p class="restricted">{{ object.definition.description|safe }}</p>
 		 	<dl class="alt-style">
 			 	<dt>Homepage url</dt>
 			 	<dd>
-			 		{% if object.homepage%}
-			 			<a href="{{ object.homepage }}">{{ object.homepage }}</a>
+			 		{% if object.definition.homepage%}
+			 			<a href="{{ object.definition.homepage }}">{{ object.definition.homepage }}</a>
 			 		{% else %}
 			 			Not set yet
 			 		{% endif %}
 			 	</dd>
 			 	<dt>Moderation</dt>
 			 	<dd>
-			 		{{ object.moderation_enabled|yesno:"Yes, No" }}
+			 		{{ object.definition.member_accept_policy.description }}
 			 	</dd>
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
-		<form action="{% url astakos.im.views.group_detail object.id %}" method="post"
+		<form action="{% url project_detail object.serial %}" method="post"
 	            class="withlabels">{% csrf_token %}
 	            {% with update_form as form %}
                     {% include "im/form_render.html" %}
@@ -70,49 +71,48 @@
 		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
-		 	<dd>{{ object.name }}&nbsp;</dd>
-		 	<!--<dt>Type</dt>
-		 	<dd>{{object.kindname|capfirst}}&nbsp;</dd>-->
+		 	<dd>{{ object.definition.name }}&nbsp;</dd>
 		 	<dt>Issue date:</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>Expiration Date</dt>
-		 	<dd>{{object.expiration_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dt>Start date:</dt>
+		 	<dd>{{object.definition.start_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dt>End Date</dt>
+		 	<dd>{{object.definition.end_date|date:"d/m/Y"}}&nbsp;</dd>
 <!--
 		 	<dt>Moderation</dt>
 		 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
  -->
 		 	<dt>Activated</dt>
-		 	<dd>{% if object.is_enabled %}Yes{% else %}No{% endif %}</dd>
+		 	<dd>{% if object.is_active %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>
-		 	{{ o.owners }}
-		 	<dd>{% for o in owners %}
-                    {% if object.is_owner %}
+		 	{{ o.owner }}
+		 	<dd>{% if user == o.owner %}
                         Me
-                    {% else%}
-                        {{o.realname}} ({{o.email}})
-                    
-                    {% endif %}
-                {% endfor %}&nbsp;
+                {% else%}
+                    {{o.owner.realname}} ({{o.owner.email}})
+                
+                {% endif %}
+                &nbsp;
             </dd>
             <dt>Max participants</dt>
-		 	<dd>{% if object.max_participants%}{{object.max_participants}}{% else %}&nbsp;{% endif %}</dd>
+		 	<dd>{% if object.definition.limit_on_members_number%}{{object.definition.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
 		 </dl>
 	 </div>
 	 <div class="full-dotted">
 		 <h3>RESOURCES</h3>		 
-		 {% if quota %}
+		 {% if object.definition.projectresourcegrant_set.all %}
 		 <dl class="alt-style">	
-	 		{% for q in quota %}
-		 		 
+	 		{% for q in object.definition.projectresourcegrant_set.all %}
+		 		 q.resource
 		 		<dt>
        				Max {% if q.is_abbreviation %}{{ q.verbose_name|upper }}{% else %}{{ q.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
        			</dt>
 		 		<dd>
-       			{% if q.value %}
+       			{% if q.member_limit %}
        				 {% if q.unit %}
-       				 	{{ q.value|sizeof_fmt }}
+       				 	{{ q.member_limit|sizeof_fmt }}
        				 {% else %}
-       				 	{{ q.value|isinf }}
+       				 	{{ q.member_limit|isinf }}
        				 {% endif %}
        			{% else %}
        				Unlimited
@@ -128,10 +128,10 @@
             <p>No resources</p>
         {% endif %} 
 	 </div>
-     {% if object.is_owner %}
+     {% if user == object.owner %}
 	 <div class="full-dotted">
 	    {% with page|concat:sorting as args %}
-	    {% with object.membership_set.select_related.all|paginate:args as membership %}
+	    {% with object.project.projectmembership_set.select_related.all|paginate:args as membership %}
             {% if membership %}
             <form method="GET" class="minimal" action="#members-table">
                 <div class="form-row">
@@ -156,20 +156,20 @@
                   <tr>
                     <td>{{m.person.email}}</td>
                     <td>{{m.person.realname}}</td>
-                    {% if m.person in owners %}
+                    {% if m.person == o.owner %}
                     <td>Owner</td>
                     {% else %}
-                        {% if m.is_approved %}
+                        {% if m.is_accepted %}
                         <td>Approved
-                            {% if object.is_owner %}
-                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
+                            {% if user == object.owner %}
+                                <a href="{% url project_disapprove_member object.serial m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
                             {% endif %}
                         </td>
                         {% else %}
                         <td>Pending
-                            {% if object.is_owner %}
-                                <a href="{% url approve_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
-                                <a href="{% url disapprove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
+                            {% if user == object.owner %}
+                                <a href="{% url project_approve_member object.serial m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
+                                <a href="{% url project_disapprove_member object.serial m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
                             {% endif %}
                         </td>    
                         {% endif %}
@@ -203,7 +203,7 @@
      
     
     <div class="full-dotted">
-        <form action="{% url astakos.im.views.group_detail object.id %}#members-table" method="post" class="withlabels" >{% csrf_token %}
+        <form action="{% url project_detail object.serial %}#members-table" method="post" class="withlabels" >{% csrf_token %}
             <h2>Enroll more members</h2>
                 {% with addmembers_form as form %}
                     {% include "im/form_render.html" %}
@@ -227,5 +227,6 @@
     
 </div>
  
+{% endwith %}
 {% endwith %}
 {% endblock %}

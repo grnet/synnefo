@@ -2,4 +2,5 @@
 d=`dirname $0`
 export SYNNEFO_SETTINGS_DIR=$d/settings
 snf-manage syncdb --all --noinput
+snf-manage flush --noinput
 snf-manage runserver "$@" 2> $d/server_stderr &

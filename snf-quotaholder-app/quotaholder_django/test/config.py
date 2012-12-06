@@ -141,7 +141,6 @@ class QHTestCase(unittest.TestCase):
     def tearDownClass(self):
         from signal import SIGTERM
         os.kill(-self.server, SIGTERM)
-        os.remove('/tmp/qh_testdb')
 
 
 ### VARS ###

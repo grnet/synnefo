@@ -108,18 +108,26 @@ are all configurable settings in ``/etc/synnefo/20-snf-cyclades-app-api.conf``. 
 to denote that a link or MAC prefix will be allocated from the corresponging Pool.
 
 The administrator is able to create any of the above flavors
-and override their default values by explicitly passing mode, link, etc.. using
-the `snf-manage network-create` command. Currently only ``MAC_FILTERED`` and
-``PHYSICAL_VLAN`` can use existing pools and cannot be overriden.
+and override their default values by explicitly passing mode, link, etc. using
+the `snf-manage network-create` command. 
+
+The end-user is allowed to create only networks of flavor ``MAC_FILTERED`` and
+``PHYSICAL_VLAN``. Currently, only ``MAC_FILTERED`` and ``PHYSICAL_VLAN`` can
+use existing pools and cannot be overriden.
 
 Network @ Ganeti level
 ----------------------
 
-Currently, Ganeti does support IP Pool management. The functionality
-has been merged in the Ganeti master branch and will appear on Ganeti 2.7.
-If you want to use hotplug and external interface as well, you can clone
-our local repo https://code.grnet.gr/git/ganeti-local and checkout
-stable-2.6-ippool-hotplug-esi branch.
+Currently, stable Ganeti does not support IP Pool management. However, the
+functionality has been merged in the official Ganeti master branch and will
+appear on Ganeti 2.7.0. So, you can either checkout the Ganeti master branch
+and build your packages, or clone our local repo
+https://code.grnet.gr/git/ganeti-local and checkout the
+`stable-2.6-ippool-hotplug-esi` branch. This is the Ganeti stable branch with
+IP pool management, Hotplugging and ExtStorage Interface features merged on top
+of it. The last two features are not a hard Synnefo requirement, but will
+enable you to do neat things when you get experienced with Synnefo. They are
+going to be pushed for review upstream sometime soon.
 
 Any network created in Synnefo is also created in one (for public networks) or
 all (for private networks) Ganeti backends. In Ganeti a network can have the
@@ -412,8 +420,8 @@ mac prefix, tags for the network. You are not allowed to use the existing pools
 (only MAC_FILTERED, PHYSICAL_VLAN use them) so link and mac prefix uniqueness
 cannot be guaranteed.
 
-Lets assume a bridge ``br200`` that serves a VPN network to GRNET exist already
-in Ganeti nodes and we want to create for a certain user a private network so
+Lets assume a bridge ``br200`` that serves a VPN network to GRNET already exists
+on Ganeti nodes and we want to create for a certain user a private network so
 that he can access the VPN. Then we run in Cyclades:
 
 .. code-block:: console

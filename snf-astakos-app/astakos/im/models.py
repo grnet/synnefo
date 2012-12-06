@@ -178,8 +178,7 @@ class AstakosGroup(Group):
     issue_date = models.DateTimeField('Start date', null=True)
     expiration_date = models.DateTimeField(
         _('Expiration date'),
-        null=True
-         null=True
+        null=True,
     )
     moderation_enabled = models.BooleanField(
         _('Moderated membership?'),

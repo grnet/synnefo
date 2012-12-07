@@ -83,10 +83,19 @@ import astakos.im.messages as astakos_messages
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
-try:
-    content_type = ContentType.objects.get(app_label='im', model='astakosuser')
-except:
-    content_type = DEFAULT_CONTENT_TYPE
+_content_type = None
+
+def get_content_type():
+    global _content_type
+    if _content_type is not None:
+        return _content_type
+
+    try:
+        content_type = ContentType.objects.get(app_label='im', model='astakosuser')
+    except:
+        content_type = DEFAULT_CONTENT_TYPE
+    _content_type = content_type
+    return content_type
 
 RESOURCE_SEPARATOR = '.'
 
@@ -398,16 +407,17 @@ class AstakosUser(User):
     def add_permission(self, pname):
         if self.has_perm(pname):
             return
-        p, created = Permission.objects.get_or_create(codename=pname,
-                                                      name=pname.capitalize(),
-                                                      content_type=content_type)
+        p, created = Permission.objects.get_or_create(
+                                    codename=pname,
+                                    name=pname.capitalize(),
+                                    content_type=get_content_type())
         self.user_permissions.add(p)
 
     def remove_permission(self, pname):
         if self.has_perm(pname):
             return
         p = Permission.objects.get(codename=pname,
-                                   content_type=content_type)
+                                   content_type=get_content_type())
         self.user_permissions.remove(p)
 
     @property
@@ -1007,10 +1017,17 @@ class MemberAcceptPolicy(models.Model):
     def __str__(self):
         return self.policy
 
-try:
-    auto_accept = MemberAcceptPolicy.objects.get(policy='auto_accept')
-except:
-    auto_accept = None
+_auto_accept = False
+def get_auto_accept():
+    global _auto_accept
+    if _auto_accept is not False:
+        return _auto_accept
+    try:
+        auto_accept = MemberAcceptPolicy.objects.get(policy='auto_accept')
+    except:
+        auto_accept = None
+    _auto_accept = auto_accept
+    return auto_accept
 
 class ProjectDefinition(models.Model):
     name = models.CharField(max_length=80)

@@ -1,112 +1,77 @@
 # encoding: utf-8
-import datetime
-from south.db import db
-from south.v2 import SchemaMigration
-from django.db import models
 
-class Migration(SchemaMigration):
+from south.v2 import DataMigration
+
+from astakos.im.settings import SERVICES
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+class Migration(DataMigration):
 
     def forwards(self, orm):
-        
-        # Adding model 'ProjectApplication'
-        db.create_table('im_projectapplication', (
-            ('serial', self.gf('django.db.models.fields.CharField')(default='a3e0784bfd924d4ba9a1181332d5e9', unique=True, max_length=30, primary_key=True)),
-            ('applicant', self.gf('django.db.models.fields.related.ForeignKey')(related_name='my_project_applications', to=orm['im.AstakosUser'])),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(related_name='own_project_applications', to=orm['im.AstakosUser'])),
-            ('comments', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('definition', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['im.ProjectDefinition'], unique=True)),
-            ('issue_date', self.gf('django.db.models.fields.DateTimeField')()),
-            ('precursor_application', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['im.ProjectApplication'], unique=True, null=True, blank=True)),
-        ))
-        db.send_create_signal('im', ['ProjectApplication'])
+        "Write your forwards methods here."
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
 
-        # Adding model 'Project'
-        db.create_table('im_project', (
-            ('serial', self.gf('django.db.models.fields.CharField')(default='ab6c5646977c4e678daff27ff3c7cb', unique=True, max_length=30, primary_key=True)),
-            ('application', self.gf('django.db.models.fields.related.OneToOneField')(related_name='project', unique=True, to=orm['im.ProjectApplication'])),
-            ('creation_date', self.gf('django.db.models.fields.DateTimeField')()),
-            ('last_approval_date', self.gf('django.db.models.fields.DateTimeField')()),
-            ('termination_date', self.gf('django.db.models.fields.DateTimeField')()),
-            ('last_synced_application', self.gf('django.db.models.fields.related.OneToOneField')(blank=True, related_name='last_project', unique=True, null=True, to=orm['im.ProjectApplication'])),
-        ))
-        db.send_create_signal('im', ['Project'])
-
-        # Adding model 'ProjectMembership'
-        db.create_table('im_projectmembership', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
-            ('project', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Project'])),
-            ('issue_date', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 12, 6, 10, 11, 33, 387204))),
-            ('decision_date', self.gf('django.db.models.fields.DateField')(null=True, db_index=True)),
-            ('is_accepted', self.gf('django.db.models.fields.BooleanField')(default=False)),
-        ))
-        db.send_create_signal('im', ['ProjectMembership'])
-
-        # Adding unique constraint on 'ProjectMembership', fields ['person', 'project']
-        db.create_unique('im_projectmembership', ['person_id', 'project_id'])
-
-        # Adding model 'MemberAcceptPolicy'
-        db.create_table('im_memberacceptpolicy', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('policy', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255, db_index=True)),
-            ('description', self.gf('django.db.models.fields.CharField')(max_length=80)),
-        ))
-        db.send_create_signal('im', ['MemberAcceptPolicy'])
-
-        # Adding model 'ProjectDefinition'
-        db.create_table('im_projectdefinition', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=80)),
-            ('homepage', self.gf('django.db.models.fields.URLField')(max_length=255, null=True, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True)),
-            ('start_date', self.gf('django.db.models.fields.DateTimeField')()),
-            ('end_date', self.gf('django.db.models.fields.DateTimeField')()),
-            ('member_accept_policy', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.MemberAcceptPolicy'])),
-            ('limit_on_members_number', self.gf('django.db.models.fields.PositiveIntegerField')(null=True, blank=True)),
-        ))
-        db.send_create_signal('im', ['ProjectDefinition'])
-
-        # Adding model 'ProjectResourceGrant'
-        db.create_table('im_projectresourcegrant', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('member_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True)),
-            ('project_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True)),
-            ('resource', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Resource'])),
-            ('project_definition', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.ProjectDefinition'], blank=True)),
-        ))
-        db.send_create_signal('im', ['ProjectResourceGrant'])
-
-        # Adding unique constraint on 'ProjectResourceGrant', fields ['resource', 'project_definition']
-        db.create_unique('im_projectresourcegrant', ['resource_id', 'project_definition_id'])
-
+        def create_policies(args):
+            sn, dict = args
+            url = dict.get('url')
+            resources = dict.get('resources') or ()
+            s, created = orm.Service.objects.get_or_create(
+                name=sn,
+                defaults={'url': url}
+            )
+            
+            for r in resources:
+                try:
+                    rn = r.pop('name', '')
+                    uplimit = r.pop('uplimit', None)
+                    r, created = orm.Resource.objects.get_or_create(
+                        service=s,
+                        name=rn,
+                        defaults=r)
+                except Exception, e:
+                    print "Cannot create resource ", rn
+                    continue
+                else:
+                    q, created = orm.AstakosGroupQuota.objects.get_or_create(
+                        group=default,
+                        resource=r,
+                        defaults={
+                            'uplimit':uplimit,
+                        }
+                    )
+        map(create_policies, SERVICES.iteritems())
 
     def backwards(self, orm):
-        
-        # Removing unique constraint on 'ProjectResourceGrant', fields ['resource', 'project_definition']
-        db.delete_unique('im_projectresourcegrant', ['resource_id', 'project_definition_id'])
+        try:
+            default = orm.AstakosGroup.objects.get(name='default')
+        except orm.AstakosGroup.DoesNotExist:
+            return
 
-        # Removing unique constraint on 'ProjectMembership', fields ['person', 'project']
-        db.delete_unique('im_projectmembership', ['person_id', 'project_id'])
+        def destroy_policies(args):
+            sn, dict = args
+            url = dict.get('url')
+            resources = dict.get('resources') or ()
+            for r in resources:
+                rn = r.get('name', '')
+                try:
+                    q = orm.AstakosGroupQuota.objects.get(
+                        group=default,
+                        resource__name=rn)
+                    q.delete()
+                    q = orm.Resource.objects.get(service__name=sn, name=rn)
+                    q.delete()
+                except Exception, e:
+                    print "Cannot create resource ", rn
+                    continue
 
-        # Deleting model 'ProjectApplication'
-        db.delete_table('im_projectapplication')
-
-        # Deleting model 'Project'
-        db.delete_table('im_project')
-
-        # Deleting model 'ProjectMembership'
-        db.delete_table('im_projectmembership')
-
-        # Deleting model 'MemberAcceptPolicy'
-        db.delete_table('im_memberacceptpolicy')
-
-        # Deleting model 'ProjectDefinition'
-        db.delete_table('im_projectdefinition')
-
-        # Deleting model 'ProjectResourceGrant'
-        db.delete_table('im_projectresourcegrant')
-
-
+        map(destroy_policies, SERVICES.iteritems())
+    
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},
@@ -152,14 +117,14 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 11, 33, 376205)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 7, 16, 31, 23, 704384)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'im.astakosgroup': {
             'Meta': {'object_name': 'AstakosGroup', '_ormbases': ['auth.Group']},
             'approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 11, 33, 368608)'}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 7, 16, 31, 23, 696770)'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'estimated_participants': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
             'expiration_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
@@ -225,7 +190,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 11, 33, 378081)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 7, 16, 31, 23, 706057)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.groupkind': {
@@ -244,16 +209,10 @@ class Migration(SchemaMigration):
             'realname': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
         },
-        'im.memberacceptpolicy': {
-            'Meta': {'object_name': 'MemberAcceptPolicy'},
-            'description': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'policy': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'})
-        },
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
-            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 11, 33, 373957)', 'blank': 'True'}),
+            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 7, 16, 31, 23, 702070)', 'blank': 'True'}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
@@ -270,55 +229,6 @@ class Migration(SchemaMigration):
             'third_party_identifier': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'token': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
-        },
-        'im.project': {
-            'Meta': {'object_name': 'Project'},
-            'application': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'project'", 'unique': 'True', 'to': "orm['im.ProjectApplication']"}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'last_approval_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'last_synced_application': ('django.db.models.fields.related.OneToOneField', [], {'blank': 'True', 'related_name': "'last_project'", 'unique': 'True', 'null': 'True', 'to': "orm['im.ProjectApplication']"}),
-            'members': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.AstakosUser']", 'through': "orm['im.ProjectMembership']", 'symmetrical': 'False'}),
-            'serial': ('django.db.models.fields.CharField', [], {'default': "'ab6c5646977c4e678daff27ff3c7cb'", 'unique': 'True', 'max_length': '30', 'primary_key': 'True'}),
-            'termination_date': ('django.db.models.fields.DateTimeField', [], {})
-        },
-        'im.projectapplication': {
-            'Meta': {'object_name': 'ProjectApplication'},
-            'applicant': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'my_project_applications'", 'to': "orm['im.AstakosUser']"}),
-            'comments': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'definition': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['im.ProjectDefinition']", 'unique': 'True'}),
-            'issue_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'own_project_applications'", 'to': "orm['im.AstakosUser']"}),
-            'precursor_application': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['im.ProjectApplication']", 'unique': 'True', 'null': 'True', 'blank': 'True'}),
-            'serial': ('django.db.models.fields.CharField', [], {'default': "'a3e0784bfd924d4ba9a1181332d5e9'", 'unique': 'True', 'max_length': '30', 'primary_key': 'True'})
-        },
-        'im.projectdefinition': {
-            'Meta': {'object_name': 'ProjectDefinition'},
-            'description': ('django.db.models.fields.TextField', [], {'null': 'True'}),
-            'end_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'homepage': ('django.db.models.fields.URLField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'limit_on_members_number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'member_accept_policy': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.MemberAcceptPolicy']"}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
-            'resource_grants': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': "orm['im.Resource']", 'null': 'True', 'through': "orm['im.ProjectResourceGrant']", 'blank': 'True'}),
-            'start_date': ('django.db.models.fields.DateTimeField', [], {})
-        },
-        'im.projectmembership': {
-            'Meta': {'unique_together': "(('person', 'project'),)", 'object_name': 'ProjectMembership'},
-            'decision_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'db_index': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_accepted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'issue_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 11, 33, 387204)'}),
-            'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
-            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"})
-        },
-        'im.projectresourcegrant': {
-            'Meta': {'unique_together': "(('resource', 'project_definition'),)", 'object_name': 'ProjectResourceGrant'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'member_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
-            'project_definition': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.ProjectDefinition']", 'blank': 'True'}),
-            'project_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
-            'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
         },
         'im.resource': {
             'Meta': {'object_name': 'Resource'},

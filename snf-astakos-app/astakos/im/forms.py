@@ -57,7 +57,7 @@ from django.contrib.auth.models import AnonymousUser
 from astakos.im.models import (
     AstakosUser, EmailChange, AstakosGroup, Invitation, GroupKind,
     Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
-    ProjectDefinition, ProjectApplication, submit_application
+    ProjectDefinition, ProjectApplication
 )
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
@@ -969,7 +969,7 @@ class ProjectApplicationForm(forms.ModelForm):
             precursor_application = self.instance.projectapplication
         except:
             precursor_application = None
-        return submit_application(
+        return ProjectApplication.submit(
             definition,
             applicant,
             comments,

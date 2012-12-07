@@ -87,6 +87,17 @@ Its attributes are:
     *a reference by serial to a previous application which this application
     requests to modify. It can be null if there is no precursor.*
 
+An application is immutable in its attributes above,
+but its status depends on how it has been processed.
+The *application status* can be:
+
+    :(1):   pending
+    :(2a):  approved
+    :(2b):  rejected
+    :(3):   replaced
+
+When an application becomes *approved* and set to the project,
+its precursor must automatically be set to *replaced*.
 
 
 Project Membership

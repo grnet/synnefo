@@ -87,6 +87,9 @@ each node's general prerequisites separately. Any additional configuration,
 specific to a synnefo service for each node, will be described at the service's
 section.
 
+Finally, it is required for Cyclades and Ganeti nodes to have synchronized
+system clocks (e.g. by running ntpd).
+
 Node1
 -----
 
@@ -97,12 +100,13 @@ General Synnefo dependencies
  * gunicorn (WSGI http server)
  * postgresql (database)
  * rabbitmq (message queue)
+ * ntp (NTP daemon)
 
-You can install apache2 and progresql by running:
+You can install apache2, progresql and ntp by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql
+   # apt-get install apache2 postgresql ntp
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -334,12 +338,13 @@ General Synnefo dependencies
  * apache (http server)
  * gunicorn (WSGI http server)
  * postgresql (database)
+ * ntp (NTP daemon)
 
 You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql
+   # apt-get install apache2 postgresql ntp
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:

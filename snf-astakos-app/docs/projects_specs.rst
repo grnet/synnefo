@@ -164,7 +164,7 @@ The attributes for a project are:
 ``members``
     *the set of members for this project*
 
-``membership_updated``
+``membership_dirty``
     *boolean attribute declaring that the project
     needs membership synchronization.
     It must be atomically set and committed before
@@ -234,7 +234,7 @@ Rules
 
     An alive project is delcared synchronized by setting
     ``last_application_synced`` to be equal to the ``application``,
-    and setting ``membership_updated`` to false,
+    and setting ``membership_dirty`` to false,
 
     Semantically, the project becomes synchronized when its application
     definition has been fully implemented and committed to quotaholder,
@@ -248,7 +248,7 @@ Rules
     a project is declared synchronized if and only if:
 
     - ``last_application_synced`` equals ``application``
-    - ``membership_updated`` is false
+    - ``membership_dirty`` is false
     - ``termination_start_date`` is null or ``termination_date`` is set
 
     Depending on which of the previous three clauses fail,

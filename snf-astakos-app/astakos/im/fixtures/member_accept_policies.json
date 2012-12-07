@@ -1,0 +1,26 @@
+[
+    {
+        "model": "im.memberrejectpolicy",
+        "pk": 1,
+        "fields": {
+            "policy": "auto_accept",
+            "description": "remove requests are automatically accepted by the system"
+        }
+    },
+    {
+        "model": "im.memberrejectpolicy",
+        "pk": 2,
+        "fields": {
+            "policy": "owner_accepts",
+            "description": "remove requests must be accepted by the owner of the project"
+        }
+    },
+    {
+        "model": "im.memberrejectpolicy",
+        "pk": 3,
+        "fields": {
+            "policy": "closed",
+            "description": "members can not leave the project"
+        }
+    }
+]

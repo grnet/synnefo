@@ -4,7 +4,7 @@
         "pk": 1,
         "fields": {
             "policy": "auto_accept",
-            "description": "new join requests are automatically accepted by the system"
+            "description": "leave requests are automatically accepted by the system"
         }
     },
     {
@@ -12,7 +12,7 @@
         "pk": 2,
         "fields": {
             "policy": "owner_accepts",
-            "description": "new join requests must be accepted by the owner of the project"
+            "description": "leave requests must be accepted by the owner of the project"
         }
     },
     {
@@ -20,7 +20,7 @@
         "pk": 3,
         "fields": {
             "policy": "closed",
-            "description": "no new members can join the project, even if old ones leave"
+            "description": "no member can leave the project"
         }
     }
 ]

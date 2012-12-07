@@ -7,8 +7,8 @@ by the members and used for a specified period in time.
 
 Definition
 ----------
-A **definition** for a project represents the initialization
-or modification of a project has the following attributes:
+A **definition** for a project, which represents the initialization
+or modification of a project, has the following attributes:
 
 ``name``
     *in dot-hierarchical dns-like form*
@@ -87,6 +87,17 @@ Its attributes are:
     *a reference by serial to a previous application which this application
     requests to modify. It can be null if there is no precursor.*
 
+An application is immutable in its attributes above,
+but its status depends on how it has been processed.
+The *application status* can be:
+
+    :(1):   pending
+    :(2a):  approved
+    :(2b):  rejected
+    :(3):   replaced
+
+When an application becomes *approved* and set to the project,
+its precursor must automatically be set to *replaced*.
 
 
 Project Membership
@@ -197,7 +208,7 @@ Rules
 4. **Suspended projects**
 
     A valid project is declared **terminated** if and only if
-    
+
     - its ``termination_date`` is null
     - its ``last_approval_date`` is null,
       or its ``limit_on_members_number`` and ``limits_on_resources`` are violated
@@ -232,7 +243,7 @@ Rules
     The status of the project's synchronization with Quotaholder
     can be either **synchronized** or **unsyncrhonized**.
 
-    An alive project is delcared synchronized by setting
+    An alive project is declared synchronized by setting
     ``last_application_synced`` to be equal to the ``application``,
     and setting ``membership_dirty`` to false,
 
@@ -265,7 +276,7 @@ Rules
     If either ``creation_date`` or ``last_approval_date``
     is in the future, the project state is declared **inconsistent**
     but the project is still considered created or approved, respectively.
-    
+
     If ``termination_date`` is in the future, the project state is declared
     **inconsistent** but the project is still considered terminated.
 
@@ -279,21 +290,21 @@ Rules
 
     Every application for a project can be followed up with another one.
     The new application points back to it with its ``precursor`` attribute.
-    
+
     This means that an applicant can update their application
     before it has been approved.
-    
+
     Apart from an applicant, whoever can approve the project,
     can also post a follow up application for it, modifying
     some aspects of the definition and approve that instead.
     For example, a user might request for 100 GB storage,
     but the Service may approve a project with only 80GB,
     via a follow up application.
-    
+
     If the precursor of an application is not associated with a project
     (i.e. no project references it as its defining ``application``),
     then a new project entry is created and initialized.
-    
+
     If the precursor of an application *is* associated with a valid project,
     then the same project entry is used and is re-initialized according
     to the new application's definition.
@@ -366,7 +377,7 @@ with a user's resource quotas is assumed to be available.
 
    After committing, the procedure to synchronize the project (see below)
    should be called.
-   
+
 #. Synchronize a membership with quotaholder
 
    This procedure is not required to be an independent procedure
@@ -374,7 +385,7 @@ with a user's resource quotas is assumed to be available.
    That is, if user synchronization takes care of all memberships,
    one can call user synchronization instead of membership synchronization.
 
-#. Synchronize a user with quotaholder 
+#. Synchronize a user with quotaholder
 
    User synchronization is equivalent to the synchronization of
    all the user's memberships.
@@ -396,7 +407,7 @@ output, may include several elements.
 Interaction with the feature is going through several view elements.
 Each element has two pieces of input,
 the *objects being referenced*, and the *accessing user*,
-and its appearance and function is accordingly parametrized.
+and its appearance and function is accordingly parameterized.
 
 Each *project element* may need to display information
 that internally belongs to its linked object,

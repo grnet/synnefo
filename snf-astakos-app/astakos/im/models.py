@@ -185,7 +185,10 @@ class AstakosGroup(Group):
         _('Creation date'),
         default=datetime.now()
     )
-    issue_date = models.DateTimeField('Start date', null=True)
+    issue_date = models.DateTimeField(
+        _('Start date'),
+        null=True
+    )
     expiration_date = models.DateTimeField(
         _('Expiration date'),
         null=True
@@ -1037,6 +1040,11 @@ def get_auto_accept():
     return auto_accept
 
 class ProjectDefinition(models.Model):
+    serial = models.CharField(
+        primary_key=True,
+        max_length=30,
+        unique=True
+    )
     name = models.CharField(max_length=80)
     homepage = models.URLField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True)
@@ -1053,6 +1061,8 @@ class ProjectDefinition(models.Model):
     )
     
     def save(self):
+        if not self.serial:
+            self.serial = uuid.uuid4().hex[:30]
         self.validate_name()
         super(ProjectDefinition, self).save()
         
@@ -1140,19 +1150,37 @@ class ProjectApplication(models.Model):
             self.serial = uuid.uuid4().hex[:30]
         super(ProjectApplication, self).save()
 
+    @property
+    def status(self):
+        try:
+            self.project
+        except Project.DoesNotExist:
+            return 'PENDING'
+        else:
+            if self.project.is_terminated:
+                return 'ALIVE'
+            else:
+                return 'TERMINATED'
+        
     @staticmethod
     def submit(definition, applicant, comments, precursor_application=None, commit=True):
-        if precursor_application and precursor_application.project.is_valid:
-            application = precursor_application.copy()
-            application.precursor_application = precursor_application
-        else:
+        application = None
+        if precursor_application:
+            try:
+                precursor_application.project
+            except:
+                pass
+            else:
+                if precursor_application.project.is_valid:
+                    application = precursor_application.copy()
+                    application.precursor_application = precursor_application
+        if not application:
             application = ProjectApplication(owner=applicant)
         application.definition = definition
         application.applicant = applicant
         application.comments = comments
         application.issue_date = datetime.now()
         if commit:
-            definition.save()
             application.save()
         if applicant.is_superuser:
             self.approve_application()
@@ -1164,6 +1192,7 @@ class ProjectApplication(models.Model):
         )
         notification.send()
         return application
+
 
 class Project(models.Model):
     serial = models.CharField(
@@ -1186,7 +1215,7 @@ class Project(models.Model):
         if not self.serial:
             self.serial = uuid.uuid4().hex[:30]
         super(ProjectApplication, self).save()
-
+    
     @property
     def definition(self):
         return self.application.definition

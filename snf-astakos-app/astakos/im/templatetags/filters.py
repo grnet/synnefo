@@ -43,7 +43,7 @@ from django.db.models.query import QuerySet
 
 
 from astakos.im.settings import PAGINATE_BY
-
+from astakos.im.models import RESOURCE_SEPARATOR
 
 register = template.Library()
 
@@ -200,3 +200,24 @@ def truncatename(v):
         return v[:max]+'...'
     else:
         return v[:20]
+
+@register.filter
+def resource_groups(project_definition):
+    try:
+        grants = project_definition.projectresourcegrant_set
+        return grants.values_list('resource__group', flat=True)
+    except:
+        return ()
+
+@register.filter
+def resource_grants(project_definition):
+    try:
+        grants = project_definition.projectresourcegrant_set
+        grants = grants.values_list(
+            'resource__name',
+            'resource__service__name',
+            'member_limit'
+        )
+        return dict((RESOURCE_SEPARATOR.join([e[1], e[0]]), e[2]) for e in grants)
+    except:
+        return {}

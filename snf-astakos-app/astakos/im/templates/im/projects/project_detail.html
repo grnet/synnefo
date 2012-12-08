@@ -5,7 +5,6 @@
 {% block page.body %}
 {% with object.project.members as members %}
 {% with object.project.approved_members as approved_members %}
-
 <div class="projects">
 	
 
@@ -28,6 +27,7 @@
 	 	<span>{{ object.definition.name|upper }}</span>
 	 </h2>
 	 
+<!-- 
 	 <div class="details">
 	 	<h3>
 	 		GENERAL INFO
@@ -39,18 +39,6 @@
 	 	<div class="data">
 		 	<p class="restricted">{{ object.definition.description|safe }}</p>
 		 	<dl class="alt-style">
-			 	<dt>Homepage url</dt>
-			 	<dd>
-			 		{% if object.definition.homepage%}
-			 			<a href="{{ object.definition.homepage }}">{{ object.definition.homepage }}</a>
-			 		{% else %}
-			 			Not set yet
-			 		{% endif %}
-			 	</dd>
-			 	<dt>Member accept policy</dt>
-			 	<dd>
-			 		{{ object.definition.member_accept_policy }}
-			 	</dd>
 			 </dl>
 		</div>
 		<div class="editable" style="display:none;">
@@ -65,29 +53,39 @@
 	    </form>
 		</div>
 	 </div>
+ -->
 	 <div class="full-dotted">
 		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
 		 	<dd>{{ object.definition.name }}&nbsp;</dd>
+		 	<dt>Description</dt>
+		 	<dd>{{ object.definition.description|safe }}&nbsp;</dd>
+            <dt>Homepage url</dt>
+            <dd>
+                {% if object.definition.homepage%}
+                    <a href="{{ object.definition.homepage }}">{{ object.definition.homepage }}</a>
+                {% else %}
+                    Not set yet
+                {% endif %}
+            </dd>
+            <dt>Member accept policy</dt>
+            <dd>
+                {{ object.definition.member_accept_policy }}
+            </dd>
 		 	<dt>Issue date:</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Start date:</dt>
 		 	<dd>{{object.definition.start_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>End Date</dt>
 		 	<dd>{{object.definition.end_date|date:"d/m/Y"}}&nbsp;</dd>
-<!--
-		 	<dt>Moderation</dt>
-		 	<dd>{% if object.moderation_enabled%}Yes{% else %}No{% endif %}</dd>
- -->
 		 	<dt>Activated</dt>
 		 	<dd>{% if object.is_active %}Yes{% else %}No{% endif %}</dd>
 		 	<dt>Owner</dt>
 		 	<dd>{% if user == object.owner %}
                         Me
                 {% else%}
-                    {{object.owner.realname}} ({{object.owner.email}})
-                
+                    {{object.owner.realname}} {% if user.is_superuser %}({{object.owner.email}}){% endif %}
                 {% endif %}
                 &nbsp;
             </dd>
@@ -96,25 +94,32 @@
 		 </dl>
 	 </div>
 	 <div class="full-dotted">
-		 <h3>RESOURCES</h3>		 
+		 <h3>RESOURCES</h3>
 		 {% if object.definition.projectresourcegrant_set.all %}
-		 <dl class="alt-style">	
-	 		{% for q in object.definition.projectresourcegrant_set.all %}
-		 		 q.resource
+	     <dl class="alt-style">	
+	 		{% for rp in object.definition.projectresourcegrant_set.all %}
+	 		    <dt>
+	 		        {{rp.resource}}
+	 		    </dt>
+	 		    <dd>
+	 		        {{rp.member_limit}}
+	 		    <dd/>
+<!-- 
 		 		<dt>
        				Max {% if q.is_abbreviation %}{{ q.verbose_name|upper }}{% else %}{{ q.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
        			</dt>
 		 		<dd>
-       			{% if q.member_limit %}
+       			{% if q.value %}
        				 {% if q.unit %}
-       				 	{{ q.member_limit|sizeof_fmt }}
+       				 	{{ q.value|sizeof_fmt }}
        				 {% else %}
-       				 	{{ q.member_limit|isinf }}
+       				 	{{ q.value|isinf }}
        				 {% endif %}
        			{% else %}
        				Unlimited
        			{% endif %}
        			</dd>
+ -->
        		{% empty %}
        			No resources
 	 		{% endfor %}
@@ -125,7 +130,7 @@
             <p>No resources</p>
         {% endif %} 
 	 </div>
-     {% if user == object.owner %}
+     {% if object.is_alive %}
 	 <div class="full-dotted">
 	    {% with page|concat:sorting as args %}
 	    {% with object.project.projectmembership_set.select_related.all|paginate:args as membership %}
@@ -143,7 +148,7 @@
                 <caption>MEMBERS:</caption>
                 <thead>
                     <tr>
-                        <th>User Id</th>
+                        <th>User Email</th>
                         <th>Name</th>
                         <th>Status</th>
                     </tr>
@@ -151,7 +156,7 @@
                 <tbody>
                 {% for m in membership.object_list %}
                   <tr>
-                    <td>{{m.person.email}}</td>
+                    <td>{%if user.is_superuser or user == o.owner %}{{m.person.email}}{% endif %}</td>
                     <td>{{m.person.realname}}</td>
                     {% if m.person == o.owner %}
                     <td>Owner</td>

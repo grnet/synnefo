@@ -922,8 +922,7 @@ class ProjectApplicationForm(forms.ModelForm):
     
     class Meta:
         model = ProjectDefinition
-        exclude = ('resource_grants')
-    
+        exclude = ('resource_grants', 'serial')
     
     def clean(self):
         userid = self.data.get('user', None)[0]
@@ -976,3 +975,17 @@ class ProjectApplicationForm(forms.ModelForm):
             precursor_application,
             commit
         )
+
+class ProjectSortForm(forms.Form):
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(('definition__name', 'Sort by Name'),
+                 ('issue_date', 'Sort by Issue date'),
+                 ('definition__start_date', 'Sort by Start Date'),
+                 ('definition__end_date', 'Sort by End Date'),
+#                  ('approved_members_num', 'Sort by Participants'),
+                 ('definition__member_accept_policy', 'Sort by Member Accept Policy'),
+                 ('definition__member_reject_policy', 'Sort by Member Reject Policy')
+        ),
+        required=True
+    )

@@ -66,7 +66,9 @@
 			            <option value="definition__start_date" {% if sorting == 'definition__start_date' %}selected{% endif %}>Sort by Start Date</option>
 			            <option value="definition__end_date" {% if sorting == 'definition__end_date' %}selected{% endif %}>Sort by End Date</option>
 			            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> --> 
+			            <!-- <option value="status" {% if sorting == '' %}selected{% endif %}>Sort by Member Accept Policy</option> --> 
 			            <option value="definition__member_accept_policy" {% if sorting == 'definition__member_accept_policy' %}selected{% endif %}>Sort by Member Accept Policy</option> 
+			            <option value="definition__member_reject_policy" {% if sorting == 'definition__member_reject_policy' %}selected{% endif %}>Sort by Member Reject Policy</option> 
 					</select>
 					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
@@ -81,14 +83,13 @@
                     <!--<th>Type</th>-->
                     <th>Issued</th>
                     <th>Starts</th>
-                    <th>Expires</th>
-                     
+                    <th>Ends</th>               
                     <th>Enrolled</th>
-                   
-                     
                     <th>Status</th>
+                    <th>Membership Status</th>
                     <th>&nbsp;</th>
 			        <th>Member accept policy</th>
+			        <th>Member reject policy</th>
                    <!-- <th>&nbsp;</th>-->
                   
                   </tr>
@@ -104,7 +105,9 @@
 	                    <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
 	                    <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
 	                    <td style="width:11%">{{approved_members|length}}</td>
-	                    
+	                    <td style="width:11%">
+	                        {{o.status}} <a href="{% url project_update o.serial %}">Update</a>
+	                    </td>
 	                    <td style="width:17%">
 	                    	<div class="msg-wrap">
 	                        {% if user == o.owner %}
@@ -126,27 +129,20 @@
 	                    	<div class="msg-wrap">
 	                    		 
 		                    {% if user in members %}
-		                        {% if user in approved_members %}
-		    
-		                        
+		                        {% if user in approved_members %}    
 			                       	{% if not user == o.owner %}
-			                             
 			                            <form action="{% url project_leave o.serial %}" method="post" class="link-like">{% csrf_token %}
 			                                 <input type="submit"  value="x leave group" class="leave"/>
 			                            </form>
 			                            <div class="dialog">
 					                		Are you sure you what to leave this group?<br>
 					                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
-					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
-					                		
+					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>       		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
 			                        {% else %}
 			                        	 &nbsp;
 			                        {% endif %}
-		                        
-		                            
-		
 		                        {% else %}
 		                            &nbsp;
 		                        {% endif %}
@@ -167,6 +163,7 @@
 	                    	</div>
 	                    </td>
 			            <td class="centered" style="width:9%">{{o.definition.member_accept_policy}}</td>
+	                    <td class="centered" style="width:9%">{{o.definition.member_reject_policy}}</td>
 	                    <!--td><a href="#" class="more-info" title="more info">+ more info</a></td-->
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">

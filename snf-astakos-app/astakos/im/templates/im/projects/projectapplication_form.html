@@ -6,6 +6,7 @@
 	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
 {% endblock %}	
 {% block page.body %}
+
 <form action="#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 
     <fieldset class="with-info" id="top">
@@ -18,7 +19,14 @@
     	</legend>
         
         {% include "im/form_render.html" %}
-
+        
+        {% for g, resources in resource_catalog.get_groups_resources %}
+	    	{% for rname in resources.keys %}
+	    	    {% with object|resource_grants|lookup:rname as value %}
+	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %}">
+                {% endwith %}
+            {% endfor %}
+        {% endfor %}
     </fieldset>
     
     <fieldset id="icons">
@@ -30,16 +38,18 @@
 	    	</span>    
     	</legend>
     	<ul class="clearfix">
+    	    {% with object|resource_groups as groups %}
             {% for g, group_info in resource_catalog.groups.items %}  
             	{% if g %}
 	    		<li>
-	    			<a href="#{{ g }}" id="{{'group_'|add:g}}"><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
-	    			<input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}"  id="proxy_{{ 'id_is_selected_'|add:g }}">
-	    			<input type="hidden" name="{{ 'is_selected_'|add:g }}"  id="{{ 'id_is_selected_'|add:g }}">
+	    		    <a href="#{{ g }}" id="{{'group_'|add:g}}" {% if g in groups %}class="selected"{% endif %}><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
+	    			<input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}"  id="proxy_{{ 'id_is_selected_'|add:g }}" {% if g in groups %}checked="checked"{% endif %}>
+	    			<input type="hidden" name="{{ 'is_selected_'|add:g }}"  id="{{ 'id_is_selected_'|add:g }}" {% if g in groups %}checked="checked"{% endif %}>
 	                <p class="msg">{{ group_info.help_text }}</p>
 	    		</li>
 	    		{% endif %}
             {% endfor %}
+            {% endwith %}
     	</ul>
     	
     </fieldset>
@@ -78,8 +88,7 @@
 										 	class="dehumanize"
 										{% endif  %}
 			       						/> 
-			       			<input type="hidden" name="{{rname|add:'_uplimit'}}" id="{{'id_'|add:rname|add:'_uplimit'}}" ">
-			    			<span class="extra-img">&nbsp;</span>
+			       			<span class="extra-img">&nbsp;</span>
 			         		<span class="info"><em>more info</em><span>Leave this field blank if you don't want to specify this resource</span></span>
 			         		<p class="error-msg">Invalid format</p>
 			    		</p>

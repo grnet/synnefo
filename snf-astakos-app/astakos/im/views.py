@@ -54,7 +54,7 @@ from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
-    create_object, delete_object, get_model_and_form_class
+    create_object, update_object, delete_object, get_model_and_form_class
 )
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.xheaders import populate_xheaders
@@ -80,7 +80,7 @@ from astakos.im.forms import (
     MembersSortForm, AstakosGroupSortForm,
     TimelineForm, PickResourceForm,
     AstakosGroupCreationSummaryForm,
-    ProjectApplicationForm
+    ProjectApplicationForm, ProjectSortForm
 )
 from astakos.im.functions import (
     send_feedback, SendMailError,
@@ -783,7 +783,7 @@ class ResourcePresentation():
             yield g, self.get_group_resources(g)
 
     def get_quota(self, group_quotas):
-        for r, v in group_quotas.iteritems():
+        for r, v in group_quotas:
             rname = str(r)
             quota = self.data['resources'].get(rname)
             quota['value'] = v
@@ -1481,6 +1481,12 @@ def project_list(request):
     q |= ProjectApplication.objects.filter(
         project__in=request.user.projectmembership_set.values_list('project', flat=True)
     )
+    sorting = 'definition__name'
+    sort_form = ProjectSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    q = q.order_by(sorting)
+    
     return object_list(
         request,
         q,
@@ -1489,27 +1495,51 @@ def project_list(request):
         template_name='im/projects/project_list.html',
         extra_context={
             'is_search':False,
-            'sorting':request.GET.get('sorting'),
+            'sorting':request.GET.get('sorting')
         }
     )
-
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_application_detail(request, serial):
-    return object_detail(
-        request,
-        queryset=ProjectApplication.objects.select_related(), 
-        slug=serial,
-        slug_field='serial',
-        template_name='im/projects/projectapplication_detail.html'
+def project_update(request, serial):
+    result = callpoint.list_resources()
+    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+    resource_catalog.update_from_result(result)
+
+    if not result.is_success:
+        messages.error(
+            request,
+            'Unable to retrieve system resources: %s' % result.reason
     )
+    extra_context = {'resource_catalog':resource_catalog}
+    return update_object(
+        request,
+        slug=serial,
+        slug_field='projectapplication__serial',
+        template_name='im/projects/projectapplication_form.html',
+        extra_context=extra_context, post_save_redirect='/im/project/list/',
+        form_class=ProjectApplicationForm)
+   
+# @require_http_methods(["GET", "POST"])
+# @signed_terms_required
+# @login_required
+# def project_application_detail(request, serial):
+#     return object_detail(
+#         request,
+#         queryset=ProjectApplication.objects.select_related(),
+#         slug=serial,
+#         slug_field='serial',
+#         template_name='im/projects/projectapplication_detail.html'
+#     )
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def project_detail(request, serial):
+    result = callpoint.list_resources()
+    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+    resource_catalog.update_from_result(result)
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),
@@ -1517,7 +1547,8 @@ def project_detail(request, serial):
         slug_field='serial',
         template_name='im/projects/project_detail.html',
         extra_context={
-            'sorting':request.GET.get('sorting', request.POST.get('sorting')),
+            'resource_catalog':resource_catalog,
+            'sorting':request.GET.get('sorting', request.POST.get('sorting'))
         }
     )
 

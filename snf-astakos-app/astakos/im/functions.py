@@ -347,7 +347,7 @@ class SendFeedbackError(SendMailError):
 
 class ChangeEmailError(SendMailError):
     def __init__(self):
-        self.message = self.message = _(astakos_messages.CHANGE_EMAIL_SEND_ERR)
+        self.message = _(astakos_messages.CHANGE_EMAIL_SEND_ERR)
         super(ChangeEmailError, self).__init__()
 
 

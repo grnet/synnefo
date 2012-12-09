@@ -443,14 +443,15 @@ class AstakosUser(User):
         d = defaultdict(int)
         for q in self.policies:
             d[q.resource] += q.uplimit or inf
-        for m in self.extended_groups:
-            if not m.is_approved:
+        for m in self.projectmembership_set.select_related().all():
+            if not m.acceptance_date:
                 continue
-            g = m.group
-            if not g.is_enabled:
+            p = m.project
+            if not p.is_active:
                 continue
-            for r, uplimit in g.quota.iteritems():
-                d[r] += uplimit or inf
+            grants = p.application.definition.projectresourcegrant_set.all()
+            for g in grants:
+                d[g.resource] += g.member_limit or inf
         # TODO set default for remaining
         return d
 
@@ -1013,45 +1014,52 @@ class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
 
-class MemberAcceptPolicy(models.Model):
+class MemberJoinPolicy(models.Model):
     policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
     description = models.CharField(_('Description'), max_length=80)
 
     def __str__(self):
         return self.policy
 
-class MemberRejectPolicy(models.Model):
+class MemberLeavePolicy(models.Model):
     policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
     description = models.CharField(_('Description'), max_length=80)
 
     def __str__(self):
         return self.policy
 
-_auto_accept = False
-def get_auto_accept():
+_auto_accept_join = False
+def get_auto_accept_join():
     global _auto_accept
     if _auto_accept is not False:
         return _auto_accept
     try:
-        auto_accept = MemberAcceptPolicy.objects.get(policy='auto_accept')
+        auto_accept = MemberJoinPolicy.objects.get(policy='auto_accept')
+    except:
+        auto_accept = None
+    _auto_accept = auto_accept
+    return auto_accept
+
+_auto_accept_leave = False
+def get_auto_accept_leave():
+    global _auto_accept
+    if _auto_accept is not False:
+        return _auto_accept
+    try:
+        auto_accept = MemberLeavePolicy.objects.get(policy='auto_accept')
     except:
         auto_accept = None
     _auto_accept = auto_accept
     return auto_accept
 
 class ProjectDefinition(models.Model):
-    serial = models.CharField(
-        primary_key=True,
-        max_length=30,
-        unique=True
-    )
     name = models.CharField(max_length=80)
     homepage = models.URLField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    member_accept_policy = models.ForeignKey(MemberAcceptPolicy)
-    member_reject_policy = models.ForeignKey(MemberRejectPolicy)
+    member_join_policy = models.ForeignKey(MemberJoinPolicy)
+    member_leave_policy = models.ForeignKey(MemberLeavePolicy)
     limit_on_members_number = models.PositiveIntegerField(null=True,blank=True)
     resource_grants = models.ManyToManyField(
         Resource,
@@ -1061,8 +1069,6 @@ class ProjectDefinition(models.Model):
     )
     
     def save(self):
-        if not self.serial:
-            self.serial = uuid.uuid4().hex[:30]
         self.validate_name()
         super(ProjectDefinition, self).save()
         
@@ -1103,7 +1109,7 @@ class ProjectDefinition(models.Model):
         alive_projects = list(get_alive_projects())
         q = filter(
             lambda p: p.definition.name == self.name and \
-                p.application.serial != self.projectapplication.serial,
+                p.application.id != self.projectapplication.id,
             alive_projects
         )
         if q:
@@ -1123,11 +1129,10 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_definition")
 
 class ProjectApplication(models.Model):
-    serial = models.CharField(
-        primary_key=True,
-        max_length=30,
-        unique=True
-    )
+    PENDING, APPROVED, REPLACED = range(3)
+    states_list = ['Pending', 'Approved', 'Replaced']
+    states = dict((k, v) for k, v in enumerate(states_list))
+
     applicant = models.ForeignKey(
         AstakosUser,
         related_name='my_project_applications',
@@ -1142,28 +1147,41 @@ class ProjectApplication(models.Model):
     issue_date = models.DateTimeField()
     precursor_application = models.OneToOneField('ProjectApplication',
         null=True,
-        blank=True
+        blank=True,
+        db_index=True
     )
     
+    @property
+    def follower(self):
+        try:
+            return ProjectApplication.objects.get(precursor_application=self)
+        except ProjectApplication.DoesNotExist:
+            return
+
     def save(self):
-        if not self.serial:
-            self.serial = uuid.uuid4().hex[:30]
+        self.definition.save()
+        self.definition = self.definition
         super(ProjectApplication, self).save()
 
     @property
     def status(self):
+        if self.follower:
+            try:
+                self.follower.project
+            except:
+                pass
+            else:
+                if self.follower.project.last_approval_date:
+                    return self.states[self.REPLACED]
         try:
             self.project
         except Project.DoesNotExist:
-            return 'PENDING'
-        else:
-            if self.project.is_terminated:
-                return 'ALIVE'
-            else:
-                return 'TERMINATED'
+            return self.states[self.PENDING]
+        if self.project.is_alive:
+            return self.states[self.APPROVED]
         
     @staticmethod
-    def submit(definition, applicant, comments, precursor_application=None, commit=True):
+    def submit(definition, resource_policies, applicant, comments, precursor_application=None, commit=True):
         application = None
         if precursor_application:
             try:
@@ -1171,35 +1189,79 @@ class ProjectApplication(models.Model):
             except:
                 pass
             else:
-                if precursor_application.project.is_valid:
-                    application = precursor_application.copy()
+                if precursor_application.status != 'Pending':
+                    application = precursor_application
                     application.precursor_application = precursor_application
+                    application.id = None
+                    print '>>>', application.precursor_application.id
         if not application:
             application = ProjectApplication(owner=applicant)
         application.definition = definition
         application.applicant = applicant
         application.comments = comments
         application.issue_date = datetime.now()
+        application.definition.id = None
+        application.id = None
         if commit:
             application.save()
+            application.definition.resource_policies = resource_policies
         if applicant.is_superuser:
             self.approve_application()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [i[1] for i in settings.ADMINS],
-            _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
-            _('An new project application identified by %(serial)s has been submitted.') % application.__dict__
-        )
-        notification.send()
+#         else:
+#             notification = build_notification(
+#                 settings.SERVER_EMAIL,
+#                 [i[1] for i in settings.ADMINS],
+#                 _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
+#                 _('An new project application identified by %(id)s has been submitted.') % application.__dict__
+#             )
+#             notification.send()
         return application
+        
+    def approve(self, approval_user=None):
+        """
+        If approval_user then during owner membership acceptance
+        it is checked whether the request_user is eligible.
+        """
+        if self.status != self.states[self.PENDING]:
+            return
+        if not self.precursor_application:
+            kwargs = {
+                'application':self,
+                'creation_date':datetime.now(),
+                'last_approval_date':datetime.now(),
+            }
+            project = _create_object(Project, **kwargs)
+            project.accept_member(self.owner, approval_user)
+        else:
+            project = self.precursor_application.project
+            project.application = self
+            project.last_approval_date = datetime.now()
+            project.save()
+
+#         notification = build_notification(
+#             settings.SERVER_EMAIL,
+#             [project.owner.email],
+#             _('Project application has been approved on %s alpha2 testing' % SITENAME),
+#             _('Your application request %(id)s has been apporved.')
+#         )
+#         notification.send()
+
+        rejected = self.project.sync()
+        if rejected:
+            # revert to precursor
+            project.appication = app.precursor_application
+            if project.application:
+                project.last_approval_date = last_approval_date
+                project.save()
+            rejected = project.sync()
+            if rejected:
+                raise Exception(_(astakos_messages.QH_SYNC_ERROR))
+        else:
+            project.last_application_synced = app
+            project.save()
 
 
 class Project(models.Model):
-    serial = models.CharField(
-        primary_key=True,
-        max_length=30,
-        unique=True
-    )
     application = models.OneToOneField(ProjectApplication, related_name='project')
     creation_date = models.DateTimeField()
     last_approval_date = models.DateTimeField(null=True)
@@ -1211,10 +1273,6 @@ class Project(models.Model):
         ProjectApplication, related_name='last_project', null=True, blank=True
     )
     
-    def save(self):
-        if not self.serial:
-            self.serial = uuid.uuid4().hex[:30]
-        super(ProjectApplication, self).save()
     
     @property
     def definition(self):
@@ -1223,20 +1281,9 @@ class Project(models.Model):
     @property
     def violated_members_number_limit(self):
         return len(self.approved_members) <= self.definition.limit_on_members_number
-
-    @property
-    def is_valid(self):
-        try:
-            self.application.definition.validate_name()
-        except ValidationError:
-            return False
-        else:
-            return True
         
     @property
     def is_active(self):
-        if not self.is_valid:
-            return False
         if not self.last_approval_date:
             return False
         if self.termination_date:
@@ -1249,16 +1296,12 @@ class Project(models.Model):
     
     @property
     def is_terminated(self):
-        if not self.is_valid:
-            return False
         if not self.termination_date:
             return False
         return True
     
     @property
     def is_suspended(self):
-        if not self.is_valid:
-            return False
         if not self.termination_date:
             return False
         if not self.last_approval_date:
@@ -1294,13 +1337,13 @@ class Project(models.Model):
         return [m.person for m in self.projectmembership_set.filter(~Q(acceptance_date=None))]
         
     def sync(self, specific_members=()):
-        if self.is_synchornized():
+        if self.is_synchronized:
             return
         members = specific_members or self.approved_members
-        c, rejected = send_quota(members)
+        c, rejected = send_quota(self.approved_members)
         return rejected
     
-    def add_member(self, user, request_user=None):
+    def accept_member(self, user, request_user=None):
         if isinstance(user, int):
             user = _lookup_object(AstakosUser, id=user)
         if request_user and \
@@ -1308,70 +1351,46 @@ class Project(models.Model):
             raise Exception(_(astakos_messages.NOT_ALLOWED))
         if not self.is_alive:
             raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-        if self.definition.member_accept_policy == 'closed':
-            raise Exception(_(astakos_messages.MEMBER_ACCEPT_POLICY_CLOSED))
-        if len(self.approved_members) + 1 > self.limit_on_members_number:
+        if self.definition.member_join_policy == 'closed':
+            raise Exception(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
+        if len(self.approved_members) + 1 > self.definition.limit_on_members_number:
             raise Exception(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
-        created, m = ProjectMembership.objects.get_or_create(
-            person=user, project=project
+        m, created = ProjectMembership.objects.get_or_create(
+            person=user, project=self
         )
         m.accept()
-        
-    def remove_member(self, user, request_user=None):
-        if user.is_digit():
+
+    def reject_member(self, user, request_user=None):
+        if isinstance(user, int):
             user = _lookup_object(AstakosUser, id=user)
         if request_user and \
             (not self.owner == request_user and not request_user.is_superuser):
             raise Exception(_(astakos_messages.NOT_ALLOWED))
         if not self.is_alive:
             raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-        m = _lookup_object(ProjectMembership, person=user, project=project)
-        m.remove()
-        
-    def approve(self, approval_user=None):
-        """
-        If approval_user then during owner membership acceptance
-        it is checked whether the request_user is eligible.
-        """
-        if not self.precursor_application:
-            kwargs = {
-                'application':self,
-                'creation_date':datetime.now(),
-                'last_approval_date':datetime.now(),
-            }
-            project = _create_object(Project, **kwargs)
-            project.add_member(self.owner, approval_user)
+        try:
+            m = ProjectMembership.objects.get(person=user, project=self)
+        except:
+            raise Exception(_(astakos_messages.NOT_MEMBERSHIP_REQUEST) % project.__dict__)
         else:
-            project = self.precursor_application.project
-            last_approval_date = project.last_approval_date
-            if project.is_valid:
-                project.application = app
-                project.last_approval_date = datetime.now()
-                project.save()
-            else:
-                raise Exception(_(astakos_messages.INVALID_PROJECT) % project.__dict__)
+            m.reject()
         
-        rejected = self.sync()
-        if rejected:
-            # revert to precursor
-            project.appication = app.precursor_application
-            if project.application:
-                project.last_approval_date = last_approval_date
-                project.save()
-            rejected = synchonize_project(project.serial)
-            if rejected:
-                raise Exception(_(astakos_messages.QH_SYNC_ERROR))
+    def remove_member(self, user, request_user=None):
+        if isinstance(user, int):
+            user = _lookup_object(AstakosUser, id=user)
+        if request_user and \
+            (not self.owner == request_user and not request_user.is_superuser):
+            raise Exception(_(astakos_messages.NOT_ALLOWED))
+        if not self.is_alive:
+            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        if self.definition.member_leave_policy == 'closed':
+            raise Exception(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
+        try:
+            m = ProjectMembership.objects.get(person=user, project=self)
+        except:
+            raise Exception(_(astakos_messages.NOT_MEMBERSHIP_REQUEST) % project.__dict__)
         else:
-            project.last_application_synced = app
-            project.save()
-            sender, recipients, subject, message
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [project.owner.email],
-                _('Project application has been approved on %s alpha2 testing' % SITENAME),
-                _('Your application request %(serial)s has been apporved.')
-            )
-            notification.send()
+            m.remove()
     
     def terminate(self):
         self.termination_start_date = datetime.now()
@@ -1417,29 +1436,28 @@ class ProjectMembership(models.Model):
             return
         self.acceptance_date = datetime.now()
         self.save()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.person.email],
-            _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__,
-            _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__
-        ).send()
+#         notification = build_notification(
+#             settings.SERVER_EMAIL,
+#             [self.person.email],
+#             _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__,
+#             _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__
+#         ).send()
         self.sync()
     
     def reject(self):
         history_item = ProjectMembershipHistory(
-            serial=self.serial,
             person=self.person,
             project=self.project,
             request_date=self.request_date,
             rejection_date=datetime.now()
         ).save()
         self.delete()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.person.email],
-            _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__,
-            _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__
-        ).send()
+#         notification = build_notification(
+#             settings.SERVER_EMAIL,
+#             [self.person.email],
+#             _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__,
+#             _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__
+#         ).send()
     
     def remove(self):
         history_item = ProjectMembershipHistory(
@@ -1450,12 +1468,12 @@ class ProjectMembership(models.Model):
             removal_date=datetime.now()
         ).save()
         self.delete()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.person.email],
-            _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__,
-            _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__
-        ).send()
+#         notification = build_notification(
+#             settings.SERVER_EMAIL,
+#             [self.person.email],
+#             _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__,
+#             _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__
+#         ).send()
         self.sync()
     
     def sync(self):
@@ -1463,7 +1481,7 @@ class ProjectMembership(models.Model):
         self.project.membership_dirty = True
         self.project.save()
         
-        rejected = self.sync([self])
+        rejected = self.project.sync(specific_members=[self])
         if not rejected:
             # if syncing was successful unset membership_dirty flag
             self.membership_dirty = False
@@ -1507,12 +1525,7 @@ def _lookup_object(model, **kwargs):
     """
     if not kwargs:
         raise MissingIdentifier
-    try:
-        return model.objects.get(**kwargs)
-    except model.DoesNotExist:
-        raise ItemNotExists(model._meta.verbose_name, **kwargs)
-    except model.MultipleObjectsReturned:
-        raise MultipleItemsExist(model._meta.verbose_name, **kwargs)
+    return model.objects.get(**kwargs)
 
 def _create_object(model, **kwargs):
     o = model.objects.create(**kwargs)
@@ -1540,8 +1553,8 @@ def _update_object(model, id, save=True, **kwargs):
 #     return Project.objects.all()
 # 
 # 
-# def synchonize_project(serial):
-#     project = _lookup_object(Project, serial=serial)
+# def synchonize_project(id):
+#     project = _lookup_object(Project, id=id)
 #     return project.sync()
 
 

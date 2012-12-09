@@ -34,74 +34,67 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
-from astakos.im.models import approve_application, 
+from astakos.im.models import _lookup_object, ProjectApplication, Project
 
+@transaction.commit_on_success
 class Command(BaseCommand):
-    args = "<project application serial>"
+    args = "<project application id>"
     help = "Update project state"
 
     option_list = BaseCommand.option_list + (
+        make_option('--approve',
+                    action='store_true',
+                    dest='approve',
+                    default=False,
+                    help="Approve group"),
         make_option('--terminate',
                     action='store_true',
                     dest='terminate',
                     default=False,
-                    help="Enable group"),
+                    help="Terminate group"),
         make_option('--suspend',
                     action='store_true',
                     dest='suspend',
                     default=False,
-                    help="Disable group"),
-        make_option('--activate',
-                    action='store_true',
-                    dest='activate',
-                    default=False,
-                    help="Disable group"),
+                    help="Suspend group")
     )
 
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a group identifier")
-
-        group = None
+        
+        app = None
+        p = None
         try:
-            if args[0].isdigit():
-                group = AstakosGroup.objects.get(id=args[0])
-            else:
-                group = AstakosGroup.objects.get(name=args[0])
-        except AstakosGroup.DoesNotExist, e:
-            raise CommandError("Invalid group")
+            id = int(args[0])
+        except ValueError:
+            raise CommandError('Invalid id')
+        else:
+            try:
+                # Is it a project application id?
+                app = _lookup_object(ProjectApplication, id=id)
+            except ProjectApplication.DoesNotExist:
+                try:
+                    # Is it a project id?
+                    p = _lookup_object(Project, id=id)
+                except Project.DoesNotExist:
+                    raise CommandError('Invalid id')
+            try:
+                if options['approve']:
+                    if not app:
+                        raise CommandError('Project application id is required.')
+                    app.approve()
 
-        try:
-            pname = options.get('add-permission')
-            if pname:
-                r, created = add_group_permission(group, pname)
-                if created:
-                    self.stdout.write(
-                        'Permission: %s created successfully\n' % pname)
-                if r == 0:
-                    self.stdout.write(
-                        'Group has already permission: %s\n' % pname)
-                else:
-                    self.stdout.write(
-                        'Permission: %s added successfully\n' % pname)
+                if app and app.status != 'Pending':
+                    p = app.project
 
-            pname = options.get('delete-permission')
-            if pname:
-                r = remove_group_permission(group, pname)
-                if r < 0:
-                    self.stdout.write(
-                        'Invalid permission codename: %s\n' % pname)
-                elif r == 0:
-                    self.stdout.write('Group has not permission: %s\n' % pname)
-                elif r > 0:
-                    self.stdout.write(
-                        'Permission: %s removed successfully\n' % pname)
-
-            if options.get('enable'):
-                group.enable()
-            elif options.get('disable'):
-                group.disable()
-
-        except Exception, e:
-            raise CommandError(e)
+                if options['terminate']:
+                    p.terminate()
+                if options['suspend']:
+                    p.suspend()
+            except BaseException, e:
+                import traceback
+                traceback.print_exc()
+                raise CommandError(e)

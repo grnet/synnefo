@@ -67,8 +67,8 @@
 			            <option value="definition__end_date" {% if sorting == 'definition__end_date' %}selected{% endif %}>Sort by End Date</option>
 			            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> --> 
 			            <!-- <option value="status" {% if sorting == '' %}selected{% endif %}>Sort by Member Accept Policy</option> --> 
-			            <option value="definition__member_accept_policy" {% if sorting == 'definition__member_accept_policy' %}selected{% endif %}>Sort by Member Accept Policy</option> 
-			            <option value="definition__member_reject_policy" {% if sorting == 'definition__member_reject_policy' %}selected{% endif %}>Sort by Member Reject Policy</option> 
+			            <option value="definition__member_join_policy__description" {% if sorting == 'definition__member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
+			            <option value="definition__member_leave_policy__description" {% if sorting == 'definition__member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 
 					</select>
 					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
@@ -96,17 +96,17 @@
                 </thead>
                 <tbody>
                   {% for o in object_list %} 
-                  {% with o.project.members as members %}
+                  {% with o.project.members.all as members %}
                   {% with o.project.approved_members as approved_members%}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
-	                    <td style="width:22%"><a href="{% url project_detail o.serial %}" title="visit group page">{{o.definition.name|truncatename}}</a></td>
+	                    <td style="width:22%"><a href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name|truncatename}}</a></td>
 	                    <!--td>{{o.kindname|capfirst}}</td-->
 	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 	                    <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
 	                    <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
 	                    <td style="width:11%">{{approved_members|length}}</td>
 	                    <td style="width:11%">
-	                        {{o.status}} <a href="{% url project_update o.serial %}">Update</a>
+	                        {{o.status}} <a href="{% url project_update o.id %}">Update</a>
 	                    </td>
 	                    <td style="width:17%">
 	                    	<div class="msg-wrap">
@@ -131,12 +131,12 @@
 		                    {% if user in members %}
 		                        {% if user in approved_members %}    
 			                       	{% if not user == o.owner %}
-			                            <form action="{% url project_leave o.serial %}" method="post" class="link-like">{% csrf_token %}
+			                            <form action="{% url project_leave o.id %}" method="post" class="link-like">{% csrf_token %}
 			                                 <input type="submit"  value="x leave group" class="leave"/>
 			                            </form>
 			                            <div class="dialog">
 					                		Are you sure you what to leave this group?<br>
-					                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
+					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
 					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>       		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
@@ -148,12 +148,12 @@
 		                        {% endif %}
 		                    {% else %}
 		                        {% if o.project.is_alive %}
-		                                <form action="{% url project_join o.serial %}" method="post" class="link-like">{% csrf_token %}
+		                                <form action="{% url project_join o.id %}" method="post" class="link-like">{% csrf_token %}
 		                                    <input type="submit"   value="+ join group" class="join_group join" />
 		                                </form>
 		                                <div class="dialog">
 					                		Are you sure you what to join this group?<br>
-					                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
+					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
 					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
@@ -162,8 +162,8 @@
 		                    {% endif %}
 	                    	</div>
 	                    </td>
-			            <td class="centered" style="width:9%">{{o.definition.member_accept_policy}}</td>
-	                    <td class="centered" style="width:9%">{{o.definition.member_reject_policy}}</td>
+			            <td class="centered" style="width:9%">{{o.definition.member_join_policy}}</td>
+	                    <td class="centered" style="width:9%">{{o.definition.member_leave_policy}}</td>
 	                    <!--td><a href="#" class="more-info" title="more info">+ more info</a></td-->
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
@@ -244,7 +244,7 @@
 			            <tbody>
 			              {% for o in page_obj.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td style="width:22%"><a  href="{% url project_detail o.serial %}" title="visit group page">{{o.definition.name|truncatename }}</a></td>
+			                <td style="width:22%"><a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name|truncatename }}</a></td>
 			                <!--td>{{o.kindname|capfirst}}</td-->
 			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 			                <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
@@ -285,12 +285,12 @@
 			                		{% if o.is_active %}
 			                			{% if user in approved_members %}
 						                    
-					                    	<form action="{% url project_leave o.serial %}" method="post" class="link-like">{% csrf_token %}
+					                    	<form action="{% url project_leave o.id %}" method="post" class="link-like">{% csrf_token %}
 					                             <input type="submit"  value="x leave" class="leave" />
 					                        </form>	
 					                        <div class="dialog">
 						                		Are you sure you want to leave this group?<br>
-						                		Name: <a  href="{% url project_detail o.serial %}" title="visit group page">{{o.groupname}}</a><br>
+						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
 						                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 						                		
 						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>

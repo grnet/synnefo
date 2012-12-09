@@ -922,8 +922,15 @@ class ProjectApplicationForm(forms.ModelForm):
     
     class Meta:
         model = ProjectDefinition
-        exclude = ('resource_grants', 'serial')
+        exclude = ('resource_grants', 'id')
     
+    
+    def __init__(self, *args, **kwargs):
+        super(ProjectApplicationForm, self).__init__(*args, **kwargs)
+        instance = kwargs.get('instance')
+        if instance:
+            self.initial['comments'] = instance.projectapplication.comments
+            
     def clean(self):
         userid = self.data.get('user', None)[0]
         self.user = None
@@ -960,8 +967,7 @@ class ProjectApplicationForm(forms.ModelForm):
         return policies
 
     def save(self, commit=True):
-        definition = super(ProjectApplicationForm, self).save(commit=commit)
-        definition.resource_policies=self.resource_policies
+        definition = super(ProjectApplicationForm, self).save(commit=False)
         applicant = self.user
         comments = self.cleaned_data.pop('comments', None)
         try:
@@ -970,6 +976,7 @@ class ProjectApplicationForm(forms.ModelForm):
             precursor_application = None
         return ProjectApplication.submit(
             definition,
+            self.resource_policies,
             applicant,
             comments,
             precursor_application,
@@ -984,8 +991,32 @@ class ProjectSortForm(forms.Form):
                  ('definition__start_date', 'Sort by Start Date'),
                  ('definition__end_date', 'Sort by End Date'),
 #                  ('approved_members_num', 'Sort by Participants'),
-                 ('definition__member_accept_policy', 'Sort by Member Accept Policy'),
-                 ('definition__member_reject_policy', 'Sort by Member Reject Policy')
+                 ('definition__member_join_policy__description', 'Sort by Member Join Policy'),
+                 ('definition__member_leave_policy__description', 'Sort by Member Leave Policy')
         ),
         required=True
     )
+
+class AddProjectMembersForm(forms.Form):
+    q = forms.CharField(
+        max_length=800, widget=forms.Textarea, label=_('Add members'),
+        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP),
+        required=True)
+
+    def clean(self):
+        q = self.cleaned_data.get('q') or ''
+        users = q.split(',')
+        users = list(u.strip() for u in users if u)
+        db_entries = AstakosUser.objects.filter(email__in=users)
+        unknown = list(set(users) - set(u.email for u in db_entries))
+        if unknown:
+            raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
+        self.valid_users = db_entries
+        return self.cleaned_data
+
+    def get_valid_users(self):
+        """Should be called after form cleaning"""
+        try:
+            return self.valid_users
+        except:
+            return ()

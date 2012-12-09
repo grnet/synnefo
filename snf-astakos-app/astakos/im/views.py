@@ -97,7 +97,7 @@ from astakos.im.settings import (
 )
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
-# from .generic_views import create_object
+from astakos.im.notifications import NotificationError
 
 import astakos.im.messages as astakos_messages
 from astakos.im import settings
@@ -1452,12 +1452,13 @@ def remove_auth_provider(request, pk):
 
 def how_it_works(request):
     return render_response(
-        template='im/how_it_works.html',
-        context_instance=get_context(request),)
+        'im/how_it_works.html',
+        context_instance=get_context(request))
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
+# @transaction.commit_manually
 def project_add(request):
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
@@ -1469,9 +1470,23 @@ def project_add(request):
             'Unable to retrieve system resources: %s' % result.reason
     )
     extra_context = {'resource_catalog':resource_catalog}
-    return create_object(request, template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect='/im/project/list/',
-        form_class=ProjectApplicationForm)
+
+    try:
+        r = create_object(request, template_name='im/projects/projectapplication_form.html',
+            extra_context=extra_context, post_save_redirect='/im/project/list/',
+            form_class=ProjectApplicationForm)
+#         transaction.commit()
+        return r
+    except NotificationError, e:
+        messages.error(request, e.message)
+#         transaction.rollback()
+        return render_response(
+            'im/projects/projectapplication_form.html',
+            sorting = 'definition__name',
+            form = ProjectApplicationForm(),
+            context_instance=get_context(request, extra_context)
+        )
+
 
 @require_http_methods(["GET"])
 @signed_terms_required
@@ -1481,6 +1496,7 @@ def project_list(request):
     q |= ProjectApplication.objects.filter(
         project__in=request.user.projectmembership_set.values_list('project', flat=True)
     )
+    q = q.select_related()
     sorting = 'definition__name'
     sort_form = ProjectSortForm(request.GET)
     if sort_form.is_valid():
@@ -1502,7 +1518,7 @@ def project_list(request):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_update(request, serial):
+def project_update(request, id):
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
@@ -1515,8 +1531,8 @@ def project_update(request, serial):
     extra_context = {'resource_catalog':resource_catalog}
     return update_object(
         request,
-        slug=serial,
-        slug_field='projectapplication__serial',
+        slug=id,
+        slug_field='projectapplication__id',
         template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect='/im/project/list/',
         form_class=ProjectApplicationForm)
@@ -1524,31 +1540,45 @@ def project_update(request, serial):
 # @require_http_methods(["GET", "POST"])
 # @signed_terms_required
 # @login_required
-# def project_application_detail(request, serial):
+# def project_application_detail(request, id):
 #     return object_detail(
 #         request,
 #         queryset=ProjectApplication.objects.select_related(),
-#         slug=serial,
-#         slug_field='serial',
+#         object_id=id,
 #         template_name='im/projects/projectapplication_detail.html'
 #     )
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_detail(request, serial):
+def project_detail(request, id):
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
+
+    if request.method == 'POST':
+        addmembers_form = AddGroupMembersForm(request.POST)
+        if addmembers_form.is_valid():
+            try:
+                obj = Project.objects.get(id=id)
+                map(obj.approve_member, addmembers_form.valid_users)
+            except AssertionError:
+                msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
+                messages.error(request, msg)
+            except AssertionError:
+                msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
+                messages.error(request, msg)
+            addmembers_form = AddGroupMembersForm()
+
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),
-        slug=serial,
-        slug_field='serial',
+        object_id=id,
         template_name='im/projects/project_detail.html',
         extra_context={
             'resource_catalog':resource_catalog,
-            'sorting':request.GET.get('sorting', request.POST.get('sorting'))
+            'sorting':request.GET.get('sorting', request.POST.get('sorting')),
+            'addmembers_form':AddGroupMembersForm()
         }
     )
 
@@ -1567,24 +1597,24 @@ def project_all(request):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_join(request, serial):
+def project_join(request, id):
     pass
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_leave(request, serial):
+def project_leave(request, id):
     pass
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-def project_approve_member(request, serial, user_id):
+def project_approve_member(request, id, user_id):
     pass
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-def project_remove_member(request, serial, user_id):
+def project_remove_member(request, id, user_id):
     pass
     

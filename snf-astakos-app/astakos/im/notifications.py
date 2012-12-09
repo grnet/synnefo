@@ -34,6 +34,8 @@
 import logging
 import socket
 
+from smtplib import SMTPException
+
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.translation import ugettext as _
@@ -64,14 +66,11 @@ class EmailNotification(Notification):
                 self.sender,
                 self.recipients
             )
-        except BaseException, e:
+        except (SMTPException, socket.error), e:
             logger.exception(e)
-            raise SendNotificationError()
+            raise NotificationError()
 
-class SendMailError(Exception):
-    pass
-
-class SendNotificationError(SendMailError):
+class NotificationError(Exception):
     def __init__(self):
         self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
-        super(SendNotificationError, self).__init__()
+        super(NotificationError, self).__init__()

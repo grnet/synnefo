@@ -33,26 +33,44 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import approve_application, ProjectApplication
+from astakos.im.models import ProjectApplication
 
-class Command(BaseCommand):
-    args = "<project application serial>"
-    help = "Update project state"
 
-    def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide a group identifier")
+class Command(NoArgsCommand):
+    help = "List resources"
 
-        serial = args[0]
-        try:
-            approve_application(serial)
-        except ProjectApplication.DoesNotExist, e:
-            raise CommandError("Invalid serial")
-        except Exception, e:
-            import traceback
-            traceback.print_exc()
-            raise CommandError("Project application approval failed with: %s" % e)
-        else:
-            self.stdout.write("Project application has been successfully approved")
+    option_list = NoArgsCommand.option_list + (
+        make_option('-c',
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
+    )
+
+    def handle_noargs(self, **options):
+        apps = ProjectApplication.objects.select_related().all()
+
+        labels = ('id', 'name', 'status')
+        columns = (3, 40, 10)
+
+        if not options['csv']:
+            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
+            self.stdout.write(line + '\n')
+            sep = '-' * len(line)
+            self.stdout.write(sep + '\n')
+
+        for app in apps:
+            fields = (
+                str(app.id),
+                app.definition.name,
+                app.status
+            )
+
+            if options['csv']:
+                line = '|'.join(fields)
+            else:
+                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+
+            self.stdout.write(line.encode('utf8') + '\n')

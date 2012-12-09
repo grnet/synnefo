@@ -1,6 +1,6 @@
 [
     {
-        "model": "im.memberrejectpolicy",
+        "model": "im.memberleavepolicy",
         "pk": 1,
         "fields": {
             "policy": "auto_accept",
@@ -8,7 +8,7 @@
         }
     },
     {
-        "model": "im.memberrejectpolicy",
+        "model": "im.memberleavepolicy",
         "pk": 2,
         "fields": {
             "policy": "owner_accepts",
@@ -16,7 +16,7 @@
         }
     },
     {
-        "model": "im.memberrejectpolicy",
+        "model": "im.memberleavepolicy",
         "pk": 3,
         "fields": {
             "policy": "closed",

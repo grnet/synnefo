@@ -40,7 +40,7 @@ from django.http import Http404
 
 from astakos.im.models import ProjectApplication
 
-@transaction.commit_on_success
+@transaction.commit_manually
 class Command(BaseCommand):
     args = "<project application id>"
     help = "Update project state"
@@ -62,4 +62,7 @@ class Command(BaseCommand):
             try:
                 app.approve()
             except BaseException, e:
+                transaction.rollback()
                 raise CommandError(e)
+            else:
+                transaction.commit()

@@ -52,8 +52,8 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         apps = ProjectApplication.objects.select_related().all()
 
-        labels = ('id', 'name', 'state')
-        columns = (3, 40, 10)
+        labels = ('application.id', 'project.id', 'name', 'state')
+        columns = (15, 10, 20, 10)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -62,8 +62,13 @@ class Command(NoArgsCommand):
             self.stdout.write(sep + '\n')
 
         for app in apps:
+            try:
+                project_id = str(app.project.id)
+            except:
+                project_id = ''
             fields = (
                 str(app.id),
+                str(project_id),
                 app.definition.name,
                 app.state
             )

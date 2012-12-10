@@ -1197,6 +1197,7 @@ class ProjectApplication(models.Model):
             precursor_application_id = precursor_application.id
             application = precursor_application
             application.id = None
+            application.precursor_application = None
         else:
             application = ProjectApplication(owner=applicant)
         application.definition = definition
@@ -1256,10 +1257,15 @@ class ProjectApplication(models.Model):
             project.application = self
             project.last_approval_date = datetime.now()
             project.save()
-            self.precursor_application.state = REPLACED
-        self.definition.validate_name()
+        precursor = self.precursor_application
+        while precursor:
+            precursor.state = REPLACED
+            precursor.save()
+            precursor = precursor.precursor_application
         self.state = APPROVED
         self.save()
+        
+#         self.definition.validate_name()
 
         notification = build_notification(
             settings.SERVER_EMAIL,
@@ -1280,7 +1286,7 @@ class ProjectApplication(models.Model):
             if rejected:
                 raise Exception(_(astakos_messages.QH_SYNC_ERROR))
         else:
-            project.last_application_synced = app
+            project.last_application_synced = self
             project.save()
 
 

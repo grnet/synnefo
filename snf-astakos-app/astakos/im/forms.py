@@ -1031,5 +1031,5 @@ class ProjectMembersSortForm(forms.Form):
         required=True
     )
 
-class ProjectGroupSearchForm(forms.Form):
+class ProjectSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search project')

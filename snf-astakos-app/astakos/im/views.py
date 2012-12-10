@@ -82,7 +82,7 @@ from astakos.im.forms import (
     TimelineForm, PickResourceForm,
     AstakosGroupCreationSummaryForm,
     ProjectApplicationForm, ProjectSortForm,
-    AddProjectMembersForm, ProjectGroupSearchForm
+    AddProjectMembersForm, ProjectSearchForm
 )
 from astakos.im.functions import (
     send_feedback, SendMailError,
@@ -1588,15 +1588,16 @@ def project_detail(request, id):
 @signed_terms_required
 @login_required
 def project_search(request):
-    queryset = ProjectApplication.objects.none()
+    queryset = ProjectApplication.objects
     if request.method == 'GET':
-        form = AstakosGroupSearchForm()
+        form = ProjectSearchForm()
+        queryset = queryset.none()
     else:
-        form = AstakosGroupSearchForm(request.POST.get('q'))
+        form = ProjectSearchForm(request.POST)
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            queryset = filter(~Q(project__last_approval_date__isnull=True))
-            queryset = queryset.filter(name__contains=q)
+            queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
+            queryset = queryset.filter(definition__name__contains=q)
     sorting = 'definition__name'        
     # validate sorting
     sort_form = AstakosGroupSortForm(request.GET)
@@ -1608,7 +1609,7 @@ def project_search(request):
         queryset,
         paginate_by=PAGINATE_BY_ALL,
         page=request.GET.get('page') or 1,
-        template_name='im/astakosgroup_list.html',
+        template_name='im/projects/project_list.html',
         extra_context=dict(
             form=form,
             is_search=True,
@@ -1623,7 +1624,6 @@ def project_search(request):
 def project_all(request):
     q = ProjectApplication.objects.filter(~Q(project__last_approval_date__isnull=True))
     q = q.select_related()
-    
     sorting = 'definition__name'
     sort_form = ProjectSortForm(request.GET)
     if sort_form.is_valid():
@@ -1637,7 +1637,7 @@ def project_all(request):
         page=request.GET.get('page') or 1,
         template_name='im/projects/project_list.html',
         extra_context={
-            'form':ProjectGroupSearchForm(),
+            'form':ProjectSearchForm(),
             'is_search':True,
             'sorting':sorting
         }

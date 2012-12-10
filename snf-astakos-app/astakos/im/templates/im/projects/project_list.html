@@ -55,7 +55,7 @@
         
     {% endif %}
     {% with page_obj.object_list as object_list %}
-    <!-- Search group -->
+    <!-- Search project -->
     {% if object_list %}
         <div class="full-dotted">
         	<form method="GET" class="minimal" action="#searchResults"> 
@@ -99,7 +99,7 @@
                   {% with o.project.members.all as members %}
                   {% with o.project.approved_members as approved_members%}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
-	                    <td style="width:22%"><a href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name|truncatename}}</a></td>
+	                    <td style="width:22%"><a href="{% url project_detail o.id %}" title="visit project page">{{o.definition.name|truncatename}}</a></td>
 	                    <!--td>{{o.kindname|capfirst}}</td-->
 	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
 	                    <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
@@ -135,8 +135,8 @@
 			                                 <input type="submit"  value="x leave group" class="leave"/>
 			                            </form>
 			                            <div class="dialog">
-					                		Are you sure you what to leave this group?<br>
-					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
+					                		Are you sure you what to leave this project?<br>
+					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name}}</a><br>
 					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>       		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
@@ -152,8 +152,8 @@
 		                                    <input type="submit"   value="+ join group" class="join_group join" />
 		                                </form>
 		                                <div class="dialog">
-					                		Are you sure you what to join this group?<br>
-					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
+					                		Are you sure you what to join this project?<br>
+					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name}}</a><br>
 					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
@@ -289,8 +289,8 @@
 					                             <input type="submit"  value="x leave" class="leave" />
 					                        </form>	
 					                        <div class="dialog">
-						                		Are you sure you want to leave this group?<br>
-						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
+						                		Are you sure you want to leave this project?<br>
+						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name}}</a><br>
 						                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
 						                		
 						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>

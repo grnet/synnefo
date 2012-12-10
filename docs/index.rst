@@ -94,7 +94,7 @@ architecture and the internals of Synnefo components.
 .. toctree::
    :maxdepth: 1
 
-   Installation Guide on two nodes <quick-install-admin-guide>
+   Quick Installation Guide (on two nodes) <quick-install-admin-guide>
 
 .. toctree::
    :maxdepth: 2

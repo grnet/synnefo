@@ -209,7 +209,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
     'group': 'www-data',
     'args': (
       '--bind=127.0.0.1:8080',
-      '--workers=4',
+      '--workers=8',
       '--log-level=debug',
     ),
    }

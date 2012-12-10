@@ -642,6 +642,8 @@ def get_ganeti_jobs(backend=None, bulk=False):
 
 def get_backends(backend=None):
     if backend:
+        if backend.offline:
+            return []
         return [backend]
     return Backend.objects.filter(offline=False)
 

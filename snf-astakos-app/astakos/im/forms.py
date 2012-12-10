@@ -951,9 +951,9 @@ class ProjectApplicationForm(forms.ModelForm):
         for name, value in self.data.iteritems():
             if not value:
                 continue
-            uplimit = value[0]
-            subs = name.split('_uplimit')
-            if len(subs) == 2:
+            uplimit = value
+            if name.endswith('_uplimit'):
+                subs = name.split('_uplimit')
                 prefix, suffix = subs
                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
                 resource = Resource.objects.get(service__name=s, name=r)

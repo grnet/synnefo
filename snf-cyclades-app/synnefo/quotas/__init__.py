@@ -30,16 +30,19 @@
 from functools import wraps
 from contextlib import contextmanager
 
-from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,
-                              CYCLADES_QUOTAHOLDER_URL,
-                              CYCLADES_QUOTAHOLDER_TOKEN,
-                              VMS_USER_QUOTA, MAX_VMS_PER_USER,
-                              NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 
 from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
 from synnefo.api.faults import OverLimit
+from synnefo.settings import CYCLADES_USE_QUOTAHOLDER
 
-from kamaki.clients.quotaholder import QuotaholderClient
+if CYCLADES_USE_QUOTAHOLDER:
+    from synnefo.settings import (CYCLADES_QUOTAHOLDER_URL,
+                                  CYCLADES_QUOTAHOLDER_TOKEN)
+    from kamaki.clients.quotaholder import QuotaholderClient
+else:
+    from synnefo.settings import (VMS_USER_QUOTA, MAX_VMS_PER_USER,
+                                  NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
+
 from synnefo.lib.quotaholder.api import (NoCapacityError, NoQuantityError)
 from synnefo.lib.commissioning import CallError
 
@@ -189,6 +192,7 @@ def issue_commission(**commission_info):
         except CallError as e:
             if e.call_error in ["NoCapacityError", "NoQuantityError"]:
                 raise OverLimit("Limit exceeded for your account")
+            raise
 
     if serial:
         return QuotaHolderSerial.objects.create(serial=serial)

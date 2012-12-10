@@ -113,6 +113,14 @@ so we can add it in Cyclades with:
 
    # snf-manage backend-add --clustername=ganeti.example.com --user=synnefo --pass=example_rapi_passw0rd
 
+After 0.13 every backend added stays in drained mode (no VMs can be added).
+Therefore get your backend ID (propably 1) and run:
+
+.. code-block:: console
+
+   # snf-manage backend-list
+   # snf-manage backend-modify --drained=False 1
+
 Further assumptions:
 
 - Preprovisioned Bridges: ``br0``, ``prv0``, ``prv1..prv20``

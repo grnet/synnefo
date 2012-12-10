@@ -506,6 +506,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         checked = []
         for entity, resource, quantity in provisions:
 
+            if entity == target:
+                m = "Cannot issue commission from an entity to itself (%s)" % (
+                    entity,)
+                raise InvalidDataError(m)
+
             ent_res = entity, resource
             if ent_res in checked:
                 m = "Duplicate provision for %s.%s" % ent_res

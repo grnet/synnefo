@@ -559,19 +559,12 @@ For astakos specific configuration, edit the following options in
 
    ASTAKOS_DEFAULT_ADMIN_EMAIL = None
 
-   ASTAKOS_IM_MODULES = ['local']
-
    ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
    ASTAKOS_BASEURL = 'https://node1.example.com'
 
-   ASTAKOS_SITENAME = '~okeanos demo example'
-
-   ASTAKOS_RECAPTCHA_ENABLED = False
-
-``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
-is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
-domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
+The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
+services). ``ASTAKOS_BASEURL`` is the astakos home page.
 
 ``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
 Every time a new account is created a notification is sent to this email.
@@ -579,8 +572,8 @@ For this we need access to a running mail server, so we have disabled
 it for now by setting its value to None. For more informations on this,
 read the relative :ref:`section <mail-server>`.
 
-.. note:: For the purpose of this guide, we have disabled recaptcha authentication.
-    If you would like to enable it you have to edit the following options:
+.. note:: For the purpose of this guide, we don't enable recaptcha authentication.
+    If you would like to enable it, you have to edit the following options:
 
     .. code-block:: console
 
@@ -619,6 +612,67 @@ read the relative :ref:`section <shibboleth-auth>`.
         MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
         TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
 
+Enable Pooling
+--------------
+
+This section can be bypassed, but we strongly recommend you apply the following,
+since they result in a significant performance boost.
+
+Synnefo includes a pooling DBAPI driver for PostgreSQL, as a thin wrapper
+around Psycopg2. This allows independent Django requests to reuse pooled DB
+connections, with significant performance gains.
+
+To use, first monkey-patch psycopg2. For Django, run this before the
+``DATABASES`` setting in ``/etc/synnefo/10-snf-webproject-database.conf``:
+
+.. code-block:: console
+
+   from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
+   monkey_patch_psycopg2()
+
+If running with greenlets, it is also recommended to modify psycopg2 behavior
+so it works properly in a greenlet context:
+
+.. code-block:: console
+
+   from synnefo.lib.db.psyco_gevent import make_psycopg_green
+   make_psycopg_green()
+
+Use the Psycopg2 driver as usual. For Django, this means using
+``django.db.backends.postgresql_psycopg2`` without any modifications. To enable
+connection pooling, pass a nonzero ``synnefo_poolsize`` option to the DBAPI
+driver, through ``DATABASES.OPTIONS`` in django.
+
+All the above will result in an ``/etc/synnefo/10-snf-webproject-database.conf``
+file that looks like this:
+
+.. code-block:: console
+
+   # Monkey-patch psycopg2
+   from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
+   monkey_patch_psycopg2()
+
+   # If running with greenlets
+   from synnefo.lib.db.psyco_gevent import make_psycopg_green
+   make_psycopg_green()
+
+   DATABASES = {
+    'default': {
+        # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
+        'ENGINE': 'postgresql_psycopg2',
+        'OPTIONS': {'synnefo_poolsize': 8},
+
+         # ATTENTION: This *must* be the absolute path if using sqlite3.
+         # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
+        'NAME': 'snf_apps',
+        'USER': 'synnefo',                      # Not used with sqlite3.
+        'PASSWORD': 'example_passw0rd',         # Not used with sqlite3.
+        # Set to empty string for localhost. Not used with sqlite3.
+        'HOST': '4.3.2.1',
+        # Set to empty string for default. Not used with sqlite3.
+        'PORT': '5432',
+    }
+   }
 
 Database Initialization
 -----------------------
@@ -834,6 +888,46 @@ The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service'
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 pithos+ web client to get from astakos all the information needed to fill its
 own cloudbar. So we put our astakos deployment urls there.
+
+Pooling and Greenlets
+---------------------
+
+Pithos is pooling-ready without the need of further configuration, because it
+doesn't use a Django DB. It pools HTTP connections to Astakos and pithos
+backend objects for access to the Pithos DB.
+
+However, as in Astakos, if running with Greenlets, it is also recommended to
+modify psycopg2 behavior so it works properly in a greenlet context. This means
+adding the following lines at the top of your
+``/etc/synnefo/10-snf-webproject-database.conf`` file:
+
+.. code-block:: console
+
+   from synnefo.lib.db.psyco_gevent import make_psycopg_green
+   make_psycopg_green()
+
+Furthermore, add the ``--worker-class=gevent`` argument on your
+``/etc/gunicorn.d/synnefo`` configuration file. The file should look something like
+this:
+
+.. code-block:: console
+
+   CONFIG = {
+    'mode': 'django',
+    'environment': {
+      'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
+    },
+    'working_dir': '/etc/synnefo',
+    'user': 'www-data',
+    'group': 'www-data',
+    'args': (
+      '--bind=127.0.0.1:8080',
+      '--workers=4',
+      '--worker-class=gevent',
+      '--log-level=debug',
+      '--timeout=43200'
+    ),
+   }
 
 Servers Initialization
 ----------------------

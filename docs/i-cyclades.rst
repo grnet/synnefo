@@ -26,10 +26,13 @@ The following apply to ``cyclades`` node. In the rest of the sections
 we will refer to its IP with FQDN ``cyclades.example.com``.Please make sure you have
 db, mq, gunicorn, apache, webproject, pithos and astakos already setup.
 
-Install the corresponding package:
+Install the corresponding package. Please note that memcache is needed for
+versions >= 0.13 :
 
 .. code-block:: console
 
+    # apt-get install memcached
+    # apt-get install python-memcache
     # apt-get install snf-cyclades-app
 
 In `/etc/synnefo/cyclades.conf` add:
@@ -67,6 +70,9 @@ In `/etc/synnefo/cyclades.conf` add:
     BACKEND_BLOCK_PATH = '/srv/pithos/data/'
 
     AMQP_HOSTS = ["amqp://synnefo:example_rabbitmq_passw0rd@mq.example.com:5672"]
+
+    CACHE_BACKEND = 'memcached://127.0.0.1:11211/'
+    VMAPI_BASE_URL = 'https://cyclades.example.com/'
 
 
 Restart services and initialize database:

@@ -25,6 +25,8 @@ The following apply to ``cms`` node. In the following sections
 we will refer to its IP as ``cms.example.com`` . Before install make sure
 you have db, apache and gunicorn setup already.
 
+IMPORTANT: Currently cms cannot coexist with astakos, synnefo and pithos roles
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First install the corresponding package:
 

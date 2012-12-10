@@ -25,6 +25,8 @@ The following apply to ``astakos`` node. In the following sections
 we will refer to its IP as ``accounts.example.com`` . Make sure
 you have db, mq, apache and gunicorn setup already.
 
+IMPORTANT: Currently if astakos coexists with cyclades/pithos roles, your setup is prone to csrf attacks.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First install the corresponding package:
 
@@ -53,6 +55,13 @@ In `/etc/synnefo/astakos.conf` add:
 
     ASTAKOS_COOKIE_DOMAIN = 'example.com'
 
+If ``astakos`` is on the same node with ``cyclades`` or ``pithos``, add the following
+line in `/etc/synnefo/astakos.conf` but please note that your setup will be prone to
+csrf attacks:
+
+.. code-block:: console
+
+   MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
 
 Then initialize the Database and register services with:
 

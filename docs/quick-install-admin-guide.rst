@@ -630,8 +630,8 @@ To use, first monkey-patch psycopg2. For Django, run this before the
    from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
    monkey_patch_psycopg2()
 
-If running with greenlets, it is also recommended to modify psycopg2 behavior
-so it works properly in a greenlet context:
+If running with greenlets, we should modify psycopg2 behavior, so it works
+properly in a greenlet context:
 
 .. code-block:: console
 

@@ -1097,10 +1097,6 @@ class ProjectDefinition(models.Model):
         through='ProjectResourceGrant'
     )
     
-    def save(self):
-        self.validate_name()
-        super(ProjectDefinition, self).save()
-        
     @property
     def violated_resource_grants(self):
         return False
@@ -1212,6 +1208,14 @@ class ProjectApplication(models.Model):
         if commit:
             application.save()
             application.definition.resource_policies = resource_policies
+            # better implementation ???
+            if precursor_application:
+                try:
+                    precursor = ProjectApplication.objects.get(id=precursor_application_id)
+                except:
+                    pass
+                application.precursor_application = precursor
+                application.save()
         else:
             notification = build_notification(
                 settings.SERVER_EMAIL,
@@ -1226,6 +1230,10 @@ class ProjectApplication(models.Model):
         """
         If approval_user then during owner membership acceptance
         it is checked whether the request_user is eligible.
+        
+        Raises:
+            ValidationError: if there is other alive project with the same name
+            
         """
         if self.state != PENDING:
             return
@@ -1249,6 +1257,7 @@ class ProjectApplication(models.Model):
             project.last_approval_date = datetime.now()
             project.save()
             self.precursor_application.state = REPLACED
+        self.definition.validate_name()
         self.state = APPROVED
         self.save()
 

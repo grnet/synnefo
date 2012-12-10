@@ -119,7 +119,7 @@ class QHAPITest(QHTestCase):
 
     def test_001_list_entities(self):
         r = self.qh.list_entities(entity='system', key='')
-        self.assertEqual(r, ['system', self.e_name])
+        self.assertEqual(sorted(r), sorted(['system', self.e_name]))
 
         with self.assertRaises(NoEntityError):
             self.qh.list_entities(entity='doesnotexist', key='')

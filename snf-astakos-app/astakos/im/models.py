@@ -1549,7 +1549,7 @@ class ProjectMembership(models.Model):
         if not rejected:
             # if syncing was successful unset membership_dirty flag
             self.membership_dirty = False
-            self.save()
+            self.project.save()
         
 
 class ProjectMembershipHistory(models.Model):
@@ -1710,8 +1710,7 @@ pre_save.connect(check_closed_join_membership_policy, sender=ProjectMembership)
 def check_auto_accept_join_membership_policy(sender, instance, created, **kwargs):
     if not created:
         return
-    if created:
-        join_policy = instance.project.application.definition.member_join_policy
-        if join_policy == get_auto_accept_join():
-            instance.accept()
+    join_policy = instance.project.application.definition.member_join_policy
+    if join_policy == get_auto_accept_join():
+        instance.accept()
 post_save.connect(check_auto_accept_join_membership_policy, sender=ProjectMembership)

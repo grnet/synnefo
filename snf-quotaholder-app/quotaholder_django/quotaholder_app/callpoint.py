@@ -45,7 +45,9 @@ from synnefo.lib.commissioning.utils.newname import newname
 from django.db.models import Q
 from django.db import transaction, IntegrityError
 from .models import (Holder, Entity, Policy, Holding,
-                     Commission, Provision, ProvisionLog, now)
+                     Commission, Provision, ProvisionLog, now,
+                     db_get_entity, db_get_holding, db_get_policy,
+                     db_get_commission, db_filter_provision)
 
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
@@ -107,7 +109,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for entity, key, newkey in set_entity_key:
             try:
-                e = Entity.objects.get(entity=entity, key=key)
+                e = db_get_entity(entity=entity, key=key, for_update=True)
             except Entity.DoesNotExist:
                 append(entity)
                 continue
@@ -163,7 +165,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 import_limit, export_limit  ) in set_limits:
 
                 try:
-                    policy = Policy.objects.get(policy=policy)
+                    policy = db_get_policy(policy=policy, for_update=True)
                 except Policy.DoesNotExist:
                     Policy.objects.create(  policy=policy,
                                             quantity=quantity,
@@ -200,7 +202,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
     def _set_holding(self, entity, resource, policy, flags):
         try:
-            h = Holding.objects.get(entity=entity, resource=resource)
+            h = db_get_holding(entity=entity, resource=resource,
+                               for_update=True)
             h.policy = p
             h.flags = flags
             h.save()
@@ -231,7 +234,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
+                h = db_get_holding(entity=entity, resource=resource,
+                                   for_update=True)
                 h.policy = p
                 h.flags = flags
                 h.save()
@@ -245,7 +249,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                           imported, exported, returned, released,
                           flags):
         try:
-            h = Holding.objects.get(entity=entity, resource=resource)
+            h = db_get_holding(entity=entity, resource=resource,
+                               for_update=True)
         except Holding.DoesNotExist:
             h = Holding(entity=entity, resource=resource)
 
@@ -305,7 +310,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
+                h = db_get_holding(entity=entity, resource=resource,
+                                   for_update=True)
                 h.imported=imported
                 h.importing=imported
                 h.exported=exported
@@ -341,7 +347,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
     def _increase_resource(self, entity, resource, amount):
         try:
-            h = Holding.objects.get(entity=entity, resource=resource)
+            h = db_get_holding(entity=entity, resource=resource,
+                               for_update=True)
         except Holding.DoesNotExist:
             h = Holding(entity=entity, resource=resource)
             p = Policy.objects.create(policy=self._new_policy_name(),
@@ -356,7 +363,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for idx, (entity, resource, key) in enumerate(release_holding):
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
+                h = db_get_holding(entity=entity, resource=resource,
+                                   for_update=True)
             except Holding.DoesNotExist:
                 append(idx)
                 continue
@@ -462,7 +470,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 )
 
                 try:
-                    h = Holding.objects.get(entity=entity, resource=resource)
+                    h = db_get_holding(entity=entity, resource=resource,
+                                       for_update=True)
                     p = h.policy
                     h.policy = newp
                     h.flags = flags
@@ -528,7 +537,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 release = 1
 
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
+                h = db_get_holding(entity=entity, resource=resource,
+                                   for_update=True)
             except Holding.DoesNotExist:
                 m = ("There is not enough quantity "
                      "to allocate from in %s.%s" % (entity, resource))
@@ -551,7 +561,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     raise NoQuantityError(m)
 
             try:
-                th = Holding.objects.get(entity=target, resource=resource)
+                th = db_get_holding(entity=target, resource=resource,
+                                    for_update=True)
             except Holding.DoesNotExist:
                 m = ("There is not enough capacity "
                      "to allocate into in %s.%s" % (target, resource))
@@ -630,18 +641,20 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for serial in serials:
             try:
-                c = Commission.objects.get(clientkey=clientkey, serial=serial)
+                c = db_get_commission(clientkey=clientkey, serial=serial,
+                                      for_update=True)
             except Commission.DoesNotExist:
                 return
 
             t = c.entity
 
-            provisions = Provision.objects.filter(serial=serial)
+            provisions = db_filter_provision(serial=serial, for_update=True)
             for pv in provisions:
                 try:
-                    h = Holding.objects.get(entity=pv.entity.entity,
-                                            resource=pv.resource    )
-                    th = Holding.objects.get(entity=t, resource=pv.resource)
+                    h = db_get_holding(entity=pv.entity.entity,
+                                       resource=pv.resource, for_update=True)
+                    th = db_get_holding(entity=t, resource=pv.resource,
+                                        for_update=True)
                 except Holding.DoesNotExist:
                     m = "Corrupted provision"
                     raise CorruptedError(m)
@@ -673,18 +686,20 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         for serial in serials:
             try:
-                c = Commission.objects.get(clientkey=clientkey, serial=serial)
+                c = db_get_commission(clientkey=clientkey, serial=serial,
+                                      for_update=True)
             except Commission.DoesNotExist:
                 return
 
             t = c.entity
 
-            provisions = Provision.objects.filter(serial=serial)
+            provisions = db_filter_provision(serial=serial, for_update=True)
             for pv in provisions:
                 try:
-                    h = Holding.objects.get(entity=pv.entity.entity,
-                                            resource=pv.resource)
-                    th = Holding.objects.get(entity=t, resource=pv.resource)
+                    h = db_get_holding(entity=pv.entity.entity,
+                                       resource=pv.resource, for_update=True)
+                    th = db_get_holding(entity=t, resource=pv.resource,
+                                        for_update=True)
                 except Holding.DoesNotExist:
                     m = "Corrupted provision"
                     raise CorruptedError(m)
@@ -740,7 +755,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         append = rejected.append
         for entity, key in release_entity:
             try:
-                e = Entity.objects.get(entity=entity, key=key)
+                e = db_get_entity(entity=entity, key=key, for_update=True)
             except Entity.DoesNotExist:
                 append(entity)
                 continue

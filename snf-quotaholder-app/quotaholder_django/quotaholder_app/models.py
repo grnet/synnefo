@@ -37,7 +37,7 @@ from synnefo.lib.commissioning import CorruptedError
 from django.db.models import (Model, BigIntegerField, CharField,
                               ForeignKey, AutoField)
 from django.db import transaction
-
+from .managers import ForUpdateManager
 
 class Holder(Model):
 
@@ -45,6 +45,7 @@ class Holder(Model):
     intval      =   BigIntegerField()
     strval      =   CharField(max_length=4096)
 
+    objects     =   ForUpdateManager()
 
 class Entity(Model):
 
@@ -53,6 +54,7 @@ class Entity(Model):
                                related_name='entities')
     key         =   CharField(max_length=4096, null=False)
 
+    objects     =   ForUpdateManager()
 
 class Policy(Model):
 
@@ -62,6 +64,7 @@ class Policy(Model):
     import_limit    =   BigIntegerField(null=True,  default=None)
     export_limit    =   BigIntegerField(null=True,  default=None)
 
+    objects     =   ForUpdateManager()
 
 class Holding(Model):
 
@@ -79,6 +82,8 @@ class Holding(Model):
     returning   =   BigIntegerField(null=False, default=0)
     released    =   BigIntegerField(null=False, default=0)
     releasing   =   BigIntegerField(null=False, default=0)
+
+    objects     =   ForUpdateManager()
 
     class Meta:
         unique_together = (('entity', 'resource'),)
@@ -98,6 +103,7 @@ class Commission(Model):
     clientkey   =   CharField(max_length=4096, null=False)
     issue_time  =   CharField(max_length=24, default=now)
 
+    objects     =   ForUpdateManager()
 
 class Provision(Model):
 
@@ -109,6 +115,7 @@ class Provision(Model):
     resource    =   CharField(max_length=4096, null=False)
     quantity    =   BigIntegerField(null=False)
 
+    objects     =   ForUpdateManager()
 
 class ProvisionLog(Model):
 
@@ -138,6 +145,7 @@ class ProvisionLog(Model):
     delta_quantity      =   BigIntegerField(null=False)
     reason              =   CharField(max_length=4096)
 
+    objects     =   ForUpdateManager()
 
     def source_allocated_through(self):
         return self.source_imported - self.source_released
@@ -179,3 +187,37 @@ class ProvisionLog(Model):
     def target_outbound(self):
         return self.target_outbound_through() + self.target_exported
 
+def _access(*args, **kwargs):
+    method = args[0]
+    model = args[1]
+    args = args[2:]
+    o = model.objects
+    try:
+        if kwargs['for_update']:
+            del kwargs['for_update']
+            o = o.select_for_update()
+    except KeyError:
+        pass
+    f = getattr(o, method)
+    return f(*args, **kwargs)
+
+def _get(*args, **kwargs):
+    return _access('get', *args, **kwargs)
+
+def _filter(*args, **kwargs):
+    return _access('filter', *args, **kwargs)
+
+def db_get_holding(*args, **kwargs):
+    return _get(Holding, *args, **kwargs)
+
+def db_get_entity(*args, **kwargs):
+    return _get(Entity, *args, **kwargs)
+
+def db_get_policy(*args, **kwargs):
+    return _get(Policy, *args, **kwargs)
+
+def db_get_commission(*args, **kwargs):
+    return _get(Commission, *args, **kwargs)
+
+def db_filter_provision(*args, **kwargs):
+    return _filter(Provision, *args, **kwargs)

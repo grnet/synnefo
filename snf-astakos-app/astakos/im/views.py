@@ -1543,17 +1543,7 @@ def project_update(request, id):
         template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect='/im/project/list/',
         form_class=ProjectApplicationForm)
-   
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# def project_application_detail(request, id):
-#     return object_detail(
-#         request,
-#         queryset=ProjectApplication.objects.select_related(),
-#         object_id=id,
-#         template_name='im/projects/projectapplication_detail.html'
-#     )
+
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required

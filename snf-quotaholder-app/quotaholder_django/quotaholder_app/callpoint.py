@@ -446,27 +446,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 quantity, capacity,
                 import_limit, export_limit, flags  ) in set_quota:
 
-                p = None
-
                 try:
-                    h = Holding.objects.get(entity=entity, resource=resource)
-                    if h.entity.key != key:
-                        append((entity, resource))
-                        continue
-                    p = h.policy
-
-                except Holding.DoesNotExist:
-                    try:
-                        e = Entity.objects.get(entity=entity)
-                    except Entity.DoesNotExist:
-                        append((entity, resource))
-                        continue
-
-                    if e.key != key:
-                        append((entity, resource))
-                        continue
-
-                    h = None
+                    e = Entity.objects.get(entity=entity, key=key)
+                except Entity.DoesNotExist:
+                    append((entity, resource))
+                    continue
 
                 policy = newname('policy_')
                 newp = Policy   (
@@ -477,12 +461,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                             export_limit=export_limit
                 )
 
-                if h is None:
-                    h = Holding(entity=e, resource=resource,
-                                policy=newp, flags=flags)
-                else:
+                try:
+                    h = Holding.objects.get(entity=entity, resource=resource)
+                    p = h.policy
                     h.policy = newp
                     h.flags = flags
+                except Holding.DoesNotExist:
+                    h = Holding(entity=e, resource=resource,
+                                policy=newp, flags=flags)
+                    p = None
 
                 # the order is intentionally reversed so that it
                 # would break if we are not within a transaction.

@@ -33,7 +33,7 @@
 
 
 from .specificator  import  CanonifyException
-from .exception     import  CorruptedError, InvalidDataError
+from .exception     import  CorruptedError, InvalidDataError, ReturnButFail
 from .importing     import  imp_module
 
 from re import compile as re_compile, sub as re_sub
@@ -165,11 +165,13 @@ class Callpoint(object):
                 data = self.do_make_call(call_name, data)
             else:
                 data = call_func(**data)
+            self.commit()
+        except ReturnButFail, e:
+            self.rollback()
+            data = e.data
         except Exception, e:
             self.rollback()
             raise
-        else:
-            self.commit()
 
         try:
             data = canonifier.canonify_output(call_name, data)

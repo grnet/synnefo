@@ -180,10 +180,19 @@ class QHAPITest(QHTestCase):
         f1 = self.rand_flags()
         p2, _ = self.new_policy()
         f2 = self.rand_flags()
+
+        # none is committed
         r = self.qh.set_holding(set_holding=[(e, resource, k, p0, f0),
                                              (e, resource, k, p1, f1),
                                              (e, resource, k, p2, f2)])
         self.assertEqual(r, [(e, resource, p0)])
+
+        r = self.qh.get_holding(get_holding=[(e, resource, k)])
+        self.assertEqual(r, [])
+
+        r = self.qh.set_holding(set_holding=[(e, resource, k, p1, f1),
+                                             (e, resource, k, p2, f2)])
+        self.assertEqual(r, [])
 
         resource1 = self.rand_resource()
         r = self.qh.get_holding(get_holding=[(e, resource, k),
@@ -277,19 +286,35 @@ class QHAPITest(QHTestCase):
     def test_011_release_empty(self):
         e, k = self.new_entity()
         e0, k0 = self.rand_entity(), Key.random()
+
+        # none is committed
         r = self.qh.release_entity(release_entity=[(e, k), (e0, k0)])
         self.assertEqual(r, [e0])
+
+        r = self.qh.get_entity(get_entity=[(e, k)])
+        self.assertEqual(r, [(e, 'system')])
+
+        r = self.qh.release_entity(release_entity=[(e, k)])
+        self.assertEqual(r, [])
+
         r = self.qh.get_entity(get_entity=[(e, k)])
         self.assertEqual(r, [])
 
     def test_012_release_nonempty(self):
         e, k = self.new_entity()
         e1, k1 = self.new_entity(e, k)
+
+        # none is committed
         r = self.qh.release_entity(release_entity=[(e, k), (e1, k1)])
         self.assertEqual(r, [e])
+
         r = self.qh.get_entity(get_entity=[(e1, k1)])
+        self.assertEqual(r, [(e1, e)])
+
+        r = self.qh.release_entity(release_entity=[(e1, k1), (e, k)])
         self.assertEqual(r, [])
-        r = self.qh.release_entity(release_entity=[(e, k)])
+
+        r = self.qh.get_entity(get_entity=[(e1, k1)])
         self.assertEqual(r, [])
 
     def test_013_release_nonempty(self):
@@ -312,10 +337,20 @@ class QHAPITest(QHTestCase):
         r = self.qh.set_holding(set_holding=[(e1, resource, k1, p, f)])
 
         counters = self.rand_counters()
+
+        # none is committed
         r = self.qh.reset_holding(
             reset_holding=[(e0, resource, k0) + counters,
                            (e1, resource, k1) + counters])
         self.assertEqual(r, [0])
+
+        r = self.qh.get_holding(get_holding=[(e1, resource, k1)])
+        self.assertEqual(r, [(e1, resource, p) + DEFAULT_HOLDING + (f,)])
+
+        r = self.qh.reset_holding(
+            reset_holding=[(e1, resource, k1) + counters])
+        self.assertEqual(r, [])
+
         r = self.qh.get_holding(get_holding=[(e1, resource, k1)])
         self.assertEqual(r, [(e1, resource, p) + counters + (f,)])
 

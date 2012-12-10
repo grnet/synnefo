@@ -108,3 +108,7 @@ class CorruptedError(CallError):
 @register_exception
 class InvalidDataError(CallError):
     pass
+
+class ReturnButFail(Exception):
+    def __init__(self, retval=None):
+        self.data = retval

@@ -39,7 +39,7 @@ from synnefo.lib.quotaholder.api import (
                             DuplicateError)
 
 from synnefo.lib.commissioning import \
-    Callpoint, CorruptedError, InvalidDataError
+    Callpoint, CorruptedError, InvalidDataError, ReturnButFail
 from synnefo.lib.commissioning.utils.newname import newname
 
 from django.db.models import Q
@@ -101,6 +101,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 e = Entity.objects.create(entity=entity,
                                           owner=owner,
                                           key=key)
+
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def set_entity_key(self, context={}, set_entity_key=()):
@@ -117,6 +120,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             e.key = newkey
             e.save()
 
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def list_entities(self, context={}, entity=None, key=None):
@@ -243,6 +248,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h = Holding.objects.create( entity=e, resource=resource,
                                             policy=p, flags=flags      )
 
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def _init_holding(self, entity, resource, policy,
@@ -294,6 +301,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                    imported, exported,
                                    returned, released,
                                    flags)
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def reset_holding(self, context={}, reset_holding=()):
@@ -325,6 +334,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 append(idx)
                 continue
 
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def _check_pending(self, entity, resource):
@@ -384,6 +395,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             h.delete()
 
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def list_resources(self, context={}, entity=None, key=None):
@@ -489,6 +502,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 if p is not None and p.holding_set.count() == 0:
                     p.delete()
 
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def issue_commission(self,  context     =   {},
@@ -770,6 +785,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             e.delete()
 
+        if rejected:
+            raise ReturnButFail(rejected)
         return rejected
 
     def get_timeline(self, context={}, after="", before="Z", get_timeline=()):

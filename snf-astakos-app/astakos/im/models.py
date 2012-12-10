@@ -69,7 +69,7 @@ from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, BILLING_FIELDS,
     EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    GROUP_CREATION_SUBJECT
+    GROUP_CREATION_SUBJECT, SITENAME
 )
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
@@ -1212,16 +1212,6 @@ class ProjectApplication(models.Model):
         if commit:
             application.save()
             application.definition.resource_policies = resource_policies
-            # better implementation ???
-            if precursor_application:
-                try:
-                    precursor = ProjectApplication.objects.get(id=precursor_application_id)
-                except:
-                    pass
-                precursor.state = REPLACED
-                precursor.save()
-                application.precursor_application_id = precursor
-                application.save()
         else:
             notification = build_notification(
                 settings.SERVER_EMAIL,
@@ -1258,6 +1248,7 @@ class ProjectApplication(models.Model):
             project.application = self
             project.last_approval_date = datetime.now()
             project.save()
+            self.precursor_application.state = REPLACED
         self.state = APPROVED
         self.save()
 
@@ -1380,7 +1371,7 @@ class Project(models.Model):
         m, created = ProjectMembership.objects.get_or_create(
             person=user, project=self
         )
-        m.accept(user, delete_on_failure=created, request_user=None)
+        m.accept(delete_on_failure=created, request_user=None)
 
     def reject_member(self, user, request_user=None):
         """
@@ -1502,8 +1493,9 @@ class ProjectMembership(models.Model):
             project=self.project,
             request_date=self.request_date,
             rejection_date=datetime.now()
-        ).save()
+        )
         self.delete()
+        history_item.save()
         notification = build_notification(
             settings.SERVER_EMAIL,
             [self.person.email],
@@ -1553,7 +1545,7 @@ class ProjectMembership(models.Model):
         self.project.membership_dirty = True
         self.project.save()
         
-        rejected = self.project.sync(specific_members=[self])
+        rejected = self.project.sync(specific_members=[self.person])
         if not rejected:
             # if syncing was successful unset membership_dirty flag
             self.membership_dirty = False
@@ -1716,6 +1708,8 @@ pre_save.connect(check_closed_join_membership_policy, sender=ProjectMembership)
 
 
 def check_auto_accept_join_membership_policy(sender, instance, created, **kwargs):
+    if not created:
+        return
     if created:
         join_policy = instance.project.application.definition.member_join_policy
         if join_policy == get_auto_accept_join():

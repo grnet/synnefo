@@ -1694,15 +1694,17 @@ def handle_project_membership(func):
     def wrapper(request, id, user_id=None):
         rollback = False
         if not user_id:
-            user_id = user.id
+            user_id = request.user.id
         try:
             m = ProjectMembership.objects.select_related().get(
                 project__application__id=id,
                 person__id=user_id)
         except AstakosUser.DoesNotExist:
-            return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
+            msg = _(astakos_messages.ACCOUNT_UNKNOWN)
+            messages.error(request, msg)
         except ProjectMembership.DoesNotExist:
-            return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
+            msg = _(astakos_messages.NOT_MEMBER)
+            messages.error(request, msg)
         else:
             try:
                 func(request, m)
@@ -1718,7 +1720,7 @@ def handle_project_membership(func):
     return wrapper
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 @handle_project_membership
@@ -1732,7 +1734,7 @@ def project_leave(request, m):
 @handle_project_membership
 def project_approve_member(request, m):
     m.accept(request_user=request.user)
-    realname = membership.person.realname
+    realname = m.person.realname
     msg = _(astakos_messages.USER_JOINED_GROUP) % locals()
     messages.success(request, msg)
 
@@ -1754,6 +1756,6 @@ def project_remove_member(request, m):
 @handle_project_membership
 def project_reject_member(request, m):
     m.remove(request_user=request.user)
-    realname = membership.person.realname
+    realname = m.person.realname
     msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % locals()
     messages.success(request, msg)

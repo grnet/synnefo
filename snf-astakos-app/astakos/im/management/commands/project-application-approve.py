@@ -33,44 +33,33 @@
 
 from optparse import make_option
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
+from django.views.generic.create_update import lookup_object
+from django.http import Http404
 
 from astakos.im.models import ProjectApplication
 
+@transaction.commit_on_success
+class Command(BaseCommand):
+    args = "<project application id>"
+    help = "Update project state"
 
-class Command(NoArgsCommand):
-    help = "List resources"
-
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
-
-    def handle_noargs(self, **options):
-        apps = ProjectApplication.objects.select_related().all()
-
-        labels = ('id', 'name', 'state')
-        columns = (3, 40, 10)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for app in apps:
-            fields = (
-                str(app.id),
-                app.definition.name,
-                app.state
-            )
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+    def handle(self, *args, **options):
+        if len(args) < 1:
+            raise CommandError("Please provide a group identifier")
+        
+        try:
+            id = int(args[0])
+        except ValueError:
+            raise CommandError('Invalid id')
+        else:
+            try:
+                # Is it a project application id?
+                app = lookup_object(ProjectApplication, id, None, None)
+            except Http404:
+                raise CommandError('Invalid id')
+            try:
+                app.approve()
+            except BaseException, e:
+                raise CommandError(e)

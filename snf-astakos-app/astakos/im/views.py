@@ -62,13 +62,14 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
+from django.core.exceptions import PermissionDenied
 
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (
     AstakosUser, ApprovalTerms, AstakosGroup,
     EmailChange, GroupKind, Membership,
     RESOURCE_SEPARATOR, AstakosUserAuthProvider,
-    ProjectApplication
+    ProjectApplication, ProjectMembership, Project
 )
 from astakos.im.util import get_context, prepare_response, get_query, restrict_next
 from astakos.im.forms import (
@@ -80,7 +81,8 @@ from astakos.im.forms import (
     MembersSortForm, AstakosGroupSortForm,
     TimelineForm, PickResourceForm,
     AstakosGroupCreationSummaryForm,
-    ProjectApplicationForm, ProjectSortForm
+    ProjectApplicationForm, ProjectSortForm,
+    AddProjectMembersForm, ProjectGroupSearchForm
 )
 from astakos.im.functions import (
     send_feedback, SendMailError,
@@ -1458,8 +1460,9 @@ def how_it_works(request):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-# @transaction.commit_manually
+@transaction.commit_manually
 def project_add(request):
+    rollback = False
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
@@ -1475,17 +1478,21 @@ def project_add(request):
         r = create_object(request, template_name='im/projects/projectapplication_form.html',
             extra_context=extra_context, post_save_redirect='/im/project/list/',
             form_class=ProjectApplicationForm)
-#         transaction.commit()
         return r
     except NotificationError, e:
+        rollback = True
         messages.error(request, e.message)
-#         transaction.rollback()
         return render_response(
             'im/projects/projectapplication_form.html',
             sorting = 'definition__name',
             form = ProjectApplicationForm(),
             context_instance=get_context(request, extra_context)
         )
+    finally:
+        if rollback:
+            transaction.rollback()
+        else:
+            transaction.commit()
 
 
 @require_http_methods(["GET"])
@@ -1511,7 +1518,7 @@ def project_list(request):
         template_name='im/projects/project_list.html',
         extra_context={
             'is_search':False,
-            'sorting':request.GET.get('sorting')
+            'sorting':sorting
         }
     )
 
@@ -1556,19 +1563,24 @@ def project_detail(request, id):
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
 
+    addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
-        addmembers_form = AddGroupMembersForm(request.POST)
+        addmembers_form = AddProjectMembersForm(request.POST)
         if addmembers_form.is_valid():
             try:
-                obj = Project.objects.get(id=id)
-                map(obj.approve_member, addmembers_form.valid_users)
-            except AssertionError:
-                msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
-                messages.error(request, msg)
-            except AssertionError:
-                msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
-                messages.error(request, msg)
-            addmembers_form = AddGroupMembersForm()
+                obj = ProjectApplication.objects.get(id=id)
+                map(obj.project.accept_member, addmembers_form.valid_users)
+            except ProjectApplication.DoesNotExist, e:
+                messages.error(request, _(astakos_messages.UNKNOWN_IDENTIFIER))
+            except BaseException, e:
+                messages.error(request, e)
+            addmembers_form = AddProjectMembersForm()
+    
+    # validate sorting
+    sorting = 'person__email'
+    form = MembersSortForm(request.GET or request.POST)
+    if form.is_valid():
+        sorting = form.cleaned_data.get('sorting')
 
     return object_detail(
         request,
@@ -1577,8 +1589,8 @@ def project_detail(request, id):
         template_name='im/projects/project_detail.html',
         extra_context={
             'resource_catalog':resource_catalog,
-            'sorting':request.GET.get('sorting', request.POST.get('sorting')),
-            'addmembers_form':AddGroupMembersForm()
+            'sorting':sorting,
+            'addmembers_form':addmembers_form
         }
     )
 
@@ -1586,35 +1598,162 @@ def project_detail(request, id):
 @signed_terms_required
 @login_required
 def project_search(request):
-    pass
+    queryset = ProjectApplication.objects.none()
+    if request.method == 'GET':
+        form = AstakosGroupSearchForm()
+    else:
+        form = AstakosGroupSearchForm(request.POST.get('q'))
+        if form.is_valid():
+            q = form.cleaned_data['q'].strip()
+            queryset = filter(~Q(project__last_approval_date__isnull=True))
+            queryset = queryset.filter(name__contains=q)
+    sorting = 'definition__name'        
+    # validate sorting
+    sort_form = AstakosGroupSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    queryset = queryset.order_by(sorting)
+    return object_list(
+        request,
+        queryset,
+        paginate_by=PAGINATE_BY_ALL,
+        page=request.GET.get('page') or 1,
+        template_name='im/astakosgroup_list.html',
+        extra_context=dict(
+            form=form,
+            is_search=True,
+            sorting=sorting
+        )
+    )
+
 
 @require_http_methods(["GET"])
 @signed_terms_required
 @login_required
 def project_all(request):
-    pass
-
-@require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
-def project_join(request, id):
-    pass
-
-@require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
-def project_leave(request, id):
-    pass
-
-@require_http_methods(["POST"])
-@signed_terms_required
-@login_required
-def project_approve_member(request, id, user_id):
-    pass
-
-@require_http_methods(["POST"])
-@signed_terms_required
-@login_required
-def project_remove_member(request, id, user_id):
-    pass
+    q = ProjectApplication.objects.filter(~Q(project__last_approval_date__isnull=True))
+    q = q.select_related()
     
+    sorting = 'definition__name'
+    sort_form = ProjectSortForm(request.GET)
+    if sort_form.is_valid():
+        sorting = sort_form.cleaned_data.get('sorting')
+    q = q.order_by(sorting)
+    
+    return object_list(
+        request,
+        q,
+        paginate_by=PAGINATE_BY_ALL,
+        page=request.GET.get('page') or 1,
+        template_name='im/projects/project_list.html',
+        extra_context={
+            'form':ProjectGroupSearchForm(),
+            'is_search':True,
+            'sorting':sorting
+        }
+    )
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+@transaction.commit_manually
+def project_join(request, id):
+    rollback = False
+    try:
+        project = Project.objects.get(application__id=id)
+        m = ProjectMembership(
+            project=project,
+            person=request.user,
+            request_date=datetime.now())
+        m.save()
+    except Project.DoesNotExist, e:
+        msg = _(astakos_messages.UNKNOWN_IDENTIFIER)
+        messages.error(request, msg)
+    except IntegrityError, e:
+        logger.exception(e)
+        msg = _(astakos_messages.MEMBERSHIP_REQUEST_EXISTS)
+        messages.error(request, msg)
+    except PermissionDenied, e:
+        messages.error(request, e)
+    except NotificationError, e:
+        rollback = True
+        messages.error(request, e)
+    else:
+        return project_detail(request, id)
+    finally:
+        if rollback:
+            transaction.rollback()
+        else:
+            transaction.commit()
+    return project_search(request)
+
+
+@transaction.commit_manually
+def handle_project_membership(func):
+    @wraps(func)
+    def wrapper(request, id, user_id=None):
+        rollback = False
+        if not user_id:
+            user_id = user.id
+        try:
+            m = ProjectMembership.objects.select_related().get(
+                project__application__id=id,
+                person__id=user_id)
+        except AstakosUser.DoesNotExist:
+            return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
+        except ProjectMembership.DoesNotExist:
+            return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
+        else:
+            try:
+                func(request, m)
+            except (NotificationError, PermissionDenied), e:
+                messages.error(request, e)
+                rollback = True
+        finally:
+            if rollback:
+                transaction.rollback()
+            else:
+                transaction.commit()
+        return project_detail(request, id)
+    return wrapper
+
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+@handle_project_membership
+def project_leave(request, m):
+    m.leave()
+
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+@handle_project_membership
+def project_approve_member(request, m):
+    m.accept(request_user=request.user)
+    realname = membership.person.realname
+    msg = _(astakos_messages.USER_JOINED_GROUP) % locals()
+    messages.success(request, msg)
+
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+@handle_project_membership
+def project_remove_member(request, m):
+    m.remove(request_user=request.user)
+    realname = m.person.realname
+    msg = _(astakos_messages.USER_LEFT_GROUP) % locals()
+    messages.success(request, msg)
+
+
+@require_http_methods(["GET"])
+@signed_terms_required
+@login_required
+@handle_project_membership
+def project_reject_member(request, m):
+    m.remove(request_user=request.user)
+    realname = membership.person.realname
+    msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % locals()
+    messages.success(request, msg)

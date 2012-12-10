@@ -1,26 +1,26 @@
 [
     {
-        "model": "im.memberleavepolicy",
+        "model": "im.memberjoinpolicy",
         "pk": 1,
         "fields": {
             "policy": "auto_accept",
-            "description": "remove requests are automatically accepted by the system"
+            "description": "leave requests are automatically accepted by the system"
         }
     },
     {
-        "model": "im.memberleavepolicy",
+        "model": "im.memberjoinpolicy",
         "pk": 2,
         "fields": {
             "policy": "owner_accepts",
-            "description": "remove requests must be accepted by the owner of the project"
+            "description": "leave requests must be accepted by the owner of the project"
         }
     },
     {
-        "model": "im.memberleavepolicy",
+        "model": "im.memberjoinpolicy",
         "pk": 3,
         "fields": {
             "policy": "closed",
-            "description": "members can not leave the project"
+            "description": "no member can leave the project"
         }
     }
 ]

@@ -84,7 +84,7 @@
 		 	<dt>End Date</dt>
 		 	<dd>{{object.definition.end_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Status</dt>
-		 	<dd>{{ object.status }}</dd>
+		 	<dd>{{ object.state }}</dd>
 		 	<dt>Owner</dt>
 		 	<dd>{% if user == object.owner %}
                         Me
@@ -158,7 +158,7 @@
                     <select name="sorting" onchange="this.form.submit();" class="dropkicked">
                         <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>Sort by User Id</option>
                         <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Sort by Name</option>
-                        <option value="date_joined" {% if sorting == 'date_joined' %}selected{% endif %}>Sort by Status</option>
+                        <option value="acceptance_date" {% if sorting == 'acceptance_date' %}selected{% endif %}>Sort by Acceptance Date</option>
                     </select>
                 </div>
             </form>
@@ -189,7 +189,7 @@
                         <td>Pending
                             {% if user == object.owner %}
                                 <a href="{% url project_approve_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
-                                <a href="{% url project_remove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
+                                <a href="{% url project_reject_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
                             {% endif %}
                         </td>    
                         {% endif %}

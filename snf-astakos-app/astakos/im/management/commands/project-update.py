@@ -35,20 +35,19 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.views.generic.create_update import lookup_object
+from django.http import Http404
 
-from astakos.im.models import _lookup_object, ProjectApplication, Project
+from astakos.im.models import (
+    ProjectApplication, Project, PENDING
+)
 
 @transaction.commit_on_success
 class Command(BaseCommand):
-    args = "<project application id>"
+    args = "<project id>"
     help = "Update project state"
 
     option_list = BaseCommand.option_list + (
-        make_option('--approve',
-                    action='store_true',
-                    dest='approve',
-                    default=False,
-                    help="Approve group"),
         make_option('--terminate',
                     action='store_true',
                     dest='terminate',
@@ -65,36 +64,20 @@ class Command(BaseCommand):
         if len(args) < 1:
             raise CommandError("Please provide a group identifier")
         
-        app = None
-        p = None
         try:
             id = int(args[0])
         except ValueError:
             raise CommandError('Invalid id')
         else:
             try:
-                # Is it a project application id?
-                app = _lookup_object(ProjectApplication, id=id)
-            except ProjectApplication.DoesNotExist:
-                try:
-                    # Is it a project id?
-                    p = _lookup_object(Project, id=id)
-                except Project.DoesNotExist:
-                    raise CommandError('Invalid id')
-            try:
-                if options['approve']:
-                    if not app:
-                        raise CommandError('Project application id is required.')
-                    app.approve()
-
-                if app and app.status != 'Pending':
-                    p = app.project
-
+                # Is it a project id?
+                p = lookup_object(Project, id, None, None)
+            except Http404:
+                raise CommandError('Invalid id')
+            else:
                 if options['terminate']:
                     p.terminate()
-                if options['suspend']:
+                elif options['suspend']:
                     p.suspend()
             except BaseException, e:
-                import traceback
-                traceback.print_exc()
                 raise CommandError(e)

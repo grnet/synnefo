@@ -21,14 +21,11 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
             ('project', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Project'])),
-            ('request_date', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 12, 9, 11, 4, 41, 210148))),
+            ('request_date', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 12, 10, 13, 48, 24, 819868))),
             ('removal_date', self.gf('django.db.models.fields.DateField')(null=True)),
             ('rejection_date', self.gf('django.db.models.fields.DateField')(null=True)),
         ))
         db.send_create_signal('im', ['ProjectMembershipHistory'])
-
-        # Adding unique constraint on 'ProjectMembershipHistory', fields ['person', 'project']
-        db.create_unique('im_projectmembershiphistory', ['person_id', 'project_id'])
 
         # Adding model 'ProjectApplication'
         db.create_table('im_projectapplication', (
@@ -39,6 +36,7 @@ class Migration(SchemaMigration):
             ('definition', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['im.ProjectDefinition'], unique=True)),
             ('issue_date', self.gf('django.db.models.fields.DateTimeField')()),
             ('precursor_application', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['im.ProjectApplication'], unique=True, null=True, blank=True)),
+            ('state', self.gf('django.db.models.fields.CharField')(default='Unknown', max_length=80)),
         ))
         db.send_create_signal('im', ['ProjectApplication'])
 
@@ -60,8 +58,9 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('person', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.AstakosUser'])),
             ('project', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.Project'])),
-            ('request_date', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 12, 9, 11, 4, 41, 209391))),
+            ('request_date', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2012, 12, 10, 13, 48, 24, 819045))),
             ('acceptance_date', self.gf('django.db.models.fields.DateField')(null=True, db_index=True)),
+            ('leave_request_date', self.gf('django.db.models.fields.DateField')(null=True)),
         ))
         db.send_create_signal('im', ['ProjectMembership'])
 
@@ -111,9 +110,6 @@ class Migration(SchemaMigration):
 
         # Removing unique constraint on 'ProjectMembership', fields ['person', 'project']
         db.delete_unique('im_projectmembership', ['person_id', 'project_id'])
-
-        # Removing unique constraint on 'ProjectMembershipHistory', fields ['person', 'project']
-        db.delete_unique('im_projectmembershiphistory', ['person_id', 'project_id'])
 
         # Deleting model 'MemberJoinPolicy'
         db.delete_table('im_memberjoinpolicy')
@@ -185,14 +181,14 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 9, 11, 4, 41, 198398)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 10, 13, 48, 24, 808772)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         'im.astakosgroup': {
             'Meta': {'object_name': 'AstakosGroup', '_ormbases': ['auth.Group']},
             'approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 9, 11, 4, 41, 189261)'}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 10, 13, 48, 24, 801104)'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'estimated_participants': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
             'expiration_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
@@ -258,7 +254,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 9, 11, 4, 41, 200303)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 10, 13, 48, 24, 810599)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchange_user'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.groupkind': {
@@ -292,7 +288,7 @@ class Migration(SchemaMigration):
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
-            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 9, 11, 4, 41, 196071)', 'blank': 'True'}),
+            'date_requested': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 10, 13, 48, 24, 806557)', 'blank': 'True'}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosGroup']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
@@ -330,7 +326,8 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'issue_date': ('django.db.models.fields.DateTimeField', [], {}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'own_project_applications'", 'to': "orm['im.AstakosUser']"}),
-            'precursor_application': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['im.ProjectApplication']", 'unique': 'True', 'null': 'True', 'blank': 'True'})
+            'precursor_application': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['im.ProjectApplication']", 'unique': 'True', 'null': 'True', 'blank': 'True'}),
+            'state': ('django.db.models.fields.CharField', [], {'default': "'Unknown'", 'max_length': '80'})
         },
         'im.projectdefinition': {
             'Meta': {'object_name': 'ProjectDefinition'},
@@ -349,18 +346,19 @@ class Migration(SchemaMigration):
             'Meta': {'unique_together': "(('person', 'project'),)", 'object_name': 'ProjectMembership'},
             'acceptance_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'leave_request_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
-            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 9, 11, 4, 41, 209391)'})
+            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 10, 13, 48, 24, 819045)'})
         },
         'im.projectmembershiphistory': {
-            'Meta': {'unique_together': "(('person', 'project'),)", 'object_name': 'ProjectMembershipHistory'},
+            'Meta': {'object_name': 'ProjectMembershipHistory'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
             'rejection_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             'removal_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
-            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 9, 11, 4, 41, 210148)'})
+            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 10, 13, 48, 24, 819868)'})
         },
         'im.projectresourcegrant': {
             'Meta': {'unique_together': "(('resource', 'project_definition'),)", 'object_name': 'ProjectResourceGrant'},

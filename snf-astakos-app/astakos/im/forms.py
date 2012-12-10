@@ -1020,3 +1020,16 @@ class AddProjectMembersForm(forms.Form):
             return self.valid_users
         except:
             return ()
+
+class ProjectMembersSortForm(forms.Form):
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(('person__email', 'User Id'),
+                 ('person__first_name', 'Name'),
+                 ('acceptance_date', 'Acceptance date')
+        ),
+        required=True
+    )
+
+class ProjectGroupSearchForm(forms.Form):
+    q = forms.CharField(max_length=200, label='Search project')

@@ -66,7 +66,7 @@
 			            <option value="definition__start_date" {% if sorting == 'definition__start_date' %}selected{% endif %}>Sort by Start Date</option>
 			            <option value="definition__end_date" {% if sorting == 'definition__end_date' %}selected{% endif %}>Sort by End Date</option>
 			            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> --> 
-			            <!-- <option value="status" {% if sorting == '' %}selected{% endif %}>Sort by Member Accept Policy</option> --> 
+			            <option value="state" {% if sorting == 'state' %}selected{% endif %}>Sort by Status</option> 
 			            <option value="definition__member_join_policy__description" {% if sorting == 'definition__member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
 			            <option value="definition__member_leave_policy__description" {% if sorting == 'definition__member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 
 					</select>
@@ -106,7 +106,7 @@
 	                    <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
 	                    <td style="width:11%">{{approved_members|length}}</td>
 	                    <td style="width:11%">
-	                        {{o.status}} <a href="{% url project_update o.id %}">Update</a>
+	                        {{o.state}}{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}
 	                    </td>
 	                    <td style="width:17%">
 	                    	<div class="msg-wrap">

@@ -61,6 +61,9 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.validators import email_re
+from django.core.exceptions import PermissionDenied
+from django.views.generic.create_update import lookup_object
+from django.core.exceptions import ObjectDoesNotExist
 
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
@@ -84,6 +87,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
+
+PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
 
 def get_content_type():
     global _content_type
@@ -1030,27 +1035,51 @@ class MemberLeavePolicy(models.Model):
 
 _auto_accept_join = False
 def get_auto_accept_join():
-    global _auto_accept
-    if _auto_accept is not False:
-        return _auto_accept
+    global _auto_accept_join
+    if _auto_accept_join is not False:
+        return _auto_accept_join
     try:
         auto_accept = MemberJoinPolicy.objects.get(policy='auto_accept')
     except:
         auto_accept = None
-    _auto_accept = auto_accept
+    _auto_accept_join = auto_accept
     return auto_accept
+
+_closed_join = False
+def get_closed_join():
+    global _closed_join
+    if _closed_join is not False:
+        return _closed_join
+    try:
+        closed = MemberJoinPolicy.objects.get(policy='closed')
+    except:
+        closed = None
+    _closed_join = closed
+    return closed
 
 _auto_accept_leave = False
 def get_auto_accept_leave():
-    global _auto_accept
-    if _auto_accept is not False:
-        return _auto_accept
+    global _auto_accept_leave
+    if _auto_accept_leave is not False:
+        return _auto_accept_leave
     try:
         auto_accept = MemberLeavePolicy.objects.get(policy='auto_accept')
     except:
         auto_accept = None
-    _auto_accept = auto_accept
+    _auto_accept_leave = auto_accept
     return auto_accept
+
+_closed_leave = False
+def get_closed_leave():
+    global _closed_leave
+    if _closed_leave is not False:
+        return _closed_leave
+    try:
+        closed = MemberLeavePolicy.objects.get(policy='closed')
+    except:
+        closed = None
+    _closed_leave = closed
+    return closeds
 
 class ProjectDefinition(models.Model):
     name = models.CharField(max_length=80)
@@ -1128,9 +1157,9 @@ class ProjectResourceGrant(models.Model):
     class Meta:
         unique_together = ("resource", "project_definition")
 
+
 class ProjectApplication(models.Model):
-    PENDING, APPROVED, REPLACED = range(3)
-    states_list = ['Pending', 'Approved', 'Replaced']
+    states_list = [PENDING, APPROVED, REPLACED, UNKNOWN]
     states = dict((k, v) for k, v in enumerate(states_list))
 
     applicant = models.ForeignKey(
@@ -1150,6 +1179,7 @@ class ProjectApplication(models.Model):
         blank=True,
         db_index=True
     )
+    state = models.CharField(max_length=80, default=UNKNOWN)
     
     @property
     def follower(self):
@@ -1163,58 +1193,43 @@ class ProjectApplication(models.Model):
         self.definition = self.definition
         super(ProjectApplication, self).save()
 
-    @property
-    def status(self):
-        if self.follower:
-            try:
-                self.follower.project
-            except:
-                pass
-            else:
-                if self.follower.project.last_approval_date:
-                    return self.states[self.REPLACED]
-        try:
-            self.project
-        except Project.DoesNotExist:
-            return self.states[self.PENDING]
-        if self.project.is_alive:
-            return self.states[self.APPROVED]
-        
+
     @staticmethod
     def submit(definition, resource_policies, applicant, comments, precursor_application=None, commit=True):
         application = None
         if precursor_application:
-            try:
-                precursor_application.project
-            except:
-                pass
-            else:
-                if precursor_application.status != 'Pending':
-                    application = precursor_application
-                    application.precursor_application = precursor_application
-                    application.id = None
-                    print '>>>', application.precursor_application.id
-        if not application:
+            precursor_application_id = precursor_application.id
+            application = precursor_application
+            application.id = None
+        else:
             application = ProjectApplication(owner=applicant)
         application.definition = definition
+        application.definition.id = None
         application.applicant = applicant
         application.comments = comments
         application.issue_date = datetime.now()
-        application.definition.id = None
-        application.id = None
+        application.state = PENDING
         if commit:
             application.save()
             application.definition.resource_policies = resource_policies
-        if applicant.is_superuser:
-            self.approve_application()
-#         else:
-#             notification = build_notification(
-#                 settings.SERVER_EMAIL,
-#                 [i[1] for i in settings.ADMINS],
-#                 _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
-#                 _('An new project application identified by %(id)s has been submitted.') % application.__dict__
-#             )
-#             notification.send()
+            # better implementation ???
+            if precursor_application:
+                try:
+                    precursor = ProjectApplication.objects.get(id=precursor_application_id)
+                except:
+                    pass
+                precursor.state = REPLACED
+                precursor.save()
+                application.precursor_application_id = precursor
+                application.save()
+        else:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [i[1] for i in settings.ADMINS],
+                _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
+                _('An new project application identified by %(id)s has been submitted.') % application.__dict__
+            )
+            notification.send()
         return application
         
     def approve(self, approval_user=None):
@@ -1222,9 +1237,15 @@ class ProjectApplication(models.Model):
         If approval_user then during owner membership acceptance
         it is checked whether the request_user is eligible.
         """
-        if self.status != self.states[self.PENDING]:
+        if self.state != PENDING:
             return
-        if not self.precursor_application:
+        create = False
+        try:
+            self.precursor_application.project
+        except:
+            create = True
+
+        if create:
             kwargs = {
                 'application':self,
                 'creation_date':datetime.now(),
@@ -1237,19 +1258,21 @@ class ProjectApplication(models.Model):
             project.application = self
             project.last_approval_date = datetime.now()
             project.save()
+        self.state = APPROVED
+        self.save()
 
-#         notification = build_notification(
-#             settings.SERVER_EMAIL,
-#             [project.owner.email],
-#             _('Project application has been approved on %s alpha2 testing' % SITENAME),
-#             _('Your application request %(id)s has been apporved.')
-#         )
-#         notification.send()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [self.owner.email],
+            _('Project application has been approved on %s alpha2 testing' % SITENAME),
+            _('Your application request %(id)s has been apporved.')
+        )
+        notification.send()
 
         rejected = self.project.sync()
         if rejected:
             # revert to precursor
-            project.appication = app.precursor_application
+            project.application = app.precursor_application
             if project.application:
                 project.last_approval_date = last_approval_date
                 project.save()
@@ -1344,53 +1367,50 @@ class Project(models.Model):
         return rejected
     
     def accept_member(self, user, request_user=None):
+        """
+        Raises:
+            django.exceptions.PermissionDenied
+            astakos.im.models.AstakosUser.DoesNotExist
+        """
         if isinstance(user, int):
-            user = _lookup_object(AstakosUser, id=user)
-        if request_user and \
-            (not self.owner == request_user and not request_user.is_superuser):
-            raise Exception(_(astakos_messages.NOT_ALLOWED))
-        if not self.is_alive:
-            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-        if self.definition.member_join_policy == 'closed':
-            raise Exception(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
-        if len(self.approved_members) + 1 > self.definition.limit_on_members_number:
-            raise Exception(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
+            try:
+                user = lookup_object(AstakosUser, user, None, None)
+            except Http404:
+                raise AstakosUser.DoesNotExist()
         m, created = ProjectMembership.objects.get_or_create(
             person=user, project=self
         )
-        m.accept()
+        m.accept(user, delete_on_failure=created, request_user=None)
 
     def reject_member(self, user, request_user=None):
+        """
+        Raises:
+            django.exceptions.PermissionDenied
+            astakos.im.models.AstakosUser.DoesNotExist
+            astakos.im.models.ProjectMembership.DoesNotExist
+        """
         if isinstance(user, int):
-            user = _lookup_object(AstakosUser, id=user)
-        if request_user and \
-            (not self.owner == request_user and not request_user.is_superuser):
-            raise Exception(_(astakos_messages.NOT_ALLOWED))
-        if not self.is_alive:
-            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-        try:
-            m = ProjectMembership.objects.get(person=user, project=self)
-        except:
-            raise Exception(_(astakos_messages.NOT_MEMBERSHIP_REQUEST) % project.__dict__)
-        else:
-            m.reject()
+            try:
+                user = lookup_object(AstakosUser, user, None, None)
+            except Http404:
+                raise AstakosUser.DoesNotExist()
+        m = ProjectMembership.objects.get(person=user, project=self)
+        m.reject()
         
     def remove_member(self, user, request_user=None):
+        """
+        Raises:
+            django.exceptions.PermissionDenied
+            astakos.im.models.AstakosUser.DoesNotExist
+            astakos.im.models.ProjectMembership.DoesNotExist
+        """
         if isinstance(user, int):
-            user = _lookup_object(AstakosUser, id=user)
-        if request_user and \
-            (not self.owner == request_user and not request_user.is_superuser):
-            raise Exception(_(astakos_messages.NOT_ALLOWED))
-        if not self.is_alive:
-            raise Exception(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-        if self.definition.member_leave_policy == 'closed':
-            raise Exception(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
-        try:
-            m = ProjectMembership.objects.get(person=user, project=self)
-        except:
-            raise Exception(_(astakos_messages.NOT_MEMBERSHIP_REQUEST) % project.__dict__)
-        else:
-            m.remove()
+            try:
+                user = lookup_object(AstakosUser, user, None, None)
+            except Http404:
+                raise AstakosUser.DoesNotExist()
+        m = ProjectMembership.objects.get(person=user, project=self)
+        m.remove()
     
     def terminate(self):
         self.termination_start_date = datetime.now()
@@ -1427,24 +1447,56 @@ class ProjectMembership(models.Model):
     project = models.ForeignKey(Project)
     request_date = models.DateField(default=datetime.now())
     acceptance_date = models.DateField(null=True, db_index=True)
+    leave_request_date = models.DateField(null=True)
 
     class Meta:
         unique_together = ("person", "project")
-    
-    def accept(self):
+
+    def accept(self, delete_on_failure=False, request_user=None):
+        """
+            Raises:
+                django.exception.PermissionDenied
+                astakos.im.notifications.NotificationError
+        """
+        try:
+            if request_user and \
+                (not self.project.application.owner == request_user and \
+                    not request_user.is_superuser):
+                raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
+            if not self.project.is_alive:
+                raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % self.project.__dict__)
+            if self.project.definition.member_join_policy == 'closed':
+                raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
+            if len(self.project.approved_members) + 1 > self.project.definition.limit_on_members_number:
+                raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
+        except PermissionDenied, e:
+            if delete_on_failure:
+                m.delete()
+            raise
         if self.acceptance_date:
             return
         self.acceptance_date = datetime.now()
         self.save()
-#         notification = build_notification(
-#             settings.SERVER_EMAIL,
-#             [self.person.email],
-#             _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__,
-#             _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__
-#         ).send()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [self.person.email],
+            _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__,
+            _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__
+        ).send()
         self.sync()
     
-    def reject(self):
+    def reject(self, request_user=None):
+        """
+            Raises:
+                django.exception.PermissionDenied,
+                astakos.im.notifications.NotificationError
+        """
+        if request_user and \
+            (not self.project.application.owner == request_user and \
+                not request_user.is_superuser):
+            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
+        if not self.project.is_alive:
+            raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
         history_item = ProjectMembershipHistory(
             person=self.person,
             project=self.project,
@@ -1452,30 +1504,50 @@ class ProjectMembership(models.Model):
             rejection_date=datetime.now()
         ).save()
         self.delete()
-#         notification = build_notification(
-#             settings.SERVER_EMAIL,
-#             [self.person.email],
-#             _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__,
-#             _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__
-#         ).send()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [self.person.email],
+            _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__,
+            _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__
+        ).send()
     
-    def remove(self):
+    def remove(self, request_user=None):
+        """
+            Raises:
+                django.exception.PermissionDenied
+                astakos.im.notifications.NotificationError
+        """
+        if request_user and \
+            (not self.project.application.owner == request_user and \
+                not request_user.is_superuser):
+            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
+        if not self.project.is_alive:
+            raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % self.project.__dict__)
         history_item = ProjectMembershipHistory(
             id=self.id,
             person=self.person,
             project=self.project,
             request_date=self.request_date,
             removal_date=datetime.now()
-        ).save()
+        )
         self.delete()
-#         notification = build_notification(
-#             settings.SERVER_EMAIL,
-#             [self.person.email],
-#             _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__,
-#             _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__
-#         ).send()
+        history_item.save()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [self.person.email],
+            _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__,
+            _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__
+        ).send()
         self.sync()
     
+    def leave(self):
+        leave_policy = self.project.application.definition.member_leave_policy
+        if leave_policy == get_auto_accept_leave():
+            self.remove()
+        else:
+            self.leave_request_date = datetime.now()
+            self.save()
+
     def sync(self):
         # set membership_dirty flag
         self.project.membership_dirty = True
@@ -1494,9 +1566,6 @@ class ProjectMembershipHistory(models.Model):
     request_date = models.DateField(default=datetime.now())
     removal_date = models.DateField(null=True)
     rejection_date = models.DateField(null=True)
-
-    class Meta:
-        unique_together = ("person", "project")
 
 
 def filter_queryset_by_property(q, property):
@@ -1518,44 +1587,10 @@ def get_active_projects():
         'is_active'
     )
 
-def _lookup_object(model, **kwargs):
-    """
-    Returns an object of the specific model matching the given lookup
-    parameters.
-    """
-    if not kwargs:
-        raise MissingIdentifier
-    return model.objects.get(**kwargs)
-
 def _create_object(model, **kwargs):
     o = model.objects.create(**kwargs)
     o.save()
     return o
-
-def _update_object(model, id, save=True, **kwargs):
-    o = self._lookup_object(model, id=id)
-    if kwargs:
-        o.__dict__.update(kwargs)
-    if save:
-        o.save()
-    return o
-
-# def list_applications():
-#     return ProjectApplication.objects.all()
-# 
-# 
-# def list_projects(filter_property=None):
-#     if filter_property:
-#         return filter_queryset_by_property(
-#             Project.objects.all(),
-#             filter_property
-#         )
-#     return Project.objects.all()
-# 
-# 
-# def synchonize_project(id):
-#     project = _lookup_object(Project, id=id)
-#     return project.sync()
 
 
 def create_astakos_user(u):
@@ -1576,21 +1611,14 @@ def fix_superusers(sender, **kwargs):
     admins = User.objects.filter(is_superuser=True)
     for u in admins:
         create_astakos_user(u)
+post_syncdb.connect(fix_superusers)
 
 
 def user_post_save(sender, instance, created, **kwargs):
     if not created:
         return
     create_astakos_user(instance)
-
-
-def set_default_group(user):
-    try:
-        default = AstakosGroup.objects.get(name='default')
-        Membership(
-            group=default, person=user, date_joined=datetime.now()).save()
-    except AstakosGroup.DoesNotExist, e:
-        logger.exception(e)
+post_save.connect(user_post_save, sender=User)
 
 
 def astakosuser_pre_save(sender, instance, **kwargs):
@@ -1607,6 +1635,15 @@ def astakosuser_pre_save(sender, instance, **kwargs):
         l = filter(lambda f: get(db_instance, f) != get(instance, f),
                    BILLING_FIELDS)
         instance.aquarium_report = True if l else False
+pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
+
+def set_default_group(user):
+    try:
+        default = AstakosGroup.objects.get(name='default')
+        Membership(
+            group=default, person=user, date_joined=datetime.now()).save()
+    except AstakosGroup.DoesNotExist, e:
+        logger.exception(e)
 
 
 def astakosuser_post_save(sender, instance, created, **kwargs):
@@ -1617,12 +1654,24 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
+post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
 
 def resource_post_save(sender, instance, created, **kwargs):
     if not created:
         return
     register_resources((instance,))
+post_save.connect(resource_post_save, sender=Resource)
+
+
+def on_quota_disturbed(sender, users, **kwargs):
+#     print '>>>', locals()
+    if not users:
+        return
+    send_quota(users)
+
+quota_disturbed = Signal(providing_args=["users"])
+quota_disturbed.connect(on_quota_disturbed)
 
 
 def send_quota_disturbed(sender, instance, **kwargs):
@@ -1642,27 +1691,6 @@ def send_quota_disturbed(sender, instance, **kwargs):
         if not instance.is_enabled:
             return
     quota_disturbed.send(sender=sender, users=users)
-
-
-def on_quota_disturbed(sender, users, **kwargs):
-#     print '>>>', locals()
-    if not users:
-        return
-    send_quota(users)
-
-def renew_token(sender, instance, **kwargs):
-    if not instance.auth_token:
-        instance.renew_token()
-
-post_syncdb.connect(fix_superusers)
-post_save.connect(user_post_save, sender=User)
-pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
-post_save.connect(astakosuser_post_save, sender=AstakosUser)
-post_save.connect(resource_post_save, sender=Resource)
-
-quota_disturbed = Signal(providing_args=["users"])
-quota_disturbed.connect(on_quota_disturbed)
-
 post_delete.connect(send_quota_disturbed, sender=AstakosGroup)
 post_delete.connect(send_quota_disturbed, sender=Membership)
 post_save.connect(send_quota_disturbed, sender=AstakosUserQuota)
@@ -1670,5 +1698,26 @@ post_delete.connect(send_quota_disturbed, sender=AstakosUserQuota)
 post_save.connect(send_quota_disturbed, sender=AstakosGroupQuota)
 post_delete.connect(send_quota_disturbed, sender=AstakosGroupQuota)
 
+
+def renew_token(sender, instance, **kwargs):
+    if not instance.auth_token:
+        instance.renew_token()
 pre_save.connect(renew_token, sender=AstakosUser)
 pre_save.connect(renew_token, sender=Service)
+
+
+def check_closed_join_membership_policy(sender, instance, **kwargs):
+    if instance.id:
+        return
+    join_policy = instance.project.application.definition.member_join_policy
+    if join_policy == get_closed_join():
+        raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
+pre_save.connect(check_closed_join_membership_policy, sender=ProjectMembership)
+
+
+def check_auto_accept_join_membership_policy(sender, instance, created, **kwargs):
+    if created:
+        join_policy = instance.project.application.definition.member_join_policy
+        if join_policy == get_auto_accept_join():
+            instance.accept()
+post_save.connect(check_auto_accept_join_membership_policy, sender=ProjectMembership)

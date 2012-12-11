@@ -207,7 +207,7 @@ Rules
 
 4. **Suspended projects**
 
-    A valid project is declared **terminated** if and only if
+    A valid project is declared **suspended** if and only if
 
     - its ``termination_date`` is null
     - its ``last_approval_date`` is null,

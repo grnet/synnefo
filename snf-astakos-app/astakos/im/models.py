@@ -1402,6 +1402,8 @@ class Project(models.Model):
         m, created = ProjectMembership.objects.get_or_create(
             person=user, project=self
         )
+        if m.acceptance_date:
+            return
         m.accept(delete_on_failure=created, request_user=None)
 
     def reject_member(self, user, request_user=None):
@@ -1496,7 +1498,7 @@ class ProjectMembership(models.Model):
                 raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
         except PermissionDenied, e:
             if delete_on_failure:
-                m.delete()
+                self.delete()
             raise
         if self.acceptance_date:
             return

@@ -1229,15 +1229,6 @@ class ProjectApplication(models.Model):
         application.state = PENDING
         application.save()
         application.definition.resource_policies = resource_policies
-        # better implementation ???
-        if precursor_application:
-            try:
-                precursor = ProjectApplication.objects.get(id=precursor_application_id)
-            except:
-                pass
-            else:
-                application.precursor_application = precursor
-                application.save()
 
         notification = build_notification(
             settings.SERVER_EMAIL,
@@ -1265,20 +1256,13 @@ class ProjectApplication(models.Model):
         if self.state != PENDING:
             raise PermissionDenied(_(PROJECT_ALREADY_ACTIVE))
 
+        precursor = self.precursor_application
         try:
-            precursor = self.precursor_application
             project = precursor.project
             project.application = self
             prev_approval_date = project.last_approval_date
             project.last_approval_date = datetime.now()
             project.save()
-
-            p = precursor
-            while p:
-                p.state = REPLACED
-                p.save()
-                p = p.precursor_application
-
         except:
             kwargs = {
                 'application':self,
@@ -1287,7 +1271,12 @@ class ProjectApplication(models.Model):
             }
             project = _create_object(Project, **kwargs)
             project.accept_member(self.owner, approval_user)
-            precursor = None
+        
+        p = precursor
+        while p:
+            p.state = REPLACED
+            p.save()
+            p = p.precursor_application
 
         self.state = APPROVED
         self.save()
@@ -1453,7 +1442,7 @@ class Project(models.Model):
         rejected = self.sync()
         if not rejected:
             self.termination_start_date = None
-            self.terminaton_date = datetime.now()
+            self.termination_date = datetime.now()
             self.save()
             
         notification = build_notification(
@@ -1759,6 +1748,6 @@ def check_auto_accept_join_membership_policy(sender, instance, created, **kwargs
     if not created:
         return
     join_policy = instance.project.application.definition.member_join_policy
-    if join_policy == get_auto_accept_join():
+    if join_policy == get_auto_accept_join() and not instance.acceptance_date:
         instance.accept()
 post_save.connect(check_auto_accept_join_membership_policy, sender=ProjectMembership)

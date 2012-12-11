@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import ProjectApplication
-
+from ._common import format_bool
 
 class Command(NoArgsCommand):
     help = "List resources"
@@ -52,8 +52,11 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         apps = ProjectApplication.objects.select_related().all()
 
-        labels = ('application.id', 'project.id', 'name', 'state')
-        columns = (15, 10, 20, 10)
+        labels = (
+            'application.id', 'project.id', 'name', 'application.state',
+            'is_active', 'is_alive', 'is_suspended', 'is_terminated'
+        )
+        columns = (15, 10, 20, 10, 10, 10, 10, 10)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -64,13 +67,25 @@ class Command(NoArgsCommand):
         for app in apps:
             try:
                 project_id = str(app.project.id)
+                is_active = app.project.is_active
+                is_alive = app.project.is_alive
+                is_suspended = app.project.is_suspended
+                is_terminated = app.project.is_terminated
             except:
                 project_id = ''
+                is_active = ''
+                is_alive = ''
+                is_suspended = ''
+                is_terminated = ''
             fields = (
                 str(app.id),
                 str(project_id),
                 app.definition.name,
-                app.state
+                app.state,
+                format_bool(is_active),
+                format_bool(is_alive),
+                format_bool(is_suspended),
+                format_bool(is_terminated)
             )
 
             if options['csv']:

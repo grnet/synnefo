@@ -1208,42 +1208,35 @@ class ProjectApplication(models.Model):
 
 
     @staticmethod
-    def submit(definition, resource_policies, applicant, comments, precursor_application=None, commit=True):
-        application = None
+    def submit(definition, resource_policies, applicant, comments,
+               precursor_application=None, commit=True):
+
+        application = ProjectApplication()
         if precursor_application:
-            precursor_application_id = precursor_application.id
-            application = precursor_application
-            application.id = None
-            application.precursor_application = None
+            application.precursor_application = precursor_application
+            application.owner = precursor_application.owner
         else:
-            application = ProjectApplication(owner=applicant)
+            application.owner = applicant
+
         application.definition = definition
-        application.definition.id = None
+        application.definition.resource_policies = resource_policies
         application.applicant = applicant
         application.comments = comments
         application.issue_date = datetime.now()
         application.state = PENDING
+
         if commit:
             application.save()
-            application.definition.resource_policies = resource_policies
-            # better implementation ???
-            if precursor_application:
-                try:
-                    precursor = ProjectApplication.objects.get(id=precursor_application_id)
-                except:
-                    pass
-                application.precursor_application = precursor
-                application.save()
         else:
             notification = build_notification(
                 settings.SERVER_EMAIL,
                 [i[1] for i in settings.ADMINS],
                 _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
-                _('An new project application identified by %(id)s has been submitted.') % application.__dict__
+                _('A new project application identified by %(id)s has been submitted.') % application.__dict__
             )
             notification.send()
         return application
-        
+
     def approve(self, approval_user=None):
         """
         If approval_user then during owner membership acceptance

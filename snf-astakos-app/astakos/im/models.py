@@ -69,7 +69,7 @@ from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, BILLING_FIELDS,
     EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    GROUP_CREATION_SUBJECT, SITENAME
+    GROUP_CREATION_SUBJECT, SITENAME, SERVICES
 )
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
@@ -317,7 +317,19 @@ class AstakosGroup(Group):
         self.owner = l
         map(self.approve_member, l)
 
-
+_default_quota = {}
+def get_default_quota():
+    global _default_quota
+    if _default_quota:
+        return _default_quota
+    for s, data in SERVICES.iteritems():
+        map(
+            lambda d:_default_quota.update(
+                {'%s%s%s' % (s, RESOURCE_SEPARATOR, d.get('name')):d.get('uplimit', 0)}
+            ),
+            data.get('resources', {})
+        )
+    return _default_quota
 
 class AstakosUserManager(UserManager):
 
@@ -446,6 +458,8 @@ class AstakosUser(User):
     def quota(self):
         """Returns a dict with the sum of quota limits per resource"""
         d = defaultdict(int)
+        default_quota = get_default_quota()
+        d.update(default_quota)
         for q in self.policies:
             d[q.resource] += q.uplimit or inf
         for m in self.projectmembership_set.select_related().all():
@@ -456,7 +470,7 @@ class AstakosUser(User):
                 continue
             grants = p.application.definition.projectresourcegrant_set.all()
             for g in grants:
-                d[g.resource] += g.member_limit or inf
+                d[str(g.resource)] += g.member_limit or inf
         # TODO set default for remaining
         return d
 

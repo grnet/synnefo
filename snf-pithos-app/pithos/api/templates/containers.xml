@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{% load get_type %}
+<account name="{{ account }}">
+  {% for container in containers %}
+  <container>
+  {% for key, value in container.items %}
+    <{{ key }}>{% if value|get_type == "dict" %}
+      {% for k, v in value.iteritems %}<key>{{ k }}</key><value>{{ v }}</value>
+      {% endfor %}
+    {% else %}{{ value }}{% endif %}</{{ key }}>
+  {% endfor %}
+  </container>
+  {% endfor %}
+</account>

@@ -1,0 +1,26 @@
+Changelog
+=========
+
+v0.9.7
+------
+* Minor fixes
+
+v0.9.6
+------
+* Fix double content-type header 
+* Fix missing import
+
+v0.9.5
+------
+* fix pithos-sh put using hashmaps.
+* progress bars in pithos-sh.
+
+v0.9.4
+------
+* Change default server.
+
+v0.9.3
+------
+* Setup dispatcher environment with synnefo settings.
+* Check Content-Type up to semicolon.
+

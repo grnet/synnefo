@@ -1,0 +1,67 @@
+README
+======
+
+Pithos is a file storage service, built by GRNET using Django (https://www.djangoproject.com/).
+Learn more about Pithos at: http://code.grnet.gr/projects/pithos
+
+Consult COPYRIGHT for licensing information.
+
+About Pithos application
+------------------------
+
+This package contains the Django application that implements the Pithos v2 API. It depends on the Pithos backend, which does the actual data and metadata operations.
+
+How to run
+----------
+
+Use snf-webproject to run Pithos automatically.
+
+To use Pithos in a custom Django project, just add ``pithos.api`` to ``INSTALLED_APPS``.
+
+Pithos has been tested with SQLite and PostgreSQL backend databases. When using PostgreSQL, ensure that the has been created with the appropriate encoding and collation::
+
+    CREATE DATABASE pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
+
+Settings
+--------
+
+Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using snf-webproject.
+
+===============================  ================================================  ============================================================
+Name                             Default value                                     Description
+===============================  ================================================  ============================================================
+PITHOS_AUTHENTICATION_URL        \http://127.0.0.1:8000/im/authenticate            Astakos API URL
+PITHOS_AUTHENTICATION_USERS      A dictionary of sample users (token to username)  Set to empty or None to disable
+PITHOS_BACKEND_DB_MODULE         pithos.backends.lib.sqlalchemy
+PITHOS_BACKEND_DB_CONNECTION     sqlite:////tmp/pithos-backend.db                  SQLAlchemy database connection string
+PITHOS_BACKEND_BLOCK_MODULE      pithos.backends.lib.hashfiler
+PITHOS_BACKEND_BLOCK_PATH        /tmp/pithos-data/                                 Map and block storage path
+PITHOS_BACKEND_BLOCK_UMASK       0o022                                             Map and block storage umask
+PITHOS_BACKEND_QUEUE_MODULE      None                                              Use ``pithos.backends.lib.rabbitmq`` to enable
+PITHOS_BACKEND_QUEUE_CONNECTION  None                                              Format like ``rabbitmq://guest:guest@localhost:5672/pithos``
+PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                            Default user quota
+PITHOS_BACKEND_VERSIONING        auto                                              Default versioning policy for containers
+PITHOS_UPDATE_MD5                True                                              Update object checksums when using hashmaps
+PITHOS_SERVICE_TOKEN             ''                                                Service token acquired by the identity provider (astakos)
+===============================  ================================================  ============================================================
+
+To update checksums asynchronously, enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
+
+    pithos-dispatcher --exchange=pithos --key=pithos.object --callback=pithos.api.dispatch.update_md5
+
+To send sharing notifications::
+
+    pithos-dispatcher --exchange=pithos --key=pithos.sharing --callback=pithos.api.dispatch.send_sharing_notification
+
+Administrator functions
+-----------------------
+
+Available as extensions to Django's command-line management utility:
+
+============  ======================
+Name          Description
+============  ======================
+storagequota  Get/set a user's quota
+============  ======================
+
+

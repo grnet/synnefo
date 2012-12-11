@@ -42,8 +42,11 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
+
 env.packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools',
-                'snf-webproject']
+                'snf-webproject', 'snf-pithos-backend', 'snf-pithos-app',
+                'snf-pithos-tools', 'snf-astakos-app']
+
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'
@@ -168,12 +171,12 @@ def co(c):
 # Debian packaging helpers
 #
 
-env.debian_branch = 'debian-0.8'
-env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject']
-env.signdebs = False
+env.debian_branch = 'debian'
+env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools',
+                    'snf-webproject', 'snf-pithos-backend', 'snf-pithos-tools',
+                    'snf-pithos-app', 'snf-astakos-app']
+env.signdebs = True
 env.debrelease = False  # Increase release number in Debian changelogs
-
-
 
 def _last_commit(f):
     return local("git rev-list --all --date-order --max-count=1 %s" % f,
@@ -188,6 +191,7 @@ def _diff_from_master(c,f):
 def dch(p):
     with co(env.debian_branch):
         local("git merge master")
+        local("git merge %s" % env.upstream)
         with lcd(package_root(p)):
             local("if [ ! -d .git ]; then mkdir .git; fi")
 

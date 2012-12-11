@@ -1348,9 +1348,9 @@ class Project(models.Model):
     
     @property
     def is_suspended(self):
-        if not self.termination_date:
+        if self.termination_date:
             return False
-        if not self.last_approval_date:
+        if self.last_approval_date:
             if not self.definition.violated_resource_grants:
                 return False
 #             if not self.violated_members_number_limit:

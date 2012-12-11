@@ -1,6 +1,6 @@
 Format: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?revision=174&view=co
 Upstream-Name: Synnefo
-Upstream-Contact: GRNET development team <synnefo@lists.grnet.gr>
+Upstream-Contact: GRNET development team <synnefo-devel@googlegroups.com>
 Source: https://code.grnet.gr/projects/synnefo
 
 Files: *
@@ -38,7 +38,3 @@ Licence: BSD-2-clause
  documentation are those of the authors and should not be
  interpreted as representing official policies, either expressed
  or implied, of GRNET S.A.
- .
- On Debian systems, the full text of the GNU General Public
- License version 2 can be found in the file
- `/usr/share/common-licenses/BSD'.

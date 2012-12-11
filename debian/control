@@ -1,0 +1,98 @@
+Source: synnefo
+Section: python
+Priority: optional
+Maintainer: Dimitris Aragiorgis <dimara@grnet.gr>
+Build-Depends: debhelper (>= 8), python-all (>= 2.5)
+Standards-Version: 3.9.2
+XS-Python-Version: >= 2.6
+Homepage: https://code.grnet.gr/projects/synnefo
+
+Package: synnefo
+Version: 0.13
+Section: python
+Priority: optional
+Architecture: all
+Depends: snf-common, snf-cyclades-app, snf-cyclades-gtools, snf-webproject, snf-astakos-app, snf-pithos-app, snf-pithos-backend
+Description: Synnefo meta package
+
+Package: snf-common
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-setuptools
+Provides: ${python:Provides}
+Replaces: snf-ganeti-tools
+XB-Python-Version: ${python:Versions}
+Description: Synnefo common package
+
+Package: snf-cyclades-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
+Provides: ${python:Provides}
+Replaces: snf-network
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Synnefo cyclades package
+
+Package: snf-cyclades-gtools
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-common, snf-network
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Ganeti supplementary tools
+ This package contains the supplementary tools for Ganeti needed
+ by the synnefo software.
+ .
+ Included are:
+  * snf-ganeti-hook, a Ganeti hook that message the Synnefo queue
+  * snf-ganeti-eventd, a daemon watching the Ganeti job queue
+  * snf-progress-monitor, a utility to monitor image deployment and
+    produce notifications to the Synnefo queue
+
+Package: snf-webproject
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo webproject package
+
+Package: snf-astakos-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Identity management, catalog and policy services.
+             Built by GRNET using Django (https://www.djangoproject.com/).
+             Learn more about Astakos at: http://code.grnet.gr/projects/astakos
+             Consult LICENSE for licensing information.
+
+Package: snf-pithos-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-pithos-backend, snf-common
+Recommends: snf-webproject
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Pithos web app
+
+Package: snf-pithos-backend
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common,
+    python-argparse
+Replaces: snf-pithos-lib
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Pithos backend library
+
+Package: snf-pithos-tools
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common
+Provides: ${python:Provides}
+Replaces: snf-pithos-backend
+XB-Python-Version: ${python:Versions}
+Description: Synnefo pithos tools
+
+Package: snf-tools
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo tools package

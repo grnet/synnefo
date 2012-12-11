@@ -1,0 +1,47 @@
+#!/usr/bin/make -f
+# Sample debian/rules that uses debhelper.
+# This file is public domain software, originally written by Joey Hess.
+#
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+BUILDDIR := debian
+DESTDIR := ${CURDIR}/${BUILDDIR}
+
+PACKAGES = \
+	snf-astakos-app \
+	snf-common \
+	snf-cyclades-app \
+	snf-cyclades-gtools \
+	snf-webproject \
+	snf-pithos-app \
+	snf-pithos-backend \
+	snf-tools
+
+%:
+	dh $@ --with python2
+
+
+override_dh_auto_install:
+	for package in $(PACKAGES); do \
+		cd $$package ; \
+		python setup.py install --root=$(DESTDIR)/$$package --install-layout=deb ; \
+		cd - ; \
+	done
+	-for py in $(shell pyversions -vr debian/control); do \
+		rm $(DESTDIR)/*/usr/lib/python$$py/*-packages/*-nspkg.pth; \
+	done
+	dh_install
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0640 $(DESTDIR)/*/etc/synnefo/*
+	chmod 0750 $(DESTDIR)/*/etc/synnefo
+	chown -R root:www-data $(DESTDIR)/*/etc/synnefo
+
+override_dh_installinit:
+	dh_installinit --name=snf-ganeti-eventd --error-handler=true -- defaults 20 80 -i
+	dh_installinit --name=snf-dispatcher --error-handler=true -- defaults 20 80 -i
+
+override_dh_build:

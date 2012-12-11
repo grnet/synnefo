@@ -11,9 +11,7 @@
 		 			<div class="img-wrap">&nbsp;</div>
 		 			<div class="info">
 						<h3>{{ rdata.report_desc }}</h3>
-						<p>
-						 
-						 
+						<p>							
 						{% if rdata.unit == 'bytes' %}
 							{{ rdata.currValue|sizeof_fmt  }} out of  {{ rdata.maxValue|sizeof_fmt }}
 						{% else %}

@@ -135,6 +135,18 @@ class LocalAuthProvider(AuthProvider):
     def extra_actions(self):
         return [(_('Change password'), reverse('password_change')), ]
 
+class LDAPAuthProvider(AuthProvider):
+    module = 'ldap'
+    title = _('LDAP credentials')
+    description = _('Allows you to login using your LDAP credentials')
+
+    one_per_user = True
+
+    login_template = 'im/auth/local_login_form.html'
+    login_prompt_template = 'im/auth/local_login_prompt.html'
+    signup_prompt_template = 'im/auth/local_signup_prompt.html'
+    details_tpl = _('You can login to your account using your'
+                    ' %(auth_backend)s password.')
 
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'

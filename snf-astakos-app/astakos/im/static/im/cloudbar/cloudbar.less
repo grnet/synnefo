@@ -1,0 +1,122 @@
+@import "less/variables.less";
+@import "less/mixins.less";
+
+@toolbarBg: #222;
+@toolbarColor: darken(@white, 10%);
+@toolbarHeight: 30px;
+
+.servicesbar {
+
+    // mini reset
+    ol, ul { list-style:none; margin:0; padding:0;}
+    li {margin:0; padding:0;}
+    font-family: arial, sans-serif !important;
+    font-size: 13px !important;
+    line-height: 13px;
+    letter-spacing: 0px;
+    .clearfix();
+    color: #ccc;
+    z-index: 1000;
+    border-bottom: 1px solid #444;
+
+    background-color: darken(@toolbarBg, 40%);
+
+    a {
+        border: none !important;
+        font-family: arial, sans-serif !important;
+        font-size: 13px !important;
+        color: @toolbarColor;    
+        text-decoration: none;
+        display: block;
+        float: left;
+        padding: 11px;
+        height: 13px;
+        &:hover {
+            background-color: #444;
+        }
+        &.active {
+            font-weight: bold;
+            font-size: 13px !important;
+            background-color: #333;
+        }
+
+        img {
+            border: none;
+            margin: 1px;
+            margin-bottom: 2px;
+        }
+    }
+
+    .services {
+        .clearfix();
+
+        a {
+
+            &.with-icon {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 35px;
+                height: 35px;
+            }
+
+            font-size: 13px !important;
+            font-weight: bold;
+            color: #ccc;
+
+            &.active {
+                font-size: 13px !important;    
+                color: @white !important;
+            }
+            &:hover {
+                background-color: #444;
+            }
+        }
+    }    
+
+    position: relative;
+
+    .profile {
+        margin-top: -35px;
+        .clearfix();
+        text-align: right;
+        min-width: 200px;
+        width: 200px;
+
+        .user {
+            &> a {
+                font-weight: bold !important;
+                font-size: 12px !important;
+            }    
+
+            &.active {
+                background-color: #333;
+            }
+        }
+        a {
+                    float: none;
+        }
+        ul {
+            display: none;    
+            li {
+                width: 100%;
+                border-bottom: 1px solid #444;
+                background-color: #333;
+                a {
+                    float: none;
+                    display: block;
+                }
+            }
+        }
+        &:hover, &.hover {
+            background-color: #222;
+            ul {
+                display: block;    
+            }
+        }
+        background-color: @black;
+        .clearfix();
+        position: absolute;
+        right: 0;
+        float: right;    
+    }
+}

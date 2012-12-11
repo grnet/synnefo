@@ -1,0 +1,10 @@
+{% extends 'im/one_col_base.html'%}
+
+{%block page.title %}Email change{% endblock %}
+{% block body %}
+<div class="section">
+    {% if modified_user %}
+    <h2>Email changed syccessfully for user {{modified_user.id}}.</h2>
+    {% endif %}
+</div>
+{% endblock %}

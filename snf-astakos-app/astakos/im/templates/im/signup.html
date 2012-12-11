@@ -1,0 +1,30 @@
+{% extends 'im/base_two_cols.html' %}
+
+{% block page.title %}
+    Signup
+{% endblock %}
+
+{% block body.left %}
+    <img class="pic" src="{{ IM_STATIC_URL }}images/pictures/accounts_3.png" />
+{% comment %}{% include "im/services_description.html" %}{% endcomment %}
+{% endblock body.left %}
+
+{% block body.right %}
+    {% if "local" in im_modules %}
+      <div class="form-stacked">
+        <form action="{% url astakos.im.views.signup %}" method="post"
+            class="innerlabels signup">{% csrf_token %}
+          <h2><span>SIGN UP</span></h2>
+            <input type="hidden" name="next" value="{{ next }}">
+            <input type="hidden" name="code" value="{{ code }}">
+            <input type="hidden" name="provider" value={{ provider|default:"local" }}>
+            {% with signup_form as form %}
+            {% include "im/form_render.html" %}
+            {% endwith %}
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="SUBMIT" />
+            </div>
+        </form>
+      </div>
+    {% endif %}
+{% endblock %}

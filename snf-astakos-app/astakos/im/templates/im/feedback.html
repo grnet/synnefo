@@ -1,0 +1,19 @@
+{% extends "im/account_base.html" %}
+
+{% block body %}
+<form action="{% url astakos.im.views.feedback %}" method="post"
+    class="withlabels">{% csrf_token %}
+    
+    {% with feedback_form as form %}
+    {% include "im/form_render.html" %}
+    {% endwith %}
+    
+    <div class="form-row submit">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="auth" value="{{ user.auth_token }}">
+    	<input type="hidden" name="username" value="{{ username }}">
+        <input type="submit" class="submit altcol" value="SEND" />
+    </div>
+  
+</form>
+{% endblock body %}

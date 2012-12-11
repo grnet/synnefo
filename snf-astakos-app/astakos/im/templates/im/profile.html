@@ -1,0 +1,18 @@
+{% extends "im/account_base.html" %}
+
+{% block body %}
+
+<form action={%url astakos.im.views.edit_profile %} method="post" class="withlabels">{% csrf_token %}
+    
+    {% with profile_form as form %}
+    {% include "im/form_render.html" %}
+    {% endwith %}
+
+    <div class="form-row submit">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="auth" value="{{ user.auth_token }}">
+        <input type="submit" class="submit altcol" value="UPDATE" />
+    </div>
+
+</form>
+{% endblock body %}

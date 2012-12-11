@@ -24,4 +24,5 @@ _build
 # version modules created automatically from setup.py
 */synnefo/versions/*.py
 !*/synnefo/versions/__init__.py
+snf-astakos-app/astakos/version.py
 snf-tools/synnefo_tools/version.py

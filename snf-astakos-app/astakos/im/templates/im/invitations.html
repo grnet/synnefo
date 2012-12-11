@@ -1,0 +1,55 @@
+{% extends "im/account_base.html" %}
+
+{% block page.body %}
+<div class="full bottom-bordered clearfix">
+	<div class="lt-div">
+		<p>Invite someone else</p>
+	</div>
+	 
+	 {% if inviter.invitations %}
+	  <form action="{% url astakos.im.views.invite %}" method="post"
+	    class="innerlabels overflow-hidden">{% csrf_token %}
+	
+	    {% with invitation_form as form %}
+	    	{% include "im/form_render.html" %}
+	    {% endwith %}
+	
+	    <div class="form-row submit">
+	        <input type="submit" class="submit altcol" value="SEND" />
+	    </div>
+	  </form>
+	  {% endif %}
+	 
+</div>
+ 
+	<div class="full {% block innerpage.class %}{% endblock %}">
+	    
+	    <h2>You have <em>{{ inviter.invitations }}</em> invitation{{ inviter.invitations|pluralize }} left.</h2>
+	    {% if sent|length %}
+	      <table class="zebra-striped id-sorted">
+	        <thead>
+	          <tr>
+	            <th>Email</th>
+	            <th>Real Name</th>
+	            <th>Used</th>
+	          </tr>
+	        </thead>
+	        <tbody>
+	          {% for inv in sent %}
+	          <tr class="{% if inv.is_consumed %}used{% endif %}">
+	            <td>{{ inv.email }}</td>
+	            <td>{{ inv.realname }}</td>
+	            <td class="consumed">{% if inv.is_consumed %}Yes{% else %}No{% endif %}</td>
+	          </tr>
+	          {% endfor %}
+	        </tbody>
+	    </table>
+	    {% else %}
+	        <p>No invitations sent</p>
+	    {% endif %}
+	</div>     
+
+
+
+{% endblock %}
+

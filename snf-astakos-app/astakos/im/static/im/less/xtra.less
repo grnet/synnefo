@@ -1,0 +1,66 @@
+// row helper
+.makeRow { .clearfix(); margin-left: -@gridGutterWidth; }
+
+
+#font {
+  .main(@weight: normal, @size: 14px, @lineHeight: 22px) {
+    font-family: 'Antic', sans-serif;
+    font-size: @size;
+    font-weight: @weight;
+    line-height: @lineHeight;
+    letter-spacing: 1px;
+  }
+}
+
+
+.button {
+    #font.main();
+    background-color: @buttonBg;
+    color: @buttonColor;
+    border: none;
+    padding: 0.8em @gridGutterWidth;
+    font-size: 1em;
+
+    &:hover {
+        background-color: @linkColor;    
+    }
+
+    &.back {
+        text-decoration: none;
+        bottom: 0;
+        float: right;
+        &.right { right: 0}
+        z-index: 500;
+    }
+}
+
+.buttons-list {
+    z-index: 300;
+    position: relative;
+    .button {
+        margin-left: 10px;    
+    }    
+
+    &.fixpos {
+        margin-top: -42px;    
+    }
+}
+
+// specific styles for A buttons
+a.button {
+    text-align: center !important;
+    color: #fff !important;
+    border: none !important;
+    display: block !important;
+
+    &:hover {
+        color: #fff !important;    
+    }
+}
+
+
+.transit(@type:color, @time:.15s, @easing:linear) {
+    -webkit-transition: @type @time @easing;
+    transition: @type @time @easing;
+}
+

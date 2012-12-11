@@ -1,0 +1,50 @@
+{% extends 'im/base_two_cols.html'%}
+
+{% block signup_class %}hidden{% endblock %}
+{% block page.title %}{% endblock %}
+
+{% block body.left %}
+	<img class="pic" src="{{ IM_STATIC_URL }}images/porta.png" />
+	{% comment %}{% include "im/services_description.html" %}{% endcomment %}
+{% endblock body.left %}
+    
+{% block body.right %} 
+	{% if "local" in im_modules %}
+    	<form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
+		    <h2>LOGIN</h2>
+		    {% with login_form as form %}
+		    	{% include "im/form_render.html" %}
+		    {% endwith %}
+		    <input type="hidden" name="next" value="{{ next }}">
+		    <div class="form-row submit clearfix">
+		    	
+		        <input type="submit" class="submit altcol" value="SUBMIT" />
+		        <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
+		    </div>
+    	</form>
+    {% endif %}
+    <div class="extralogin">
+         {% for o in im_modules %}
+    	<div>
+        {% if o != 'local' %}
+        LOGIN using
+            <a href="/im/login/{{ o }}?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
+            alt="{{ o|title }}">{{ o }}</a>
+        {% endif %}
+        </div>
+        {% endfor %}
+    </div><br />
+    {% block body.signup %}
+	    {% for o in im_modules %}
+	        {% if o != 'local' %}
+	       
+	        {% endif %}
+	    {% endfor %}
+	    <div class="bottom">
+	        {% block body.login.signup %}
+	            new to okeanos ? <a href="{% url astakos.im.views.signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">CREATE ACCOUNT</a>
+	        {% endblock %}
+	    </div>
+	{% endblock body.signup %}
+ 
+{% endblock body.right%}

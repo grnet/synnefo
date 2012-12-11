@@ -1,0 +1,14 @@
+{% extends "im/base.html" %}
+
+{% block page.body %}
+<div class="two-cols clearfix">
+	<div class="rt">
+	    {% block body.right %}
+	    {% endblock %}
+	</div>
+	<div class="lt">
+	    {% block body.left %}
+	    {% endblock %}
+	</div>
+</div>
+{% endblock %}

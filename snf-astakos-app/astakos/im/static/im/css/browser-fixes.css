@@ -1,0 +1,27 @@
+﻿body											{ -webkit-text-size-adjust:100%; }
+
+/* Mozilla */
+@-moz-document url-prefix() {
+	button::-moz-focus-inner,
+	input[type="image"]::-moz-focus-inner,
+	input[type="submit"]::-moz-focus-inner,
+	input[type="reset"]::-moz-focus-inner,
+	input[type="button"]::-moz-focus-inner 		{ border:0; }
+	textarea 									{ resize:none; }
+}
+
+/* Webkit */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+	button,
+	input[type="submit"],
+	input[type="reset"],
+	input[type="button"]						{ -webkit-appearance:button; }
+	input[type="text"]:focus,
+	input[type="password"]:focus,
+	textarea:focus 								{ outline:0 none; }
+	textarea 									{ resize:none; }
+	input[type="checkbox"],
+	input[type="radio"]							{ vertical-align:-2px; }
+	input[type="search"]								{ -webkit-appearance:textfield; }
+	input[type="search"]::-webkit-search-cancel-button	{ -webkit-appearance:none; }
+}

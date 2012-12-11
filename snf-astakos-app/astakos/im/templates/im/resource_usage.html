@@ -7,7 +7,7 @@
 	<div class="stats clearfix">
 		<ul>
 			{% for rname, rdata in resource_catalog.resources.items %}
-		 		<li class="clearfix  {{ rdata.load_class }} {{ rdata.verbose_name}}">
+		 		<li class="clearfix  {{ rdata.load_class }} {{ rname|get_value_after_dot }}">
 		 			<div class="img-wrap">&nbsp;</div>
 		 			<div class="info">
 						<h3>{{ rdata.report_desc }}</h3>
@@ -15,6 +15,7 @@
 							{{ rdata.currValue|sizeof_fmt  }} out of {{ rdata.maxValue|sizeof_fmt }}
 						{% else %}
 							{{ rdata.currValue }} out of {{ rdata.maxValue }}
+						<p>
 						{% endif %}		
 						</p>
 					</div>

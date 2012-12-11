@@ -979,8 +979,7 @@ class ProjectApplicationForm(forms.ModelForm):
             self.resource_policies,
             applicant,
             comments,
-            precursor_application,
-            commit
+            precursor_application
         )
 
 class ProjectSortForm(forms.Form):

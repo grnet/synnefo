@@ -1212,7 +1212,7 @@ class ProjectApplication(models.Model):
 
     @staticmethod
     def submit(definition, resource_policies, applicant, comments,
-               precursor_application=None, commit=True):
+               precursor_application=None):
 
         application = ProjectApplication()
         if precursor_application:
@@ -1222,23 +1222,20 @@ class ProjectApplication(models.Model):
             application.owner = applicant
 
         application.definition = definition
-        application.definition.resource_policies = resource_policies
         application.applicant = applicant
         application.comments = comments
         application.issue_date = datetime.now()
         application.state = PENDING
-
-        if commit:
+        application.save()
+        application.definition.resource_policies = resource_policies
+        # better implementation ???
+        if precursor_application:
+            try:
+                precursor = ProjectApplication.objects.get(id=precursor_application_id)
+            except:
+                pass
+            application.precursor_application = precursor
             application.save()
-            application.definition.resource_policies = resource_policies
-            # better implementation ???
-            if precursor_application:
-                try:
-                    precursor = ProjectApplication.objects.get(id=precursor_application_id)
-                except:
-                    pass
-                application.precursor_application = precursor
-                application.save()
 
         notification = build_notification(
             settings.SERVER_EMAIL,

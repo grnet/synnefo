@@ -1222,6 +1222,7 @@ class ProjectApplication(models.Model):
             application.owner = applicant
 
         application.definition = definition
+        application.definition.id = None
         application.applicant = applicant
         application.comments = comments
         application.issue_date = datetime.now()
@@ -1234,8 +1235,9 @@ class ProjectApplication(models.Model):
                 precursor = ProjectApplication.objects.get(id=precursor_application_id)
             except:
                 pass
-            application.precursor_application = precursor
-            application.save()
+            else:
+                application.precursor_application = precursor
+                application.save()
 
         notification = build_notification(
             settings.SERVER_EMAIL,

@@ -180,7 +180,7 @@
                     <td>Owner</td>
                     {% else %}
                         {% if m.acceptance_date %}
-                        <td>Approved
+                        <td>Approved {% if m.leave_request_date%}(User has requested to leave the project on:{{m.leave_request_date}}){% endif %}
                             {% if user == object.owner and user != m.person %}
                                 <a href="{% url project_remove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
                             {% endif %}

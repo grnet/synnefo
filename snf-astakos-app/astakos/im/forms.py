@@ -932,7 +932,7 @@ class ProjectApplicationForm(forms.ModelForm):
             self.initial['comments'] = instance.projectapplication.comments
             
     def clean(self):
-        userid = self.data.get('user', None)[0]
+        userid = self.data.get('user', None)
         self.user = None
         if userid:
             try:

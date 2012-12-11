@@ -1156,7 +1156,7 @@ class ProjectDefinition(models.Model):
         )
         if q:
             raise ValidationError(
-                {'name': [_(astakos_messages.UNIQUE_PROJECT_NAME_CONSTRAIN_ERR)]}
+                _(astakos_messages.UNIQUE_PROJECT_NAME_CONSTRAIN_ERR)
             )
 
 
@@ -1253,8 +1253,12 @@ class ProjectApplication(models.Model):
             ValidationError: if there is other alive project with the same name
             
         """
+        try:
+            self.definition.validate_name()
+        except ValidationError, e:
+            raise PermissionDenied(e.messages[0])
         if self.state != PENDING:
-            return
+            raise PermissionDenied(_(PROJECT_ALREADY_ACTIVE))
         create = False
         try:
             self.precursor_application.project
@@ -1288,7 +1292,7 @@ class ProjectApplication(models.Model):
             settings.SERVER_EMAIL,
             [self.owner.email],
             _('Project application has been approved on %s alpha2 testing' % SITENAME),
-            _('Your application request %(id)s has been apporved.')
+            _('Your application request %(id)s has been approved.') % self.id
         )
         notification.send()
 

@@ -262,6 +262,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         email = self.cleaned_data['email'].lower()
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
+        if reserved_email(email):
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return email
 
     def clean_has_signed_terms(self):
@@ -324,23 +326,6 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         field = self.fields[name]
         self.initial['additional_email'] = self.initial.get(name, field.initial)
         self.initial['email'] = None
-
-    def clean_email(self):
-        email = self.cleaned_data['email'].lower()
-        if self.instance:
-            if self.instance.email == email:
-                raise forms.ValidationError(_("This is your current email."))
-        for user in AstakosUser.objects.filter(email__iexact=email):
-            if user.provider == 'shibboleth':
-                raise forms.ValidationError(_(
-                        "This email is already associated with another \
-                         shibboleth account."
-                    )
-                )
-            else:
-                raise forms.ValidationError(_("This email is already used"))
-        super(ShibbolethUserCreationForm, self).clean_email()
-        return email
 
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
@@ -615,7 +600,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
     )
     desc = forms.CharField(
         label= 'Description',
-        widget=forms.Textarea, 
+        widget=forms.Textarea,
         help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "
     )
     issue_date = forms.DateTimeField(
@@ -652,7 +637,7 @@ class AstakosGroupCreationForm(forms.ModelForm):
         args.insert(0, qd)
 
         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-        
+
         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
                                 'issue_date', 'expiration_date',
                                 'moderation_enabled', 'max_participants']

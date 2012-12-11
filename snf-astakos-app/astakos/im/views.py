@@ -41,6 +41,7 @@ from urllib import quote
 from functools import wraps
 from datetime import datetime
 
+from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -62,10 +63,13 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 
+import astakos.im.messages as astakos_messages
+
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (AstakosUser, ApprovalTerms, AstakosGroup,
                                EmailChange, GroupKind, Membership,
-                               RESOURCE_SEPARATOR, AstakosUserAuthProvider)
+                               RESOURCE_SEPARATOR, AstakosUserAuthProvider,
+                               PendingThirdPartyUser)
 from astakos.im.util import get_context, prepare_response, get_query, restrict_next
 from astakos.im.forms import (LoginForm, InvitationForm, ProfileForm,
                               FeedbackForm, SignApprovalTermsForm,
@@ -87,7 +91,6 @@ from astakos.im.settings import (COOKIE_DOMAIN, LOGOUT_NEXT,
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
-import astakos.im.messages as astakos_messages
 from astakos.im import settings
 from astakos.im import auth_providers
 
@@ -124,7 +127,8 @@ def requires_auth_provider(provider_id, **perms):
                 for pkey, value in perms.iteritems():
                     attr = 'is_available_for_%s' % pkey.lower()
                     if getattr(provider, attr)() != value:
-                        raise PermissionDenied
+                        #TODO: add session message
+                        return HttpResponseRedirect(reverse('login'))
             return func(request, *args)
         return wrapper
     return decorator
@@ -408,6 +412,11 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         instance = None
 
     third_party_token = request.REQUEST.get('third_party_token', None)
+    if third_party_token:
+        pending = get_object_or_404(PendingThirdPartyUser,
+                                    token=third_party_token)
+        provider = pending.provider
+        instance = pending.get_user_instance()
 
     try:
         if not backend:
@@ -531,10 +540,16 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
     if request.user.is_authenticated():
         email = request.user.email
         auth_logout(request)
+    else:
+        response['Location'] = reverse('index')
+        response.status_code = 301
+        return response
+
     next = restrict_next(
         request.GET.get('next'),
         domain=COOKIE_DOMAIN
     )
+
     if next:
         response['Location'] = next
         response.status_code = 302
@@ -543,8 +558,8 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         response.status_code = 301
     else:
         messages.add_message(request, messages.SUCCESS, _(astakos_messages.LOGOUT_SUCCESS))
-        context = get_context(request, extra_context)
-        response.write(render_to_string(template, context_instance=context))
+        response['Location'] = reverse('index')
+        response.status_code = 301
     return response
 
 
@@ -946,9 +961,9 @@ def group_list(request):
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     query = query+" ORDER BY %s ASC" %sorting
-    
+
     q = AstakosGroup.objects.raw(query)
-    
+
     # Create the template, context, response
     template_name = "%s/%s_list.html" % (
         q.model._meta.app_label,
@@ -1034,7 +1049,7 @@ def group_detail(request, group_id):
     form = MembersSortForm(request.GET)
     if form.is_valid():
         sorting = form.cleaned_data.get('sorting')
-    
+
     result = callpoint.list_resources()
     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
     resource_catalog.update_from_result(result)
@@ -1074,7 +1089,7 @@ def group_search(request, extra_context=None, **kwargs):
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-    
+
     sorting = 'groupname'
     if q:
         queryset = AstakosGroup.objects.select_related()
@@ -1110,7 +1125,7 @@ def group_search(request, extra_context=None, **kwargs):
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,
                     })
-        
+
         # validate sorting
         sort_form = AstakosGroupSortForm(request.GET)
         if sort_form.is_valid():
@@ -1160,14 +1175,14 @@ def group_all(request, extra_context=None, **kwargs):
                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
                         AND astakosuser_id = %s)
                         THEN 1 ELSE 0 END""" % request.user.id,   })
-    
+
     # validate sorting
     sorting = 'groupname'
     sort_form = AstakosGroupSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     q = q.order_by(sorting)
-    
+
     return object_list(
         request,
         q,
@@ -1299,7 +1314,7 @@ def resource_usage(request):
             entry['ratio_limited'] = 100
         else:
             entry['ratio_limited'] = entry['ratio']
-        
+
         return entry
 
     def pluralize(entry):
@@ -1441,4 +1456,4 @@ def how_it_works(request):
     return render_response(
         template='im/how_it_works.html',
         context_instance=get_context(request),)
-    
+

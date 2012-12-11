@@ -154,7 +154,8 @@ class ShibbolethAuthProvider(AuthProvider):
     description = _('Allows you to login to your account using your academic '
                     'credentials')
     add_prompt = _('Add academic credentials to your account.')
-    details_tpl = _('Shibboleth account %(identifier)s is connected with your '
+    details_tpl = _('Shibboleth account %(identifier)s ('
+                    '%(affiliation)s affiliation) is connected with your '
                     ' account.')
     user_title = _('Academic credentials (%(identifier)s)')
 

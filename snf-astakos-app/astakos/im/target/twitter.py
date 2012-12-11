@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+
 from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
@@ -51,6 +53,7 @@ from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
+from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 
@@ -113,6 +116,8 @@ def authenticated(
     access_token = dict(cgi.parse_qsl(content))
     userid = access_token['user_id']
     username = access_token.get('screen_name', userid)
+    provider_info = {'screen_name': username}
+    affiliation = 'Twitter.com'
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -127,7 +132,9 @@ def authenticated(
             return HttpResponseRedirect(reverse('edit_profile'))
 
         user.add_auth_provider('twitter', identifier=userid,
-                               provider_info={'screen_name': username})
+                               affiliation=affiliation,
+                               provider_info=provider_info)
+        messages.success(request, 'Account assigned.')
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
@@ -142,7 +149,7 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-        elif not user.activation_sent:
+        elif not user.activation_sent or not user.email_verified:
             message = _('Your request is pending activation')
 			#TODO: use astakos_messages
             if not settings.MODERATION_ENABLED:
@@ -161,63 +168,28 @@ def authenticated(
 
     except AstakosUser.DoesNotExist, e:
 		#TODO: use astakos_messages
+        provider = auth_providers.get_provider('twitter')
+        if not provider.is_available_for_create():
+            return HttpResponseRedirect(reverse('login'))
+
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=userid,
             provider='twitter',
+            info=json.dumps(provider_info)
         )
         # update pending user
-        user.affiliation = 'Twitter'
+        user.affiliation = affiliation
         user.generate_token()
         user.save()
 
         extra_context['provider'] = 'twitter'
         extra_context['token'] = user.token
-        extra_context['signup_url'] = reverse('twitter_signup', args=(user.token,))
+        extra_context['signup_url'] = reverse('signup') + \
+                                    "?third_party_token=%s" % user.token
 
         return render_response(
             template,
             context_instance=get_context(request, extra_context)
         )
-
-
-@requires_auth_provider('twitter', login=True, create=True)
-@require_http_methods(["GET"])
-@requires_anonymous
-def signup(
-    request,
-    token,
-    backend=None,
-    on_creation_template='im/third_party_registration.html',
-    extra_context={}):
-
-    extra_context = extra_context or {}
-    if not token:
-		#TODO: use astakos_messages
-        return HttpResponseBadRequest(_('Missing key parameter.'))
-
-    pending = get_object_or_404(PendingThirdPartyUser, token=token)
-    d = pending.__dict__
-    d.pop('_state', None)
-    d.pop('id', None)
-    d.pop('token', None)
-    d.pop('created', None)
-    user = AstakosUser(**d)
-
-    try:
-        backend = backend or get_backend(request)
-    except ImproperlyConfigured, e:
-        messages.error(request, e)
-    else:
-        extra_context['form'] = backend.get_signup_form(
-            provider='twitter',
-            instance=user
-        )
-
-    extra_context['provider'] = 'twitter'
-    extra_context['third_party_token'] = token
-    return render_response(
-            on_creation_template,
-            context_instance=get_context(request, extra_context)
-    )
 

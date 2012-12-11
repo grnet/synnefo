@@ -121,10 +121,10 @@ def login(request, on_failure='im/login.html'):
         # a third party provider account
         # TODO: USE astakos_messages
         try:
-          request.user.add_pending_auth_provider(third_party_token)
-          messages.success(request, _('Your new login method has been added'))
+            request.user.add_pending_auth_provider(third_party_token)
+            messages.success(request, _('Your new login method has been added'))
         except PendingThirdPartyUser.DoesNotExist:
-          messages.error(request, _('Account method assignment failed'))
+            messages.error(request, _('Failed to assign new login method'))
 
     return response
 

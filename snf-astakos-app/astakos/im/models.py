@@ -319,6 +319,9 @@ class AstakosUserManager(UserManager):
                           kwargs.iteritems()))
         return self.get(auth_providers__module=provider, **kwargs)
 
+    def get_by_email(self, email):
+        return self.get(email=email)
+
 class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
@@ -378,9 +381,6 @@ class AstakosUser(User):
 
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
-
-    class Meta:
-        unique_together = ("provider", "third_party_identifier")
 
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
@@ -599,6 +599,9 @@ class AstakosUser(User):
            provider_settings.one_per_user:
             return False
 
+        if 'provider_info' in kwargs:
+            kwargs.pop('provider_info')
+
         if 'identifier' in kwargs:
             try:
                 # provider with specified params already exist
@@ -626,7 +629,9 @@ class AstakosUser(User):
     def add_auth_provider(self, provider, **kwargs):
         info_data = ''
         if 'provider_info' in kwargs:
-            info_data = json.dumps(kwargs.pop('provider_info'))
+            info_data = kwargs.pop('provider_info')
+            if isinstance(info_data, dict):
+                info_data = json.dumps(info_data)
 
         if self.can_add_auth_provider(provider, **kwargs):
             self.auth_providers.create(module=provider, active=True,
@@ -644,7 +649,9 @@ class AstakosUser(User):
             pending = PendingThirdPartyUser.objects.get(token=pending)
 
         provider = self.add_auth_provider(pending.provider,
-                               identifier=pending.third_party_identifier)
+                               identifier=pending.third_party_identifier,
+                                affiliation=pending.affiliation,
+                                          provider_info=pending.info)
 
         if email_re.match(pending.email or '') and pending.email != self.email:
             self.additionalmail_set.get_or_create(email=pending.email)
@@ -657,7 +664,11 @@ class AstakosUser(User):
 
     # user urls
     def get_resend_activation_url(self):
-        return reverse('send_activation', {'user_id': self.pk})
+        return reverse('send_activation', kwargs={'user_id': self.pk})
+
+    def get_provider_remove_url(self, module, **kwargs):
+        return reverse('remove_auth_provider', kwargs={
+            'pk': self.auth_providers.get(module=module, **kwargs).pk})
 
     def get_activation_url(self, nxt=False):
         url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
@@ -719,18 +730,23 @@ class AstakosUserAuthProvider(models.Model):
     auth_backend = models.CharField('Backend', max_length=255, blank=False,
                                    default='astakos')
     info_data = models.TextField(default="", null=True, blank=True)
+    created = models.DateTimeField('Creation date', auto_now_add=True)
 
     objects = AstakosUserAuthProviderManager()
 
     class Meta:
         unique_together = (('identifier', 'module', 'user'), )
+        ordering = ('module', 'created')
 
     def __init__(self, *args, **kwargs):
         super(AstakosUserAuthProvider, self).__init__(*args, **kwargs)
         try:
             self.info = json.loads(self.info_data)
-        except:
+            if not self.info:
+                self.info = {}
+        except Exception, e:
             self.info = {}
+
         for key,value in self.info.iteritems():
             setattr(self, 'info_%s' % key, value)
 
@@ -741,7 +757,10 @@ class AstakosUserAuthProvider(models.Model):
 
     @property
     def details_display(self):
-        return self.settings.get_details_tpl_display % self.__dict__
+        try:
+          return self.settings.get_details_tpl_display % self.__dict__
+        except:
+          return ''
 
     @property
     def title_display(self):
@@ -751,7 +770,10 @@ class AstakosUserAuthProvider(models.Model):
                 title_tpl = self.settings.get_user_title_display
         except Exception, e:
             pass
-        return title_tpl % self.__dict__
+        try:
+          return title_tpl % self.__dict__
+        except:
+          return self.settings.get_title_display % self.__dict__
 
     def can_remove(self):
         return self.user.can_remove_auth_provider(self.module)
@@ -997,9 +1019,21 @@ class PendingThirdPartyUser(models.Model):
     username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
     token = models.CharField('Token', max_length=255, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    info = models.TextField(default="", null=True, blank=True)
 
     class Meta:
         unique_together = ("provider", "third_party_identifier")
+
+    def get_user_instance(self):
+        d = self.__dict__
+        d.pop('_state', None)
+        d.pop('id', None)
+        d.pop('token', None)
+        d.pop('created', None)
+        d.pop('info', None)
+        user = AstakosUser(**d)
+
+        return user
 
     @property
     def realname(self):

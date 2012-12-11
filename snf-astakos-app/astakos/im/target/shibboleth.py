@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+
 from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
@@ -50,6 +52,7 @@ from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
+from astakos.im import auth_providers
 from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
@@ -69,7 +72,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
-@requires_auth_provider('local', login=True)
+@requires_auth_provider('shibboleth', login=True)
 @require_http_methods(["GET", "POST"])
 def login(
     request,
@@ -82,6 +85,7 @@ def login(
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
+
         if not eppn:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN))
         if Tokens.SHIB_DISPLAYNAME in tokens:
@@ -99,6 +103,7 @@ def login(
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     email = tokens.get(Tokens.SHIB_MAIL, '')
+    provider_info = {'eppn': eppn, 'email': email}
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -108,11 +113,14 @@ def login(
         # automatically add eppn provider to user
         user = request.user
         if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn):
+                                                  identifier=eppn,
+                                                  provider_info=provider_info):
             messages.error(request, 'Account already exists.')
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('shibboleth', identifier=eppn)
+        user.add_auth_provider('shibboleth', identifier=eppn,
+                               affiliation=affiliation)
+        messages.success(request, 'Account assigned.')
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
@@ -140,16 +148,21 @@ def login(
 
         else:
 			#TODO: use astakos_messages
-            message = _(u'Account disabled. Please contact support')
+            message = _(u'Account not active. Please contact support')
             messages.error(request, message)
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
 		#TODO: use astakos_messages
+        provider = auth_providers.get_provider('shibboleth')
+        if not provider.is_available_for_create():
+            return reverse('index')
+
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=eppn,
             provider='shibboleth',
+            info=json.dumps(provider_info)
         )
         # update pending user
         user.realname = realname
@@ -160,50 +173,11 @@ def login(
 
         extra_context['provider'] = 'shibboleth'
         extra_context['token'] = user.token
-        extra_context['signup_url'] = reverse('shibboleth_signup', args=(user.token,))
+        extra_context['signup_url'] = reverse('signup') + \
+                                        "?third_party_token=%s" % user.token
 
         return render_response(
             template,
             context_instance=get_context(request, extra_context)
         )
 
-
-@requires_auth_provider('local', login=True, create=True)
-@require_http_methods(["GET"])
-@requires_anonymous
-def signup(
-    request,
-    token,
-    backend=None,
-    on_creation_template='im/third_party_registration.html',
-    extra_context=None):
-
-    extra_context = extra_context or {}
-    if not token:
-		#TODO: use astakos_messages
-        return HttpResponseBadRequest(_('Missing key parameter.'))
-
-    pending = get_object_or_404(PendingThirdPartyUser, token=token)
-    d = pending.__dict__
-    d.pop('_state', None)
-    d.pop('id', None)
-    d.pop('token', None)
-    d.pop('created', None)
-    user = AstakosUser(**d)
-
-    try:
-        backend = backend or get_backend(request)
-    except ImproperlyConfigured, e:
-        messages.error(request, e)
-    else:
-        extra_context['form'] = backend.get_signup_form(
-            provider='shibboleth',
-            instance=user
-        )
-
-    extra_context['provider'] = 'shibboleth'
-    extra_context['third_party_token'] = token
-    return render_response(
-            on_creation_template,
-            context_instance=get_context(request, extra_context)
-    )

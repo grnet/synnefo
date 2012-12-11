@@ -990,6 +990,7 @@ class ProjectSortForm(forms.Form):
                  ('definition__start_date', 'Sort by Start Date'),
                  ('definition__end_date', 'Sort by End Date'),
 #                  ('approved_members_num', 'Sort by Participants'),
+                 ('state', 'Sort by Status'),
                  ('definition__member_join_policy__description', 'Sort by Member Join Policy'),
                  ('definition__member_leave_policy__description', 'Sort by Member Leave Policy')
         ),

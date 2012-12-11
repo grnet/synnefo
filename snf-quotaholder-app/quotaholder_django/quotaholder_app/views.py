@@ -56,7 +56,7 @@ def _get_body(request):
 
 callpoints = {('quotaholder', 'v'): API_Callpoint()}
 
-@transaction.commit_on_success
+@transaction.commit_manually
 @csrf_exempt
 def view(request, appname='quotaholder', version=None, callname=None):
     if (appname, version) not in callpoints:

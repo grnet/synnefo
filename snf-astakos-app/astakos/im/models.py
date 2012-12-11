@@ -1241,10 +1241,10 @@ class ProjectApplication(models.Model):
         """
         If approval_user then during owner membership acceptance
         it is checked whether the request_user is eligible.
-        
+
         Raises:
             ValidationError: if there is other alive project with the same name
-            
+
         """
         try:
             self.definition.validate_name()
@@ -1252,13 +1252,22 @@ class ProjectApplication(models.Model):
             raise PermissionDenied(e.messages[0])
         if self.state != PENDING:
             raise PermissionDenied(_(PROJECT_ALREADY_ACTIVE))
-        create = False
-        try:
-            self.precursor_application.project
-        except:
-            create = True
 
-        if create:
+        try:
+            precursor = self.precursor_application
+            project = precursor.project
+            project.application = self
+            prev_approval_date = project.last_approval_date
+            project.last_approval_date = datetime.now()
+            project.save()
+
+            p = precursor
+            while p:
+                p.state = REPLACED
+                p.save()
+                p = p.precursor_application
+
+        except:
             kwargs = {
                 'application':self,
                 'creation_date':datetime.now(),
@@ -1266,19 +1275,11 @@ class ProjectApplication(models.Model):
             }
             project = _create_object(Project, **kwargs)
             project.accept_member(self.owner, approval_user)
-        else:
-            project = self.precursor_application.project
-            project.application = self
-            project.last_approval_date = datetime.now()
-            project.save()
-        precursor = self.precursor_application
-        while precursor:
-            precursor.state = REPLACED
-            precursor.save()
-            precursor = precursor.precursor_application
+            precursor = None
+
         self.state = APPROVED
         self.save()
-        
+
 #         self.definition.validate_name()
 
         notification = build_notification(
@@ -1292,10 +1293,11 @@ class ProjectApplication(models.Model):
         rejected = self.project.sync()
         if rejected:
             # revert to precursor
-            project.application = app.precursor_application
-            if project.application:
-                project.last_approval_date = last_approval_date
+            if precursor:
+                project.application = precursor
+                project.last_approval_date = prev_approval_date
                 project.save()
+
             rejected = project.sync()
             if rejected:
                 raise Exception(_(astakos_messages.QH_SYNC_ERROR))

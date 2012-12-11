@@ -83,7 +83,7 @@ static_files = {'astakos.im': ''}
 
 # The following settings will replace the default django settings
 AUTHENTICATION_BACKENDS = (
-#     'django_auth_ldap.backend.LDAPBackend',
+     'django_auth_ldap.backend.LDAPBackend',
 	'astakos.im.auth_backends.EmailBackend',
     'astakos.im.auth_backends.TokenBackend')
 LOGIN_URL = '/im'

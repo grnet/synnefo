@@ -1,0 +1,45 @@
+--- A translation in English follows ---
+
+Έχει δημιουργηθεί το παρακάτω project:
+
+Id:                             {{object.id}}
+Name:                           {{object.definition.name}}
+Issue date:                     {{object.issue_date|date:"d/m/Y"}}
+Start date:                     {{object.definition.start_date|date:"d/m/Y"}}
+End date:                       {{object.definition.end_date|date:"d/m/Y"}}
+Member Join Policy:             {{object.definition.member_join_policy.policy}}
+Member Leave Policy:            {{object.definition.member_leave_policy.policy}}
+Owner:                          {{object.owner}}
+Applicant:                      {{object.applicant}}
+Maximum participant number:     {{object.definition.limit_on_members_number}}
+Precursor:                      {{object.precursor_application.id}}
+Policies:
+{% for p in object.definition.projectresourcegrant_set.all %}
+    {{p.resource}}: uplimit:{% if p.member_limit %}{{p.member_limit}}{% else %}inf{% endif %}
+{% endfor %}
+
+Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
+snf-manage project-application-approve <id>
+--
+
+The following project has been created:
+
+
+Id:                             {{object.id}}
+Name:                           {{object.definition.name}}
+Issue date:                     {{object.issue_date|date:"d/m/Y"}}
+Start date:                     {{object.definition.start_date|date:"d/m/Y"}}
+End date:                       {{object.definition.end_date|date:"d/m/Y"}}
+Member Join Policy:             {{object.definition.member_join_policy.policy}}
+Member Leave Policy:            {{object.definition.member_leave_policy.policy}}
+Owner:                          {{object.owner}}
+Applicant:                      {{object.applicant}}
+Maximum participant number:     {{object.definition.limit_on_members_number}}
+Precursor:                      {{object.precursor_application.id}}
+Policies:
+{% for p in object.definition.projectresourcegrant_set.all %}
+    {{p.resource}}: uplimit:{% if p.member_limit %}{{p.member_limit}}{% else %}inf{% endif %}
+{% endfor %}
+
+For approving it you can use the command line tool:
+snf-manage project-application-approve <id>

@@ -75,9 +75,10 @@ class Command(BaseCommand):
             except Http404:
                 raise CommandError('Invalid id')
             else:
-                if options['terminate']:
-                    p.terminate()
-                elif options['suspend']:
-                    p.suspend()
-            except BaseException, e:
-                raise CommandError(e)
+                try:
+                    if options['terminate']:
+                        p.terminate()
+                    elif options['suspend']:
+                        p.suspend()
+                except BaseException, e:
+                    raise CommandError(e)

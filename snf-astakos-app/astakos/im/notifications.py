@@ -39,20 +39,31 @@ from smtplib import SMTPException
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.translation import ugettext as _
+from django.template.loader import render_to_string
 
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
 
-def build_notification(sender, recipients, subject, message):
-    return EmailNotification(sender, recipients, subject, message)
+def build_notification(
+    sender, recipients, subject, message=None, template=None, dictionary=None
+):
+    return EmailNotification(
+        sender, recipients, subject, message, template, dictionary
+    )
 
 class Notification(object):
-    def __init__(self, sender, recipients, subject, message):
+    def __init__(
+        self, sender, recipients, subject,
+        message=None, template=None, dictionary=None
+    ):
+        if not message and not template:
+            raise InputError('message and template cannot be both None.')
+        dictionary = dictionary or {}
         self.sender = sender
         self.recipients = recipients
         self.subject = subject
-        self.message = message
+        self.message = message or render_to_string(template, dictionary)
     
     def send(self):
         pass

@@ -90,6 +90,11 @@ ASTAKOS_GROUP_CREATION_SUBJECT              '%s alpha2 testing group created (%%
 ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT '%s alpha2 testing account activated (%%(user)s)' % SITENAME                    Account activation helpdesk notification email subject
 ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT          'Email change on %s alpha2 testing' % SITENAME                                  Email change subject               
 ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT        'Password reset on %s alpha2 testing' % SITENAME                                Password change email subject
+ASTAKOS_PROJECT_CREATION_SUBJECT            '%s alpha2 testing project application created (%%(name)s)' % SITENAME          Project application creation subject
+ASTAKOS_PROJECT_APPROVED_SUBJECT            '%s alpha2 testing project application approved (%%(name)s)' % SITENAME         Project application approval subject
+ASTAKOS_PROJECT_TERMINATION_SUBJECT         '%s alpha2 testing project terminated (%%(name)s)' % SITENAME                   Project termination subject
+ASTAKOS_PROJECT_SUSPENSION_SUBJECT          '%s alpha2 testing project suspended (%%(name)s)' % SITENAME                    Project suspension subject
+ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT   '%s alpha2 testing project membership changed (%%(name)s)' % SITENAME           Project membership change subject
 
 ASTAKOS_QUOTAHOLDER_URL                     ''                                                                              The quotaholder URI
                                                                                                                             e.g. ``http://localhost:8080/api/quotaholder/v``

@@ -1,0 +1,7 @@
+--- A translation in English follows ---
+
+Η αίτησή σας για το project {{object.definition.name}} έχει γίνει δεκτή.
+
+--
+
+Your project application request ({{object.definition.name}}) has been approved.

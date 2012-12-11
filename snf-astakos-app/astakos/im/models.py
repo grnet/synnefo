@@ -69,7 +69,10 @@ from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, BILLING_FIELDS,
     EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    GROUP_CREATION_SUBJECT, SITENAME, SERVICES
+    SITENAME, SERVICES,
+    PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
+    PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
+    PROJECT_MEMBERSHIP_CHANGE_SUBJECT
 )
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
@@ -1227,14 +1230,24 @@ class ProjectApplication(models.Model):
 
         if commit:
             application.save()
-        else:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [i[1] for i in settings.ADMINS],
-                _(GROUP_CREATION_SUBJECT) % {'group':application.definition.name},
-                _('A new project application identified by %(id)s has been submitted.') % application.__dict__
-            )
-            notification.send()
+            application.definition.resource_policies = resource_policies
+            # better implementation ???
+            if precursor_application:
+                try:
+                    precursor = ProjectApplication.objects.get(id=precursor_application_id)
+                except:
+                    pass
+                application.precursor_application = precursor
+                application.save()
+
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [i[1] for i in settings.ADMINS],
+            _(PROJECT_CREATION_SUBJECT) % application.definition.__dict__,
+            template='im/projects/project_creation_notification.txt',
+            dictionary={'object':application}
+        )
+        notification.send()
         return application
 
     def approve(self, approval_user=None):
@@ -1280,13 +1293,12 @@ class ProjectApplication(models.Model):
         self.state = APPROVED
         self.save()
 
-#         self.definition.validate_name()
-
         notification = build_notification(
             settings.SERVER_EMAIL,
             [self.owner.email],
-            _('Project application has been approved on %s alpha2 testing' % SITENAME),
-            _('Your application request %(id)s has been approved.') % self.id
+            _(PROJECT_APPROVED_SUBJECT) % self.definition.__dict__,
+            template='im/projects/project_approval_notification.txt',
+            dictionary={'object':self}
         )
         notification.send()
 
@@ -1445,22 +1457,25 @@ class Project(models.Model):
             self.terminaton_date = datetime.now()
             self.save()
             
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.application.owner.email],
-                _('Project %(name)s has been terminated.') %  self.definition.__dict__,
-                _('Project %(name)s has been terminated.') %  self.definition.__dict__
-            )
-            notification.send()
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [self.application.owner.email],
+            _(PROJECT_TERMINATION_SUBJECT) % self.definition.__dict__,
+            template='im/projects/project_termination_notification.txt',
+            dictionary={'object':self.application}
+        )
+        notification.send()
 
     def suspend(self):
         self.last_approval_date = None
         self.save()
+        self.sync()
         notification = build_notification(
             settings.SERVER_EMAIL,
             [self.application.owner.email],
-            _('Project %(name)s has been suspended.') %  self.definition.__dict__,
-            _('Project %(name)s has been suspended.') %  self.definition.__dict__
+            _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
+            template='im/projects/project_suspension_notification.txt',
+            dictionary={'object':self.application}
         )
         notification.send()
 
@@ -1502,8 +1517,9 @@ class ProjectMembership(models.Model):
         notification = build_notification(
             settings.SERVER_EMAIL,
             [self.person.email],
-            _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__,
-            _('Your membership on project %(name)s has been accepted.') % self.project.definition.__dict__
+            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
+            template='im/projects/project_membership_change_notification.txt',
+            dictionary={'object':self.project.application, 'action':'accepted'}
         ).send()
         self.sync()
     
@@ -1530,8 +1546,9 @@ class ProjectMembership(models.Model):
         notification = build_notification(
             settings.SERVER_EMAIL,
             [self.person.email],
-            _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__,
-            _('Your membership on project %(name)s has been rejected.') % self.project.definition.__dict__
+            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
+            template='im/projects/project_membership_change_notification.txt',
+            dictionary={'object':self.project.application, 'action':'rejected'}
         ).send()
     
     def remove(self, request_user=None):
@@ -1558,8 +1575,9 @@ class ProjectMembership(models.Model):
         notification = build_notification(
             settings.SERVER_EMAIL,
             [self.person.email],
-            _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__,
-            _('Your membership on project %(name)s has been removed.') % self.project.definition.__dict__
+            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
+            template='im/projects/project_membership_change_notification.txt',
+            dictionary={'object':self.project.application, 'action':'removed'}
         ).send()
         self.sync()
     

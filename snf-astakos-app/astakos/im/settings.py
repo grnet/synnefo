@@ -117,8 +117,9 @@ VERIFICATION_EMAIL_SUBJECT = getattr(
 ACCOUNT_CREATION_SUBJECT = getattr(
     settings, 'ASTAKOS_ACCOUNT_CREATION_SUBJECT',
     '%s alpha2 testing account created (%%(user)s)' % SITENAME)
-GROUP_CREATION_SUBJECT = getattr(settings, 'ASTAKOS_GROUP_CREATION_SUBJECT',
-                                 '%s alpha2 testing group created (%%(group)s)' % SITENAME)
+GROUP_CREATION_SUBJECT = getattr(
+    settings, 'ASTAKOS_GROUP_CREATION_SUBJECT',
+    '%s alpha2 testing group created (%%(group)s)' % SITENAME)
 HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
     '%s alpha2 testing account activated (%%(user)s)' % SITENAME)
@@ -128,6 +129,21 @@ EMAIL_CHANGE_EMAIL_SUBJECT = getattr(
 PASSWORD_RESET_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
     'Password reset on %s alpha2 testing' % SITENAME)
+PROJECT_CREATION_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_CREATION_SUBJECT',
+    '%s alpha2 testing project application created (%%(name)s)' % SITENAME)
+PROJECT_APPROVED_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_APPROVED_SUBJECT',
+    '%s alpha2 testing project application approved (%%(name)s)' % SITENAME)
+PROJECT_TERMINATION_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_TERMINATION_SUBJECT',
+    '%s alpha2 testing project terminated (%%(name)s)' % SITENAME)
+PROJECT_SUSPENSION_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_SUSPENSION_SUBJECT',
+    '%s alpha2 testing project suspended (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
+    '%s alpha2 testing project membership changed (%%(name)s)' % SITENAME)
 
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')

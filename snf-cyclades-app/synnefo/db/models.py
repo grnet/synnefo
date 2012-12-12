@@ -682,7 +682,7 @@ class PoolTable(models.Model):
     @classmethod
     def get_pool(cls):
         try:
-            pool_row = cls.objects.select_for_update().all()[0]
+            pool_row = cls.objects.select_for_update().get()
             return pool_row.pool
         except IndexError:
             raise pools.EmptyPool

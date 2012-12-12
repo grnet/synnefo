@@ -474,7 +474,7 @@ class AstakosUser(User):
             p = m.project
             if not p.is_active:
                 continue
-            grants = p.application.definition.projectresourcegrant_set.all()
+            grants = p.current_application.definition.projectresourcegrant_set.all()
             for g in grants:
                 d[str(g.resource)] += g.member_limit or inf
         # TODO set default for remaining
@@ -1153,9 +1153,9 @@ class ProjectDefinition(models.Model):
         """
         q = list(get_alive_projects())
         q = filter(lambda p: p.definition.name == self.name , q)
-        q = filter(lambda p: p.application.id != self.projectapplication.id, q)
+        q = filter(lambda p: p.current_application.id != self.projectapplication.id, q)
         if self.projectapplication.precursor_application:
-            q = filter(lambda p: p.application.id != \
+            q = filter(lambda p: p.current_application.id != \
                 self.projectapplication.precursor_application.id, q)
         if q:
             raise ValidationError(
@@ -1229,15 +1229,18 @@ class ProjectApplication(models.Model):
         application.state = PENDING
         application.save()
         application.definition.resource_policies = resource_policies
+        
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [i[1] for i in settings.ADMINS],
+                _(PROJECT_CREATION_SUBJECT) % application.definition.__dict__,
+                template='im/projects/project_creation_notification.txt',
+                dictionary={'object':application}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
 
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [i[1] for i in settings.ADMINS],
-            _(PROJECT_CREATION_SUBJECT) % application.definition.__dict__,
-            template='im/projects/project_creation_notification.txt',
-            dictionary={'object':application}
-        )
-        notification.send()
         return application
 
     def approve(self, approval_user=None):
@@ -1246,8 +1249,7 @@ class ProjectApplication(models.Model):
         it is checked whether the request_user is eligible.
 
         Raises:
-            ValidationError: if there is other alive project with the same name
-
+            PermissionDenied
         """
         try:
             self.definition.validate_name()
@@ -1263,11 +1265,11 @@ class ProjectApplication(models.Model):
         except:
             project = Project()
             project.creation_date = now
-            project.accept_member(self.owner, approval_user)
 
         project.last_application_approved = self
         project.last_approval_date = now
         project.save()
+        project.accept_member(self.owner, approval_user)
 
         p = precursor
         while p:
@@ -1278,26 +1280,26 @@ class ProjectApplication(models.Model):
         self.state = APPROVED
         self.save()
 
-        transaction.commit()
-
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.owner.email],
-            _(PROJECT_APPROVED_SUBJECT) % self.definition.__dict__,
-            template='im/projects/project_approval_notification.txt',
-            dictionary={'object':self}
-        )
-        notification.send()
+        if transaction.is_managed():
+            transaction.commit()
 
         rejected = self.project.sync()
-        if not rejected:
-            project.application = self
-            project.save()
+        
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [self.owner.email],
+                _(PROJECT_APPROVED_SUBJECT) % self.definition.__dict__,
+                template='im/projects/project_approval_notification.txt',
+                dictionary={'object':self}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
 
 
 class Project(models.Model):
     application = models.OneToOneField(
-        ProjectApplication, related_name='project', null=True, blank=True)
+        ProjectApplication, related_name='project', null=True)
     creation_date = models.DateTimeField()
     last_approval_date = models.DateTimeField(null=True)
     termination_start_date = models.DateTimeField(null=True)
@@ -1307,10 +1309,13 @@ class Project(models.Model):
     last_application_approved = models.OneToOneField(
         ProjectApplication, related_name='last_project')
     
+    @property
+    def current_application(self):
+        return self.application or self.last_application_approved
     
     @property
     def definition(self):
-        return self.application.definition
+        return self.current_application.definition
 
     @property
     def violated_members_number_limit(self):
@@ -1375,6 +1380,9 @@ class Project(models.Model):
             return
         members = specific_members or self.approved_members
         c, rejected = send_quota(self.approved_members)
+        if not rejected:
+            self.application = self.last_application_approved
+            self.save()
         return rejected
     
     def accept_member(self, user, request_user=None):
@@ -1436,27 +1444,32 @@ class Project(models.Model):
             self.termination_date = datetime.now()
             self.save()
             
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.application.owner.email],
-            _(PROJECT_TERMINATION_SUBJECT) % self.definition.__dict__,
-            template='im/projects/project_termination_notification.txt',
-            dictionary={'object':self.application}
-        )
-        notification.send()
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [self.current_application.owner.email],
+                _(PROJECT_TERMINATION_SUBJECT) % self.definition.__dict__,
+                template='im/projects/project_termination_notification.txt',
+                dictionary={'object':self.current_application}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
 
     def suspend(self):
         self.last_approval_date = None
         self.save()
         self.sync()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.application.owner.email],
-            _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
-            template='im/projects/project_suspension_notification.txt',
-            dictionary={'object':self.application}
-        )
-        notification.send()
+
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [self.current_application.owner.email],
+                _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
+                template='im/projects/project_suspension_notification.txt',
+                dictionary={'object':self.current_application}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
 
 class ProjectMembership(models.Model):
     person = models.ForeignKey(AstakosUser)
@@ -1472,11 +1485,10 @@ class ProjectMembership(models.Model):
         """
             Raises:
                 django.exception.PermissionDenied
-                astakos.im.notifications.NotificationError
         """
         try:
             if request_user and \
-                (not self.project.application.owner == request_user and \
+                (not self.project.current_application.owner == request_user and \
                     not request_user.is_superuser):
                 raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
             if not self.project.is_alive:
@@ -1491,23 +1503,26 @@ class ProjectMembership(models.Model):
             return
         self.acceptance_date = datetime.now()
         self.save()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':self.project.application, 'action':'accepted'}
-        ).send()
         self.sync()
+
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [self.person.email],
+                _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
+                template='im/projects/project_membership_change_notification.txt',
+                dictionary={'object':self.project.current_application, 'action':'accepted'}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
     
     def reject(self, request_user=None):
         """
             Raises:
-                django.exception.PermissionDenied,
-                astakos.im.notifications.NotificationError
+                django.exception.PermissionDenied
         """
         if request_user and \
-            (not self.project.application.owner == request_user and \
+            (not self.project.current_application.owner == request_user and \
                 not request_user.is_superuser):
             raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
         if not self.project.is_alive:
@@ -1520,22 +1535,25 @@ class ProjectMembership(models.Model):
         )
         self.delete()
         history_item.save()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':self.project.application, 'action':'rejected'}
-        ).send()
-    
+
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [self.person.email],
+                _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
+                template='im/projects/project_membership_change_notification.txt',
+                dictionary={'object':self.project.current_application, 'action':'rejected'}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
+
     def remove(self, request_user=None):
         """
             Raises:
                 django.exception.PermissionDenied
-                astakos.im.notifications.NotificationError
         """
         if request_user and \
-            (not self.project.application.owner == request_user and \
+            (not self.project.current_application.owner == request_user and \
                 not request_user.is_superuser):
             raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
         if not self.project.is_alive:
@@ -1549,17 +1567,21 @@ class ProjectMembership(models.Model):
         )
         self.delete()
         history_item.save()
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [self.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':self.project.application, 'action':'removed'}
-        ).send()
         self.sync()
+
+        try:
+            notification = build_notification(
+                settings.SERVER_EMAIL,
+                [self.person.email],
+                _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
+                template='im/projects/project_membership_change_notification.txt',
+                dictionary={'object':self.project.current_application, 'action':'removed'}
+            ).send()
+        except NotificationError, e:
+            logger.error(e.messages)
     
     def leave(self):
-        leave_policy = self.project.application.definition.member_leave_policy
+        leave_policy = self.project.current_application.definition.member_leave_policy
         if leave_policy == get_auto_accept_leave():
             self.remove()
         else:
@@ -1727,9 +1749,9 @@ pre_save.connect(renew_token, sender=Service)
 def check_closed_join_membership_policy(sender, instance, **kwargs):
     if instance.id:
         return
-    if instance.person == instance.project.application.owner:
+    if instance.person == instance.project.current_application.owner:
         return
-    join_policy = instance.project.application.definition.member_join_policy
+    join_policy = instance.project.current_application.definition.member_join_policy
     if join_policy == get_closed_join():
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
 pre_save.connect(check_closed_join_membership_policy, sender=ProjectMembership)
@@ -1738,7 +1760,7 @@ pre_save.connect(check_closed_join_membership_policy, sender=ProjectMembership)
 def check_auto_accept_join_membership_policy(sender, instance, created, **kwargs):
     if not created:
         return
-    join_policy = instance.project.application.definition.member_join_policy
+    join_policy = instance.project.current_application.definition.member_join_policy
     if join_policy == get_auto_accept_join() and not instance.acceptance_date:
         instance.accept()
 post_save.connect(check_auto_accept_join_membership_policy, sender=ProjectMembership)

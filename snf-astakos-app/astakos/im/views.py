@@ -99,7 +99,6 @@ from astakos.im.settings import (
 )
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
-from astakos.im.notifications import NotificationError
 
 import astakos.im.messages as astakos_messages
 from astakos.im import settings
@@ -1479,9 +1478,10 @@ def project_add(request):
             extra_context=extra_context, post_save_redirect='/im/project/list/',
             form_class=ProjectApplicationForm)
         return r
-    except NotificationError, e:
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
-        messages.error(request, e.message)
         return render_response(
             'im/projects/projectapplication_form.html',
             sorting = 'definition__name',
@@ -1665,9 +1665,10 @@ def project_join(request, id):
         messages.error(request, msg)
     except PermissionDenied, e:
         messages.error(request, e)
-    except NotificationError, e:
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
-        messages.error(request, e)
     else:
         return project_detail(request, id)
     finally:
@@ -1698,8 +1699,11 @@ def handle_project_membership(func):
         else:
             try:
                 func(request, m)
-            except (NotificationError, PermissionDenied), e:
+            except PermissionDenied, e:
                 messages.error(request, e)
+            except BaseException, e:
+                logger.exception(e)
+                messages.error(_(astakos_messages.GENERIC_ERROR ))
                 rollback = True
         finally:
             if rollback:

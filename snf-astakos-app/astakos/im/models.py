@@ -1256,22 +1256,19 @@ class ProjectApplication(models.Model):
         if self.state != PENDING:
             raise PermissionDenied(_(PROJECT_ALREADY_ACTIVE))
 
+        now = datetime.now()
         precursor = self.precursor_application
         try:
             project = precursor.project
-            project.application = self
-            prev_approval_date = project.last_approval_date
-            project.last_approval_date = datetime.now()
-            project.save()
         except:
-            kwargs = {
-                'application':self,
-                'creation_date':datetime.now(),
-                'last_approval_date':datetime.now(),
-            }
-            project = _create_object(Project, **kwargs)
+            project = Project()
+            project.creation_date = now
             project.accept_member(self.owner, approval_user)
-        
+
+        project.last_application_approved = self
+        project.last_approval_date = now
+        project.save()
+
         p = precursor
         while p:
             p.state = REPLACED
@@ -1280,6 +1277,8 @@ class ProjectApplication(models.Model):
 
         self.state = APPROVED
         self.save()
+
+        transaction.commit()
 
         notification = build_notification(
             settings.SERVER_EMAIL,
@@ -1291,32 +1290,22 @@ class ProjectApplication(models.Model):
         notification.send()
 
         rejected = self.project.sync()
-        if rejected:
-            # revert to precursor
-            if precursor:
-                project.application = precursor
-                project.last_approval_date = prev_approval_date
-                project.save()
-
-            rejected = project.sync()
-            if rejected:
-                raise Exception(_(astakos_messages.QH_SYNC_ERROR))
-        else:
-            project.last_application_synced = self
+        if not rejected:
+            project.application = self
             project.save()
 
 
 class Project(models.Model):
-    application = models.OneToOneField(ProjectApplication, related_name='project')
+    application = models.OneToOneField(
+        ProjectApplication, related_name='project', null=True, blank=True)
     creation_date = models.DateTimeField()
     last_approval_date = models.DateTimeField(null=True)
     termination_start_date = models.DateTimeField(null=True)
     termination_date = models.DateTimeField(null=True)
     members = models.ManyToManyField(AstakosUser, through='ProjectMembership')
     membership_dirty = models.BooleanField(default=False)
-    last_application_synced = models.OneToOneField(
-        ProjectApplication, related_name='last_project', null=True, blank=True
-    )
+    last_application_approved = models.OneToOneField(
+        ProjectApplication, related_name='last_project')
     
     
     @property
@@ -1373,7 +1362,7 @@ class Project(models.Model):
     
     @property
     def is_synchronized(self):
-        return self.last_application_synced == self.application and \
+        return self.last_application_approved == self.application and \
             not self.membership_dirty and \
             (not self.termination_start_date or termination_date)
     

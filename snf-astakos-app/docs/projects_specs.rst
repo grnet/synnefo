@@ -140,20 +140,20 @@ The attributes for a project are:
     *a unique serial number identifying the project*
 
 ``application``
-    *the application which has created or modified the project.
-    An application is approved by setting it to this attribute.*
+    *the last application that was successfully synchronized with Quotaholder.*
 
-``last_application_synced``
-    *the last application that was successfully synchronized with Quotaholder.
+``last_application_approved``
+    *the application which has created or modified the project.
+    An application is approved by setting it to this attribute.
+
     Normally, this is the same as the ``application`` above.
-    However, on approval, only ``application`` is set
+    However, on approval, only ``last_application_approved`` is set
     so the two attributes differ, marking the project as pending definition
     synchronization. Upon successful synchronization with Quotaholder,
-    ``last_application_synced`` is also set,
-    marking the project definition synchronized.
+    ``application`` is also set, marking the project definition synchronized.
     Note that if during the synchronization another approval
-    updates ``application``, then after synchronization the project
-    is still out of sync, and needs another loop.*
+    updates ``last_application_approved``, then after synchronization
+    the project is still out of sync, and needs another loop.*
 
 ``creation_date``
     *when the project was created (i.e. was first approved)*
@@ -244,7 +244,7 @@ Rules
     can be either **synchronized** or **unsyncrhonized**.
 
     An alive project is declared synchronized by setting
-    ``last_application_synced`` to be equal to the ``application``,
+    ``application`` to be equal to ``last_application_approved``,
     and setting ``membership_dirty`` to false,
 
     Semantically, the project becomes synchronized when its application
@@ -258,7 +258,7 @@ Rules
     In general, also considering projects under termination,
     a project is declared synchronized if and only if:
 
-    - ``last_application_synced`` equals ``application``
+    - ``last_application_approved`` equals ``application``
     - ``membership_dirty`` is false
     - ``termination_start_date`` is null or ``termination_date`` is set
 
@@ -302,7 +302,7 @@ Rules
     via a follow up application.
 
     If the precursor of an application is not associated with a project
-    (i.e. no project references it as its defining ``application``),
+    (i.e. no project references it as its defining ``last_application_approved``),
     then a new project entry is created and initialized.
 
     If the precursor of an application *is* associated with a valid project,

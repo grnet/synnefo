@@ -25,7 +25,7 @@
     $(document).ready(function(){
       $("h2.form-toggler a").click(function(e) {
         e.preventDefault();
-        $("div.form").slideToggle();
+        $("div.login-form").slideToggle();
       });
       if ($('form.login-form .form-row.with-errors, form.login-form .form-error').length > 0) {
         $('div.login-form').css({display:'block'});

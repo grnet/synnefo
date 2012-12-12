@@ -65,3 +65,7 @@ In router node in case you have a NAT setup run:
 
     # iptables -t nat -A POSTROUTING -s 10.0.1.0/24 -j MASQUERADE
     # ip addr add 10.0.1.1/24 dev eth1
+
+
+Test your Setup:
+++++++++++++++++

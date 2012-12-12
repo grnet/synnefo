@@ -101,3 +101,7 @@ All this can be done with one command:
 .. code-block:: console
 
    # snf-manage user-add --password=12345 --active user@example.com Name LastName
+
+
+Test your Setup:
+++++++++++++++++

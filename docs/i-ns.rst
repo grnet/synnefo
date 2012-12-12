@@ -144,3 +144,7 @@ In all ``synnefo`` and ``backend`` nodes add in `/etc/resolv.conf`:
     domain example.com
     search example.com
     nameserver 4.3.2.1
+
+
+Test your Setup:
+++++++++++++++++

@@ -38,3 +38,7 @@ exchanges:
    # rabbitmqctl delete_user guest
    # rabbitmqctl set_user_tags synnefo administrator
    # /etc/init.d/rabbitmq-server restart
+
+
+Test your Setup:
+++++++++++++++++

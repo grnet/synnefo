@@ -85,3 +85,7 @@ Now enable sites and modules by running:
    # a2ensite synnefo-ssl
    # a2enmod headers
    # a2enmod proxy_http
+
+
+Test your Setup:
+++++++++++++++++

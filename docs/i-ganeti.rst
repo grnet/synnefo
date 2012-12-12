@@ -67,3 +67,7 @@ We need to add a rapi user to Ganeti so that Synnefo can talk with the backend:
    # result=$(echo -n "synnefo:Ganeti Remote API:example_rapi_passw0rd" | openssl md5)
    # echo "synnefo {HA1} $result" >> /var/lib/ganeti/rapi/users
    # /etc/init.d/ganeti restart
+
+
+Test your Setup:
+++++++++++++++++

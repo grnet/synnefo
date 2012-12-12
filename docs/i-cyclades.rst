@@ -151,3 +151,7 @@ access Internet:
 .. code-block:: console
 
    # snf-manage network-create --subnet=10.0.1.0/24 --gateway=10.0.1.1 --public --dhcp --flavor=CUSTOM --mode=bridged --link=br0 --name=Internet --backend-id=1
+
+
+Test your Setup:
+++++++++++++++++

@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
-  echo "$0 upstream_branch debian_branch"
-  exit 1
-fi
-
 parse_git_branch()
 {
     git branch 2> /dev/null | grep '^*' | sed 's/^*\ //g'
@@ -51,23 +46,8 @@ TOPLEVEL="$(git rev-parse --show-toplevel)"
 CURRENT_BRANCH=$(parse_git_branch)
 
 LOCALBRANCH="$CURRENT_BRANCH"
-REMOTEUPSTREAM=$1
-REMOTEDEBIAN=$2
-PKGAREA=~/packages
-BACKUPAREA=~/backup
-BUILDAREA=$(mktemp -d --tmpdir=/tmp build-area.XXX)
 
-PACKAGES="
-  snf-astakos-app
-  snf-common
-  snf-webproject
-  snf-cyclades-app
-  snf-cyclades-gtools
-  snf-tools
-  snf-pithos-app
-  snf-pithos-backend
-  snf-pithos-tools"
-
+source devtools/autopkg.conf
 
 set -e
 trap cleanup EXIT
@@ -81,16 +61,12 @@ test -d "$BACKUPAREA" || die "Backup area directory $BACKUPAREA missing"
 # Prerequisite: Test the dialog utility is available
 dialog --help &>/dev/null || die "Could not run the 'dialog' utility"
 
-# Test all needed branches exist and can be checked out
-#TODO: check for up-to-date branches
-git fetch origin $REMOTEUPSTREAM
 git fetch origin $REMOTEDEBIAN
 
 echo "##########################################################"
 echo "Will build packages"
 echo "under '$BUILDAREA',"
-echo "from branch '$LOCALBRANCH'"
-echo "with upstream branch '$REMOTEUPSTREAM',"
+echo "from local branch '$LOCALBRANCH'"
 echo "and debian branch '$REMOTEDEBIAN'"
 echo "##########################################################"
 echo "Press Enter to continue..."
@@ -113,7 +89,7 @@ snap=false
 mrgextra=-m
 dchextra=-R
 mrgmsg="Merge branch '$REMOTEUPSTREAM' into $REMOTEDEBIAN"
-dialog --defaultno --yesno "Create Snapshot?" 5 20 && snap=true && dchextra=-S && mrgextra= && mrgmsg=
+dialog --yesno "Create Snapshot?" 5 20 && snap=true && dchextra=-S && mrgextra= && mrgmsg=
 
 # merge local branch into tmp branch with a nice commit message,
 # so it can be pushed as is to upstream debian
@@ -161,13 +137,28 @@ rm -f "$PKGAREA"/* || true
 cp -v "$BUILDAREA"/* "$PKGAREA"/ || true
 cp -v "$BUILDAREA"/* "$BACKUPAREA"/ || true
 
-# Revert the changes, altough everything should have taken
-# place inside a temporary directory, and we can probably nuke everything
-if ! $snap; then
-  # here we can push the commits to the remote debian branch as they are
-  echo "#################### All OK ###################"
-  echo "git push --tags origin $TMPDEBIAN:$REMOTEDEBIAN"
-  echo
+echo "###############################################"
+echo "####              SUCCESS                  ####"
+echo "###############################################"
+
+#check if your local branch is up-to-date
+commits_behind=$(git rev-list $LOCALBRANCH..origin/$REMOTEUPSTREAM | wc -l)
+if [ $commits_behind -ne 0 ]; then
+  die "Your branch is outdated!! Please run: git pull --rebase origin/$REMOTEUPSTREAM"
 fi
+
+trap - EXIT
+
+# Remove the added versions.py files
+git reset --hard HEAD
+# here we can push the commits to the remote debian branch as they are
+
+if ! $snap; then
+  TAGS="--tags"
+fi
+echo "git push $TAGS origin $TMPDEBIAN:$REMOTEDEBIAN"
+echo "git checkout $LOCALBRANCH"
+echo "git push $TAGS origin $LOCALBRANCH:$REMOTEUPSTREAM"
+echo
 
 exit 0

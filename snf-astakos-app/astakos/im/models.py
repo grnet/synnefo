@@ -1162,7 +1162,6 @@ class ProjectDefinition(models.Model):
                 _(astakos_messages.UNIQUE_PROJECT_NAME_CONSTRAIN_ERR)
             )
 
-
 class ProjectResourceGrant(models.Model):
     objects = ExtendedManager()
     member_limit = models.BigIntegerField(null=True)
@@ -1243,6 +1242,18 @@ class ProjectApplication(models.Model):
 
         return application
 
+    def _get_project(self):
+        precursor = self
+        while precursor:
+            try:
+                project = precursor.project
+                return project
+            except Project.DoesNotExist:
+                pass
+            precursor = precursor.precursor_application
+
+        return None
+
     def approve(self, approval_user=None):
         """
         If approval_user then during owner membership acceptance
@@ -1251,38 +1262,48 @@ class ProjectApplication(models.Model):
         Raises:
             PermissionDenied
         """
-        try:
-            self.definition.validate_name()
-        except ValidationError, e:
-            raise PermissionDenied(e.messages[0])
+
+        if not transaction.is_managed():
+            raise AssertionError("NOPE")
+
+        new_project_name = self.definition.name
         if self.state != PENDING:
-            raise PermissionDenied(_(PROJECT_ALREADY_ACTIVE))
+            m = _("cannot approve: project '%s' in state '%s'"
+                % (new_project_name, self.state))
+            raise PermissionDenied(m) # invalid argument
 
         now = datetime.now()
-        precursor = self.precursor_application
-        try:
-            project = precursor.project
-        except:
-            project = Project()
-            project.creation_date = now
+        project = self._get_project()
+        if project is None:
+            try:
+                conflicting_project = Project.objects.get(name=new_project_name)
+                m = _("cannot approve: project with name '%s' "
+                      "already exists (serial: %s)"
+                    % (new_project_name, conflicting_project.id))
+                raise PermissionDenied(m) # invalid argument
+            except Project.DoesNotExist:
+                pass
+            project = Project(creation_date=now)
 
         project.last_application_approved = self
         project.last_approval_date = now
+        #ProjectMembership.add_to_project(self)
+        project.add_member(self.owner)
         project.save()
-        project.accept_member(self.owner, approval_user)
 
-        p = precursor
-        while p:
-            p.state = REPLACED
-            p.save()
-            p = p.precursor_application
+        precursor = self.precursor_application
+        while precursor:
+            precursor.state = REPLACED
+            precursor.save()
+            precursor = precursor.precursor_application
 
         self.state = APPROVED
         self.save()
 
-        if transaction.is_managed():
-            transaction.commit()
+        transaction.commit()
+        project.check_sync()
 
+    def approve_view():
         rejected = self.project.sync()
         
         try:
@@ -1298,17 +1319,31 @@ class ProjectApplication(models.Model):
 
 
 class Project(models.Model):
-    application = models.OneToOneField(
-        ProjectApplication, related_name='project', null=True)
-    creation_date = models.DateTimeField()
-    last_approval_date = models.DateTimeField(null=True)
-    termination_start_date = models.DateTimeField(null=True)
-    termination_date = models.DateTimeField(null=True)
-    members = models.ManyToManyField(AstakosUser, through='ProjectMembership')
-    membership_dirty = models.BooleanField(default=False)
-    last_application_approved = models.OneToOneField(
-        ProjectApplication, related_name='last_project')
-    
+    application                 =   models.OneToOneField(
+                                            ProjectApplication,
+                                            related_name='project',
+                                            null=True)
+    last_application_approved   =   models.OneToOneField(
+                                            ProjectApplication,
+                                            related_name='last_project')
+    last_approval_date          =   models.DateTimeField(null=True)
+
+    members                     =   models.ManyToManyField(
+                                            AstakosUser,
+                                            through='ProjectMembership')
+
+    current_membership_serial   =   models.BigIntegerField()
+    synced_membership_serial    =   models.BigIntegerField()
+
+    termination_start_date      =   models.DateTimeField(null=True)
+    termination_date            =   models.DateTimeField(null=True)
+
+    creation_date               =   models.DateTimeField()
+    name                        =   models.CharField(
+                                            max_length=80,
+                                            db_index=True,
+                                            unique=True)
+
     @property
     def current_application(self):
         return self.application or self.last_application_approved
@@ -1384,26 +1419,61 @@ class Project(models.Model):
             self.application = self.last_application_approved
             self.save()
         return rejected
-    
-    def accept_member(self, user, request_user=None):
+
+    def set_pending_membership_sync(self):
+        self.membership_dirty = True
+        self.save()
+
+    def set_state(self):
+        PROJECT_SYNCHRONIZED = 0
+        PROJECT_SYNC_PENDING_MEMBERSHIP = (1 << 0)
+        PROJECT_SYNC_PENDING_DEFINITION = (1 << 1)
+        PROJECT_SYNC_PENDING = (PROJECT_SYNC_PENDING_DEFINITION | 
+                                PROJECT_SYNC_PENDING_MEMBERSHIP)
+
+        oldstate = self.state
+        state = PROJECT_SYNCHRONIZED
+
+        if self.last_application_approved != self.application:
+            state |= PROJECT_SYNC_PENDING_DEFINITION
+
+        if self.membership_dirty:
+            state |= PROJECT_SYNC_PENDING_MEMBERSHIP
+
+        if oldstate != state:
+            self.state = state
+            self.save()
+        return state
+
+    def check_sync(self, hint=None):
+        state = self.set_state()
+        if state: # needs syncing
+            if self.sync_membership():
+                self.set_sta
+
+    def sync_membership(self, members=None):
+        members = members if members is not None else self.approved_members
+        rejected = send_quota(members)
+        success = not rejected
+        if success:
+            self.members
+        return success
+
+    def add_member(self, user):
         """
         Raises:
             django.exceptions.PermissionDenied
             astakos.im.models.AstakosUser.DoesNotExist
         """
         if isinstance(user, int):
-            try:
-                user = lookup_object(AstakosUser, user, None, None)
-            except Http404:
-                raise AstakosUser.DoesNotExist()
+            user = AstakosUser.objects.get(user=user)
+
         m, created = ProjectMembership.objects.get_or_create(
             person=user, project=self
         )
-        if m.acceptance_date:
-            return
-        m.accept(delete_on_failure=created, request_user=None)
+        m.accept()
 
-    def reject_member(self, user, request_user=None):
+    def remove_member(self, user):
         """
         Raises:
             django.exceptions.PermissionDenied
@@ -1411,28 +1481,11 @@ class Project(models.Model):
             astakos.im.models.ProjectMembership.DoesNotExist
         """
         if isinstance(user, int):
-            try:
-                user = lookup_object(AstakosUser, user, None, None)
-            except Http404:
-                raise AstakosUser.DoesNotExist()
-        m = ProjectMembership.objects.get(person=user, project=self)
-        m.reject()
-        
-    def remove_member(self, user, request_user=None):
-        """
-        Raises:
-            django.exceptions.PermissionDenied
-            astakos.im.models.AstakosUser.DoesNotExist
-            astakos.im.models.ProjectMembership.DoesNotExist
-        """
-        if isinstance(user, int):
-            try:
-                user = lookup_object(AstakosUser, user, None, None)
-            except Http404:
-                raise AstakosUser.DoesNotExist()
+            user = AstakosUser.objects.get(user=user)
+
         m = ProjectMembership.objects.get(person=user, project=self)
         m.remove()
-    
+
     def terminate(self):
         self.termination_start_date = datetime.now()
         self.terminaton_date = None
@@ -1471,17 +1524,52 @@ class Project(models.Model):
         except NotificationError, e:
             logger.error(e.messages)
 
+
 class ProjectMembership(models.Model):
     person = models.ForeignKey(AstakosUser)
     project = models.ForeignKey(Project)
     request_date = models.DateField(default=datetime.now())
+
     acceptance_date = models.DateField(null=True, db_index=True)
     leave_request_date = models.DateField(null=True)
 
     class Meta:
         unique_together = ("person", "project")
 
-    def accept(self, delete_on_failure=False, request_user=None):
+    def _set_history_item(self, reason, date=None):
+        if isinstance(reason, basestring):
+            reason = ProjectMembershipHistory.reasons.get(reason, -1)
+
+        history_item = ProjectMembershipHistory(
+                            serial=self.id,
+                            person=self.person,
+                            project=self.project,
+                            date=date,
+                            reason=reason)
+        history_item.save()
+        serial = history_item.id
+
+    def accept(self):
+        if not self.acceptance_date:
+            now = datetime.now()
+            self.acceptance_date = now
+            serial = self._set_history_item(reason='ACCEPT', date=now)
+            self.project.current_membership_serial = serial
+            self.save()
+
+    def remove(self):
+        serial = self._set_history_item(reason='REMOVE')
+        self.project.current_membership_serial = serial
+        self.delete()
+
+    def reject(self):
+        self._set_history_item(reason='REJECT')
+        self.delete()
+
+
+    ### Views to be moved to views ###
+
+    def accept_view(self, delete_on_failure=False, request_user=None):
         """
             Raises:
                 django.exception.PermissionDenied
@@ -1515,8 +1603,8 @@ class ProjectMembership(models.Model):
             ).send()
         except NotificationError, e:
             logger.error(e.messages)
-    
-    def reject(self, request_user=None):
+
+    def reject_view(self, request_user=None):
         """
             Raises:
                 django.exception.PermissionDenied
@@ -1547,7 +1635,7 @@ class ProjectMembership(models.Model):
         except NotificationError, e:
             logger.error(e.messages)
 
-    def remove(self, request_user=None):
+    def remove_view(self, request_user=None):
         """
             Raises:
                 django.exception.PermissionDenied
@@ -1598,14 +1686,16 @@ class ProjectMembership(models.Model):
             # if syncing was successful unset membership_dirty flag
             self.membership_dirty = False
             self.project.save()
-        
+
 
 class ProjectMembershipHistory(models.Model):
+    reasons_list = ['ACCEPT', 'REJECT', 'REMOVE']
+    reasons = dict((k, v) for v, k in enumerate(reasons_list))
     person = models.ForeignKey(AstakosUser)
     project = models.ForeignKey(Project)
-    request_date = models.DateField(default=datetime.now())
-    removal_date = models.DateField(null=True)
-    rejection_date = models.DateField(null=True)
+    date = models.DateField(default=datetime.now)
+    reason = models.IntegerField()
+    serial = models.BigIntegerField()
 
 
 def filter_queryset_by_property(q, property):

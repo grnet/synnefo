@@ -135,8 +135,8 @@ def process_net_status(vm, etime, nics):
 
     for nic in ganeti_nics:
         ipv4 = nic.get('ipv4', '')
+        net = nic['network']
         if ipv4:
-            net = nic['network']
             net.reserve_address(ipv4)
 
         nic['dirty'] = False

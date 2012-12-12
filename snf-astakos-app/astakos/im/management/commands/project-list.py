@@ -50,10 +50,10 @@ class Command(NoArgsCommand):
     )
 
     def handle_noargs(self, **options):
-        apps = ProjectApplication.objects.select_related().all()
-
+        apps = ProjectApplication.objects.select_related().all().order_by('id')
+        
         labels = (
-            'application.id', 'project.id', 'name', 'application.state',
+            'application.id', 'application.state', 'project.id', 'name', 
             'is_active', 'is_alive', 'is_suspended', 'is_terminated'
         )
         columns = (15, 10, 20, 10, 10, 10, 10, 10)
@@ -79,9 +79,9 @@ class Command(NoArgsCommand):
                 is_terminated = ''
             fields = (
                 str(app.id),
+                app.state,
                 str(project_id),
                 app.definition.name,
-                app.state,
                 format_bool(is_active),
                 format_bool(is_alive),
                 format_bool(is_suspended),

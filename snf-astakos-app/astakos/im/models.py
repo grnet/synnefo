@@ -1151,12 +1151,12 @@ class ProjectDefinition(models.Model):
         """
         Validate name uniqueness among all active projects.
         """
-        alive_projects = list(get_alive_projects())
-        q = filter(
-            lambda p: p.definition.name == self.name and \
-                p.application.id != self.projectapplication.id,
-            alive_projects
-        )
+        q = list(get_alive_projects())
+        q = filter(lambda p: p.definition.name == self.name , q)
+        q = filter(lambda p: p.application.id != self.projectapplication.id, q)
+        if self.projectapplication.precursor_application:
+            q = filter(lambda p: p.application.id != \
+                self.projectapplication.precursor_application.id, q)
         if q:
             raise ValidationError(
                 _(astakos_messages.UNIQUE_PROJECT_NAME_CONSTRAIN_ERR)

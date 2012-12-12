@@ -86,6 +86,7 @@
                     <th>Ends</th>               
                     <th>Enrolled</th>
                     <th>Status</th>
+                    <th/>
                     <th>Membership Status</th>
                     <th>&nbsp;</th>
 			        <th>Member accept policy</th>
@@ -106,8 +107,9 @@
 	                    <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
 	                    <td style="width:11%">{{approved_members|length}}</td>
 	                    <td style="width:11%">
-	                        {{o.state}}{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}
+	                        {{o.state}}
 	                    </td>
+	                    <td>{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}</td>
 	                    <td style="width:17%">
 	                    	<div class="msg-wrap">
 	                        {% if user == o.owner %}

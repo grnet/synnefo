@@ -25,6 +25,11 @@
       $("h2.form-toggler a").click(function(e) {
         e.preventDefault();
         $("div.form").slideToggle();
-      })
+      });
+      $('div.form .form-row').each(function() {
+		if ( $(this).hasClass('with-errors') ){
+			$('div.form').show();	
+		}
+	  });
     })
   </script>

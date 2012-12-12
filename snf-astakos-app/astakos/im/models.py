@@ -1101,7 +1101,37 @@ def get_closed_leave():
     _closed_leave = closed
     return closeds
 
-class ProjectDefinition(models.Model):
+class ProjectResourceGrant(models.Model):
+    objects = ExtendedManager()
+    member_limit = models.BigIntegerField(null=True)
+    project_limit = models.BigIntegerField(null=True)
+    resource = models.ForeignKey(Resource)
+    project_application = models.ForeignKey(ProjectApplication, blank=True)
+
+    class Meta:
+        unique_together = ("resource", "project_application")
+
+
+class ProjectApplication(models.Model):
+    states_list = [PENDING, APPROVED, REPLACED, UNKNOWN]
+    states = dict((k, v) for k, v in enumerate(states_list))
+
+    applicant = models.ForeignKey(
+        AstakosUser,
+        related_name='my_project_applications',
+        db_index=True)
+    owner = models.ForeignKey(
+        AstakosUser,
+        related_name='own_project_applications',
+        db_index=True
+    )
+    precursor_application = models.OneToOneField('ProjectApplication',
+        null=True,
+        blank=True,
+        db_index=True
+    )
+    state = models.CharField(max_length=80, default=UNKNOWN)
+
     name = models.CharField(max_length=80)
     homepage = models.URLField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True)
@@ -1116,10 +1146,8 @@ class ProjectDefinition(models.Model):
         blank=True,
         through='ProjectResourceGrant'
     )
-    
-    @property
-    def violated_resource_grants(self):
-        return False
+    comments = models.TextField(null=True, blank=True)
+    issue_date = models.DateTimeField()
     
     def add_resource_policy(self, service, resource, uplimit, update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
@@ -1147,55 +1175,6 @@ class ProjectDefinition(models.Model):
             update = p.get('update', True)
             self.add_resource_policy(service, resource, uplimit, update)
     
-    def validate_name(self):
-        """
-        Validate name uniqueness among all active projects.
-        """
-        q = list(get_alive_projects())
-        q = filter(lambda p: p.definition.name == self.name , q)
-        q = filter(lambda p: p.current_application.id != self.projectapplication.id, q)
-        if self.projectapplication.precursor_application:
-            q = filter(lambda p: p.current_application.id != \
-                self.projectapplication.precursor_application.id, q)
-        if q:
-            raise ValidationError(
-                _(astakos_messages.UNIQUE_PROJECT_NAME_CONSTRAIN_ERR)
-            )
-
-class ProjectResourceGrant(models.Model):
-    objects = ExtendedManager()
-    member_limit = models.BigIntegerField(null=True)
-    project_limit = models.BigIntegerField(null=True)
-    resource = models.ForeignKey(Resource)
-    project_definition = models.ForeignKey(ProjectDefinition, blank=True)
-
-    class Meta:
-        unique_together = ("resource", "project_definition")
-
-
-class ProjectApplication(models.Model):
-    states_list = [PENDING, APPROVED, REPLACED, UNKNOWN]
-    states = dict((k, v) for k, v in enumerate(states_list))
-
-    applicant = models.ForeignKey(
-        AstakosUser,
-        related_name='my_project_applications',
-        db_index=True)
-    owner = models.ForeignKey(
-        AstakosUser,
-        related_name='own_project_applications',
-        db_index=True
-    )
-    comments = models.TextField(null=True, blank=True)
-    definition = models.OneToOneField(ProjectDefinition)
-    issue_date = models.DateTimeField()
-    precursor_application = models.OneToOneField('ProjectApplication',
-        null=True,
-        blank=True,
-        db_index=True
-    )
-    state = models.CharField(max_length=80, default=UNKNOWN)
-    
     @property
     def follower(self):
         try:
@@ -1203,14 +1182,8 @@ class ProjectApplication(models.Model):
         except ProjectApplication.DoesNotExist:
             return
 
-    def save(self):
-        self.definition.save()
-        self.definition = self.definition
-        super(ProjectApplication, self).save()
-
-
     @staticmethod
-    def submit(definition, resource_policies, applicant, comments,
+    def submit_view(definition, resource_policies, applicant, comments,
                precursor_application=None):
 
         application = ProjectApplication()
@@ -1277,10 +1250,11 @@ class ProjectApplication(models.Model):
         if project is None:
             try:
                 conflicting_project = Project.objects.get(name=new_project_name)
-                m = _("cannot approve: project with name '%s' "
-                      "already exists (serial: %s)"
-                    % (new_project_name, conflicting_project.id))
-                raise PermissionDenied(m) # invalid argument
+                if conflicting_project.is_alive:
+                    m = _("cannot approve: project with name '%s' "
+                          "already exists (serial: %s)"
+                          % (new_project_name, conflicting_project.id))
+                    raise PermissionDenied(m) # invalid argument
             except Project.DoesNotExist:
                 pass
             project = Project(creation_date=now)
@@ -1349,38 +1323,43 @@ class Project(models.Model):
         return self.application or self.last_application_approved
     
     @property
-    def definition(self):
-        return self.current_application.definition
-
+    def violated_resource_grants(self):
+        if self.application is None:
+            return True
+        # do something
+        return False
+    
     @property
     def violated_members_number_limit(self):
-        return len(self.approved_members) <= self.definition.limit_on_members_number
+        application = self.application
+        if application is None:
+            return True
+        return len(self.approved_members) <= application.limit_on_members_number
         
     @property
+    def is_terminated(self):
+        return bool(self.termination)
+    
+    @property
+    def is_still_approved(self):
+        return bool(self.last_approval_date)
+
+    @property
     def is_active(self):
-        if not self.last_approval_date:
-            return False
-        if self.termination_date:
-            return False
-        if self.definition.violated_resource_grants:
+        if (self.is_terminated or
+            not self.is_still_approved or
+            self.violated_resource_grants):
             return False
 #         if self.violated_members_number_limit:
 #             return False
         return True
     
     @property
-    def is_terminated(self):
-        if not self.termination_date:
-            return False
-        return True
-    
-    @property
     def is_suspended(self):
-        if self.termination_date:
+        if (self.is_terminated or
+            self.is_still_approved or
+            not self.violated_resource_grants):
             return False
-        if self.last_approval_date:
-            if not self.definition.violated_resource_grants:
-                return False
 #             if not self.violated_members_number_limit:
 #                 return False
         return True
@@ -1668,7 +1647,7 @@ class ProjectMembership(models.Model):
         except NotificationError, e:
             logger.error(e.messages)
     
-    def leave(self):
+    def leave_view(self):
         leave_policy = self.project.current_application.definition.member_leave_policy
         if leave_policy == get_auto_accept_leave():
             self.remove()

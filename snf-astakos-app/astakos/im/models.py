@@ -1492,8 +1492,6 @@ class ProjectMembership(models.Model):
                 raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
             if not self.project.is_alive:
                 raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % self.project.__dict__)
-            if self.project.definition.member_join_policy == 'closed':
-                raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
             if len(self.project.approved_members) + 1 > self.project.definition.limit_on_members_number:
                 raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
         except PermissionDenied, e:
@@ -1739,6 +1737,8 @@ pre_save.connect(renew_token, sender=Service)
 
 def check_closed_join_membership_policy(sender, instance, **kwargs):
     if instance.id:
+        return
+    if instance.person == instance.project.application.owner:
         return
     join_policy = instance.project.application.definition.member_join_policy
     if join_policy == get_closed_join():

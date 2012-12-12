@@ -83,5 +83,5 @@ class EmailNotification(Notification):
 
 class NotificationError(Exception):
     def __init__(self):
-        self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
+        self.message = _(astakos_messages.DETAILED_NOTIFICATION_SEND_ERR) % self.__dict__
         super(NotificationError, self).__init__()

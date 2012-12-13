@@ -506,6 +506,59 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
+    def add_quota(self, context={}, add_quota=()):
+        rejected = []
+        append = rejected.append
+
+        for (   entity, resource, key,
+                quantity, capacity,
+                import_limit, export_limit ) in add_quota:
+
+                try:
+                    e = Entity.objects.get(entity=entity, key=key)
+                except Entity.DoesNotExist:
+                    append((entity, resource))
+                    continue
+
+                try:
+                    h = db_get_holding(entity=entity, resource=resource,
+                                       for_update=True)
+                    p = h.policy
+                except Holding.DoesNotExist:
+                    h = Holding(entity=e, resource=resource, flags=0)
+                    p = None
+
+                policy = newname('policy_')
+                newp = Policy(policy=policy)
+
+                newp.quantity = _add(p.quantity if p else 0, quantity)
+                newp.capacity = _add(p.capacity if p else 0, capacity)
+                newp.import_limit = _add(p.import_limit if p else 0,
+                                              import_limit)
+                newp.export_limit = _add(p.export_limit if p else 0,
+                                              export_limit)
+
+                new_values = [newp.capacity,
+                              newp.import_limit, newp.export_limit]
+                if any(map(_isneg, new_values)):
+                    append((entity, resource))
+                    continue
+
+                h.policy = newp
+
+                # the order is intentionally reversed so that it
+                # would break if we are not within a transaction.
+                # Has helped before.
+                h.save()
+                newp.save()
+
+                if p is not None and p.holding_set.count() == 0:
+                    p.delete()
+
+        if rejected:
+            raise ReturnButFail(rejected)
+        return rejected
+
     def issue_commission(self,  context     =   {},
                                 clientkey   =   None,
                                 target      =   None,
@@ -864,6 +917,19 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return timeline
 
+def _add(x, y):
+    if x is None or y is None:
+        return None
+    return x + y
+
+def _update(dest, source, attr, delta):
+    dest_attr = getattr(dest, attr)
+    dest_attr = _add(getattr(source, attr, 0), delta)
+
+def _isneg(x):
+    if x is None:
+        return False
+    return x < 0
 
 API_Callpoint = QuotaholderDjangoDBCallpoint
 

@@ -76,6 +76,10 @@ Quantity            =   Integer(classname='Quantity', null=True)
 Capacity            =   Nonnegative(classname='Capacity', null=True)
 ImportLimit         =   Nonnegative(classname='ImportLimit', null=True)
 ExportLimit         =   Nonnegative(classname='ExportLimit', null=True)
+QuantityDelta       =   Integer(classname='QuantityDelta', null=True)
+CapacityDelta       =   Integer(classname='CapacityDelta', null=True)
+ImportLimitDelta    =   Integer(classname='ImportLimitDelta', null=True)
+ExportLimitDelta    =   Integer(classname='ExportLimitDelta', null=True)
 Imported            =   Nonnegative(classname='Imported')
 Exported            =   Nonnegative(classname='Exported')
 Returned            =   Nonnegative(classname='Returned')
@@ -226,6 +230,16 @@ class QuotaholderAPI(Specificator):
                 set_quota   =   ListOf( Entity, Resource, Key,
                                         Quantity, Capacity,
                                         ImportLimit, ExportLimit, Flags )
+        ):
+        rejected = ListOf(Entity, Resource)
+        return rejected
+
+    def add_quota   (
+                self,
+                context     =   Context,
+                add_quota   =   ListOf( Entity, Resource, Key,
+                                        QuantityDelta, CapacityDelta,
+                                        ImportLimitDelta, ExportLimitDelta )
         ):
         rejected = ListOf(Entity, Resource)
         return rejected

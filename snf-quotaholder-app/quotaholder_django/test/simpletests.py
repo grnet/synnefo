@@ -223,6 +223,40 @@ class QHAPITest(QHTestCase):
         self.assertEqual(r, [])
         return limits
 
+    def test_0081_add_quota(self):
+        e0, k0 = self.new_entity()
+        e1, k1 = self.new_entity()
+        resource0 = self.rand_resource()
+        resource1 = self.rand_resource()
+
+        r = self.qh.set_quota(
+            set_quota=[(e0, resource0, k0) + (5, 5, 5, 5) + (0,),
+                       (e1, resource0, k1) + (5, 5, 5, 5) + (0,)])
+        self.assertEqual(r, [])
+
+        r = self.qh.add_quota(add_quota=[(e0, resource0, k0, 0, (-2), None, 0),
+                                         (e0, resource1, k0, 0, None, 5, 5)])
+        self.assertEqual(r, [])
+
+        r = self.qh.get_quota(get_quota=[(e0, resource0, k0),
+                                         (e0, resource1, k0)])
+        self.assertEqual(r, [(e0, resource0, 5, 5 - 2, None, 5)
+                             + DEFAULT_HOLDING + (0,),
+                             (e0, resource1, 0, None, 5, 5)
+                             + DEFAULT_HOLDING + (0,)])
+
+        # none is committed
+        r = self.qh.add_quota(add_quota=[(e1, resource0, k1, 0, (-10), None, 0),
+                                         (e0, resource1, k0, 1, 0, 0, 0)])
+        self.assertEqual(r, [(e1, resource0)])
+
+        r = self.qh.get_quota(get_quota=[(e1, resource0, k1),
+                                         (e0, resource1, k0)])
+        self.assertEqual(r, [(e1, resource0, 5, 5 , 5, 5)
+                             + DEFAULT_HOLDING + (0,),
+                             (e0, resource1, 0, None, 5, 5)
+                             + DEFAULT_HOLDING + (0,)])
+
     def test_009_commissions(self):
         e0, k0 = self.new_entity()
         e1, k1 = self.new_entity()

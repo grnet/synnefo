@@ -109,3 +109,7 @@ img[align="right"]								{ margin:0 0 0.5em 1em; }
 .button:hover { background-color: #3582AC;}
 .button.wide { display: block;}
 span.action-desc { display: block; color: #fff;}
+.button:visited { color: #fff !important }
+
+/* heading extra */
+h2 .header-actions { float: right; font-size: 0.8em;}

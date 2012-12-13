@@ -9,21 +9,48 @@
     
 {% block body.right %} 
     
-    {% include master_auth_provider.login_template %}
+    <div class="login-section">
 
-    <div class="extralogin">
+      <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
+          <a class="other-logins" href="#other-login-methods">other login methods</a></span>
+      </h2>
+      <div class="main-login-method">
+        {% include master_auth_provider.login_template %}
+      </div>
+
+    <div class="extralogin" style="display:none">
       {% for provider in auth_providers %}
       {% if not provider == master_auth_provider %}
         {% include provider.login_prompt_template %}
+        <br />
       {% endif %}
       {% endfor %}
-    </div><br />
-    <div class="bottom">
-      {% block body.signup %}
-        {% for provider in auth_providers %}
-          {% include provider.signup_prompt_template %}
-        {% endfor %}
+        <div class="bottom">
+        {% block body.signup %}
+          {% for provider in auth_providers %}
+              {% include provider.signup_prompt_template %}
+          {% endfor %}
+        {% endblock body.signup %}
+        </div>
     </div>
-	{% endblock body.signup %}
+    </div>
+    <script>
+      $(document).ready(function(){
+        if (window.location.toString().match(/#other-login-methods/)) {
+            $(".extralogin").show();
+        }
+
+        $(".other-logins").click(function(e){
+            e.preventDefault();
+            $(".extralogin").slideToggle();
+            if (window.location.toString().match(/#other-login-methods/)) {
+              window.location = window.location.hash = "#"
+            } else {
+              window.location = window.location.hash = "#other-login-methods"
+            }
+        })
+
+        });    
+    </script>
  
 {% endblock body.right%}

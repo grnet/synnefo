@@ -26,10 +26,9 @@
         e.preventDefault();
         $("div.form").slideToggle();
       });
-      $('div.form .form-row').each(function() {
-		if ( $(this).hasClass('with-errors') ){
-			$('div.form').show();	
-		}
-	  });
+	if ( ( $('div.form .form-row.with-errors').length > 0)  || ( $('ul.errorlist').length > 0 ) )  {
+		$("div.form").show();
+	}
+		
     })
   </script>

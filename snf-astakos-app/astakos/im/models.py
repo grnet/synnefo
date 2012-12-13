@@ -41,7 +41,7 @@ from base64 import b64encode
 from urlparse import urlparse
 from urllib import quote
 from random import randint
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from django.db import models, IntegrityError
 from django.contrib.auth.models import User, UserManager, Group, Permission
@@ -1101,12 +1101,82 @@ def get_closed_leave():
     _closed_leave = closed
     return closeds
 
+
+### PROJECTS ###
+################
+
+
+class SyncedModel(models.Model):
+
+    new_state       = models.BigIntegerField()
+    synced_state    = models.BigIntegerField()
+    STATUS_SYNCED   = 0
+    STATUS_PENDING  = 1
+    sync_status     = models.IntegerField(db_index=True)
+
+    class Meta:
+        abstract = True
+
+    class NotSynced(Exception):
+        pass
+
+    def sync_init_state(self, state):
+        self.synced_state = state
+        self.new_state = state
+        self.sync_status = self.STATUS_SYNCED
+
+    def sync_get_status(self):
+        return self.sync_status
+
+    def sync_set_status(self):
+        if self.new_state != self.synced_state:
+            self.sync_status = self.STATUS_PENDING
+        else:
+            self.sync_status = self.STATUS_SYNCED
+
+    def sync_set_synced(self):
+        self.synced_state = self.new_state
+        self.sync_status = self.STATUS_SYNCED
+
+    def sync_get_synced_state(self):
+        return self.synced_state
+
+    def sync_set_new_state(self, new_state):
+        self.new_state = new_state
+        self.sync_set_status()
+
+    def sync_get_new_state(self):
+        return self.new_state
+
+    def sync_set_synced_state(self, synced_state):
+        self.synced_state = synced_state
+        self.sync_set_status()
+
+    def sync_get_pending_objects(self):
+        return self.objects.filter(sync_status=self.STATUS_PENDING)
+
+    def sync_get_synced_objects(self):
+        return self.objects.filter(sync_status=self.STATUS_SYNCED)
+
+    def sync_verify_get_synced_state(self):
+        status = self.sync_get_status()
+        state = self.sync_get_synced_state()
+        verified = (status == self.STATUS_SYNCED)
+        return state, verified
+
+
 class ProjectResourceGrant(models.Model):
-    objects = ExtendedManager()
-    member_limit = models.BigIntegerField(null=True)
-    project_limit = models.BigIntegerField(null=True)
+
     resource = models.ForeignKey(Resource)
     project_application = models.ForeignKey(ProjectApplication, blank=True)
+    project_capacity     = models.BigIntegerField(null=True)
+    project_import_limit = models.BigIntegerField(null=True)
+    project_export_limit = models.BigIntegerField(null=True)
+    member_capacity      = models.BigIntegerField(null=True)
+    member_import_limit  = models.BigIntegerField(null=True)
+    member_export_limit  = models.BigIntegerField(null=True)
+
+    objects = ExtendedManager()
 
     class Meta:
         unique_together = ("resource", "project_application")
@@ -1114,7 +1184,7 @@ class ProjectResourceGrant(models.Model):
 
 class ProjectApplication(models.Model):
     states_list = [PENDING, APPROVED, REPLACED, UNKNOWN]
-    states = dict((k, v) for k, v in enumerate(states_list))
+    states = dict((k, v) for v, k in enumerate(states_list))
 
     applicant = models.ForeignKey(
         AstakosUser,
@@ -1241,8 +1311,8 @@ class ProjectApplication(models.Model):
 
         new_project_name = self.definition.name
         if self.state != PENDING:
-            m = _("cannot approve: project '%s' in state '%s'"
-                % (new_project_name, self.state))
+            m = _("cannot approve: project '%s' in state '%s'") % (
+                    new_project_name, self.state)
             raise PermissionDenied(m) # invalid argument
 
         now = datetime.now()
@@ -1252,8 +1322,8 @@ class ProjectApplication(models.Model):
                 conflicting_project = Project.objects.get(name=new_project_name)
                 if conflicting_project.is_alive:
                     m = _("cannot approve: project with name '%s' "
-                          "already exists (serial: %s)"
-                          % (new_project_name, conflicting_project.id))
+                          "already exists (serial: %s)") % (
+                            new_project_name, conflicting_project.id)
                     raise PermissionDenied(m) # invalid argument
             except Project.DoesNotExist:
                 pass
@@ -1292,7 +1362,7 @@ class ProjectApplication(models.Model):
             logger.error(e.messages)
 
 
-class Project(models.Model):
+class Project(SyncedModel):
     application                 =   models.OneToOneField(
                                             ProjectApplication,
                                             related_name='project',
@@ -1305,9 +1375,6 @@ class Project(models.Model):
     members                     =   models.ManyToManyField(
                                             AstakosUser,
                                             through='ProjectMembership')
-
-    current_membership_serial   =   models.BigIntegerField()
-    synced_membership_serial    =   models.BigIntegerField()
 
     termination_start_date      =   models.DateTimeField(null=True)
     termination_date            =   models.DateTimeField(null=True)
@@ -1380,15 +1447,9 @@ class Project(models.Model):
         return False
     
     @property
-    def is_synchronized(self):
-        return self.last_application_approved == self.application and \
-            not self.membership_dirty and \
-            (not self.termination_start_date or termination_date)
-    
-    @property
     def approved_members(self):
         return [m.person for m in self.projectmembership_set.filter(~Q(acceptance_date=None))]
-        
+
     def sync(self, specific_members=()):
         if self.is_synchronized:
             return
@@ -1504,7 +1565,48 @@ class Project(models.Model):
             logger.error(e.messages)
 
 
-class ProjectMembership(models.Model):
+QuotaLimits = namedtuple('QuotaLimits', ('holder',
+                                         'capacity',
+                                         'import_limit',
+                                         'export_limit'))
+
+
+
+class ExclusiveOrRaise(object):
+    """Context Manager to exclusively execute a critical code section.
+       The exclusion must be global.
+       (IPC semaphores will not protect across OS,
+        DB locks will if it's the same DB)
+    """
+
+    class Busy(Exception):
+        pass
+
+    def __init__(self, locked=False):
+        init = 0 if locked else 1
+        from multiprocess import Semaphore
+        self._sema = Semaphore(init)
+
+    def enter(self):
+        acquired = self._sema.acquire(False)
+        if not acquired:
+            raise self.Busy()
+
+    def leave(self):
+        self._sema.release()
+
+    def __enter__(self):
+        self.enter()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.leave()
+
+
+exclusive_or_raise = ExclusiveOrRaise(locked=False)
+
+
+class ProjectMembership(SyncedModel):
     person = models.ForeignKey(AstakosUser)
     project = models.ForeignKey(Project)
     request_date = models.DateField(default=datetime.now())
@@ -1512,8 +1614,23 @@ class ProjectMembership(models.Model):
     acceptance_date = models.DateField(null=True, db_index=True)
     leave_request_date = models.DateField(null=True)
 
+    REQUESTED   =   0
+    ACCEPTED    =   1
+    REMOVED     =   2
+    REJECTED    =   3   # never seen, because .delete()
+
     class Meta:
         unique_together = ("person", "project")
+
+    def __str__(self):
+        return _("<'%s' membership in project '%s'>") % (
+                self.person.username, self.project.application)
+
+    __repr__ = __str__
+
+    def __init__(self, *args, **kwargs):
+        self.sync_init_state(self.REQUEST)
+        super(ProjectMembership, self).__init__(*args, **kwargs)
 
     def _set_history_item(self, reason, date=None):
         if isinstance(reason, basestring):
@@ -1529,142 +1646,100 @@ class ProjectMembership(models.Model):
         serial = history_item.id
 
     def accept(self):
-        if not self.acceptance_date:
-            now = datetime.now()
-            self.acceptance_date = now
-            serial = self._set_history_item(reason='ACCEPT', date=now)
-            self.project.current_membership_serial = serial
-            self.save()
+        state, verified = self.sync_verify_get_synced_state()
+        if not verified:
+            new_state = self.sync_get_new_state()
+            m = _("%s: cannot accept: not synched (%s -> %s)") % (
+                    self, state, new_state)
+            raise self.NotSynced(m)
+
+        if state != self.REQUESTED:
+            m = _("%s: attempt to accept in state '%s'") % (self, state)
+            raise AssertionError(m)
+
+        now = datetime.now()
+        self.acceptance_date = now
+        self._set_history_item(reason='ACCEPT', date=now)
+        self.sync_set_new_state(self.ACCEPTED)
+        self.save()
 
     def remove(self):
+        state, verified = self.sync_verify_get_synced_state()
+        if not verified:
+            new_state = self.sync_get_new_state()
+            m = _("%s: cannot remove: not synched (%s -> %s)") % (
+                    self, state, new_state)
+            raise self.NotSynced(m)
+
+        if state != self.ACCEPTED:
+            m = _("%s: attempt to remove in state '%s'") % (self, state)
+            raise AssertionError(m)
+
         serial = self._set_history_item(reason='REMOVE')
-        self.project.current_membership_serial = serial
-        self.delete()
+        self.sync_set_new_state(self.REMOVED)
+        self.save()
 
     def reject(self):
+        state, verified = self.sync_verify_get_synced_state()
+        if not verified:
+            new_state = self.sync_get_new_state()
+            m = _("%s: cannot reject: not synched (%s -> %s)") % (
+                    self, state, new_state))
+            raise self.NotSynced(m)
+
+        if state != self.REQUESTED:
+            m = _("%s: attempt to remove in state '%s'") % (self, state)
+            raise AssertionError(m)
+
+        # rejected requests don't need sync,
+        # because they were never effected
         self._set_history_item(reason='REJECT')
         self.delete()
 
+    def get_quotas(self, limits_list=None, factor=1):
+        holder = self.person.username
+        if limits_list is None:
+            limits_list = []
+        append = limits_list.append
+        all_grants = self.project.application.resource_grants.all()
+        for grant in all_grants:
+            append(QuotaLimits(holder       = holder,
+                               resource     = grant.resource.name,
+                               capacity     = factor * grant.member_capacity,
+                               import_limit = factor * grant.member_import_limit,
+                               export_limit = factor * grant.member_export_limit))
+        return limits_list
 
-    ### Views to be moved to views ###
+    def do_sync(self):
+        state = self.sync_get_synced_state()
+        new_state = self.sync_get_new_state()
 
-    def accept_view(self, delete_on_failure=False, request_user=None):
-        """
-            Raises:
-                django.exception.PermissionDenied
-        """
-        try:
-            if request_user and \
-                (not self.project.current_application.owner == request_user and \
-                    not request_user.is_superuser):
-                raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-            if not self.project.is_alive:
-                raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % self.project.__dict__)
-            if len(self.project.approved_members) + 1 > self.project.definition.limit_on_members_number:
-                raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
-        except PermissionDenied, e:
-            if delete_on_failure:
-                self.delete()
-            raise
-        if self.acceptance_date:
-            return
-        self.acceptance_date = datetime.now()
-        self.save()
-        self.sync()
-
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.person.email],
-                _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
-                template='im/projects/project_membership_change_notification.txt',
-                dictionary={'object':self.project.current_application, 'action':'accepted'}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
-
-    def reject_view(self, request_user=None):
-        """
-            Raises:
-                django.exception.PermissionDenied
-        """
-        if request_user and \
-            (not self.project.current_application.owner == request_user and \
-                not request_user.is_superuser):
-            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-        if not self.project.is_alive:
-            raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-        history_item = ProjectMembershipHistory(
-            person=self.person,
-            project=self.project,
-            request_date=self.request_date,
-            rejection_date=datetime.now()
-        )
-        self.delete()
-        history_item.save()
-
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.person.email],
-                _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
-                template='im/projects/project_membership_change_notification.txt',
-                dictionary={'object':self.project.current_application, 'action':'rejected'}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
-
-    def remove_view(self, request_user=None):
-        """
-            Raises:
-                django.exception.PermissionDenied
-        """
-        if request_user and \
-            (not self.project.current_application.owner == request_user and \
-                not request_user.is_superuser):
-            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-        if not self.project.is_alive:
-            raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % self.project.__dict__)
-        history_item = ProjectMembershipHistory(
-            id=self.id,
-            person=self.person,
-            project=self.project,
-            request_date=self.request_date,
-            removal_date=datetime.now()
-        )
-        self.delete()
-        history_item.save()
-        self.sync()
-
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.person.email],
-                _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % self.project.definition.__dict__,
-                template='im/projects/project_membership_change_notification.txt',
-                dictionary={'object':self.project.current_application, 'action':'removed'}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
-    
-    def leave_view(self):
-        leave_policy = self.project.current_application.definition.member_leave_policy
-        if leave_policy == get_auto_accept_leave():
-            self.remove()
+        if state == self.REQUESTED and new_state == self.ACCEPTED:
+            factor = 1
+        elif state == self.ACCEPTED and new_state == self.REMOVED:
+            factor = -1
         else:
-            self.leave_request_date = datetime.now()
-            self.save()
+            m = _("%s: sync: called on invalid state ('%s' -> '%s')") % (
+                    self, state, new_state)
+            raise AssertionError(m)
+
+        quotas = self.get_quotas(factor=factor)
+        try:
+            failure = add_quotas(quotas)
+            if failure:
+                m = "%s: sync: add_quotas failed" % (self,)
+                raise RuntimeError(m)
+        except Exception:
+            raise
+        else:
+            self.sync_set_synced()
+
+        if new_state == self.REMOVED:
+            self.delete()
 
     def sync(self):
-        # set membership_dirty flag
-        self.project.membership_dirty = True
-        self.project.save()
-        
-        rejected = self.project.sync(specific_members=[self.person])
-        if not rejected:
-            # if syncing was successful unset membership_dirty flag
-            self.membership_dirty = False
-            self.project.save()
+        with exclusive_or_raise:
+            self.do_sync()
 
 
 class ProjectMembershipHistory(models.Model):

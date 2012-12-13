@@ -127,7 +127,8 @@ def requires_auth_provider(provider_id, **perms):
                 for pkey, value in perms.iteritems():
                     attr = 'is_available_for_%s' % pkey.lower()
                     if getattr(provider, attr)() != value:
-                        #TODO: add session message
+                        msg = provider.get_message("NOT_ACTIVE_FOR_" + pkey.upper())
+                        messages.error(request, msg)
                         return HttpResponseRedirect(reverse('login'))
             return func(request, *args)
         return wrapper

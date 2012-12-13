@@ -37,7 +37,9 @@ from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
 
 from django.conf import settings
+
 from astakos.im import settings as astakos_settings
+from astakos.im import messages as astakos_messages
 
 import logging
 
@@ -71,6 +73,14 @@ class AuthProvider(object):
     module_active = False
     module_enabled = False
     one_per_user = False
+
+    def get_message(self, msg, **kwargs):
+        params = kwargs
+        params.update({'provider': self.get_title_display})
+
+        override_msg = getattr(self, 'get_%s_message_display' % msg.lower(), None)
+        msg = 'AUTH_PROVIDER_%s' % msg
+        return override_msg or getattr(astakos_messages, msg, msg) % params
 
     def __init__(self, user=None):
         self.user = user

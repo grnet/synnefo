@@ -149,27 +149,16 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-        elif not user.activation_sent or not user.email_verified:
-            message = _('Your request is pending activation')
-			#TODO: use astakos_messages
-            if not settings.MODERATION_ENABLED:
-                url = user.get_resend_activation_url()
-                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
-                message = message + u' ' + msg_extra
-
-            messages.error(request, message)
-            return HttpResponseRedirect(reverse('login'))
-
         else:
-			#TODO: use astakos_messages
-            message = _(u'Account disabled. Please contact support')
+            message = user.get_inactive_message()
             messages.error(request, message)
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-		#TODO: use astakos_messages
         provider = auth_providers.get_provider('twitter')
         if not provider.is_available_for_create():
+            messages.error(request,
+                           _(astakos_messages.AUTH_PROVIDER_NOT_ACTIVE) % provider.get_title_display)
             return HttpResponseRedirect(reverse('login'))
 
         # eppn not stored in astakos models, create pending profile

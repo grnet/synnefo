@@ -65,6 +65,7 @@ from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email
 
 from astakos.im.util import reserved_email, get_query
+from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 
@@ -382,11 +383,24 @@ class LoginForm(AuthenticationForm):
         """
         Override default behavior in order to check user's activation later
         """
+        username = self.cleaned_data.get('username')
+
+        try:
+            user = AstakosUser.objects.get(email=username)
+            if not user.has_auth_provider('local'):
+                provider = auth_providers.get_provider('local')
+                raise forms.ValidationError(
+                    _(provider.get_message('NOT_ACTIVE_FOR_USER_LOGIN')))
+        except AstakosUser.DoesNotExist:
+            pass
+
         try:
             super(LoginForm, self).clean()
         except forms.ValidationError, e:
-#            if self.user_cache is None:
-#                raise
+            if self.user_cache is None:
+                raise
+            if not self.user_cache.is_active:
+                raise forms.ValidationError(self.user_cache.get_inactive_message())
             if self.request:
                 if not self.request.session.test_cookie_worked():
                     raise

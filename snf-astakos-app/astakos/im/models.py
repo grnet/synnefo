@@ -504,9 +504,6 @@ class AstakosUser(User):
             self.username = self.email
 
         self.validate_unique_email_isactive()
-        if self.is_active and self.activation_sent:
-            # reset the activation sent
-            self.activation_sent = None
 
         super(AstakosUser, self).save(**kwargs)
 
@@ -556,7 +553,6 @@ class AstakosUser(User):
         """
         q = AstakosUser.objects.all()
         q = q.filter(email = self.email)
-        q = q.filter(is_active = self.is_active)
         if self.id:
             q = q.filter(~Q(id = self.id))
         if q.count() != 0:

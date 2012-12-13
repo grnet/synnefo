@@ -359,8 +359,7 @@ class LoginForm(AuthenticationForm):
                                          'recaptcha_response_field', ])
 
     def clean_username(self):
-        if 'username' in self.cleaned_data:
-            return self.cleaned_data['username'].lower()
+        return self.cleaned_data['username'].lower()
 
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
@@ -475,7 +474,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email__iexact=email, is_active=True)
+            user = AstakosUser.objects.get(email__iexact=email)
             if not user.has_usable_password():
                 raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
 

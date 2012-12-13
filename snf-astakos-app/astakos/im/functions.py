@@ -287,8 +287,7 @@ def activate(
     Raises SendGreetingError, ValidationError
     """
     user.is_active = True
-    if verify_email:
-        user.email_verified = True
+    user.email_verified = True
     user.save()
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)

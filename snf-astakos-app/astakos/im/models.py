@@ -718,6 +718,7 @@ class AstakosUser(User):
                 else:
                     url = self.get_resend_activation_url()
                     msg_extra = mark_safe(_(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP) + \
+                                u' ' + \
                                 _('<a href="%s">%s?</a>') % (url,
                                 _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
         else:
@@ -729,7 +730,7 @@ class AstakosUser(User):
                 msg_extra = mark_safe(_('<a href="%s">%s?</a>') % (url,
                             _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
 
-        return mark_safe(message + msg_extra)
+        return mark_safe(message + u' '+ msg_extra)
 
 
 class AstakosUserAuthProviderManager(models.Manager):

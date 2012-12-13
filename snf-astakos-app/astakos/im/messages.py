@@ -40,6 +40,10 @@ ACCOUNT_RESEND_ACTIVATION               =   'You have not followed the activatio
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' or <a href="%(signup_url)s">Provide new email?</a>'])
 
 ACCOUNT_PENDING_ACTIVATION_HELP         =   'If you haven\'t received activation email, be sure to check your spam folder.'
+
+ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' + \
+                                            ' been activated and you have been' + \
+                                            ' automatically signed in to your account.'
 PASSWORD_RESET_DONE                     =   'A mail with details on how to change your password was sent.'
 PASSWORD_RESET_CONFIRM_DONE             =   'Password changed. You can now login using your new password.'
 

@@ -584,30 +584,33 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     try:
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
-        return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
+        messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
+        return HttpResponseRedirect(reverse('index'))
 
     if user.is_active:
         message = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
         messages.error(request, message)
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
 
     try:
-        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+        activate_func(user, greeting_email_template_name,
+                      helpdesk_email_template_name, verify_email=True)
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
-        return response
+        messages.success(request, astakos_messages.ACCOUNT_ACTIVATED)
+        return HttpResponseRedirect(reverse('edit_profile'))
     except SendMailError, e:
         message = e.message
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
     except BaseException, e:
         status = messages.ERROR
         message = _(astakos_messages.GENERIC_ERROR)
         messages.add_message(request, messages.ERROR, message)
         logger.exception(e)
         transaction.rollback()
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET", "POST"])

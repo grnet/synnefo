@@ -40,6 +40,8 @@ ACCOUNT_RESEND_ACTIVATION               =   'You have not followed the activatio
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' or <a href="%(signup_url)s">Provide new email?</a>'])
 
 ACCOUNT_PENDING_ACTIVATION_HELP         =   'If you haven\'t received activation email, be sure to check your spam folder.'
+PASSWORD_RESET_DONE                     =   'A mail with details on how to change your password was sent.'
+PASSWORD_RESET_CONFIRM_DONE             =   'Password changed. You can now login using your new password.'
 
 ACCOUNT_RESEND_ACTIVATION_PROMPT        =   'Resend activation mail'
 ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'
@@ -58,6 +60,7 @@ MEMBER_JOINED_GROUP                     =   '%(realname)s has been successfully 
 MEMBER_REMOVED                          =   '%(realname)s has been successfully removed from the group.'
 BILLING_ERROR                           =   'Service response status: %(status)d'
 LOGOUT_SUCCESS                          =   'You have successfully logged out.'
+LOGIN_SUCCESS                           =   'You have successfully logged in.'
 
 GENERIC_ERROR                           =   'Something wrong has happened. \
                                                Please contact the administrators for more details.'

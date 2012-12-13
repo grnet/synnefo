@@ -80,8 +80,8 @@ def login(request, on_failure='im/login.html'):
             {'login_form':form,
              'next':next,
              'key': third_party_token},
-            context_instance=RequestContext(request)
-        )
+            context_instance=RequestContext(request))
+
     # get the user from the cache
     user = form.user_cache
 
@@ -115,7 +115,21 @@ def login(request, on_failure='im/login.html'):
         except PendingThirdPartyUser.DoesNotExist:
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 
+    messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
     return response
+
+
+@require_http_methods(["GET"])
+def password_reset_done(request, *args, **kwargs):
+    messages.success(request, _(astakos_messages.PASSWORD_RESET_DONE))
+    return HttpResponseRedirect(reverse('index'))
+
+
+@require_http_methods(["GET"])
+def password_reset_confirm_done(request, *args, **kwargs):
+    messages.success(request, _(astakos_messages.PASSWORD_RESET_CONFIRM_DONE))
+    return HttpResponseRedirect(reverse('index'))
+
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required

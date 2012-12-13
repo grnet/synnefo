@@ -220,7 +220,7 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     if status == 'success' and state_for_success is not None:
         back_network.operstate = state_for_success
 
-    if status in ('canceled', 'error') and opcode == 'OP_NETWORK_CREATE':
+    if status in ('canceled', 'error') and opcode == 'OP_NETWORK_ADD':
         utils.update_state(back_network, 'ERROR')
         back_network.backendtime = etime
 
@@ -250,7 +250,6 @@ def update_network_state(serials, network):
 
     all_equal = len(set(backend_states)) <= 1
     network.state = all_equal and backend_states[0] or 'PENDING'
-
     # Release the resources on the deletion of the Network
     if old_state != 'DELETED' and network.state == 'DELETED':
         log.info("Network %r deleted. Releasing link %r mac_prefix %r",
@@ -270,7 +269,6 @@ def update_network_state(serials, network):
         network.serial = serial
         serial.accepted = True
         serial.save()
-
     network.save()
 
 

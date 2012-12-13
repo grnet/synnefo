@@ -288,6 +288,8 @@ def activate(
     """
     user.is_active = True
     user.email_verified = True
+    if not user.activation_sent:
+        user.activation_sent = datetime.now()
     user.save()
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)

@@ -95,7 +95,7 @@ def login(
         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
             realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
         else:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
+            realname = ''
     except KeyError, e:
         # invalid shibboleth headers, redirect to login, display message
         messages.error(request, e.message)
@@ -113,8 +113,7 @@ def login(
         # automatically add eppn provider to user
         user = request.user
         if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn,
-                                                  provider_info=provider_info):
+                                                  identifier=eppn):
             messages.error(request, 'Account already exists.')
             return HttpResponseRedirect(reverse('edit_profile'))
 

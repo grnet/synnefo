@@ -1401,7 +1401,7 @@ class Project(SyncedModel):
         application = self.application
         if application is None:
             return True
-        return len(self.approved_members) <= application.limit_on_members_number
+        return len(self.approved_members) > application.limit_on_members_number
         
     @property
     def is_terminated(self):

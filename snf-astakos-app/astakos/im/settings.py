@@ -271,3 +271,8 @@ RESOURCES_PRESENTATION_DATA = getattr(
 
 # Permit local account migration
 ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(settings, 'ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION', True)
+
+# Strict shibboleth usage
+SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
+                                       'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',
+                                       False)

@@ -100,6 +100,9 @@ class AuthProvider(object):
 
     def get_setting(self, name, default=None):
         attr = 'ASTAKOS_AUTH_PROVIDER_%s_%s' % (self.module.upper(), name.upper())
+        attr_sec = 'ASTAKOS_%s_%s' % (self.module.upper(), name.upper())
+        if not hasattr(settings, attr):
+            return getattr(settings, attr_sec, default)
         return getattr(settings, attr, default)
 
     def is_available_for_login(self):

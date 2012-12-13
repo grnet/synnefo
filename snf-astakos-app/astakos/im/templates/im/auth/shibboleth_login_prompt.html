@@ -1,3 +1,4 @@
-LOGIN or SIGNUP using
+<br />
+{{ provider.get_login_prompt }}
 <a href="/im/login/shibboleth?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
   alt="{{ provider.get_title_display }}">{{ provider.get_title_display }}</a>

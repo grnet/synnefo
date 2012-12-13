@@ -1,6 +1,8 @@
 <form action="{% url astakos.im.target.local.login %}#other-login-methods" method="post" 
   class="login-form login innerlabels">{% csrf_token %}
-  <p>if you already have a username and password</p>
+  <p>
+    {{ provider.get_login_prompt_display }}
+  </p>
   <Br />
   <div class="login-form" style="display:block">
     {% with login_form as form %}

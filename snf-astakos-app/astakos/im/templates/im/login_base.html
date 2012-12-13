@@ -22,7 +22,6 @@
       {% for provider in auth_providers %}
       {% if not provider == master_auth_provider %}
         {% include provider.login_prompt_template %}
-        <br />
       {% endif %}
       {% endfor %}
         <div class="bottom">

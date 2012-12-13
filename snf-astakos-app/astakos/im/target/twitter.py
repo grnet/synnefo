@@ -173,6 +173,7 @@ def authenticated(
         user.save()
 
         extra_context['provider'] = 'twitter'
+        extra_context['provider_title'] = 'Twitter'
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
                                     "?third_party_token=%s" % user.token

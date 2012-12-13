@@ -75,6 +75,9 @@ def login(request, on_failure='im/login.html'):
     third_party_token = get_query(request).get('key', False)
 
     if not form.is_valid():
+        if third_party_token:
+            messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
         return render_to_response(
             on_failure,
             {'login_form':form,

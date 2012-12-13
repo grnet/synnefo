@@ -1152,7 +1152,7 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
         return
     set_default_group(instance)
     # TODO handle socket.error & IOError
-    register_users((instance,))
+    #register_users((instance,))
 
 
 def resource_post_save(sender, instance, created, **kwargs):

@@ -195,6 +195,10 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
 
+    third_party_token = request.GET.get('key', False)
+    if third_party_token:
+        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
     return render_response(
         template_name,
         login_form = LoginForm(request=request),

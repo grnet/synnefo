@@ -13,8 +13,15 @@
     {% if "local" in im_modules %}
       <div class="form-stacked">
         <h2><span>Already have an account?</span></h2>
-        <a href="{% url astakos.im.views.index %}?key={{ token }}">YES</a>
-        <a href="{{ signup_url }}">NO</a>
+        <a href="{% url astakos.im.views.index %}?key={{ token }}"
+          class="button wide">
+          <span class="left">YES</span>
+          <span class="action-desc right">I want to add '{{ provider_title }}' as a new login method for my existing account</span>
+        </a>
+        <a href="{{ signup_url }}?key={{ token }}" class="button wide">
+          <span class="left">NO</span>
+          <span class="right action-desc">I want to create a new account</span>
+        </a>
       </div>
     {% endif %}
 {% endblock %}

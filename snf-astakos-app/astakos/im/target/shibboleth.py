@@ -153,13 +153,13 @@ def login(
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=eppn,
-            provider='shibboleth',
-            info=json.dumps(provider_info)
+            provider='shibboleth'
         )
         # update pending user
         user.realname = realname
         user.affiliation = affiliation
         user.email = email
+        user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 

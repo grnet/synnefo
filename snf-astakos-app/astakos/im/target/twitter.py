@@ -165,10 +165,10 @@ def authenticated(
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=userid,
             provider='twitter',
-            info=json.dumps(provider_info)
         )
         # update pending user
         user.affiliation = affiliation
+        user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 

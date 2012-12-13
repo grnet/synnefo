@@ -1618,6 +1618,8 @@ class ProjectMembership(SyncedModel):
     ACCEPTED    =   1
     REMOVED     =   2
     REJECTED    =   3   # never seen, because .delete()
+    REPLACED    =   4   # when the project definition is replaced
+                        # spontaneously goes back to ACCEPTED when synced
 
     class Meta:
         unique_together = ("person", "project")
@@ -1697,10 +1699,10 @@ class ProjectMembership(SyncedModel):
         self.delete()
 
     def get_quotas(self, limits_list=None, factor=1):
-        holder = self.person.username
         if limits_list is None:
             limits_list = []
         append = limits_list.append
+        holder = self.person.username
         all_grants = self.project.application.resource_grants.all()
         for grant in all_grants:
             append(QuotaLimits(holder       = holder,
@@ -1710,20 +1712,69 @@ class ProjectMembership(SyncedModel):
                                export_limit = factor * grant.member_export_limit))
         return limits_list
 
+    def get_diff_quotas(self, limits_list=None, factor=1):
+        if limits_list is None:
+            limits_list = []
+
+        append = limits_list.append
+        holder = self.person.username
+
+        # first, inverse all current limits, and index them by resource name
+        cur_grants = self.project.application.resource_grants.all()
+        f = factor * -1
+        tmp_grants = {}
+        for grant in cur_grants:
+            name = grant.resource.name
+            tmp_grants[name] = QuotaLimits(
+                            holder       = holder,
+                            resource     = name,
+                            capacity     = f * grant.member_capacity,
+                            import_limit = f * grant.member_import_limit,
+                            export_limit = f * grant.member_export_limit))
+
+        # second, add each new limit to its inversed current
+        for new_grant in new_grants:
+            name = grant.resource.name
+            cur_grant = tmp_grants.pop(name, None)
+            if cur_grant is None:
+                # if limits on a new resource, set 0 current values
+                capacity = 0
+                import_limit = 0
+                export_limit = 0
+            else:
+                capacity = cur_grant.capacity
+                import_limit = cur_grant.import_limit
+                export_limit = cur_grant.export_limit
+
+            capacity += new_grant.member_capacity
+            import_limit += new_grant.member_import_limit
+            export_limit += new_grant.member_export_limit
+
+            append(QuotaLimits(holder       = holder,
+                               resource     = name,
+                               capacity     = capacity,
+                               import_limit = import_limit,
+                               export_limit = export_limit))
+
+        # third, append all the inversed current limits for removed resources
+        limits_list.extend(tmp_grants.itervalues())
+        return limits_list
+
     def do_sync(self):
         state = self.sync_get_synced_state()
         new_state = self.sync_get_new_state()
 
         if state == self.REQUESTED and new_state == self.ACCEPTED:
-            factor = 1
+            quotas = self.get_quotas(factor=1)
         elif state == self.ACCEPTED and new_state == self.REMOVED:
-            factor = -1
+            quotas = self.get_quotas(factor=-1)
+        elif state == self.ACCEPTED and new_state == self.REPLACED:
+            quotas = self.get_diff_quotas(factor=1)
         else:
             m = _("%s: sync: called on invalid state ('%s' -> '%s')") % (
                     self, state, new_state)
             raise AssertionError(m)
 
-        quotas = self.get_quotas(factor=factor)
         try:
             failure = add_quotas(quotas)
             if failure:
@@ -1734,8 +1785,11 @@ class ProjectMembership(SyncedModel):
         else:
             self.sync_set_synced()
 
+        # some states have instant side-effects/transitions
         if new_state == self.REMOVED:
             self.delete()
+        elif new_state == self.REPLACED:
+            self.sync_init_state(self.ACCEPTED)
 
     def sync(self):
         with exclusive_or_raise:

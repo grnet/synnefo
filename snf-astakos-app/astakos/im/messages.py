@@ -128,7 +128,7 @@ SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated wi
 NOTIFICATION_SENT                       =   'Your request for an account was successfully received and is now pending approval. \
                                                You will be notified by email in the next few days. \
                                                Thanks for your interest in ~okeanos! The GRNET team.'
-ACTIVATION_SENT                         =   'Activation sent.'
+ACTIVATION_SENT                         =   'An email containing your activation link was sent to your email address.'
 
 REGISTRATION_COMPLETED                  =   'Registration completed you can now login to your account.'
 

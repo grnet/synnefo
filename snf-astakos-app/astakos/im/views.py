@@ -713,6 +713,10 @@ def change_email(request, activation_key=None,
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
 
+    if request.user.is_authenticated():
+        messages.error(request, 'You are already signed in.')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
     if settings.MODERATION_ENABLED:
         raise PermissionDenied
 
@@ -726,6 +730,8 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             send_activation_func(u)
             msg = _(astakos_messages.ACTIVATION_SENT)
             messages.success(request, msg)
+            return HttpResponseRedirect('/im/')
+
         except SendMailError, e:
             messages.error(request, e)
     return render_response(

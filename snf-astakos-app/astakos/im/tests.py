@@ -149,9 +149,11 @@ class ShibbolethTests(TestCase):
         self.assertContains(r, messages.SHIBBOLETH_MISSING_EPPN)
         client.set_tokens(eppn="kpapeppn")
 
+        astakos_settings.SHIBBOLETH_REQUIRE_NAME_INFO = True
         # shibboleth user info required
         r = client.get('/im/login/shibboleth?', follow=True)
         self.assertContains(r, messages.SHIBBOLETH_MISSING_NAME)
+        astakos_settings.SHIBBOLETH_REQUIRE_NAME_INFO = False
 
         # shibboleth logged us in
         client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn", cn="1",
@@ -216,7 +218,7 @@ class ShibbolethTests(TestCase):
         # lets login (not activated yet)
         client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn", cn="1", )
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertContains(r, "Your request is pending activation")
+        self.assertContains(r, messages.ACCOUNT_PENDING_MODERATION)
         r = client.get("/im/profile", follow=True)
         self.assertRedirects(r, 'http://testserver/im/?next=%2Fim%2Fprofile')
 
@@ -273,7 +275,7 @@ class ShibbolethTests(TestCase):
                      'username': 'kpap@grnet.gr',
                      'key': pending_key}
         r = self.client.post('/im/local', post_data, follow=True)
-        self.assertContains(r, "Failed to assign new login method")
+        self.assertContains(r, messages.AUTH_PROVIDER_ADD_FAILED)
         self.client.logout()
         client.logout()
 
@@ -444,6 +446,9 @@ class LocalUserTests(TestCase):
 
         # admin gets notified and activates the user from the command line
         self.assertEqual(len(get_mailbox('support@cloud.grnet.gr')), 1)
+        r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
+                                                 'password': 'password'})
+        self.assertContains(r, messages.ACCOUNT_PENDING_MODERATION)
         functions.send_activation(user)
 
         # user activation fields updated and user gets notified via email
@@ -476,7 +481,8 @@ class LocalUserTests(TestCase):
         # also she cannot login
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                                  'password': 'password'})
-        self.assertContains(r, 'You have not followed the activation link')
+        self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION_HELP)
+        self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION)
         self.assertNotContains(r, 'Resend activation')
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse('_pithos2_a' in self.client.cookies)
@@ -488,7 +494,8 @@ class LocalUserTests(TestCase):
         self.assertContains(r, "doesn&#39;t have an associated user account")
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                                  'password': 'password'})
-        self.assertContains(r, 'You have not followed the activation link')
+        print r
+        self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION)
         self.assertContains(r, 'Resend activation')
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse('_pithos2_a' in self.client.cookies)
@@ -550,7 +557,7 @@ class LocalUserTests(TestCase):
         # old pass is not usable
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                            'password': 'password'})
-        self.assertContains(r, messages.ACCOUNT_AUTHENTICATION_FAILED)
+        self.assertContains(r, 'Please enter a correct username and password')
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                            'password': 'newpass'},
                                            follow=True)

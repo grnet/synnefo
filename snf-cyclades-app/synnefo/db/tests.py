@@ -45,13 +45,6 @@ class FlavorTestCase(TestCase):
         """Test a flavor object, its internal cost calculation and naming methods"""
         flavor = Flavor.objects.get(pk=30000)
 
-        # test current active/inactive costs
-        c_active = flavor.current_cost_active
-        c_inactive = flavor.current_cost_inactive
-
-        self.assertEqual(c_active, 10, 'flavor.cost_active should be 10! (%d)' % (c_active,))
-        self.assertEqual(c_inactive, 5, 'flavor.cost_inactive should be 5! (%d)' % (c_inactive,))
-
         # test name property, should be C1R1024D10
         f_name = flavor.name
 

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,12 +33,6 @@
 
 from __future__ import with_statement
 
-from collections import defaultdict
-from email.utils import parsedate
-from random import choice, randint, sample
-from time import mktime
-
-from django.conf import settings
 from django.utils import simplejson as json
 from django.test import TestCase
 from django.test.client import Client
@@ -46,16 +40,21 @@ from django.test.client import Client
 from synnefo.db.models import *
 from synnefo.logic.utils import get_rsapi_state
 
-import mock
-from synnefo.lib import astakos
+from mock import patch, Mock
 
 from contextlib import contextmanager
+from synnefo.db import models_factory as mfactory
 
-# This is a hack to override astakos
-# The global variable ASTAKOS_PATCHED_USER keeps the name of
-# a dummy user that we provide through replacement of the
-# corresponding astakos function with a dummy function.
-ASTAKOS_PATCHED_USER = "user"
+from synnefo.api import util
+from synnefo.api import faults
+
+
+def get_image_mock(request, *Args, **kwargs):
+    return {'backend_id': '1234',
+            'location': 'pithos://dummyimage',
+            'disk_format': 'drbd'}
+util.get_image = get_image_mock
+
 
 @contextmanager
 def astakos_user(user):
@@ -64,394 +63,100 @@ def astakos_user(user):
 
     usage:
     with astakos_user("user@user.com"):
-        .... make api calls .... get_user will act as user@user.com requested the api.
+        .... make api calls ....
 
     """
     from synnefo.lib import astakos
+    from synnefo.api import util
     orig_method = astakos.get_user
-    
-    global ASTAKOS_PATCHED_USER
-    ASTAKOS_PATCHED_USER = user
+
     def dummy_get_user(request, *args, **kwargs):
-        global ASTAKOS_PATCHED_USER
-        request.user = {'username': ASTAKOS_PATCHED_USER, 'groups': []}
-        request.user_uniq = ASTAKOS_PATCHED_USER
+        request.user = {'username': user, 'groups': []}
+        request.user_uniq = user
     astakos.get_user = dummy_get_user
+    util.get_user = dummy_get_user
     yield
     astakos.get_user = orig_method
+
 
 class AaiClient(Client):
     def request(self, **request):
         request['HTTP_X_AUTH_TOKEN'] = '0000'
         return super(AaiClient, self).request(**request)
 
-class NetworksTest(TestCase):
-    
-    fixtures = ['network_test_data']
 
-    def test_attachments_list(self):
-        with astakos_user("admin@adminland.com"):
-            r = self.client.get("/api/v1.1/networks")
-            data = json.loads(r.content)
-            self.assertEqual(data["networks"]["values"][1]["name"], "network4admin")
-            #import pdb; pdb.set_trace()
-            self.assertEqual(len(data["networks"]["values"]), 2)
-        with astakos_user("user1@userland.com"):
-            r = self.client.get("/api/v1.1/networks")
-            data = json.loads(r.content)
-            self.assertEqual(data["networks"]["values"][1]["name"], "network4user1")
-            #import pdb; pdb.set_trace()
-            self.assertEqual(len(data["networks"]["values"]), 2)
-
-    def test_create_network(self):
-        with astakos_user("admin@adminland.com"):
-            r = self.client.post("/api/v1.1/networks")
-
-class ServersTest(TestCase):
-
-    fixtures = ['network_test_data']
-
-    def test_attachments_list(self):
-        with astakos_user("admin@adminland.com"):
-            r = self.client.get("/api/v1.1/servers")
-            data = json.loads(r.content)
-            self.assertEqual(data["servers"]["values"][0]["id"], 1001)
-            self.assertEqual(len(data["servers"]["values"]), 1)
-            r = self.client.get("/api/v1.1/servers/1001")
+def create_flavors(num):
+    return [mfactory.FlavorFactory() for x in range(num)]
 
 
-class TestQuota(TestCase):
-
-    fixtures = ['users', 'flavors']
-    astakos_response_user = 'test'
-
-    def setUp(self):
-
-        self.astakos_response_user = 'test'
-        def get_user_mock(request, *Args, **kwargs):
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
-                request.user_uniq = self.astakos_response_user
-                request.user = {'uniq': self.astakos_response_user}
-
-        def get_image_mock(request, *Args, **kwargs):
-            return {'backend_id':'1234', 'location':'pithos://dummyimage',
-                    'disk_format': 'plain'}
-
-        self.rapi_patch = mock.patch('synnefo.logic.backend.rapi')
-        self.rapi_mock = self.rapi_patch.start()
-
-        self.pithos_patch = mock.patch('synnefo.api.util.get_image')
-        self.pithos_mock = self.rapi_patch.start()
-
-        # mock the astakos authentication function
-        from synnefo.api import util
-        util.get_user = get_user_mock
-        util.get_image = get_image_mock
-
-        settings.SKIP_SSH_VALIDATION = True
-        self.client = AaiClient()
-        self.user = 'test'
-
-    def test_vms_quota(self):
-        request = {
-                    "server": {
-                        "name": "new-server-test",
-                        "userid": "test",
-                        "imageRef": 1,
-                        "flavorRef": 1,
-                        "metadata": {
-                            "My Server Name": "Apache1"
-                        },
-                        "personality": []
-                    }
-        }
-
-        def create_server(for_user='test'):
-            self.astakos_response_user = for_user
-            return self.client.post('/api/v1.1/servers', json.dumps(request),
-                content_type="application/json")
-
-        def user_vms_count(user='test'):
-            return VirtualMachine.objects.filter(userid=user).count()
-
-        # admin sets max vms per user to 2
-        settings.MAX_VMS_PER_USER = 2
-        create_server()
-        create_server()
-        self.assertEqual(user_vms_count(), 2)
-
-        # third creation fails
-        resp = create_server()
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_vms_count(), 2)
-
-        # setting changed, no additional servers can get created
-        settings.MAX_VMS_PER_USER = 1
-        resp = create_server()
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_vms_count(), 2)
-
-        # admin wants test user to create 4 vms, now test user can create
-        # one additional vm, but no more
-        settings.VMS_USER_QUOTA = {'test':3}
-        create_server()
-        self.assertEqual(user_vms_count(), 3)
-        resp = create_server()
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_vms_count(), 3)
-        # other users still apply to the global quota
-        create_server("testuser2")
-        self.assertEqual(user_vms_count("testuser2"), 1)
-        resp = create_server("testuser2")
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_vms_count("testuser2"), 1)
-
-
-    def test_networks_quota(self):
-
-        def create_network(for_user='test'):
-            request = json.dumps({'network': {'name': 'user %s network' %
-                for_user}})
-            self.astakos_response_user = for_user
-            return self.client.post('/api/v1.1/networks', request,
-                content_type="application/json")
-
-        def user_networks_count(user='test'):
-            return Network.objects.filter(userid=user).count()
-
-        settings.MAX_NETWORKS_PER_USER = 1
-        create_network()
-        self.assertEqual(user_networks_count(),1)
-        resp = create_network()
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_networks_count(), 1)
-
-        settings.NETWORKS_USER_QUOTA = {'test':2}
-        create_network()
-        self.assertEqual(user_networks_count(),2)
-        resp = create_network()
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_networks_count(), 2)
-
-        create_network("testuser2")
-        self.assertEqual(user_networks_count("testuser2"),1)
-        resp = create_network("testuser2")
-        self.assertEqual(resp.status_code, 413)
-        self.assertEqual(user_networks_count("testuser2"), 1)
-
-        settings.GANETI_MAX_LINK_NUMBER = 3
-        settings.NETWORKS_USER_QUOTA = {'test':10}
-        resp = create_network()
-        self.assertEqual(Network.objects.count(), 4)
-        self.assertEqual('No networks available.' in resp.content, True)
-        self.assertEqual(user_networks_count(), 2)
-
-
-
-
-class APITestCase(TestCase):
-    fixtures = ['users', 'api_test_data']
-    test_server_id = 1001
-    test_image_id = 1
-    test_flavor_id = 1
-    test_group_id = 1
-    test_wrong_server_id = 99999999
-    test_wrong_image_id = 99999999
-    test_wrong_flavor_id = 99999999
-    test_wrong_group_id = 99999999
-    #make the testing with these id's
-
-    def setUp(self):
-        self.client = AaiClient()
-        settings.MAX_VMS_PER_USER = 5
+class APITest(TestCase):
 
     def test_api_version(self):
         """Check API version."""
-
-        response = self.client.get('/api/v1.1/')
+        with astakos_user('user'):
+            response = self.client.get('/api/v1.1/')
         self.assertEqual(response.status_code, 200)
         api_version = json.loads(response.content)['version']
         self.assertEqual(api_version['id'], 'v1.1')
         self.assertEqual(api_version['status'], 'CURRENT')
 
-    def test_server_list(self):
-        """Test if the expected list of servers is returned."""
 
-        response = self.client.get('/api/v1.1/servers')
-        vms_from_api = json.loads(response.content)['servers']['values']
-        vms_from_db = VirtualMachine.objects.filter(deleted=False)
-        self.assertEqual(len(vms_from_api), len(vms_from_db))
-        self.assertTrue(response.status_code in [200, 203])
-        for vm_from_api in vms_from_api:
-            vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
-            self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['name'], vm_from_db.name)
+class BaseTestCase(TestCase):
+    def get(self, url, user='user'):
+        with astakos_user(user):
+            response = self.client.get(url)
+        return response
 
-    def test_server_details(self):
-        """Test if the expected server is returned."""
+    def delete(self, url, user='user'):
+        with astakos_user(user):
+            response = self.client.delete(url)
+        return response
 
-        response = self.client.get('/api/v1.1/servers/%d' % self.test_server_id)
-        vm_from_api = json.loads(response.content)['server']
-        vm_from_db = VirtualMachine.objects.get(id=self.test_server_id)
-        self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
-        self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
-        self.assertEqual(vm_from_api['id'], vm_from_db.id)
-        self.assertEqual(vm_from_api['imageRef'], vm_from_db.imageid)
-        self.assertEqual(vm_from_api['name'], vm_from_db.name)
-        self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
-        self.assertTrue(response.status_code in [200, 203])
+    def post(self, url, user='user', params={}, ctype='json'):
+        if ctype == 'json':
+            content_type = 'application/json'
+        with astakos_user(user):
+            response = self.client.post(url, params, content_type=content_type)
+        return response
 
-    def test_servers_details(self):
-        """Test if the servers details are returned."""
+    def put(self, url, user='user', params={}, ctype='json'):
+        if ctype == 'json':
+            content_type = 'application/json'
+        with astakos_user(user):
+            response = self.client.put(url, params, content_type=content_type)
+        return response
 
-        response = self.client.get('/api/v1.1/servers/detail')
-
-        # Make sure both DB and API responses are sorted by id,
-        # to allow for 1-1 comparisons
-        vms_from_db = VirtualMachine.objects.filter(deleted=False).order_by('id')
-        vms_from_api = json.loads(response.content)['servers']['values']
-        vms_from_api = sorted(vms_from_api, key=lambda vm: vm['id'])
-        self.assertEqual(len(vms_from_db), len(vms_from_api))
-
-        id_list = [vm.id for vm in vms_from_db]
-        number = 0
-        for vm_id in id_list:
-            vm_from_api = vms_from_api[number]
-            vm_from_db = VirtualMachine.objects.get(id=vm_id)
-            self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
-            self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
-            self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['imageRef'], vm_from_db.imageid)
-            self.assertEqual(vm_from_api['name'], vm_from_db.name)
-            self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
-            number += 1
-        for vm_from_api in vms_from_api:
-            vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
-            self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
-            self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
-            self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['imageRef'], vm_from_db.imageid)
-            self.assertEqual(vm_from_api['name'], vm_from_db.name)
-            self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
+    def assertSuccess(self, response):
         self.assertTrue(response.status_code in [200, 203])
 
-    def test_wrong_server(self):
-        """Test 404 response if server does not exist."""
+    def assertFault(self, response, status_code, name):
+        self.assertEqual(response.status_code, status_code)
+        fault = json.loads(response.content)
+        self.assertEqual(fault.keys(), [name])
 
-        response = self.client.get('/api/v1.1/servers/%d' % self.test_wrong_server_id)
-        self.assertEqual(response.status_code, 404)
+    def assertBadRequest(self, response):
+        self.assertFault(response, 400, 'badRequest')
 
-    def test_create_server_empty(self):
-        """Test if the create server call returns a 400 badRequest if
-           no attributes are specified."""
+    def assertItemNotFound(self, response):
+        self.assertFault(response, 404, 'itemNotFound')
 
-        response = self.client.post('/api/v1.1/servers', {})
-        self.assertEqual(response.status_code, 400)
 
-    def test_create_server(self):
-        """Test if the create server call returns the expected response
-           if a valid request has been speficied."""
+class FlavorAPITest(BaseTestCase):
 
-        request = {
-                    "server": {
-                        "name": "new-server-test",
-                        "userid": "test",
-                        "imageRef": 1,
-                        "flavorRef": 1,
-                        "metadata": {
-                            "My Server Name": "Apache1"
-                        },
-                        "personality": []
-                    }
-        }
-        response = self.client.post('/api/v1.1/servers', json.dumps(request),
-                                    content_type='application/json')
-        self.assertEqual(response.status_code, 202)
-        #TODO: check response.content
-        #TODO: check create server with wrong options (eg non existing flavor)
-
-    def test_server_polling(self):
-        """Test if the server polling works as expected."""
-
-        response = self.client.get('/api/v1.1/servers/detail')
-        vms_from_api_initial = json.loads(response.content)['servers']['values']
-        ts = mktime(parsedate(response['Date']))
-        since = datetime.datetime.fromtimestamp(ts).isoformat() + 'Z'
-        response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % since)
-        self.assertEqual(len(response.content), 0)
-
-        #now create a machine. Then check if it is on the list
-        request = {
-                    "server": {
-                        "name": "new-server-test",
-                        "imageRef": 1,
-                        "flavorRef": 1,
-                        "metadata": {
-                            "My Server Name": "Apache1"
-                        },
-                        "personality": []
-                    }
-        }
-
-        path = '/api/v1.1/servers'
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 202)
-
-        response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % since)
-        self.assertEqual(response.status_code, 200)
-        vms_from_api_after = json.loads(response.content)['servers']['values']
-        #make sure the newly created server is included on the updated list
-        self.assertEqual(len(vms_from_api_after), 1)
-
-    def test_reboot_server(self):
-        """Test if the specified server is rebooted."""
-        request = {'reboot': {'type': 'HARD'}}
-        path = '/api/v1.1/servers/%d/action' % self.test_server_id
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 202)
-        # server id that does not exist
-        path = '/api/v1.1/servers/%d/action' % self.test_wrong_server_id
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 404)
-
-    def test_shutdown_server(self):
-        """Test if the specified server is shutdown."""
-
-        request = {'shutdown': {}}
-        path = '/api/v1.1/servers/%d/action' % self.test_server_id
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 202)
-        # server id that does not exist
-        path = '/api/v1.1/servers/%d/action' % self.test_wrong_server_id
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 404)
-
-    def test_start_server(self):
-        """Test if the specified server is started."""
-
-        request = {'start': {}}
-        path = '/api/v1.1/servers/%d/action' % self.test_server_id
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 202)
-        # server id that does not exist
-        path = '/api/v1.1/servers/%d/action' % self.test_wrong_server_id
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 404)
-
-    def test_delete_server(self):
-        """Test if the specified server is deleted."""
-        response = self.client.delete('/api/v1.1/servers/%d' % self.test_server_id)
-        self.assertEqual(response.status_code, 204)
-        # server id that does not exist
-        response = self.client.delete('/api/v1.1/servers/%d' % self.test_wrong_server_id)
-        self.assertEqual(response.status_code, 404)
+    def setUp(self):
+        self.flavor1 = mfactory.FlavorFactory()
+        self.flavor2 = mfactory.FlavorFactory(deleted=True)
+        self.flavor3 = mfactory.FlavorFactory()
 
     def test_flavor_list(self):
         """Test if the expected list of flavors is returned by."""
 
-        response = self.client.get('/api/v1.1/flavors')
+        # with astakos_user('user'):
+        #     response = self.client.get('/api/v1.1/flavors')
+        response = self.get('/api/v1.1/flavors')
+
         flavors_from_api = json.loads(response.content)['flavors']['values']
-        flavors_from_db = Flavor.objects.all()
+        flavors_from_db = Flavor.objects.filter(deleted=False)
         self.assertEqual(len(flavors_from_api), len(flavors_from_db))
         self.assertTrue(response.status_code in [200, 203])
         for flavor_from_api in flavors_from_api:
@@ -461,9 +166,9 @@ class APITestCase(TestCase):
 
     def test_flavors_details(self):
         """Test if the flavors details are returned."""
+        response = self.get('/api/v1.1/flavors/detail')
 
-        response = self.client.get('/api/v1.1/flavors/detail')
-        flavors_from_db = Flavor.objects.all()
+        flavors_from_db = Flavor.objects.filter(deleted=False)
         flavors_from_api = json.loads(response.content)['flavors']['values']
 
         # Assert that all flavors in the db appear inthe API call result
@@ -490,10 +195,12 @@ class APITestCase(TestCase):
 
     def test_flavor_details(self):
         """Test if the expected flavor is returned."""
+        flavor = self.flavor3
 
-        response = self.client.get('/api/v1.1/flavors/%d' % self.test_flavor_id)
+        response = self.get('/api/v1.1/flavors/%d' % flavor.id)
+
         flavor_from_api = json.loads(response.content)['flavor']
-        flavor_from_db = Flavor.objects.get(id=self.test_flavor_id)
+        flavor_from_db = Flavor.objects.get(id=flavor.id)
         self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
         self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
         self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
@@ -501,666 +208,673 @@ class APITestCase(TestCase):
         self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
         self.assertTrue(response.status_code in [200, 203])
 
+    def test_deleted_flavor_details(self):
+        """Test that API returns details for deleted flavors"""
+        flavor = self.flavor2
+        response = self.get('/api/v1.1/flavors/%d' % flavor.id)
+        flavor_from_api = json.loads(response.content)['flavor']
+        self.assertEqual(response.status_code, 200)
+        self.assertEquals(flavor_from_api['name'], flavor.name)
+
+    def test_deleted_flavors_list(self):
+        """Test that deleted flavors do not appear to flavors list"""
+        response = self.get('/api/v1.1/flavors')
+        flavors_from_api = json.loads(response.content)['flavors']['values']
+        self.assertEqual(len(flavors_from_api), 2)
+
+    def test_deleted_flavors_details(self):
+        """Test that deleted flavors do not appear to flavors detail list"""
+        mfactory.FlavorFactory(deleted=True)
+        response = self.get('/api/v1.1/flavors/detail')
+        flavors_from_api = json.loads(response.content)['flavors']['values']
+        self.assertEqual(len(flavors_from_api), 2)
+
     def test_wrong_flavor(self):
         """Test 404 result when requesting a flavor that does not exist."""
 
-        response = self.client.get('/api/v1.1/flavors/%d' % self.test_wrong_flavor_id)
-        self.assertTrue(response.status_code in [404, 503])
+        response = self.get('/api/v1.1/flavors/%d' % 22)
+        self.assertTrue(response.status_code in [404])
 
-    def test_image_list(self):
-        """Test if the expected list of images is returned by the API."""
 
-        response = self.client.get('/api/v1.1/images')
-        images_from_api = json.loads(response.content)['images']['values']
-        images_from_db = Image.objects.all()
-        self.assertEqual(len(images_from_api), len(images_from_db))
+class ServerAPITest(BaseTestCase):
+    def setUp(self):
+        self.user1 = 'user1'
+        self.user2 = 'user2'
+        self.vm1 = mfactory.VirtualMachineFactory(userid=self.user1)
+        self.vm2 = mfactory.VirtualMachineFactory(userid=self.user2)
+        self.vm3 = mfactory.VirtualMachineFactory(deleted=True,
+                                                  userid=self.user1)
+        self.vm4 = mfactory.VirtualMachineFactory(userid=self.user2)
+
+    def test_server_list_1(self):
+        """Test if the expected list of servers is returned."""
+        response = self.get('/api/v1.1/servers')
         self.assertTrue(response.status_code in [200, 203])
-        for image_from_api in images_from_api:
-            image_from_db = Image.objects.get(id=image_from_api['id'])
-            self.assertEqual(image_from_api['id'], image_from_db.id)
-            self.assertEqual(image_from_api['name'], image_from_db.name)
+        servers = json.loads(response.content)['servers']['values']
+        self.assertEqual(servers, [])
 
-    def test_wrong_image(self):
-        """Test 404 result if a non existent image is requested."""
+    def test_server_list_2(self):
+        """Test if the expected list of servers is returned."""
+        response = self.get('/api/v1.1/servers', self.user1)
+        self.assertTrue(response.status_code in [200, 203])
+        servers = json.loads(response.content)['servers']['values']
+        db_server = self.vm1
+        self.assertEqual(servers, [{'name': db_server.name,
+                                    'id': db_server.id}])
 
-        response = self.client.get('/api/v1.1/images/%d' % self.test_wrong_image_id)
+    def test_server_list_detail(self):
+        """Test if the servers list details are returned."""
+        user = self.user2
+        user_vms = {self.vm2.id: self.vm2,
+                    self.vm4.id: self.vm4}
+
+        response = self.get('/api/v1.1/servers/detail', user)
+        servers = json.loads(response.content)['servers']['values']
+        self.assertEqual(len(servers), len(user_vms))
+        for api_vm in servers:
+            db_vm = user_vms[api_vm['id']]
+            self.assertEqual(api_vm['flavorRef'], db_vm.flavor.id)
+            self.assertEqual(api_vm['hostId'], db_vm.hostid)
+            self.assertEqual(api_vm['id'], db_vm.id)
+            self.assertEqual(api_vm['imageRef'], db_vm.imageid)
+            self.assertEqual(api_vm['name'], db_vm.name)
+            self.assertEqual(api_vm['status'], get_rsapi_state(db_vm))
+            self.assertTrue(response.status_code in [200, 203])
+
+    def test_server_detail(self):
+        """Test if a server details are returned."""
+        db_vm = self.vm2
+        user = self.vm2.userid
+        db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
+
+        response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
+        server = json.loads(response.content)['server']
+
+        self.assertEqual(server['flavorRef'], db_vm.flavor.id)
+        self.assertEqual(server['hostId'], db_vm.hostid)
+        self.assertEqual(server['id'], db_vm.id)
+        self.assertEqual(server['imageRef'], db_vm.imageid)
+        self.assertEqual(server['name'], db_vm.name)
+        self.assertEqual(server['status'], get_rsapi_state(db_vm))
+
+        metadata = server['metadata']['values']
+        self.assertEqual(len(metadata), 1)
+        self.assertEqual(metadata[db_vm_meta.meta_key], db_vm_meta.meta_value)
+        self.assertTrue(response.status_code in [200, 203])
+
+    def test_noauthorized(self):
+        """Test 404 for detail of other user vm"""
+        db_vm = self.vm2
+
+        response = self.get('/api/v1.1/servers/%d' % db_vm.id, 'wrong_user')
         self.assertEqual(response.status_code, 404)
 
-    def test_server_metadata(self):
-        """Test server's metadata (add, edit)."""
+    def test_wrong_server(self):
+        """Test 404 response if server does not exist."""
+        response = self.get('/api/v1.1/servers/%d' % 5000)
+        self.assertEqual(response.status_code, 404)
 
-        key = 'name'
-        request = {'meta': {key: 'a fancy name'}}
+    def test_create_server_empty(self):
+        """Test if the create server call returns a 400 badRequest if
+           no attributes are specified."""
 
-        path = '/api/v1.1/servers/%d/meta/%s' % (self.test_server_id, key)
-        response = self.client.put(path, json.dumps(request), content_type='application/json')
-        self.assertEqual(response.status_code, 201)
-
-
-def create_flavors(n=1):
-    for i in range(n):
-        Flavor.objects.create(
-            cpu=randint(1, 4),
-            ram=randint(1, 8) * 512,
-            disk=randint(1, 40))
+        response = self.post('/api/v1.1/servers', params={})
+        self.assertEqual(response.status_code, 400)
 
 
-def create_images(n=1):
-    for i in range(n):
-        Image.objects.create(
-            name='Image %d' % (i + 1),
-            state='ACTIVE',
-            owner='test')
+@patch('synnefo.api.util.get_image')
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerCreateAPITest(BaseTestCase):
+    def test_create_server(self, mrapi, mimage):
+        """Test if the create server call returns the expected response
+           if a valid request has been speficied."""
+        mimage.return_value = {'location': 'pithos://foo',
+                               'disk_format': 'diskdump'}
+        mrapi().CreateInstance.return_value = 12
+        flavor = mfactory.FlavorFactory()
+        # Create public network and backend
+        network = mfactory.NetworkFactory(public=True)
+        backend = mfactory.BackendFactory()
+        mfactory.BackendNetworkFactory(network=network, backend=backend)
+
+        request = {
+                    "server": {
+                        "name": "new-server-test",
+                        "userid": "test_user",
+                        "imageRef": 1,
+                        "flavorRef": flavor.id,
+                        "metadata": {
+                            "My Server Name": "Apache1"
+                        },
+                        "personality": []
+                    }
+        }
+        response = self.post('/api/v1.1/servers', 'test_user',
+                                 json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        mrapi().CreateInstance.assert_called_once()
+
+        api_server = json.loads(response.content)['server']
+        self.assertEqual(api_server['status'], "BUILD")
+        self.assertEqual(api_server['progress'], 0)
+        self.assertEqual(api_server['metadata']['values'],
+                        {"My Server Name":  "Apache1"})
+        self.assertTrue('adminPass' in api_server)
+
+        db_vm = VirtualMachine.objects.get(userid='test_user')
+        self.assertEqual(api_server['name'], db_vm.name)
+        self.assertEqual(api_server['status'], db_vm.operstate)
+
+    def test_create_server_no_flavor(self, mrapi, mimage):
+        request = {
+                    "server": {
+                        "name": "new-server-test",
+                        "userid": "test_user",
+                        "imageRef": 1,
+                        "flavorRef": 42,
+                        "metadata": {
+                            "My Server Name": "Apache1"
+                        },
+                        "personality": []
+                    }
+        }
+        response = self.post('/api/v1.1/servers', 'test_user',
+                                 json.dumps(request), 'json')
+        self.assertItemNotFound(response)
 
 
-def create_image_metadata(n=1):
-    images = Image.objects.all()
-    for i in range(n):
-        ImageMetadata.objects.create(
-            meta_key='Key%d' % (i + 1),
-            meta_value='Value %d' % (i + 1),
-            image=choice(images))
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerDestroyAPITest(BaseTestCase):
+    def test_delete_server(self, mrapi):
+        vm = mfactory.VirtualMachineFactory()
+        response = self.delete('/api/v1.1/servers/%d' % vm.id, vm.userid)
+        self.assertEqual(response.status_code, 204)
+        mrapi().DeleteInstance.assert_called_once()
+
+    def test_non_existing_delete_server(self, mrapi):
+        vm = mfactory.VirtualMachineFactory()
+        response = self.delete('/api/v1.1/servers/%d' % 42, vm.userid)
+        self.assertItemNotFound(response)
+        mrapi().DeleteInstance.assert_not_called()
 
 
-def create_servers(n=1):
-    flavors = Flavor.objects.all()
-    images = Image.objects.all()
-    for i in range(n):
-        VirtualMachine.objects.create(
-            name='Server %d' % (i + 1),
-            owner='test',
-            imageid=choice(images).id,
-            hostid=str(i),
-            flavor=choice(flavors))
-
-
-def create_server_metadata(n=1):
-    servers = VirtualMachine.objects.all()
-    for i in range(n):
-        VirtualMachineMetadata.objects.create(
-            meta_key='Key%d' % (i + 1),
-            meta_value='Value %d' % (i + 1),
-            vm=choice(servers))
-
-
-class AssertInvariant(object):
-    def __init__(self, callable, *args, **kwargs):
-        self.callable = callable
-        self.args = args
-        self.kwargs = kwargs
-
-    def __enter__(self):
-        self.value = self.callable(*self.args, **self.kwargs)
-        return self.value
-
-    def __exit__(self, type, value, tb):
-        assert self.value == self.callable(*self.args, **self.kwargs)
-
-
-class BaseTestCase(TestCase):
-    FLAVORS = 1
-    IMAGES = 1
-    SERVERS = 1
-    SERVER_METADATA = 0
-    IMAGE_METADATA = 0
-    fixtures = ['users']
-
-    def setUp(self):
-        self.client = AaiClient()
-        create_flavors(self.FLAVORS)
-        create_images(self.IMAGES)
-        create_image_metadata(self.IMAGE_METADATA)
-        create_servers(self.SERVERS)
-        create_server_metadata(self.SERVER_METADATA)
-
-    def assertFault(self, response, status_code, name):
-        self.assertEqual(response.status_code, status_code)
-        fault = json.loads(response.content)
-        self.assertEqual(fault.keys(), [name])
-
-    def assertBadRequest(self, response):
-        self.assertFault(response, 400, 'badRequest')
-
-    def assertItemNotFound(self, response):
-        self.assertFault(response, 404, 'itemNotFound')
-
-    def list_images(self, detail=False):
-        path = '/api/v1.1/images'
-        if detail:
-            path += '/detail'
-        response = self.client.get(path)
-        self.assertTrue(response.status_code in (200, 203))
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['images'])
-        self.assertEqual(reply['images'].keys(), ['values'])
-        return reply['images']['values']
-
-    def list_metadata(self, path):
-        response = self.client.get(path)
-        self.assertTrue(response.status_code in (200, 203))
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['metadata'])
-        self.assertEqual(reply['metadata'].keys(), ['values'])
-        return reply['metadata']['values']
-
-    def list_server_metadata(self, server_id):
-        path = '/api/v1.1/servers/%d/meta' % server_id
-        return self.list_metadata(path)
-
-    def list_image_metadata(self, image_id):
-        path = '/api/v1.1/images/%d/meta' % image_id
-        return self.list_metadata(path)
-
-    def update_metadata(self, path, metadata):
-        data = json.dumps({'metadata': metadata})
-        response = self.client.post(path, data, content_type='application/json')
-        self.assertEqual(response.status_code, 201)
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['metadata'])
-        return reply['metadata']
-
-    def update_server_metadata(self, server_id, metadata):
-        path = '/api/v1.1/servers/%d/meta' % server_id
-        return self.update_metadata(path, metadata)
-
-    def update_image_metadata(self, image_id, metadata):
-        path = '/api/v1.1/images/%d/meta' % image_id
-        return self.update_metadata(path, metadata)
-
-    def create_server_meta(self, server_id, meta):
-        key = meta.keys()[0]
-        path = '/api/v1.1/servers/%d/meta/%s' % (server_id, key)
-        data = json.dumps({'meta': meta})
-        response = self.client.put(path, data, content_type='application/json')
-        self.assertEqual(response.status_code, 201)
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['meta'])
-        response_meta = reply['meta']
-        self.assertEqual(response_meta, meta)
-
-    def get_all_server_metadata(self):
-        metadata = defaultdict(dict)
-        for m in VirtualMachineMetadata.objects.all():
-            metadata[m.vm.id][m.meta_key] = m.meta_value
-        return metadata
-
-    def get_all_image_metadata(self):
-        metadata = defaultdict(dict)
-        for m in ImageMetadata.objects.all():
-            metadata[m.image.id][m.meta_key] = m.meta_value
-        return metadata
-
-    def list_networks(self, detail=False):
-        path = '/api/v1.1/networks'
-        if detail:
-            path += '/detail'
-        response = self.client.get(path)
-        self.assertTrue(response.status_code in (200, 203))
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['networks'])
-        self.assertEqual(reply['networks'].keys(), ['values'])
-        return reply['networks']['values']
-
-    def create_network(self, name):
-        with astakos_user("admin@adminland.com"):
-            path = '/api/v1.1/networks'
-            data = json.dumps({'network': {'name': name}})
-            response = self.client.post(path, data, content_type='application/json')
+@patch('synnefo.api.util.get_image')
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerActionAPITest(BaseTestCase):
+    def test_actions(self, mrapi, mimage):
+        actions = ['start', 'shutdown', 'reboot']
+        vm = mfactory.VirtualMachineFactory()
+        vm.operstate = "STOPPED"
+        vm.save()
+        for action in actions:
+            val = {'type': 'HARD'} if action == 'reboot' else {}
+            request = {action: val}
+            response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                                vm.userid, json.dumps(request), 'json')
             self.assertEqual(response.status_code, 202)
-            reply = json.loads(response.content)
-            self.assertEqual(reply.keys(), ['network'])
-            return reply
+            if action == 'shutdown':
+                self.assertEqual(VirtualMachine.objects.get(id=vm.id).action,
+                                 "STOP")
+            else:
+                self.assertEqual(VirtualMachine.objects.get(id=vm.id).action,
+                                 action.upper())
 
-    def get_network_details(self, network_id):
-        path = '/api/v1.1/networks/%s' % network_id
-        response = self.client.get(path)
-        self.assertEqual(response.status_code, 200)
-        reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['network'])
-        return reply['network']
+    def test_firewall(self, mrapi, mimage):
+        vm = mfactory.VirtualMachineFactory()
+        vm.operstate = "STOPPED"
+        vm.save()
+        request = {'firewallProfile': {'profile': 'PROTECTED'}}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        mrapi().ModifyInstance.assert_called_once()
 
-    def update_network_name(self, network_id, new_name):
-        path = '/api/v1.1/networks/%s' % network_id
-        data = json.dumps({'network': {'name': new_name}})
-        response = self.client.put(path, data, content_type='application/json')
+
+class ServerMetadataAPITest(BaseTestCase):
+    def setUp(self):
+        self.vm = mfactory.VirtualMachineFactory()
+        self.metadata = mfactory.VirtualMachineMetadataFactory(vm=self.vm)
+
+    def test_get_metadata(self):
+        vm = self.vm
+        create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)
+        metadata = [create_meta(), create_meta(), create_meta()]
+        response = self.get('/api/v1.1/servers/%d/meta' % vm.id, vm.userid)
+        self.assertTrue(response.status_code in [200, 203])
+        api_metadata = json.loads(response.content)['metadata']['values']
+        self.assertEqual(len(api_metadata), len(metadata) + 1)
+        for db_m in metadata:
+            self.assertEqual(api_metadata[db_m.meta_key], db_m.meta_value)
+
+        request = {'metadata':
+                        {'foo': 'bar'},
+                        metadata[0].meta_key: 'bar2'
+                  }
+        response = self.post('/api/v1.1/servers/%d/meta' % vm.id, vm.userid,
+                             json.dumps(request), 'json')
+        metadata2 = VirtualMachineMetadata.objects.filter(vm=vm)
+        response = self.get('/api/v1.1/servers/%d/meta' % vm.id, vm.userid)
+        self.assertTrue(response.status_code in [200, 203])
+        api_metadata2 = json.loads(response.content)['metadata']['values']
+        self.assertTrue('foo' in api_metadata2.keys())
+        self.assertTrue(api_metadata2[metadata[0].meta_key], 'bar2')
+        self.assertEqual(len(api_metadata2), len(metadata2))
+        for db_m in metadata2:
+            self.assertEqual(api_metadata2[db_m.meta_key], db_m.meta_value)
+
+        # Create new meta
+        request = {'meta': {'foo2': 'bar2'}}
+        response = self.put('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+                            vm.userid, json.dumps(request), 'json')
+
+        # Get the new meta
+        response = self.get('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+                            vm.userid)
+        meta = json.loads(response.content)['meta']
+        self.assertEqual(meta['foo2'], 'bar2')
+
+        # Delete the new meta
+        response = self.delete('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+                               vm.userid)
         self.assertEqual(response.status_code, 204)
 
-    def delete_network(self, network_id):
-        path = '/api/v1.1/networks/%s' % network_id
-        response = self.client.delete(path)
-        self.assertEqual(response.status_code, 204)
+        # Try to get the deleted meta: should raise 404
+        response = self.get('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+                            vm.userid)
+        self.assertEqual(response.status_code, 404)
 
-    def add_to_network(self, network_id, server_id):
-        path = '/api/v1.1/networks/%s/action' % network_id
-        data = json.dumps({'add': {'serverRef': server_id}})
-        response = self.client.post(path, data, content_type='application/json')
+    def test_invalid_metadata(self):
+        vm = self.vm
+        response = self.post('/api/v1.1/servers/%d/meta' % vm.id, vm.userid)
+        self.assertBadRequest(response)
+        self.assertEqual(len(vm.metadata.all()), 1)
+
+    def test_invalid_metadata_server(self):
+        response = self.post('/api/v1.1/servers/42/meta', 'user')
+        self.assertItemNotFound(response)
+
+    def test_get_meta_invalid_key(self):
+        vm = self.vm
+        response = self.get('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+                            vm.userid)
+        self.assertItemNotFound(response)
+
+
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class NetworkAPITest(BaseTestCase):
+    def setUp(self):
+        self.mac_prefixes = mfactory.MacPrefixPoolTableFactory()
+        self.bridges = mfactory.BridgePoolTableFactory()
+        self.user = 'dummy-user'
+        self.net1 = mfactory.NetworkFactory(userid=self.user)
+        self.net2 = mfactory.NetworkFactory(userid=self.user)
+
+    def assertNetworksEqual(self, db_net, api_net, detail=False):
+        self.assertEqual(str(db_net.id), api_net["id"])
+        self.assertEqual(db_net.name, api_net['name'])
+        if detail:
+            self.assertEqual(db_net.state, api_net['status'])
+            self.assertEqual(db_net.flavor, api_net['type'])
+            self.assertEqual(db_net.subnet, api_net['cidr'])
+            self.assertEqual(db_net.subnet6, api_net['cidr6'])
+            self.assertEqual(db_net.gateway, api_net['gateway'])
+            self.assertEqual(db_net.gateway6, api_net['gateway6'])
+            self.assertEqual(db_net.dhcp, api_net['dhcp'])
+
+    def test_create_network_1(self, mrapi):
+        request = {
+            'network': {'name': 'foo'}
+            }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        db_networks = Network.objects.filter(userid='user1')
+        self.assertEqual(len(db_networks), 1)
+        db_net = db_networks[0]
+        api_net = json.loads(response.content)['network']
+        self.assertNetworksEqual(db_net, api_net)
+        mrapi.CreateNetwork.assert_called()
+        mrapi.ConnectNetwork.assert_called()
+
+    def test_invalid_data_1(self, mrapi):
+        """Test invalid flavor"""
+        request = {
+            'network': {'name': 'foo', 'type': 'LoLo'}
+            }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertBadRequest(response)
+        self.assertEqual(len(Network.objects.filter(userid='user1')), 0)
+
+    def test_invalid_data_2(self, mrapi):
+        """Test invalid subnet"""
+        request = {
+            'network': {'name': 'foo', 'cidr': '10.0.0.0/8'}
+            }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertFault(response, 413, "overLimit")
+
+    def test_invalid_data_3(self, mrapi):
+        """Test unauthorized to create public network"""
+        request = {
+                'network': {'name': 'foo', 'public': True}
+            }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertFault(response, 403, "forbidden")
+
+    def test_list_networks(self, mrapi):
+        mfactory.NetworkFactory(userid=self.user, deleted=True)
+        response = self.get('/api/v1.1/networks/', self.user)
+        self.assertSuccess(response)
+        db_nets = Network.objects.filter(userid=self.user, deleted=False)
+        api_nets = json.loads(response.content)["networks"]["values"]
+        self.assertEqual(len(db_nets), len(api_nets))
+        for api_net in api_nets:
+            net_id = api_net['id']
+            self.assertNetworksEqual(Network.objects.get(id=net_id), api_net)
+
+    def test_list_networks_detail(self, mrapi):
+        mfactory.NetworkFactory(userid=self.user, deleted=True)
+        response = self.get('/api/v1.1/networks/detail', self.user)
+        self.assertSuccess(response)
+        db_nets = Network.objects.filter(userid=self.user, deleted=False)
+        api_nets = json.loads(response.content)["networks"]["values"]
+        self.assertEqual(len(db_nets), len(api_nets))
+        for api_net in api_nets:
+            net_id = api_net['id']
+            self.assertNetworksEqual(Network.objects.get(id=net_id), api_net,
+                                     detail=True)
+
+    def test_network_details_1(self, mrapi):
+        response = self.get('/api/v1.1/networks/%d' % self.net1.id,
+                            self.net1.userid)
+        self.assertSuccess(response)
+        api_net = json.loads(response.content)["network"]
+        self.assertNetworksEqual(self.net1, api_net, detail=True)
+
+    def test_invalid_network(self, mrapi):
+        response = self.get('/api/v1.1/networks/%d' % 42,
+                            self.net1.userid)
+        self.assertItemNotFound(response)
+
+    def test_rename_network(self, mrapi):
+        request = {'network': {'name': "new_name"}}
+        response = self.put('/api/v1.1/networks/%d' % self.net2.id,
+                            self.net2.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(Network.objects.get(id=self.net2.id).name, "new_name")
+
+    def test_rename_public_network(self, mrapi):
+        net = mfactory.NetworkFactory(public=True)
+        request = {'network': {'name': "new_name"}}
+        response = self.put('/api/v1.1/networks/%d' % net.id,
+                            self.net2.userid, json.dumps(request), 'json')
+        self.assertFault(response, 403, 'forbidden')
+
+    def test_delete_network(self, mrapi):
+        response = self.delete('/api/v1.1/networks/%d' % self.net2.id,
+                                self.net2.userid)
+        self.assertEqual(response.status_code, 204)
+        net = Network.objects.get(id=self.net2.id, userid=self.net2.userid)
+        self.assertEqual(net.action, 'DESTROY')
+        mrapi.DeleteNetwork.assert_called()
+
+    def test_delete_public_network(self, mrapi):
+        net = mfactory.NetworkFactory(public=True)
+        response = self.delete('/api/v1.1/networks/%d' % net.id,
+                                self.net2.userid)
+        self.assertFault(response, 403, 'forbidden')
+        mrapi.DeleteNetwork.assert_not_called()
+
+    def test_add_nic(self, mrapi):
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
+        request = {'add': {'serverRef': vm.id}}
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
 
-    def remove_from_network(self, network_id, server_id):
-        path = '/api/v1.1/networks/%s/action' % network_id
-        data = json.dumps({'remove': {'serverRef': server_id}})
-        response = self.client.post(path, data, content_type='application/json')
+    def test_add_nic_malformed(self, mrapi):
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
+        request = {'add': {'serveRef': vm.id}}
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_remove_nic(self, mrapi):
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
+        nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
+        request = {'remove': {'attachment': 'nic-%s-%s' % (vm.id, nic.index)}}
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
+        self.assertTrue(NetworkInterface.objects.get(id=nic.id).dirty)
+        # Remove dirty nic
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        self.assertFault(response, 409, 'buildInProgress')
 
-
-def popdict(l, **kwargs):
-    """Pops a dict from list `l` based on the predicates given as `kwargs`."""
-
-    for i in range(len(l)):
-        item = l[i]
-        match = True
-        for key, val in kwargs.items():
-            if item[key] != val:
-                match = False
-                break
-        if match:
-            del l[i]
-            return item
-    return None
-
-
-class ListImages(BaseTestCase):
-    IMAGES = 10
-
-    def test_list_images(self):
-        images = self.list_images()
-        keys = set(['id', 'name'])
-        for img in Image.objects.all():
-            image = popdict(images, id=img.id)
-            self.assertTrue(image is not None)
-            self.assertEqual(set(image.keys()), keys)
-            self.assertEqual(image['id'], img.id)
-            self.assertEqual(image['name'], img.name)
-        self.assertEqual(images, [])
-
-    def test_list_images_detail(self):
-        images = self.list_images(detail=True)
-        keys = set(['id', 'name', 'updated', 'created', 'status', 'progress'])
-        for img in Image.objects.all():
-            image = popdict(images, id=img.id)
-            self.assertTrue(image is not None)
-            self.assertEqual(set(image.keys()), keys)
-            self.assertEqual(image['id'], img.id)
-            self.assertEqual(image['name'], img.name)
-            self.assertEqual(image['status'], img.state)
-            self.assertEqual(image['progress'], 100 if img.state == 'ACTIVE' else 0)
-        self.assertEqual(images, [])
-
-
-class ListServerMetadata(BaseTestCase):
-    SERVERS = 5
-    SERVER_METADATA = 100
-
-    def test_list_metadata(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            for vm in VirtualMachine.objects.all():
-                response_metadata = self.list_server_metadata(vm.id)
-                self.assertEqual(response_metadata, metadata[vm.id])
-
-    def test_invalid_server(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            response = self.client.get('/api/v1.1/servers/0/meta')
-            self.assertItemNotFound(response)
-
-
-class UpdateServerMetadata(BaseTestCase):
-    SERVER_METADATA = 10
-
-    def test_update_metadata(self):
-        metadata = self.get_all_server_metadata()
-        server_id = choice(metadata.keys())
-        new_metadata = {}
-        for key in sample(metadata[server_id].keys(), 3):
-            new_metadata[key] = 'New %s value' % key
-        response_metadata = self.update_server_metadata(server_id,
-                                                        new_metadata)
-        metadata[server_id].update(new_metadata)
-        self.assertEqual(response_metadata, metadata[server_id])
-        self.assertEqual(metadata, self.get_all_server_metadata())
-
-    def test_invalid_data(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            path = '/api/v1.1/servers/%d/meta' % server_id
-            response = self.client.post(path, 'metadata', content_type='application/json')
-            self.assertBadRequest(response)
-
-    def test_invalid_server(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            path = '/api/v1.1/servers/0/meta'
-            data = json.dumps({'metadata': {'Key1': 'A Value'}})
-            response = self.client.post(path, data, content_type='application/json')
-            self.assertItemNotFound(response)
-
-
-class GetServerMetadataItem(BaseTestCase):
-    SERVERS = 5
-    SERVER_METADATA = 100
-
-    def test_get_metadata_item(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            key = choice(metadata[server_id].keys())
-            path = '/api/v1.1/servers/%d/meta/%s' % (server_id, key)
-            response = self.client.get(path)
-            self.assertTrue(response.status_code in (200, 203))
-            reply = json.loads(response.content)
-            self.assertEqual(reply['meta'], {key: metadata[server_id][key]})
-
-    def test_invalid_key(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            response = self.client.get('/api/v1.1/servers/%d/meta/foo' % server_id)
-            self.assertItemNotFound(response)
-
-    def test_invalid_server(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            response = self.client.get('/api/v1.1/servers/0/meta/foo')
-            self.assertItemNotFound(response)
-
-
-class CreateServerMetadataItem(BaseTestCase):
-    SERVER_METADATA = 10
-
-    def test_create_metadata(self):
-        metadata = self.get_all_server_metadata()
-        server_id = choice(metadata.keys())
-        meta = {'Foo': 'Bar'}
-        self.create_server_meta(server_id, meta)
-        metadata[server_id].update(meta)
-        self.assertEqual(metadata, self.get_all_server_metadata())
-
-    def test_update_metadata(self):
-        metadata = self.get_all_server_metadata()
-        server_id = choice(metadata.keys())
-        key = choice(metadata[server_id].keys())
-        meta = {key: 'New Value'}
-        self.create_server_meta(server_id, meta)
-        metadata[server_id].update(meta)
-        self.assertEqual(metadata, self.get_all_server_metadata())
-
-    def test_invalid_server(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            path = '/api/v1.1/servers/0/meta/foo'
-            data = json.dumps({'meta': {'foo': 'bar'}})
-            response = self.client.put(path, data, content_type='application/json')
-            self.assertItemNotFound(response)
-
-    def test_invalid_key(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            path = '/api/v1.1/servers/%d/meta/baz' % server_id
-            data = json.dumps({'meta': {'foo': 'bar'}})
-            response = self.client.put(path, data, content_type='application/json')
-            self.assertBadRequest(response)
-
-    def test_invalid_data(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            path = '/api/v1.1/servers/%d/meta/foo' % server_id
-            response = self.client.put(path, 'meta', content_type='application/json')
-            self.assertBadRequest(response)
-
-
-class DeleteServerMetadataItem(BaseTestCase):
-    SERVER_METADATA = 10
-
-    def test_delete_metadata(self):
-        metadata = self.get_all_server_metadata()
-        server_id = choice(metadata.keys())
-        key = choice(metadata[server_id].keys())
-        path = '/api/v1.1/servers/%d/meta/%s' % (server_id, key)
-        response = self.client.delete(path)
-        self.assertEqual(response.status_code, 204)
-        metadata[server_id].pop(key)
-        self.assertEqual(metadata, self.get_all_server_metadata())
-
-    def test_invalid_server(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            response = self.client.delete('/api/v1.1/servers/9/meta/Key1')
-            self.assertItemNotFound(response)
-
-    def test_invalid_key(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            path = '/api/v1.1/servers/%d/meta/foo' % server_id
-            response = self.client.delete(path)
-            self.assertItemNotFound(response)
-
-
-class ListImageMetadata(BaseTestCase):
-    IMAGES = 5
-    IMAGE_METADATA = 100
-
-    def test_list_metadata(self):
-        with AssertInvariant(self.get_all_image_metadata) as metadata:
-            for image in Image.objects.all():
-                response_metadata = self.list_image_metadata(image.id)
-                self.assertEqual(response_metadata, metadata[image.id])
-
-    def test_invalid_image(self):
-        with AssertInvariant(self.get_all_image_metadata):
-            response = self.client.get('/api/v1.1/images/0/meta')
-            self.assertItemNotFound(response)
-
-
-class UpdateImageMetadata(BaseTestCase):
-    IMAGE_METADATA = 10
-
-    def test_update_metadata(self):
-        metadata = self.get_all_image_metadata()
-        image_id = choice(metadata.keys())
-        new_metadata = {}
-        for key in sample(metadata[image_id].keys(), 3):
-            new_metadata[key] = 'New %s value' % key
-        response_metadata = self.update_image_metadata(image_id, new_metadata)
-        metadata[image_id].update(new_metadata)
-        self.assertEqual(response_metadata, metadata[image_id])
-        self.assertEqual(metadata, self.get_all_image_metadata())
-
-    def test_invalid_data(self):
-        with AssertInvariant(self.get_all_image_metadata) as metadata:
-            image_id = choice(metadata.keys())
-            path = '/api/v1.1/images/%d/meta' % image_id
-            response = self.client.post(path, 'metadata', content_type='application/json')
-            self.assertBadRequest(response)
-
-    def test_invalid_server(self):
-        with AssertInvariant(self.get_all_image_metadata):
-            path = '/api/v1.1/images/0/meta'
-            data = json.dumps({'metadata': {'Key1': 'A Value'}})
-            response = self.client.post(path, data, content_type='application/json')
-            self.assertItemNotFound(response)
+    def test_remove_nic_malformed(self, mrapi):
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
+        nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
+        request = {'remove':
+                    {'att234achment': 'nic-%s-%s' % (vm.id, nic.index)}
+                  }
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
 
 
 class ServerVNCConsole(BaseTestCase):
-    SERVERS = 1
 
     def test_not_active_server(self):
-        """Test console req for server not in ACTIVE state returns badRequest"""
-        server_id = choice(VirtualMachine.objects.all()).id
-        path = '/api/v1.1/servers/%d/action' % server_id
+        """Test console req for not ACTIVE server returns badRequest"""
+        vm = mfactory.VirtualMachineFactory()
         data = json.dumps({'console': {'type': 'vnc'}})
-        response = self.client.post(path, data, content_type='application/json')
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, data, 'json')
         self.assertBadRequest(response)
 
     def test_active_server(self):
         """Test console req for ACTIVE server"""
-        server_id = choice(VirtualMachine.objects.all()).id
-        # FIXME: Start the server properly, instead of tampering with the DB
-        vm = choice(VirtualMachine.objects.all())
+        vm = mfactory.VirtualMachineFactory()
         vm.operstate = 'STARTED'
         vm.save()
-        server_id = vm.id
 
-        path = '/api/v1.1/servers/%d/action' % server_id
         data = json.dumps({'console': {'type': 'vnc'}})
-        response = self.client.post(path, data, content_type='application/json')
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, data, 'json')
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['console'])
         console = reply['console']
         self.assertEqual(console['type'], 'vnc')
-        self.assertEqual(set(console.keys()), set(['type', 'host', 'port', 'password']))
+        self.assertEqual(set(console.keys()),
+                         set(['type', 'host', 'port', 'password']))
 
 
-class AaiTestCase(TestCase):
-    fixtures = ['users', 'api_test_data', 'auth_test_data']
-    apibase = '/api/v1.1'
+@patch('synnefo.api.images.ImageBackend')
+class ImageAPITest(BaseTestCase):
+    def test_create_image(self, mimage):
+        """Test that create image is not implemented"""
+        response = self.post('/api/v1.1/images/', 'user', json.dumps(''),
+                             'json')
+        self.assertEqual(response.status_code, 503)
 
+    def test_list_images(self, mimage):
+        """Test that expected list of images is returned"""
+        images = [{'id': 1, 'name': 'image-1'},
+                  {'id': 2, 'name': 'image-2'},
+                  {'id': 3, 'name': 'image-3'}]
+        mimage().list.return_value = images
+        response = self.get('/api/v1.1/images/', 'user')
+        self.assertSuccess(response)
+        api_images = json.loads(response.content)['images']['values']
+        self.assertEqual(images, api_images)
+
+    def test_list_images_detail(self, mimage):
+        images = [{'id': 1,
+                   'name': 'image-1',
+                   'status':'available',
+                   'created_at': '2012-11-26 11:52:54',
+                   'updated_at': '2012-12-26 11:52:54',
+                   'deleted_at': '',
+                   'properties': {'foo':'bar'}},
+                  {'id': 2,
+                   'name': 'image-2',
+                   'status': 'deleted',
+                   'created_at': '2012-11-26 11:52:54',
+                   'updated_at': '2012-12-26 11:52:54',
+                   'deleted_at': '2012-12-27 11:52:54',
+                   'properties': ''},
+                  {'id': 3,
+                   'name': 'image-3',
+                   'status': 'available',
+                   'created_at': '2012-11-26 11:52:54',
+                   'deleted_at': '',
+                   'updated_at': '2012-12-26 11:52:54',
+                   'properties': ''}]
+        result_images = [
+                  {'id': 1,
+                   'name': 'image-1',
+                   'status':'ACTIVE',
+                   'progress': 100,
+                   'created': '2012-11-26T11:52:54+00:00',
+                   'updated': '2012-12-26T11:52:54+00:00',
+                   'metadata': {'values': {'foo':'bar'}}},
+                  {'id': 2,
+                   'name': 'image-2',
+                   'status': 'DELETED',
+                   'progress': 0,
+                   'created': '2012-11-26T11:52:54+00:00',
+                   'updated': '2012-12-26T11:52:54+00:00'},
+                  {'id': 3,
+                   'name': 'image-3',
+                   'status': 'ACTIVE',
+                   'progress': 100,
+                   'created': '2012-11-26T11:52:54+00:00',
+                   'updated': '2012-12-26T11:52:54+00:00'}]
+        mimage().list.return_value = images
+        response = self.get('/api/v1.1/images/detail', 'user')
+        self.assertSuccess(response)
+        api_images = json.loads(response.content)['images']['values']
+        self.assertEqual(len(result_images), len(api_images))
+        self.assertEqual(result_images, api_images)
+
+    def test_get_image_details(self, mimage):
+        image = {'id': 42,
+                 'name': 'image-1',
+                 'status': 'available',
+                 'created_at': '2012-11-26 11:52:54',
+                 'updated_at': '2012-12-26 11:52:54',
+                 'deleted_at': '',
+                 'properties': {'foo': 'bar'}}
+        result_image = \
+                  {'id': 42,
+                   'name': 'image-1',
+                   'status': 'ACTIVE',
+                   'progress': 100,
+                   'created': '2012-11-26T11:52:54+00:00',
+                   'updated': '2012-12-26T11:52:54+00:00',
+                   'metadata': {'values': {'foo': 'bar'}}}
+        with patch('synnefo.api.util.get_image') as m:
+            m.return_value = image
+            response = self.get('/api/v1.1/images/42', 'user')
+        self.assertSuccess(response)
+        api_image = json.loads(response.content)['image']
+        self.assertEqual(api_image, result_image)
+
+    def test_invalid_image(self, mimage):
+        with patch('synnefo.api.util.get_image') as m:
+            m.side_effect = faults.ItemNotFound('Image not found')
+            response = self.get('/api/v1.1/images/42', 'user')
+        self.assertItemNotFound(response)
+
+    def test_delete_image(self, mimage):
+        # TODO
+        pass
+
+
+class ImageMetadataAPITest(BaseTestCase):
     def setUp(self):
-        self.client = Client()
+        self.image = {'id': 42,
+                 'name': 'image-1',
+                 'status': 'available',
+                 'created_at': '2012-11-26 11:52:54',
+                 'updated_at': '2012-12-26 11:52:54',
+                 'deleted_at': '',
+                 'properties': {'foo': 'bar', 'foo2': 'bar2'}}
+        self.result_image = \
+                  {'id': 42,
+                   'name': 'image-1',
+                   'status': 'ACTIVE',
+                   'progress': 100,
+                   'created': '2012-11-26T11:52:54+00:00',
+                   'updated': '2012-12-26T11:52:54+00:00',
+                   'metadata': {'values': {'foo': 'bar'}}}
+        self.mock_get_image = Mock('synnefo.api.util.get_image')
+        self.mock_get_image.result = self.image
+        self.mock_image_backend = Mock('synnefo.api.images.ImageBackend')
 
-    def test_fail_oapi_auth(self):
-        """ test authentication from not registered user using OpenAPI
-        """
-        response = self.client.get(self.apibase + '/servers', {},
-                                   **{'X-Auth-User': 'notme',
-                                      'X-Auth-Key': '0xdeadbabe',
-                                      'TEST-AAI': 'true'})
-        self.assertEquals(response.status_code, 401)
+    def test_list_metadata(self):
+        with patch('synnefo.api.util.get_image') as m:
+            m.return_value = self.image
+            response = self.get('/api/v1.1/images/42/meta', 'user')
+        self.assertSuccess(response)
+        meta = json.loads(response.content)['metadata']['values']
+        self.assertEqual(meta, self.image['properties'])
 
-    def test_oapi_auth(self):
-        """authentication with user registration
-        """
-        response = self.client.get(self.apibase + '/index.html', {},
-                                   **{'X-Auth-User': 'testdbuser',
-                                      'X-Auth-Key': 'test@synnefo.gr',
-                                      'TEST-AAI': 'true'})
-        self.assertEquals(response.status_code, 204)
-        self.assertNotEqual(response['X-Auth-Token'], None)
-        self.assertEquals(response['X-Server-Management-Url'], '')
-        self.assertEquals(response['X-Storage-Url'], '')
-        self.assertEquals(response['X-CDN-Management-Url'], '')
+    def test_get_metadata(self):
+        with patch('synnefo.api.util.get_image') as m:
+            m.return_value = self.image
+            response = self.get('/api/v1.1/images/42/meta/foo', 'user')
+        self.assertSuccess(response)
+        meta = json.loads(response.content)['meta']
+        self.assertEqual(meta['foo'], 'bar')
 
-    def test_unauthorized_call(self):
-        request = {'reboot': {'type': 'HARD'}}
-        path = '/api/v1.1/servers/%d/action' % 1
-        response = self.client.post(path, json.dumps(request),
-                                    content_type='application/json')
-        self.assertEquals(response.status_code, 401)
+    def test_get_invalid_metadata(self):
+        with patch('synnefo.api.util.get_image') as m:
+            m.return_value = self.image
+            response = self.get('/api/v1.1/images/42/meta/not_found', 'user')
+        self.assertItemNotFound(response)
 
+    def test_delete_metadata_item(self):
+        with patch('synnefo.api.util.get_image') as m:
+            with patch('synnefo.api.images.ImageBackend') as mimage:
+                m.return_value = self.image
+                response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
+                self.assertEqual(response.status_code, 204)
+                mimage().update.assert_called_once_with('42',
+                                             {'properties': {'foo2': 'bar2'}})
 
-class ListNetworks(BaseTestCase):
-    SERVERS = 5
+    def test_create_metadata_item(self):
+        with patch('synnefo.api.util.get_image') as m:
+            with patch('synnefo.api.images.ImageBackend') as mimage:
+                m.return_value = self.image
+                request = {'meta': {'foo3': 'bar3'}}
+                response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                                    json.dumps(request), 'json')
+                self.assertEqual(response.status_code, 201)
+                mimage().update.assert_called_once_with('42',
+                        {'properties':
+                            {'foo': 'bar', 'foo2': 'bar2', 'foo3': 'bar3'}})
 
-    def setUp(self):
-        BaseTestCase.setUp(self)
-
-        for i in range(5):
-            self.create_network('net%d' % i)
-
-        machines = VirtualMachine.objects.all()
-        for network in Network.objects.all():
-            n = randint(0, self.SERVERS - 1)
-            for machine in sample(machines, n):
-                machine.nics.create(network=network)
-
-    def test_list_networks(self):
-        networks = self.list_networks()
-        for net in Network.objects.all():
-            net_id = str(net.id) if not net.public else 'public'
-            network = popdict(networks, id=net_id)
-            self.assertEqual(network['name'], net.name)
-        self.assertEqual(networks, [])
-
-    def test_list_networks_detail(self):
-        networks = self.list_networks(detail=True)
-        for net in Network.objects.all():
-            net_id = str(net.id) if not net.public else 'public'
-            network = popdict(networks, id=net_id)
-            self.assertEqual(network['name'], net.name)
-            machines = set(vm.id for vm in net.machines.all())
-            self.assertEqual(set(network['servers']['values']), machines)
-        self.assertEqual(networks, [])
-
-
-class CreateNetwork(BaseTestCase):
-    def test_create_network(self):
-        before = self.list_networks()
-        self.create_network('net')
-        after = self.list_networks()
-        self.assertEqual(len(after) - len(before), 1)
-        found = False
-        for network in after:
-            if network['name'] == 'net':
-                found = True
-                break
-        self.assertTrue(found)
-
-
-class GetNetworkDetails(BaseTestCase):
-    SERVERS = 5
-
-    def test_get_network_details(self):
-        name = 'net'
-        self.create_network(name)
-
-        servers = VirtualMachine.objects.all()
-        network = Network.objects.all()[1]
-
-        net = self.get_network_details(network.id)
-        self.assertEqual(net['name'], name)
-        self.assertEqual(net['servers']['values'], [])
-
-        server_id = choice(servers).id
-        self.add_to_network(network.id, server_id)
-        net = self.get_network_details(network.id)
-        self.assertEqual(net['name'], network.name)
-
-
-class UpdateNetworkName(BaseTestCase):
-    def test_update_network_name(self):
-        name = 'net'
-        self.create_network(name)
-        networks = self.list_networks(detail=True)
-        priv = [net for net in networks if net['id'] != 'public']
-        network = choice(priv)
-        network_id = network['id']
-        new_name = network['name'] + '_2'
-        self.update_network_name(network_id, new_name)
-
-        network['name'] = new_name
-        del network['updated']
-        net = self.get_network_details(network_id)
-        del net['updated']
-        self.assertEqual(net, network)
-
-
-class DeleteNetwork(BaseTestCase):
-    def test_delete_network(self):
-        for i in range(5):
-            self.create_network('net%d' % i)
-
-        networks = self.list_networks()
-        priv = [net for net in networks if net['id'] != 'public']
-        network = choice(priv)
-        network_id = network['id']
-        self.delete_network(network_id)
-
-        net = self.get_network_details(network_id)
-        self.assertEqual(net['status'], 'DELETED')
-
-        priv.remove(network)
-        networks = self.list_networks()
-        new_priv = [net for net in networks if net['id'] != 'public']
-        self.assertEqual(priv, new_priv)
-
-
-class NetworkActions(BaseTestCase):
-    SERVERS = 20
-
-    def test_add_remove_server(self):
-        self.create_network('net')
-
-        server_ids = [vm.id for vm in VirtualMachine.objects.all()]
-        network = self.list_networks(detail=True)[1]
-        network_id = network['id']
-
-        to_add = set(sample(server_ids, 10))
-        for server_id in to_add:
-            self.add_to_network(network_id, server_id)
-
-        to_remove = set(sample(to_add, 5))
-        for server_id in to_remove:
-            self.remove_from_network(network_id, server_id)
+    def test_update_metadata_item(self):
+        with patch('synnefo.api.util.get_image') as m:
+            with patch('synnefo.api.images.ImageBackend') as mimage:
+                m.return_value = self.image
+                request = {'metadata': {'foo': 'bar_new', 'foo4': 'bar4'}}
+                response = self.post('/api/v1.1/images/42/meta', 'user',
+                                    json.dumps(request), 'json')
+                self.assertEqual(response.status_code, 201)
+                mimage().update.assert_called_once_with('42', {'properties':
+                        {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}})

@@ -367,7 +367,10 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 @transaction.commit_manually
 @require_http_methods(["GET", "POST"])
-def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
+def signup(request, template_name='im/signup.html',
+           on_success='im/signup_complete.html', extra_context=None,
+           on_success_redirect='/im/profile/',
+           backend=None):
     """
     Allows a user to create a local account.
 
@@ -430,6 +433,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.error(request, e)
+
     if request.method == 'POST':
         if form.is_valid():
             user = form.save(commit=False)
@@ -456,13 +460,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     return response
                 messages.add_message(request, status, message)
                 transaction.commit()
-                return render_response(
-                    on_success,
-                    context_instance=get_context(
-                        request,
-                        extra_context
-                    )
-                )
+                return HttpResponseRedirect(on_success_redirect)
+
             except SendMailError, e:
                 logger.exception(e)
                 status = messages.ERROR
@@ -475,6 +474,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 messages.error(request, message)
                 logger.exception(e)
                 transaction.rollback()
+
     return render_response(template_name,
                            signup_form=form,
                            third_party_token=third_party_token,

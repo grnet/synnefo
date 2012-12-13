@@ -121,7 +121,7 @@ NOTIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'notification'
 MISSING_NEXT_PARAMETER                  =   'No next parameter'
 
 INVITATION_SENT                         =   'Invitation sent to %(email)s.'
-VERIFICATION_SENT                       =   'Verification sent.'
+VERIFICATION_SENT                       =   'Registration completed but account is not active yet. Account activation link was sent to your email address.'
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with another local account. \
                                                To change this account to a shibboleth one follow the link in the verification email sent to %(email)s. \
                                                Otherwise just ignore it.'
@@ -130,7 +130,7 @@ NOTIFICATION_SENT                       =   'Your request for an account was suc
                                                Thanks for your interest in ~okeanos! The GRNET team.'
 ACTIVATION_SENT                         =   'Activation sent.'
 
-REGISTRATION_COMPLETED                  =   'Registration completed. You can now login.'
+REGISTRATION_COMPLETED                  =   'Registration completed you can now login to your account.'
 
 NO_RESPONSE                             =   'There is no response.'
 NOT_ALLOWED_NEXT_PARAM                  =   'Not allowed next parameter.'

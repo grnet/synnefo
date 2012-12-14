@@ -150,5 +150,6 @@ AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Signup using '%(provider)s' is
 AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "'%(provider)s is disabled"
 AUTH_PROVIDER_ADDED                          =   "Your new login method has been added"
 AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method"
+AUTH_PROVIDER_ADD_EXISTS                     =   "Account already assigned to another user."
 AUTH_PROVIDER_LOGIN_TO_ADD                   =   "Please login now to your existing account."
 

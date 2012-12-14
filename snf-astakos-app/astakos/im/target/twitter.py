@@ -128,13 +128,14 @@ def authenticated(
         user = request.user
         if not request.user.can_add_auth_provider('twitter',
                                                   identifier=userid):
-            messages.error(request, 'Account already exists.')
+            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
+                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
         user.add_auth_provider('twitter', identifier=userid,
                                affiliation=affiliation,
                                provider_info=provider_info)
-        messages.success(request, 'Account assigned.')
+        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:

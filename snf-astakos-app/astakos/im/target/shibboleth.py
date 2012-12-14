@@ -107,7 +107,7 @@ def login(
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-    provider_info = {'eppn': eppn, 'email': email}
+    provider_info = {'eppn': eppn, 'email': email, 'name': realname}
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -118,12 +118,14 @@ def login(
         user = request.user
         if not request.user.can_add_auth_provider('shibboleth',
                                                   identifier=eppn):
-            messages.error(request, 'Account already exists.')
+            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
+                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
         user.add_auth_provider('shibboleth', identifier=eppn,
-                               affiliation=affiliation)
-        messages.success(request, 'Account assigned.')
+                               affiliation=affiliation,
+                               provider_info=provider_info)
+        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:

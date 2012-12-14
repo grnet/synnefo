@@ -295,6 +295,7 @@ def create_server(request):
         properties = img.get('properties', {})
         image['backend_id'] = img['location']
         image['format'] = img['disk_format']
+        image['checksum'] = img['checksum']
         image['metadata'] = dict((key.upper(), val) \
                                  for key, val in properties.items())
 

@@ -31,30 +31,46 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL, \
-        COOKIE_NAME, LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES, \
-        GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS
-from astakos.im.api.admin import get_menu
+from astakos.im.settings import (
+    IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL,
+    LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES,
+    GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS)
+from astakos.im.api import get_menu
 from astakos.im.util import get_query
+from astakos.im.models import GroupKind
+from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
-from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.utils import simplejson as json
+
 
 def im_modules(request):
     return {'im_modules': IM_MODULES}
 
+def auth_providers(request):
+    active_auth_providers = []
+    for module in IM_MODULES:
+        provider = AUTH_PROVIDERS.get(module, None)
+        if provider:
+            active_auth_providers.append(provider())
+
+    return {'auth_providers': active_auth_providers,
+            'master_auth_provider': active_auth_providers[0]}
+
 def next(request):
-    return {'next' : get_query(request).get('next', '')}
+    return {'next': get_query(request).get('next', '')}
+
 
 def code(request):
-    return {'code' : request.GET.get('code', '')}
+    return {'code': request.GET.get('code', '')}
+
 
 def invitations(request):
-    return {'invitations_enabled' :INVITATIONS_ENABLED}
+    return {'invitations_enabled': INVITATIONS_ENABLED}
+
 
 def media(request):
-    return {'IM_STATIC_URL' : IM_STATIC_URL}
+    return {'IM_STATIC_URL': IM_STATIC_URL}
+
 
 def custom_messages(request):
     global GLOBAL_MESSAGES, SIGNUP_MESSAGES, LOGIN_MESSAGES, PROFILE_MESSAGES
@@ -69,26 +85,29 @@ def custom_messages(request):
     if type(PROFILE_MESSAGES) == dict:
         PROFILE_MESSAGES = PROFILE_MESSAGES.items()
 
-    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or \
-            LOGIN_MESSAGES or PROFILE_MESSAGES)
+    EXTRA_MESSAGES_SET = bool(GLOBAL_MESSAGES or SIGNUP_MESSAGES or
+                              LOGIN_MESSAGES or PROFILE_MESSAGES)
 
     return {
-            'GLOBAL_MESSAGES' : GLOBAL_MESSAGES,
-            'SIGNUP_MESSAGES' : SIGNUP_MESSAGES,
-            'LOGIN_MESSAGES' : LOGIN_MESSAGES,
-            'PROFILE_MESSAGES' : PROFILE_MESSAGES,
-            'PROFILE_EXTRA_LINKS' : PROFILE_EXTRA_LINKS,
-            'EXTRA_MESSAGES_SET' : EXTRA_MESSAGES_SET
-           }
+        'GLOBAL_MESSAGES': GLOBAL_MESSAGES,
+        'SIGNUP_MESSAGES': SIGNUP_MESSAGES,
+        'LOGIN_MESSAGES': LOGIN_MESSAGES,
+        'PROFILE_MESSAGES': PROFILE_MESSAGES,
+        'PROFILE_EXTRA_LINKS': PROFILE_EXTRA_LINKS,
+        'EXTRA_MESSAGES_SET': EXTRA_MESSAGES_SET
+    }
+
 
 def menu(request):
-    absolute = lambda (url): request.build_absolute_uri(url)
-    resp = get_menu(request, True, False)
     try:
+        resp = get_menu(request, True, False)
         menu_items = json.loads(resp.content)[1:]
     except Exception, e:
         return {}
     else:
-        for item in menu_items:
-            item['is_active'] = absolute(request.path) == item['url']
-        return {'menu':menu_items}
+        return {'menu': menu_items}
+
+
+def group_kinds(request):
+    return {'group_kinds': GroupKind.objects.exclude(
+        name='default').values_list('name', flat=True)}

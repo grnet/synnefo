@@ -881,6 +881,8 @@ def request_serialization(request, format_allowed=False):
     
     return 'text'
 
+def User(unicode):
+    pass
 
 def api_method(http_method=None, format_allowed=False, user_required=True):
     """Decorator function for views that implement an API method."""
@@ -901,6 +903,10 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                     get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
                     if  getattr(request, 'user', None) is None:
                         raise Unauthorized('Access denied')
+                    assert request.get('uniq') not None
+                    request.user_uniq = User(request.get('uniq'))
+                    request.user_uniq.id = request.user.get('id')
+                    assert request.user_uniq.id not None
                 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:

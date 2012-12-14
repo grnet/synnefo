@@ -31,26 +31,34 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.contrib.auth import authenticate
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
 
 from astakos.im.util import prepare_response, get_query
-from astakos.im.views import requires_anonymous
-from astakos.im.models import AstakosUser
-from astakos.im.forms import LoginForm
-from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
+from astakos.im.views import requires_anonymous, signed_terms_required
+from astakos.im.models import PendingThirdPartyUser
+from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
+                             ExtendedSetPasswordForm
+from astakos.im.settings import (RATELIMIT_RETRIES_ALLOWED,
+                                ENABLE_LOCAL_ACCOUNT_MIGRATION)
+import astakos.im.messages as astakos_messages
+from astakos.im.views import requires_auth_provider
+from astakos.im import settings
 
 from ratelimit.decorators import ratelimit
 
-retries = RATELIMIT_RETRIES_ALLOWED-1
-rate = str(retries)+'/m'
+retries = RATELIMIT_RETRIES_ALLOWED - 1
+rate = str(retries) + '/m'
 
+
+@requires_auth_provider('local', login=True)
 @require_http_methods(["GET", "POST"])
 @csrf_exempt
 @requires_anonymous
@@ -60,25 +68,98 @@ def login(request, on_failure='im/login.html'):
     on_failure: the template name to render on login failure
     """
     was_limited = getattr(request, 'limited', False)
-    form = LoginForm(data=request.POST, was_limited=was_limited, request=request)
+    form = LoginForm(data=request.POST,
+                     was_limited=was_limited,
+                     request=request)
     next = get_query(request).get('next', '')
+    third_party_token = get_query(request).get('key', False)
+
     if not form.is_valid():
-        return render_to_response(on_failure,
-                                  {'login_form':form,
-                                   'next':next},
-                                  context_instance=RequestContext(request))
+        return render_to_response(
+            on_failure,
+            {'login_form':form,
+             'next':next,
+             'key': third_party_token},
+            context_instance=RequestContext(request)
+        )
     # get the user from the cash
     user = form.user_cache
-    
+
     message = None
     if not user:
-        message = _('Cannot authenticate account')
+        message = _(astakos_messages.ACCOUNT_AUTHENTICATION_FAILED)
     elif not user.is_active:
-        message = _('Inactive account')
+        if not user.activation_sent:
+            message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
+        else:
+			# TODO: USE astakos_messages
+            url = reverse('send_activation', kwargs={'user_id':user.id})
+            msg = _('You have not followed the activation link.')
+            if settings.MODERATION_ENABLED:
+                msg_extra = ' ' + _('Please contact support.')
+            else:
+                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
+
+            message = msg + msg_extra
+    elif not user.can_login_with_auth_provider('local'):
+        # valid user logged in with no auth providers set, add local provider
+        # and let him log in
+        if user.auth_providers.count() == 0:
+            user.add_auth_provider('local')
+        else:
+            message = _(astakos_messages.NO_LOCAL_AUTH)
+
     if message:
-        messages.add_message(request, messages.ERROR, message)
+        messages.error(request, message)
         return render_to_response(on_failure,
-                                  {'form':form},
+                                  {'login_form': form},
                                   context_instance=RequestContext(request))
-    
-    return prepare_response(request, user, next)
+
+    response = prepare_response(request, user, next)
+    if third_party_token:
+        # use requests to assign the account he just authenticated with with
+        # a third party provider account
+        # TODO: USE astakos_messages
+        try:
+          request.user.add_pending_auth_provider(third_party_token)
+          messages.success(request, _('Your new login method has been added'))
+        except PendingThirdPartyUser.DoesNotExist:
+          messages.error(request, _('Account method assignment failed'))
+
+    return response
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+@requires_auth_provider('local', login=True)
+def password_change(request, template_name='registration/password_change_form.html',
+                    post_change_redirect=None, password_change_form=ExtendedPasswordChangeForm):
+
+    create_password = False
+
+    # no local backend user wants to create a password
+    if not request.user.has_auth_provider('local'):
+        create_password = True
+        password_change_form = ExtendedSetPasswordForm
+
+    if post_change_redirect is None:
+        post_change_redirect = reverse('edit_profile')
+
+    if request.method == "POST":
+        form_kwargs = dict(
+            user=request.user,
+            data=request.POST,
+        )
+        if not create_password:
+            form_kwargs['session_key'] = session_key=request.session.session_key
+
+        form = password_change_form(**form_kwargs)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(post_change_redirect)
+    else:
+        form = password_change_form(user=request.user)
+    return render_to_response(template_name, {
+        'form': form,
+    }, context_instance=RequestContext(request))
+

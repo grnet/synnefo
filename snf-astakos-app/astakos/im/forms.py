@@ -31,41 +31,72 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 from urlparse import urljoin
-from datetime import datetime
+from random import random
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, \
-    PasswordResetForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.forms import (
+    UserCreationForm, AuthenticationForm,
+    PasswordResetForm, PasswordChangeForm,
+    SetPasswordForm)
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
 from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
-from django.utils.functional import lazy
 from django.utils.safestring import mark_safe
-from django.contrib import messages
 from django.utils.encoding import smart_str
+from django.conf import settings
+from django.forms.models import fields_for_model
+from django.db import transaction
+from django.utils.encoding import smart_unicode
+from django.core import validators
+from django.contrib.auth.models import AnonymousUser
 
-from astakos.im.models import AstakosUser, Invitation, get_latest_terms, EmailChange
-from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL, \
-    BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, DEFAULT_CONTACT_EMAIL, \
-    RECAPTCHA_ENABLED, LOGGING_LEVEL, PASSWORD_RESET_EMAIL_SUBJECT, \
-    NEWPASSWD_INVALIDATE_TOKEN
+from astakos.im.models import (
+    AstakosUser, EmailChange, Invitation,
+#     AstakosGroup, GroupKind,
+    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
+    ProjectApplication)
+from astakos.im.settings import (
+    INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
+    RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
+    PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
+    MODERATION_ENABLED)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
-from astakos.im.functions import send_change_email
+from astakos.im.functions import send_change_email, submit_application
 
-# since Django 1.4 use django.core.urlresolvers.reverse_lazy instead
-from astakos.im.util import reverse_lazy, reserved_email, get_query
+from astakos.im.util import reserved_email, get_query
+
+import astakos.im.messages as astakos_messages
 
 import logging
 import hashlib
 import recaptcha.client.captcha as captcha
-from random import random
+import re
 
 logger = logging.getLogger(__name__)
 
-class LocalUserCreationForm(UserCreationForm):
+DOMAIN_VALUE_REGEX = re.compile(
+    r'^(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.){0,126}(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?))$',
+    re.IGNORECASE)
+
+class StoreUserMixin(object):
+    @transaction.commit_on_success
+    def store_user(self, user, request):
+        user.save()
+        self.post_store_user(user, request)
+        return user
+
+    def post_store_user(self, user, request):
+        """
+        Interface method for descendant backends to be able to do stuff within
+        the transaction enabled by store_user.
+        """
+        pass
+
+
+class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
     """
     Extends the built in UserCreationForm in several ways:
 
@@ -74,19 +105,20 @@ class LocalUserCreationForm(UserCreationForm):
     * User created is not active.
     """
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
-    recaptcha_response_field = forms.CharField(widget=RecaptchaWidget, label='')
+    recaptcha_response_field = forms.CharField(
+        widget=RecaptchaWidget, label='')
 
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name", "has_signed_terms", "has_signed_terms")
+        fields = ("email", "first_name", "last_name",
+                  "has_signed_terms", "has_signed_terms")
 
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
         """
-        request = kwargs.get('request', None)
+        request = kwargs.pop('request', None)
         if request:
-            kwargs.pop('request')
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP', None))
 
@@ -96,7 +128,7 @@ class LocalUserCreationForm(UserCreationForm):
 
         if RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
-                                         'recaptcha_response_field',])
+                                         'recaptcha_response_field', ])
         if get_latest_terms():
             self.fields.keyOrder.append('has_signed_terms')
 
@@ -104,22 +136,22 @@ class LocalUserCreationForm(UserCreationForm):
             # Overriding field label since we need to apply a link
             # to the terms within the label
             terms_link_html = '<a href="%s" target="_blank">%s</a>' \
-                    % (reverse('latest_terms'), _("the terms"))
+                % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
-                    mark_safe("I agree with %s" % terms_link_html)
+                mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email']
+        email = self.cleaned_data['email'].lower()
         if not email:
-            raise forms.ValidationError(_("This field is required"))
+            raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
-            raise forms.ValidationError(_("This email is already used"))
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return email
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
-            raise forms.ValidationError(_('You have to agree with the terms'))
+            raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
     def clean_recaptcha_response_field(self):
@@ -137,7 +169,15 @@ class LocalUserCreationForm(UserCreationForm):
         rrf = self.cleaned_data['recaptcha_response_field']
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(_('You have not entered the correct words'))
+            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
+
+    def post_store_user(self, user, request):
+        """
+        Interface method for descendant backends to be able to do stuff within
+        the transaction enabled by store_user.
+        """
+        user.add_auth_provider('local', auth_backend='astakos')
+        user.set_password(self.cleaned_data['password1'])
 
     def save(self, commit=True):
         """
@@ -148,8 +188,9 @@ class LocalUserCreationForm(UserCreationForm):
         user.renew_token()
         if commit:
             user.save()
-            logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
+            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
         return user
+
 
 class InvitedLocalUserCreationForm(LocalUserCreationForm):
     """
@@ -170,21 +211,28 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
 
-
     def save(self, commit=True):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
-        level = user.invitation.inviter.level + 1
-        user.level = level
-        user.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        user.set_invitations_level()
         user.email_verified = True
         if commit:
             user.save()
         return user
 
-class ThirdPartyUserCreationForm(forms.ModelForm):
+
+class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
+    id = forms.CharField(
+        widget=forms.HiddenInput(),
+        label='',
+        required=False
+    )
+    third_party_identifier = forms.CharField(
+        widget=forms.HiddenInput(),
+        label=''
+    )
     class Meta:
         model = AstakosUser
-        fields = ("email", "first_name", "last_name", "third_party_identifier", "has_signed_terms")
+        fields = ['id', 'email', 'third_party_identifier', 'first_name', 'last_name']
 
     def __init__(self, *args, **kwargs):
         """
@@ -193,44 +241,53 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         self.request = kwargs.get('request', None)
         if self.request:
             kwargs.pop('request')
+
+        latest_terms = get_latest_terms()
+        if latest_terms:
+            self._meta.fields.append('has_signed_terms')
+
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email', 'first_name', 'last_name', 'third_party_identifier']
-        if get_latest_terms():
+
+        if latest_terms:
             self.fields.keyOrder.append('has_signed_terms')
-        #set readonly form fields
-        ro = ["third_party_identifier"]
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
             terms_link_html = '<a href="%s" target="_blank">%s</a>' \
-                    % (reverse('latest_terms'), _("the terms"))
+                % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
                     mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email']
+        email = self.cleaned_data['email'].lower()
         if not email:
-            raise forms.ValidationError(_("This field is required"))
+            raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         return email
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
-            raise forms.ValidationError(_('You have to agree with the terms'))
+            raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
+
+    def post_store_user(self, user, request):
+        pending = PendingThirdPartyUser.objects.get(
+                                token=request.POST.get('third_party_token'),
+                                third_party_identifier= \
+            self.cleaned_data.get('third_party_identifier'))
+        return user.add_pending_auth_provider(pending)
+
 
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
         user.renew_token()
-        user.provider = get_query(self.request).get('provider')
         if commit:
             user.save()
-            logger._log(LOGGING_LEVEL, 'Created user %s' % user.email, [])
+            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
         return user
+
 
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
     """
@@ -240,7 +297,8 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+        super(
+            InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
 
         #set readonly form fields
         ro = ('email',)
@@ -249,43 +307,53 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
 
     def save(self, commit=True):
         user = super(InvitedThirdPartyUserCreationForm, self).save(commit=False)
-        level = user.invitation.inviter.level + 1
-        user.level = level
-        user.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        user.set_invitation_level()
         user.email_verified = True
         if commit:
             user.save()
         return user
 
+
 class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
-    additional_email = forms.CharField(widget=forms.HiddenInput(), label='', required = False)
+    additional_email = forms.CharField(
+        widget=forms.HiddenInput(), label='', required=False)
 
     def __init__(self, *args, **kwargs):
         super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder.append('additional_email')
         # copy email value to additional_mail in case user will change it
         name = 'email'
         field = self.fields[name]
         self.initial['additional_email'] = self.initial.get(name, field.initial)
+        self.initial['email'] = None
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        for user in AstakosUser.objects.filter(email = email):
+        email = self.cleaned_data['email'].lower()
+        if self.instance:
+            if self.instance.email == email:
+                raise forms.ValidationError(_("This is your current email."))
+        for user in AstakosUser.objects.filter(email__iexact=email):
             if user.provider == 'shibboleth':
-                raise forms.ValidationError(_("This email is already associated with another shibboleth account."))
-            elif not user.is_active:
-                raise forms.ValidationError(_("This email is already associated with an inactive account. \
-                                              You need to wait to be activated before being able to switch to a shibboleth account."))
+                raise forms.ValidationError(_(
+                        "This email is already associated with another \
+                         shibboleth account."
+                    )
+                )
+            else:
+                raise forms.ValidationError(_("This email is already used"))
         super(ShibbolethUserCreationForm, self).clean_email()
         return email
 
-class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm, InvitedThirdPartyUserCreationForm):
+
+class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
+                                        InvitedThirdPartyUserCreationForm):
     pass
+
 
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label=_("Email"))
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
-    recaptcha_response_field = forms.CharField(widget=RecaptchaWidget, label='')
+    recaptcha_response_field = forms.CharField(
+        widget=RecaptchaWidget, label='')
 
     def __init__(self, *args, **kwargs):
         was_limited = kwargs.get('was_limited', False)
@@ -303,7 +371,11 @@ class LoginForm(AuthenticationForm):
         self.fields.keyOrder = ['username', 'password']
         if was_limited and RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
-                                         'recaptcha_response_field',])
+                                         'recaptcha_response_field', ])
+
+    def clean_username(self):
+        if 'username' in self.cleaned_data:
+            return self.cleaned_data['username'].lower()
 
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
@@ -320,29 +392,41 @@ class LoginForm(AuthenticationForm):
         rrf = self.cleaned_data['recaptcha_response_field']
         check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(_('You have not entered the correct words'))
+            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
 
     def clean(self):
-        super(LoginForm, self).clean()
-        if self.user_cache and self.user_cache.provider not in ('local', ''):
-            raise forms.ValidationError(_('Local login is not the current authentication method for this account.'))
+        """
+        Override default behavior in order to check user's activation later
+        """
+        try:
+            super(LoginForm, self).clean()
+        except forms.ValidationError, e:
+#            if self.user_cache is None:
+#                raise
+            if self.request:
+                if not self.request.session.test_cookie_worked():
+                    raise
         return self.cleaned_data
+
 
 class ProfileForm(forms.ModelForm):
     """
     Subclass of ``ModelForm`` for permiting user to edit his/her profile.
-    Most of the fields are readonly since the user is not allowed to change them.
+    Most of the fields are readonly since the user is not allowed to change
+    them.
 
-    The class defines a save method which sets ``is_verified`` to True so as the user
-    during the next login will not to be redirected to profile page.
+    The class defines a save method which sets ``is_verified`` to True so as the
+    user during the next login will not to be redirected to profile page.
     """
     renew = forms.BooleanField(label='Renew token', required=False)
 
     class Meta:
         model = AstakosUser
-        fields = ('email', 'first_name', 'last_name', 'auth_token', 'auth_token_expires')
+        fields = ('email', 'first_name', 'last_name', 'auth_token',
+                  'auth_token_expires')
 
     def __init__(self, *args, **kwargs):
+        self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
         ro_fields = ('email', 'auth_token', 'auth_token_expires')
@@ -354,10 +438,14 @@ class ProfileForm(forms.ModelForm):
         user = super(ProfileForm, self).save(commit=False)
         user.is_verified = True
         if self.cleaned_data.get('renew'):
-            user.renew_token()
+            user.renew_token(
+                flush_sessions=True,
+                current_key=self.session_key
+            )
         if commit:
             user.save()
         return user
+
 
 class FeedbackForm(forms.Form):
     """
@@ -367,14 +455,16 @@ class FeedbackForm(forms.Form):
     feedback_data = forms.CharField(widget=forms.HiddenInput(), label='',
                                     required=False)
 
+
 class SendInvitationForm(forms.Form):
     """
     Form for sending an invitations
     """
 
-    email = forms.EmailField(required = True, label = 'Email address')
-    first_name = forms.EmailField(label = 'First name')
-    last_name = forms.EmailField(label = 'Last name')
+    email = forms.EmailField(required=True, label='Email address')
+    first_name = forms.EmailField(label='First name')
+    last_name = forms.EmailField(label='Last name')
+
 
 class ExtendedPasswordResetForm(PasswordResetForm):
     """
@@ -387,22 +477,26 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email=email, is_active=True)
+            user = AstakosUser.objects.get(email__iexact=email, is_active=True)
             if not user.has_usable_password():
-                raise forms.ValidationError(_("This account has not a usable password."))
+                raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
+
+            if not user.can_change_password():
+                raise forms.ValidationError(_('Password change for this account'
+                                              ' is not supported.'))
+
         except AstakosUser.DoesNotExist, e:
-            raise forms.ValidationError(_('That e-mail address doesn\'t have an associated user account. Are you sure you\'ve registered?'))
+            raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
 
-    def save(self, domain_override=None, email_template_name='registration/password_reset_email.html',
-             use_https=False, token_generator=default_token_generator, request=None):
+    def save(
+        self, domain_override=None, email_template_name='registration/password_reset_email.html',
+            use_https=False, token_generator=default_token_generator, request=None):
         """
         Generates a one-use only link for resetting password and sends to the user.
         """
         for user in self.users_cache:
-            url = reverse('django.contrib.auth.views.password_reset_confirm',
-                          kwargs={'uidb36':int_to_base36(user.id),
-                                  'token':token_generator.make_token(user)})
+            url = user.astakosuser.get_password_reset_url(token_generator)
             url = urljoin(BASEURL, url)
             t = loader.get_template(email_template_name)
             c = {
@@ -413,9 +507,10 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'baseurl': BASEURL,
                 'support': DEFAULT_CONTACT_EMAIL
             }
-            from_email = DEFAULT_FROM_EMAIL
+            from_email = settings.SERVER_EMAIL
             send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
-                t.render(Context(c)), from_email, [user.email])
+                      t.render(Context(c)), from_email, [user.email])
+
 
 class EmailChangeForm(forms.ModelForm):
     class Meta:
@@ -425,17 +520,19 @@ class EmailChangeForm(forms.ModelForm):
     def clean_new_email_address(self):
         addr = self.cleaned_data['new_email_address']
         if AstakosUser.objects.filter(email__iexact=addr):
-            raise forms.ValidationError(_(u'This email address is already in use. Please supply a different email address.'))
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
     def save(self, email_template_name, request, commit=True):
         ec = super(EmailChangeForm, self).save(commit=False)
         ec.user = request.user
-        activation_key = hashlib.sha1(str(random()) + smart_str(ec.new_email_address))
-        ec.activation_key=activation_key.hexdigest()
+        activation_key = hashlib.sha1(
+            str(random()) + smart_str(ec.new_email_address))
+        ec.activation_key = activation_key.hexdigest()
         if commit:
             ec.save()
         send_change_email(ec, request, email_template_name=email_template_name)
+
 
 class SignApprovalTermsForm(forms.ModelForm):
     class Meta:
@@ -448,8 +545,9 @@ class SignApprovalTermsForm(forms.ModelForm):
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
         if not has_signed_terms:
-            raise forms.ValidationError(_('You have to agree with the terms'))
+            raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
+
 
 class InvitationForm(forms.ModelForm):
     username = forms.EmailField(label=_("Email"))
@@ -464,11 +562,12 @@ class InvitationForm(forms.ModelForm):
     def clean_username(self):
         username = self.cleaned_data['username']
         try:
-            Invitation.objects.get(username = username)
-            raise forms.ValidationError(_('There is already invitation for this email.'))
+            Invitation.objects.get(username=username)
+            raise forms.ValidationError(_(astakos_messages.INVITATION_EMAIL_EXISTS))
         except Invitation.DoesNotExist:
             pass
         return username
+
 
 class ExtendedPasswordChangeForm(PasswordChangeForm):
     """
@@ -481,12 +580,299 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
                                    help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
+        self.session_key = kwargs.pop('session_key', None)
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
 
     def save(self, commit=True):
-        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            self.user.renew_token()
+        try:
+            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+                self.user.renew_token()
+            self.user.flush_sessions(current_key=self.session_key)
+        except AttributeError:
+            # if user model does has not such methods
+            pass
         return super(ExtendedPasswordChangeForm, self).save(commit=commit)
+
+
+# class AstakosGroupCreationForm(forms.ModelForm):
+#     kind = forms.ModelChoiceField(
+#         queryset=GroupKind.objects.all(),
+#         label="",
+#         widget=forms.HiddenInput()
+#     )
+#     name = forms.CharField(
+#         validators=[validators.RegexValidator(
+#             DOMAIN_VALUE_REGEX,
+#             _(astakos_messages.DOMAIN_VALUE_ERR), 'invalid'
+#         )],
+#         widget=forms.TextInput(attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
+#         help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization "
+#     )
+#     homepage = forms.URLField(
+#         label= 'Homepage Url',
+#         widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
+#         help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
+#         required=False
+#     )
+#     desc = forms.CharField(
+#         label= 'Description',
+#         widget=forms.Textarea, 
+#         help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "
+#     )
+#     issue_date = forms.DateTimeField(
+#         label= 'Start date',
+#         help_text= "Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date."
+#     )
+#     expiration_date = forms.DateTimeField(
+#         label= 'End date',
+#         help_text= "Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  "
+#     )
+#     moderation_enabled = forms.BooleanField(
+#         label= 'Moderated',
+#         help_text="Select this to approve each member manually, before they become a part of your Project (default). Be sure you know what you are doing, if you uncheck this option. ",
+#         required=False,
+#         initial=True
+#     )
+#     max_participants = forms.IntegerField(
+#         label='Total number of members',
+#         required=True, min_value=1,
+#         help_text="Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. "
+#     )
+# 
+#     class Meta:
+#         model = AstakosGroup
+# 
+#     def __init__(self, *args, **kwargs):
+#         #update QueryDict
+#         args = list(args)
+#         qd = args.pop(0).copy()
+#         members_unlimited = qd.pop('members_unlimited', False)
+#         members_uplimit = qd.pop('members_uplimit', None)
+# 
+#         #substitue QueryDict
+#         args.insert(0, qd)
+# 
+#         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
+#         
+#         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
+#                                 'issue_date', 'expiration_date',
+#                                 'moderation_enabled', 'max_participants']
+#         def add_fields((k, v)):
+#             k = k.partition('_proxy')[0]
+#             self.fields[k] = forms.IntegerField(
+#                 required=False,
+#                 widget=forms.HiddenInput(),
+#                 min_value=1
+#             )
+#         map(add_fields,
+#             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
+#         )
+# 
+#         def add_fields((k, v)):
+#             self.fields[k] = forms.BooleanField(
+#                 required=False,
+#                 #widget=forms.HiddenInput()
+#             )
+#         map(add_fields,
+#             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
+#         )
+# 
+#     def policies(self):
+#         self.clean()
+#         policies = []
+#         append = policies.append
+#         for name, uplimit in self.cleaned_data.iteritems():
+# 
+#             subs = name.split('_uplimit')
+#             if len(subs) == 2:
+#                 prefix, suffix = subs
+#                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
+#                 resource = Resource.objects.get(service__name=s, name=r)
+# 
+#                 # keep only resource limits for selected resource groups
+#                 if self.cleaned_data.get(
+#                     'is_selected_%s' % resource.group, False
+#                 ):
+#                     append(dict(service=s, resource=r, uplimit=uplimit))
+#         return policies
+# 
+# class AstakosGroupCreationSummaryForm(forms.ModelForm):
+#     kind = forms.ModelChoiceField(
+#         queryset=GroupKind.objects.all(),
+#         label="",
+#         widget=forms.HiddenInput()
+#     )
+#     name = forms.CharField(
+#         widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
+#         help_text="Name should be in the form of dns"
+#     )
+#     moderation_enabled = forms.BooleanField(
+#         help_text="Check if you want to approve members participation manually",
+#         required=False,
+#         initial=True
+#     )
+#     max_participants = forms.IntegerField(
+#         required=False, min_value=1
+#     )
+# 
+#     class Meta:
+#         model = AstakosGroup
+# 
+#     def __init__(self, *args, **kwargs):
+#         #update QueryDict
+#         args = list(args)
+#         qd = args.pop(0).copy()
+#         members_unlimited = qd.pop('members_unlimited', False)
+#         members_uplimit = qd.pop('members_uplimit', None)
+# 
+#         #substitue QueryDict
+#         args.insert(0, qd)
+# 
+#         super(AstakosGroupCreationSummaryForm, self).__init__(*args, **kwargs)
+#         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
+#                                 'issue_date', 'expiration_date',
+#                                 'moderation_enabled', 'max_participants']
+#         def add_fields((k, v)):
+#             self.fields[k] = forms.IntegerField(
+#                 required=False,
+#                 widget=forms.TextInput(),
+#                 min_value=1
+#             )
+#         map(add_fields,
+#             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
+#         )
+# 
+#         def add_fields((k, v)):
+#             self.fields[k] = forms.BooleanField(
+#                 required=False,
+#                 widget=forms.HiddenInput()
+#             )
+#         map(add_fields,
+#             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
+#         )
+#         for f in self.fields.values():
+#             f.widget = forms.HiddenInput()
+# 
+#     def clean(self):
+#         super(AstakosGroupCreationSummaryForm, self).clean()
+#         self.cleaned_data['policies'] = []
+#         append = self.cleaned_data['policies'].append
+#         #tbd = [f for f in self.fields if (f.startswith('is_selected_') and (not f.endswith('_proxy')))]
+#         tbd = [f for f in self.fields if f.startswith('is_selected_')]
+#         for name, uplimit in self.cleaned_data.iteritems():
+#             subs = name.split('_uplimit')
+#             if len(subs) == 2:
+#                 tbd.append(name)
+#                 prefix, suffix = subs
+#                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
+#                 resource = Resource.objects.get(service__name=s, name=r)
+# 
+#                 # keep only resource limits for selected resource groups
+#                 if self.cleaned_data.get(
+#                     'is_selected_%s' % resource.group, False
+#                 ):
+#                     append(dict(service=s, resource=r, uplimit=uplimit))
+#         for name in tbd:
+#             self.cleaned_data.pop(name, None)
+#         return self.cleaned_data
+# 
+# class AstakosGroupUpdateForm(forms.ModelForm):
+#     class Meta:
+#         model = AstakosGroup
+#         fields = ( 'desc','homepage', 'moderation_enabled')
+# 
+# 
+# class AddGroupMembersForm(forms.Form):
+#     q = forms.CharField(
+#         max_length=800, widget=forms.Textarea, label=_('Add members'),
+#         help_text=_(astakos_messages.ADD_GROUP_MEMBERS_Q_HELP),
+#         required=True)
+# 
+#     def clean(self):
+#         q = self.cleaned_data.get('q') or ''
+#         users = q.split(',')
+#         users = list(u.strip() for u in users if u)
+#         db_entries = AstakosUser.objects.filter(email__in=users)
+#         unknown = list(set(users) - set(u.email for u in db_entries))
+#         if unknown:
+#             raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
+#         self.valid_users = db_entries
+#         return self.cleaned_data
+# 
+#     def get_valid_users(self):
+#         """Should be called after form cleaning"""
+#         try:
+#             return self.valid_users
+#         except:
+#             return ()
+# 
+# 
+# class AstakosGroupSearchForm(forms.Form):
+#     q = forms.CharField(max_length=200, label='Search project')
+# 
+# 
+# class TimelineForm(forms.Form):
+#     entity = forms.ModelChoiceField(
+#         queryset=AstakosUser.objects.filter(is_active=True)
+#     )
+#     resource = forms.ModelChoiceField(
+#         queryset=Resource.objects.all()
+#     )
+#     start_date = forms.DateTimeField()
+#     end_date = forms.DateTimeField()
+#     details = forms.BooleanField(required=False, label="Detailed Listing")
+#     operation = forms.ChoiceField(
+#         label='Charge Method',
+#         choices=(('', '-------------'),
+#                  ('charge_usage', 'Charge Usage'),
+#                  ('charge_traffic', 'Charge Traffic'), )
+#     )
+# 
+#     def clean(self):
+#         super(TimelineForm, self).clean()
+#         d = self.cleaned_data
+#         if 'resource' in d:
+#             d['resource'] = str(d['resource'])
+#         if 'start_date' in d:
+#             d['start_date'] = d['start_date'].strftime(
+#                 "%Y-%m-%dT%H:%M:%S.%f")[:24]
+#         if 'end_date' in d:
+#             d['end_date'] = d['end_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
+#         if 'entity' in d:
+#             d['entity'] = d['entity'].email
+#         return d
+# 
+# 
+# class AstakosGroupSortForm(forms.Form):
+#     sorting = forms.ChoiceField(
+#         label='Sort by',
+#         choices=(
+#             ('groupname', 'Name'),
+#             ('issue_date', 'Issue Date'),
+#             ('expiration_date', 'Expiration Date'),
+#             ('approved_members_num', 'Participants'),
+#             ('moderation_enabled', 'Moderation'),
+#             ('membership_status', 'Enrollment Status')
+#         ),
+#         required=True
+#     )
+# 
+# class MembersSortForm(forms.Form):
+#     sorting = forms.ChoiceField(
+#         label='Sort by',
+#         choices=(('person__email', 'User Id'),
+#                  ('person__first_name', 'Name'),
+#                  ('date_joined', 'Status')
+#         ),
+#         required=True
+#     )
+# 
+# class PickResourceForm(forms.Form):
+#     resource = forms.ModelChoiceField(
+#         queryset=Resource.objects.select_related().all()
+#     )
+#     resource.widget.attrs["onchange"] = "this.form.submit()"
+
 
 class ExtendedSetPasswordForm(SetPasswordForm):
     """
@@ -494,15 +880,148 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     to optionally renew also the token.
     """
     if not NEWPASSWD_INVALIDATE_TOKEN:
-        renew = forms.BooleanField(label='Renew token', required=False,
-                                   initial=True,
-                                   help_text='Unsetting this may result in security risk.')
-    
+        renew = forms.BooleanField(
+            label='Renew token',
+            required=False,
+            initial=True,
+            help_text='Unsetting this may result in security risk.'
+        )
+
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
-    
+
+    @transaction.commit_on_success()
     def save(self, commit=True):
-        if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
-            if isinstance(self.user, AstakosUser):
+        try:
+            self.user = AstakosUser.objects.get(id=self.user.id)
+            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
                 self.user.renew_token()
+            #self.user.flush_sessions()
+            if not self.user.has_auth_provider('local'):
+                self.user.add_auth_provider('local', auth_backend='astakos')
+
+        except BaseException, e:
+            logger.exception(e)
         return super(ExtendedSetPasswordForm, self).save(commit=commit)
+
+
+class ProjectApplicationForm(forms.ModelForm):
+    name = forms.CharField(
+        validators=[validators.RegexValidator(
+            DOMAIN_VALUE_REGEX,
+            _(astakos_messages.DOMAIN_VALUE_ERR),
+            'invalid'
+        )],
+        widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
+        help_text="Name should be in the form of dns"
+    )
+    comments = forms.CharField(widget=forms.Textarea, required=False)
+    
+    class Meta:
+        model = ProjectApplication
+        exclude = (
+            'resource_grants', 'id', 'applicant', 'owner',
+            'precursor_application', 'state', 'issue_date')
+
+    def clean(self):
+        userid = self.data.get('user', None)
+        self.user = None
+        if userid:
+            try:
+                self.user = AstakosUser.objects.get(id=userid)
+            except AstakosUser.DoesNotExist:
+                pass
+        if not self.user:
+            raise forms.ValidationError(_(astakos_messages.NO_APPLICANT))
+        super(ProjectApplicationForm, self).clean()
+        return self.cleaned_data
+    
+    @property
+    def resource_policies(self):
+        policies = []
+        append = policies.append
+        for name, value in self.data.iteritems():
+            if not value:
+                continue
+            uplimit = value
+            if name.endswith('_uplimit'):
+                subs = name.split('_uplimit')
+                prefix, suffix = subs
+                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
+                resource = Resource.objects.get(service__name=s, name=r)
+
+                # keep only resource limits for selected resource groups
+#                 if self.data.get(
+#                     'is_selected_%s' % resource.group, False
+#                 ):
+                if uplimit:
+                    append(dict(service=s, resource=r, uplimit=uplimit))
+        return policies
+
+    def save(self, commit=True):
+        application = super(ProjectApplicationForm, self).save(commit=False)
+        applicant = self.user
+        comments = self.cleaned_data.pop('comments', None)
+        try:
+            precursor_application = self.instance.precursor_application
+        except:
+            precursor_application = None
+        return submit_application(
+            application,
+            self.resource_policies,
+            applicant,
+            comments,
+            precursor_application
+        )
+
+class ProjectSortForm(forms.Form):
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(('name', 'Sort by Name'),
+                 ('issue_date', 'Sort by Issue date'),
+                 ('start_date', 'Sort by Start Date'),
+                 ('end_date', 'Sort by End Date'),
+#                  ('approved_members_num', 'Sort by Participants'),
+                 ('state', 'Sort by Status'),
+                 ('member_join_policy__description', 'Sort by Member Join Policy'),
+                 ('member_leave_policy__description', 'Sort by Member Leave Policy')
+        ),
+        required=True
+    )
+
+class AddProjectMembersForm(forms.Form):
+    q = forms.CharField(
+        max_length=800, widget=forms.Textarea, label=_('Add members'),
+        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP),
+        required=True)
+
+    def clean(self):
+        q = self.cleaned_data.get('q') or ''
+        users = q.split(',')
+        users = list(u.strip() for u in users if u)
+        db_entries = AstakosUser.objects.filter(email__in=users)
+        unknown = list(set(users) - set(u.email for u in db_entries))
+        if unknown:
+            raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
+        self.valid_users = db_entries
+        return self.cleaned_data
+
+    def get_valid_users(self):
+        """Should be called after form cleaning"""
+        try:
+            return self.valid_users
+        except:
+            return ()
+
+class ProjectMembersSortForm(forms.Form):
+    sorting = forms.ChoiceField(
+        label='Sort by',
+        choices=(('person__email', 'User Id'),
+                 ('person__first_name', 'Name'),
+                 ('acceptance_date', 'Acceptance date')
+        ),
+        required=True
+    )
+
+class ProjectSearchForm(forms.Form):
+    q = forms.CharField(max_length=200, label='Search project')

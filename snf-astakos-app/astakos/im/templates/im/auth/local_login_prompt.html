@@ -1,0 +1,30 @@
+<form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
+  <h2 class="form-toggler"><a href="#">LOGIN USING YOUR LOCAL ACCOUNT</a></h2>
+  <div class="form" style="display:none">
+    {% with login_form as form %}
+        {% include "im/form_render.html" %}
+    {% endwith %}
+    <input type="hidden" name="next" value="{{ next }}">
+    
+    {% if key %}
+        <input type="hidden" name="key" value="{{key}}">
+    {% else %}
+        {% if request.GET.key %}
+            <input type="hidden" name="key" value="{{request.GET.key}}">
+        {% endif %}
+    {% endif %}
+    
+    <div class="form-row submit clearfix">
+        <input type="submit" class="submit altcol" value="SUBMIT" />
+        <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
+      </div>
+    </div>
+  </form>
+  <script>
+    $(document).ready(function(){
+      $("h2.form-toggler a").click(function(e) {
+        e.preventDefault();
+        $("div.form").slideToggle();
+      })
+    })
+  </script>

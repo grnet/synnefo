@@ -1,0 +1,44 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}"> 
+	<div class="stats clearfix">
+		<ul>
+			{% for rname, rdata in resource_catalog.resources.items %}
+		 		<li class="clearfix  {{ rdata.load_class }} {{ rname|get_value_after_dot }}">
+		 			<div class="img-wrap">&nbsp;</div>
+		 			<div class="info">
+						<h3>{{ rdata.report_desc }}</h3>
+						<p>
+						 
+						 
+						{% if rdata.unit == 'bytes' %}
+							{{ rdata.currValue|sizeof_fmt  }} out of  {{ rdata.maxValue|sizeof_fmt }}
+						{% else %}
+							{{ rdata.currValue }}  out of  {{ rdata.maxValue }} {{ rdata.unit }}
+						{% endif %}		
+						{% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
+						</p>
+					</div>
+					<div class="bar">
+						<div>
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
+								 {% if rdata.ratio > 18  %}
+								 <em>{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</em>	
+							</span>
+								{% else%}
+								&nbsp;
+							</span>
+							<em>{{ rdata.ratio|floatformat }}% &nbsp;&nbsp;</em>
+								{% endif %}
+						</div>
+					</div>
+		 		</li>
+		 	{% endfor%}
+		</ul>
+			 
+	</div>    
+</div>
+{% endblock %}

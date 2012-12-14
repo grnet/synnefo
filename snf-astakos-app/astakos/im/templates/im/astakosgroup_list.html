@@ -1,0 +1,370 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="projects">
+	    <h2>PROJECTS</h2>
+	    {% if form %}
+		    <p>Search for existing Projects and join the ones you like. Please search by Project name. </p>
+		    <form action="{% url group_search %}" method="post" class="withlabels signup submit-inline">{% csrf_token %}
+		            {% include "im/form_render.html" %}
+		        <div class="form-row submit">
+		                <input type="submit" class="submit altcol" value="SEARCH" />
+		                {% if q %}<a href="{% url group_all %}">clear</a>{% endif %}
+		        </div>
+		    </form>
+		    
+		    <!--<form action="{% url group_all %}" method="post" class="link-like alone">{% csrf_token %}
+		        <div class="form-row submit">
+		            <input type="submit" class="submit altcol" value="clear" />
+		        </div>
+		    </form>
+		   <-->
+	    {% else %}
+    	<div class="two-cols clearfix">
+			<div class="rt">
+				 &nbsp;
+			</div>
+			<div class="lt">
+				 <p>~okeanos gives the opportunity to Greek Academic or Research Organizations/Institutions/Faculty to run their own projects remotely on virtual infrastructure. Simple, fast and with minimal to no cost at all.</p>
+				 <p><a href="{% url how_it_works %}" style="font-size:1.154em;">How it works ></a></p>
+			</div>
+		</div>
+		
+		
+		<div class="widjets"> 
+			<!--<a href="#" class="widjet-x" title="remove boxes">X</a>-->
+			<ul class="clearfix">	
+				<li class="create">
+					<div>
+						<div class="wrap">
+
+							<p class="centered"><a href="{% url group_add 'project' %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
+							<p class="txt">Create a new Project in seconds. Specify how many members it will have, which and how many virtual resources it will provide to its members. Describe its purpose. Submit your request and if accepted, you and your colleagues are ready to deploy!<br><br> </p>
+							<p><a href="{% url group_add 'project' %}">create a project ></a></p>
+							<!--<p class="btn"><a href="{% url group_create_list %}" class="submit">CREATE</a></p>-->
+						</div>
+					</div>
+				</li>
+				<li class="join">
+					<div>
+						<div class="wrap">
+							<p class="centered"><a href="{% url group_all %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+							<p class="txt">Become a member of an existing Project and instantly gain access to the resources it has to offer you. Search for open Projects and join for free. Contact the closed Projects administrators, if you think they will accept you. In two words: try to Join now. </p>
+							
+							<p><a href="{% url group_all %}">join a project ></a></p>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+        
+    {% endif %}
+    {% with page_obj.object_list as object_list %}
+    <!-- Search group -->
+    {% if object_list %}
+        <div class="full-dotted">
+        	<form method="GET" class="minimal" action="#searchResults"> 
+				<div class="form-row">
+					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
+					    <option value="groupname">Sort by Name</option>
+			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
+			            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
+			            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> 
+			            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Sort by Moderation</option> 
+					</select>
+					<input type="hidden" name="q" value="{{q}}"/>
+				</div>
+			</form>
+            <table class="alt-style complex" id="searchResults">
+                <caption>
+                    {% if q %}SEARCH RESULTS{% else %}ALL PROJECTS{% endif %}
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <!--<th>Type</th>-->
+                    <th>Start date</th>
+                    <th>End date</th>
+                     
+                    <th>Members</th>
+                   
+                     
+                    <th>Status</th>
+                    <th>&nbsp;</th>
+			        <th>Moderated</th>
+                   <!-- <th>&nbsp;</th>-->
+                  
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for o in object_list %}
+                   <tr class="{% cycle 'tr1' 'tr2' %}">
+	                    <td style="width:22%"><a href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|truncatename}}</a></td>
+	                    <!--td>{{o.kindname|capfirst}}</td-->
+	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
+	                    <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
+	                    <td style="width:11%">{{o.approved_members_num}}</td>
+	                    
+	                    <td style="width:17%">
+	                    	<div class="msg-wrap">
+	                    		 
+		                    {% if o.is_member %}
+		                        {% if o.membership_approval_date %}
+		    
+		                        
+			                       	{% if not o.is_owner %}
+			                            Registered
+			                             
+			                        {% else %}
+			                        	Owner
+			                        {% endif %}
+		                        
+		                            
+		
+		                        {% else %}
+		                            Activation pending
+		                        {% endif %}
+		                    {% else %}
+		                            Not member 
+		                                 
+		                            
+		                    {% endif %}
+	                    	</div>
+	                    </td>
+	                    <td style="width:15%">
+	                    	<div class="msg-wrap">
+	                    		 
+		                    {% if o.is_member %}
+		                        {% if o.membership_approval_date %}
+		    
+		                        
+			                       	{% if not o.is_owner %}
+			                             
+			                            <form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+			                                 <input type="submit"  value="x leave group" class="leave"/>
+			                            </form>
+			                            <div class="dialog">
+					                		Are you sure you what to leave this group?<br>
+					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
+					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+					                		
+					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+					                	</div>
+			                        {% else %}
+			                        	 &nbsp;
+			                        {% endif %}
+		                        
+		                            
+		
+		                        {% else %}
+		                            &nbsp;
+		                        {% endif %}
+		                    {% else %}
+		                             
+		                                <form action="{% url group_join o.id %}" method="post" class="link-like">{% csrf_token %}
+		                                    <input type="submit"   value="+ join group" class="join_group join" />
+		                                </form>
+		                                <div class="dialog">
+					                		Are you sure you what to join this group?<br>
+					                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
+					                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+					                		
+					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+					                	</div>
+		                            
+		                    {% endif %}
+	                    	</div>
+	                    </td>
+			            <td class="centered" style="width:9%">{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
+	                    <!--td><a href="#" class="more-info" title="more info">+ more info</a></td-->
+                  </tr>
+                  <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
+                    <td colspan="7" class="info-td">
+                        <div>
+                            <p>{{o.desc}}</p>
+                            <p>{% if o.homepage%}
+                                Group's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.homepage }}</a>
+                            
+                            {% endif %}
+                            </p>
+                        </div>	
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+            </table>
+           
+        </div>
+        
+     
+	    <div class="pagination">
+			<p class="next-prev">
+		        {% if page_obj.has_previous %}
+	                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">< previous</a>
+	            {% else  %}
+                        	<a href="javascript:void()" class="disabled">< previous</a>    
+	            {% endif %}
+	            {% if page_obj.has_next %}
+	                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{q}}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">next ></a>
+	            {% else  %}
+                        	<a href="javascript:void()" class="disabled">next ></a>
+	            {% endif %}
+	    	</p>
+			<p class="nums">
+				<span class="current">
+	                Page {{ page_obj.number }} of {{ paginator.num_pages }}
+	            </span>
+			</p>
+	   </div>
+      <!-- Group listing -->
+       {% else %}
+       		{% if not form %}
+            {% with page|concat:sorting as args %}
+            {% with q|paginate:args as page_obj %}
+        	 	{% if page_obj.object_list  %}
+	      	    <div>
+					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
+						<div class="form-row">
+						    <select name="sorting"  class="dropkicked"  tabindex="1">
+							    <option value="groupname">Sort by Name</option>
+					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			
+					            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
+					            <option value="expiration_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
+					            <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option>
+					            <option value="moderation_enabled" {% if sorting == 'moderation_enabled' %}selected{% endif %}>Sort by Moderation</option>		
+							</select>
+						</div>
+					</form>
+					<table class="alt-style complex" id="allGroups">
+			            <caption>MY PROJECTS</caption>
+			            <thead>
+			              <tr>
+			                <th>Name</th>
+			                <!--th>Type</th-->
+			                <th>Start date</th>
+			                <th>End date</th>
+			                <th>Members</th>
+			                <th>Status</th>
+			                <th>&nbsp;</th>
+			                <th class="centered">Moderated</th>
+			               <!-- <th>&nbsp;</th>-->
+			                
+			              </tr>
+			            </thead>
+			            <tbody>
+			              {% for o in page_obj.object_list %}
+			              <tr class="{% cycle 'tr1' 'tr2' %}">
+			                <td style="width:22%"><a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname|truncatename }}</a></td>
+			                <!--td>{{o.kindname|capfirst}}</td-->
+			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
+			                <td style="width:13%">{{o.expiration_date|date:"d/m/Y"}}</td>
+			                <td style="width:11%">{{ o.approved_members_num }}</td>
+			                <td style="width:17%">
+			                	<div class="msg-wrap">
+			                	{% if user.email = o.groupowner %}
+			                		{% if o.is_enabled %}
+			                			Active (Owner)
+			                		{% else %}
+			                			Pending
+			                		{% endif %}
+			                	{% else %}
+			                		{% if o.is_enabled %}
+			                			{% if o.membership_status %}
+						                    Registered
+					                    	 
+						                {% else %}
+						                    Activation Pending
+						                {% endif %}
+			                		{% else %}
+			                			-
+			                		{% endif %}
+			                	{% endif %}
+			                	
+			                	</div>
+			                </td>
+			                <td style="width:15%">
+			                	<div class="msg-wrap">
+			                 	{% if user.email = o.groupowner %}
+			                		{% if o.is_enabled %}
+			                			&nbsp;
+			                		{% else %}
+			                			&nbsp;
+			                		{% endif %}
+			                	{% else %}
+			                		{% if o.is_enabled %}
+			                			{% if o.membership_status %}
+						                    
+					                    	<form action="{% url group_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+					                             <input type="submit"  value="x leave" class="leave" />
+					                        </form>	
+					                        <div class="dialog">
+						                		Are you sure you what to leave this group?<br>
+						                		Name: <a  href="{% url group_detail o.id %}" title="visit group page">{{o.groupname}}</a><br>
+						                		{% if o.desc %}Description:{{o.desc|truncatewords:30}}{% endif %}<br><br>
+						                		
+						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+						                	</div>
+						                {% else %}
+						                    &nbsp;
+						                {% endif %}
+			                		{% else %}
+			                			&nbsp;
+			                		{% endif %}
+			                	{% endif %}
+			                	
+			                	</div>
+			                </td>
+			                <td class="centered" style="width:9%">{% if o.moderation_enabled%}Yes{% else %}No{% endif %}</td>
+			               <!-- <td><a href="#" class="more-info" title="more info">+ more info </a></td>-->
+			              </tr>
+			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
+			                <td colspan="8" class="info-td">
+			                	<div>
+			                		<p>{{o.desc}}</p>
+					                <p>{% if o.homepage%}
+							 			Group's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
+							 		{% endif %}
+							 		</p>
+			                	</div>	
+			                </td>
+			              </tr>
+			              {% endfor %}
+			            </tbody>
+			        </table>
+				</div>
+				<div class="pagination">
+					<p class="next-prev">
+				        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">< previous</a>
+                        {% else  %}
+                        	<a href="javascript:void()" class="disabled">< previous</a>
+                        {% endif %}
+			            {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if sorting %}&sorting={{ sorting }}{% endif%}#allGroups">next ></a>
+                        {% else %}
+							<a href="javascript:void()" class="disabled">next ></a>
+                        {% endif %}
+			    	</p>
+					<p class="nums">
+						<span class="current">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+					</p>
+			   </div>
+		 	{% endif %}
+        	{% endwith %} 
+	      	{% endwith %} 
+	      	{% endif %}
+	      	{% if form %}
+	            {% if q %}
+	                <h2>No projects found!</h2>
+	            {% endif %}
+	        {% endif %}
+      {% endif %}
+    {% endwith %}
+</div>
+</div>  
+{% endblock %}

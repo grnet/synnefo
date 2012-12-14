@@ -31,33 +31,29 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from random import choice
-from string import digits, lowercase, uppercase
-from uuid import uuid4
-from time import time
 from os.path import abspath
 
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import ApprovalTerms
 
+
 class Command(BaseCommand):
     args = "<location>"
     help = "Insert approval terms"
-    
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
-        
+
         location = abspath(args[0].decode('utf8'))
         try:
-            f = open(location, 'r')
+            open(location, 'r')
         except IOError:
             raise CommandError("Invalid location")
-        
+
         terms = ApprovalTerms(location=location)
         terms.save()
-        
+
         msg = "Created term id %d" % (terms.id,)
         self.stdout.write(msg + '\n')

@@ -1,0 +1,7 @@
+--- A translation in English follows ---
+
+Το project {{object.definition.name}} έχει τερματιστεί.
+
+--
+
+Your project application request ({{object.definition.name}}) has been terminated.

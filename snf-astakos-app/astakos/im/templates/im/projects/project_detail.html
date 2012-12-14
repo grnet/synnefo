@@ -1,0 +1,252 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+
+{% block page.body %}
+{% with object.project.members as members %}
+{% with object.project.approved_members as approved_members %}
+<div class="projects">
+	
+
+	<h2>
+        <em>
+            {% if user == object.owner %}
+                {% if object.is_active %}
+                    [ ADMINISTRATOR - ACTIVE ]
+                {% else %}
+                    [ ADMINISTRATOR - PENDING ]
+                {% endif %}
+            {%  else %}
+                {% if  user in approve_members %}
+                    [ ENROLLED - ACTIVE ]
+                {% else %}
+                    [ ENROLLED - PENDING ]
+                {% endif %}
+            {% endif %}
+        </em>
+	 	<span>{{ object.name|upper }}</span>
+	 </h2>
+	 
+<!-- 
+	 <div class="details">
+	 	<h3>
+	 		GENERAL INFO
+		 	{% if user == object.owner %}
+		 		<a href="#" class="edit">EDIT</a>
+		 	{% endif %}
+	 	</h3>
+	 	
+	 	<div class="data">
+		 	<p class="restricted">{{ object.description|safe }}</p>
+		 	<dl class="alt-style">
+			 </dl>
+		</div>
+		<div class="editable" style="display:none;">
+		<form action="{% url project_detail object.id %}" method="post"
+	            class="withlabels">{% csrf_token %}
+	            {% with update_form as form %}
+                    {% include "im/form_render.html" %}
+                    <div class="form-row submit">
+                        <input type="submit" class="submit altcol" value="SAVE" />
+                    </div>
+	            {% endwith %}
+	    </form>
+		</div>
+	 </div>
+ -->
+	 <div class="full-dotted">
+		 <h3>DETAILS</h3>
+		 <dl class="alt-style">
+		 	<dt>Name</dt>
+		 	<dd>{{ object.name }}&nbsp;</dd>
+		 	<dt>Description</dt>
+		 	<dd>{{ object.description|safe }}&nbsp;</dd>
+            <dt>Homepage url</dt>
+            <dd>
+                {% if object.homepage%}
+                    <a href="{{ object.homepage }}">{{ object.homepage }}</a>
+                {% else %}
+                    Not set yet
+                {% endif %}
+            </dd>
+            <dt>Member join policy</dt>
+            <dd>
+                {{ object.member_join_policy }}
+            </dd>
+		 	<dt>Member leave policy</dt>
+            <dd>
+                {{ object.member_leave_policy }}
+            </dd>
+		 	<dt>Issue date:</dt>
+		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dt>Start date:</dt>
+		 	<dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dt>End Date</dt>
+		 	<dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dt>Status</dt>
+		 	<dd>{{ object.state }}</dd>
+		 	<dt>Owner</dt>
+		 	<dd>{% if user == object.owner %}
+                        Me
+                {% else%}
+                    {{object.owner.realname}} {% if user.is_superuser %}({{object.owner.email}}){% endif %}
+                {% endif %}
+                &nbsp;
+            </dd>
+            <dt>Max participants</dt>
+		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
+		 	<dt>Precursor Application</dt>
+		 	<dd>
+		 	    {% if object.precursor_application %}
+                    <a href="{% url project_detail object.precursor_application.id %}">{{object.precursor_application.id}}</a>
+                {% endif %}
+                &nbsp;
+		 	</dd>
+		 	<dt>Follower Application</dt>
+		 	<dd>
+		 	    {% if object.follower %}
+                    <a href="{% url project_detail object.follower.id %}">{{object.follower.id}}</a>
+                {% endif %}
+                &nbsp;
+		 	</dd>
+		 </dl>
+	 </div>
+	 <div class="full-dotted">
+		 <h3>RESOURCES</h3>
+		 {% if object.projectresourcegrant_set.all %}
+	     <dl class="alt-style">	
+	 		{% for rp in object.projectresourcegrant_set.all %}
+	 		    <dt>
+	 		        {{rp.resource}}
+	 		    </dt>
+	 		    <dd>
+	 		        {{rp.member_capacity}}
+	 		    <dd/>
+<!-- 
+		 		<dt>
+       				Max {% if q.is_abbreviation %}{{ q.verbose_name|upper }}{% else %}{{ q.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
+       			</dt>
+		 		<dd>
+       			{% if q.value %}
+       				 {% if q.unit %}
+       				 	{{ q.value|sizeof_fmt }}
+       				 {% else %}
+       				 	{{ q.value|isinf }}
+       				 {% endif %}
+       			{% else %}
+       				Unlimited
+       			{% endif %}
+       			</dd>
+ -->
+       		{% empty %}
+       			No resources
+	 		{% endfor %}
+	 		
+	 		
+	 	</dl>
+		{% else %}
+            <p>No resources</p>
+        {% endif %} 
+	 </div>
+     {% if object.project.is_alive %}
+	 <div class="full-dotted">
+	    {% with page|concat:sorting as args %}
+	    {% with object.project.projectmembership_set.select_related.all|paginate:args as membership %}
+            {% if membership %}
+            <form method="GET" class="minimal" action="#members-table">
+                <div class="form-row">
+                    <select name="sorting" onchange="this.form.submit();" class="dropkicked">
+                        <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>Sort by User Id</option>
+                        <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Sort by Name</option>
+                        <option value="acceptance_date" {% if sorting == 'acceptance_date' %}selected{% endif %}>Sort by Acceptance Date</option>
+                    </select>
+                </div>
+            </form>
+             <table class="alt-style" id="members-table">
+                <caption>MEMBERS:</caption>
+                <thead>
+                    <tr>
+                        {%if user.is_superuser or user == object.owner %}<th>User Email</th>{% endif %}
+                        <th>Name</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for m in membership.object_list %}
+                  <tr>
+                    {%if user.is_superuser or user == object.owner %}<td>{{m.person.email}}</td>{% endif %}
+                    <td>{{m.person.realname}}</td>
+                    {% if m.person == object.owner %}
+                    <td>Owner</td>
+                    {% else %}
+                        {% if m.acceptance_date %}
+                        <td>Approved {% if m.leave_request_date%}(User has requested to leave the project on:{{m.leave_request_date}}){% endif %}
+                            {% if user == object.owner and user != m.person %}
+                                <a href="{% url project_remove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
+                            {% endif %}
+                        </td>
+                        {% else %}
+                        <td>Pending
+                            {% if user == object.owner %}
+                                <a href="{% url project_approve_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
+                                <a href="{% url project_reject_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
+                            {% endif %}
+                        </td>    
+                        {% endif %}
+                    {% endif %}
+                  </tr>
+                {% endfor %}
+                </tbody>
+             </table>
+             <div class="pagination">
+                <p class="next-prev">
+                    {% if membership.has_previous %}
+                        <a href="?page={{ membership.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+                    {% endif %}
+                    {% if membership.has_next %}
+                        <a href="?page={{ membership.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+                    {% endif %}
+                </p>
+                <p class="nums">
+                    <span class="current">
+                        Page {{ membership.number }} of {{ membership.paginator.num_pages }}
+                    </span>
+                </p>
+            </div>
+             {% else %}
+                <p>No members yet!</p>
+            {% endif %}
+        {% endwith %}
+        {% endwith %}
+	 </div>
+     
+     
+    
+    <div class="full-dotted">
+        <form action="{% url project_detail object.id %}#members-table" method="post" class="withlabels" >{% csrf_token %}
+            <h2>Enroll more members</h2>
+                {% with addmembers_form as form %}
+                    {% include "im/form_render.html" %}
+                {% endwith %}
+                <div class="form-row submit">
+                    <input type="submit" class="submit altcol" value="ADD MEMBERS" />
+                </div>
+        </form>
+    </div>
+    {% endif %}
+    <div class="full-dotted">
+    	<p>
+    		<a href="{% url project_all %}">back to All Projects &gt;</a></li>
+    	</p>
+        <p>
+        	<a href="{% url project_list %}">back to My Projects &gt;</a>
+        </p>
+        </ul>
+    </div>
+     
+    
+</div>
+ 
+{% endwith %}
+{% endwith %}
+{% endblock %}

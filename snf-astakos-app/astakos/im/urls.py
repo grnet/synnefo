@@ -31,82 +31,128 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, include, url
-from django.contrib.auth.views import password_change
+from django.conf.urls.defaults import patterns, url
 
-from astakos.im.forms import (ExtendedPasswordResetForm,
-                              ExtendedPasswordChangeForm,
-                              ExtendedSetPasswordForm, LoginForm)
+from astakos.im.forms import (
+    ExtendedPasswordResetForm,
+    ExtendedPasswordChangeForm,
+    ExtendedSetPasswordForm, LoginForm)
 from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
 
-urlpatterns = patterns('astakos.im.views',
+urlpatterns = patterns(
+    'astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
     url(r'^login/?$', 'index', {}, name='login'),
-    url(r'^profile/?$', 'edit_profile'),
-    url(r'^feedback/?$', 'feedback'),
-    url(r'^signup/?$', 'signup', {'on_success':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
-    url(r'^logout/?$', 'logout', {'template':'im/login.html', 'extra_context':{'login_form':LoginForm()}}),
-    url(r'^activate/?$', 'activate'),
+    url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
+    url(r'^feedback/?$', 'feedback', {}, name='feedback'),
+    url(r'^signup/?$', 'signup', {'on_success': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
+    url(r'^logout/?$', 'logout', {'template': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='logout'),
+    url(r'^activate/?$', 'activate', {}, name='activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
     url(r'^approval_terms/(?P<term_id>\d+)/?$', 'approval_terms'),
-    url(r'^password/?$', 'change_password', {}, name='password_change'),
+    url(r'^send/activation/(?P<user_id>\d+)/?$', 'send_activation', {}, name='send_activation'),
+    url(r'^resources/?$', 'resource_usage', {}, name='resource_usage'),
+
+#    url(r'^billing/?$', 'billing', {}, name='billing'),
+#    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
+
+#     url(r'^group/add/complete/?$', 'group_add_complete', {}, name='group_add_complete'),
+#     url(r'^group/add/(?P<kind_name>\w+)?$', 'group_add', {}, name='group_add'),
+#     url(r'^group/list/?$', 'group_list', {}, name='group_list'),
+#     url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {}, name='group_detail'),
+#     url(r'^group/search/?$', 'group_search', {}, name='group_search'),
+#     url(r'^group/all/?$', 'group_all', {}, name='group_all'),
+#     url(r'^group/(?P<group_id>\d+)/join/?$', 'group_join', {}, name='group_join'),
+#     url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave', {}, name='group_leave'),
+#     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
+#     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
+#     url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list'),
+    
+    url(r'^project/add/?$', 'project_add', {}, name='project_add'),
+    url(r'^project/update/(?P<application_id>\w+)/?$', 'project_update', {}, name='project_update'),
+    url(r'^project/list/?$', 'project_list', {}, name='project_list'),
+    url(r'^project/search/?$', 'project_search', {}, name='project_search'),
+    url(r'^project/all/?$', 'project_all', {}, name='project_all'),
+    url(r'^project/(?P<application_id>\w+)/?$', 'project_detail', {}, name='project_detail'),
+    url(r'^project/(?P<application_id>\w+)/join/?$', 'project_join', {}, name='project_join'),
+    url(r'^project/(?P<application_id>\w+)/leave/?$', 'project_leave', {}, name='project_leave'),
+    url(r'^project/(?P<application_id>\w+)/(?P<user_id>\d+)/approve/?$', 'project_approve_member', {}, name='project_approve_member'),
+    url(r'^project/(?P<application_id>\w+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
+    url(r'^project/(?P<application_id>\w+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    
+    url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
+    url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {}, name='remove_auth_provider'),
 )
+
 
 if EMAILCHANGE_ENABLED:
-    urlpatterns += patterns('astakos.im.views',
+    urlpatterns += patterns(
+        'astakos.im.views',
         url(r'^email_change/?$', 'change_email', {}, name='email_change'),
-        url(r'^email_change/confirm/(?P<activation_key>\w+)/', 'change_email', {},
-            name='email_change_confirm')
-)
-    
-urlpatterns += patterns('astakos.im.target',
-    url(r'^login/redirect/?$', 'redirect.login')
-)
+        url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
+            name='email_change_confirm'))
+
+urlpatterns += patterns(
+    'astakos.im.target',
+    url(r'^login/redirect/?$', 'redirect.login'))
 
 if 'local' in IM_MODULES:
-    urlpatterns += patterns('astakos.im.target',
-        url(r'^local/?$', 'local.login')
-    )
-    urlpatterns += patterns('django.contrib.auth.views',
+    urlpatterns += patterns(
+        'astakos.im.target',
+        url(r'^local/?$', 'local.login'),
+        url(r'^password_change/?$', 'local.password_change', {
+            'post_change_redirect':'profile',
+            'password_change_form':ExtendedPasswordChangeForm
+            },
+            name='password_change'))
+    urlpatterns += patterns(
+        'django.contrib.auth.views',
         url(r'^local/password_reset/?$', 'password_reset',
          {'email_template_name':'registration/password_email.txt',
           'password_reset_form':ExtendedPasswordResetForm}),
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
          'password_reset_confirm', {'set_password_form':ExtendedSetPasswordForm}),
-        url(r'^local/password/reset/complete/?$', 'password_reset_complete'),
-        url(r'^password_change/?$', 'password_change', {'post_change_redirect':'profile',
-            'password_change_form':ExtendedPasswordChangeForm})
-    )
+        url(r'^local/password/reset/complete/?$', 'password_reset_complete'))
 
 if INVITATIONS_ENABLED:
-    urlpatterns += patterns('astakos.im.views',
-        url(r'^invite/?$', 'invite')
-    )
+    urlpatterns += patterns(
+        'astakos.im.views',
+        url(r'^invite/?$', 'invite', {}, name='invite'))
 
 if 'shibboleth' in IM_MODULES:
-    urlpatterns += patterns('astakos.im.target',
-        url(r'^login/shibboleth/?$', 'shibboleth.login')
-    )
+    urlpatterns += patterns(
+        'astakos.im.target',
+        url(r'^login/shibboleth/?$', 'shibboleth.login'),
+        url(r'^shibboleth/signup/(\w+)/?$', 'shibboleth.signup', {}, 'shibboleth_signup'))
 
 if 'twitter' in IM_MODULES:
-    urlpatterns += patterns('astakos.im.target',
+    urlpatterns += patterns(
+        'astakos.im.target',
         url(r'^login/twitter/?$', 'twitter.login'),
-        url(r'^login/twitter/authenticated/?$', 'twitter.authenticated')
-    )
+        url(r'^login/twitter/authenticated/?$',
+            'twitter.authenticated'),
+        url(r'^twitter/signup/([\w-]+)/?$',
+            'twitter.signup', {}, 'twitter_signup'))
 
-urlpatterns += patterns('astakos.im.api.admin',
+urlpatterns += patterns(
+    'astakos.im.api',
+    url(r'^get_services/?$', 'get_services'),
+    url(r'^get_menu/?$', 'get_menu'))
+
+urlpatterns += patterns(
+    'astakos.im.api.admin',
     url(r'^authenticate/?$', 'authenticate_old'),
     #url(r'^authenticate/v2/?$', 'authenticate'),
-    url(r'^get_services/?$', 'get_services'),
-    url(r'^get_menu/?$', 'get_menu'),
     url(r'^admin/api/v2.0/users/?$', 'get_user_by_email'),
-    url(r'^admin/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
-)
+    url(r'^admin/api/v2.0/users/(?P<user_id>.+?)/?$',
+        'get_user_by_username'))
 
-urlpatterns += patterns('astakos.im.api.service',
+urlpatterns += patterns(
+    'astakos.im.api.service',
     #url(r'^service/api/v2.0/tokens/(?P<token_id>.+?)/?$', 'validate_token'),
     url(r'^service/api/v2.0/feedback/?$', 'send_feedback'),
-    url(r'^service/api/v2.0/users/?$', 'get_user_by_email'),
-    url(r'^service/api/v2.0/users/(?P<user_id>.+?)/?$', 'get_user_by_username'),
-)
+    url(r'^service/api/v2.0/users/?$',
+        'get_user_by_email'),
+    url(r'^service/api/v2.0/users/(?P<user_id>.+?)/?$',
+        'get_user_by_username'))

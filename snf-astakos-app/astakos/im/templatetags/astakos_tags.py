@@ -1,5 +1,5 @@
 from django import template
-from django.core.urlresolvers import reverse, resolve
+from django.core.urlresolvers import resolve
 from django.conf import settings
 
 register = template.Library()
@@ -15,9 +15,11 @@ MESSAGES_VIEWS_MAP = getattr(settings, 'ASTAKOS_MESSAGES_VIEWS_MAP', {
     'astakos.im.views.feedback': 'PROFILE_MESSAGES',
 })
 
+
 @register.tag(name='display_messages')
 def display_messages(parser, token):
     return MessagesNode()
+
 
 class DummyMessage(object):
     def __init__(self, type, msg):
@@ -26,6 +28,7 @@ class DummyMessage(object):
 
     def __repr__(self):
         return "%s: %s" % (self.tags, self.message)
+
 
 class MessagesNode(template.Node):
 
@@ -53,7 +56,8 @@ class MessagesNode(template.Node):
             cls = messages[-1].tags
             content = '<div class="top-msg active %s">' % cls
             for msg in messages:
-                content += '<div class="msg %s">%s</div>' % (msg.tags, msg.message)
+                content += '<div class="msg %s">%s</div>' % (
+                    msg.tags, msg.message)
 
             content += '<a href="#" title="close" class="close">X</a>'
             content += '</div>'

@@ -1,59 +1,70 @@
 # encoding: utf-8
-import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
+
 
 class Migration(SchemaMigration):
-    
+
     def forwards(self, orm):
-        
+
         # Changing field 'AstakosUser.email_verified'
-        db.alter_column('im_astakosuser', 'email_verified', self.gf('django.db.models.fields.BooleanField')(blank=True))
+        db.alter_column('im_astakosuser', 'email_verified', self.gf(
+            'django.db.models.fields.BooleanField')(blank=True))
 
         # Changing field 'AstakosUser.has_credits'
-        db.alter_column('im_astakosuser', 'has_credits', self.gf('django.db.models.fields.BooleanField')(blank=True))
+        db.alter_column('im_astakosuser', 'has_credits', self.gf(
+            'django.db.models.fields.BooleanField')(blank=True))
 
         # Changing field 'AstakosUser.date_signed_terms'
-        db.alter_column('im_astakosuser', 'date_signed_terms', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True))
+        db.alter_column('im_astakosuser', 'date_signed_terms', self.gf(
+            'django.db.models.fields.DateTimeField')(null=True, blank=True))
 
         # Changing field 'AstakosUser.is_verified'
-        db.alter_column('im_astakosuser', 'is_verified', self.gf('django.db.models.fields.BooleanField')(blank=True))
+        db.alter_column('im_astakosuser', 'is_verified', self.gf(
+            'django.db.models.fields.BooleanField')(blank=True))
 
         # Changing field 'AstakosUser.has_signed_terms'
-        db.alter_column('im_astakosuser', 'has_signed_terms', self.gf('django.db.models.fields.BooleanField')(blank=True))
+        db.alter_column('im_astakosuser', 'has_signed_terms', self.gf(
+            'django.db.models.fields.BooleanField')(blank=True))
 
         # Changing field 'Invitation.is_accepted'
-        db.alter_column('im_invitation', 'is_accepted', self.gf('django.db.models.fields.BooleanField')(blank=True))
+        db.alter_column('im_invitation', 'is_accepted', self.gf(
+            'django.db.models.fields.BooleanField')(blank=True))
 
         # Changing field 'Invitation.is_consumed'
-        db.alter_column('im_invitation', 'is_consumed', self.gf('django.db.models.fields.BooleanField')(blank=True))
-    
-    
+        db.alter_column('im_invitation', 'is_consumed', self.gf(
+            'django.db.models.fields.BooleanField')(blank=True))
+
     def backwards(self, orm):
-        
+
         # Changing field 'AstakosUser.email_verified'
-        db.alter_column('im_astakosuser', 'email_verified', self.gf('django.db.models.fields.BooleanField')())
+        db.alter_column('im_astakosuser', 'email_verified',
+                        self.gf('django.db.models.fields.BooleanField')())
 
         # Changing field 'AstakosUser.has_credits'
-        db.alter_column('im_astakosuser', 'has_credits', self.gf('django.db.models.fields.BooleanField')())
+        db.alter_column('im_astakosuser', 'has_credits', self.gf(
+            'django.db.models.fields.BooleanField')())
 
         # Changing field 'AstakosUser.date_signed_terms'
-        db.alter_column('im_astakosuser', 'date_signed_terms', self.gf('django.db.models.fields.DateTimeField')(null=True))
+        db.alter_column('im_astakosuser', 'date_signed_terms', self.gf(
+            'django.db.models.fields.DateTimeField')(null=True))
 
         # Changing field 'AstakosUser.is_verified'
-        db.alter_column('im_astakosuser', 'is_verified', self.gf('django.db.models.fields.BooleanField')())
+        db.alter_column('im_astakosuser', 'is_verified', self.gf(
+            'django.db.models.fields.BooleanField')())
 
         # Changing field 'AstakosUser.has_signed_terms'
-        db.alter_column('im_astakosuser', 'has_signed_terms', self.gf('django.db.models.fields.BooleanField')())
+        db.alter_column('im_astakosuser', 'has_signed_terms',
+                        self.gf('django.db.models.fields.BooleanField')())
 
         # Changing field 'Invitation.is_accepted'
-        db.alter_column('im_invitation', 'is_accepted', self.gf('django.db.models.fields.BooleanField')())
+        db.alter_column('im_invitation', 'is_accepted', self.gf(
+            'django.db.models.fields.BooleanField')())
 
         # Changing field 'Invitation.is_consumed'
-        db.alter_column('im_invitation', 'is_consumed', self.gf('django.db.models.fields.BooleanField')())
-    
-    
+        db.alter_column('im_invitation', 'is_consumed', self.gf(
+            'django.db.models.fields.BooleanField')())
+
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},
@@ -129,5 +140,5 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
         }
     }
-    
+
     complete_apps = ['im']

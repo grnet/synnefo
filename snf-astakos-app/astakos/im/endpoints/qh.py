@@ -60,6 +60,7 @@ def get_client():
     if not QUOTAHOLDER_URL:
         return
     _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+    return _client
 
 def call(func_name):
     """Decorator function for Quotaholder client calls."""
@@ -77,7 +78,7 @@ def call(func_name):
             if not func:
                 return ()
 
-            data = payload_func(entities, client, **kwargs)
+            data = payload_func(entities, c, **kwargs)
             if not data:
                 return data
 

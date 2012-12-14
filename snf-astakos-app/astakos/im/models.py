@@ -71,7 +71,7 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quota, register_resources)
+    register_users, send_quota, register_resources, add_quota, QuotaLimits)
 from astakos.im import auth_providers
 #from astakos.im.endpoints.aquarium.producer import report_user_event
 #from astakos.im.tasks import propagate_groupmembers_quota
@@ -1181,67 +1181,116 @@ def get_closed_leave():
 ################
 
 
-class SyncedModel(models.Model):
+def synced_model_metaclass(class_name, class_parents, class_attributes):
 
-    new_state       = models.BigIntegerField()
-    synced_state    = models.BigIntegerField()
-    STATUS_SYNCED   = 0
-    STATUS_PENDING  = 1
-    sync_status     = models.IntegerField(db_index=True)
+    new_attributes = {}
+    sync_attributes = {}
 
-    class Meta:
-        abstract = True
-
-    class NotSynced(Exception):
-        pass
-
-    def sync_init_state(self, state):
-        self.synced_state = state
-        self.new_state = state
-        self.sync_status = self.STATUS_SYNCED
-
-    def sync_get_status(self):
-        return self.sync_status
-
-    def sync_set_status(self):
-        if self.new_state != self.synced_state:
-            self.sync_status = self.STATUS_PENDING
+    for name, value in class_attributes.iteritems():
+        sync, underscore, rest = name.partition('_')
+        if sync == 'sync' and underscore == '_':
+            sync_attributes[rest] = value
         else:
+            new_attributes[name] = value
+
+    if 'prefix' not in sync_attributes:
+        m = ("you did not specify a 'sync_prefix' attribute "
+             "in class '%s'" % (class_name,))
+        raise ValueError(m)
+
+    prefix = sync_attributes.pop('prefix')
+    class_name = sync_attributes.pop('classname', prefix + '_model')
+
+    for name, value in sync_attributes.iteritems():
+        newname = prefix + '_' + name
+        if newname in new_attributes:
+            m = ("class '%s' was specified with prefix '%s' "
+                 "but it already has an attribute named '%s'"
+                 % (class_name, prefix, newname))
+            raise ValueError(m)
+
+        new_attributes[newname] = value
+
+    newclass = type(class_name, class_parents, new_attributes)
+    return newclass
+
+
+def make_synced(prefix='sync', name='SyncedState'):
+
+    the_name = name
+    the_prefix = prefix
+
+    class SyncedState(models.Model):
+
+        sync_classname      = the_name
+        sync_prefix         = the_prefix
+        __metaclass__       = synced_model_metaclass
+
+        sync_new_state      = models.BigIntegerField(null=True)
+        sync_synced_state   = models.BigIntegerField(null=True)
+        STATUS_SYNCED       = 0
+        STATUS_PENDING      = 1
+        sync_status         = models.IntegerField(db_index=True)
+
+        class Meta:
+            abstract = True
+
+        class NotSynced(Exception):
+            pass
+
+        def sync_init_state(self, state):
+            self.sync_synced_state = state
+            self.sync_new_state = state
             self.sync_status = self.STATUS_SYNCED
 
-    def sync_set_synced(self):
-        self.synced_state = self.new_state
-        self.sync_status = self.STATUS_SYNCED
+        def sync_get_status(self):
+            return self.sync_status
 
-    def sync_get_synced_state(self):
-        return self.synced_state
+        def sync_set_status(self):
+            if self.sync_new_state != self.sync_synced_state:
+                self.sync_status = self.STATUS_PENDING
+            else:
+                self.sync_status = self.STATUS_SYNCED
 
-    def sync_set_new_state(self, new_state):
-        self.new_state = new_state
-        self.sync_set_status()
+        def sync_set_synced(self):
+            self.sync_synced_state = self.sync_new_state
+            self.sync_status = self.STATUS_SYNCED
 
-    def sync_get_new_state(self):
-        return self.new_state
+        def sync_get_synced_state(self):
+            return self.sync_synced_state
 
-    def sync_set_synced_state(self, synced_state):
-        self.synced_state = synced_state
-        self.sync_set_status()
+        def sync_set_new_state(self, new_state):
+            self.sync_new_state = new_state
+            self.sync_set_status()
 
-    def sync_get_pending_objects(self):
-        return self.objects.filter(sync_status=self.STATUS_PENDING)
+        def sync_get_new_state(self):
+            return self.sync_new_state
 
-    def sync_get_synced_objects(self):
-        return self.objects.filter(sync_status=self.STATUS_SYNCED)
+        def sync_set_synced_state(self, synced_state):
+            self.sync_synced_state = synced_state
+            self.sync_set_status()
 
-    def sync_verify_get_synced_state(self):
-        status = self.sync_get_status()
-        state = self.sync_get_synced_state()
-        verified = (status == self.STATUS_SYNCED)
-        return state, verified
+        def sync_get_pending_objects(self):
+            kw = dict((the_prefix + '_status', self.STATUS_PENDING))
+            return self.objects.filter(**kw)
 
-    def sync_is_synced(self):
-        state, verified = self.sync_verify_get_synced_state()
-        return verified
+        def sync_get_synced_objects(self):
+            kw = dict((the_prefix + '_status', self.STATUS_SYNCED))
+            return self.objects.filter(**kw)
+
+        def sync_verify_get_synced_state(self):
+            status = self.sync_get_status()
+            state = self.sync_get_synced_state()
+            verified = (status == self.STATUS_SYNCED)
+            return state, verified
+
+        def sync_is_synced(self):
+            state, verified = self.sync_verify_get_synced_state()
+            return verified
+
+    return SyncedState
+
+SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
 class ProjectApplication(models.Model):
@@ -1420,7 +1469,11 @@ class ProjectResourceGrant(models.Model):
     class Meta:
         unique_together = ("resource", "project_application")
 
-class Project(SyncedModel):
+
+class Project(make_synced('app_sync'),
+              make_synced('memb_sync'),
+              models.Model):
+
     synced_application          =   models.OneToOneField(
                                             ProjectApplication,
                                             related_name='project',
@@ -1642,12 +1695,6 @@ class Project(SyncedModel):
 #             logger.error(e.messages)
 
 
-QuotaLimits = namedtuple('QuotaLimits', ('holder',
-                                         'capacity',
-                                         'import_limit',
-                                         'export_limit'))
-
-
 
 class ExclusiveOrRaise(object):
     """Context Manager to exclusively execute a critical code section.
@@ -1683,7 +1730,7 @@ class ExclusiveOrRaise(object):
 exclusive_or_raise = ExclusiveOrRaise(locked=False)
 
 
-class ProjectMembership(SyncedModel):
+class ProjectMembership(SyncedState, models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
     project             =   models.ForeignKey(Project)
@@ -1868,9 +1915,9 @@ class ProjectMembership(SyncedModel):
 
         quotas = self.get_quotas(factor=factor)
         try:
-            failure = add_quotas(quotas)
+            failure = add_quota(quotas)
             if failure:
-                m = "%s: sync: add_quotas failed" % (self,)
+                m = "%s: sync: add_quota failed" % (self,)
                 raise RuntimeError(m)
         except Exception:
             raise

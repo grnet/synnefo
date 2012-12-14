@@ -157,6 +157,18 @@ class Migration(SchemaMigration):
             'realname': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
         },
+        'im.memberjoinpolicy': {
+            'Meta': {'object_name': 'MemberJoinPolicy'},
+            'description': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'policy': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'})
+        },
+        'im.memberleavepolicy': {
+            'Meta': {'object_name': 'MemberLeavePolicy'},
+            'description': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'policy': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'})
+        },
         'im.membership': {
             'Meta': {'unique_together': "(('person', 'group'),)", 'object_name': 'Membership'},
             'date_joined': ('django.db.models.fields.DateField', [], {'db_index': 'True', 'null': 'True', 'blank': 'True'}),
@@ -178,6 +190,74 @@ class Migration(SchemaMigration):
             'third_party_identifier': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'token': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
+        },
+        'im.project': {
+            'Meta': {'object_name': 'Project'},
+            'application': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'project'", 'unique': 'True', 'null': 'True', 'to': "orm['im.ProjectApplication']"}),
+            'creation_date': ('django.db.models.fields.DateTimeField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'last_application_approved': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'last_project'", 'unique': 'True', 'to': "orm['im.ProjectApplication']"}),
+            'last_approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'members': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.AstakosUser']", 'through': "orm['im.ProjectMembership']", 'symmetrical': 'False'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80', 'db_index': 'True'}),
+            'new_state': ('django.db.models.fields.BigIntegerField', [], {}),
+            'state': ('django.db.models.fields.CharField', [], {'default': "'Unknown'", 'max_length': '80'}),
+            'sync_status': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'synced_state': ('django.db.models.fields.BigIntegerField', [], {}),
+            'termination_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'termination_start_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'})
+        },
+        'im.projectapplication': {
+            'Meta': {'object_name': 'ProjectApplication'},
+            'applicant': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'my_project_applications'", 'to': "orm['im.AstakosUser']"}),
+            'comments': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True'}),
+            'end_date': ('django.db.models.fields.DateTimeField', [], {}),
+            'homepage': ('django.db.models.fields.URLField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'issue_date': ('django.db.models.fields.DateTimeField', [], {}),
+            'limit_on_members_number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'member_join_policy': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.MemberJoinPolicy']"}),
+            'member_leave_policy': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.MemberLeavePolicy']"}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
+            'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'own_project_applications'", 'to': "orm['im.AstakosUser']"}),
+            'precursor_application': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['im.ProjectApplication']", 'unique': 'True', 'null': 'True', 'blank': 'True'}),
+            'resource_grants': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': "orm['im.Resource']", 'null': 'True', 'through': "orm['im.ProjectResourceGrant']", 'blank': 'True'}),
+            'start_date': ('django.db.models.fields.DateTimeField', [], {}),
+            'state': ('django.db.models.fields.CharField', [], {'default': "'Unknown'", 'max_length': '80'})
+        },
+        'im.projectmembership': {
+            'Meta': {'unique_together': "(('person', 'project'),)", 'object_name': 'ProjectMembership'},
+            'acceptance_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'db_index': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'leave_request_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            'new_state': ('django.db.models.fields.BigIntegerField', [], {}),
+            'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
+            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
+            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 13, 16, 50, 58, 29637)'}),
+            'sync_status': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'synced_state': ('django.db.models.fields.BigIntegerField', [], {})
+        },
+        'im.projectmembershiphistory': {
+            'Meta': {'object_name': 'ProjectMembershipHistory'},
+            'date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime.now'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
+            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
+            'reason': ('django.db.models.fields.IntegerField', [], {}),
+            'serial': ('django.db.models.fields.BigIntegerField', [], {})
+        },
+        'im.projectresourcegrant': {
+            'Meta': {'unique_together': "(('resource', 'project_application'),)", 'object_name': 'ProjectResourceGrant'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'member_capacity': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'member_export_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'member_import_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'project_application': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.ProjectApplication']", 'blank': 'True'}),
+            'project_capacity': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'project_export_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'project_import_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
         },
         'im.resource': {
             'Meta': {'object_name': 'Resource'},

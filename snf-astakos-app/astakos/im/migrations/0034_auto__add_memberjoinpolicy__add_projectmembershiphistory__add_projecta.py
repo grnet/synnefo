@@ -8,9 +8,6 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Removing unique constraint on 'Resource', fields ['name']
-        db.delete_unique('im_resource', ['name'])
-
         # Adding model 'MemberJoinPolicy'
         db.create_table('im_memberjoinpolicy', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -109,21 +106,8 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'ProjectResourceGrant', fields ['resource', 'project_application']
         db.create_unique('im_projectresourcegrant', ['resource_id', 'project_application_id'])
 
-        # Removing index on 'Resource', fields ['name']
-        db.delete_index('im_resource', ['name'])
-
-        # Adding unique constraint on 'Resource', fields ['name', 'service']
-        db.create_unique('im_resource', ['name', 'service_id'])
-
-
     def backwards(self, orm):
         
-        # Removing unique constraint on 'Resource', fields ['name', 'service']
-        db.delete_unique('im_resource', ['name', 'service_id'])
-
-        # Adding index on 'Resource', fields ['name']
-        db.create_index('im_resource', ['name'])
-
         # Removing unique constraint on 'ProjectResourceGrant', fields ['resource', 'project_application']
         db.delete_unique('im_projectresourcegrant', ['resource_id', 'project_application_id'])
 
@@ -150,10 +134,6 @@ class Migration(SchemaMigration):
 
         # Deleting model 'ProjectResourceGrant'
         db.delete_table('im_projectresourcegrant')
-
-        # Adding unique constraint on 'Resource', fields ['name']
-        db.create_unique('im_resource', ['name'])
-
 
     models = {
         'auth.group': {
@@ -394,12 +374,12 @@ class Migration(SchemaMigration):
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
         },
         'im.resource': {
-            'Meta': {'unique_together': "(('name', 'service'),)", 'object_name': 'Resource'},
+            'Meta': {'object_name': 'Resource'},
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'group': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'meta': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.ResourceMetadata']", 'symmetrical': 'False'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'}),
             'service': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Service']"}),
             'unit': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'})
         },

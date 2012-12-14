@@ -35,9 +35,9 @@
 
 import sys
 import logging
+import json
 
-from synnefo.lib.queue import (exchange_connect, exchange_close,
-    exchange_send, exchange_route, queue_callback, queue_start)
+from synnefo.lib.amqp import AMQPClient
 
 from optparse import OptionParser
 
@@ -45,7 +45,7 @@ from django.core.management import setup_environ
 try:
     from synnefo import settings
 except ImportError:
-   raise Exception("Cannot import settings")
+    raise Exception("Cannot import settings")
 setup_environ(settings)
 
 BROKER_HOST = 'localhost'
@@ -57,6 +57,7 @@ BROKER_VHOST = '/'
 CONSUMER_QUEUE = 'feed'
 CONSUMER_EXCHANGE = 'sample'
 CONSUMER_KEY = '#'
+
 
 def main():
     parser = OptionParser()
@@ -83,22 +84,33 @@ def main():
     parser.add_option('--test', action='store_true', default=False,
                       dest='test', help='Produce a dummy message for testing')
     opts, args = parser.parse_args()
-    
+
     DEBUG = False
     if opts.verbose:
         DEBUG = True
-    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        level=logging.DEBUG if DEBUG else logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        level=logging.DEBUG if DEBUG else logging.INFO)
     logger = logging.getLogger('dispatcher')
+
+    host =  'amqp://%s:%s@%s:%s' % (opts.user, opts.password, opts.host, opts.port)
+    queue = opts.queue
+    key = opts.key
+    exchange = opts.exchange
     
-    exchange = 'rabbitmq://%s:%s@%s:%s/%s' % (opts.user, opts.password, opts.host, opts.port, opts.exchange)
-    connection = exchange_connect(exchange)
+    client = AMQPClient(hosts=[host])
+    client.connect()
+
     if opts.test:
-        exchange_send(connection, opts.key, {"test": "0123456789"})
-        exchange_close(connection)
+        client.exchange_declare(exchange=exchange,
+                                type='topic')
+        client.basic_publish(exchange=exchange,
+                             routing_key=key,
+                             body= json.dumps({"test": "0123456789"}))
+        client.close()
         sys.exit()
-    
+
     callback = None
     if opts.callback:
         cb = opts.callback.rsplit('.', 1)
@@ -106,18 +118,27 @@ def main():
             __import__(cb[0])
             cb_module = sys.modules[cb[0]]
             callback = getattr(cb_module, cb[1])
-    
-    def handle_message(msg):
+
+    def handle_message(client, msg):
         logger.debug('%s', msg)
         if callback:
             callback(msg)
-    
-    exchange_route(connection, opts.key, opts.queue)
-    queue_callback(connection, opts.queue, handle_message)
+        client.basic_ack(msg)
+
+    client.queue_declare(queue=queue)
+    client.queue_bind(queue=queue,
+                      exchange=exchange,
+                      routing_key=key)
+
+    client.basic_consume(queue=queue, callback=handle_message)
+
     try:
-        queue_start(connection)
+        while True:
+            client.basic_wait()
     except KeyboardInterrupt:
         pass
+    finally:
+        client.close()
 
 
 if __name__ == '__main__':

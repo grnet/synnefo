@@ -31,12 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from dbwrapper import DBWrapper
-from node import Node, ROOTNODE, SERIAL, HASH, SIZE, TYPE, MTIME, MUSER, UUID, CHECKSUM, CLUSTER, MATCH_PREFIX, MATCH_EXACT
-from permissions import Permissions, READ, WRITE
-from config import Config
-from quotaholder_serials import QuotaholderSerial
+from dbworker import DBWorker
 
-__all__ = ["DBWrapper",
-           "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "TYPE", "MTIME", "MUSER", "UUID", "CHECKSUM", "CLUSTER", "MATCH_PREFIX", "MATCH_EXACT",
-           "Permissions", "READ", "WRITE", "Config", "QuotaholderSerial"]
+class QuotaholderSerial(DBWorker):
+    """QuotaholderSerial keeps track of quota holder serials.
+    """
+
+    def __init__(self, **params):
+        DBWorker.__init__(self, **params)
+        execute = self.execute
+
+        execute(""" create table if not exists qh_serials
+                          ( serial bigint primary key) """)
+    
+    def get_lower(self, serial):
+        """Return entries lower than serial."""
+
+        q = "select serial from qh_serials where serial < ?"
+        self.execute(q, (serial,))
+        return self.fetchall()
+    
+    def insert_serial(self, serial):
+        """Insert a serial.
+        """
+
+        q = "insert or ignore into qh_serials (serial) values (?)"
+        return self.execute(q, (serial,)).lastrowid
+        

@@ -31,55 +31,53 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from sqlalchemy import Table, Column, String, MetaData
+from sqlalchemy.sql import select
+from sqlalchemy.exc import NoSuchTableError
+
 from dbworker import DBWorker
 
+def create_tables(engine):
+    metadata = MetaData()
+    columns = []
+    columns.append(Column('key', String(256), primary_key=True))
+    columns.append(Column('value', String(256)))
+    config = Table('config', metadata, *columns, mysql_engine='InnoDB')
+    
+    metadata.create_all(engine)
+    return metadata.sorted_tables
 
-class Public(DBWorker):
-    """Paths can be marked as public."""
+class Config(DBWorker):
+    """Config are properties holding persistent information about system state.
+    """
 
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
-        execute = self.execute
+        try:
+            metadata = MetaData(self.engine)
+            self.config = Table('config', metadata, autoload=True)
+        except NoSuchTableError:
+            tables = create_tables(self.engine)
+            map(lambda t: self.__setattr__(t.name, t), tables)
 
-        execute(""" create table if not exists public
-                          ( public_id integer primary key autoincrement,
-                            path      text not null,
-                            active    boolean not null default 1 ) """)
-        execute(""" create unique index if not exists idx_public_path
-                    on public(path) """)
+    def get_value(self, key):
+        """Return configuration value for key."""
 
-    def public_set(self, path):
-        q = "insert or ignore into public (path) values (?)"
-        self.execute(q, (path,))
-        q = "update public set active = 1 where path = ?"
-        self.execute(q, (path,))
-
-    def public_unset(self, path):
-        q = "update public set active = 0 where path = ?"
-        self.execute(q, (path,))
-
-    def public_unset_bulk(self, paths):
-        placeholders = ','.join('?' for path in paths)
-        q = "update public set active = 0 where path in (%s)" % placeholders
-        self.execute(q, paths)
-
-    def public_get(self, path):
-        q = "select public_id from public where path = ? and active = 1"
-        self.execute(q, (path,))
-        row = self.fetchone()
+        s = select([self.config.c.value])
+        s = s.where(self.config.c.key == key)
+        r = self.conn.execute(s)
+        row = r.fetchone()
+        r.close()
         if row:
             return row[0]
         return None
+    
+    def set_value(self, key, value):
+        """Set a configuration entry.
+        """
 
-    def public_list(self, prefix):
-        q = "select path, public_id from public where path like ? escape '\\' and active = 1"
-        self.execute(q, (self.escape_like(prefix) + '%',))
-        return self.fetchall()
-
-    def public_path(self, public):
-        q = "select path from public where public_id = ? and active = 1"
-        self.execute(q, (public,))
-        row = self.fetchone()
-        if row:
-            return row[0]
-        return None
+        s = self.config.insert()
+        r = self.conn.execute(s, key=key, value=value)
+        inserted_primary_key = r.inserted_primary_key[0]
+        r.close()
+        return inserted_primary_key

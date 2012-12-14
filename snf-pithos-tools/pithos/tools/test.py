@@ -59,16 +59,13 @@ DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
                 "%A, %d-%b-%y %H:%M:%S GMT",
                 "%a, %d %b %Y %H:%M:%S GMT"]
 
-OTHER_ACCOUNTS = {
-    '0001': 'verigak',
-    '0002': 'chazapis',
-    '0003': 'gtsouk',
-    '0004': 'papagian',
-    '0005': 'louridas',
-    '0006': 'chstath',
-    '0007': 'pkanavos',
-    '0008': 'mvasilak',
-    '0009': 'διογένης'}
+from pithos.api.settings import AUTHENTICATION_USERS
+AUTHENTICATION_USERS = AUTHENTICATION_USERS or {}
+OTHER_ACCOUNTS = AUTHENTICATION_USERS.copy()
+try:
+    OTHER_ACCOUNTS.pop(get_auth())
+except:
+    pass
 
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
@@ -123,7 +120,7 @@ class BaseTestCase(unittest.TestCase):
 
     def _clean_account(self):
         for c in self.client.list_containers():
-            if c not in self.initial_containers:
+#             if c not in self.initial_containers:
                 self.client.delete_container(c, delimiter='/')
                 self.client.delete_container(c)
     
@@ -298,7 +295,7 @@ class AccountHead(BaseTestCase):
 
     def test_get_account_meta_until(self):
         t = datetime.datetime.utcnow()
-        past = t - datetime.timedelta(minutes=-15)
+        past = t - datetime.timedelta(minutes=15)
         past = int(_time.mktime(past.timetuple()))
 
         meta = {'premium':True}
@@ -913,13 +910,12 @@ class ObjectGet(BaseTestCase):
         v_meta = self.client.retrieve_object_metadata(c, o['name'],
                                                       restricted=True,
                                                       version=v)
-        for k in meta.keys():
-            self.assertTrue(k not in v_meta)
-
+        (self.assertTrue(k not in v_meta) for k in meta.keys())
+        
         #update obejct
         data = get_random_data()
         self.client.update_object(c, o['name'], StringIO(data))
-
+        
         aa = self.client.retrieve_object_versionlist(c, o['name'])['versions']
         self.assert_versionlist_structure(aa)
         self.assertEqual(len(a)+1, len(aa))
@@ -1861,19 +1857,20 @@ class ListSharing(BaseTestCase):
         self.client.create_container('c')
         for i in range(2):
             self.upload_random_data('c1', 'o%s' %i)
-        accounts = OTHER_ACCOUNTS.copy()
-        self.o1_sharing_with = accounts.popitem()
-        self.o1_sharing = [self.o1_sharing_with[1]]
-        self.client.share_object('c1', 'o1', self.o1_sharing, read=True)
-
-        l = []
-        for i in range(2):
-            l.append(accounts.popitem())
-
+        if not OTHER_ACCOUNTS:
+            raise Warning('No other accounts avalaible for running this test.')
+        for token, account in OTHER_ACCOUNTS.items():
+            self.o1_sharing = token, account
+            self.client.share_object('c1', 'o1', (account,), read=True)
+            break
+        
+    def tearDown(self):
+        pass
+    
     def test_list_other_shared(self):
         self.other = Pithos_Client(get_url(),
-                              self.o1_sharing_with[0],
-                              self.o1_sharing_with[1])
+                              self.o1_sharing[0],
+                              self.o1_sharing[1])
         self.assertTrue(get_user() in self.other.list_shared_by_others())
 
     def test_list_my_shared(self):
@@ -1981,7 +1978,7 @@ class List(BaseTestCase):
         self.assertEqual(l, '')
         self.assertEqual([], func(*args, format='json', **kwargs))
 
-class TestGreek(BaseTestCase):
+class TestUTF8(BaseTestCase):
     def test_create_container(self):
         self.client.create_container('φάκελος')
         self.assert_container_exists('φάκελος')
@@ -2109,16 +2106,18 @@ class TestGreek(BaseTestCase):
 
     def test_groups(self):
         #create a group
-        groups = {'σεφς':'chazapis,διογένης'}
+        groups = {'γκρουπ':'chazapis,διογένης'}
         self.client.set_account_groups(**groups)
         groups.update(self.initial_groups)
-        self.assertEqual(groups['σεφς'],
-                         self.client.retrieve_account_groups()['σεφς'])
+        self.assertEqual(groups['γκρουπ'],
+                         self.client.retrieve_account_groups()['γκρουπ'])
 
         #check read access
         self.client.create_container('φάκελος')
         o = self.upload_random_data('φάκελος', 'ο1')
-        self.client.share_object('φάκελος', 'ο1', ['%s:σεφς' % get_user()])
+        self.client.share_object('φάκελος', 'ο1', ['%s:γκρουπ' % get_user()])
+        if 'διογένης' not in OTHER_ACCOUNTS.values():
+            raise Warning('No such an account exists for running this test.')
         chef = Pithos_Client(get_url(),
                             '0009',
                             'διογένης')
@@ -2171,7 +2170,10 @@ class TestGreek(BaseTestCase):
 class TestPermissions(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-
+        
+        if not OTHER_ACCOUNTS:
+            raise Warning('No other accounts avalaible for running this test.')
+        
         #create a group
         self.authorized = ['chazapis', 'verigak', 'gtsouk']
         groups = {'pithosdev':','.join(self.authorized)}

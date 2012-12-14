@@ -13,8 +13,10 @@ down_revision = None
 from alembic import op
 import sqlalchemy as sa
 
+
 def upgrade():
     op.create_index('idx_nodes_parent', 'nodes', ['parent'])
+
 
 def downgrade():
     op.drop_index('idx_nodes_parent', tablename='nodes')

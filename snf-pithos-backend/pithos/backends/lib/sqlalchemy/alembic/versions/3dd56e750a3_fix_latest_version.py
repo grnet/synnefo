@@ -15,22 +15,24 @@ import sqlalchemy as sa
 from sqlalchemy.sql import table, column
 from sqlalchemy.sql.expression import desc
 
+
 def upgrade():
-    n = table('nodes', 
-        column('node', sa.Integer),
-        column('latest_version', sa.Integer)
-    )
-    v = table('versions', 
-        column('node', sa.Integer),
-        column('mtime', sa.Integer),
-        column('serial', sa.Integer),
-    )
-    
-    s = sa.select([v.c.serial]).where(n.c.node == v.c.node).order_by(desc(v.c.mtime)).limit(1)
+    n = table('nodes',
+              column('node', sa.Integer),
+              column('latest_version', sa.Integer)
+              )
+    v = table('versions',
+              column('node', sa.Integer),
+              column('mtime', sa.Integer),
+              column('serial', sa.Integer),
+              )
+
+    s = sa.select([v.c.serial]).where(
+        n.c.node == v.c.node).order_by(desc(v.c.mtime)).limit(1)
     op.execute(
-        n.update().\
-            values({'latest_version':s})
-            )
+        n.update().
+        values({'latest_version': s})
+    )
 
 
 def downgrade():

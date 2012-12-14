@@ -41,13 +41,17 @@ add_checkpoint()
 
 CLEANUP=( )
 
+source devtools/autopkg.conf
+
 # The root of the git repository, no matter where we're called from
 TOPLEVEL="$(git rev-parse --show-toplevel)"
 CURRENT_BRANCH=$(parse_git_branch)
 
 LOCALBRANCH="$CURRENT_BRANCH"
+LOCALDEBIAN=$1
+DEBIANBRANCH=${LOCALDEBIAN:- origin/$REMOTEDEBIAN}
 
-source devtools/autopkg.conf
+
 
 set -e
 trap cleanup EXIT
@@ -61,13 +65,12 @@ test -d "$BACKUPAREA" || die "Backup area directory $BACKUPAREA missing"
 # Prerequisite: Test the dialog utility is available
 dialog --help &>/dev/null || die "Could not run the 'dialog' utility"
 
-git fetch origin $REMOTEDEBIAN
 
 echo "##########################################################"
 echo "Will build packages"
 echo "under '$BUILDAREA',"
 echo "from local branch '$LOCALBRANCH'"
-echo "and debian branch '$REMOTEDEBIAN'"
+echo "and debian branch '$DEBIANBRANCH'"
 echo "##########################################################"
 echo "Press Enter to continue..."
 read
@@ -76,7 +79,8 @@ add_checkpoint
 
 # Create a temporary debian branch to do everything
 TMPDEBIAN=$(mktemp -u debian.XXX)
-git branch --track $TMPDEBIAN  origin/$REMOTEDEBIAN
+
+git branch --track $TMPDEBIAN  $DEBIANBRANCH
 #add_cleanup git branch -D $TMPDEBIAN
 
 git checkout $TMPDEBIAN
@@ -126,7 +130,7 @@ done
 
 # Build all packages
 git-buildpackage --git-export-dir="$BUILDAREA" \
-                 --git-upstream-branch=$REMOTEUPSTREAM \
+                 --git-upstream-branch=$LOCALBRANCH \
                  --git-debian-branch=$TMPDEBIAN \
                  --git-export=INDEX \
                  --git-ignore-new -sa
@@ -141,10 +145,15 @@ echo "###############################################"
 echo "####              SUCCESS                  ####"
 echo "###############################################"
 
+git fetch origin
 #check if your local branch is up-to-date
 commits_behind=$(git rev-list $LOCALBRANCH..origin/$REMOTEUPSTREAM | wc -l)
 if [ $commits_behind -ne 0 ]; then
-  die "Your branch is outdated!! Please run: git pull --rebase origin/$REMOTEUPSTREAM"
+  die "Your local branch is outdated!! Please run: git pull --rebase origin/$REMOTEUPSTREAM"
+fi
+commits_behind=$(git rev-list $DEBIANBRANCH..origin/$REMOTEDEBIAN | wc -l)
+if [ $commits_behind -ne 0 ]; then
+  die "Your debian branch is outdated!! Please run: git pull --rebase origin/$REMOTEDEBIAN"
 fi
 
 trap - EXIT

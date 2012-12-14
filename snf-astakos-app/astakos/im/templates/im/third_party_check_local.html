@@ -13,7 +13,7 @@
     {% if "local" in im_modules %}
       <div class="form-stacked">
         <h2><span>Already have an account?</span></h2>
-        <a href="{% url astakos.im.views.index %}?key={{ token }}"
+        <a href="{% url astakos.im.views.index %}?key={{ token }}#other-login-methods"
           class="button wide">
           <span class="left">YES</span>
           <span class="action-desc right">I want to add '{{ provider_title }}' as a new login method for my existing account</span>

@@ -12,13 +12,14 @@
     <div class="login-section">
 
       <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
-          <a class="other-logins" href="#other-login-methods">other login methods</a></span>
+              <a class="other-logins" href="#other-login-methods">other login methods</a></span>
       </h2>
       <div class="main-login-method">
         {% include master_auth_provider.login_template %}
       </div>
 
-    <div class="extralogin" style="display:none">
+      <div class="extralogin" 
+          style="{% if not last_login_method or last_login_method == master_auth_provider.module %}display:none{% endif %}">
       {% for provider in auth_providers %}
       {% if not provider == master_auth_provider %}
         {% include provider.login_prompt_template %}

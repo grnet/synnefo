@@ -145,10 +145,12 @@ def authenticated(
         )
         if user.is_active:
             # authenticate user
-            return prepare_response(request,
+            response = prepare_response(request,
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
+            response.set_cookie('astakos_last_login_method', 'twitter')
+            return response
         else:
             message = user.get_inactive_message()
             messages.error(request, message)

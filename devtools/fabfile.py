@@ -185,15 +185,9 @@ def _last_commit(f):
                  capture=True).strip()
 
 
-<<<<<<< HEAD:devtools/fabfile.py
-def _diff_from_master(c,f):
-    return local("git log --oneline %s..master %s" \
-                 " | wc -l" % (c, f), capture=True)
-=======
 def _diff_from_master(c, f):
     return local("git log --oneline %s..%s %s"
                  " | wc -l" % (c, env.upstream, f), capture=True)
->>>>>>> b3119c3e35ce7bbc820d44ba584e045ec7ad02e7:fabfile.py
 
 
 def dch(p):

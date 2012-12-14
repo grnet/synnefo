@@ -106,14 +106,16 @@ def authenticate_old(request, user=None):
 
     response = HttpResponse()
     response.status = 204
-    user_info = {'username': user.username,
-                 'uniq': user.email,
-                 'auth_token': user.auth_token,
-                 'auth_token_created': user.auth_token_created.isoformat(),
-                 'auth_token_expires': user.auth_token_expires.isoformat(),
-                 'has_credits': user.has_credits,
-                 'has_signed_terms': user.signed_terms,
-                 'groups': [g.name for g in user.groups.all()]}
+    user_info = {
+        'id': user.id,
+        'username': user.username,
+        'uniq': user.email,
+        'auth_token': user.auth_token,
+        'auth_token_created': user.auth_token_created.isoformat(),
+        'auth_token_expires': user.auth_token_expires.isoformat(),
+        'has_credits': user.has_credits,
+        'has_signed_terms': user.signed_terms,
+        'groups': [g.name for g in user.groups.all()]}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
@@ -142,15 +144,17 @@ def authenticate(request, user=None):
 
     response = HttpResponse()
     response.status = 204
-    user_info = {'userid': user.username,
-                 'email': [user.email],
-                 'name': user.realname,
-                 'auth_token': user.auth_token,
-                 'auth_token_created': epoch(user.auth_token_created),
-                 'auth_token_expires': epoch(user.auth_token_expires),
-                 'has_credits': user.has_credits,
-                 'is_active': user.is_active,
-                 'groups': [g.name for g in user.groups.all()]}
+    user_info = {
+        'id': user.id,
+        'userid': user.username,
+        'email': [user.email],
+        'name': user.realname,
+        'auth_token': user.auth_token,
+        'auth_token_created': epoch(user.auth_token_created),
+        'auth_token_expires': epoch(user.auth_token_expires),
+        'has_credits': user.has_credits,
+        'is_active': user.is_active,
+        'groups': [g.name for g in user.groups.all()]}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)

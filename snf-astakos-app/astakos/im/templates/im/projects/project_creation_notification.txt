@@ -3,19 +3,19 @@
 Έχει δημιουργηθεί το παρακάτω project:
 
 Id:                             {{object.id}}
-Name:                           {{object.definition.name}}
+Name:                           {{object.name}}
 Issue date:                     {{object.issue_date|date:"d/m/Y"}}
-Start date:                     {{object.definition.start_date|date:"d/m/Y"}}
-End date:                       {{object.definition.end_date|date:"d/m/Y"}}
-Member Join Policy:             {{object.definition.member_join_policy.policy}}
-Member Leave Policy:            {{object.definition.member_leave_policy.policy}}
+Start date:                     {{object.start_date|date:"d/m/Y"}}
+End date:                       {{object.end_date|date:"d/m/Y"}}
+Member Join Policy:             {{object.member_join_policy.policy}}
+Member Leave Policy:            {{object.member_leave_policy.policy}}
 Owner:                          {{object.owner}}
 Applicant:                      {{object.applicant}}
-Maximum participant number:     {{object.definition.limit_on_members_number}}
+Maximum participant number:     {{object.limit_on_members_number}}
 Precursor:                      {{object.precursor_application.id}}
 Policies:
-{% for p in object.definition.projectresourcegrant_set.all %}
-    {{p.resource}}: uplimit:{% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
+{% for p in object.projectresourcegrant_set.all %}
+    {{p.resource}}: member capacity:{% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
 {% endfor %}
 
 Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
@@ -26,19 +26,19 @@ The following project has been created:
 
 
 Id:                             {{object.id}}
-Name:                           {{object.definition.name}}
+Name:                           {{object.name}}
 Issue date:                     {{object.issue_date|date:"d/m/Y"}}
-Start date:                     {{object.definition.start_date|date:"d/m/Y"}}
-End date:                       {{object.definition.end_date|date:"d/m/Y"}}
-Member Join Policy:             {{object.definition.member_join_policy.policy}}
-Member Leave Policy:            {{object.definition.member_leave_policy.policy}}
+Start date:                     {{object.start_date|date:"d/m/Y"}}
+End date:                       {{object.end_date|date:"d/m/Y"}}
+Member Join Policy:             {{object.member_join_policy.policy}}
+Member Leave Policy:            {{object.member_leave_policy.policy}}
 Owner:                          {{object.owner}}
 Applicant:                      {{object.applicant}}
-Maximum participant number:     {{object.definition.limit_on_members_number}}
+Maximum participant number:     {{object.limit_on_members_number}}
 Precursor:                      {{object.precursor_application.id}}
 Policies:
-{% for p in object.definition.projectresourcegrant_set.all %}
-    {{p.resource}}: uplimit:{% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
+{% for p in object.projectresourcegrant_set.all %}
+    {{p.resource}}: member capacity:{% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
 {% endfor %}
 
 For approving it you can use the command line tool:

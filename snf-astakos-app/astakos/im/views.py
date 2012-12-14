@@ -41,6 +41,7 @@ from urllib import quote
 from functools import wraps
 from datetime import datetime
 
+from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -63,6 +64,8 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
+
+import astakos.im.messages as astakos_messages
 
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (
@@ -103,7 +106,6 @@ from astakos.im.settings import (
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 
-import astakos.im.messages as astakos_messages
 from astakos.im import settings
 from astakos.im import auth_providers
 
@@ -140,7 +142,9 @@ def requires_auth_provider(provider_id, **perms):
                 for pkey, value in perms.iteritems():
                     attr = 'is_available_for_%s' % pkey.lower()
                     if getattr(provider, attr)() != value:
-                        raise PermissionDenied
+                        msg = provider.get_message("NOT_ACTIVE_FOR_" + pkey.upper())
+                        messages.error(request, msg)
+                        return HttpResponseRedirect(reverse('login'))
             return func(request, *args)
         return wrapper
     return decorator
@@ -205,6 +209,10 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     template_name = login_template_name
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
+
+    third_party_token = request.GET.get('key', False)
+    if third_party_token:
+        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
 
     return render_response(
         template_name,
@@ -374,7 +382,10 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 @transaction.commit_manually
 @require_http_methods(["GET", "POST"])
-def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
+def signup(request, template_name='im/signup.html',
+           on_success='im/signup_complete.html', extra_context=None,
+           on_success_redirect='/im/profile/',
+           backend=None):
     """
     Allows a user to create a local account.
 
@@ -424,6 +435,11 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         instance = None
 
     third_party_token = request.REQUEST.get('third_party_token', None)
+    if third_party_token:
+        pending = get_object_or_404(PendingThirdPartyUser,
+                                    token=third_party_token)
+        provider = pending.provider
+        instance = pending.get_user_instance()
 
     try:
         if not backend:
@@ -432,6 +448,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.error(request, e)
+
     if request.method == 'POST':
         if form.is_valid():
             user = form.save(commit=False)
@@ -458,13 +475,8 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                     return response
                 messages.add_message(request, status, message)
                 transaction.commit()
-                return render_response(
-                    on_success,
-                    context_instance=get_context(
-                        request,
-                        extra_context
-                    )
-                )
+                return HttpResponseRedirect(on_success_redirect)
+
             except SendMailError, e:
                 logger.exception(e)
                 status = messages.ERROR
@@ -477,6 +489,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 messages.error(request, message)
                 logger.exception(e)
                 transaction.rollback()
+
     return render_response(template_name,
                            signup_form=form,
                            third_party_token=third_party_token,
@@ -547,10 +560,16 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
     if request.user.is_authenticated():
         email = request.user.email
         auth_logout(request)
+    else:
+        response['Location'] = reverse('index')
+        response.status_code = 301
+        return response
+
     next = restrict_next(
         request.GET.get('next'),
         domain=COOKIE_DOMAIN
     )
+
     if next:
         response['Location'] = next
         response.status_code = 302
@@ -559,8 +578,8 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         response.status_code = 301
     else:
         messages.add_message(request, messages.SUCCESS, _(astakos_messages.LOGOUT_SUCCESS))
-        context = get_context(request, extra_context)
-        response.write(render_to_string(template, context_instance=context))
+        response['Location'] = reverse('index')
+        response.status_code = 301
     return response
 
 
@@ -580,30 +599,33 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     try:
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
-        return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
+        messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
+        return HttpResponseRedirect(reverse('index'))
 
     if user.is_active:
         message = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
         messages.error(request, message)
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
 
     try:
-        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+        activate_func(user, greeting_email_template_name,
+                      helpdesk_email_template_name, verify_email=True)
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
-        return response
+        messages.success(request, astakos_messages.ACCOUNT_ACTIVATED)
+        return HttpResponseRedirect(reverse('edit_profile'))
     except SendMailError, e:
         message = e.message
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
     except BaseException, e:
         status = messages.ERROR
         message = _(astakos_messages.GENERIC_ERROR)
         messages.add_message(request, messages.ERROR, message)
         logger.exception(e)
         transaction.rollback()
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET", "POST"])
@@ -709,6 +731,10 @@ def change_email(request, activation_key=None,
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
 
+    if request.user.is_authenticated():
+        messages.error(request, 'You are already signed in.')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
     if settings.MODERATION_ENABLED:
         raise PermissionDenied
 
@@ -722,6 +748,8 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             send_activation_func(u)
             msg = _(astakos_messages.ACTIVATION_SENT)
             messages.success(request, msg)
+            return HttpResponseRedirect('/im/')
+
         except SendMailError, e:
             messages.error(request, e)
     return render_response(
@@ -922,7 +950,6 @@ class ResourcePresentation():
 #         form=form,
 #         policies=form.cleaned_data.get('policies')
 #     )
-
 
 ##@require_http_methods(["GET"])
 # @require_http_methods(["GET", "POST"])
@@ -1316,7 +1343,7 @@ def resource_usage(request):
             entry['ratio_limited'] = 100
         else:
             entry['ratio_limited'] = entry['ratio']
-        
+
         return entry
 
     def pluralize(entry):

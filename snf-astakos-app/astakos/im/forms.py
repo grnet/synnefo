@@ -67,6 +67,7 @@ from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application
 
 from astakos.im.util import reserved_email, get_query
+from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 
@@ -263,6 +264,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         email = self.cleaned_data['email'].lower()
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
+        if reserved_email(email):
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return email
 
     def clean_has_signed_terms(self):
@@ -326,23 +329,6 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         self.initial['additional_email'] = self.initial.get(name, field.initial)
         self.initial['email'] = None
 
-    def clean_email(self):
-        email = self.cleaned_data['email'].lower()
-        if self.instance:
-            if self.instance.email == email:
-                raise forms.ValidationError(_("This is your current email."))
-        for user in AstakosUser.objects.filter(email__iexact=email):
-            if user.provider == 'shibboleth':
-                raise forms.ValidationError(_(
-                        "This email is already associated with another \
-                         shibboleth account."
-                    )
-                )
-            else:
-                raise forms.ValidationError(_("This email is already used"))
-        super(ShibbolethUserCreationForm, self).clean_email()
-        return email
-
 
 class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
                                         InvitedThirdPartyUserCreationForm):
@@ -374,8 +360,7 @@ class LoginForm(AuthenticationForm):
                                          'recaptcha_response_field', ])
 
     def clean_username(self):
-        if 'username' in self.cleaned_data:
-            return self.cleaned_data['username'].lower()
+        return self.cleaned_data['username'].lower()
 
     def clean_recaptcha_response_field(self):
         if 'recaptcha_challenge_field' in self.cleaned_data:
@@ -398,11 +383,24 @@ class LoginForm(AuthenticationForm):
         """
         Override default behavior in order to check user's activation later
         """
+        username = self.cleaned_data.get('username')
+
+        try:
+            user = AstakosUser.objects.get(email=username)
+            if not user.has_auth_provider('local'):
+                provider = auth_providers.get_provider('local')
+                raise forms.ValidationError(
+                    _(provider.get_message('NOT_ACTIVE_FOR_USER_LOGIN')))
+        except AstakosUser.DoesNotExist:
+            pass
+
         try:
             super(LoginForm, self).clean()
         except forms.ValidationError, e:
-#            if self.user_cache is None:
-#                raise
+            if self.user_cache is None:
+                raise
+            if not self.user_cache.is_active:
+                raise forms.ValidationError(self.user_cache.get_inactive_message())
             if self.request:
                 if not self.request.session.test_cookie_worked():
                     raise
@@ -477,7 +475,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email__iexact=email, is_active=True)
+            user = AstakosUser.objects.get(email__iexact=email)
             if not user.has_usable_password():
                 raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
 
@@ -884,8 +882,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
             label='Renew token',
             required=False,
             initial=True,
-            help_text='Unsetting this may result in security risk.'
-        )
+            help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)

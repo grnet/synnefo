@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+
 from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
@@ -51,6 +53,7 @@ from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
+from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 
@@ -111,6 +114,9 @@ def authenticated(
 
     access_token = dict(cgi.parse_qsl(content))
     userid = access_token['user_id']
+    username = access_token.get('screen_name', userid)
+    provider_info = {'screen_name': username}
+    affiliation = 'Twitter.com'
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -124,7 +130,10 @@ def authenticated(
             messages.error(request, 'Account already exists.')
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('twitter', identifier=userid)
+        user.add_auth_provider('twitter', identifier=userid,
+                               affiliation=affiliation,
+                               provider_info=provider_info)
+        messages.success(request, 'Account assigned.')
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
@@ -139,82 +148,37 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-        elif not user.activation_sent:
-            message = _('Your request is pending activation')
-			#TODO: use astakos_messages
-            if not settings.MODERATION_ENABLED:
-                url = user.get_resend_activation_url()
-                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
-                message = message + u' ' + msg_extra
-
-            messages.error(request, message)
-            return HttpResponseRedirect(reverse('login'))
-
         else:
-			#TODO: use astakos_messages
-            message = _(u'Account disabled. Please contact support')
+            message = user.get_inactive_message()
             messages.error(request, message)
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-		#TODO: use astakos_messages
+        provider = auth_providers.get_provider('twitter')
+        if not provider.is_available_for_create():
+            messages.error(request,
+                           _(astakos_messages.AUTH_PROVIDER_NOT_ACTIVE) % provider.get_title_display)
+            return HttpResponseRedirect(reverse('login'))
+
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=userid,
             provider='twitter',
         )
         # update pending user
-        user.affiliation = 'Twitter'
+        user.affiliation = affiliation
+        user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 
         extra_context['provider'] = 'twitter'
+        extra_context['provider_title'] = 'Twitter'
         extra_context['token'] = user.token
-        extra_context['signup_url'] = reverse('twitter_signup', args=(user.token,))
+        extra_context['signup_url'] = reverse('signup') + \
+                                    "?third_party_token=%s" % user.token
 
         return render_response(
             template,
             context_instance=get_context(request, extra_context)
         )
-
-
-@requires_auth_provider('twitter', login=True, create=True)
-@require_http_methods(["GET"])
-@requires_anonymous
-def signup(
-    request,
-    token,
-    backend=None,
-    on_creation_template='im/third_party_registration.html',
-    extra_context={}):
-
-    extra_context = extra_context or {}
-    if not token:
-		#TODO: use astakos_messages
-        return HttpResponseBadRequest(_('Missing key parameter.'))
-
-    pending = get_object_or_404(PendingThirdPartyUser, token=token)
-    d = pending.__dict__
-    d.pop('_state', None)
-    d.pop('id', None)
-    d.pop('token', None)
-    d.pop('created', None)
-    user = AstakosUser(**d)
-
-    try:
-        backend = backend or get_backend(request)
-    except ImproperlyConfigured, e:
-        messages.error(request, e)
-    else:
-        extra_context['form'] = backend.get_signup_form(
-            provider='twitter',
-            instance=user
-        )
-
-    extra_context['provider'] = 'twitter'
-    extra_context['third_party_token'] = token
-    return render_response(
-            on_creation_template,
-            context_instance=get_context(request, extra_context)
-    )
 

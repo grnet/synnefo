@@ -1,6 +1,10 @@
-<form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
-  <h2 class="form-toggler"><a href="#">LOGIN USING YOUR LOCAL ACCOUNT</a></h2>
-  <div class="form" style="display:none">
+<form action="{% url astakos.im.target.local.login %}#other-login-methods" method="post" 
+  class="login-form login innerlabels">{% csrf_token %}
+  <p>
+    {{ provider.get_login_prompt_display }}
+  </p>
+  <Br />
+  <div class="login-form" style="display:block">
     {% with login_form as form %}
         {% include "im/form_render.html" %}
     {% endwith %}
@@ -20,11 +24,3 @@
       </div>
     </div>
   </form>
-  <script>
-    $(document).ready(function(){
-      $("h2.form-toggler a").click(function(e) {
-        e.preventDefault();
-        $("div.form").slideToggle();
-      })
-    })
-  </script>

@@ -75,32 +75,25 @@ def login(request, on_failure='im/login.html'):
     third_party_token = get_query(request).get('key', False)
 
     if not form.is_valid():
+        if third_party_token:
+            messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
         return render_to_response(
             on_failure,
             {'login_form':form,
              'next':next,
              'key': third_party_token},
-            context_instance=RequestContext(request)
-        )
-    # get the user from the cash
+            context_instance=RequestContext(request))
+
+    # get the user from the cache
     user = form.user_cache
 
     message = None
     if not user:
         message = _(astakos_messages.ACCOUNT_AUTHENTICATION_FAILED)
     elif not user.is_active:
-        if not user.activation_sent:
-            message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
-        else:
-			# TODO: USE astakos_messages
-            url = reverse('send_activation', kwargs={'user_id':user.id})
-            msg = _('You have not followed the activation link.')
-            if settings.MODERATION_ENABLED:
-                msg_extra = ' ' + _('Please contact support.')
-            else:
-                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
+        message = user.get_inactive_message()
 
-            message = msg + msg_extra
     elif not user.can_login_with_auth_provider('local'):
         # valid user logged in with no auth providers set, add local provider
         # and let him log in
@@ -119,14 +112,27 @@ def login(request, on_failure='im/login.html'):
     if third_party_token:
         # use requests to assign the account he just authenticated with with
         # a third party provider account
-        # TODO: USE astakos_messages
         try:
-          request.user.add_pending_auth_provider(third_party_token)
-          messages.success(request, _('Your new login method has been added'))
+            request.user.add_pending_auth_provider(third_party_token)
+            messages.success(request, _(astakos_messages.AUTH_PROVIDER_ADDED))
         except PendingThirdPartyUser.DoesNotExist:
-          messages.error(request, _('Account method assignment failed'))
+            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 
+    messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
     return response
+
+
+@require_http_methods(["GET"])
+def password_reset_done(request, *args, **kwargs):
+    messages.success(request, _(astakos_messages.PASSWORD_RESET_DONE))
+    return HttpResponseRedirect(reverse('index'))
+
+
+@require_http_methods(["GET"])
+def password_reset_confirm_done(request, *args, **kwargs):
+    messages.success(request, _(astakos_messages.PASSWORD_RESET_CONFIRM_DONE))
+    return HttpResponseRedirect(reverse('index'))
+
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required

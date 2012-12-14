@@ -1,5 +1,7 @@
 <form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
-    <h2>LOGIN</h2>
+    <p>
+    {{ provider.get_primary_login_prompt_display }}
+    </p>
     {% with login_form as form %}
         {% include "im/form_render.html" %}
     {% endwith %}

@@ -1,4 +1,5 @@
-new to okeanos ? 
+<br />
+{{ provider.get_signup_prompt_display }}
 <a href="{% url astakos.im.views.signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">
 {{ provider.get_create_prompt_display }}
 </a>

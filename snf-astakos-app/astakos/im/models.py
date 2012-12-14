@@ -1854,7 +1854,7 @@ class ProjectMembership(SyncedState, models.Model):
         if synced_application is None:
             m = _("%s: attempt to read resource grants "
                   "of an uninitialized project") % (self,)
-            raise AssertionException(m)
+            raise AssertionError(m)
 
         # first, inverse all current limits, and index them by resource name
         cur_grants = synced_application.resource_grants.all()

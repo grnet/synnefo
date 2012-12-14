@@ -1239,43 +1239,53 @@ class SyncedModel(models.Model):
         verified = (status == self.STATUS_SYNCED)
         return state, verified
 
+    def sync_is_synced(self):
+        state, verified = self.sync_verify_get_synced_state()
+        return verified
+
+
 class ProjectApplication(models.Model):
-    states_list = [PENDING, APPROVED, REPLACED, UNKNOWN]
-    states = dict((k, v) for v, k in enumerate(states_list))
 
-    applicant = models.ForeignKey(
-        AstakosUser,
-        related_name='my_project_applications',
-        db_index=True)
-    owner = models.ForeignKey(
-        AstakosUser,
-        related_name='own_project_applications',
-        db_index=True
-    )
-    precursor_application = models.OneToOneField('ProjectApplication',
-        null=True,
-        blank=True,
-        db_index=True
-    )
-    state = models.CharField(max_length=80, default=UNKNOWN)
+    applicant               =   models.ForeignKey(
+                                    AstakosUser,
+                                    related_name='my_project_applications',
+                                    db_index=True
+                                    )
+    owner                   =   models.ForeignKey(
+                                    AstakosUser,
+                                    related_name='own_project_applications',
+                                    db_index=True
+                                    )
+    precursor_application   =   models.OneToOneField('ProjectApplication',
+                                                     null=True,
+                                                     blank=True,
+                                                     db_index=True
+                                                     )
+    state                   =   models.CharField(max_length=80,
+                                                 default=UNKNOWN)
 
-    name = models.CharField(max_length=80)
-    homepage = models.URLField(max_length=255, null=True, blank=True)
-    description = models.TextField(null=True)
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    member_join_policy = models.ForeignKey(MemberJoinPolicy)
-    member_leave_policy = models.ForeignKey(MemberLeavePolicy)
-    limit_on_members_number = models.PositiveIntegerField(null=True,blank=True)
-    resource_grants = models.ManyToManyField(
-        Resource,
-        null=True,
-        blank=True,
-        through='ProjectResourceGrant'
-    )
-    comments = models.TextField(null=True, blank=True)
-    issue_date = models.DateTimeField()
-    
+    name                    =   models.CharField(max_length=80)
+    homepage                =   models.URLField(max_length=255, null=True,
+                                                blank=True)
+    description             =   models.TextField(null=True)
+    start_date              =   models.DateTimeField()
+    end_date                =   models.DateTimeField()
+    member_join_policy      =   models.ForeignKey(MemberJoinPolicy)
+    member_leave_policy     =   models.ForeignKey(MemberLeavePolicy)
+    limit_on_members_number =   models.PositiveIntegerField(null=True,
+                                                            blank=True)
+    resource_grants         =   models.ManyToManyField(
+                                    Resource,
+                                    null=True,
+                                    blank=True,
+                                    through='ProjectResourceGrant'
+                                    )
+    comments                =   models.TextField(null=True, blank=True)
+    issue_date              =   models.DateTimeField()
+
+    states_list =   [PENDING, APPROVED, REPLACED, UNKNOWN]
+    states      =   dict((k, v) for v, k in enumerate(states_list))
+
     def add_resource_policy(self, service, resource, uplimit, update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
         resource = Resource.objects.get(service__name=service, name=resource)
@@ -1301,7 +1311,7 @@ class ProjectApplication(models.Model):
             uplimit = p.get('uplimit', 0)
             update = p.get('update', True)
             self.add_resource_policy(service, resource, uplimit, update)
-    
+
     @property
     def follower(self):
         try:
@@ -1370,7 +1380,12 @@ class ProjectApplication(models.Model):
                 pass
             project = Project(creation_date=now)
 
-        project.last_application_approved = self
+        project.latest_application = self
+        project.set_membership_replaced()
+
+        with exclusive_or_raise:
+            project.status_set_flag(Project.SYNC_PENDING_DEFINITION)
+
         project.last_approval_date = now
         project.save()
         #ProjectMembership.add_to_project(self)
@@ -1390,14 +1405,15 @@ class ProjectApplication(models.Model):
 
 class ProjectResourceGrant(models.Model):
 
-    resource = models.ForeignKey(Resource)
-    project_application = models.ForeignKey(ProjectApplication, blank=True)
-    project_capacity     = models.BigIntegerField(null=True)
-    project_import_limit = models.BigIntegerField(null=True)
-    project_export_limit = models.BigIntegerField(null=True)
-    member_capacity      = models.BigIntegerField(null=True)
-    member_import_limit  = models.BigIntegerField(null=True)
-    member_export_limit  = models.BigIntegerField(null=True)
+    resource                =   models.ForeignKey(Resource)
+    project_application     =   models.ForeignKey(ProjectApplication,
+                                                  blank=True)
+    project_capacity        =   models.BigIntegerField(null=True)
+    project_import_limit    =   models.BigIntegerField(null=True)
+    project_export_limit    =   models.BigIntegerField(null=True)
+    member_capacity         =   models.BigIntegerField(null=True)
+    member_import_limit     =   models.BigIntegerField(null=True)
+    member_export_limit     =   models.BigIntegerField(null=True)
 
     objects = ExtendedManager()
 
@@ -1405,11 +1421,11 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
 class Project(SyncedModel):
-    application                 =   models.OneToOneField(
+    synced_application          =   models.OneToOneField(
                                             ProjectApplication,
                                             related_name='project',
                                             null=True)
-    last_application_approved   =   models.OneToOneField(
+    latest_application          =   models.OneToOneField(
                                             ProjectApplication,
                                             related_name='last_project')
     last_approval_date          =   models.DateTimeField(null=True)
@@ -1426,30 +1442,47 @@ class Project(SyncedModel):
                                             max_length=80,
                                             db_index=True,
                                             unique=True)
-    state = models.CharField(max_length=80, default=UNKNOWN)
+
+    status                      =   models.IntegerField(db_index=True)
+
+    SYNCHRONIZED                =   0
+    SYNC_PENDING_MEMBERSHIP     =   (1 << 0)
+    SYNC_PENDING_DEFINITION     =   (1 << 1)
+    # SYNC_PENDING                =   (SYNC_PENDING_DEFINITION |
+    #                                  SYNC_PENDING_MEMBERSHIP)
+
+
+    def status_set_flag(self, s):
+        self.status |= s
+
+    def status_unset_flag(self, s):
+        self.status &= ~s
+
+    def status_is_set_flag(self, s):
+        return self.status & s == s
 
     @property
     def current_application(self):
-        return self.application or self.last_application_approved
-    
+        return self.synced_application or self.latest_application
+
     @property
     def violated_resource_grants(self):
-        if self.application is None:
+        if self.synced_application is None:
             return True
         # do something
         return False
-    
+
     @property
     def violated_members_number_limit(self):
-        application = self.application
+        application = self.synced_application
         if application is None:
             return True
         return len(self.approved_members) > application.limit_on_members_number
-        
+
     @property
     def is_terminated(self):
         return bool(self.termination)
-    
+
     @property
     def is_still_approved(self):
         return bool(self.last_approval_date)
@@ -1473,11 +1506,11 @@ class Project(SyncedModel):
 #             if not self.violated_members_number_limit:
 #                 return False
         return True
-    
+
     @property
     def is_alive(self):
         return self.is_active or self.is_suspended
-    
+
     @property
     def is_inconsistent(self):
         now = datetime.now()
@@ -1488,59 +1521,60 @@ class Project(SyncedModel):
         if self.terminaton_date > now:
             return True
         return False
-    
+
+    @property
+    def approved_memberships(self):
+        return self.projectmembership_set.filter(
+            synced_state=ProjectMembership.ACCEPTED)
+
     @property
     def approved_members(self):
-        return [m.person for m in self.projectmembership_set.filter(~Q(acceptance_date=None))]
-
-    def sync(self, specific_members=()):
-        if self.is_synchronized:
-            return
-        members = specific_members or self.approved_members
-        rejected = send_quota(self.approved_members)
-        if not rejected:
-            self.application = self.last_application_approved
-            self.save()
-        return rejected
-
-    def set_pending_membership_sync(self):
-        self.membership_dirty = True
-        self.save()
-
-    def set_state(self):
-        PROJECT_SYNCHRONIZED = 0
-        PROJECT_SYNC_PENDING_MEMBERSHIP = (1 << 0)
-        PROJECT_SYNC_PENDING_DEFINITION = (1 << 1)
-        PROJECT_SYNC_PENDING = (PROJECT_SYNC_PENDING_DEFINITION | 
-                                PROJECT_SYNC_PENDING_MEMBERSHIP)
-
-        oldstate = self.state
-        state = PROJECT_SYNCHRONIZED
-
-        if self.last_application_approved != self.application:
-            state |= PROJECT_SYNC_PENDING_DEFINITION
-
-        if self.membership_dirty:
-            state |= PROJECT_SYNC_PENDING_MEMBERSHIP
-
-        if oldstate != state:
-            self.state = state
-            self.save()
-        return state
+        return [m.person for m in self.approved_memberships]
 
     def check_sync(self, hint=None):
-        state = self.set_state()
-        if state: # needs syncing
-            if self.sync_membership():
-                self.set_sta
+        if self.status != self.SYNCHRONIZED:
+            self.sync()
 
-    def sync_membership(self, members=None):
-        members = members if members is not None else self.approved_members
-        rejected = send_quota(members)
-        success = not rejected
-        if success:
-            self.members
-        return success
+    def set_membership_replaced(self):
+        members = [m for m in self.approved_memberships
+                   if m.sync_is_synced()]
+
+        for member in members:
+            member.sync_set_new_state(member.REPLACED)
+            member.save()
+
+    def sync_membership(self):
+        pending_members = self.projectmembership.filter(
+            sync_status=ProjectMembership.STATUS_PENDING)
+        for member in members:
+            try:
+                member.sync()
+            except Exception:
+                raise
+
+        still_pending_members = self.members.filter(
+            sync_status=ProjectMembership.STATUS_PENDING)
+        if not still_pending_members:
+            with exclusive_or_raise:
+                self.status_unset_flag(self.SYNC_PENDING_MEMBERSHIP)
+                self.save()
+
+    def sync_definition(self):
+        try:
+            self.sync_membership()
+        except Exception:
+            raise
+        else:
+            with exclusive_or_raise:
+                self.status_unset_flag(self.SYNC_PENDING_DEFINITION)
+                self.synced_application = self.latest_application
+                self.save()
+
+    def sync(self):
+        if self.status_is_set_flag(self.SYNC_PENDING_DEFINITION):
+            self.sync_definition()
+        if self.status_is_set_flag(self.SYNC_PENDING_MEMBERSHIP):
+            self.sync_membership()
 
     def add_member(self, user):
         """
@@ -1573,13 +1607,13 @@ class Project(SyncedModel):
         self.termination_start_date = datetime.now()
         self.terminaton_date = None
         self.save()
-        
+
         rejected = self.sync()
         if not rejected:
             self.termination_start_date = None
             self.termination_date = datetime.now()
             self.save()
-            
+
 #         try:
 #             notification = build_notification(
 #                 settings.SERVER_EMAIL,
@@ -1650,12 +1684,13 @@ exclusive_or_raise = ExclusiveOrRaise(locked=False)
 
 
 class ProjectMembership(SyncedModel):
-    person = models.ForeignKey(AstakosUser)
-    project = models.ForeignKey(Project)
-    request_date = models.DateField(default=datetime.now())
 
-    acceptance_date = models.DateField(null=True, db_index=True)
-    leave_request_date = models.DateField(null=True)
+    person              =   models.ForeignKey(AstakosUser)
+    project             =   models.ForeignKey(Project)
+    request_date        =   models.DateField(default=datetime.now())
+
+    acceptance_date     =   models.DateField(null=True, db_index=True)
+    leave_request_date  =   models.DateField(null=True)
 
     REQUESTED   =   0
     ACCEPTED    =   1
@@ -1706,6 +1741,9 @@ class ProjectMembership(SyncedModel):
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
         self.sync_set_new_state(self.ACCEPTED)
+        with exclusive_or_raise:
+            self.project.status_set_flag(Project.SYNC_PENDING_MEMBERSHIP)
+            self.project.save()
         self.save()
 
     def remove(self):
@@ -1722,6 +1760,9 @@ class ProjectMembership(SyncedModel):
 
         serial = self._set_history_item(reason='REMOVE')
         self.sync_set_new_state(self.REMOVED)
+        with exclusive_or_raise:
+            self.project.status_set_flag(Project.SYNC_PENDING_MEMBERSHIP)
+            self.project.save()
         self.save()
 
     def reject(self):
@@ -1746,7 +1787,7 @@ class ProjectMembership(SyncedModel):
             limits_list = []
         append = limits_list.append
         holder = self.person.username
-        all_grants = self.project.application.resource_grants.all()
+        all_grants = self.project.latest_application.resource_grants.all()
         for grant in all_grants:
             append(QuotaLimits(holder       = holder,
                                resource     = grant.resource.name,
@@ -1762,8 +1803,14 @@ class ProjectMembership(SyncedModel):
         append = limits_list.append
         holder = self.person.username
 
+        synced_application = self.project.synced_application
+        if synced_application is None:
+            m = _("%s: attempt to read resource grants "
+                  "of an uninitialized project") % (self,)
+            raise AssertionException(m)
+
         # first, inverse all current limits, and index them by resource name
-        cur_grants = self.project.application.resource_grants.all()
+        cur_grants = synced_application.resource_grants.all()
         f = factor * -1
         tmp_grants = {}
         for grant in cur_grants:
@@ -1776,7 +1823,7 @@ class ProjectMembership(SyncedModel):
                             export_limit = f * grant.member_export_limit)
 
         # second, add each new limit to its inversed current
-        new_grants = self.project.new_application.resource_grants.all()
+        new_grants = self.project.latest_application.resource_grants.all()
         for new_grant in new_grants:
             name = grant.resource.name
             cur_grant = tmp_grants.pop(name, None)
@@ -1842,13 +1889,14 @@ class ProjectMembership(SyncedModel):
 
 
 class ProjectMembershipHistory(models.Model):
-    reasons_list = ['ACCEPT', 'REJECT', 'REMOVE']
-    reasons = dict((k, v) for v, k in enumerate(reasons_list))
-    person = models.ForeignKey(AstakosUser)
-    project = models.ForeignKey(Project)
-    date = models.DateField(default=datetime.now)
-    reason = models.IntegerField()
-    serial = models.BigIntegerField()
+    reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']
+    reasons         =   dict((k, v) for v, k in enumerate(reasons_list))
+
+    person  =   models.ForeignKey(AstakosUser)
+    project =   models.ForeignKey(Project)
+    date    =   models.DateField(default=datetime.now)
+    reason  =   models.IntegerField()
+    serial  =   models.BigIntegerField()
 
 
 def filter_queryset_by_property(q, property):
@@ -1952,7 +2000,7 @@ post_save.connect(resource_post_save, sender=Resource)
 #     if not users:
 #         return
 #     send_quota(users)
-# 
+#
 # quota_disturbed = Signal(providing_args=["users"])
 # quota_disturbed.connect(on_quota_disturbed)
 

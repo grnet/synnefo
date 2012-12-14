@@ -32,8 +32,10 @@
 # Provides automated tests for db module
 
 from synnefo.db.models import *
-
 from django.test import TestCase
+
+# Import pool tests
+from synnefo.db.pools.tests import *
 
 
 class FlavorTestCase(TestCase):

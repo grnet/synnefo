@@ -33,7 +33,8 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_backend, check_backend_credentials
+from synnefo.management.common import (get_backend, check_backend_credentials,
+                                       parse_bool)
 
 
 class Command(BaseCommand):
@@ -56,22 +57,16 @@ class Command(BaseCommand):
             help="Set backend's password"),
         make_option('--drained',
             dest='drained',
-            action='store_true',
-            default=False,
+            choices=["True", "False"],
+            metavar="True|False",
             help="Set the backend as drained to exclude from allocation "\
                  "operations"),
-        make_option('--no-drained',
-            dest='drained',
-            action='store_false'),
         make_option('--offline',
             dest='offline',
-            action='store_true',
-            default=False,
+            choices=["True", "False"],
+            metavar="True|False",
             help="Set the backend as offline to not communicate in order "\
                  "to avoid delays"),
-        make_option('--no-offline',
-            dest='offline',
-            action='store_false')
         )
 
     def handle(self, *args, **options):
@@ -81,19 +76,21 @@ class Command(BaseCommand):
         backend = get_backend(args[0])
 
         # Ensure fields correspondence with options and Backend model
-        fields = ('clustername', 'port', 'username', 'password', 'drained',
-                  'offline')
+        credentials_changed = False
+        fields = ('clustername', 'port', 'username', 'password')
         for field in fields:
             value = options.get(field)
             if value is not None:
                 backend.__setattr__(field, value)
+                credentials_changed = True
 
-        credentials = ('clustername', 'port', 'username', 'password')
-        for field in credentials:
-            if options.get(field):
+        if credentials_changed:
                 # check credentials, if any of them changed!
                 check_backend_credentials(backend.clustername, backend.port,
                                           backend.username, backend.password)
-                return
+        if options['drained']:
+            backend.drained = parse_bool(options['drained'])
+        if options['offline']:
+            backend.offile = parse_bool(options['offline'])
 
         backend.save()

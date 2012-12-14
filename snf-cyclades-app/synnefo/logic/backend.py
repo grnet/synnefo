@@ -39,8 +39,11 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, VirtualMachineDiagnostic)
+                               pooled_rapi_client, BridgePoolTable,
+                               MacPrefixPoolTable, VirtualMachineDiagnostic)
 from synnefo.logic import utils
+from synnefo import quotas
+from synnefo.api.util import release_resource
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -54,8 +57,9 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
+@quotas.uses_commission
 @transaction.commit_on_success
-def process_op_status(vm, etime, jobid, opcode, status, logmsg):
+def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -78,13 +82,11 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
 
-
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
-    if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
+    if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
-
-    if opcode == 'OP_INSTANCE_REMOVE':
+    elif opcode == 'OP_INSTANCE_REMOVE':
         # Set the deleted flag explicitly, cater for admin-initiated removals
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
@@ -92,6 +94,13 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
         #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
+            # Issue commission
+            serial = quotas.issue_vm_commission(vm.userid, vm.flavor,
+                                                delete=True)
+            serials.append(serial)
+            vm.serial = serial
+            serial.accepted = True
+            serial.save()
             release_instance_nics(vm)
             vm.nics.all().delete()
             vm.deleted = True
@@ -118,10 +127,32 @@ def process_net_status(vm, etime, nics):
     Update the state of the VM in the DB accordingly.
     """
 
+    ganeti_nics = process_ganeti_nics(nics)
+    if not nics_changed(vm.nics.order_by('index'), ganeti_nics):
+        log.debug("NICs for VM %s have not changed", vm)
+
     release_instance_nics(vm)
 
-    new_nics = enumerate(nics)
-    for i, new_nic in new_nics:
+    for nic in ganeti_nics:
+        ipv4 = nic.get('ipv4', '')
+        net = nic['network']
+        if ipv4:
+            net.reserve_address(ipv4)
+
+        nic['dirty'] = False
+        vm.nics.create(**nic)
+        # Dummy save the network, because UI uses changed-since for VMs
+        # and Networks in order to show the VM NICs
+        net.save()
+
+    vm.backendtime = etime
+    vm.save()
+
+
+def process_ganeti_nics(ganeti_nics):
+    """Process NIC dict from ganeti hooks."""
+    new_nics = []
+    for i, new_nic in enumerate(ganeti_nics):
         network = new_nic.get('network', '')
         n = str(network)
         pk = utils.id_from_network_name(n)
@@ -138,23 +169,31 @@ def process_net_status(vm, etime, nics):
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
-        if ipv4:
-            net.reserve_address(ipv4)
+        nic = {
+               'index': i,
+               'network': net,
+               'mac': mac,
+               'ipv4': ipv4,
+               'ipv6': ipv6,
+               'firewall_profile': firewall_profile}
 
-        vm.nics.create(
-            network=net,
-            index=i,
-            mac=mac,
-            ipv4=ipv4,
-            ipv6=ipv6,
-            firewall_profile=firewall_profile,
-            dirty=False)
-        # Dummy save the network, because UI uses changed-since for VMs
-        # and Networks in order to show the VM NICs
-        net.save()
+        new_nics.append(nic)
+    return new_nics
 
-    vm.backendtime = etime
-    vm.save()
+
+def nics_changed(old_nics, new_nics):
+    """Return True if NICs have changed in any way."""
+    if len(old_nics) != len(new_nics):
+        return True
+    for old_nic, new_nic in zip(old_nics, new_nics):
+        if not (old_nic.ipv4 == new_nic['ipv4'] and\
+                old_nic.ipv6 == new_nic['ipv6'] and\
+                old_nic.mac == new_nic['mac'] and\
+                old_nic.firewall_profile == new_nic['firewall_profile'] and\
+                old_nic.index == new_nic['index'] and\
+                old_nic.network == new_nic['network']):
+            return True
+    return False
 
 
 def release_instance_nics(vm):
@@ -195,6 +234,44 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     if status == 'success':
         back_network.backendtime = etime
     back_network.save()
+    # Also you must update the state of the Network!!
+    update_network_state(back_network.network)
+
+
+@quotas.uses_commission
+def update_network_state(serials, network):
+    old_state = network.state
+
+    backend_states = [s.operstate for s in network.backend_networks.all()]
+    if not backend_states:
+        network.state = 'PENDING'
+        network.save()
+        return
+
+    all_equal = len(set(backend_states)) <= 1
+    network.state = all_equal and backend_states[0] or 'PENDING'
+
+    # Release the resources on the deletion of the Network
+    if old_state != 'DELETED' and network.state == 'DELETED':
+        log.info("Network %r deleted. Releasing link %r mac_prefix %r",
+                 network.id, network.mac_prefix, network.link)
+        network.deleted = True
+        if network.mac_prefix:
+            if network.FLAVORS[network.flavor]["mac_prefix"] == "pool":
+                release_resource(res_type="mac_prefix",
+                                 value=network.mac_prefix)
+        if network.link:
+            if network.FLAVORS[network.flavor]["link"] == "pool":
+                release_resource(res_type="bridge", value=network.link)
+
+        # Issue commission
+        serial = quotas.issue_network_commission(network.userid, delete=True)
+        serials.append(serial)
+        network.serial = serial
+        serial.accepted = True
+        serial.save()
+
+    network.save()
 
 
 @transaction.commit_on_success
@@ -271,20 +348,12 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
             source_date=etime, message=message, details=details)
 
 
-def create_instance(vm, public_nic, flavor, image, password, personality):
+def create_instance(vm, public_nic, flavor, image, password=None):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
         metadata value should be a dictionary.
     """
-
-    if settings.IGNORE_FLAVOR_DISK_SIZES:
-        if image['backend_id'].find("windows") >= 0:
-            sz = 14000
-        else:
-            sz = 4000
-    else:
-        sz = flavor.disk * 1024
 
     # Handle arguments to CreateInstance() as a dictionary,
     # initialize it based on a deployment-specific value.
@@ -297,22 +366,14 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
 
-    # Identify if provider parameter should be set in disk options.
-    # Current implementation support providers only fo ext template.
-    # To select specific provider for an ext template, template name
-    # should be formated as `ext_<provider_name>`.
-    provider = None
-    disk_template = flavor.disk_template
-    if flavor.disk_template.startswith("ext"):
-        disk_template, provider = flavor.disk_template.split("_", 1)
-
-    kw['disk_template'] = disk_template
-    kw['disks'] = [{"size": sz}]
+    kw['disk_template'] = flavor.disk_template
+    kw['disks'] = [{"size": flavor.disk * 1024}]
+    provider = flavor.disk_provider
     if provider:
         kw['disks'][0]['provider'] = provider
 
         if provider == 'vlmc':
-            kw['disks'][0]['origin'] = image['checksum']
+            kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
     if settings.GANETI_USE_HOTPLUG:
@@ -321,31 +382,31 @@ def create_instance(vm, public_nic, flavor, image, password, personality):
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False
     kw['name_check'] = False
+
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
-    #
     #kw['pnode'] = rapi.GetNodes()[0]
+
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {
-        'auto_balance': True,
-        'vcpus': flavor.cpu,
-        'memory': flavor.ram}
+       'auto_balance': True,
+       'vcpus': flavor.cpu,
+       'memory': flavor.ram}
 
     kw['osparams'] = {
+        'config_url': vm.config_url,
+        # Store image id and format to Ganeti
         'img_id': image['backend_id'],
-        'img_passwd': password,
         'img_format': image['format']}
-    if personality:
-        kw['osparams']['img_personality'] = json.dumps(personality)
 
-    if provider == 'vlmc':
-        kw['osparams']['img_id'] = 'null'
-
-    kw['osparams']['img_properties'] = json.dumps(image['metadata'])
+    if password:
+        # Only for admin created VMs !!
+        kw['osparams']['img_passwd'] = password
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
+
     log.debug("Creating instance %s", utils.hide_pass(kw))
     with pooled_rapi_client(vm) as client:
         return client.CreateInstance(**kw)
@@ -456,8 +517,6 @@ def connect_network(network, backend, depend_job=None, group=None):
     """Connect a network to nodegroups."""
     log.debug("Connecting network %s to backend %s", network, backend)
 
-    mode = "routed" if "ROUTED" in network.type else "bridged"
-
     if network.public:
         conflicts_check = True
     else:
@@ -466,11 +525,11 @@ def connect_network(network, backend, depend_job=None, group=None):
     depend_jobs = [depend_job] if depend_job else []
     with pooled_rapi_client(backend) as client:
         if group:
-            client.ConnectNetwork(network.backend_id, group, mode,
+            client.ConnectNetwork(network.backend_id, group, network.mode,
                                   network.link, conflicts_check, depend_jobs)
         else:
             for group in client.GetGroups():
-                client.ConnectNetwork(network.backend_id, group, mode,
+                client.ConnectNetwork(network.backend_id, group, network.mode,
                                       network.link, conflicts_check,
                                       depend_jobs)
 
@@ -583,6 +642,8 @@ def get_ganeti_jobs(backend=None, bulk=False):
 
 def get_backends(backend=None):
     if backend:
+        if backend.offline:
+            return []
         return [backend]
     return Backend.objects.filter(offline=False)
 
@@ -661,14 +722,10 @@ def _create_network_synced(network, backend):
 
 
 def connect_network_synced(network, backend):
-    if network.type in ('PUBLIC_ROUTED', 'CUSTOM_ROUTED'):
-        mode = 'routed'
-    else:
-        mode = 'bridged'
     with pooled_rapi_client(backend) as client:
         for group in client.GetGroups():
-            job = client.ConnectNetwork(network.backend_id, group, mode,
-                                        network.link)
+            job = client.ConnectNetwork(network.backend_id, group,
+                                        network.mode, network.link)
             result = wait_for_job(client, job)
             if result[0] != 'success':
                 return result

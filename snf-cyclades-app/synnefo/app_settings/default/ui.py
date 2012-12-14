@@ -164,7 +164,7 @@ UI_OS_DEFAULT_USER_MAP = {
 
 # Available network types for use to choose when creating a private network
 # If only one set, no select options will be displayed
-UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'PRIVATE_MAC_FILTERED': 'mac-filtering'}
+UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'MAC_FILTERED': 'mac-filtering'}
 
 # Suggested private networks to let the user choose from when creating a private
 # network with dhcp enabled

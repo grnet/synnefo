@@ -1,6 +1,7 @@
 import sys
 from synnefo.db.pools import (PoolManager, EmptyPool, BridgePool,
                               MacPrefixPool, IPPool)
+from bitarray import bitarray
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -34,8 +35,10 @@ class PoolManagerTestCase(unittest.TestCase):
     def test_created_pool(self):
         obj = DummyObject(42)
         pool = DummyPool(obj)
-        self.assertEqual(pool.to_01(), '1' * 42 + '0' * 6)
-        self.assertEqual(pool.to_map(), '.' * 42 + 'X' * 6)
+        self.assertEqual(pool.to_01(), '1' * 42)
+        self.assertEqual(pool.to_map(), '.' * 42)
+        self.assertEqual(pool.available, bitarray('1' * 42 + '0' * 6))
+        self.assertEqual(pool.reserved, bitarray('1' * 42 + '0' * 6))
 
     def test_save_pool(self):
         obj = DummyObject(42)
@@ -89,6 +92,24 @@ class PoolManagerTestCase(unittest.TestCase):
         pool.put(0)
         self.assertEqual(pool.get(), 1)
 
+    def test_extend_pool(self):
+        obj = DummyObject(42)
+        pool = DummyPool(obj)
+        pool.extend(7)
+        self.assertEqual(pool.to_01(), '1' * 49)
+        self.assertEqual(pool.to_map(), '.' * 49)
+        self.assertEqual(pool.available, bitarray('1' * 49 + '0' * 7))
+        self.assertEqual(pool.reserved, bitarray('1' * 49 + '0' * 7))
+
+    def test_shrink_pool(self):
+        obj = DummyObject(42)
+        pool = DummyPool(obj)
+        pool.shrink(3)
+        self.assertEqual(pool.to_01(), '1' * 39)
+        self.assertEqual(pool.to_map(), '.' * 39)
+        self.assertEqual(pool.available, bitarray('1' * 39 + '0' * 1))
+        self.assertEqual(pool.reserved, bitarray('1' * 39 + '0' * 1))
+
 
 class BridgePoolTestCase(unittest.TestCase):
     def test_bridge_conversion(self):
@@ -96,7 +117,7 @@ class BridgePoolTestCase(unittest.TestCase):
         obj.base = "bridge"
         pool = BridgePool(obj)
         for i in range(0, 13):
-            self.assertEqual("bridge" + str(i), pool.get())
+            self.assertEqual("bridge" + str(i + 1), pool.get())
         pool.put("bridge2")
         pool.put("bridge6")
         self.assertEqual("bridge2", pool.get())

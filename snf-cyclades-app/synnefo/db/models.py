@@ -32,7 +32,6 @@ import datetime
 from django.conf import settings
 from django.db import models
 from django.db import IntegrityError
-from django.db import transaction
 
 import utils
 from contextlib import contextmanager
@@ -185,6 +184,21 @@ BACKEND_STATUSES = (
 )
 
 
+class QuotaHolderSerial(models.Model):
+    serial = models.BigIntegerField(null=False, primary_key=True, db_index=True)
+    pending = models.BooleanField(default=True, db_index=True)
+    accepted = models.BooleanField(default=False)
+    rejected = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = u'Quota Serial'
+        ordering = ["serial"]
+
+    def save(self, *args, **kwargs):
+        self.pending = not (self.accepted or self.rejected)
+        super(QuotaHolderSerial, self).save(*args, **kwargs)
+
+
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
     ACTIONS = (
@@ -274,6 +288,8 @@ class VirtualMachine(models.Model):
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
+    serial = models.ForeignKey(QuotaHolderSerial,
+                              related_name='virtual_machine', null=True)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -313,36 +329,6 @@ class VirtualMachine(models.Model):
     def put_client(client):
             put_rapi_client(client)
 
-    # Error classes
-    class InvalidBackendIdError(Exception):
-        def __init__(self, value):
-            self.value = value
-
-        def __str__(self):
-            return repr(self.value)
-
-    class InvalidBackendMsgError(Exception):
-        def __init__(self, opcode, status):
-            self.opcode = opcode
-            self.status = status
-
-        def __str__(self):
-            return repr('<opcode: %s, status: %s>' % (self.opcode,
-                        self.status))
-
-    class InvalidActionError(Exception):
-        def __init__(self, action):
-            self._action = action
-
-        def __str__(self):
-            return repr(str(self._action))
-
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
-
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)
@@ -375,6 +361,36 @@ class VirtualMachine(models.Model):
 
     def __unicode__(self):
         return str(self.id)
+
+    # Error classes
+    class InvalidBackendIdError(Exception):
+        def __init__(self, value):
+            self.value = value
+
+        def __str__(self):
+            return repr(self.value)
+
+    class InvalidBackendMsgError(Exception):
+        def __init__(self, opcode, status):
+            self.opcode = opcode
+            self.status = status
+
+        def __str__(self):
+            return repr('<opcode: %s, status: %s>' % (self.opcode,
+                        self.status))
+
+    class InvalidActionError(Exception):
+        def __init__(self, action):
+            self._action = action
+
+        def __str__(self):
+            return repr(str(self._action))
+
+    class DeletedError(Exception):
+        pass
+
+    class BuildingError(Exception):
+        pass
 
 
 class VirtualMachineMetadata(models.Model):
@@ -410,13 +426,40 @@ class Network(models.Model):
         'ERROR': 'ERROR'
     }
 
-    NETWORK_TYPES = (
-        ('PUBLIC_ROUTED', 'Public routed network'),
-        ('PRIVATE_PHYSICAL_VLAN', 'Private vlan network'),
-        ('PRIVATE_MAC_FILTERED', 'Private network with mac-filtering'),
-        ('CUSTOM_ROUTED', 'Custom routed network'),
-        ('CUSTOM_BRIDGED', 'Custom bridged network')
-    )
+    FLAVORS = {
+        'CUSTOM': {
+             'mode': 'bridged',
+             'link': settings.DEFAULT_BRIDGE,
+             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+             'tags': None,
+             'desc': "Basic flavor used for a bridged network",
+        },
+        'IP_LESS_ROUTED': {
+             'mode': 'routed',
+             'link': settings.DEFAULT_ROUTING_TABLE,
+             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+             'tags': 'ip-less-routed',
+             'desc': "Flavor used for an IP-less routed network using"
+                     " Proxy ARP",
+        },
+        'MAC_FILTERED': {
+             'mode': 'bridged',
+             'link': settings.DEFAULT_MAC_FILTERED_BRIDGE,
+             'mac_prefix': 'pool',
+             'tags': 'private-filtered',
+             'desc': "Flavor used for bridged networks that offer isolation"
+                     " via filtering packets based on their src "
+                     " MAC (ebtables)",
+        },
+        'PHYSICAL_VLAN': {
+             'mode': 'bridged',
+             'link': 'pool',
+             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+             'tags': 'physical-vlan',
+             'desc': "Flavor used for bridged network that offer isolation"
+                     " via dedicated physical vlan",
+        },
+    }
 
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128,
@@ -426,10 +469,11 @@ class Network(models.Model):
     gateway = models.CharField('Gateway', max_length=32, null=True)
     gateway6 = models.CharField('IPv6 Gateway', max_length=64, null=True)
     dhcp = models.BooleanField('DHCP', default=True)
-    type = models.CharField(choices=NETWORK_TYPES, max_length=50,
-                            default='PRIVATE_PHYSICAL_VLAN')
-    link = models.CharField('Network Link', max_length=128, null=True)
+    flavor = models.CharField('Flavor', max_length=32, null=False)
+    mode = models.CharField('Network Mode', max_length=16, null=True)
+    link = models.CharField('Network Link', max_length=32, null=True)
     mac_prefix = models.CharField('MAC Prefix', max_length=32, null=False)
+    tags = models.CharField('Network Tags', max_length=128, null=True)
     public = models.BooleanField(default=False, db_index=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -446,11 +490,56 @@ class Network(models.Model):
                                                            reserved_map='',
                                                            size=0),
                 null=True)
+    serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
+                               null=True)
 
     objects = ForUpdateManager()
 
     def __unicode__(self):
         return str(self.id)
+
+    @property
+    def backend_id(self):
+        """Return the backend id by prepending backend-prefix."""
+        if not self.id:
+            raise Network.InvalidBackendIdError("self.id is None")
+        return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+
+    @property
+    def backend_tag(self):
+        """Return the network tag to be used in backend
+
+        """
+        if self.tags:
+            return self.tags.split(',')
+        else:
+            return []
+
+    def create_backend_network(self, backend=None):
+        """Create corresponding BackendNetwork entries."""
+
+        backends = [backend] if backend else Backend.objects.all()
+        for backend in backends:
+            BackendNetwork.objects.create(backend=backend, network=self)
+
+    def get_pool(self):
+        if not self.pool_id:
+            self.pool = IPPoolTable.objects.create(available_map='',
+                                                   reserved_map='',
+                                                   size=0)
+            self.save()
+        return IPPoolTable.objects.select_for_update().get(id=self.pool_id)\
+                                                      .pool
+
+    def reserve_address(self, address):
+        pool = self.get_pool()
+        pool.reserve(address)
+        pool.save()
+
+    def release_address(self, address):
+        pool = self.get_pool()
+        pool.put(address)
+        pool.save()
 
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
@@ -478,83 +567,8 @@ class Network(models.Model):
     class DeletedError(Exception):
         pass
 
-    @property
-    def backend_id(self):
-        """Return the backend id by prepending backend-prefix."""
-        if not self.id:
-            raise Network.InvalidBackendIdError("self.id is None")
-        return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
-
-    @property
-    def backend_tag(self):
-        """Return the network tag to be used in backend
-
-        """
-        return getattr(snf_settings, self.type + '_TAGS')
-
-    @transaction.commit_on_success
-    def update_state(self):
-        """Update state of the Network.
-
-        Update the state of the Network depending on the related
-        backend_networks. When backend networks do not have the same operstate,
-        the Network's state is PENDING. Otherwise it is the same with
-        the BackendNetworks operstate.
-
-        """
-
-        old_state = self.state
-
-        backend_states = [s.operstate for s in self.backend_networks.all()]
-        if not backend_states:
-            self.state = 'PENDING'
-            self.save()
-            return
-
-        all_equal = len(set(backend_states)) <= 1
-        self.state = all_equal and backend_states[0] or 'PENDING'
-
-        # Release the resources on the deletion of the Network
-        if old_state != 'DELETED' and self.state == 'DELETED':
-            log.info("Network %r deleted. Releasing link %r mac_prefix %r",
-                     self.id, self.mac_prefix, self.link)
-            self.deleted = True
-            if self.mac_prefix and self.type == 'PRIVATE_MAC_FILTERED':
-                mac_pool = MacPrefixPoolTable.get_pool()
-                mac_pool.put(self.mac_prefix)
-                mac_pool.save()
-
-            if self.link and self.type == 'PRIVATE_PHYSICAL_VLAN':
-                bridge_pool = BridgePoolTable.get_pool()
-                bridge_pool.put(self.link)
-                bridge_pool.save()
-
-        self.save()
-
-    def create_backend_network(self, backend=None):
-        """Create corresponding BackendNetwork entries."""
-
-        backends = [backend] if backend else Backend.objects.all()
-        for backend in backends:
-            BackendNetwork.objects.create(backend=backend, network=self)
-
-    def get_pool(self):
-        if not self.pool_id:
-            self.pool = IPPoolTable.objects.create(available_map='',
-                                                   reserved_map='',
-                                                   size=0)
-            self.save()
-        return IPPoolTable.objects.select_for_update().get(id=self.pool_id).pool
-
-    def reserve_address(self, address):
-        pool = self.get_pool()
-        pool.reserve(address)
-        pool.save()
-
-    def release_address(self, address):
-        pool = self.get_pool()
-        pool.put(address)
-        pool.save()
+    class BuildingError(Exception):
+        pass
 
 
 class BackendNetwork(models.Model):
@@ -627,14 +641,6 @@ class BackendNetwork(models.Model):
                                                mac_prefix)
             self.mac_prefix = mac_prefix
 
-    def save(self, *args, **kwargs):
-        super(BackendNetwork, self).save(*args, **kwargs)
-        self.network.update_state()
-
-    def delete(self, *args, **kwargs):
-        super(BackendNetwork, self).delete(*args, **kwargs)
-        self.network.update_state()
-
 
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
@@ -676,7 +682,7 @@ class PoolTable(models.Model):
     @classmethod
     def get_pool(cls):
         try:
-            pool_row = cls.objects.select_for_update().all()[0]
+            pool_row = cls.objects.select_for_update().get()
             return pool_row.pool
         except IndexError:
             raise pools.EmptyPool
@@ -766,4 +772,3 @@ class VirtualMachineDiagnostic(models.Model):
 
     class Meta:
         ordering = ['-created']
-

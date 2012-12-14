@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import (format_vm_state, get_backend,
-                                       filter_results)
+                                       filter_results, pprint_table)
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
 
@@ -103,40 +103,33 @@ class Command(BaseCommand):
         if filter_by:
             servers = filter_results(servers, filter_by)
 
-        labels = ('id', 'name', 'owner', 'flavor', 'image', 'state',
-                  'backend')
-        columns = (3, 12, 20, 11, 12, 9, 40)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
         cache = ImageCache()
 
+        headers = ('id', 'name', 'owner', 'flavor', 'image', 'state',
+                   'backend')
+
+        table = []
         for server in servers.order_by('id'):
-            id = str(server.id)
             try:
                 name = server.name.decode('utf8')
             except UnicodeEncodeError:
                 name = server.name
+
             flavor = server.flavor.name
+
             try:
                 image = cache.get_image(server.imageid, server.userid)['name']
             except:
                 image = server.imageid
 
             state = format_vm_state(server)
-            fields = (id, name, server.userid, flavor, image, state,
-                      str(server.backend))
 
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+            fields = (str(server.id), name, server.userid, flavor, image,
+                      state, str(server.backend))
+            table.append(fields)
 
-            self.stdout.write(line.encode('utf8') + '\n')
+        separator = " | " if options['csv'] else None
+        pprint_table(self.stdout, table, headers, separator)
 
 
 class ImageCache(object):

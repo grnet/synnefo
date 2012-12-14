@@ -31,13 +31,14 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
+from django.db import transaction
 from synnefo.db.models import Backend, Network
 from django.db.utils import IntegrityError
 from synnefo.logic.backend import (get_physical_resources,
                                    update_resources,
                                    create_network_synced,
                                    connect_network_synced)
-from synnefo.management.common import check_backend_credentials
+from synnefo.management.common import check_backend_credentials, pprint_table
 
 
 class Command(BaseCommand):
@@ -51,9 +52,6 @@ class Command(BaseCommand):
         make_option('--port', dest='port', default=5080),
         make_option('--user', dest='username'),
         make_option('--pass', dest='password'),
-        make_option('--drained', action='store_true',
-            dest='drained', default=False,
-            help="Set as drained to exclude from allocations"),
         make_option('--no-check', action='store_false',
             dest='check', default=True,
             help="Do not perform credentials check and resources update"),
@@ -62,12 +60,12 @@ class Command(BaseCommand):
             help="Do not perform initialization of the Backend Model")
         )
 
+    @transaction.commit_on_success
     def handle(self, **options):
         clustername = options['clustername']
         port = options['port']
         username = options['username']
         password = options['password']
-        drained = options['drained']
 
         if not (clustername and username and password):
             raise CommandError("Clustername, user and pass must be supplied")
@@ -82,7 +80,7 @@ class Command(BaseCommand):
                                              port=port,
                                              username=username,
                                              password=password,
-                                             drained=drained)
+                                             drained=True)
         except IntegrityError as e:
             raise CommandError("Cannot create backend: %s\n" % e)
 
@@ -95,9 +93,10 @@ class Command(BaseCommand):
         self.stdout.write('\rRetrieving backend resources:\n')
         resources = get_physical_resources(backend)
         attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
-        self.stdout.write('----------------------------\n')
-        for a in attr:
-            self.stdout.write(a.ljust(12) + ' : ' + str(resources[a]) + '\n')
+
+        table = [[str(resources[x]) for x in attr]]
+        pprint_table(self.stdout, table, attr)
+
         update_resources(backend, resources)
 
         if not options['init']:
@@ -108,20 +107,13 @@ class Command(BaseCommand):
             return
 
         self.stdout.write('\nCreating the follow networks:\n')
-        fields = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
-        columns = (20, 16, 16, 16, 10)
-        line = ' '.join(f.ljust(c) for f, c in zip(fields, columns))
-        sep = '-' * len(line)
-        self.stdout.write(sep + '\n')
-        self.stdout.write(line + '\n')
-        self.stdout.write(sep + '\n')
+        headers = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
+        table = []
 
         for net in networks:
-            fields = (net.backend_id, str(net.subnet), str(net.gateway),
-                      str(net.mac_prefix), str(net.public))
-            line = ' '.join(f.ljust(c) for f, c in zip(fields, columns))
-            self.stdout.write(line + '\n')
-        self.stdout.write(sep + '\n\n')
+            table.append((net.backend_id, str(net.subnet), str(net.gateway),
+                         str(net.mac_prefix), str(net.public)))
+        pprint_table(self.stdout, table, headers)
 
         for net in networks:
             net.create_backend_network(backend)

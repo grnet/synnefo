@@ -38,12 +38,9 @@ from synnefo.management.common import validate_network_info, get_backend
 
 from synnefo.db.models import Network
 from synnefo.logic.backend import create_network
+from synnefo.api.util import values_from_flavor
 
-from synnefo.api.util import net_resources
-
-NETWORK_TYPES = ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
-                 'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
-                 'CUSTOM_BRIDGED']
+NETWORK_FLAVORS = Network.FLAVORS.keys()
 
 
 class Command(BaseCommand):
@@ -68,6 +65,14 @@ class Command(BaseCommand):
             dest='gateway',
             default=None,
             help='Gateway of the network'),
+        make_option('--subnet6',
+            dest='subnet6',
+            default=None,
+            help='IPv6 subnet of the network'),
+        make_option('--gateway6',
+            dest='gateway6',
+            default=None,
+            help='IPv6 gateway of the network'),
         make_option('--dhcp',
             dest='dhcp',
             action='store_true',
@@ -78,32 +83,32 @@ class Command(BaseCommand):
             action='store_true',
             default=False,
             help='Network is public'),
-        make_option('--type',
-            dest='type',
-            default='PRIVATE_MAC_FILTERED',
-            choices=NETWORK_TYPES,
-            help='Type of network. Choices: ' + ', '.join(NETWORK_TYPES)),
-        make_option('--subnet6',
-            dest='subnet6',
+        make_option('--flavor',
+            dest='flavor',
             default=None,
-            help='IPv6 subnet of the network'),
-        make_option('--gateway6',
-            dest='gateway6',
+            choices=NETWORK_FLAVORS,
+            help='Network flavor. Choices: ' + ', '.join(NETWORK_FLAVORS)),
+        make_option('--mode',
+            dest='mode',
             default=None,
-            help='IPv6 gateway of the network'),
+            help="Overwrite flavor connectivity mode."),
+        make_option('--link',
+            dest='link',
+            default=None,
+            help="Overwrite flavor connectivity link."),
+        make_option('--mac-prefix',
+            dest='mac_prefix',
+            default=None,
+            help="Overwrite flavor connectivity MAC prefix"),
+        make_option('--tags',
+            dest='tags',
+            default=None,
+            help='The tags of the Network (comma separated strings)'),
         make_option('--backend-id',
             dest='backend_id',
             default=None,
             help='ID of the backend that the network will be created. Only for'
                  ' public networks'),
-        make_option('--link',
-            dest='link',
-            default=None,
-            help="Connectivity link of the Network. None for default."),
-        make_option('--mac-prefix',
-            dest='mac_prefix',
-            default=None,
-            help="MAC prefix of the network. None for default")
         )
 
     def handle(self, *args, **options):
@@ -112,53 +117,59 @@ class Command(BaseCommand):
 
         name = options['name']
         subnet = options['subnet']
-        net_type = options['type']
         backend_id = options['backend_id']
         public = options['public']
+        flavor = options['flavor']
+        mode = options['mode']
         link = options['link']
         mac_prefix = options['mac_prefix']
+        tags = options['tags']
 
         if not name:
             raise CommandError("Name is required")
         if not subnet:
             raise CommandError("Subnet is required")
+        if not flavor:
+            raise CommandError("Flavor is required")
         if public and not backend_id:
             raise CommandError("backend-id is required")
         if backend_id and not public:
             raise CommandError("Private networks must be created to"
                                " all backends")
 
-        if mac_prefix and net_type == "PRIVATE_MAC_FILTERED":
+        if mac_prefix and flavor == "MAC_FILTERED":
             raise CommandError("Can not override MAC_FILTERED mac-prefix")
-        if link and net_type == "PRIVATE_PHYSICAL_VLAN":
+        if link and flavor == "PHYSICAL_VLAN":
             raise CommandError("Can not override PHYSICAL_VLAN link")
 
         if backend_id:
             backend = get_backend(backend_id)
 
-        default_link, default_mac_prefix = net_resources(net_type)
-        if not link:
-            link = default_link
-        if not mac_prefix:
-            mac_prefix = default_mac_prefix
+        fmode, flink, fmac_prefix, ftags = values_from_flavor(flavor)
+        mode = mode or fmode
+        link = link or flink
+        mac_prefix = mac_prefix or fmac_prefix
+        tags = tags or ftags
 
         subnet, gateway, subnet6, gateway6 = validate_network_info(options)
 
-        if not link:
-            raise CommandError("Can not create network. No connectivity link")
+        if not link or not mode:
+            raise CommandError("Can not create network. No connectivity link or mode")
 
         network = Network.objects.create(
                 name=name,
                 userid=options['owner'],
                 subnet=subnet,
                 gateway=gateway,
-                dhcp=options['dhcp'],
-                type=net_type,
-                public=public,
-                link=link,
-                mac_prefix=mac_prefix,
                 gateway6=gateway6,
                 subnet6=subnet6,
+                dhcp=options['dhcp'],
+                flavor=flavor,
+                public=public,
+                mode=mode,
+                link=link,
+                mac_prefix=mac_prefix,
+                tags=tags,
                 state='PENDING')
 
         if public:

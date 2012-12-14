@@ -71,7 +71,7 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quota, register_resources)
+    register_users, send_quota, register_resources, add_quota, QuotaLimits)
 from astakos.im import auth_providers
 #from astakos.im.endpoints.aquarium.producer import report_user_event
 #from astakos.im.tasks import propagate_groupmembers_quota
@@ -1642,12 +1642,6 @@ class Project(SyncedModel):
 #             logger.error(e.messages)
 
 
-QuotaLimits = namedtuple('QuotaLimits', ('holder',
-                                         'capacity',
-                                         'import_limit',
-                                         'export_limit'))
-
-
 
 class ExclusiveOrRaise(object):
     """Context Manager to exclusively execute a critical code section.
@@ -1868,9 +1862,9 @@ class ProjectMembership(SyncedModel):
 
         quotas = self.get_quotas(factor=factor)
         try:
-            failure = add_quotas(quotas)
+            failure = add_quota(quotas)
             if failure:
-                m = "%s: sync: add_quotas failed" % (self,)
+                m = "%s: sync: add_quota failed" % (self,)
                 raise RuntimeError(m)
         except Exception:
             raise

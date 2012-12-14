@@ -109,6 +109,21 @@ def send_quota(users, client=None):
             append(args)
     return data
 
+QuotaLimits = namedtuple('QuotaLimits', ('holder',
+                                         'capacity',
+                                         'import_limit',
+                                         'export_limit'))
+
+@call('add_quota')
+def add_quota(quotalimits_list):
+    data = []
+    append = data.append
+    for ql in quotalimits_list:
+        args = (ql.holder, ql.resource, ENTITY_KEY,
+                0, ql.capacity, ql.import_limit, ql.export_limit)
+        append(args)
+    return data
+
 
 @call('set_quota')
 def send_resource_quantities(resources, client=None):

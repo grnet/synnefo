@@ -52,32 +52,41 @@ logger = logging.getLogger(__name__)
 
 inf = float('inf')
 
+_client = None
+def get_client():
+    global _client
+    if _client:
+        return _client
+    if not QUOTAHOLDER_URL:
+        return
+    _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+
 def call(func_name):
     """Decorator function for Quotaholder client calls."""
     def decorator(payload_func):
         @wraps(payload_func)
-        def wrapper(entities=(), client=None, **kwargs):
+        def wrapper(entities=(), **kwargs):
             if not entities:
-                return client, ()
+                return ()
 
             if not QUOTAHOLDER_URL:
-                return client, ()
+                return ()
 
-            c = client or QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+            c = get_client() 
             func = c.__dict__.get(func_name)
             if not func:
-                return c, ()
+                return ()
 
             data = payload_func(entities, client, **kwargs)
             if not data:
-                return c, data
+                return data
 
             funcname = func.__name__
             kwargs = {'context': {}, funcname: data}
             rejected = func(**kwargs)
             msg = _('%s: %s - Rejected: %s' % (funcname, data, rejected,))
             logger.log(LOGGING_LEVEL, msg)
-            return c, rejected
+            return rejected
         return wrapper
     return decorator
 
@@ -153,20 +162,20 @@ def create_entities(entities, client=None, field=''):
 
 def register_users(users, client=None):
     users, copy = itertools.tee(users)
-    client, rejected = create_entities(entities=users,
+    rejected = create_entities(entities=users,
                                        client=client,
                                        field='email')
     created = (e for e in copy if unicode(e) not in rejected)
-    return send_quota(created, client)
+    return send_quota(created)
 
 
 def register_resources(resources, client=None):
     resources, copy = itertools.tee(resources)
-    client, rejected = create_entities(entities=resources,
+    rejected = create_entities(entities=resources,
                                        client=client,
                                        field='service')
     created = (e for e in copy if unicode(e) not in rejected)
-    return send_resource_quantities(created, client)
+    return send_resource_quantities(created)
 
 
 from datetime import datetime

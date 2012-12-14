@@ -36,8 +36,7 @@ from django.utils.translation import ugettext as _
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
 from django.http import (
-    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
-)
+    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden)
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_http_methods
 

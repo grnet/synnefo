@@ -44,8 +44,8 @@ from django.shortcuts import get_object_or_404
 from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context
-from astakos.im.views import requires_anonymous, render_response, \
-        requires_auth_provider
+from astakos.im.views import (
+    requires_anonymous, render_response, requires_auth_provider)
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
@@ -74,8 +74,8 @@ class Tokens:
 def login(
     request,
     template='im/third_party_check_local.html',
-    extra_context=None
-):
+    extra_context=None):
+
     extra_context = extra_context or {}
 
     tokens = request.META

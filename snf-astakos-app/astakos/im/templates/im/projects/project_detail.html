@@ -24,7 +24,7 @@
                 {% endif %}
             {% endif %}
         </em>
-	 	<span>{{ object.definition.name|upper }}</span>
+	 	<span>{{ object.name|upper }}</span>
 	 </h2>
 	 
 <!-- 
@@ -37,7 +37,7 @@
 	 	</h3>
 	 	
 	 	<div class="data">
-		 	<p class="restricted">{{ object.definition.description|safe }}</p>
+		 	<p class="restricted">{{ object.description|safe }}</p>
 		 	<dl class="alt-style">
 			 </dl>
 		</div>
@@ -58,31 +58,31 @@
 		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
-		 	<dd>{{ object.definition.name }}&nbsp;</dd>
+		 	<dd>{{ object.name }}&nbsp;</dd>
 		 	<dt>Description</dt>
-		 	<dd>{{ object.definition.description|safe }}&nbsp;</dd>
+		 	<dd>{{ object.description|safe }}&nbsp;</dd>
             <dt>Homepage url</dt>
             <dd>
-                {% if object.definition.homepage%}
-                    <a href="{{ object.definition.homepage }}">{{ object.definition.homepage }}</a>
+                {% if object.homepage%}
+                    <a href="{{ object.homepage }}">{{ object.homepage }}</a>
                 {% else %}
                     Not set yet
                 {% endif %}
             </dd>
             <dt>Member join policy</dt>
             <dd>
-                {{ object.definition.member_join_policy }}
+                {{ object.member_join_policy }}
             </dd>
 		 	<dt>Member leave policy</dt>
             <dd>
-                {{ object.definition.member_leave_policy }}
+                {{ object.member_leave_policy }}
             </dd>
 		 	<dt>Issue date:</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Start date:</dt>
-		 	<dd>{{object.definition.start_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>End Date</dt>
-		 	<dd>{{object.definition.end_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>Status</dt>
 		 	<dd>{{ object.state }}</dd>
 		 	<dt>Owner</dt>
@@ -94,7 +94,7 @@
                 &nbsp;
             </dd>
             <dt>Max participants</dt>
-		 	<dd>{% if object.definition.limit_on_members_number%}{{object.definition.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
+		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
 		 	<dt>Precursor Application</dt>
 		 	<dd>
 		 	    {% if object.precursor_application %}
@@ -113,14 +113,14 @@
 	 </div>
 	 <div class="full-dotted">
 		 <h3>RESOURCES</h3>
-		 {% if object.definition.projectresourcegrant_set.all %}
+		 {% if object.projectresourcegrant_set.all %}
 	     <dl class="alt-style">	
-	 		{% for rp in object.definition.projectresourcegrant_set.all %}
+	 		{% for rp in object.projectresourcegrant_set.all %}
 	 		    <dt>
 	 		        {{rp.resource}}
 	 		    </dt>
 	 		    <dd>
-	 		        {{rp.member_limit}}
+	 		        {{rp.member_capacity}}
 	 		    <dd/>
 <!-- 
 		 		<dt>
@@ -236,10 +236,10 @@
     {% endif %}
     <div class="full-dotted">
     	<p>
-    		<a href="{% url group_all %}">back to All Projects &gt;</a></li>
+    		<a href="{% url project_all %}">back to All Projects &gt;</a></li>
     	</p>
         <p>
-        	<a href="{% url group_list %}">back to My Projects &gt;</a>
+        	<a href="{% url project_list %}">back to My Projects &gt;</a>
         </p>
         </ul>
     </div>

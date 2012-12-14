@@ -39,18 +39,17 @@ from functools import wraps
 from smtplib import SMTPException
 
 from astakos.im.models import (
-    AstakosUser, AstakosGroup, GroupKind, Resource, Service, RESOURCE_SEPARATOR,
-    Project, ProjectApplication, ProjectMembership, filter_queryset_by_property
-)
-from astakos.im.api.backends.base import BaseBackend, SuccessResult, FailureResult
+    AstakosUser,
+#     AstakosGroup, GroupKind,
+    Resource, Service, RESOURCE_SEPARATOR,
+    Project, ProjectApplication, ProjectMembership, filter_queryset_by_property)
+from astakos.im.api.backends.base import (
+    BaseBackend, SuccessResult, FailureResult)
 from astakos.im.api.backends.errors import (
-    ItemNotExists, ItemExists, MissingIdentifier, MultipleItemsExist
-)
-# from astakos.im.api.backends.lib.notifications import EmailNotification
+    ItemNotExists, ItemExists, MissingIdentifier, MultipleItemsExist)
 
 from astakos.im.util import reserved_email, model_to_dict
-from astakos.im.endpoints.qh import get_quota, send_quota
-from astakos.im.settings import SITENAME
+from astakos.im.endpoints.qh import get_quota
 try:
     from astakos.im.messages import astakos_messages
 except:
@@ -236,7 +235,7 @@ class DjangoBackend(BaseBackend):
     @safe
     def get_resource_usage(self, user_id):
         user = self._lookup_user(user_id)
-        c, data = get_quota((user,))
+        data = get_quota((user,))
         resources = []
         append = resources.append
         for t in data:
@@ -306,17 +305,17 @@ class DjangoBackend(BaseBackend):
                                 id__in=ids)
         q.delete()
 
-    @safe
-    def create_group(self, **kwargs):
-        policies = kwargs.pop('policies', ())
-        permissions = kwargs.pop('permissions', ())
-        members = kwargs.pop('members', ())
-        owners = kwargs.pop('owners', ())
-
-        g = self._create_object(AstakosGroup, **kwargs)
-
-        g.permissions = permissions
-        g.policies = policies
-#        g.members = members
-        g.owners = owners
-        return self._details(g)
+#     @safe
+#     def create_group(self, **kwargs):
+#         policies = kwargs.pop('policies', ())
+#         permissions = kwargs.pop('permissions', ())
+#         members = kwargs.pop('members', ())
+#         owners = kwargs.pop('owners', ())
+# 
+#         g = self._create_object(AstakosGroup, **kwargs)
+# 
+#         g.permissions = permissions
+#         g.policies = policies
+# #        g.members = members
+#         g.owners = owners
+#         return self._details(g)

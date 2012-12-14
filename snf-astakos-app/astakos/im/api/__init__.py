@@ -42,7 +42,8 @@ from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, GroupKind, Service, Resource
 from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
-from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
+from astakos.im.settings import (
+    INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -182,29 +183,30 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                        url=absolute(request, reverse('invite')),
                        name="Invitations"))
             
-            append(item(
-                   url=absolute(request, reverse('group_list')),
-                   name="Projects",
-#                    submenu=(item(
-#                             url=absolute(request,
-#                                          reverse('group_list')),
-#                             name="Overview"),
-#                             item(
-#                                 url=absolute(request,
-#                                              reverse('group_create_list')),
-#                                 name="Create"),
-#                             item(
-#                                 url=absolute(request,
-#                                              reverse('group_search')),
-#                                 name="Join"),
+            if QUOTAHOLDER_URL:
+#                 append(item(
+#                        url=absolute(request, reverse('group_list')),
+#                        name="Projects",
+#     #                    submenu=(item(
+#     #                             url=absolute(request,
+#     #                                          reverse('group_list')),
+#     #                             name="Overview"),
+#     #                             item(
+#     #                                 url=absolute(request,
+#     #                                              reverse('group_create_list')),
+#     #                                 name="Create"),
+#     #                             item(
+#     #                                 url=absolute(request,
+#     #                                              reverse('group_search')),
+#     #                                 name="Join"),
+#     #                     )
 #                     )
+#                 )
+                append(item(
+                       url=absolute(request, reverse('project_list')),
+                       name="New Projects",
+                    )
                 )
-            )
-            append(item(
-                   url=absolute(request, reverse('project_list')),
-                   name="New Projects",
-                )
-            )
             append(item(
                    url=absolute(request, reverse('resource_usage')),
                    name="Usage"))

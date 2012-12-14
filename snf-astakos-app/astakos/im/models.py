@@ -49,8 +49,7 @@ from django.utils.translation import ugettext as _
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.db.models.signals import (
-    pre_save, post_save, post_syncdb, post_delete
-)
+    pre_save, post_save, post_syncdb, post_delete)
 from django.contrib.contenttypes.models import ContentType
 
 from django.dispatch import Signal
@@ -61,28 +60,18 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.validators import email_re
-from django.core.exceptions import PermissionDenied
-from django.views.generic.create_update import lookup_object
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, BILLING_FIELDS,
     EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, SERVICES,
-    PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
-    PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
-    PROJECT_MEMBERSHIP_CHANGE_SUBJECT
-)
+    SITENAME, SERVICES)
 from astakos.im.endpoints.qh import (
-    register_users, send_quota, register_resources
-)
+    register_users, send_quota, register_resources)
 from astakos.im import auth_providers
-from astakos.im.endpoints.aquarium.producer import report_user_event
-from astakos.im.functions import send_invitation
+#from astakos.im.endpoints.aquarium.producer import report_user_event
 #from astakos.im.tasks import propagate_groupmembers_quota
-
-from astakos.im.notifications import build_notification
 
 import astakos.im.messages as astakos_messages
 
@@ -453,13 +442,6 @@ class AstakosUser(User):
         except Invitation.DoesNotExist:
             return None
 
-    def invite(self, email, realname):
-        inv = Invitation(inviter=self, username=email, realname=realname)
-        inv.save()
-        send_invitation(inv)
-        self.invitations = max(0, self.invitations - 1)
-        self.save()
-
     @property
     def quota(self):
         """Returns a dict with the sum of quota limits per resource"""
@@ -474,9 +456,9 @@ class AstakosUser(User):
             p = m.project
             if not p.is_active:
                 continue
-            grants = p.current_application.definition.projectresourcegrant_set.all()
+            grants = p.current_application.projectresourcegrant_set.all()
             for g in grants:
-                d[str(g.resource)] += g.member_limit or inf
+                d[str(g.resource)] += g.member_capacity or inf
         # TODO set default for remaining
         return d
 
@@ -591,7 +573,9 @@ class AstakosUser(User):
         if self.id:
             q = q.filter(~Q(id = self.id))
         if q.count() != 0:
-            raise ValidationError({'__all__': [_(astakos_messages.UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR)]})
+            m = 'Another account with the same email = %(email)s & \
+                is_active = %(is_active)s found.' % __self__
+            raise ValidationError(m)
 
     @property
     def signed_terms(self):
@@ -936,7 +920,7 @@ class EmailChangeManager(models.Manager):
             except AstakosUser.DoesNotExist:
                 pass
             else:
-                raise ValueError(_(astakos_messages.NEW_EMAIL_ADDR_RESERVED))
+                raise ValueError(_('The new email address is reserved.'))
             # update user
             user = AstakosUser.objects.get(pk=email_change.user_id)
             user.email = email_change.new_email_address
@@ -944,12 +928,13 @@ class EmailChangeManager(models.Manager):
             email_change.delete()
             return user
         except EmailChange.DoesNotExist:
-            raise ValueError(_(astakos_messages.INVALID_ACTIVATION_KEY))
+            raise ValueError(_('Invalid activation key.'))
 
 
 class EmailChange(models.Model):
-    new_email_address = models.EmailField(_(u'new e-mail address'),
-                                          help_text=_(astakos_messages.EMAIL_CHANGE_NEW_ADDR_HELP))
+    new_email_address = models.EmailField(
+        _(u'new e-mail address'),
+        help_text=_('Your old email address will be used until you verify your new one.'))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchange_user')
     requested_at = models.DateTimeField(default=datetime.now())
@@ -1164,24 +1149,6 @@ class SyncedModel(models.Model):
         verified = (status == self.STATUS_SYNCED)
         return state, verified
 
-
-class ProjectResourceGrant(models.Model):
-
-    resource = models.ForeignKey(Resource)
-    project_application = models.ForeignKey(ProjectApplication, blank=True)
-    project_capacity     = models.BigIntegerField(null=True)
-    project_import_limit = models.BigIntegerField(null=True)
-    project_export_limit = models.BigIntegerField(null=True)
-    member_capacity      = models.BigIntegerField(null=True)
-    member_import_limit  = models.BigIntegerField(null=True)
-    member_export_limit  = models.BigIntegerField(null=True)
-
-    objects = ExtendedManager()
-
-    class Meta:
-        unique_together = ("resource", "project_application")
-
-
 class ProjectApplication(models.Model):
     states_list = [PENDING, APPROVED, REPLACED, UNKNOWN]
     states = dict((k, v) for v, k in enumerate(states_list))
@@ -1224,13 +1191,13 @@ class ProjectApplication(models.Model):
         resource = Resource.objects.get(service__name=service, name=resource)
         if update:
             ProjectResourceGrant.objects.update_or_create(
-                project_definition=self,
+                project_application=self,
                 resource=resource,
-                defaults={'member_limit': uplimit}
+                defaults={'member_capacity': uplimit}
             )
         else:
             q = self.projectresourcegrant_set
-            q.create(resource=resource, member_limit=uplimit)
+            q.create(resource=resource, member_capacity=uplimit)
 
     @property
     def resource_policies(self):
@@ -1252,38 +1219,22 @@ class ProjectApplication(models.Model):
         except ProjectApplication.DoesNotExist:
             return
 
-    @staticmethod
-    def submit_view(definition, resource_policies, applicant, comments,
+    def submit(self, resource_policies, applicant, comments,
                precursor_application=None):
 
-        application = ProjectApplication()
         if precursor_application:
-            application.precursor_application = precursor_application
-            application.owner = precursor_application.owner
+            self.precursor_application = precursor_application
+            self.owner = precursor_application.owner
         else:
-            application.owner = applicant
+            self.owner = applicant
 
-        application.definition = definition
-        application.definition.id = None
-        application.applicant = applicant
-        application.comments = comments
-        application.issue_date = datetime.now()
-        application.state = PENDING
-        application.save()
-        application.definition.resource_policies = resource_policies
-        
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [i[1] for i in settings.ADMINS],
-                _(PROJECT_CREATION_SUBJECT) % application.definition.__dict__,
-                template='im/projects/project_creation_notification.txt',
-                dictionary={'object':application}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
-
-        return application
+        self.id = None
+        self.applicant = applicant
+        self.comments = comments
+        self.issue_date = datetime.now()
+        self.state = PENDING
+        self.save()
+        self.resource_policies = resource_policies
 
     def _get_project(self):
         precursor = self
@@ -1309,7 +1260,7 @@ class ProjectApplication(models.Model):
         if not transaction.is_managed():
             raise AssertionError("NOPE")
 
-        new_project_name = self.definition.name
+        new_project_name = self.name
         if self.state != PENDING:
             m = _("cannot approve: project '%s' in state '%s'") % (
                     new_project_name, self.state)
@@ -1331,9 +1282,9 @@ class ProjectApplication(models.Model):
 
         project.last_application_approved = self
         project.last_approval_date = now
+        project.save()
         #ProjectMembership.add_to_project(self)
         project.add_member(self.owner)
-        project.save()
 
         precursor = self.precursor_application
         while precursor:
@@ -1347,20 +1298,21 @@ class ProjectApplication(models.Model):
         transaction.commit()
         project.check_sync()
 
-    def approve_view():
-        rejected = self.project.sync()
-        
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.owner.email],
-                _(PROJECT_APPROVED_SUBJECT) % self.definition.__dict__,
-                template='im/projects/project_approval_notification.txt',
-                dictionary={'object':self}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
+class ProjectResourceGrant(models.Model):
 
+    resource = models.ForeignKey(Resource)
+    project_application = models.ForeignKey(ProjectApplication, blank=True)
+    project_capacity     = models.BigIntegerField(null=True)
+    project_import_limit = models.BigIntegerField(null=True)
+    project_export_limit = models.BigIntegerField(null=True)
+    member_capacity      = models.BigIntegerField(null=True)
+    member_import_limit  = models.BigIntegerField(null=True)
+    member_export_limit  = models.BigIntegerField(null=True)
+
+    objects = ExtendedManager()
+
+    class Meta:
+        unique_together = ("resource", "project_application")
 
 class Project(SyncedModel):
     application                 =   models.OneToOneField(
@@ -1384,6 +1336,7 @@ class Project(SyncedModel):
                                             max_length=80,
                                             db_index=True,
                                             unique=True)
+    state = models.CharField(max_length=80, default=UNKNOWN)
 
     @property
     def current_application(self):
@@ -1454,7 +1407,7 @@ class Project(SyncedModel):
         if self.is_synchronized:
             return
         members = specific_members or self.approved_members
-        c, rejected = send_quota(self.approved_members)
+        rejected = send_quota(self.approved_members)
         if not rejected:
             self.application = self.last_application_approved
             self.save()
@@ -1537,32 +1490,32 @@ class Project(SyncedModel):
             self.termination_date = datetime.now()
             self.save()
             
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.current_application.owner.email],
-                _(PROJECT_TERMINATION_SUBJECT) % self.definition.__dict__,
-                template='im/projects/project_termination_notification.txt',
-                dictionary={'object':self.current_application}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
+#         try:
+#             notification = build_notification(
+#                 settings.SERVER_EMAIL,
+#                 [self.current_application.owner.email],
+#                 _(PROJECT_TERMINATION_SUBJECT) % self.__dict__,
+#                 template='im/projects/project_termination_notification.txt',
+#                 dictionary={'object':self.current_application}
+#             ).send()
+#         except NotificationError, e:
+#             logger.error(e.messages)
 
     def suspend(self):
         self.last_approval_date = None
         self.save()
         self.sync()
 
-        try:
-            notification = build_notification(
-                settings.SERVER_EMAIL,
-                [self.current_application.owner.email],
-                _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
-                template='im/projects/project_suspension_notification.txt',
-                dictionary={'object':self.current_application}
-            ).send()
-        except NotificationError, e:
-            logger.error(e.messages)
+#         try:
+#             notification = build_notification(
+#                 settings.SERVER_EMAIL,
+#                 [self.current_application.owner.email],
+#                 _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
+#                 template='im/projects/project_suspension_notification.txt',
+#                 dictionary={'object':self.current_application}
+#             ).send()
+#         except NotificationError, e:
+#             logger.error(e.messages)
 
 
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
@@ -1584,7 +1537,7 @@ class ExclusiveOrRaise(object):
 
     def __init__(self, locked=False):
         init = 0 if locked else 1
-        from multiprocess import Semaphore
+        from multiprocessing import Semaphore
         self._sema = Semaphore(init)
 
     def enter(self):
@@ -1685,7 +1638,7 @@ class ProjectMembership(SyncedModel):
         state, verified = self.sync_verify_get_synced_state()
         if not verified:
             new_state = self.sync_get_new_state()
-            m = _("%s: cannot reject: not synched (%s -> %s)") % (
+            m = _("%s: cannot reject: not synched (%s -> %s)" % (
                     self, state, new_state))
             raise self.NotSynced(m)
 
@@ -1730,9 +1683,10 @@ class ProjectMembership(SyncedModel):
                             resource     = name,
                             capacity     = f * grant.member_capacity,
                             import_limit = f * grant.member_import_limit,
-                            export_limit = f * grant.member_export_limit))
+                            export_limit = f * grant.member_export_limit)
 
         # second, add each new limit to its inversed current
+        new_grants = self.project.new_application.resource_grants.all()
         for new_grant in new_grants:
             name = grant.resource.name
             cur_grant = tmp_grants.pop(name, None)
@@ -1775,6 +1729,7 @@ class ProjectMembership(SyncedModel):
                     self, state, new_state)
             raise AssertionError(m)
 
+        quotas = self.get_quotas(factor=factor)
         try:
             failure = add_quotas(quotas)
             if failure:
@@ -1859,37 +1814,37 @@ def user_post_save(sender, instance, created, **kwargs):
 post_save.connect(user_post_save, sender=User)
 
 
-def astakosuser_pre_save(sender, instance, **kwargs):
-    instance.aquarium_report = False
-    instance.new = False
-    try:
-        db_instance = AstakosUser.objects.get(id=instance.id)
-    except AstakosUser.DoesNotExist:
-        # create event
-        instance.aquarium_report = True
-        instance.new = True
-    else:
-        get = AstakosUser.__getattribute__
-        l = filter(lambda f: get(db_instance, f) != get(instance, f),
-                   BILLING_FIELDS)
-        instance.aquarium_report = True if l else False
-pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
+# def astakosuser_pre_save(sender, instance, **kwargs):
+#     instance.aquarium_report = False
+#     instance.new = False
+#     try:
+#         db_instance = AstakosUser.objects.get(id=instance.id)
+#     except AstakosUser.DoesNotExist:
+#         # create event
+#         instance.aquarium_report = True
+#         instance.new = True
+#     else:
+#         get = AstakosUser.__getattribute__
+#         l = filter(lambda f: get(db_instance, f) != get(instance, f),
+#                    BILLING_FIELDS)
+#         instance.aquarium_report = True if l else False
+# pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
 
-def set_default_group(user):
-    try:
-        default = AstakosGroup.objects.get(name='default')
-        Membership(
-            group=default, person=user, date_joined=datetime.now()).save()
-    except AstakosGroup.DoesNotExist, e:
-        logger.exception(e)
+# def set_default_group(user):
+#     try:
+#         default = AstakosGroup.objects.get(name='default')
+#         Membership(
+#             group=default, person=user, date_joined=datetime.now()).save()
+#     except AstakosGroup.DoesNotExist, e:
+#         logger.exception(e)
 
 
 def astakosuser_post_save(sender, instance, created, **kwargs):
-    if instance.aquarium_report:
-        report_user_event(instance, create=instance.new)
+#     if instance.aquarium_report:
+#         report_user_event(instance, create=instance.new)
     if not created:
         return
-    set_default_group(instance)
+#     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
@@ -1902,39 +1857,39 @@ def resource_post_save(sender, instance, created, **kwargs):
 post_save.connect(resource_post_save, sender=Resource)
 
 
-def on_quota_disturbed(sender, users, **kwargs):
-#     print '>>>', locals()
-    if not users:
-        return
-    send_quota(users)
+# def on_quota_disturbed(sender, users, **kwargs):
+# #     print '>>>', locals()
+#     if not users:
+#         return
+#     send_quota(users)
+# 
+# quota_disturbed = Signal(providing_args=["users"])
+# quota_disturbed.connect(on_quota_disturbed)
 
-quota_disturbed = Signal(providing_args=["users"])
-quota_disturbed.connect(on_quota_disturbed)
 
-
-def send_quota_disturbed(sender, instance, **kwargs):
-    users = []
-    extend = users.extend
-    if sender == Membership:
-        if not instance.group.is_enabled:
-            return
-        extend([instance.person])
-    elif sender == AstakosUserQuota:
-        extend([instance.user])
-    elif sender == AstakosGroupQuota:
-        if not instance.group.is_enabled:
-            return
-        extend(instance.group.astakosuser_set.all())
-    elif sender == AstakosGroup:
-        if not instance.is_enabled:
-            return
-    quota_disturbed.send(sender=sender, users=users)
-post_delete.connect(send_quota_disturbed, sender=AstakosGroup)
-post_delete.connect(send_quota_disturbed, sender=Membership)
-post_save.connect(send_quota_disturbed, sender=AstakosUserQuota)
-post_delete.connect(send_quota_disturbed, sender=AstakosUserQuota)
-post_save.connect(send_quota_disturbed, sender=AstakosGroupQuota)
-post_delete.connect(send_quota_disturbed, sender=AstakosGroupQuota)
+# def send_quota_disturbed(sender, instance, **kwargs):
+#     users = []
+#     extend = users.extend
+#     if sender == Membership:
+#         if not instance.group.is_enabled:
+#             return
+#         extend([instance.person])
+#     elif sender == AstakosUserQuota:
+#         extend([instance.user])
+#     elif sender == AstakosGroupQuota:
+#         if not instance.group.is_enabled:
+#             return
+#         extend(instance.group.astakosuser_set.all())
+#     elif sender == AstakosGroup:
+#         if not instance.is_enabled:
+#             return
+#     quota_disturbed.send(sender=sender, users=users)
+# post_delete.connect(send_quota_disturbed, sender=AstakosGroup)
+# post_delete.connect(send_quota_disturbed, sender=Membership)
+# post_save.connect(send_quota_disturbed, sender=AstakosUserQuota)
+# post_delete.connect(send_quota_disturbed, sender=AstakosUserQuota)
+# post_save.connect(send_quota_disturbed, sender=AstakosGroupQuota)
+# post_delete.connect(send_quota_disturbed, sender=AstakosGroupQuota)
 
 
 def renew_token(sender, instance, **kwargs):
@@ -1942,23 +1897,3 @@ def renew_token(sender, instance, **kwargs):
         instance.renew_token()
 pre_save.connect(renew_token, sender=AstakosUser)
 pre_save.connect(renew_token, sender=Service)
-
-
-def check_closed_join_membership_policy(sender, instance, **kwargs):
-    if instance.id:
-        return
-    if instance.person == instance.project.current_application.owner:
-        return
-    join_policy = instance.project.current_application.definition.member_join_policy
-    if join_policy == get_closed_join():
-        raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
-pre_save.connect(check_closed_join_membership_policy, sender=ProjectMembership)
-
-
-def check_auto_accept_join_membership_policy(sender, instance, created, **kwargs):
-    if not created:
-        return
-    join_policy = instance.project.current_application.definition.member_join_policy
-    if join_policy == get_auto_accept_join() and not instance.acceptance_date:
-        instance.accept()
-post_save.connect(check_auto_accept_join_membership_policy, sender=ProjectMembership)

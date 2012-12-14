@@ -40,11 +40,11 @@ from django.http import Http404
 
 from astakos.im.models import ProjectApplication
 
-@transaction.commit_manually
 class Command(BaseCommand):
     args = "<project application id>"
     help = "Update project state"
 
+    @transaction.commit_manually
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a group identifier")

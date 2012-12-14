@@ -216,7 +216,7 @@ def resource_grants(project_definition):
         grants = grants.values_list(
             'resource__name',
             'resource__service__name',
-            'member_limit'
+            'member_capacity'
         )
         return dict((RESOURCE_SEPARATOR.join([e[1], e[0]]), e[2]) for e in grants)
     except:

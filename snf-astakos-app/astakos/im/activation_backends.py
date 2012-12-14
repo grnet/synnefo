@@ -38,11 +38,9 @@ from django.utils.translation import ugettext as _
 from astakos.im.models import AstakosUser
 from astakos.im.util import get_invitation
 from astakos.im.functions import (
-    send_activation, send_account_creation_notification, activate
-)
+    send_activation, send_account_creation_notification, activate)
 from astakos.im.settings import (
-    INVITATIONS_ENABLED, RE_USER_EMAIL_PATTERNS
-)
+    INVITATIONS_ENABLED, RE_USER_EMAIL_PATTERNS)
 from astakos.im import settings as astakos_settings
 from astakos.im.forms import *
 

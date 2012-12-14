@@ -40,8 +40,7 @@ from django.http import HttpRequest
 from django.utils.translation import ugettext as _
 
 from astakos.im.settings import (
-    COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, LOGGING_LEVEL
-)
+    COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, LOGGING_LEVEL)
 
 import astakos.im.messages as astakos_messages
 

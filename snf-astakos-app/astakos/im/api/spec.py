@@ -1,6 +1,5 @@
 from synnefo.lib.commissioning.specificator import (
-    Specificator, Integer, Text, ListOf
-)
+    Specificator, Integer, Text, ListOf)
 
 
 class Name(Text):

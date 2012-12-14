@@ -39,8 +39,7 @@ from django.views.generic.create_update import lookup_object
 from django.http import Http404
 
 from astakos.im.models import (
-    ProjectApplication, Project, PENDING
-)
+    ProjectApplication, Project)
 
 @transaction.commit_on_success
 class Command(BaseCommand):

@@ -47,8 +47,7 @@ from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.settings import (
-    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE
-)
+    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE)
 from astakos.im.functions import login
 
 import astakos.im.messages as astakos_messages

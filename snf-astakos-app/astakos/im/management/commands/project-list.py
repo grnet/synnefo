@@ -81,7 +81,7 @@ class Command(NoArgsCommand):
                 str(app.id),
                 app.state,
                 str(project_id),
-                app.definition.name,
+                app.name,
                 format_bool(is_active),
                 format_bool(is_alive),
                 format_bool(is_suspended),

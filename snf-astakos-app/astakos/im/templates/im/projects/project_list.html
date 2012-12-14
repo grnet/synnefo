@@ -61,14 +61,14 @@
         	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
 					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
-					    <option value="definition__name">Sort by Name</option>
+					    <option value="name">Sort by Name</option>
 			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
-			            <option value="definition__start_date" {% if sorting == 'definition__start_date' %}selected{% endif %}>Sort by Start Date</option>
-			            <option value="definition__end_date" {% if sorting == 'definition__end_date' %}selected{% endif %}>Sort by End Date</option>
+			            <option value="start_date" {% if sorting == 'start_date' %}selected{% endif %}>Sort by Start Date</option>
+			            <option value="end_date" {% if sorting == 'end_date' %}selected{% endif %}>Sort by End Date</option>
 			            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> --> 
 			            <option value="state" {% if sorting == 'state' %}selected{% endif %}>Sort by Status</option> 
-			            <option value="definition__member_join_policy__description" {% if sorting == 'definition__member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
-			            <option value="definition__member_leave_policy__description" {% if sorting == 'definition__member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 
+			            <option value="member_join_policy__description" {% if sorting == 'member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
+			            <option value="member_leave_policy__description" {% if sorting == 'member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 
 					</select>
 					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
@@ -100,11 +100,11 @@
                   {% with o.project.members.all as members %}
                   {% with o.project.approved_members as approved_members%}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
-	                    <td style="width:22%"><a href="{% url project_detail o.id %}" title="visit project page">{{o.definition.name|truncatename}}</a></td>
+	                    <td style="width:22%"><a href="{% url project_detail o.id %}" title="visit project page">{{o.name|truncatename}}</a></td>
 	                    <!--td>{{o.kindname|capfirst}}</td-->
 	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
-	                    <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
-	                    <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
+	                    <td style="width:13%">{{o.start_date|date:"d/m/Y"}}</td>
+	                    <td style="width:13%">{{o.end_date|date:"d/m/Y"}}</td>
 	                    <td style="width:11%">{{approved_members|length}}</td>
 	                    <td style="width:11%">
 	                        {{o.state}}
@@ -133,13 +133,13 @@
 		                    {% if user in members %}
 		                        {% if user in approved_members %}    
 			                       	{% if not user == o.owner %}
-			                            <form action="{% url project_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+			                            <form action="{% url project_leave o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
 			                                 <input type="submit"  value="x leave group" class="leave"/>
 			                            </form>
 			                            <div class="dialog">
 					                		Are you sure you what to leave this project?<br>
-					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name}}</a><br>
-					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>       		
+					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
+					                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>       		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
 			                        {% else %}
@@ -150,13 +150,13 @@
 		                        {% endif %}
 		                    {% else %}
 		                        {% if o.project.is_alive %}
-		                                <form action="{% url project_join o.id %}" method="post" class="link-like">{% csrf_token %}
+		                                <form action="{% url project_join o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
 		                                    <input type="submit"   value="+ join group" class="join_group join" />
 		                                </form>
 		                                <div class="dialog">
 					                		Are you sure you what to join this project?<br>
-					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name}}</a><br>
-					                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
+					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
+					                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>
 					                		
 					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 					                	</div>
@@ -164,16 +164,16 @@
 		                    {% endif %}
 	                    	</div>
 	                    </td>
-			            <td class="centered" style="width:9%">{{o.definition.member_join_policy}}</td>
-	                    <td class="centered" style="width:9%">{{o.definition.member_leave_policy}}</td>
+			            <td class="centered" style="width:9%">{{o.member_join_policy}}</td>
+	                    <td class="centered" style="width:9%">{{o.member_leave_policy}}</td>
 	                    <!--td><a href="#" class="more-info" title="more info">+ more info</a></td-->
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
                     <td colspan="7" class="info-td">
                         <div>
                             <p>{{o.desc}}</p>
-                            <p>{% if o.definition.homepage%}
-                                Project's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.definition.homepage }}</a>
+                            <p>{% if o.homepage%}
+                                Project's home page: <a target="_blank" href="{{ o.homepage }}">{{ o.homepage }}</a>
                             
                             {% endif %}
                             </p>
@@ -216,13 +216,14 @@
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
 						    <select name="sorting"  class="dropkicked"  tabindex="1">
-							    <option value="definition__name">Sort by Name</option>
-					            <!--<option value="kindname" {% if sorting == 'kindname' %}selected{% endif %}>Type</option>-->			
-					            <option value="definition__start_date" {% if sorting == 'definition__start_date' %}selected{% endif %}>Sort by Start Date</option>
-			                    <option value="definition__issue_date" {% if sorting == 'definition__issue_date' %}selected{% endif %}>Sort by Issue date</option>			
-					            <option value="definition__expiration_date" {% if sorting == 'definition__expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
+							    <option value="name">Sort by Name</option>
+			                    <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
+					            <option value="start_date" {% if sorting == 'start_date' %}selected{% endif %}>Sort by Start Date</option>
+					            <option value="end_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
 					            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> -->
-					            <option value="definition__moderation_enabled" {% if sorting == 'definition__moderation_enabled' %}selected{% endif %}>Sort by Moderation</option>		
+					            <option value="state" {% if sorting == 'state' %}selected{% endif %}>Sort by Status</option> 
+                                <option value="member_join_policy__description" {% if sorting == 'member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
+                                <option value="member_leave_policy__description" {% if sorting == 'member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 		
 							</select>
 						</div>
 					</form>
@@ -246,11 +247,11 @@
 			            <tbody>
 			              {% for o in page_obj.object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td style="width:22%"><a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name|truncatename }}</a></td>
+			                <td style="width:22%"><a  href="{% url project_detail o.id %}" title="visit group page">{{o.name|truncatename }}</a></td>
 			                <!--td>{{o.kindname|capfirst}}</td-->
 			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
-			                <td style="width:13%">{{o.definition.start_date|date:"d/m/Y"}}</td>
-			                <td style="width:13%">{{o.definition.end_date|date:"d/m/Y"}}</td>
+			                <td style="width:13%">{{o.start_date|date:"d/m/Y"}}</td>
+			                <td style="width:13%">{{o.end_date|date:"d/m/Y"}}</td>
 			                <td style="width:11%">{{approved_members|length}}</td>
 			                <td style="width:17%">
 			                	<div class="msg-wrap">
@@ -287,13 +288,13 @@
 			                		{% if o.is_active %}
 			                			{% if user in approved_members %}
 						                    
-					                    	<form action="{% url project_leave o.id %}" method="post" class="link-like">{% csrf_token %}
+					                    	<form action="{% url project_leave o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
 					                             <input type="submit"  value="x leave" class="leave" />
 					                        </form>	
 					                        <div class="dialog">
 						                		Are you sure you want to leave this project?<br>
-						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.definition.name}}</a><br>
-						                		{% if o.definition.description %}Description:{{o.definition.description|truncatewords:30}}{% endif %}<br><br>
+						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
+						                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>
 						                		
 						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
 						                	</div>
@@ -312,9 +313,9 @@
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
 			                <td colspan="8" class="info-td">
 			                	<div>
-			                		<p>{{o.definition.description}}</p>
-					                <p>{% if o.definition.homepage%}
-							 			Project's home page: <a href="{{ o.definition.homepage }}">{{ o.definition.homepage }}</a>
+			                		<p>{{o.description}}</p>
+					                <p>{% if o.homepage%}
+							 			Project's home page: <a href="{{ o.homepage }}">{{ o.homepage }}</a>
 							 		{% endif %}
 							 		</p>
 			                	</div>	

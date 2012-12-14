@@ -15,7 +15,7 @@ Maximum participant number:     {{object.definition.limit_on_members_number}}
 Precursor:                      {{object.precursor_application.id}}
 Policies:
 {% for p in object.definition.projectresourcegrant_set.all %}
-    {{p.resource}}: uplimit:{% if p.member_limit %}{{p.member_limit}}{% else %}inf{% endif %}
+    {{p.resource}}: uplimit:{% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
 {% endfor %}
 
 Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
@@ -38,7 +38,7 @@ Maximum participant number:     {{object.definition.limit_on_members_number}}
 Precursor:                      {{object.precursor_application.id}}
 Policies:
 {% for p in object.definition.projectresourcegrant_set.all %}
-    {{p.resource}}: uplimit:{% if p.member_limit %}{{p.member_limit}}{% else %}inf{% endif %}
+    {{p.resource}}: uplimit:{% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
 {% endfor %}
 
 For approving it you can use the command line tool:

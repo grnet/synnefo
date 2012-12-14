@@ -8,7 +8,7 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         for user in orm.AstakosUser.objects.all():
-            if user.provider != 'local':
+            if user.provider and user.provider != 'local':
                 orm.AstakosUserAuthProvider.objects.create(user=user,
                                                            module=user.provider,
                                                            identifier=user.third_party_identifier)

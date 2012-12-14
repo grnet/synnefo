@@ -903,10 +903,10 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                     get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
                     if  getattr(request, 'user', None) is None:
                         raise Unauthorized('Access denied')
-                    assert request.get('uniq') not None
+                    assert request.get('uniq') != None
                     request.user_uniq = User(request.get('uniq'))
                     request.user_uniq.id = request.user.get('id')
-                    assert request.user_uniq.id not None
+                    assert request.user_uniq.id != None
                 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:

@@ -73,10 +73,7 @@ class EmailBackend(ModelBackend):
     def authenticate(self, username=None, password=None):
         # First check whether a user having this email exists
         try:
-            user = AstakosUser.objects.get_by_identifier(username,
-                                                         is_active=True)
-            if  user.check_password(password):
-                return user
+            user = AstakosUser.objects.get_by_identifier(username)
         except AstakosUser.DoesNotExist:
             return None
 

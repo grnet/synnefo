@@ -79,7 +79,7 @@ import re
 logger = logging.getLogger(__name__)
 
 DOMAIN_VALUE_REGEX = re.compile(
-    r'^(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.){0,126}(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?))$',
+    r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
 
 class StoreUserMixin(object):

@@ -95,7 +95,6 @@ def login(
         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
             realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
         else:
-            print settings.SHIBBOLETH_REQUIRE_NAME_INFO, "LALALALAL"
             if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
                 raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
             else:

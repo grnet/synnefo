@@ -14,7 +14,8 @@
                       {% if provider.can_remove %}
                           <div class="dialog-wrap">
                             <a href="#" title="disable" class="red">Disable x</a>
-                            <div class="dialog">Are you sure you want to disable this method?
+                            <div class="dialog">
+                              Are you sure you want to disable this method?<br />
                               <a href="{% url remove_auth_provider provider.pk %}" 
                                 class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
                             </div>	

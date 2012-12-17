@@ -103,3 +103,13 @@ ul ul ul li										{ list-style-type:square; }
 /* misc ---------------------------------------*/
 img[align="left"]								{ margin:0 1em 0.5em 0; }
 img[align="right"]								{ margin:0 0 0.5em 1em; }
+
+/* button */
+.button { display: inline-block; color: #fff; line-height: 22px; padding: 10px 22px; background-color: #F89A1C; margin-bottom: 10px;}
+.button:hover { background-color: #3582AC;}
+.button.wide { display: block;}
+span.action-desc { display: block; color: #fff;}
+.button:visited { color: #fff !important }
+
+/* heading extra */
+h2 .header-actions { float: right; font-size: 0.8em;}

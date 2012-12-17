@@ -61,11 +61,13 @@ from django.utils.http import int_to_base36
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
+from django.utils.safestring import mark_safe
 from django.core.validators import email_re
 
 from astakos.im.settings import (DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
                                  AUTH_TOKEN_DURATION, BILLING_FIELDS,
                                  EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL)
+from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     register_users, send_quota, register_resources
 )
@@ -502,9 +504,6 @@ class AstakosUser(User):
             self.username = self.email
 
         self.validate_unique_email_isactive()
-        if self.is_active and self.activation_sent:
-            # reset the activation sent
-            self.activation_sent = None
 
         super(AstakosUser, self).save(**kwargs)
 
@@ -554,7 +553,6 @@ class AstakosUser(User):
         """
         q = AstakosUser.objects.all()
         q = q.filter(email = self.email)
-        q = q.filter(is_active = self.is_active)
         if self.id:
             q = q.filter(~Q(id = self.id))
         if q.count() != 0:
@@ -706,6 +704,33 @@ class AstakosUser(User):
     @property
     def auth_providers_display(self):
         return ",".join(map(lambda x:unicode(x), self.auth_providers.active()))
+
+    def get_inactive_message(self):
+        msg_extra = ''
+        message = ''
+        if self.activation_sent:
+            if self.email_verified:
+                message = _(astakos_messages.ACCOUNT_INACTIVE)
+            else:
+                message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
+                if astakos_settings.MODERATION_ENABLED:
+                    msg_extra = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
+                else:
+                    url = self.get_resend_activation_url()
+                    msg_extra = mark_safe(_(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP) + \
+                                u' ' + \
+                                _('<a href="%s">%s?</a>') % (url,
+                                _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
+        else:
+            if astakos_settings.MODERATION_ENABLED:
+                message = _(astakos_messages.ACCOUNT_PENDING_MODERATION)
+            else:
+                message = astakos_messages.ACCOUNT_PENDING_ACTIVATION
+                url = self.get_resend_activation_url()
+                msg_extra = mark_safe(_('<a href="%s">%s?</a>') % (url,
+                            _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
+
+        return mark_safe(message + u' '+ msg_extra)
 
 
 class AstakosUserAuthProviderManager(models.Manager):

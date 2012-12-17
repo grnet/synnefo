@@ -34,8 +34,21 @@
 ACCOUNT_AUTHENTICATION_FAILED           =   'Cannot authenticate account.'
 ACCOUNT_ALREADY_ACTIVE                  =   'Account is already active.'
 ACCOUNT_PENDING_ACTIVATION              =   'Your request is pending activation.'
+ACCOUNT_PENDING_MODERATION              =   'Your request is pending moderation.'
+ACCOUNT_INACTIVE                        =   'Your account is disabled.'
 ACCOUNT_RESEND_ACTIVATION               =   'You have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email?</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' or <a href="%(signup_url)s">Provide new email?</a>'])
+
+ACCOUNT_PENDING_ACTIVATION_HELP         =   'If you haven\'t received activation email, be sure to check your spam folder.'
+
+ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' + \
+                                            ' been activated and you have been' + \
+                                            ' automatically signed in to your account.'
+PASSWORD_RESET_DONE                     =   'A mail with details on how to change your password was sent.'
+PASSWORD_RESET_CONFIRM_DONE             =   'Password changed. You can now login using your new password.'
+
+ACCOUNT_RESEND_ACTIVATION_PROMPT        =   'Resend activation mail'
+ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'
 
 ACCOUNT_UNKNOWN                         =   'There is no such account.'
 TOKEN_UNKNOWN                           =   'There is no user matching this token.'
@@ -49,8 +62,9 @@ EMAIL_CHANGE_REGISTERED                 =   'Change email request has been regis
 OBJECT_CREATED                          =   'The %(verbose_name)s was created successfully.'
 MEMBER_JOINED_GROUP                     =   '%(realname)s has been successfully joined the group.'
 MEMBER_REMOVED                          =   '%(realname)s has been successfully removed from the group.'
-BILLING_ERROR                           =   'Service response status: %(status)d' 
+BILLING_ERROR                           =   'Service response status: %(status)d'
 LOGOUT_SUCCESS                          =   'You have successfully logged out.'
+LOGIN_SUCCESS                           =   'You have successfully logged in.'
 
 GENERIC_ERROR                           =   'Something wrong has happened. \
                                                Please contact the administrators for more details.'
@@ -71,7 +85,7 @@ REQUIRED_FIELD                          =   'This field is required.'
 EMAIL_USED                              =   'This email address is already in use. Please supply a different email address.'
 SHIBBOLETH_EMAIL_USED                   =   'This email is already associated with another shibboleth account.'
 SHIBBOLETH_INACTIVE_ACC                 =   'This email is already associated with an inactive account. \
-                                               You need to wait to be activated before being able to switch to a shibboleth account.'   
+                                               You need to wait to be activated before being able to switch to a shibboleth account.'
 SHIBBOLETH_MISSING_EPPN                 =   'Missing unique token in request.'
 SHIBBOLETH_MISSING_NAME                 =   'Missing user name in request.'
 
@@ -90,7 +104,7 @@ NEW_EMAIL_ADDR_RESERVED                 =   'The new email address is reserved.'
 EMAIL_RESERVED                          =   'Email: %(email)s is reserved'
 NO_LOCAL_AUTH                           =   'Local login is not the current authentication method for this account.'
 SWITCH_ACCOUNT_FAILURE                  =   'Account failed to switch. Invalid parameters.'
-SWITCH_ACCOUNT_SUCCESS_WITH_PROVIDER    =   'Account failed to switch to %(provider)s.' 
+SWITCH_ACCOUNT_SUCCESS_WITH_PROVIDER    =   'Account failed to switch to %(provider)s.'
 SWITCH_ACCOUNT_SUCCESS                  =   'Account successfully switched to %(provider)s.'
 
 # Field help text
@@ -111,19 +125,30 @@ NOTIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'notification'
 MISSING_NEXT_PARAMETER                  =   'No next parameter'
 
 INVITATION_SENT                         =   'Invitation sent to %(email)s.'
-VERIFICATION_SENT                       =   'Verification sent.'
+VERIFICATION_SENT                       =   'Registration completed but account is not active yet. Account activation link was sent to your email address.'
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with another local account. \
                                                To change this account to a shibboleth one follow the link in the verification email sent to %(email)s. \
                                                Otherwise just ignore it.'
 NOTIFICATION_SENT                       =   'Your request for an account was successfully received and is now pending approval. \
                                                You will be notified by email in the next few days. \
                                                Thanks for your interest in ~okeanos! The GRNET team.'
-ACTIVATION_SENT                         =   'Activation sent.'
+ACTIVATION_SENT                         =   'An email containing your activation link was sent to your email address.'
 
-REGISTRATION_COMPLETED                  =   'Registration completed. You can now login.'
+REGISTRATION_COMPLETED                  =   'Registration completed you can now login to your account.'
 
 NO_RESPONSE                             =   'There is no response.'
 NOT_ALLOWED_NEXT_PARAM                  =   'Not allowed next parameter.'
 MISSING_KEY_PARAMETER                   =   'Missing key parameter.'
 INVALID_KEY_PARAMETER                   =   'Invalid key.'
 DOMAIN_VALUE_ERR                        =   'Enter a valid domain.'
+
+# Auth providers messages
+AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled"
+AUTH_PROVIDER_NOT_ACTIVE_FOR_LOGIN           =   "Login using '%(provider)s' is disabled"
+AUTH_PROVIDER_NOT_ACTIVE_FOR_USER_LOGIN      =   "You cannot login using '%(provider)s'"
+AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Signup using '%(provider)s' is disabled"
+AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "'%(provider)s is disabled"
+AUTH_PROVIDER_ADDED                          =   "Your new login method has been added"
+AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method"
+AUTH_PROVIDER_LOGIN_TO_ADD                   =   "Please login now to your existing account."
+

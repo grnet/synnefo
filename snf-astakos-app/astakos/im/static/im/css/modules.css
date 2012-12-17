@@ -510,3 +510,8 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods .dialog							{ background:#fff; border:1px dashed #ccc; position:absolute; bottom:30px; left:0; padding:15px; width:220px; display:none;}
 .auth_methods .dialog .submit					{ min-width:30px; padding:5px 22px; } 
 .right-align									{ text-align:right; }			
+
+
+/* login section */
+.login-section {}
+.main-login-method { margin-bottom: 20px;}

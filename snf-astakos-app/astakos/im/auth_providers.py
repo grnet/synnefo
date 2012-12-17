@@ -37,7 +37,9 @@ from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
 
 from django.conf import settings
+
 from astakos.im import settings as astakos_settings
+from astakos.im import messages as astakos_messages
 
 import logging
 
@@ -71,6 +73,15 @@ class AuthProvider(object):
     module_active = False
     module_enabled = False
     one_per_user = False
+    login_prompt = _('Login using')
+
+    def get_message(self, msg, **kwargs):
+        params = kwargs
+        params.update({'provider': self.get_title_display})
+
+        override_msg = getattr(self, 'get_%s_message_display' % msg.lower(), None)
+        msg = 'AUTH_PROVIDER_%s' % msg
+        return override_msg or getattr(astakos_messages, msg, msg) % params
 
     def __init__(self, user=None):
         self.user = user
@@ -84,12 +95,15 @@ class AuthProvider(object):
             settings_attr = self.get_setting(attr.upper())
             if not settings_attr:
                 return getattr(self, attr)
-            return settings_attr
+            return _(settings_attr)
         else:
             return super(AuthProvider, self).__getattr__(key)
 
     def get_setting(self, name, default=None):
         attr = 'ASTAKOS_AUTH_PROVIDER_%s_%s' % (self.module.upper(), name.upper())
+        attr_sec = 'ASTAKOS_%s_%s' % (self.module.upper(), name.upper())
+        if not hasattr(settings, attr):
+            return getattr(settings, attr_sec, default)
         return getattr(settings, attr, default)
 
     def is_available_for_login(self):
@@ -117,6 +131,8 @@ class LocalAuthProvider(AuthProvider):
     description = _('Create a local password for your account')
     create_prompt =  _('Create an account')
     add_prompt =  _('Create a local password for your account')
+    login_prompt = _('if you already have a username and password')
+    signup_prompt = _('New to ~Okeanos ?')
 
 
     @property
@@ -154,10 +170,12 @@ class ShibbolethAuthProvider(AuthProvider):
     description = _('Allows you to login to your account using your academic '
                     'credentials')
     add_prompt = _('Add academic credentials to your account.')
-    details_tpl = _('Shibboleth account %(identifier)s ('
-                    '%(affiliation)s affiliation) is connected with your '
+    details_tpl = _('Shibboleth account \'%(identifier)s\' is connected to your '
                     ' account.')
     user_title = _('Academic credentials (%(identifier)s)')
+    primary_login_prompt = _('If you are a student/researcher/faculty you can'
+                             ' login using your university-credentials in'
+                             ' the following page')
 
     @property
     def add_url(self):

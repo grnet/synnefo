@@ -95,7 +95,11 @@ def login(
         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
             realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
         else:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
+            print settings.SHIBBOLETH_REQUIRE_NAME_INFO, "LALALALAL"
+            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
+                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
+            else:
+                realname = ''
     except KeyError, e:
         # invalid shibboleth headers, redirect to login, display message
         messages.error(request, e.message)
@@ -113,8 +117,7 @@ def login(
         # automatically add eppn provider to user
         user = request.user
         if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn,
-                                                  provider_info=provider_info):
+                                                  identifier=eppn):
             messages.error(request, 'Account already exists.')
             return HttpResponseRedirect(reverse('edit_profile'))
 
@@ -135,43 +138,33 @@ def login(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-        elif not user.activation_sent:
-            message = _('Your request is pending activation')
-			#TODO: use astakos_messages
-            if not settings.MODERATION_ENABLED:
-                url = user.get_resend_activation_url()
-                msg_extra = _('<a href="%s">Resend activation email?</a>') % url
-                message = message + u' ' + msg_extra
-
-            messages.error(request, message)
-            return HttpResponseRedirect(reverse('login'))
-
         else:
-			#TODO: use astakos_messages
-            message = _(u'Account not active. Please contact support')
+            message = user.get_inactive_message()
             messages.error(request, message)
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-		#TODO: use astakos_messages
         provider = auth_providers.get_provider('shibboleth')
         if not provider.is_available_for_create():
-            return reverse('index')
+            messages.error(request,
+                           _(astakos_messages.AUTH_PROVIDER_NOT_ACTIVE) % provider.get_title_display)
+            return HttpResponseRedirect(reverse('login'))
 
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=eppn,
-            provider='shibboleth',
-            info=json.dumps(provider_info)
+            provider='shibboleth'
         )
         # update pending user
         user.realname = realname
         user.affiliation = affiliation
         user.email = email
+        user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 
         extra_context['provider'] = 'shibboleth'
+        extra_context['provider_title'] = 'Academic credentials'
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
                                         "?third_party_token=%s" % user.token

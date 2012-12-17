@@ -125,6 +125,10 @@ class Command(BaseCommand):
 
         if options.get('active'):
             user.is_active = True
+            if not user.email_verified:
+                user.email_verified = True
+            if not user.activation_sent:
+                user.activation_sent = True
         elif options.get('inactive'):
             user.is_active = False
 

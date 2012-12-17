@@ -63,6 +63,7 @@ logger = logging.getLogger(__name__)
 
 import oauth2 as oauth
 import cgi
+import urllib
 
 consumer = oauth.Consumer(settings.TWITTER_TOKEN, settings.TWITTER_SECRET)
 client = oauth.Client(consumer)
@@ -71,18 +72,24 @@ request_token_url = 'http://twitter.com/oauth/request_token'
 access_token_url = 'http://twitter.com/oauth/access_token'
 authenticate_url = 'http://twitter.com/oauth/authenticate'
 
-
 @requires_auth_provider('twitter', login=True)
 @require_http_methods(["GET", "POST"])
 def login(request):
+    force_login = request.GET.get('force_login',
+                                  settings.TWITTER_AUTH_FORCE_LOGIN)
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         messages.error(request, 'Invalid Twitter response')
         return HttpResponseRedirect(reverse('edit_profile'))
 
     request.session['request_token'] = dict(cgi.parse_qsl(content))
-    url = "%s?oauth_token=%s" % (authenticate_url,
-        request.session['request_token']['oauth_token'])
+    params = {
+        'oauth_token': request.session['request_token']['oauth_token'],
+    }
+    if force_login:
+        params['force_login'] = 1
+
+    url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
 
     return HttpResponseRedirect(url)
 
@@ -94,6 +101,9 @@ def authenticated(
     template='im/third_party_check_local.html',
     extra_context={}
 ):
+
+    if request.GET.get('denied'):
+        return HttpResponseRedirect(reverse('edit_profile'))
 
     if not 'request_token' in request.session:
         messages.error(request, 'Twitter handshake failed')
@@ -107,9 +117,9 @@ def authenticated(
     resp, content = client.request(access_token_url, "GET")
     if resp['status'] != '200':
         try:
-          del request.session['request_token']
+            del request.session['request_token']
         except:
-          pass
+            pass
         messages.error(request, 'Invalid Twitter response')
         return HttpResponseRedirect(reverse('edit_profile'))
 

@@ -4,9 +4,11 @@ from django.conf import settings
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
 
-# Authenticate via Twitter.
+# OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
 TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
+TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
+                                  False)
 
 DEFAULT_USER_LEVEL = getattr(settings, 'ASTAKOS_DEFAULT_USER_LEVEL', 4)
 

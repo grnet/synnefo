@@ -552,7 +552,9 @@ Archipelago offers Copy-On-Write volumes based on pithos images
 
 Architecture
 ------------
-[place image here]
+.. image:: images/archipelago-architecture.png
+   :width: 50%
+   :target: _images/archipelago-architecture.png
 
 Prereqs
 -------

@@ -66,7 +66,8 @@ def _send_admin_notification(template_name,
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent admin notification for user %s' % dictionary
+        msg = 'Sent admin notification for user %s' % dictionary.get('email',
+                                                                     None)
         logger.log(LOGGING_LEVEL, msg)
 
 class EmailNotification(Notification):
@@ -84,7 +85,7 @@ class Notification(object):
         self.recipients = recipients
         self.subject = subject
         self.message = message
-    
+
     def send(self):
         pass
 

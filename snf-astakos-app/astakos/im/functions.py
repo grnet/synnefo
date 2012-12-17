@@ -145,7 +145,8 @@ def _send_admin_notification(template_name,
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent admin notification for user %s' % dictionary
+        msg = 'Sent admin notification for user %s' % dictionary.get('email',
+                                                                     None)
         logger.log(LOGGING_LEVEL, msg)
 
 

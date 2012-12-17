@@ -382,6 +382,8 @@ class AstakosUser(User):
     policy = models.ManyToManyField(
         Resource, null=True, through='AstakosUserQuota')
 
+    uuid = models.CharField(max_length=255, null=True, blank=False, unique=True)
+
     astakos_groups = models.ManyToManyField(
         AstakosGroup, verbose_name=_('agroups'), blank=True,
         help_text=_(astakos_messages.ASTAKOSUSER_GROUPS_HELP),
@@ -392,6 +394,7 @@ class AstakosUser(User):
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
+
 
     owner = models.ManyToManyField(
         AstakosGroup, related_name='owner', null=True)
@@ -490,6 +493,15 @@ class AstakosUser(User):
         resource = Resource.objects.get(service__name=service, name=resource)
         q = self.policies.get(resource=resource).delete()
 
+    def update_uuid(self):
+        while not self.uuid:
+            uuid_val =  str(uuid.uuid4())
+            try:
+                AstakosUser.objects.get(uuid=uuid_val)
+            except AstakosUser.DoesNotExist, e:
+                self.uuid = uuid_val
+        return self.uuid
+
     @property
     def extended_groups(self):
         return self.membership_set.select_related().all()
@@ -511,7 +523,9 @@ class AstakosUser(User):
         if self.__has_signed_terms != self.has_signed_terms:
             self.date_signed_terms = datetime.now()
 
-        if not self.id:
+        self.update_uuid()
+
+        if self.username != self.email.lower():
             # set username
             self.username = self.email.lower()
 

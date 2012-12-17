@@ -134,6 +134,10 @@ def authenticated(
         messages.error(request, 'Invalid Google response. Please contact support')
         return HttpResponseRedirect(reverse('edit_profile'))
 
+    if not access_token_data.get('user_id', None):
+        messages.error(request, 'Invalid Google response. Please contact support')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
     userid = access_token_data['user_id']
     username = access_token_data.get('email', None)
     provider_info = access_token_data

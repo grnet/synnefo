@@ -10,6 +10,15 @@ TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
 TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
                                   False)
 
+
+# OAuth2 Google credentials.
+GOOGLE_CLIENT_ID = getattr(settings, 'ASTAKOS_GOOGLE_CLIENT_ID', '')
+GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
+
+# OAuth2 LinkedIn credentials.
+LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
+LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
+
 DEFAULT_USER_LEVEL = getattr(settings, 'ASTAKOS_DEFAULT_USER_LEVEL', 4)
 
 INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {

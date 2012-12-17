@@ -714,6 +714,8 @@ def change_email(request, activation_key=None,
                  confirm_template_name='registration/email_change_done.html',
                  extra_context=None):
     extra_context = extra_context or {}
+
+
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
@@ -723,34 +725,50 @@ def change_email(request, activation_key=None,
                 auth_logout(request)
                 response = prepare_response(request, user)
                 transaction.commit()
-                return response
+                return HttpResponseRedirect(reverse('edit_profile'))
         except ValueError, e:
             messages.error(request, e)
+            transaction.rollback()
+            return HttpResponseRedirect(reverse('index'))
+
         return render_response(confirm_template_name,
-                               modified_user=user if 'user' in locals(
-                               ) else None,
-                               context_instance=get_context(request,
+                               modified_user=user if 'user' in locals() \
+                               else None, context_instance=get_context(request,
                                                             extra_context))
 
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
         url = request.build_absolute_uri(reverse('index'))
         return HttpResponseRedirect(url + '?next=' + path)
+
+    # clean up expired email changes
+    if request.user.email_change_is_pending():
+        change = request.user.emailchanges.get()
+        if change.activation_key_expired():
+            change.delete()
+            transaction.commit()
+            return HttpResponseRedirect(reverse('email_change'))
+
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
+            # delete pending email changes
+            request.user.emailchanges.all().delete()
             ec = form.save(email_template_name, request)
         except SendMailError, e:
             msg = e
             messages.error(request, msg)
             transaction.rollback()
-        except IntegrityError, e:
-            msg = _(astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
-            messages.error(request, msg)
+            return HttpResponseRedirect(reverse('edit_profile'))
         else:
             msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)
             transaction.commit()
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+    if request.user.email_change_is_pending():
+        messages.warning(request, astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
+
     return render_response(
         form_template_name,
         form=form,

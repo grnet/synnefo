@@ -1,5 +1,5 @@
 <div class="auth_methods">
-    <h2>ENABLED AUTHENTICATION METHODS</h2>
+    <h2>LOGIN METHODS</h2>
     <ul>
         {% for provider in user_providers %}
         <li>
@@ -32,7 +32,7 @@
     </ul>
     <ul class="notassigned">
         <li>
-            <a href="#">+ Add new authentication method</a>
+            <a href="#">+ Add new login method</a>
             
             <div class="wrap">
                 {% for provider in user_available_providers %}

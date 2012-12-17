@@ -35,6 +35,7 @@ import logging
 import itertools
 
 from functools import wraps
+from collections import namedtuple
 
 from django.utils.translation import ugettext as _
 

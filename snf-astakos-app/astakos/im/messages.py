@@ -72,7 +72,8 @@ GENERIC_ERROR                           =   'Something wrong has happened. \
 MAX_INVITATION_NUMBER_REACHED   =           'There are no invitations left.'
 GROUP_MAX_PARTICIPANT_NUMBER_REACHED    =   'Group maximum participant number has been reached.'
 NO_APPROVAL_TERMS                       =   'There are no approval terms.'
-PENDING_EMAIL_CHANGE_REQUEST            =   'There is already a pending change email request.'
+PENDING_EMAIL_CHANGE_REQUEST            =   'There is already a pending change email request. ' + \
+                                            'Submiting a new email will cancel any previous requests.'
 OBJECT_CREATED_FAILED                   =   'The %(verbose_name)s creation failed: %(reason)s.'
 GROUP_JOIN_FAILURE                      =   'Failed to join group.'
 GROUPKIND_UNKNOWN                       =   'There is no such a group kind'

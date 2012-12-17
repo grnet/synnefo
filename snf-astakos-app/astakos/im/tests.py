@@ -47,6 +47,9 @@ from urllib import quote
 
 from astakos.im import messages
 
+
+astakos_settings.EMAILCHANGE_ENABLED = True
+
 class ShibbolethClient(Client):
     """
     A shibboleth agnostic client.
@@ -623,4 +626,83 @@ class LocalUserTests(TestCase):
         # she can't because account is not active yet
         self.assertContains(r, "Password change for this account is not"
                                 " supported")
+
+class UserActionsTests(TestCase):
+
+    def setUp(self):
+        kind = GroupKind.objects.create(name="default")
+        AstakosGroup.objects.create(name="default", kind=kind)
+
+    def test_email_change(self):
+        # to test existing email validation
+        existing_user = get_local_user('existing@grnet.gr')
+
+        # local user
+        user = get_local_user('kpap@grnet.gr')
+
+        # login as kpap
+        self.client.login(username='kpap@grnet.gr', password='password')
+        r = self.client.get('/im/profile', follow=True)
+        user = r.context['request'].user
+        self.assertTrue(user.is_authenticated())
+
+        # change email is enabled
+        r = self.client.get('/im/email_change')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(user.email_change_is_pending())
+
+        # request email change to an existing email fails
+        data = {'new_email_address': 'existing@grnet.gr'}
+        r = self.client.post('/im/email_change', data)
+        self.assertContains(r, messages.EMAIL_USED)
+
+        # proper email change
+        data = {'new_email_address': 'kpap@gmail.com'}
+        r = self.client.post('/im/email_change', data, follow=True)
+        self.assertRedirects(r, '/im/profile')
+        self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
+        change1 = EmailChange.objects.get()
+
+        # user sees a warning
+        r = self.client.get('/im/email_change')
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, messages.PENDING_EMAIL_CHANGE_REQUEST)
+        self.assertTrue(user.email_change_is_pending())
+
+        # link was sent
+        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 0)
+        self.assertEqual(len(get_mailbox('kpap@gmail.com')), 1)
+
+        # proper email change
+        data = {'new_email_address': 'kpap@yahoo.com'}
+        r = self.client.post('/im/email_change', data, follow=True)
+        self.assertRedirects(r, '/im/profile')
+        self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
+        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 0)
+        self.assertEqual(len(get_mailbox('kpap@yahoo.com')), 1)
+        change2 = EmailChange.objects.get()
+
+        r = self.client.get(change1.get_url())
+        self.assertEquals(r.status_code, 302)
+        self.client.logout()
+
+        r = self.client.post('/im/local?next=' + change2.get_url(),
+                             {'username': 'kpap@grnet.gr',
+                              'password': 'password',
+                              'next': change2.get_url()},
+                             follow=True)
+        self.assertRedirects(r, '/im/profile')
+        user = r.context['request'].user
+        self.assertEquals(user.email, 'kpap@yahoo.com')
+        self.assertEquals(user.username, 'kpap@yahoo.com')
+
+
+        self.client.logout()
+        r = self.client.post('/im/local?next=' + change2.get_url(),
+                             {'username': 'kpap@grnet.gr',
+                              'password': 'password',
+                              'next': change2.get_url()},
+                             follow=True)
+        self.assertContains(r, "Please enter a correct username and password")
+        self.assertEqual(user.emailchanges.count(), 0)
 

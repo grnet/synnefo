@@ -511,6 +511,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
 
 
 class EmailChangeForm(forms.ModelForm):
+
     class Meta:
         model = EmailChange
         fields = ('new_email_address',)
@@ -533,6 +534,7 @@ class EmailChangeForm(forms.ModelForm):
 
 
 class SignApprovalTermsForm(forms.ModelForm):
+
     class Meta:
         model = AstakosUser
         fields = ("has_signed_terms",)
@@ -548,6 +550,7 @@ class SignApprovalTermsForm(forms.ModelForm):
 
 
 class InvitationForm(forms.ModelForm):
+
     username = forms.EmailField(label=_("Email"))
 
     def __init__(self, *args, **kwargs):

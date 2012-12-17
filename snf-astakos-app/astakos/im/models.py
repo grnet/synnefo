@@ -570,6 +570,9 @@ class AstakosUser(User):
         if q.count() != 0:
             raise ValidationError({'__all__': [_(astakos_messages.UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR)]})
 
+    def email_change_is_pending(self):
+        return self.emailchanges.count() > 0
+
     @property
     def signed_terms(self):
         term = get_latest_terms()
@@ -960,6 +963,7 @@ class Invitation(models.Model):
 
 
 class EmailChangeManager(models.Manager):
+
     @transaction.commit_on_success
     def change_email(self, activation_key):
         """
@@ -993,9 +997,13 @@ class EmailChangeManager(models.Manager):
                 raise ValueError(_(astakos_messages.NEW_EMAIL_ADDR_RESERVED))
             # update user
             user = AstakosUser.objects.get(pk=email_change.user_id)
+            old_email = user.email
             user.email = email_change.new_email_address
             user.save()
             email_change.delete()
+            msg = "User %d changed email from %s to %s" % (user.pk, old_email,
+                                                          user.email)
+            logger.log(LOGGING_LEVEL, msg)
             return user
         except EmailChange.DoesNotExist:
             raise ValueError(_(astakos_messages.INVALID_ACTIVATION_KEY))
@@ -1005,12 +1013,16 @@ class EmailChange(models.Model):
     new_email_address = models.EmailField(_(u'new e-mail address'),
                                           help_text=_(astakos_messages.EMAIL_CHANGE_NEW_ADDR_HELP))
     user = models.ForeignKey(
-        AstakosUser, unique=True, related_name='emailchange_user')
+        AstakosUser, unique=True, related_name='emailchanges')
     requested_at = models.DateTimeField(default=datetime.now())
     activation_key = models.CharField(
         max_length=40, unique=True, db_index=True)
 
     objects = EmailChangeManager()
+
+    def get_url(self):
+        return reverse('email_change_confirm',
+                      kwargs={'activation_key': self.activation_key})
 
     def activation_key_expired(self):
         expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)

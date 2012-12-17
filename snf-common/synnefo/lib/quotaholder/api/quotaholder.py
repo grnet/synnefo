@@ -92,6 +92,8 @@ Reason              =   Text(   classname   =   'Reason',
                                 regex       =   '(ACCEPT|REJECT):.*',
                                 maxlen      =   128         )
 
+Bool                =   Integer(classname='Bool')
+
 class QuotaholderAPI(Specificator):
 
     def create_entity   (
@@ -246,13 +248,14 @@ class QuotaholderAPI(Specificator):
         rejected = ListOf(Entity, Resource)
         return rejected
 
-    def ack_serials (
+    def ack_serial (
                 self,
                 context     =   Context,
                 clientkey   =   ClientKey,
-                serials     =   ListOf(Serial)
+                serial      =   Serial,
+                fetch_args  =   Bool
         ):
-        return Nothing
+        return ListOf(Entity, Resource)
 
     def issue_commission    (
                 self,

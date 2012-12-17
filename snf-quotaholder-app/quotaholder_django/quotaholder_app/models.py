@@ -191,7 +191,7 @@ class CallSerial(Model):
 
     serial      =   BigIntegerField(null=False)
     clientkey   =   CharField(max_length=4096, null=False)
-
+    data        =   CharField(max_length=256*1024)
     objects     =   ForUpdateManager()
 
     class Meta:

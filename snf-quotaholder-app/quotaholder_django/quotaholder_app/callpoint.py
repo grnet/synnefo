@@ -45,9 +45,10 @@ from synnefo.lib.commissioning.utils.newname import newname
 from django.db.models import Q
 from django.db import transaction, IntegrityError
 from .models import (Holder, Entity, Policy, Holding,
-                     Commission, Provision, ProvisionLog, now,
+                     Commission, Provision, ProvisionLog, CallSerial,
+                     now,
                      db_get_entity, db_get_holding, db_get_policy,
-                     db_get_commission, db_filter_provision)
+                     db_get_commission, db_filter_provision, db_get_callserial)
 
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
@@ -506,9 +507,20 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def add_quota(self, context={}, add_quota=()):
+    def add_quota(self, context={}, clientkey=None, serial=None, add_quota=()):
         rejected = []
         append = rejected.append
+
+        if serial is not None:
+            if clientkey is None:
+                all_rejected = [(q[0], q[1]) for q in add_quota]
+                raise ReturnButFail(all_rejected)
+            try:
+                cs = CallSerial.objects.get(serial=serial, clientkey=clientkey)
+                all_rejected = [(q[0], q[1]) for q in add_quota]
+                raise ReturnButFail(all_rejected)
+            except CallSerial.DoesNotExist:
+                pass
 
         for (   entity, resource, key,
                 quantity, capacity,
@@ -557,7 +569,20 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         if rejected:
             raise ReturnButFail(rejected)
+
+        if serial is not None and clientkey is not None:
+            CallSerial.objects.create(serial=serial, clientkey=clientkey)
         return rejected
+
+    def ack_serials(self, context={}, clientkey=None, serials=()):
+        for serial in serials:
+            try:
+                cs = db_get_callserial(clientkey=clientkey, serial=serial,
+                                       for_update=True)
+                cs.delete()
+            except CallSerial.DoesNotExist:
+                pass
+        return
 
     def issue_commission(self,  context     =   {},
                                 clientkey   =   None,

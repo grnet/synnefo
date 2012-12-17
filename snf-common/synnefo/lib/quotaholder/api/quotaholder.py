@@ -237,12 +237,22 @@ class QuotaholderAPI(Specificator):
     def add_quota   (
                 self,
                 context     =   Context,
+                clientkey   =   ClientKey,
+                serial      =   Serial,
                 add_quota   =   ListOf( Entity, Resource, Key,
                                         QuantityDelta, CapacityDelta,
                                         ImportLimitDelta, ExportLimitDelta )
         ):
         rejected = ListOf(Entity, Resource)
         return rejected
+
+    def ack_serials (
+                self,
+                context     =   Context,
+                clientkey   =   ClientKey,
+                serials     =   ListOf(Serial)
+        ):
+        return Nothing
 
     def issue_commission    (
                 self,

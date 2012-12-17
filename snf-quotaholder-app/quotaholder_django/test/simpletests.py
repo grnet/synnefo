@@ -234,7 +234,9 @@ class QHAPITest(QHTestCase):
                        (e1, resource0, k1) + (5, 5, 5, 5) + (0,)])
         self.assertEqual(r, [])
 
-        r = self.qh.add_quota(add_quota=[(e0, resource0, k0, 0, (-2), None, 0),
+        r = self.qh.add_quota(clientkey=self.client,
+                              serial=1,
+                              add_quota=[(e0, resource0, k0, 0, (-2), None, 0),
                                          (e0, resource1, k0, 0, None, 5, 5)])
         self.assertEqual(r, [])
 
@@ -245,8 +247,25 @@ class QHAPITest(QHTestCase):
                              (e0, resource1, 0, None, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
 
+        # repeated serial
+        r = self.qh.add_quota(clientkey=self.client,
+                              serial=1,
+                              add_quota=[(e0, resource0, k0, 0, 2, None, 0),
+                                         (e0, resource1, k0, 0, None, (-5), 0)])
+        self.assertEqual(r, [(e0, resource0), (e0, resource1)])
+
+        r = self.qh.ack_serials(clientkey=self.client, serials=[1])
+
+        # serial has been deleted
+        r = self.qh.add_quota(clientkey=self.client,
+                              serial=1,
+                              add_quota=[(e0, resource0, k0, 0, 2, None, 0)])
+        self.assertEqual(r, [])
+
         # none is committed
-        r = self.qh.add_quota(add_quota=[(e1, resource0, k1, 0, (-10), None, 0),
+        r = self.qh.add_quota(clientkey=self.client,
+                              serial=2,
+                              add_quota=[(e1, resource0, k1, 0, (-10), None, 0),
                                          (e0, resource1, k0, 1, 0, 0, 0)])
         self.assertEqual(r, [(e1, resource0)])
 

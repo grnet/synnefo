@@ -93,6 +93,10 @@ def login(request):
         'redirect_uri': get_redirect_uri(),
         'client_id': settings.GOOGLE_CLIENT_ID
     }
+    force_login = request.GET.get('force_login', False)
+    if force_login:
+        params['approval_prompt'] = 'force'
+
     url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
     return HttpResponseRedirect(url)
 
@@ -104,6 +108,9 @@ def authenticated(
     template='im/third_party_check_local.html',
     extra_context={}
 ):
+
+    if request.GET.get('error', None):
+        return HttpResponseRedirect(reverse('edit_profile'))
 
     # TODO: Handle errors, e.g. error=access_denied
     try:

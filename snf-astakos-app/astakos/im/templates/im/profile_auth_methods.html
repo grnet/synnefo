@@ -36,7 +36,7 @@
             
             <div class="wrap">
                 {% for provider in user_available_providers %}
-                <p><a href="{{ provider.add_url }}">
+                <p><a href="{{ provider.add_url }}?force_login=1">
                   {{ provider.get_title_display }}</a><br />
                 <span class="description">
                   {{ provider.get_description_display }}

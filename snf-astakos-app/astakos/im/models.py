@@ -324,6 +324,18 @@ class AstakosUserManager(UserManager):
     def get_by_email(self, email):
         return self.get(email=email)
 
+    def get_by_identifier(self, email_or_username, **kwargs):
+        try:
+            return self.get(email__iexact=email_or_username, **kwargs)
+        except AstakosUser.DoesNotExist:
+            return self.get(username__iexact=email_or_username, **kwargs)
+
+    def user_exists(self, email_or_username, **kwargs):
+        qemail = Q(email__iexact=email_or_username)
+        qusername = Q(username__iexact=email_or_username)
+        return self.filter(qemail | qusername).exists()
+
+
 class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
@@ -501,7 +513,7 @@ class AstakosUser(User):
 
         if not self.id:
             # set username
-            self.username = self.email
+            self.username = self.email.lower()
 
         self.validate_unique_email_isactive()
 

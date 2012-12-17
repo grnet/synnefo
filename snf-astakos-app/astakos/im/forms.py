@@ -82,6 +82,7 @@ DOMAIN_VALUE_REGEX = re.compile(
 )
 
 class StoreUserMixin(object):
+
     @transaction.commit_on_success
     def store_user(self, user, request):
         user.save()
@@ -141,7 +142,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
                 mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email'].lower()
+        email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
@@ -260,7 +261,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
                     mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email'].lower()
+        email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
@@ -385,7 +386,7 @@ class LoginForm(AuthenticationForm):
         username = self.cleaned_data.get('username')
 
         try:
-            user = AstakosUser.objects.get(email=username)
+            user = AstakosUser.objects.get_by_identifier(username)
             if not user.has_auth_provider('local'):
                 provider = auth_providers.get_provider('local')
                 raise forms.ValidationError(

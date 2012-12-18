@@ -922,6 +922,7 @@ class ProjectApplicationForm(forms.ModelForm):
     class Meta:
         model = ProjectApplication
         exclude = (
+            'project',
             'resource_grants', 'id', 'applicant', 'owner',
             'precursor_application', 'state', 'issue_date')
 

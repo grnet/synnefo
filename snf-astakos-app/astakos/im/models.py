@@ -1340,8 +1340,9 @@ class ProjectApplication(models.Model):
                                     related_name='projects_applied',
                                     db_index=True)
 
-    project                 =   models.ForeignKey(Project,
-                                                  related_name='applications')
+    project                 =   models.ForeignKey('Project',
+                                                  related_name='applications',
+                                                  null=True)
 
     state                   =   models.CharField(max_length=80,
                                                  default=UNKNOWN)
@@ -1500,7 +1501,7 @@ class ProjectResourceGrant(models.Model):
 
     resource                =   models.ForeignKey(Resource)
     project_application     =   models.ForeignKey(ProjectApplication,
-                                                  blank=True)
+                                                  null=True)
     project_capacity        =   models.BigIntegerField(null=True)
     project_import_limit    =   models.BigIntegerField(null=True)
     project_export_limit    =   models.BigIntegerField(null=True)
@@ -1518,7 +1519,7 @@ class Project(models.Model):
 
     application                 =   models.OneToOneField(
                                             ProjectApplication,
-                                            related_name='project')
+                                            related_name='app_project')
     last_approval_date          =   models.DateTimeField(null=True)
 
     members                     =   models.ManyToManyField(
@@ -1715,8 +1716,14 @@ class ProjectMembership(models.Model):
     project             =   models.ForeignKey(Project)
 
     state               =   models.IntegerField(default=0)
-    application         =   models.ForeignKey(ProjectApplication, null=True)
-    pending_application =   models.ForeignKey(ProjectApplication, null=True)
+    application         =   models.ForeignKey(
+                                ProjectApplication,
+                                null=True,
+                                related_name='memberships')
+    pending_application =   models.ForeignKey(
+                                ProjectApplication,
+                                null=True,
+                                related_name='pending_memebrships')
     pending_serial      =   models.BigIntegerField(null=True, db_index=True)
 
     acceptance_date     =   models.DateField(null=True, db_index=True)
@@ -1758,6 +1765,7 @@ class ProjectMembership(models.Model):
         serial = history_item.id
 
     def accept(self):
+        state = self.state
         if state != self.REQUESTED:
             m = _("%s: attempt to accept in state [%s]") % (self, state)
             raise AssertionError(m)
@@ -1871,7 +1879,7 @@ class Serial(models.Model):
     serial  =   models.AutoField(primary_key=True)
 
 def new_serial():
-    s = Serial.create()
+    s = Serial.objects.create()
     return s.serial
 
 def sync_finish_serials():
@@ -1880,7 +1888,7 @@ def sync_finish_serials():
     memberships = sfu.filter(pending_serial__isnull=False)
 
     for membership in memberships:
-        serial = membership.serial
+        serial = membership.pending_serial
         # just make sure the project row is selected for update
         project = membership.project
         if serial in serials_to_ack:

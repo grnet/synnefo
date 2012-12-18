@@ -35,8 +35,6 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.views.generic.create_update import lookup_object
-from django.http import Http404
 
 from astakos.im.models import ProjectApplication
 
@@ -56,8 +54,8 @@ class Command(BaseCommand):
         else:
             try:
                 # Is it a project application id?
-                app = lookup_object(ProjectApplication, id, None, None)
-            except Http404:
+                app = ProjectApplication.objects.get(id=id)
+            except ProjectApplication.DoesNotExist:
                 raise CommandError('Invalid id')
             try:
                 app.approve()

@@ -1591,7 +1591,7 @@ def project_update(request, application_id):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
     return update_object(
         request,
         object_id=application_id,

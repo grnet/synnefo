@@ -46,14 +46,14 @@ from django.shortcuts import get_object_or_404
 from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context
-from astakos.im.views import (
-    requires_anonymous, render_response, requires_auth_provider)
+from astakos.im.views import requires_anonymous, render_response, \
+        requires_auth_provider
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im import auth_providers
 from astakos.im import settings
+from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 
@@ -61,68 +61,97 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class Tokens:
-    # these are mapped by the Shibboleth SP software
-    SHIB_EPPN = "HTTP_EPPN"  # eduPersonPrincipalName
-    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
-    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
-    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
-    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
-    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
-    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
-    SHIB_MAIL = "HTTP_SHIB_MAIL"
+import oauth2 as oauth
+import cgi
 
-@requires_auth_provider('shibboleth', login=True)
+consumer = oauth.Consumer(settings.LINKEDIN_TOKEN, settings.LINKEDIN_SECRET)
+client = oauth.Client(consumer)
+
+request_token_url      = 'https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress'
+access_token_url       = 'https://api.linkedin.com/uas/oauth/accessToken'
+authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
+
+
+@requires_auth_provider('linkedin', login=True)
 @require_http_methods(["GET", "POST"])
-def login(
+def login(request):
+    resp, content = client.request(request_token_url, "GET")
+    if resp['status'] != '200':
+        messages.error(request, 'Invalid linkedin response')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    request_token = dict(cgi.parse_qsl(content))
+    request.session['request_token'] = request_token
+
+    url = request_token.get('xoauth_request_auth_url') + "?oauth_token=%s" % request_token.get('oauth_token')
+
+    return HttpResponseRedirect(url)
+
+
+@requires_auth_provider('linkedin', login=True)
+@require_http_methods(["GET", "POST"])
+def authenticated(
     request,
     template='im/third_party_check_local.html',
-    extra_context=None):
+    extra_context={}
+):
 
-    extra_context = extra_context or {}
+    if request.GET.get('denied'):
+        return HttpResponseRedirect(reverse('edit_profile'))
 
-    tokens = request.META
+    if not 'request_token' in request.session:
+        messages.error(request, 'linkedin handshake failed')
+        return HttpResponseRedirect(reverse('edit_profile'))
 
-    try:
-        eppn = tokens.get(Tokens.SHIB_EPPN)
-        eppn = "1234"
-        tokens[Tokens.SHIB_DISPLAYNAME] = 'Olga Brani'
-        if not eppn:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN))
-        if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
-        elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-        else:
-            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
-                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
-            else:
-                realname = ''
-    except KeyError, e:
-        # invalid shibboleth headers, redirect to login, display message
-        messages.error(request, e.message)
-        return HttpResponseRedirect(reverse('login'))
+    token = oauth.Token(request.session['request_token']['oauth_token'],
+        request.session['request_token']['oauth_token_secret'])
+    token.set_verifier(request.GET.get('oauth_verifier'))
+    client = oauth.Client(consumer, token)
+    resp, content = client.request(access_token_url, "POST")
+    if resp['status'] != '200':
+        try:
+            del request.session['request_token']
+        except:
+            pass
+        messages.error(request, 'Invalid linkedin token response')
+        return HttpResponseRedirect(reverse('edit_profile'))
+    access_token = dict(cgi.parse_qsl(content))
+    print "ACCESS", access_token
 
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    email = tokens.get(Tokens.SHIB_MAIL, '')
-    provider_info = {'eppn': eppn, 'email': email, 'name': realname}
+    token = oauth.Token(access_token['oauth_token'],
+        access_token['oauth_token_secret'])
+    client = oauth.Client(consumer, token)
+    resp, content = client.request("http://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,email-address)?format=json", "GET")
+    if resp['status'] != '200':
+        print resp, content
+        try:
+            del request.session['request_token']
+        except:
+            pass
+        messages.error(request, 'Invalid linkedin profile response')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    profile_data = json.loads(content)
+    userid = profile_data['id']
+    username = profile_data.get('emailAddress', None)
+    realname = profile_data.get('firstName', '') + ' ' + profile_data.get('lastName', '')
+    provider_info = profile_data
+    affiliation = 'linkedin.com'
 
     # an existing user accessed the view
     if request.user.is_authenticated():
-        if request.user.has_auth_provider('shibboleth', identifier=eppn):
+        if request.user.has_auth_provider('linkedin', identifier=userid):
             return HttpResponseRedirect(reverse('edit_profile'))
 
         # automatically add eppn provider to user
         user = request.user
-        if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn):
+        if not request.user.can_add_auth_provider('linkedin',
+                                                  identifier=userid):
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
                           u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('shibboleth', identifier=eppn,
+        user.add_auth_provider('linkedin', identifier=userid,
                                affiliation=affiliation,
                                provider_info=provider_info)
         messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
@@ -131,8 +160,8 @@ def login(
     try:
         # astakos user exists ?
         user = AstakosUser.objects.get_auth_provider_user(
-            'shibboleth',
-            identifier=eppn
+            'linkedin',
+            identifier=userid
         )
         if user.is_active:
             # authenticate user
@@ -140,7 +169,7 @@ def login(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-            response.set_cookie('astakos_last_login_method', 'local')
+            response.set_cookie('astakos_last_login_method', 'linkedin')
             return response
         else:
             message = user.get_inactive_message()
@@ -148,7 +177,7 @@ def login(
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-        provider = auth_providers.get_provider('shibboleth')
+        provider = auth_providers.get_provider('linkedin')
         if not provider.is_available_for_create():
             messages.error(request,
                            _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
@@ -156,18 +185,17 @@ def login(
 
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
-            third_party_identifier=eppn,
-            provider='shibboleth'
+            third_party_identifier=userid,
+            provider='linkedin',
         )
         # update pending user
         user.realname = realname
         user.affiliation = affiliation
-        user.email = email
         user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 
-        extra_context['provider'] = 'shibboleth'
+        extra_context['provider'] = 'linkedin'
         extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
@@ -182,4 +210,6 @@ def login(
             template,
             context_instance=get_context(request, extra_context)
         )
+
+
 

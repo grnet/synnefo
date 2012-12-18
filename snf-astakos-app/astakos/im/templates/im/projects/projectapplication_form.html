@@ -5,9 +5,14 @@
 	{{ block.super }}	 
 	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
 {% endblock %}	
-{% block page.body %}
 
-<form action="#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
+{% block page.body %}
+<!-- 
+{{request.POST}}
+ -->
+{% with resource_catalog|populated_resource_catalog as resource_catalog%}
+{% if show_form %}
+<form action="?verify=1#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 
     <fieldset class="with-info" id="top">
     	<legend>
@@ -39,8 +44,8 @@
     	</legend>
     	<ul class="clearfix">
     	    {% with object|resource_groups as groups %}
-            {% for g, group_info in resource_catalog.groups.items %}  
-            	{% if g %}
+            {% for g, group_info in resource_catalog.groups.items %}
+                {% if g %}
 	    		<li>
 	    		    <a href="#{{ g }}" id="{{'group_'|add:g}}" {% if g in groups %}class="selected"{% endif %}><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
 	    			<input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}"  id="proxy_{{ 'id_is_selected_'|add:g }}" {% if g in groups %}checked="checked"{% endif %}>
@@ -59,7 +64,7 @@
     </div>
     <div class="not-visible">
     	{% for gname, resources in resource_catalog.get_groups_resources %}
-	    	<div class="group {{'group_'|add:gname}}" id="{{ gname }}">
+    	    <div class="group {{'group_'|add:gname}}" id="{{ gname }}">
 	    		<a href="#icons" class="delete">X remove resource</a>	
 	    		{% for rname, rdata in resources.items %}
 	    		<fieldset class="quota">
@@ -104,11 +109,15 @@
 	<input type="hidden" name="user"  id="id_user" value="{{user.id}}">  
 	<div class="form-row submit">
    		<input type="submit" value="CONTINUE" class="submit altcol" autocomplete="off">
-	</div>   
+	</div>
 </form>
-	 
+{% else %}
+    {% include "im/projects/projectapplication_form_summary.html" %}
+{% endif %}
+
 <script>
 	
 </script>	 
- 
+
+{% endwith %}
 {% endblock %}

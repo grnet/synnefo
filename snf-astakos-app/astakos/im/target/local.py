@@ -119,6 +119,7 @@ def login(request, on_failure='im/login.html'):
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 
     messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
+    response.set_cookie('astakos_last_login_method', 'local')
     return response
 
 

@@ -42,13 +42,12 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
 
-from astakos.im.settings import PAGINATE_BY
+from astakos.im.settings import PAGINATE_BY, RESOURCES_PRESENTATION_DATA
 from astakos.im.models import RESOURCE_SEPARATOR
 
 register = template.Library()
 
 DELIM = ','
-
 
 @register.filter
 def monthssince(joined_date):
@@ -168,22 +167,26 @@ unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 0, 0, 0])
 
 @register.filter
 def sizeof_fmt(num):
-    
     """Human friendly file size"""
-    if math.isinf(num):
-        return 'Unlimited'
-    if num > 1:
-        exponent = min(int(log(num, 1024)), len(unit_list) - 1)
-        quotient = float(num) / 1024**exponent
-        unit, num_decimals = unit_list[exponent]
-        format_string = '{0:.%sf} {1}' % (num_decimals)
-        return format_string.format(quotient, unit)
-    if num == 0:
-        return '0 bytes'
-    if num == 1:
-        return '1 byte'
+    try:
+        num = float(num)
+    except:
+        return
     else:
-       return '0';
+        if math.isinf(num):
+            return 'Unlimited'
+        if num > 1:
+            exponent = min(int(log(num, 1024)), len(unit_list) - 1)
+            quotient = float(num) / 1024**exponent
+            unit, num_decimals = unit_list[exponent]
+            format_string = '{0:.%sf} {1}' % (num_decimals)
+            return format_string.format(quotient, unit)
+        if num == 0:
+            return '0 bytes'
+        if num == 1:
+            return '1 byte'
+        else:
+           return '0'
    
 @register.filter
 def isinf(v):
@@ -221,3 +224,87 @@ def resource_grants(project_definition):
         return dict((RESOURCE_SEPARATOR.join([e[1], e[0]]), e[2]) for e in grants)
     except:
         return {}
+
+class ResourcePresentation():
+
+    def __init__(self, data):
+        self.data = data
+
+    def populate_resource_data(self, resource_data):
+        for r in resource_data:
+            rname = '%s%s%s' % (r.get('service'), RESOURCE_SEPARATOR, r.get('name'))
+            if not rname in self.data['resources']:
+                self.data['resources'][rname] = {}
+
+            self.data['resources'][rname].update(r)
+            self.data['resources'][rname]['id'] = rname
+            group = r.get('group')
+            if not group in self.data['groups']:
+                self.data['groups'][group] = {}
+
+            self.data['groups'][r.get('group')].update({'name': r.get('group')})
+
+    def test(self, quota_dict):
+        for k, v in quota_dict.iteritems():
+            rname = k
+            value = v
+            if not rname in self.data['resources']:
+                self.data['resources'][rname] = {}
+
+
+            self.data['resources'][rname]['value'] = value
+
+
+    def populate_report_data(self, report_data):
+        for r in report_data:
+            rname = r.get('name')
+            if not rname in self.data['resources']:
+                self.data['resources'][rname] = {}
+
+            self.data['resources'][rname].update(r)
+            self.data['resources'][rname]['id'] = rname
+            group = r.get('group')
+            if not group in self.data['groups']:
+                self.data['groups'][group] = {}
+
+            self.data['groups'][r.get('group')].update({'name': r.get('group')})
+
+    def get_group_resources(self, group):
+        return dict(filter(lambda t: t[1].get('group') == group, self.data['resources'].iteritems()))
+
+    def get_groups_resources(self):
+        for g in self.data['groups']:
+            yield g, self.get_group_resources(g)
+
+    def get_quota(self, group_quotas):
+        for r, v in group_quotas:
+            rname = str(r)
+            quota = self.data['resources'].get(rname)
+            quota['value'] = v
+            yield quota
+
+
+    def get_policies(self, policies_data):
+        for policy in policies_data:
+            rname = '%s%s%s' % (policy.get('service'), RESOURCE_SEPARATOR, policy.get('resource'))
+            policy.update(self.data['resources'].get(rname))
+            yield policy
+
+    def __repr__(self):
+        return self.data.__repr__()
+
+    def __iter__(self, *args, **kwargs):
+        return self.data.__iter__(*args, **kwargs)
+
+    def __getitem__(self, *args, **kwargs):
+        return self.data.__getitem__(*args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        return self.data.get(*args, **kwargs)
+resource_presentation = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+
+
+@register.filter
+def populated_resource_catalog(resource_catalog):
+    resource_presentation.populate_resource_data(resource_catalog)
+    return resource_presentation

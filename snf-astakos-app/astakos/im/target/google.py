@@ -46,83 +46,117 @@ from django.shortcuts import get_object_or_404
 from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context
-from astakos.im.views import (
-    requires_anonymous, render_response, requires_auth_provider)
+from astakos.im.views import requires_anonymous, render_response, \
+        requires_auth_provider
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im import auth_providers
 from astakos.im import settings
-
-import astakos.im.messages as astakos_messages
+from astakos.im import auth_providers
 
 import logging
+import time
+import astakos.im.messages as astakos_messages
+import urlparse
+import urllib
 
 logger = logging.getLogger(__name__)
 
-class Tokens:
-    # these are mapped by the Shibboleth SP software
-    SHIB_EPPN = "HTTP_EPPN"  # eduPersonPrincipalName
-    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
-    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
-    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
-    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
-    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
-    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
-    SHIB_MAIL = "HTTP_SHIB_MAIL"
+import oauth2 as oauth
+import cgi
 
-@requires_auth_provider('shibboleth', login=True)
+signature_method = oauth.SignatureMethod_HMAC_SHA1()
+
+OAUTH_CONSUMER_KEY = settings.GOOGLE_CLIENT_ID
+OAUTH_CONSUMER_SECRET = settings.GOOGLE_SECRET
+
+consumer = oauth.Consumer(key=OAUTH_CONSUMER_KEY, secret=OAUTH_CONSUMER_SECRET)
+client = oauth.Client(consumer)
+
+token_scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
+authenticate_url = 'https://accounts.google.com/o/oauth2/auth'
+access_token_url = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
+request_token_url = 'https://accounts.google.com/o/oauth2/token'
+
+
+def get_redirect_uri():
+    return "%s%s" % (settings.BASEURL,
+                   reverse('astakos.im.target.google.authenticated'))
+
+@requires_auth_provider('google', login=True)
 @require_http_methods(["GET", "POST"])
-def login(
+def login(request):
+    params = {
+        'scope': token_scope,
+        'response_type': 'code',
+        'redirect_uri': get_redirect_uri(),
+        'client_id': settings.GOOGLE_CLIENT_ID
+    }
+    force_login = request.GET.get('force_login', False)
+    if force_login:
+        params['approval_prompt'] = 'force'
+
+    url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
+    return HttpResponseRedirect(url)
+
+
+@requires_auth_provider('google', login=True)
+@require_http_methods(["GET", "POST"])
+def authenticated(
     request,
     template='im/third_party_check_local.html',
-    extra_context=None):
+    extra_context={}
+):
 
-    extra_context = extra_context or {}
+    if request.GET.get('error', None):
+        return HttpResponseRedirect(reverse('edit_profile'))
 
-    tokens = request.META
-
+    # TODO: Handle errors, e.g. error=access_denied
     try:
-        eppn = tokens.get(Tokens.SHIB_EPPN)
-        eppn = "1234"
-        tokens[Tokens.SHIB_DISPLAYNAME] = 'Olga Brani'
-        if not eppn:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN))
-        if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
-        elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-        else:
-            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
-                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
-            else:
-                realname = ''
-    except KeyError, e:
-        # invalid shibboleth headers, redirect to login, display message
-        messages.error(request, e.message)
-        return HttpResponseRedirect(reverse('login'))
+        code = request.GET.get('code', None)
+        params = {
+            'code': code,
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_SECRET,
+            'redirect_uri': get_redirect_uri(),
+            'grant_type': 'authorization_code'
+        }
+        get_token_url = "%s" % (request_token_url,)
+        resp, content = client.request(get_token_url, "POST",
+                                       body=urllib.urlencode(params))
+        token = json.loads(content).get('access_token', None)
 
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    email = tokens.get(Tokens.SHIB_MAIL, '')
-    provider_info = {'eppn': eppn, 'email': email, 'name': realname}
+        resp, content = client.request("%s?access_token=%s" % (access_token_url,
+                                                               token) , "GET")
+        access_token_data = json.loads(content)
+    except Exception, e:
+        messages.error(request, 'Invalid Google response. Please contact support')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    if not access_token_data.get('user_id', None):
+        messages.error(request, 'Invalid Google response. Please contact support')
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    userid = access_token_data['user_id']
+    username = access_token_data.get('email', None)
+    provider_info = access_token_data
+    affiliation = 'Google.com'
 
     # an existing user accessed the view
     if request.user.is_authenticated():
-        if request.user.has_auth_provider('shibboleth', identifier=eppn):
+        if request.user.has_auth_provider('google', identifier=userid):
             return HttpResponseRedirect(reverse('edit_profile'))
 
         # automatically add eppn provider to user
         user = request.user
-        if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn):
+        if not request.user.can_add_auth_provider('google',
+                                                  identifier=userid):
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
                           u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('shibboleth', identifier=eppn,
+        user.add_auth_provider('google', identifier=userid,
                                affiliation=affiliation,
                                provider_info=provider_info)
         messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
@@ -131,8 +165,8 @@ def login(
     try:
         # astakos user exists ?
         user = AstakosUser.objects.get_auth_provider_user(
-            'shibboleth',
-            identifier=eppn
+            'google',
+            identifier=userid
         )
         if user.is_active:
             # authenticate user
@@ -140,7 +174,7 @@ def login(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-            response.set_cookie('astakos_last_login_method', 'local')
+            response.set_cookie('astakos_last_login_method', 'google')
             return response
         else:
             message = user.get_inactive_message()
@@ -148,7 +182,7 @@ def login(
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-        provider = auth_providers.get_provider('shibboleth')
+        provider = auth_providers.get_provider('google')
         if not provider.is_available_for_create():
             messages.error(request,
                            _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
@@ -156,18 +190,16 @@ def login(
 
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
-            third_party_identifier=eppn,
-            provider='shibboleth'
+            third_party_identifier=userid,
+            provider='google',
         )
         # update pending user
-        user.realname = realname
         user.affiliation = affiliation
-        user.email = email
         user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 
-        extra_context['provider'] = 'shibboleth'
+        extra_context['provider'] = 'google'
         extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
@@ -182,4 +214,5 @@ def login(
             template,
             context_instance=get_context(request, extra_context)
         )
+
 

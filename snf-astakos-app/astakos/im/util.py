@@ -106,7 +106,7 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     """
     Return url if having the supplied ``domain`` (if present) or one of the ``allowed_schemes``.
     Otherwise return None.
-    
+
     >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
     /im/feedback
     >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
@@ -167,10 +167,10 @@ def prepare_response(request, user, next='', renew=False):
         try:
             user.save()
         except ValidationError, e:
-            return HttpResponseBadRequest(e) 
-    
+            return HttpResponseBadRequest(e)
+
     next = restrict_next(next, domain=COOKIE_DOMAIN)
-    
+
     if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''
         if next:
@@ -186,7 +186,7 @@ def prepare_response(request, user, next='', renew=False):
 
     if not next:
         next = reverse('astakos.im.views.index')
-        
+
     response['Location'] = next
     response.status_code = 302
     return response
@@ -208,8 +208,7 @@ def reverse_lazy(*args, **kwargs):
 
 
 def reserved_email(email):
-    return AstakosUser.objects.filter(email__iexact=email).count() > 0 or \
-        AstakosUser.objects.filter(username__iexact=email).count() > 0
+    return AstakosUser.objects.user_exists(email)
 
 
 def get_query(request):

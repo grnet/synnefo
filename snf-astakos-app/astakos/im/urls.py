@@ -133,11 +133,30 @@ if 'shibboleth' in IM_MODULES:
     )
 
 if 'twitter' in IM_MODULES:
-    urlpatterns += patterns('astakos.im.target',
-                            url(r'^login/twitter/?$', 'twitter.login'),
-                            url(r'^login/twitter/authenticated/?$',
-                                'twitter.authenticated'),
-                            )
+    urlpatterns += patterns(
+        'astakos.im.target',
+        url(r'^login/twitter/?$', 'twitter.login'),
+        url(r'^login/twitter/authenticated/?$',
+            'twitter.authenticated'))
+
+if 'google' in IM_MODULES:
+    urlpatterns += patterns(
+        'astakos.im.target',
+        url(r'^login/goggle/?$', 'google.login'),
+        url(r'^login/google/authenticated/?$',
+            'google.authenticated'))
+
+if 'linkedin' in IM_MODULES:
+    urlpatterns += patterns(
+        'astakos.im.target',
+        url(r'^login/linkedin/?$', 'linkedin.login'),
+        url(r'^login/linkedin/authenticated/?$',
+            'linkedin.authenticated'))
+
+urlpatterns += patterns(
+    'astakos.im.api',
+    url(r'^get_services/?$', 'get_services'),
+    url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
     'astakos.im.api',

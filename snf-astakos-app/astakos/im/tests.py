@@ -41,10 +41,14 @@ from astakos.im.target.shibboleth import Tokens as ShibbolethTokens
 from astakos.im.models import *
 from astakos.im import functions
 from astakos.im import settings as astakos_settings
+from astakos.im import forms
 
 from urllib import quote
 
 from astakos.im import messages
+
+
+astakos_settings.EMAILCHANGE_ENABLED = True
 
 class ShibbolethClient(Client):
     """
@@ -135,6 +139,8 @@ class ShibbolethTests(TestCase):
     fixtures = ['groups']
 
     def setUp(self):
+        kind = GroupKind.objects.create(name="default")
+        AstakosGroup.objects.create(name="default", kind=kind)
         self.client = ShibbolethClient()
         settings.ASTAKOS_IM_MODULES = ['local', 'shibboleth']
         settings.ASTAKOS_MODERATION_ENABLED = True
@@ -156,7 +162,8 @@ class ShibbolethTests(TestCase):
         astakos_settings.SHIBBOLETH_REQUIRE_NAME_INFO = False
 
         # shibboleth logged us in
-        client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn", cn="1",
+        client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou",
                           ep_affiliation="Test Affiliation")
         r = client.get('/im/login/shibboleth?')
         self.assertEqual(r.status_code, 200)
@@ -201,8 +208,8 @@ class ShibbolethTests(TestCase):
 
         # and finally a valid signup
         post_data['email'] = 'kpap@grnet.gr'
-        r = client.post('/im/signup', post_data)
-        self.assertEqual(r.status_code, 200)
+        r = client.post('/im/signup', post_data, follow=True)
+        self.assertContains(r, messages.NOTIFICATION_SENT)
 
         # everything is ok in our db
         self.assertEqual(AstakosUser.objects.count(), 1)
@@ -213,10 +220,12 @@ class ShibbolethTests(TestCase):
         provider = AstakosUserAuthProvider.objects.get(module="shibboleth")
         self.assertEqual(provider.affiliation, 'Test Affiliation')
         self.assertEqual(provider.info, {u'email': u'kpap@grnet.gr',
-                                         u'eppn': u'kpapeppn'})
+                                         u'eppn': u'kpapeppn',
+                                         u'name': u'Kostas Papadimitriou'})
 
         # lets login (not activated yet)
-        client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn", cn="1", )
+        client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou", )
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertContains(r, messages.ACCOUNT_PENDING_MODERATION)
         r = client.get("/im/profile", follow=True)
@@ -242,7 +251,8 @@ class ShibbolethTests(TestCase):
 
         client = ShibbolethClient()
         # shibboleth logged us in, notice that we use different email
-        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn", cn="1", )
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou", )
         r = client.get("/im/login/shibboleth?")
 
         # astakos asks if we want to switch a local account to shibboleth
@@ -262,7 +272,7 @@ class ShibbolethTests(TestCase):
                      'key': pending_key}
         r = client.post('/im/local', post_data, follow=True)
         self.assertRedirects(r, "/im/profile")
-        self.assertContains(r, "Your new login method has been added")
+        self.assertContains(r, messages.AUTH_PROVIDER_ADDED)
 
         self.assertTrue(existing_user.has_auth_provider('shibboleth'))
         self.assertTrue(existing_user.has_auth_provider('local',
@@ -280,7 +290,8 @@ class ShibbolethTests(TestCase):
         client.logout()
 
         # look Ma, i can login with both my shibboleth and local account
-        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn", cn="1")
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertTrue(r.context['request'].user.is_authenticated())
         self.assertTrue(r.context['request'].user.email == "kpap@grnet.gr")
@@ -303,7 +314,8 @@ class ShibbolethTests(TestCase):
         self.assertEqual(r.status_code, 200)
 
         # cannot add the same eppn
-        client.set_tokens(mail="secondary@shibboleth.gr", eppn="kpapeppn", cn="1", )
+        client.set_tokens(mail="secondary@shibboleth.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou", )
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertRedirects(r, '/im/profile')
         self.assertTrue(r.status_code, 200)
@@ -311,7 +323,7 @@ class ShibbolethTests(TestCase):
 
         # but can add additional eppn
         client.set_tokens(mail="secondary@shibboleth.gr", eppn="kpapeppn2",
-                          cn="1", ep_affiliation="affil2")
+                          cn="Kostas Papadimitriou", ep_affiliation="affil2")
         r = client.get("/im/login/shibboleth?", follow=True)
         new_provider = existing_user.auth_providers.get(identifier="kpapeppn2")
         self.assertRedirects(r, '/im/profile')
@@ -322,7 +334,8 @@ class ShibbolethTests(TestCase):
         client.reset_tokens()
 
         # cannot login with another eppn
-        client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppninvalid", cn="1")
+        client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppninvalid",
+                          cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertFalse(r.context['request'].user.is_authenticated())
 
@@ -334,7 +347,8 @@ class ShibbolethTests(TestCase):
                                                          identifier='kpapeppn')
         remove_shibbo2_url = user.get_provider_remove_url('shibboleth',
                                                          identifier='kpapeppn2')
-        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn", cn="1")
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimtriou")
         r = client.get("/im/login/shibboleth?", follow=True)
         client.reset_tokens()
 
@@ -380,12 +394,15 @@ class ShibbolethTests(TestCase):
         user2 = get_local_user('another@grnet.gr')
         user2.add_auth_provider('shibboleth', identifier='existingeppn')
         # login
-        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn", cn="1")
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
         # try to assign existing shibboleth identifier of another user
-        client.set_tokens(mail="kpap_second@shibboleth.gr", eppn="existingeppn", cn="1")
+        client.set_tokens(mail="kpap_second@shibboleth.gr", eppn="existingeppn",
+                          cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertContains(r, 'Account already exists')
+        self.assertContains(r, messages.AUTH_PROVIDER_ADD_FAILED)
+        self.assertContains(r, messages.AUTH_PROVIDER_ADD_EXISTS)
 
 
 class LocalUserTests(TestCase):
@@ -393,6 +410,8 @@ class LocalUserTests(TestCase):
     fixtures = ['groups']
 
     def setUp(self):
+        kind = GroupKind.objects.create(name="default")
+        AstakosGroup.objects.create(name="default", kind=kind)
         from django.conf import settings
         settings.ADMINS = (('admin', 'support@cloud.grnet.gr'),)
         settings.SERVER_EMAIL = 'no-reply@grnet.gr'
@@ -421,6 +440,41 @@ class LocalUserTests(TestCase):
         self.assertEqual(len(get_mailbox('support@cloud.grnet.gr')), 0)
         self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 1)
         astakos_settings.MODERATION_ENABLED = True
+
+    def test_email_case(self):
+        data = {
+          'email': 'kPap@grnet.gr',
+          'password1': '1234',
+          'password2': '1234'
+        }
+
+        form = forms.LocalUserCreationForm(data)
+        self.assertTrue(form.is_valid())
+        user = form.save()
+        form.store_user(user, {})
+
+        u = AstakosUser.objects.get(pk=1)
+        self.assertEqual(u.email, 'kPap@grnet.gr')
+        self.assertEqual(u.username, 'kpap@grnet.gr')
+        u.is_active = True
+        u.email_verified = True
+        u.save()
+
+        data = {'username': 'kpap@grnet.gr', 'password': '1234'}
+        login = forms.LoginForm(data=data)
+        self.assertTrue(login.is_valid())
+
+        data = {'username': 'KpaP@grnet.gr', 'password': '1234'}
+        login = forms.LoginForm(data=data)
+        self.assertTrue(login.is_valid())
+
+        data = {
+          'email': 'kpap@grnet.gr',
+          'password1': '1234',
+          'password2': '1234'
+        }
+        form = forms.LocalUserCreationForm(data)
+        self.assertFalse(form.is_valid())
 
     def test_local_provider(self):
         # enable moderation
@@ -494,7 +548,6 @@ class LocalUserTests(TestCase):
         self.assertContains(r, "doesn&#39;t have an associated user account")
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                                  'password': 'password'})
-        print r
         self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION)
         self.assertContains(r, 'Resend activation')
         self.assertFalse(r.context['request'].user.is_authenticated())
@@ -577,4 +630,83 @@ class LocalUserTests(TestCase):
         # she can't because account is not active yet
         self.assertContains(r, "Password change for this account is not"
                                 " supported")
+
+class UserActionsTests(TestCase):
+
+    def setUp(self):
+        kind = GroupKind.objects.create(name="default")
+        AstakosGroup.objects.create(name="default", kind=kind)
+
+    def test_email_change(self):
+        # to test existing email validation
+        existing_user = get_local_user('existing@grnet.gr')
+
+        # local user
+        user = get_local_user('kpap@grnet.gr')
+
+        # login as kpap
+        self.client.login(username='kpap@grnet.gr', password='password')
+        r = self.client.get('/im/profile', follow=True)
+        user = r.context['request'].user
+        self.assertTrue(user.is_authenticated())
+
+        # change email is enabled
+        r = self.client.get('/im/email_change')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(user.email_change_is_pending())
+
+        # request email change to an existing email fails
+        data = {'new_email_address': 'existing@grnet.gr'}
+        r = self.client.post('/im/email_change', data)
+        self.assertContains(r, messages.EMAIL_USED)
+
+        # proper email change
+        data = {'new_email_address': 'kpap@gmail.com'}
+        r = self.client.post('/im/email_change', data, follow=True)
+        self.assertRedirects(r, '/im/profile')
+        self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
+        change1 = EmailChange.objects.get()
+
+        # user sees a warning
+        r = self.client.get('/im/email_change')
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, messages.PENDING_EMAIL_CHANGE_REQUEST)
+        self.assertTrue(user.email_change_is_pending())
+
+        # link was sent
+        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 0)
+        self.assertEqual(len(get_mailbox('kpap@gmail.com')), 1)
+
+        # proper email change
+        data = {'new_email_address': 'kpap@yahoo.com'}
+        r = self.client.post('/im/email_change', data, follow=True)
+        self.assertRedirects(r, '/im/profile')
+        self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
+        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 0)
+        self.assertEqual(len(get_mailbox('kpap@yahoo.com')), 1)
+        change2 = EmailChange.objects.get()
+
+        r = self.client.get(change1.get_url())
+        self.assertEquals(r.status_code, 302)
+        self.client.logout()
+
+        r = self.client.post('/im/local?next=' + change2.get_url(),
+                             {'username': 'kpap@grnet.gr',
+                              'password': 'password',
+                              'next': change2.get_url()},
+                             follow=True)
+        self.assertRedirects(r, '/im/profile')
+        user = r.context['request'].user
+        self.assertEquals(user.email, 'kpap@yahoo.com')
+        self.assertEquals(user.username, 'kpap@yahoo.com')
+
+
+        self.client.logout()
+        r = self.client.post('/im/local?next=' + change2.get_url(),
+                             {'username': 'kpap@grnet.gr',
+                              'password': 'password',
+                              'next': change2.get_url()},
+                             follow=True)
+        self.assertContains(r, "Please enter a correct username and password")
+        self.assertEqual(user.emailchanges.count(), 0)
 

@@ -316,8 +316,7 @@ $(document).ready(function() {
       	$('input#id_password').siblings('label').css('opacity','0');
       }
 	}, 100);
-    
-    
+	    
 });
 	
 $(window).resize(function() {

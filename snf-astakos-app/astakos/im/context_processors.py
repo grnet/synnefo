@@ -63,6 +63,8 @@ def next(request):
 def code(request):
     return {'code': request.GET.get('code', '')}
 
+def last_login_method(request):
+    return {'last_login_method': request.COOKIES.get('astakos_last_login_method', None)}
 
 def invitations(request):
     return {'invitations_enabled': INVITATIONS_ENABLED}

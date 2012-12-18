@@ -83,6 +83,7 @@ DOMAIN_VALUE_REGEX = re.compile(
     re.IGNORECASE)
 
 class StoreUserMixin(object):
+
     @transaction.commit_on_success
     def store_user(self, user, request):
         user.save()
@@ -142,7 +143,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
                 mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email'].lower()
+        email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
@@ -261,7 +262,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
                     mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
-        email = self.cleaned_data['email'].lower()
+        email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_email(email):
@@ -385,14 +386,15 @@ class LoginForm(AuthenticationForm):
         """
         username = self.cleaned_data.get('username')
 
-        try:
-            user = AstakosUser.objects.get(email=username)
-            if not user.has_auth_provider('local'):
-                provider = auth_providers.get_provider('local')
-                raise forms.ValidationError(
-                    _(provider.get_message('NOT_ACTIVE_FOR_USER_LOGIN')))
-        except AstakosUser.DoesNotExist:
-            pass
+        if username:
+            try:
+                user = AstakosUser.objects.get_by_identifier(username)
+                if not user.has_auth_provider('local'):
+                    provider = auth_providers.get_provider('local')
+                    raise forms.ValidationError(
+                        _(provider.get_message('NOT_ACTIVE_FOR_USER')))
+            except AstakosUser.DoesNotExist:
+                pass
 
         try:
             super(LoginForm, self).clean()
@@ -511,6 +513,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
 
 
 class EmailChangeForm(forms.ModelForm):
+
     class Meta:
         model = EmailChange
         fields = ('new_email_address',)
@@ -533,6 +536,7 @@ class EmailChangeForm(forms.ModelForm):
 
 
 class SignApprovalTermsForm(forms.ModelForm):
+
     class Meta:
         model = AstakosUser
         fields = ("has_signed_terms",)
@@ -548,6 +552,7 @@ class SignApprovalTermsForm(forms.ModelForm):
 
 
 class InvitationForm(forms.ModelForm):
+
     username = forms.EmailField(label=_("Email"))
 
     def __init__(self, *args, **kwargs):

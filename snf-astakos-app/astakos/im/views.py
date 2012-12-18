@@ -56,7 +56,7 @@ from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
-    create_object, update_object, delete_object, get_model_and_form_class)
+    apply_extra_context, update_object, delete_object, get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -425,9 +425,6 @@ def signup(request, template_name='im/signup.html',
         return HttpResponseRedirect(reverse('edit_profile'))
 
     provider = get_query(request).get('provider', 'local')
-    if not auth_providers.get_provider(provider).is_available_for_create():
-        raise PermissionDenied
-
     id = get_query(request).get('id')
     try:
         instance = AstakosUser.objects.get(id=id) if id else None
@@ -440,6 +437,9 @@ def signup(request, template_name='im/signup.html',
                                     token=third_party_token)
         provider = pending.provider
         instance = pending.get_user_instance()
+
+    if not auth_providers.get_provider(provider).is_available_for_create():
+        raise PermissionDenied
 
     try:
         if not backend:
@@ -685,6 +685,8 @@ def change_email(request, activation_key=None,
                  confirm_template_name='registration/email_change_done.html',
                  extra_context=None):
     extra_context = extra_context or {}
+
+
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
@@ -694,34 +696,50 @@ def change_email(request, activation_key=None,
                 auth_logout(request)
                 response = prepare_response(request, user)
                 transaction.commit()
-                return response
+                return HttpResponseRedirect(reverse('edit_profile'))
         except ValueError, e:
             messages.error(request, e)
+            transaction.rollback()
+            return HttpResponseRedirect(reverse('index'))
+
         return render_response(confirm_template_name,
-                               modified_user=user if 'user' in locals(
-                               ) else None,
-                               context_instance=get_context(request,
+                               modified_user=user if 'user' in locals() \
+                               else None, context_instance=get_context(request,
                                                             extra_context))
 
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
         url = request.build_absolute_uri(reverse('index'))
         return HttpResponseRedirect(url + '?next=' + path)
+
+    # clean up expired email changes
+    if request.user.email_change_is_pending():
+        change = request.user.emailchanges.get()
+        if change.activation_key_expired():
+            change.delete()
+            transaction.commit()
+            return HttpResponseRedirect(reverse('email_change'))
+
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
+            # delete pending email changes
+            request.user.emailchanges.all().delete()
             ec = form.save(email_template_name, request)
         except SendMailError, e:
             msg = e
             messages.error(request, msg)
             transaction.rollback()
-        except IntegrityError, e:
-            msg = _(astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
-            messages.error(request, msg)
+            return HttpResponseRedirect(reverse('edit_profile'))
         else:
             msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)
             transaction.commit()
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+    if request.user.email_change_is_pending():
+        messages.warning(request, astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
+
     return render_response(
         form_template_name,
         form=form,
@@ -761,84 +779,84 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
         )
     )
 
-class ResourcePresentation():
-
-    def __init__(self, data):
-        self.data = data
-
-    def update_from_result(self, result):
-        if result.is_success:
-            for r in result.data:
-                rname = '%s%s%s' % (r.get('service'), RESOURCE_SEPARATOR, r.get('name'))
-                if not rname in self.data['resources']:
-                    self.data['resources'][rname] = {}
-
-                self.data['resources'][rname].update(r)
-                self.data['resources'][rname]['id'] = rname
-                group = r.get('group')
-                if not group in self.data['groups']:
-                    self.data['groups'][group] = {}
-
-                self.data['groups'][r.get('group')].update({'name': r.get('group')})
-
-    def test(self, quota_dict):
-        for k, v in quota_dict.iteritems():
-            rname = k
-            value = v
-            if not rname in self.data['resources']:
-                self.data['resources'][rname] = {}
-
-
-            self.data['resources'][rname]['value'] = value
-
-
-    def update_from_result_report(self, result):
-        if result.is_success:
-            for r in result.data:
-                rname = r.get('name')
-                if not rname in self.data['resources']:
-                    self.data['resources'][rname] = {}
-
-                self.data['resources'][rname].update(r)
-                self.data['resources'][rname]['id'] = rname
-                group = r.get('group')
-                if not group in self.data['groups']:
-                    self.data['groups'][group] = {}
-
-                self.data['groups'][r.get('group')].update({'name': r.get('group')})
-
-    def get_group_resources(self, group):
-        return dict(filter(lambda t: t[1].get('group') == group, self.data['resources'].iteritems()))
-
-    def get_groups_resources(self):
-        for g in self.data['groups']:
-            yield g, self.get_group_resources(g)
-
-    def get_quota(self, group_quotas):
-        for r, v in group_quotas:
-            rname = str(r)
-            quota = self.data['resources'].get(rname)
-            quota['value'] = v
-            yield quota
-
-
-    def get_policies(self, policies_data):
-        for policy in policies_data:
-            rname = '%s%s%s' % (policy.get('service'), RESOURCE_SEPARATOR, policy.get('resource'))
-            policy.update(self.data['resources'].get(rname))
-            yield policy
-
-    def __repr__(self):
-        return self.data.__repr__()
-
-    def __iter__(self, *args, **kwargs):
-        return self.data.__iter__(*args, **kwargs)
-
-    def __getitem__(self, *args, **kwargs):
-        return self.data.__getitem__(*args, **kwargs)
-
-    def get(self, *args, **kwargs):
-        return self.data.get(*args, **kwargs)
+# class ResourcePresentation():
+# 
+#     def __init__(self, data):
+#         self.data = data
+# 
+#     def update_from_result(self, result):
+#         if result.is_success:
+#             for r in result.data:
+#                 rname = '%s%s%s' % (r.get('service'), RESOURCE_SEPARATOR, r.get('name'))
+#                 if not rname in self.data['resources']:
+#                     self.data['resources'][rname] = {}
+# 
+#                 self.data['resources'][rname].update(r)
+#                 self.data['resources'][rname]['id'] = rname
+#                 group = r.get('group')
+#                 if not group in self.data['groups']:
+#                     self.data['groups'][group] = {}
+# 
+#                 self.data['groups'][r.get('group')].update({'name': r.get('group')})
+# 
+#     def test(self, quota_dict):
+#         for k, v in quota_dict.iteritems():
+#             rname = k
+#             value = v
+#             if not rname in self.data['resources']:
+#                 self.data['resources'][rname] = {}
+# 
+# 
+#             self.data['resources'][rname]['value'] = value
+# 
+# 
+#     def update_from_result_report(self, result):
+#         if result.is_success:
+#             for r in result.data:
+#                 rname = r.get('name')
+#                 if not rname in self.data['resources']:
+#                     self.data['resources'][rname] = {}
+# 
+#                 self.data['resources'][rname].update(r)
+#                 self.data['resources'][rname]['id'] = rname
+#                 group = r.get('group')
+#                 if not group in self.data['groups']:
+#                     self.data['groups'][group] = {}
+# 
+#                 self.data['groups'][r.get('group')].update({'name': r.get('group')})
+# 
+#     def get_group_resources(self, group):
+#         return dict(filter(lambda t: t[1].get('group') == group, self.data['resources'].iteritems()))
+# 
+#     def get_groups_resources(self):
+#         for g in self.data['groups']:
+#             yield g, self.get_group_resources(g)
+# 
+#     def get_quota(self, group_quotas):
+#         for r, v in group_quotas:
+#             rname = str(r)
+#             quota = self.data['resources'].get(rname)
+#             quota['value'] = v
+#             yield quota
+# 
+# 
+#     def get_policies(self, policies_data):
+#         for policy in policies_data:
+#             rname = '%s%s%s' % (policy.get('service'), RESOURCE_SEPARATOR, policy.get('resource'))
+#             policy.update(self.data['resources'].get(rname))
+#             yield policy
+# 
+#     def __repr__(self):
+#         return self.data.__repr__()
+# 
+#     def __iter__(self, *args, **kwargs):
+#         return self.data.__iter__(*args, **kwargs)
+# 
+#     def __getitem__(self, *args, **kwargs):
+#         return self.data.__getitem__(*args, **kwargs)
+# 
+#     def get(self, *args, **kwargs):
+#         return self.data.get(*args, **kwargs)
 
 
 
@@ -1357,8 +1375,9 @@ def resource_usage(request):
     else:
         data = None
         messages.error(request, result.reason)
-    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-    resource_catalog.update_from_result_report(result)
+    resource_catalog = result.data
+#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+#     resource_catalog.update_from_result_report(result)
     return render_response('im/resource_usage.html',
                            data=data,
                            context_instance=get_context(request),
@@ -1486,43 +1505,80 @@ def how_it_works(request):
         'im/how_it_works.html',
         context_instance=get_context(request))
 
-@require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
 @transaction.commit_manually
-def project_add(request):
+def _create_object(request, model=None, template_name=None,
+        template_loader=template_loader, extra_context=None, post_save_redirect=None,
+        login_required=False, context_processors=None, form_class=None):
+    """
+    Based of django.views.generic.create_update.create_object which shows a
+    summary page before creating the object.
+    """
     rollback = False
-    result = callpoint.list_resources()
-    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-    resource_catalog.update_from_result(result)
-
-    if not result.is_success:
-        messages.error(
-            request,
-            'Unable to retrieve system resources: %s' % result.reason
-    )
-    extra_context = {'resource_catalog':resource_catalog}
-
+    response = None
     try:
-        r = create_object(request, template_name='im/projects/projectapplication_form.html',
-            extra_context=extra_context, post_save_redirect='/im/project/list/',
-            form_class=ProjectApplicationForm)
-        return r
+        if extra_context is None: extra_context = {}
+        if login_required and not request.user.is_authenticated():
+            return redirect_to_login(request.path)
+    
+        model, form_class = get_model_and_form_class(model, form_class)
+        extra_context['edit'] = 0
+        if request.method == 'POST':
+            form = form_class(request.POST, request.FILES)
+            if form.is_valid():
+                verify = request.GET.get('verify')
+                edit = request.GET.get('edit')
+                if verify == '1':
+                    extra_context['show_form'] = False
+                    extra_context['form_data'] = form.cleaned_data
+                elif edit == '1':
+                    extra_context['show_form'] = True
+                else:
+                    new_object = form.save()
+                    
+                    msg = _("The %(verbose_name)s was created successfully.") %\
+                                {"verbose_name": model._meta.verbose_name}
+                    messages.success(request, msg, fail_silently=True)
+                    response = redirect(post_save_redirect, new_object)
+        else:
+            form = form_class()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
-        return render_response(
-            'im/projects/projectapplication_form.html',
-            sorting = 'name',
-            form = ProjectApplicationForm(),
-            context_instance=get_context(request, extra_context)
-        )
     finally:
         if rollback:
             transaction.rollback()
         else:
             transaction.commit()
+        if response == None:
+            # Create the template, context, response
+            if not template_name:
+                template_name = "%s/%s_form.html" %\
+                     (model._meta.app_label, model._meta.object_name.lower())
+            t = template_loader.get_template(template_name)
+            c = RequestContext(request, {
+                'form': form
+            }, context_processors)
+            apply_extra_context(extra_context, c)
+            response = HttpResponse(t.render(c))
+        return response
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_add(request):
+    result = callpoint.list_resources()
+    if not result.is_success:
+        messages.error(
+            request,
+            'Unable to retrieve system resources: %s' % result.reason
+    )
+    else:
+        resource_catalog = result.data
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
+    return _create_object(request, template_name='im/projects/projectapplication_form.html',
+        extra_context=extra_context, post_save_redirect='/im/project/list/',
+        form_class=ProjectApplicationForm)
 
 
 @require_http_methods(["GET"])
@@ -1557,14 +1613,16 @@ def project_list(request):
 @login_required
 def project_update(request, application_id):
     result = callpoint.list_resources()
-    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-    resource_catalog.update_from_result(result)
+#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+#     resource_catalog.update_from_result(result)
 
     if not result.is_success:
         messages.error(
             request,
             'Unable to retrieve system resources: %s' % result.reason
     )
+    else:
+        resource_catalog = result.data
     extra_context = {'resource_catalog':resource_catalog}
     return update_object(
         request,
@@ -1581,8 +1639,15 @@ def project_update(request, application_id):
 @transaction.commit_manually
 def project_detail(request, application_id):
     result = callpoint.list_resources()
-    resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-    resource_catalog.update_from_result(result)
+    if not result.is_success:
+        messages.error(
+            request,
+            'Unable to retrieve system resources: %s' % result.reason
+    )
+    else:
+        resource_catalog = result.data
+#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
+#     resource_catalog.update_from_result(result)
 
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
@@ -1821,3 +1886,7 @@ def project_reject_member(request, application_id, user_id):
         else:
             transaction.commit()
     return project_detail(request, application_id)
+
+def test(v):
+    res = 'foo'
+    return res

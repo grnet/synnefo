@@ -63,6 +63,7 @@ logger = logging.getLogger(__name__)
 
 import oauth2 as oauth
 import cgi
+import urllib
 
 consumer = oauth.Consumer(settings.TWITTER_TOKEN, settings.TWITTER_SECRET)
 client = oauth.Client(consumer)
@@ -71,18 +72,24 @@ request_token_url = 'http://twitter.com/oauth/request_token'
 access_token_url = 'http://twitter.com/oauth/access_token'
 authenticate_url = 'http://twitter.com/oauth/authenticate'
 
-
 @requires_auth_provider('twitter', login=True)
 @require_http_methods(["GET", "POST"])
 def login(request):
+    force_login = request.GET.get('force_login',
+                                  settings.TWITTER_AUTH_FORCE_LOGIN)
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         messages.error(request, 'Invalid Twitter response')
         return HttpResponseRedirect(reverse('edit_profile'))
 
     request.session['request_token'] = dict(cgi.parse_qsl(content))
-    url = "%s?oauth_token=%s" % (authenticate_url,
-        request.session['request_token']['oauth_token'])
+    params = {
+        'oauth_token': request.session['request_token']['oauth_token'],
+    }
+    if force_login:
+        params['force_login'] = 1
+
+    url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
 
     return HttpResponseRedirect(url)
 
@@ -93,6 +100,9 @@ def authenticated(
     request,
     template='im/third_party_check_local.html',
     extra_context={}):
+
+    if request.GET.get('denied'):
+        return HttpResponseRedirect(reverse('edit_profile'))
 
     if not 'request_token' in request.session:
         messages.error(request, 'Twitter handshake failed')
@@ -106,9 +116,9 @@ def authenticated(
     resp, content = client.request(access_token_url, "GET")
     if resp['status'] != '200':
         try:
-          del request.session['request_token']
+            del request.session['request_token']
         except:
-          pass
+            pass
         messages.error(request, 'Invalid Twitter response')
         return HttpResponseRedirect(reverse('edit_profile'))
 
@@ -127,13 +137,14 @@ def authenticated(
         user = request.user
         if not request.user.can_add_auth_provider('twitter',
                                                   identifier=userid):
-            messages.error(request, 'Account already exists.')
+            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
+                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
         user.add_auth_provider('twitter', identifier=userid,
                                affiliation=affiliation,
                                provider_info=provider_info)
-        messages.success(request, 'Account assigned.')
+        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
@@ -144,10 +155,12 @@ def authenticated(
         )
         if user.is_active:
             # authenticate user
-            return prepare_response(request,
+            response = prepare_response(request,
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
+            response.set_cookie('astakos_last_login_method', 'twitter')
+            return response
         else:
             message = user.get_inactive_message()
             messages.error(request, message)
@@ -155,9 +168,9 @@ def authenticated(
 
     except AstakosUser.DoesNotExist, e:
         provider = auth_providers.get_provider('twitter')
-        if not provider.is_available_for_create():
+        if not provider.is_available_for_create() and not provider.is_available_for_add():
             messages.error(request,
-                           _(astakos_messages.AUTH_PROVIDER_NOT_ACTIVE) % provider.get_title_display)
+                           _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
             return HttpResponseRedirect(reverse('login'))
 
         # eppn not stored in astakos models, create pending profile
@@ -172,10 +185,15 @@ def authenticated(
         user.save()
 
         extra_context['provider'] = 'twitter'
-        extra_context['provider_title'] = 'Twitter'
+        extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
                                     "?third_party_token=%s" % user.token
+        extra_context['add_url'] = reverse('index') + \
+                                    "?key=%s#other-login-methods" % user.token
+        extra_context['can_create'] = provider.is_available_for_create()
+        extra_context['can_add'] = provider.is_available_for_add()
+
 
         return render_response(
             template,

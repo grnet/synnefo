@@ -167,7 +167,7 @@ class InvitationsBackend(ActivationBackend):
         invitation = self.invitation
         initial_data = self.get_signup_initial_data(provider)
         prefix = 'Invited' if invitation else ''
-        main = provider.capitalize()
+        main = provider.capitalize() if provider == 'local' else 'ThirdParty'
         suffix = 'UserCreationForm'
         formclass = '%s%s%s' % (prefix, main, suffix)
         return globals()[formclass](initial_data, instance=instance, request=self.request)

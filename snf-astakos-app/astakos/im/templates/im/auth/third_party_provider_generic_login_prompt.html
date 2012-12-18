@@ -1,0 +1,3 @@
+<Br />{{ provider.get_login_prompt_display|safe }}
+<a href="{{ provider.add_url }}?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
+  alt="{{ provider.get_title_display }}">{{ provider.get_title_display }}</a>

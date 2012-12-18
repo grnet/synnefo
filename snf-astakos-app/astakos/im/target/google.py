@@ -55,46 +55,53 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
 from astakos.im import auth_providers
 
-import astakos.im.messages as astakos_messages
-
 import logging
+import time
+import astakos.im.messages as astakos_messages
+import urlparse
+import urllib
 
 logger = logging.getLogger(__name__)
 
 import oauth2 as oauth
 import cgi
-import urllib
 
-consumer = oauth.Consumer(settings.TWITTER_TOKEN, settings.TWITTER_SECRET)
+signature_method = oauth.SignatureMethod_HMAC_SHA1()
+
+OAUTH_CONSUMER_KEY = settings.GOOGLE_CLIENT_ID
+OAUTH_CONSUMER_SECRET = settings.GOOGLE_SECRET
+
+consumer = oauth.Consumer(key=OAUTH_CONSUMER_KEY, secret=OAUTH_CONSUMER_SECRET)
 client = oauth.Client(consumer)
 
-request_token_url = 'http://twitter.com/oauth/request_token'
-access_token_url = 'http://twitter.com/oauth/access_token'
-authenticate_url = 'http://twitter.com/oauth/authenticate'
+token_scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
+authenticate_url = 'https://accounts.google.com/o/oauth2/auth'
+access_token_url = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
+request_token_url = 'https://accounts.google.com/o/oauth2/token'
 
-@requires_auth_provider('twitter', login=True)
+
+def get_redirect_uri():
+    return "%s%s" % (settings.BASEURL,
+                   reverse('astakos.im.target.google.authenticated'))
+
+@requires_auth_provider('google', login=True)
 @require_http_methods(["GET", "POST"])
 def login(request):
-    force_login = request.GET.get('force_login',
-                                  settings.TWITTER_AUTH_FORCE_LOGIN)
-    resp, content = client.request(request_token_url, "GET")
-    if resp['status'] != '200':
-        messages.error(request, 'Invalid Twitter response')
-        return HttpResponseRedirect(reverse('edit_profile'))
-
-    request.session['request_token'] = dict(cgi.parse_qsl(content))
     params = {
-        'oauth_token': request.session['request_token']['oauth_token'],
+        'scope': token_scope,
+        'response_type': 'code',
+        'redirect_uri': get_redirect_uri(),
+        'client_id': settings.GOOGLE_CLIENT_ID
     }
+    force_login = request.GET.get('force_login', False)
     if force_login:
-        params['force_login'] = 1
+        params['approval_prompt'] = 'force'
 
     url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
-
     return HttpResponseRedirect(url)
 
 
-@requires_auth_provider('twitter', login=True)
+@requires_auth_provider('google', login=True)
 @require_http_methods(["GET", "POST"])
 def authenticated(
     request,
@@ -102,47 +109,54 @@ def authenticated(
     extra_context={}
 ):
 
-    if request.GET.get('denied'):
+    if request.GET.get('error', None):
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if not 'request_token' in request.session:
-        messages.error(request, 'Twitter handshake failed')
+    # TODO: Handle errors, e.g. error=access_denied
+    try:
+        code = request.GET.get('code', None)
+        params = {
+            'code': code,
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_SECRET,
+            'redirect_uri': get_redirect_uri(),
+            'grant_type': 'authorization_code'
+        }
+        get_token_url = "%s" % (request_token_url,)
+        resp, content = client.request(get_token_url, "POST",
+                                       body=urllib.urlencode(params))
+        token = json.loads(content).get('access_token', None)
+
+        resp, content = client.request("%s?access_token=%s" % (access_token_url,
+                                                               token) , "GET")
+        access_token_data = json.loads(content)
+    except Exception, e:
+        messages.error(request, 'Invalid Google response. Please contact support')
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    token = oauth.Token(request.session['request_token']['oauth_token'],
-        request.session['request_token']['oauth_token_secret'])
-    client = oauth.Client(consumer, token)
-
-    # Step 2. Request the authorized access token from Twitter.
-    resp, content = client.request(access_token_url, "GET")
-    if resp['status'] != '200':
-        try:
-            del request.session['request_token']
-        except:
-            pass
-        messages.error(request, 'Invalid Twitter response')
+    if not access_token_data.get('user_id', None):
+        messages.error(request, 'Invalid Google response. Please contact support')
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    access_token = dict(cgi.parse_qsl(content))
-    userid = access_token['user_id']
-    username = access_token.get('screen_name', userid)
-    provider_info = {'screen_name': username}
-    affiliation = 'Twitter.com'
+    userid = access_token_data['user_id']
+    username = access_token_data.get('email', None)
+    provider_info = access_token_data
+    affiliation = 'Google.com'
 
     # an existing user accessed the view
     if request.user.is_authenticated():
-        if request.user.has_auth_provider('twitter', identifier=userid):
+        if request.user.has_auth_provider('google', identifier=userid):
             return HttpResponseRedirect(reverse('edit_profile'))
 
         # automatically add eppn provider to user
         user = request.user
-        if not request.user.can_add_auth_provider('twitter',
+        if not request.user.can_add_auth_provider('google',
                                                   identifier=userid):
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
                           u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('twitter', identifier=userid,
+        user.add_auth_provider('google', identifier=userid,
                                affiliation=affiliation,
                                provider_info=provider_info)
         messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
@@ -151,7 +165,7 @@ def authenticated(
     try:
         # astakos user exists ?
         user = AstakosUser.objects.get_auth_provider_user(
-            'twitter',
+            'google',
             identifier=userid
         )
         if user.is_active:
@@ -160,7 +174,7 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-            response.set_cookie('astakos_last_login_method', 'twitter')
+            response.set_cookie('astakos_last_login_method', 'google')
             return response
         else:
             message = user.get_inactive_message()
@@ -168,8 +182,8 @@ def authenticated(
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-        provider = auth_providers.get_provider('twitter')
-        if not provider.is_available_for_create() and not provider.is_available_for_add():
+        provider = auth_providers.get_provider('google')
+        if not provider.is_available_for_create():
             messages.error(request,
                            _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
             return HttpResponseRedirect(reverse('login'))
@@ -177,7 +191,7 @@ def authenticated(
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=userid,
-            provider='twitter',
+            provider='google',
         )
         # update pending user
         user.affiliation = affiliation
@@ -185,7 +199,7 @@ def authenticated(
         user.generate_token()
         user.save()
 
-        extra_context['provider'] = 'twitter'
+        extra_context['provider'] = 'google'
         extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
@@ -200,4 +214,5 @@ def authenticated(
             template,
             context_instance=get_context(request, extra_context)
         )
+
 

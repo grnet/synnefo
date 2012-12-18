@@ -145,7 +145,8 @@ def _send_admin_notification(template_name,
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent admin notification for user %s' % dictionary
+        msg = 'Sent admin notification for user %s' % dictionary.get('email',
+                                                                     None)
         logger.log(LOGGING_LEVEL, msg)
 
 
@@ -259,8 +260,7 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
 
 def send_change_email(ec, request, email_template_name='registration/email_change_email.txt'):
     try:
-        url = reverse('email_change_confirm',
-                      kwargs={'activation_key': ec.activation_key})
+        url = ec.get_url()
         url = request.build_absolute_uri(url)
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME}

@@ -12,16 +12,22 @@
 {% block body.right %}
     {% if "local" in im_modules %}
       <div class="form-stacked">
-        <h2><span>Already have an account?</span></h2>
-        <a href="{% url astakos.im.views.index %}?key={{ token }}"
+          <h2><span>Already have an account?</span></h2>
+          {% if can_add %}
+          <a href="{{ add_url }}"
           class="button wide">
           <span class="left">YES</span>
           <span class="action-desc right">I want to add '{{ provider_title }}' as a new login method for my existing account</span>
-        </a>
+      </a>
+      {% endif %}
+      {% if can_create %}
         <a href="{{ signup_url }}" class="button wide">
           <span class="left">NO</span>
           <span class="right action-desc">I want to create a new account</span>
-        </a>
+      </a>
+      {% endif %}
+      <Br /><br />
+      <a style="float:right" href="{% url index %}">CANCEL</a>
       </div>
     {% endif %}
 {% endblock %}

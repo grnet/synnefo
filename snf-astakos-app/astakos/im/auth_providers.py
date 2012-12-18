@@ -73,7 +73,8 @@ class AuthProvider(object):
     module_active = False
     module_enabled = False
     one_per_user = False
-    login_prompt = _('Login using')
+    login_prompt = _('Login using ')
+    primary_login_prompt = _('Login using ')
 
     def get_message(self, msg, **kwargs):
         params = kwargs
@@ -129,10 +130,10 @@ class LocalAuthProvider(AuthProvider):
     module = 'local'
     title = _('Local password')
     description = _('Create a local password for your account')
-    create_prompt =  _('Create an account')
     add_prompt =  _('Create a local password for your account')
     login_prompt = _('if you already have a username and password')
-    signup_prompt = _('New to ~Okeanos ?')
+    signup_prompt = _('New to ~okeanos ?')
+    signup_link_prompt = _('create an account now')
 
 
     @property
@@ -151,25 +152,12 @@ class LocalAuthProvider(AuthProvider):
     def extra_actions(self):
         return [(_('Change password'), reverse('password_change')), ]
 
-class LDAPAuthProvider(AuthProvider):
-    module = 'ldap'
-    title = _('LDAP credentials')
-    description = _('Allows you to login using your LDAP credentials')
-
-    one_per_user = True
-
-    login_template = 'im/auth/local_login_form.html'
-    login_prompt_template = 'im/auth/local_login_prompt.html'
-    signup_prompt_template = 'im/auth/local_signup_prompt.html'
-    details_tpl = _('You can login to your account using your'
-                    ' %(auth_backend)s password.')
 
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
     title = _('Academic credentials (Shibboleth)')
-    description = _('Allows you to login to your account using your academic '
-                    'credentials')
-    add_prompt = _('Add academic credentials to your account.')
+    add_prompt = _('Allows you to login to your account using your academic '
+                    'account')
     details_tpl = _('Shibboleth account \'%(identifier)s\' is connected to your '
                     ' account.')
     user_title = _('Academic credentials (%(identifier)s)')
@@ -188,9 +176,7 @@ class ShibbolethAuthProvider(AuthProvider):
 class TwitterAuthProvider(AuthProvider):
     module = 'twitter'
     title = _('Twitter')
-    description = _('Allows you to login to your account using your twitter '
-                    'account')
-    add_prompt = _('Connect with your Twitter account.')
+    add_prompt = _('Allows you to login to your account using Twitter')
     details_tpl = _('Twitter screen name: %(info_screen_name)s')
     user_title = _('Twitter (%(info_screen_name)s)')
 
@@ -198,8 +184,39 @@ class TwitterAuthProvider(AuthProvider):
     def add_url(self):
         return reverse('astakos.im.target.twitter.login')
 
-    login_template = 'im/auth/twitter_login.html'
-    login_prompt_template = 'im/auth/twitter_login_prompt.html'
+    login_template = 'im/auth/third_party_provider_generic_login.html'
+    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+
+
+class GoogleAuthProvider(AuthProvider):
+    module = 'google'
+    title = _('Google')
+    add_prompt = _('Allows you to login to your account using Google')
+    details_tpl = _('Google account: %(info_email)s')
+    user_title = _('Google (%(info_email)s)')
+
+    @property
+    def add_url(self):
+        return reverse('astakos.im.target.google.login')
+
+    login_template = 'im/auth/third_party_provider_generic_login.html'
+    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+
+
+class LinkedInAuthProvider(AuthProvider):
+    module = 'linkedin'
+    title = _('LinkedIn')
+    add_prompt = _('Allows you to login to your account using LinkedIn')
+    user_title = _('LinkedIn (%(info_emailAddress)s)')
+    details_tpl = _('LinkedIn account: %(info_emailAddress)s')
+
+    @property
+    def add_url(self):
+        return reverse('astakos.im.target.linkedin.login')
+
+    login_template = 'im/auth/third_party_provider_generic_login.html'
+    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+
 
 def get_provider(id, user_obj=None, default=None):
     """

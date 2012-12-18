@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.conf import settings
+
 ACCOUNT_AUTHENTICATION_FAILED           =   'Cannot authenticate account.'
 ACCOUNT_ALREADY_ACTIVE                  =   'Account is already active.'
 ACCOUNT_PENDING_ACTIVATION              =   'Your request is pending activation.'
@@ -72,7 +74,8 @@ GENERIC_ERROR                           =   'Something wrong has happened. \
 MAX_INVITATION_NUMBER_REACHED   =           'There are no invitations left.'
 GROUP_MAX_PARTICIPANT_NUMBER_REACHED    =   'Group maximum participant number has been reached.'
 NO_APPROVAL_TERMS                       =   'There are no approval terms.'
-PENDING_EMAIL_CHANGE_REQUEST            =   'There is already a pending change email request.'
+PENDING_EMAIL_CHANGE_REQUEST            =   'There is already a pending change email request. ' + \
+                                            'Submiting a new email will cancel any previous requests.'
 OBJECT_CREATED_FAILED                   =   'The %(verbose_name)s creation failed: %(reason)s.'
 GROUP_JOIN_FAILURE                      =   'Failed to join group.'
 GROUPKIND_UNKNOWN                       =   'There is no such a group kind'
@@ -145,10 +148,21 @@ DOMAIN_VALUE_ERR                        =   'Enter a valid domain.'
 # Auth providers messages
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled"
 AUTH_PROVIDER_NOT_ACTIVE_FOR_LOGIN           =   "Login using '%(provider)s' is disabled"
-AUTH_PROVIDER_NOT_ACTIVE_FOR_USER_LOGIN      =   "You cannot login using '%(provider)s'"
-AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Signup using '%(provider)s' is disabled"
-AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "'%(provider)s is disabled"
-AUTH_PROVIDER_ADDED                          =   "Your new login method has been added"
-AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method"
-AUTH_PROVIDER_LOGIN_TO_ADD                   =   "Please login now to your existing account."
+AUTH_PROVIDER_NOT_ACTIVE_FOR_USER            =   "You cannot login using '%(provider)s'"
+AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Signup using '%(provider)s' is disabled."
+AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "You cannot add %(provider)s login method."
+AUTH_PROVIDER_ADDED                          =   "New login method added."
+AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method."
+AUTH_PROVIDER_ADD_EXISTS                     =   "Account already assigned to another user."
+AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be assigned once you login to your account."
+AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
+
+
+messages = locals().keys()
+for msg in messages:
+    if msg == msg.upper():
+        attr = "ASTAKOS_%s_MESSAGE" % msg
+        settings_value = getattr(settings, attr, None)
+        if settings_value:
+            locals()[msg] = settings_value
 

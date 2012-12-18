@@ -96,7 +96,6 @@ def login(
         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
             realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
         else:
-            print settings.SHIBBOLETH_REQUIRE_NAME_INFO, "LALALALAL"
             if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
                 raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
             else:
@@ -108,7 +107,7 @@ def login(
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-    provider_info = {'eppn': eppn, 'email': email}
+    provider_info = {'eppn': eppn, 'email': email, 'name': realname}
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -119,12 +118,14 @@ def login(
         user = request.user
         if not request.user.can_add_auth_provider('shibboleth',
                                                   identifier=eppn):
-            messages.error(request, 'Account already exists.')
+            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
+                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
         user.add_auth_provider('shibboleth', identifier=eppn,
-                               affiliation=affiliation)
-        messages.success(request, 'Account assigned.')
+                               affiliation=affiliation,
+                               provider_info=provider_info)
+        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
@@ -135,10 +136,12 @@ def login(
         )
         if user.is_active:
             # authenticate user
-            return prepare_response(request,
+            response = prepare_response(request,
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
+            response.set_cookie('astakos_last_login_method', 'local')
+            return response
         else:
             message = user.get_inactive_message()
             messages.error(request, message)
@@ -148,7 +151,7 @@ def login(
         provider = auth_providers.get_provider('shibboleth')
         if not provider.is_available_for_create():
             messages.error(request,
-                           _(astakos_messages.AUTH_PROVIDER_NOT_ACTIVE) % provider.get_title_display)
+                           _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
             return HttpResponseRedirect(reverse('login'))
 
         # eppn not stored in astakos models, create pending profile
@@ -165,10 +168,15 @@ def login(
         user.save()
 
         extra_context['provider'] = 'shibboleth'
-        extra_context['provider_title'] = 'Academic credentials'
+        extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
-                                        "?third_party_token=%s" % user.token
+                                    "?third_party_token=%s" % user.token
+        extra_context['add_url'] = reverse('index') + \
+                                    "?key=%s#other-login-methods" % user.token
+        extra_context['can_create'] = provider.is_available_for_create()
+        extra_context['can_add'] = provider.is_available_for_add()
+
 
         return render_response(
             template,

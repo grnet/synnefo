@@ -63,38 +63,32 @@ logger = logging.getLogger(__name__)
 
 import oauth2 as oauth
 import cgi
-import urllib
 
-consumer = oauth.Consumer(settings.TWITTER_TOKEN, settings.TWITTER_SECRET)
+consumer = oauth.Consumer(settings.LINKEDIN_TOKEN, settings.LINKEDIN_SECRET)
 client = oauth.Client(consumer)
 
-request_token_url = 'http://twitter.com/oauth/request_token'
-access_token_url = 'http://twitter.com/oauth/access_token'
-authenticate_url = 'http://twitter.com/oauth/authenticate'
+request_token_url      = 'https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress'
+access_token_url       = 'https://api.linkedin.com/uas/oauth/accessToken'
+authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
 
-@requires_auth_provider('twitter', login=True)
+
+@requires_auth_provider('linkedin', login=True)
 @require_http_methods(["GET", "POST"])
 def login(request):
-    force_login = request.GET.get('force_login',
-                                  settings.TWITTER_AUTH_FORCE_LOGIN)
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
-        messages.error(request, 'Invalid Twitter response')
+        messages.error(request, 'Invalid linkedin response')
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    request.session['request_token'] = dict(cgi.parse_qsl(content))
-    params = {
-        'oauth_token': request.session['request_token']['oauth_token'],
-    }
-    if force_login:
-        params['force_login'] = 1
+    request_token = dict(cgi.parse_qsl(content))
+    request.session['request_token'] = request_token
 
-    url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
+    url = request_token.get('xoauth_request_auth_url') + "?oauth_token=%s" % request_token.get('oauth_token')
 
     return HttpResponseRedirect(url)
 
 
-@requires_auth_provider('twitter', login=True)
+@requires_auth_provider('linkedin', login=True)
 @require_http_methods(["GET", "POST"])
 def authenticated(
     request,
@@ -106,43 +100,58 @@ def authenticated(
         return HttpResponseRedirect(reverse('edit_profile'))
 
     if not 'request_token' in request.session:
-        messages.error(request, 'Twitter handshake failed')
+        messages.error(request, 'linkedin handshake failed')
         return HttpResponseRedirect(reverse('edit_profile'))
 
     token = oauth.Token(request.session['request_token']['oauth_token'],
         request.session['request_token']['oauth_token_secret'])
+    token.set_verifier(request.GET.get('oauth_verifier'))
     client = oauth.Client(consumer, token)
-
-    # Step 2. Request the authorized access token from Twitter.
-    resp, content = client.request(access_token_url, "GET")
+    resp, content = client.request(access_token_url, "POST")
     if resp['status'] != '200':
         try:
             del request.session['request_token']
         except:
             pass
-        messages.error(request, 'Invalid Twitter response')
+        messages.error(request, 'Invalid linkedin token response')
+        return HttpResponseRedirect(reverse('edit_profile'))
+    access_token = dict(cgi.parse_qsl(content))
+    print "ACCESS", access_token
+
+    token = oauth.Token(access_token['oauth_token'],
+        access_token['oauth_token_secret'])
+    client = oauth.Client(consumer, token)
+    resp, content = client.request("http://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,email-address)?format=json", "GET")
+    if resp['status'] != '200':
+        print resp, content
+        try:
+            del request.session['request_token']
+        except:
+            pass
+        messages.error(request, 'Invalid linkedin profile response')
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    access_token = dict(cgi.parse_qsl(content))
-    userid = access_token['user_id']
-    username = access_token.get('screen_name', userid)
-    provider_info = {'screen_name': username}
-    affiliation = 'Twitter.com'
+    profile_data = json.loads(content)
+    userid = profile_data['id']
+    username = profile_data.get('emailAddress', None)
+    realname = profile_data.get('firstName', '') + ' ' + profile_data.get('lastName', '')
+    provider_info = profile_data
+    affiliation = 'linkedin.com'
 
     # an existing user accessed the view
     if request.user.is_authenticated():
-        if request.user.has_auth_provider('twitter', identifier=userid):
+        if request.user.has_auth_provider('linkedin', identifier=userid):
             return HttpResponseRedirect(reverse('edit_profile'))
 
         # automatically add eppn provider to user
         user = request.user
-        if not request.user.can_add_auth_provider('twitter',
+        if not request.user.can_add_auth_provider('linkedin',
                                                   identifier=userid):
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
                           u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))
 
-        user.add_auth_provider('twitter', identifier=userid,
+        user.add_auth_provider('linkedin', identifier=userid,
                                affiliation=affiliation,
                                provider_info=provider_info)
         messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
@@ -151,7 +160,7 @@ def authenticated(
     try:
         # astakos user exists ?
         user = AstakosUser.objects.get_auth_provider_user(
-            'twitter',
+            'linkedin',
             identifier=userid
         )
         if user.is_active:
@@ -160,7 +169,7 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-            response.set_cookie('astakos_last_login_method', 'twitter')
+            response.set_cookie('astakos_last_login_method', 'linkedin')
             return response
         else:
             message = user.get_inactive_message()
@@ -168,8 +177,8 @@ def authenticated(
             return HttpResponseRedirect(reverse('login'))
 
     except AstakosUser.DoesNotExist, e:
-        provider = auth_providers.get_provider('twitter')
-        if not provider.is_available_for_create() and not provider.is_available_for_add():
+        provider = auth_providers.get_provider('linkedin')
+        if not provider.is_available_for_create():
             messages.error(request,
                            _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
             return HttpResponseRedirect(reverse('login'))
@@ -177,15 +186,16 @@ def authenticated(
         # eppn not stored in astakos models, create pending profile
         user, created = PendingThirdPartyUser.objects.get_or_create(
             third_party_identifier=userid,
-            provider='twitter',
+            provider='linkedin',
         )
         # update pending user
+        user.realname = realname
         user.affiliation = affiliation
         user.info = json.dumps(provider_info)
         user.generate_token()
         user.save()
 
-        extra_context['provider'] = 'twitter'
+        extra_context['provider'] = 'linkedin'
         extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
@@ -200,4 +210,6 @@ def authenticated(
             template,
             context_instance=get_context(request, extra_context)
         )
+
+
 

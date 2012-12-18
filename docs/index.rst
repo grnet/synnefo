@@ -34,6 +34,8 @@ There are also the following tools:
    kamaki: Command-line client <http://docs.dev.grnet.gr/kamaki/latest/index.html>
    snf-image-creator: Image bundling/uploading/registering tool <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>
    snf-image: Secure image deployment tool <snf-image>
+   snf-deploy: Synnefo deployment tool <snf-deploy>
+
 
 Synnefo is designed to be as simple, scalable and production ready as possible.
 Furthermore, although it can be deployed in small configurations, its prime
@@ -62,7 +64,15 @@ Synnefo running with two different storage backends.
 Synnefo Guides
 ==============
 
-There are 4 guides for Synnefo.
+There are 5 guides for Synnefo.
+
+For the really impatient snf-deploy tool allows you to install all software
+components from scratch (creating locally kvm based Virtual Machines) or to an
+existing cluster (in the same network subnet and domain, same network
+configuration, vanilla debian squeeze and installed ssh keys). Please note that
+this should be used only for testing or demo installations because most of the
+times the prerequisites cannot be satisfied due to the underlying
+infrastructure complexity (especially as far as networks is conserned).
 
 The quick installation guide describes how to install the whole Synnefo stack
 in just two physical nodes, for testing purposes. This guide is useful to those
@@ -82,6 +92,12 @@ and so describes all the different types of interfaces Synnefo provides to the
 external world. The Integrator's Guide targets developers, who want to actually
 extend/modify/change Synnefo itself, so describes Synnefo's indepth
 architecture and the internals of Synnefo components (currently out-of-date!).
+
+
+.. toctree::
+   :maxdepth: 2
+
+   snf-deploy tool <snf-deploy>
 
 .. toctree::
    :maxdepth: 1

@@ -210,7 +210,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                    name="Usage"))
             append(item(
                    url=absolute(request, reverse('feedback')),
-                   name="Feedback"))
+                   name="Contact"))
 #            append(item(
 #                   url=absolute(request, reverse('billing')),
 #                   name="Billing"))

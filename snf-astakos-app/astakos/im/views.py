@@ -142,8 +142,7 @@ def requires_auth_provider(provider_id, **perms):
                 for pkey, value in perms.iteritems():
                     attr = 'is_available_for_%s' % pkey.lower()
                     if getattr(provider, attr)() != value:
-                        msg = provider.get_message("NOT_ACTIVE_FOR_" + pkey.upper())
-                        messages.error(request, msg)
+                        #TODO: add session message
                         return HttpResponseRedirect(reverse('login'))
             return func(request, *args)
         return wrapper
@@ -209,10 +208,6 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     template_name = login_template_name
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
-
-    third_party_token = request.GET.get('key', False)
-    if third_party_token:
-        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
 
     return render_response(
         template_name,
@@ -382,10 +377,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 @transaction.commit_manually
 @require_http_methods(["GET", "POST"])
-def signup(request, template_name='im/signup.html',
-           on_success='im/signup_complete.html', extra_context=None,
-           on_success_redirect='/im/profile/',
-           backend=None):
+def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
 
@@ -425,6 +417,9 @@ def signup(request, template_name='im/signup.html',
         return HttpResponseRedirect(reverse('edit_profile'))
 
     provider = get_query(request).get('provider', 'local')
+    if not auth_providers.get_provider(provider).is_available_for_create():
+        raise PermissionDenied
+
     id = get_query(request).get('id')
     try:
         instance = AstakosUser.objects.get(id=id) if id else None
@@ -438,9 +433,6 @@ def signup(request, template_name='im/signup.html',
         provider = pending.provider
         instance = pending.get_user_instance()
 
-    if not auth_providers.get_provider(provider).is_available_for_create():
-        raise PermissionDenied
-
     try:
         if not backend:
             backend = get_backend(request)
@@ -448,7 +440,6 @@ def signup(request, template_name='im/signup.html',
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.error(request, e)
-
     if request.method == 'POST':
         if form.is_valid():
             user = form.save(commit=False)
@@ -475,8 +466,13 @@ def signup(request, template_name='im/signup.html',
                     return response
                 messages.add_message(request, status, message)
                 transaction.commit()
-                return HttpResponseRedirect(on_success_redirect)
-
+                return render_response(
+                    on_success,
+                    context_instance=get_context(
+                        request,
+                        extra_context
+                    )
+                )
             except SendMailError, e:
                 logger.exception(e)
                 status = messages.ERROR
@@ -489,7 +485,6 @@ def signup(request, template_name='im/signup.html',
                 messages.error(request, message)
                 logger.exception(e)
                 transaction.rollback()
-
     return render_response(template_name,
                            signup_form=form,
                            third_party_token=third_party_token,
@@ -599,33 +594,30 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     try:
         user = AstakosUser.objects.get(auth_token=token)
     except AstakosUser.DoesNotExist:
-        messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
-        return HttpResponseRedirect(reverse('index'))
+        return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
 
     if user.is_active:
         message = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
         messages.error(request, message)
-        return HttpResponseRedirect(reverse('index'))
+        return index(request)
 
     try:
-        activate_func(user, greeting_email_template_name,
-                      helpdesk_email_template_name, verify_email=True)
+        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
-        messages.success(request, astakos_messages.ACCOUNT_ACTIVATED)
-        return HttpResponseRedirect(reverse('edit_profile'))
+        return response
     except SendMailError, e:
         message = e.message
         messages.add_message(request, messages.ERROR, message)
         transaction.rollback()
-        return HttpResponseRedirect(reverse('index'))
+        return index(request)
     except BaseException, e:
         status = messages.ERROR
         message = _(astakos_messages.GENERIC_ERROR)
         messages.add_message(request, messages.ERROR, message)
         logger.exception(e)
         transaction.rollback()
-        return HttpResponseRedirect(reverse('index'))
+        return index(request)
 
 
 @require_http_methods(["GET", "POST"])
@@ -685,8 +677,6 @@ def change_email(request, activation_key=None,
                  confirm_template_name='registration/email_change_done.html',
                  extra_context=None):
     extra_context = extra_context or {}
-
-
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
@@ -696,50 +686,34 @@ def change_email(request, activation_key=None,
                 auth_logout(request)
                 response = prepare_response(request, user)
                 transaction.commit()
-                return HttpResponseRedirect(reverse('edit_profile'))
+                return response
         except ValueError, e:
             messages.error(request, e)
-            transaction.rollback()
-            return HttpResponseRedirect(reverse('index'))
-
         return render_response(confirm_template_name,
-                               modified_user=user if 'user' in locals() \
-                               else None, context_instance=get_context(request,
+                               modified_user=user if 'user' in locals(
+                               ) else None,
+                               context_instance=get_context(request,
                                                             extra_context))
 
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
         url = request.build_absolute_uri(reverse('index'))
         return HttpResponseRedirect(url + '?next=' + path)
-
-    # clean up expired email changes
-    if request.user.email_change_is_pending():
-        change = request.user.emailchanges.get()
-        if change.activation_key_expired():
-            change.delete()
-            transaction.commit()
-            return HttpResponseRedirect(reverse('email_change'))
-
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            # delete pending email changes
-            request.user.emailchanges.all().delete()
             ec = form.save(email_template_name, request)
         except SendMailError, e:
             msg = e
             messages.error(request, msg)
             transaction.rollback()
-            return HttpResponseRedirect(reverse('edit_profile'))
+        except IntegrityError, e:
+            msg = _(astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
+            messages.error(request, msg)
         else:
             msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)
             transaction.commit()
-            return HttpResponseRedirect(reverse('edit_profile'))
-
-    if request.user.email_change_is_pending():
-        messages.warning(request, astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
-
     return render_response(
         form_template_name,
         form=form,
@@ -748,10 +722,6 @@ def change_email(request, activation_key=None,
 
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
-
-    if request.user.is_authenticated():
-        messages.error(request, 'You are already signed in.')
-        return HttpResponseRedirect(reverse('edit_profile'))
 
     if settings.MODERATION_ENABLED:
         raise PermissionDenied
@@ -766,8 +736,6 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             send_activation_func(u)
             msg = _(astakos_messages.ACTIVATION_SENT)
             messages.success(request, msg)
-            return HttpResponseRedirect('/im/')
-
         except SendMailError, e:
             messages.error(request, e)
     return render_response(
@@ -1887,6 +1855,4 @@ def project_reject_member(request, application_id, user_id):
             transaction.commit()
     return project_detail(request, application_id)
 
-def test(v):
-    res = 'foo'
-    return res
+

@@ -1,5 +1,6 @@
 {% extends "im/account_base.html" %}
 
+{% load astakos_tags %}
 {% load filters %}
 
 {% block page.body %}
@@ -58,6 +59,7 @@
     <!-- Search project -->
     {% if object_list %}
         <div class="full-dotted">
+            {% comment %}
         	<form method="GET" class="minimal" action="#searchResults"> 
 				<div class="form-row">
 					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
@@ -73,26 +75,25 @@
 					<input type="hidden" name="q" value="{{q}}"/>
 				</div>
 			</form>
+			{% endcomment %}
             <table class="alt-style complex" id="searchResults">
                 <caption>
                     {% if q %}SEARCH RESULTS{% else %}ALL PROJECTS{% endif %}
                 </caption>
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <!--<th>Type</th>-->
-                    <th>Issued</th>
-                    <th>Starts</th>
-                    <th>Ends</th>               
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'name' %}-name{% else %}name{% endif %}#allGroups">Name</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'issue_date' %}-issue_date{% else %}issue_date{% endif %}#allGroups">Issue Date</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'start_date' %}-start_date{% else %}start_date{% endif %}#allGroups">Start Date</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'end_date' %}-end_date{% else %}end_date{% endif %}#allGroups">End Date</a></th>
                     <th>Enrolled</th>
-                    <th>Status</th>
-                    <th/>
-                    <th>Membership Status</th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'state' %}-state{% else %}state{% endif %}#allGroups">Status</a></th>
                     <th>&nbsp;</th>
-			        <th>Member accept policy</th>
-			        <th>Member reject policy</th>
-                   <!-- <th>&nbsp;</th>-->
-                  
+			        <th>Membership Status</th>
+                    <th>&nbsp;</th>
+			        <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'member_join_policy__description' %}-member_join_policy__description{% else %}member_join_policy__description{%endif%}#allGroups">Member Join Policy</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'member_leave_policy__description' %}-member_leave_policy__description{% else %}member_leave_policy__description{%endif%}#allGroups">Member Leave Policy</a></th>
+                    <!-- <th>&nbsp;</th>-->
                   </tr>
                 </thead>
                 <tbody>
@@ -213,6 +214,7 @@
         	 	{% with o.project.members as members %}
                 {% with o.project.approved_members as approved_members %}  
 	      	    <div>
+	      	        {% comment %}
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
 						    <select name="sorting"  class="dropkicked"  tabindex="1">
@@ -227,21 +229,23 @@
 							</select>
 						</div>
 					</form>
+					{% endcomment %}
 					<table class="alt-style complex" id="allGroups">
 			            <caption>MY PROJECTS</caption>
 			            <thead>
 			              <tr>
-			                <th>Name</th>
-			                <!--th>Type</th-->
-			                <th>Issued</th>
-			                <th>Starts</th>
-			                <th>Expires</th>
-			                <th>Enrolled</th>
-			                <th>Status</th>
-			                <th>&nbsp;</th>
-			                <th class="centered">Moderated</th>
-			               <!-- <th>&nbsp;</th>-->
-			                
+		                    <th><a href="?sorting={% if sorting == 'name' %}-name{% else %}name{% endif %}#allGroups">Name</a></th>
+                            <th><a href="?sorting={% if sorting == 'issue_date' %}-issue_date{% else %}issue_date{% endif %}#allGroups">Issue Date</a></th>
+                            <th><a href="?sorting={% if sorting == 'start_date' %}-start_date{% else %}start_date{% endif %}#allGroups">Start Date</a></th>
+                            <th><a href="?sorting={% if sorting == 'end_date' %}-end_date{% else %}end_date{% endif %}#allGroups">End Date</a></th>
+                            <th>Enrolled</th>
+                            <th><a href="?sorting={% if sorting == 'state' %}-state{% else %}state{% endif %}#allGroups">Status</a></th>
+                            <th>&nbsp;</th>
+                            <th>Membership Status</th>
+                            <th>&nbsp;</th>
+                            <th><a href="?sorting={% if sorting == 'member_join_policy__description' %}-member_join_policy__description{% else %}member_join_policy__description{% endif %}#allGroups">Member Join Policy</a></th>
+                            <th><a href="?sorting={% if sorting == 'member_leave_policy__description' %}-member_leave_policy__description{% else %}member_leave_policy__description{% endif %}#allGroups">Member Leave Policy</a></th>
+                            <!-- <th>&nbsp;</th>-->
 			              </tr>
 			            </thead>
 			            <tbody>

@@ -986,7 +986,15 @@ class ProjectSortForm(forms.Form):
 #                  ('approved_members_num', 'Sort by Participants'),
                  ('state', 'Sort by Status'),
                  ('member_join_policy__description', 'Sort by Member Join Policy'),
-                 ('member_leave_policy__description', 'Sort by Member Leave Policy')
+                 ('member_leave_policy__description', 'Sort by Member Leave Policy'),
+                 ('-name', 'Sort by Name'),
+                 ('-issue_date', 'Sort by Issue date'),
+                 ('-start_date', 'Sort by Start Date'),
+                 ('-end_date', 'Sort by End Date'),
+#                  ('-approved_members_num', 'Sort by Participants'),
+                 ('-state', 'Sort by Status'),
+                 ('-member_join_policy__description', 'Sort by Member Join Policy'),
+                 ('-member_leave_policy__description', 'Sort by Member Leave Policy')
         ),
         required=True
     )

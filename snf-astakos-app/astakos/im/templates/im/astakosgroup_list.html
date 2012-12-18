@@ -225,7 +225,6 @@
             {% with q|paginate:args as page_obj %}
         	 	{% if page_obj.object_list  %}
 	      	    <div>
-                    {% comment %}
 					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
 						<div class="form-row">
 						    <select name="sorting"  class="dropkicked"  tabindex="1">
@@ -238,7 +237,6 @@
 							</select>
 						</div>
 					</form>
-                    {% endcomment %}
 					<table class="alt-style complex" id="allGroups">
 			            <caption>MY PROJECTS</caption>
 			            <thead>

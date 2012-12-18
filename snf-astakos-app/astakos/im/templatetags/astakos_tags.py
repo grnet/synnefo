@@ -64,3 +64,8 @@ class MessagesNode(template.Node):
             context.render_context[self] = content
 
         return context.render_context[self]
+
+
+@register.simple_tag
+def olga(v):
+    return v+'a'

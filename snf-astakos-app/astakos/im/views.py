@@ -410,9 +410,6 @@ def signup(request, template_name='im/signup.html',
         return HttpResponseRedirect(reverse('edit_profile'))
 
     provider = get_query(request).get('provider', 'local')
-    if not auth_providers.get_provider(provider).is_available_for_create():
-        raise PermissionDenied
-
     id = get_query(request).get('id')
     try:
         instance = AstakosUser.objects.get(id=id) if id else None
@@ -425,6 +422,9 @@ def signup(request, template_name='im/signup.html',
                                     token=third_party_token)
         provider = pending.provider
         instance = pending.get_user_instance()
+
+    if not auth_providers.get_provider(provider).is_available_for_create():
+        raise PermissionDenied
 
     try:
         if not backend:

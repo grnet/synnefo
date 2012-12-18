@@ -971,10 +971,13 @@ def group_list(request):
 
     # validate sorting
     sorting = 'groupname'
+    ordering = ''
     sort_form = AstakosGroupSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
-    query = query+" ORDER BY %s ASC" %sorting
+        ordering = request.GET.get('ordering', 'ASC' )
+        
+    query = query+" ORDER BY %s %s" %(sorting, ordering)
 
     q = AstakosGroup.objects.raw(query)
 
@@ -983,11 +986,13 @@ def group_list(request):
         q.model._meta.app_label,
         q.model._meta.object_name.lower()
     )
+    
     extra_context = dict(
         is_search=False,
         q=q,
         sorting=sorting,
-        page=request.GET.get('page', 1)
+        page=request.GET.get('page', 1),
+        ordering=ordering,
     )
     return render_response(template_name,
                            context_instance=get_context(request, extra_context)
@@ -1103,8 +1108,11 @@ def group_search(request, extra_context=None, **kwargs):
         form = AstakosGroupSearchForm(get_query(request))
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-
+            
     sorting = 'groupname'
+    order_dict = {'ASC':'', 'DESC':'-'  }
+    ordering = ''
+    sort_order = 'groupname' 
     if q:
         queryset = AstakosGroup.objects.select_related()
         queryset = queryset.filter(~Q(kind__name='default'))
@@ -1141,10 +1149,14 @@ def group_search(request, extra_context=None, **kwargs):
                     })
 
         # validate sorting
+        
+        
         sort_form = AstakosGroupSortForm(request.GET)
         if sort_form.is_valid():
             sorting = sort_form.cleaned_data.get('sorting')
-        queryset = queryset.order_by(sorting)
+            ordering = request.GET.get('ordering','ASC')
+            sort_order = order_dict[ordering]+sorting
+        queryset = queryset.order_by(sort_order)
 
     else:
         queryset = AstakosGroup.objects.none()
@@ -1157,7 +1169,8 @@ def group_search(request, extra_context=None, **kwargs):
         extra_context=dict(form=form,
                            is_search=True,
                            q=q,
-                           sorting=sorting))
+                           sorting=sorting,
+                           ordering=ordering))
 
 
 @require_http_methods(["GET", "POST"])
@@ -1192,11 +1205,17 @@ def group_all(request, extra_context=None, **kwargs):
 
     # validate sorting
     sorting = 'groupname'
+    order_dict = {'ASC':'', 'DESC':'-'  }
+    ordering = ''
+    sort_order = 'groupname'
     sort_form = AstakosGroupSortForm(request.GET)
+    
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
-    q = q.order_by(sorting)
-
+        ordering = request.GET.get('ordering','ASC')
+        sort_order = order_dict[ordering]+sorting
+    q = q.order_by(sort_order)
+    
     return object_list(
         request,
         q,
@@ -1205,7 +1224,8 @@ def group_all(request, extra_context=None, **kwargs):
         template_name='im/astakosgroup_list.html',
         extra_context=dict(form=AstakosGroupSearchForm(),
                            is_search=True,
-                           sorting=sorting))
+                           sorting=sorting,
+                           ordering=ordering))
 
 
 #@require_http_methods(["POST"])
@@ -1471,3 +1491,6 @@ def how_it_works(request):
         template='im/how_it_works.html',
         context_instance=get_context(request),)
 
+def test(v):
+    res = 'foo'
+    return res

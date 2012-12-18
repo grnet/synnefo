@@ -27,8 +27,10 @@
       {% endfor %}
         <div class="bottom">
         {% block body.signup %}
-          {% for provider in auth_providers %}
-              {% include provider.signup_prompt_template %}
+        {% for provider in auth_providers %}
+              {% if provider.is_available_for_create %}
+                  {% include provider.signup_prompt_template %}
+              {% endif %}
           {% endfor %}
         {% endblock body.signup %}
         </div>

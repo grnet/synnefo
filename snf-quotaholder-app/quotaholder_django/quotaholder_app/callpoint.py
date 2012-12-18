@@ -49,7 +49,6 @@ from .models import (Holder, Entity, Policy, Holding,
                      now,
                      db_get_entity, db_get_holding, db_get_policy,
                      db_get_commission, db_filter_provision, db_get_callserial)
-import json
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
 
@@ -570,26 +569,41 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
 
         if serial is not None and clientkey is not None:
-            data = json.dumps(all_pairs)
-            CallSerial.objects.create(serial=serial,
-                                      clientkey=clientkey,
-                                      data=data)
+            CallSerial.objects.create(serial=serial, clientkey=clientkey)
         return rejected
 
-    def ack_serial(self, context={}, clientkey=None, serial=None,
-                   fetch_args=False):
+    def ack_serials(self, context={}, clientkey=None, serials=()):
+        if clientkey is None:
+            return
+
+        for serial in serials:
+            try:
+                c = db_get_callserial(clientkey=clientkey,
+                                      serial=serial,
+                                      for_update=True)
+                c.delete()
+            except CallSerial.DoesNotExist:
+                pass
+        return
+
+    def query_serials(self, context={}, clientkey=None, serials=()):
         result = []
-        try:
-            cs = db_get_callserial(clientkey=clientkey,
-                                   serial=serial,
-                                   for_update=True)
-        except CallSerial.DoesNotExist:
+        append = result.append
+
+        if clientkey is None:
             return result
 
-        if fetch_args:
-            result = json.loads(cs.data)
+        if not serials:
+            cs = CallSerial.objects.filter(clientkey=clientkey)
+            return [c.serial for c in cs]
 
-        cs.delete()
+        for serial in serials:
+            try:
+                db_get_callserial(clientkey=clientkey, serial=serial)
+                append(serial)
+            except CallSerial.DoesNotExist:
+                pass
+
         return result
 
     def issue_commission(self,  context     =   {},

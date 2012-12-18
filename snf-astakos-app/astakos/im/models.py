@@ -661,13 +661,28 @@ class AstakosUser(User):
 
         return True
 
-    def can_remove_auth_provider(self, provider):
-        if len(self.get_active_auth_providers()) <= 1:
+    def can_remove_auth_provider(self, module):
+        provider = auth_providers.get_provider(module)
+        existing = self.get_active_auth_providers()
+        existing_for_provider = self.get_active_auth_providers(module=module)
+
+        if len(existing) <= 1:
             return False
+
+        if len(existing_for_provider) == 1 and provider.is_required():
+            return False
+
         return True
 
     def can_change_password(self):
         return self.has_auth_provider('local', auth_backend='astakos')
+
+    def has_required_auth_providers(self):
+        required = auth_providers.REQUIRED_PROVIDERS
+        for provider in required:
+            if not self.has_auth_provider(provider):
+                return False
+        return True
 
     def has_auth_provider(self, provider, **kwargs):
         return bool(self.auth_providers.filter(module=provider,
@@ -743,9 +758,9 @@ class AstakosUser(User):
 
         return providers
 
-    def get_active_auth_providers(self):
+    def get_active_auth_providers(self, **filters):
         providers = []
-        for provider in self.auth_providers.active():
+        for provider in self.auth_providers.active(**filters):
             if auth_providers.get_provider(provider.module).is_available_for_login():
                 providers.append(provider)
         return providers
@@ -784,8 +799,8 @@ class AstakosUser(User):
 
 class AstakosUserAuthProviderManager(models.Manager):
 
-    def active(self):
-        return self.filter(active=True)
+    def active(self, **filters):
+        return self.filter(active=True, **filters)
 
 
 class AstakosUserAuthProvider(models.Model):

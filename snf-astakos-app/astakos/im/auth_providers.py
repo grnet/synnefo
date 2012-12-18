@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 # providers registry
 PROVIDERS = {}
+REQUIRED_PROVIDERS = {}
 
 class AuthProviderBase(type):
 
@@ -62,6 +63,8 @@ class AuthProviderBase(type):
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
         if include:
             PROVIDERS[type_id] = newcls
+            if newcls().is_required():
+                REQUIRED_PROVIDERS[type_id] = newcls
         return newcls
 
 
@@ -121,6 +124,10 @@ class AuthProvider(object):
         """ A user can assign provider authentication method"""
         return self.is_active() and self.get_setting('CAN_ADD',
                                                    self.is_active())
+
+    def is_required(self):
+        """Provider required (user cannot remove the last one)"""
+        return self.is_active() and self.get_setting('REQUIRED', False)
 
     def is_active(self):
         return self.module in astakos_settings.IM_MODULES

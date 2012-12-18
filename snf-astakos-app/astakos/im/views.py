@@ -151,7 +151,7 @@ def requires_anonymous(func):
 
 def signed_terms_required(func):
     """
-    Decorator checkes whether the request.user is Anonymous and in that case
+    Decorator checks whether the request.user is Anonymous and in that case
     redirects to `logout`.
     """
     @wraps(func)
@@ -163,6 +163,38 @@ def signed_terms_required(func):
             return HttpResponseRedirect(terms_uri)
         return func(request, *args, **kwargs)
     return wrapper
+
+
+def required_auth_methods_assigned(only_warn=False):
+    """
+    Decorator that checks whether the request.user has all required auth providers
+    assigned.
+    """
+    required_providers = auth_providers.REQUIRED_PROVIDERS.keys()
+
+    def decorator(func):
+        if not required_providers:
+            return func
+
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if request.user.is_authenticated():
+                for required in required_providers:
+                    if not request.user.has_auth_provider(required):
+                        provider = auth_providers.get_provider(required)
+                        if only_warn:
+                            messages.error(request,
+                                           _(astakos_messages.AUTH_PROVIDER_REQUIRED  % {
+                                               'provider': provider.get_title_display}))
+                        else:
+                            return HttpResponseRedirect(reverse('edit_profile'))
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def valid_astakos_user_required(func):
+    return signed_terms_required(required_auth_methods_assigned()(login_required(func)))
 
 
 @require_http_methods(["GET", "POST"])
@@ -202,8 +234,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
 
 
 @require_http_methods(["GET", "POST"])
-@login_required
-@signed_terms_required
+@valid_astakos_user_required
 @transaction.commit_manually
 def invite(request, template_name='im/invitations.html', extra_context=None):
     """
@@ -281,6 +312,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
 
 
 @require_http_methods(["GET", "POST"])
+@required_auth_methods_assigned(only_warn=True)
 @login_required
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
@@ -478,6 +510,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
 
 
 @require_http_methods(["GET", "POST"])
+@required_auth_methods_assigned(only_warn=True)
 @login_required
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
@@ -653,8 +686,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 
 @require_http_methods(["GET", "POST"])
-@login_required
-@signed_terms_required
+@valid_astakos_user_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -707,6 +739,10 @@ def change_email(request, activation_key=None,
 
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
+
+    if request.user.is_authenticated():
+        messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
+        return HttpResponseRedirect(reverse('edit_profile'))
 
     if settings.MODERATION_ENABLED:
         raise PermissionDenied
@@ -814,8 +850,7 @@ class ResourcePresentation():
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_add(request, kind_name='default'):
 
     result = callpoint.list_resources()
@@ -880,8 +915,7 @@ def group_add(request, kind_name='default'):
 
 #@require_http_methods(["POST"])
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_add_complete(request):
     model = AstakosGroup
     form = AstakosGroupCreationSummaryForm(request.POST)
@@ -924,8 +958,7 @@ def group_add_complete(request):
 
 #@require_http_methods(["GET"])
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_list(request):
     none = request.user.astakos_groups.none()
     query = """
@@ -986,8 +1019,7 @@ def group_list(request):
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_detail(request, group_id):
     q = AstakosGroup.objects.select_related().filter(pk=group_id)
     q = q.extra(select={
@@ -1084,8 +1116,7 @@ def group_detail(request, group_id):
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_search(request, extra_context=None, **kwargs):
     q = request.GET.get('q')
     if request.method == 'GET':
@@ -1160,8 +1191,7 @@ def group_search(request, extra_context=None, **kwargs):
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_all(request, extra_context=None, **kwargs):
     q = AstakosGroup.objects.select_related()
     q = q.filter(~Q(kind__name='default'))
@@ -1216,8 +1246,7 @@ def group_all(request, extra_context=None, **kwargs):
 
 #@require_http_methods(["POST"])
 @require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_join(request, group_id):
     m = Membership(group_id=group_id,
                    person=request.user,
@@ -1236,8 +1265,7 @@ def group_join(request, group_id):
 
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def group_leave(request, group_id):
     try:
         m = Membership.objects.select_related().get(
@@ -1276,8 +1304,7 @@ def handle_membership(func):
 
 #@require_http_methods(["POST"])
 @require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @handle_membership
 def approve_member(request, membership):
     try:
@@ -1295,8 +1322,7 @@ def approve_member(request, membership):
         messages.error(request, msg)
 
 
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @handle_membership
 def disapprove_member(request, membership):
     try:
@@ -1312,8 +1338,7 @@ def disapprove_member(request, membership):
 
 #@require_http_methods(["GET"])
 @require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def resource_usage(request):
     def with_class(entry):
         entry['load_class'] = 'red'
@@ -1426,8 +1451,7 @@ def group_create_list(request):
 
 #@require_http_methods(["GET"])
 @require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def timeline(request):
 #    data = {'entity':request.user.email}
     timeline_body = ()

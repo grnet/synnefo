@@ -46,6 +46,7 @@ ACCOUNT_PENDING_ACTIVATION_HELP         =   'If you haven\'t received activation
 ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' + \
                                             ' been activated and you have been' + \
                                             ' automatically signed in to your account.'
+ALREADY_LOGGED_IN                       =   'You are already signed in to your account.'
 PASSWORD_RESET_DONE                     =   'A mail with details on how to change your password was sent.'
 PASSWORD_RESET_CONFIRM_DONE             =   'Password changed. You can now login using your new password.'
 
@@ -156,6 +157,7 @@ AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method
 AUTH_PROVIDER_ADD_EXISTS                     =   "Account already assigned to another user."
 AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be assigned once you login to your account."
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
+AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is required. Add one from your profile page."
 
 
 messages = locals().keys()

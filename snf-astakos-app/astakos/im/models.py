@@ -1345,7 +1345,7 @@ class ProjectApplication(models.Model):
                                                   null=True)
 
     state                   =   models.CharField(max_length=80,
-                                                 default=UNKNOWN)
+                                                default=UNKNOWN)
 
     owner                   =   models.ForeignKey(
                                     AstakosUser,
@@ -1378,17 +1378,11 @@ class ProjectApplication(models.Model):
     states_list =   [PENDING, APPROVED, REPLACED, UNKNOWN]
     states      =   dict((k, v) for v, k in enumerate(states_list))
 
-    def add_resource_policy(self, service, resource, uplimit, update=True):
+    def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
+        q = self.projectresourcegrant_set
         resource = Resource.objects.get(service__name=service, name=resource)
-        if update:
-            ProjectResourceGrant.objects.update_or_create(
-                project_application=self,
-                resource=resource,
-                defaults={'member_capacity': uplimit})
-        else:
-            q = self.projectresourcegrant_set
-            q.create(resource=resource, member_capacity=uplimit)
+        q.create(resource=resource, member_capacity=uplimit)
 
     @property
     def resource_policies(self):
@@ -1400,8 +1394,7 @@ class ProjectApplication(models.Model):
             service = p.get('service', None)
             resource = p.get('resource', None)
             uplimit = p.get('uplimit', 0)
-            update = p.get('update', True)
-            self.add_resource_policy(service, resource, uplimit, update)
+            self.add_resource_policy(service, resource, uplimit)
 
     @property
     def follower(self):
@@ -1424,8 +1417,8 @@ class ProjectApplication(models.Model):
         self.comments = comments
         self.issue_date = datetime.now()
         self.state = PENDING
-        self.resource_policies = resource_policies
         self.save()
+        self.resource_policies = resource_policies
 
     def _get_project(self):
         precursor = self

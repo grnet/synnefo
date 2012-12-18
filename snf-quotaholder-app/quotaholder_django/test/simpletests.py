@@ -254,17 +254,22 @@ class QHAPITest(QHTestCase):
                                          (e0, resource1, k0, 0, None, (-5), 0)])
         self.assertEqual(r, [(e0, resource0), (e0, resource1)])
 
-        r = self.qh.ack_serial(clientkey=self.client,
-                               serial=1,
-                               fetch_args=True)
+        r = self.qh.query_serials(clientkey=self.client, serials=[1, 2])
+        self.assertEqual(r, [1])
 
-        self.assertEqual(r, [(e0, resource0), (e0, resource1)])
+        r = self.qh.query_serials(clientkey=self.client, serials=[])
+        self.assertEqual(r, [1])
 
-        r = self.qh.ack_serial(clientkey=self.client,
-                               serial=1,
-                               fetch_args=True)
-
+        r = self.qh.query_serials(clientkey=self.client, serials=[2])
         self.assertEqual(r, [])
+
+        r = self.qh.ack_serials(clientkey=self.client, serials=[1])
+
+        r = self.qh.query_serials(clientkey=self.client, serials=[1, 2])
+        self.assertEqual(r, [])
+
+        # idempotent
+        r = self.qh.ack_serials(clientkey=self.client, serials=[1])
 
         # serial has been deleted
         r = self.qh.add_quota(clientkey=self.client,

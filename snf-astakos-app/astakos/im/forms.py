@@ -385,14 +385,15 @@ class LoginForm(AuthenticationForm):
         """
         username = self.cleaned_data.get('username')
 
-        try:
-            user = AstakosUser.objects.get_by_identifier(username)
-            if not user.has_auth_provider('local'):
-                provider = auth_providers.get_provider('local')
-                raise forms.ValidationError(
-                    _(provider.get_message('NOT_ACTIVE_FOR_USER_LOGIN')))
-        except AstakosUser.DoesNotExist:
-            pass
+        if username:
+            try:
+                user = AstakosUser.objects.get_by_identifier(username)
+                if not user.has_auth_provider('local'):
+                    provider = auth_providers.get_provider('local')
+                    raise forms.ValidationError(
+                        _(provider.get_message('NOT_ACTIVE_FOR_USER')))
+            except AstakosUser.DoesNotExist:
+                pass
 
         try:
             super(LoginForm, self).clean()

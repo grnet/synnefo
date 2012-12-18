@@ -1,0 +1,95 @@
+{% load filters %}
+{% block headjs %}
+	{{ block.super }}	 
+	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
+{% endblock %}	
+{% block page.body %}
+
+<div class="projects summary">
+	<form action="?edit=0&verify=0" method="post" class="quotas-form">{% csrf_token %}
+	    {% for k,v in request.POST.items %}
+	        {% if k != 'csrfmiddlewaretoken' %}
+	            <input type="hidden" name="{{k}}"  id="{{'id_'|add:k}}" value="{{v}}">
+	        {% endif %}
+	    {% endfor %}
+		<legend>CONFIRMATION REQUEST</legend>
+		<P>These are the specifications of the Project you want to create. If you hit the "Submit" button this form will be officially sent to GRNET for review. Please make sure the following reflect exactly your request. After submitting, there is no way to modify your Project request. </P>
+		<div class="full-dotted">
+			<h3>GENERAL INFO</h3>
+			<p class="restricted">{{ form_data.desc|safe }}</p>
+			<dl class="alt-style">			    
+				<dt>Homepage Url</dt>
+				<dd>{{ form_data.homepage }}&nbsp;</dd>
+				<dt>Member join policy</dt>
+			 	<dd>{{ form_data.member_join_policy }}</dd>
+			 	<dt>Member leave policy</dt>
+			 	<dd>{{ form_data.member_leave_policy }}</dd>
+			</dl>
+		</div>
+		<div class="full-dotted">
+			 <h3>DETAILS</h3>
+			 <dl class="alt-style">			    
+			    <dt>Name</dt>
+			 	<dd>{{ form_data.name }}&nbsp;</dd>
+			 	<!--<dt>Type</dt>
+			 	<dd>Course&nbsp;</dd>-->
+			 	<dt>Start date</dt>
+			 	<dd>{{ form_data.start_date|date:"d/m/Y"}}&nbsp;</dd>
+			 	<dt>End Date</dt>
+			 	<dd>{{ form_data.end_date|date:"d/m/Y"}}&nbsp;</dd>
+			 	<dt>Total number of members</dt>
+			 	<dd>{{ form_data.limit_on_members_number }}</dd>
+			 </dl>
+		 </div>
+		 
+		 
+		 <div class="full-dotted">
+			<h3>RESOURCES</h3>
+			<p>The following ~okeanos resources will be granted to each member of this Project:</p>
+		 	<dl class="alt-style">
+		 	    {% for rp in form.resource_policies %}
+		 	        {% with resource_catalog|lookup:'resources' as resource_info %}
+		 		        {% with rp.service|add:'.'|add:rp.resource as resource_name %}
+		 	                {% with resource_info|lookup:resource_name as resource %}
+		 		    <dt>
+           				Max {% if resource.is_abbreviation %}{{ resource.verbose_name|upper }}{% else %}{{ resource.verbose_name }}{% endif %}{% if not resource.unit %}s {% endif  %}  per user
+           			</dt>
+			 		<dd>
+           			{% if rp.uplimit %}
+           				 {% if resource.unit %}
+           				 	{{ rp.uplimit|sizeof_fmt }}
+           				 {% else %}
+           				 	{{ rp.uplimit }}
+           				 {% endif %}
+           			{% else %}
+           				Unlimited
+           			{% endif %}
+           			</dd>
+           			        {% endwith %}
+           			    {% endwith %}
+           			{% endwith %}
+           		{% empty %}
+           			No resources
+		 		{% endfor %}
+		 	</dl>      
+		 </div>
+		 
+		 <div class="full-dotted">
+		 	 
+		 </div>
+		
+		 
+		<input type="hidden" name="user"  id="id_user" value="{{user.id}}">
+		<div class="form-row submit">
+            <input type="submit" value="BACK" class="submit altcol" autocomplete="off" onclick='this.form.action="?edit=1&verify=0";'>
+            <input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
+        </div>
+	</form>
+    
+</div>
+	 
+<script>
+	
+</script>	 
+
+{% endblock %}

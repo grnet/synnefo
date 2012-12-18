@@ -71,12 +71,14 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quota, register_resources, add_quota, QuotaLimits)
+    register_users, send_quota, register_resources, qh_add_quota, QuotaLimits,
+    qh_query_serials, qh_ack_serials)
 from astakos.im import auth_providers
 #from astakos.im.endpoints.aquarium.producer import report_user_event
 #from astakos.im.tasks import propagate_groupmembers_quota
 
 import astakos.im.messages as astakos_messages
+from .managers import ForUpdateManager
 
 logger = logging.getLogger(__name__)
 
@@ -474,7 +476,7 @@ class AstakosUser(User):
             p = m.project
             if not p.is_active:
                 continue
-            grants = p.current_application.projectresourcegrant_set.all()
+            grants = p.application.projectresourcegrant_set.all()
             for g in grants:
                 d[str(g.resource)] += g.member_capacity or inf
         # TODO set default for remaining
@@ -1469,11 +1471,12 @@ class ProjectApplication(models.Model):
                 pass
             project = Project(creation_date=now)
 
-        project.latest_application = self
-        project.set_membership_replaced()
+        project.application = self
 
-        with exclusive_or_raise:
-            project.status_set_flag(Project.SYNC_PENDING_DEFINITION)
+        # This will block while syncing,
+        # but unblock before setting the membership state.
+        # See ProjectMembership.set_sync()
+        project.set_membership_pending_sync()
 
         project.last_approval_date = now
         project.save()
@@ -1513,13 +1516,9 @@ class ProjectResourceGrant(models.Model):
 
 class Project(models.Model):
 
-    synced_application          =   models.OneToOneField(
+    application                 =   models.OneToOneField(
                                             ProjectApplication,
-                                            related_name='project',
-                                            null=True)
-    latest_application          =   models.OneToOneField(
-                                            ProjectApplication,
-                                            related_name='last_project')
+                                            related_name='project')
     last_approval_date          =   models.DateTimeField(null=True)
 
     members                     =   models.ManyToManyField(
@@ -1535,40 +1534,13 @@ class Project(models.Model):
                                             db_index=True,
                                             unique=True)
 
-    status                      =   models.IntegerField(db_index=True)
-
-    SYNCHRONIZED                =   0
-    SYNC_PENDING_MEMBERSHIP     =   (1 << 0)
-    SYNC_PENDING_DEFINITION     =   (1 << 1)
-    # SYNC_PENDING                =   (SYNC_PENDING_DEFINITION |
-    #                                  SYNC_PENDING_MEMBERSHIP)
-
-
-    def status_set_flag(self, s):
-        self.status |= s
-
-    def status_unset_flag(self, s):
-        self.status &= ~s
-
-    def status_is_set_flag(self, s):
-        return self.status & s == s
-
-    @property
-    def current_application(self):
-        return self.synced_application or self.latest_application
-
     @property
     def violated_resource_grants(self):
-        if self.synced_application is None:
-            return True
-        # do something
         return False
 
     @property
     def violated_members_number_limit(self):
-        application = self.synced_application
-        if application is None:
-            return True
+        application = self.application
         return len(self.approved_members) > application.limit_on_members_number
 
     @property
@@ -1616,57 +1588,24 @@ class Project(models.Model):
 
     @property
     def approved_memberships(self):
+        ACCEPTED = ProjectMembership.ACCEPTED
+        PENDING  = ProjectMembership.PENDING
         return self.projectmembership_set.filter(
-            synced_state=ProjectMembership.ACCEPTED)
+            Q(state=ACCEPTED) | Q(state=PENDING))
 
     @property
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
 
-    def check_sync(self, hint=None):
-        if self.status != self.SYNCHRONIZED:
-            self.sync()
-
-    def set_membership_replaced(self):
-        members = [m for m in self.approved_memberships
-                   if m.sync_is_synced()]
+    def set_membership_pending_sync(self):
+        ACCEPTED = ProjectMembership.ACCEPTED
+        PENDING  = ProjectMembership.PENDING
+        sfu = self.projectmembership_set.select_for_update()
+        members = sfu.filter(Q(state=ACCEPTED) | Q(state=PENDING))
 
         for member in members:
-            member.sync_set_new_state(member.REPLACED)
+            member.state = member.PENDING
             member.save()
-
-    def sync_membership(self):
-        pending_members = self.projectmembership.filter(
-            sync_status=ProjectMembership.STATUS_PENDING)
-        for member in members:
-            try:
-                member.sync()
-            except Exception:
-                raise
-
-        still_pending_members = self.members.filter(
-            sync_status=ProjectMembership.STATUS_PENDING)
-        if not still_pending_members:
-            with exclusive_or_raise:
-                self.status_unset_flag(self.SYNC_PENDING_MEMBERSHIP)
-                self.save()
-
-    def sync_definition(self):
-        try:
-            self.sync_membership()
-        except Exception:
-            raise
-        else:
-            with exclusive_or_raise:
-                self.status_unset_flag(self.SYNC_PENDING_DEFINITION)
-                self.synced_application = self.latest_application
-                self.save()
-
-    def sync(self):
-        if self.status_is_set_flag(self.SYNC_PENDING_DEFINITION):
-            self.sync_definition()
-        if self.status_is_set_flag(self.SYNC_PENDING_MEMBERSHIP):
-            self.sync_membership()
 
     def add_member(self, user):
         """
@@ -1783,14 +1722,13 @@ class ProjectMembership(models.Model):
     acceptance_date     =   models.DateField(null=True, db_index=True)
     leave_request_date  =   models.DateField(null=True)
 
+    objects     =   ForUpdateManager()
+
     REQUESTED   =   0
     PENDING     =   1
     ACCEPTED    =   2
     REMOVING    =   3
     REMOVED     =   4
-    REJECTED    =   5   # never seen, because of .delete()
-    REPLACED    =   6   # when the project definition is replaced
-                        # spontaneously goes back to ACCEPTED when synced
 
     class Meta:
         unique_together = ("person", "project")
@@ -1803,7 +1741,7 @@ class ProjectMembership(models.Model):
     __repr__ = __str__
 
     def __init__(self, *args, **kwargs):
-        self.sync_init_state(self.REQUEST)
+        self.state = self.REQUESTED
         super(ProjectMembership, self).__init__(*args, **kwargs)
 
     def _set_history_item(self, reason, date=None):
@@ -1829,15 +1767,17 @@ class ProjectMembership(models.Model):
         self._set_history_item(reason='ACCEPT', date=now)
         self.state = self.PENDING
         self.save()
+        trigger_sync()
 
     def remove(self):
         if state != self.ACCEPTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
 
-        serial = self._set_history_item(reason='REMOVE')
+        self._set_history_item(reason='REMOVE')
         self.state = self.REMOVING
         self.save()
+        trigger_sync()
 
     def reject(self):
         if state != self.REQUESTED:
@@ -1888,9 +1828,9 @@ class ProjectMembership(models.Model):
                     import_limit = cur_grant.import_limit
                     export_limit = cur_grant.export_limit
 
-                capacity += factor * new_grant.member_capacity
-                import_limit += factor * new_grant.member_import_limit
-                export_limit += factor * new_grant.member_export_limit
+                capacity += new_grant.member_capacity
+                import_limit += new_grant.member_import_limit
+                export_limit += new_grant.member_export_limit
 
                 append(QuotaLimits(holder       = holder,
                                    key          = key,
@@ -1903,9 +1843,39 @@ class ProjectMembership(models.Model):
         limits_list.extend(tmp_grants.itervalues())
         return limits_list
 
+    def set_sync(self):
+        state = self.state
+        if state == self.PENDING:
+            pending_application = self.pending_application
+            if pending_application is None:
+                m = _("%s: attempt to sync an empty pending application") % (
+                    self, state)
+                raise AssertionError(m)
+            self.application = pending_application
+            self.pending_application = None
+            self.pending_serial = None
+
+            # project.application may have changed in the meantime,
+            # in which case we stay PENDING;
+            # we are safe to check due to select_for_update
+            if self.application == self.project.application:
+                self.state = self.ACCEPTED
+            self.save()
+        elif state == self.REMOVING:
+            self.delete()
+        else:
+            m = _("%s: attempt to sync in state '%s'") % (self, state)
+            raise AssertionError(m)
+
+class Serial(models.Model):
+    serial  =   models.AutoField(primary_key=True)
+
+def new_serial():
+    s = Serial.create()
+    return s.serial
 
 def sync_finish_serials():
-    serials_to_ack = set(quotaholder_query_sync_serials([]))
+    serials_to_ack = set(qh_query_serials([]))
     sfu = ProjectMembership.objects.select_for_update()
     memberships = sfu.filter(pending_serial__isnull=False)
 
@@ -1917,8 +1887,7 @@ def sync_finish_serials():
             membership.set_sync()
 
     transaction.commit()
-    quotaholder_ack_sync_serials(list(serials_to_ack))
-
+    qh_ack_serials(list(serials_to_ack))
 
 def sync_projects():
     sync_finish_serials()
@@ -1927,10 +1896,9 @@ def sync_projects():
     REMOVING = ProjectMembership.REMOVING
     objects = ProjectMembership.objects.select_for_update()
 
-    projects = set()
     quotas = []
 
-    serial = get_serial()
+    serial = new_serial()
 
     pending = objects.filter(state=PENDING)
     for membership in pending:
@@ -1944,7 +1912,7 @@ def sync_projects():
                 membership, membership.pending_serial)
             raise AssertionError(m)
 
-        membership.pending_application = membership.project.latest_application
+        membership.pending_application = membership.project.application
         membership.pending_serial = serial
         membership.get_diff_quotas(quotas)
         membership.save()
@@ -1966,7 +1934,12 @@ def sync_projects():
         membership.save()
 
     transaction.commit()
-    quotaholder_add_quotas(serial, quotas)
+    # ProjectApplication.approve() unblocks here
+    # and can set PENDING an already PENDING membership
+    # which has been scheduled to sync with the old project.application
+    # Need to check in ProjectMembership.set_sync()
+
+    qh_add_quota(serial, quotas)
     sync_finish_serials()
 
 

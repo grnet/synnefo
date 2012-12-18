@@ -53,6 +53,8 @@ logger = logging.getLogger(__name__)
 
 inf = float('inf')
 
+clientkey = 'astakos'
+
 _client = None
 def get_client():
     global _client
@@ -116,16 +118,48 @@ QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'import_limit',
                                          'export_limit'))
 
-@call('add_quota')
-def add_quota(quotalimits_list):
+def qh_add_quota(serial, quotalimits_list):
+    if not QUOTAHOLDER_URL:
+        return ()
+
+    context = {}
+    c = get_client()
+
     data = []
     append = data.append
     for ql in quotalimits_list:
         args = (ql.holder, ql.resource, ENTITY_KEY,
                 0, ql.capacity, ql.import_limit, ql.export_limit)
         append(args)
-    return data
 
+    result = c.add_quota(context=context,
+                         clientkey=clientkey,
+                         serial=serial,
+                         add_quota=data)
+
+    return result
+
+def qh_query_serials(serials):
+    if not QUOTAHOLDER_URL:
+        return ()
+
+    context = {}
+    c = get_client()
+    result = c.query_serials(context=context,
+                             clientkey=clientkey,
+                             serials=serials)
+    return result
+
+def qh_ack_serials(serials):
+    if not QUOTAHOLDER_URL:
+        return ()
+
+    context = {}
+    c = get_client()
+    result = c.ack_serials(context=context,
+                           clientkey=clientkey,
+                           serials=serials)
+    return
 
 @call('set_quota')
 def send_resource_quantities(resources, client=None):

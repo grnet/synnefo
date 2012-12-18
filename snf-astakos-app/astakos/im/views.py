@@ -56,7 +56,7 @@ from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
-    apply_extra_context, update_object, delete_object, get_model_and_form_class)
+    apply_extra_context, lookup_object, delete_object, get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -1478,15 +1478,16 @@ def _create_object(request, model=None, template_name=None,
         template_loader=template_loader, extra_context=None, post_save_redirect=None,
         login_required=False, context_processors=None, form_class=None):
     """
-    Based of django.views.generic.create_update.create_object which shows a
+    Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
     """
     rollback = False
     response = None
+
+    if extra_context is None: extra_context = {}
+    if login_required and not request.user.is_authenticated():
+        return redirect_to_login(request.path)
     try:
-        if extra_context is None: extra_context = {}
-        if login_required and not request.user.is_authenticated():
-            return redirect_to_login(request.path)
     
         model, form_class = get_model_and_form_class(model, form_class)
         extra_context['edit'] = 0
@@ -1518,6 +1519,7 @@ def _create_object(request, model=None, template_name=None,
             transaction.rollback()
         else:
             transaction.commit()
+
         if response == None:
             # Create the template, context, response
             if not template_name:
@@ -1529,6 +1531,68 @@ def _create_object(request, model=None, template_name=None,
             }, context_processors)
             apply_extra_context(extra_context, c)
             response = HttpResponse(t.render(c))
+        return response
+
+@transaction.commit_manually
+def _update_object(request, model=None, object_id=None, slug=None,
+        slug_field='slug', template_name=None, template_loader=template_loader,
+        extra_context=None, post_save_redirect=None, login_required=False,
+        context_processors=None, template_object_name='object',
+        form_class=None):
+    """
+    Based of django.views.generic.create_update.update_object which displays a
+    summary page before updating the object.
+    """
+    rollback = False
+    response = None
+
+    if extra_context is None: extra_context = {}
+    if login_required and not request.user.is_authenticated():
+        return redirect_to_login(request.path)
+    
+    try:
+        model, form_class = get_model_and_form_class(model, form_class)
+        obj = lookup_object(model, object_id, slug, slug_field)
+    
+        if request.method == 'POST':
+            form = form_class(request.POST, request.FILES, instance=obj)
+            if form.is_valid():
+                verify = request.GET.get('verify')
+                edit = request.GET.get('edit')
+                if verify == '1':
+                    extra_context['show_form'] = False
+                    extra_context['form_data'] = form.cleaned_data
+                elif edit == '1':
+                    extra_context['show_form'] = True
+                else:                
+                    obj = form.save()
+                    msg = _("The %(verbose_name)s was updated successfully.") %\
+                                {"verbose_name": model._meta.verbose_name}
+                    messages.success(request, msg, fail_silently=True)
+                    response = redirect(post_save_redirect, obj)
+        else:
+            form = form_class(instance=obj)
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        rollback = True
+    finally:
+        if rollback:
+            transaction.rollback()
+        else:
+            transaction.commit()
+        if response == None:
+            if not template_name:
+                template_name = "%s/%s_form.html" %\
+                    (model._meta.app_label, model._meta.object_name.lower())
+            t = template_loader.get_template(template_name)
+            c = RequestContext(request, {
+                'form': form,
+                template_object_name: obj,
+            }, context_processors)
+            apply_extra_context(extra_context, c)
+            response = HttpResponse(t.render(c))
+            populate_xheaders(request, response, model, getattr(obj, obj._meta.pk.attname))
         return response
 
 @require_http_methods(["GET", "POST"])
@@ -1581,9 +1645,6 @@ def project_list(request):
 @login_required
 def project_update(request, application_id):
     result = callpoint.list_resources()
-#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-#     resource_catalog.update_from_result(result)
-
     if not result.is_success:
         messages.error(
             request,
@@ -1592,10 +1653,9 @@ def project_update(request, application_id):
     else:
         resource_catalog = result.data
     extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
-    return update_object(
+    return _update_object(
         request,
         object_id=application_id,
-#         slug_field='projectapplication__id',
         template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect='/im/project/list/',
         form_class=ProjectApplicationForm)

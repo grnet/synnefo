@@ -150,7 +150,7 @@ def login(
         provider = auth_providers.get_provider('shibboleth')
         if not provider.is_available_for_create():
             messages.error(request,
-                           _(astakos_messages.AUTH_PROVIDER_NOT_ACTIVE) % provider.get_title_display)
+                           _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
             return HttpResponseRedirect(reverse('login'))
 
         # eppn not stored in astakos models, create pending profile
@@ -167,10 +167,15 @@ def login(
         user.save()
 
         extra_context['provider'] = 'shibboleth'
-        extra_context['provider_title'] = 'Academic credentials'
+        extra_context['provider_title'] = provider.get_title_display
         extra_context['token'] = user.token
         extra_context['signup_url'] = reverse('signup') + \
-                                        "?third_party_token=%s" % user.token
+                                    "?third_party_token=%s" % user.token
+        extra_context['add_url'] = reverse('index') + \
+                                    "?key=%s#other-login-methods" % user.token
+        extra_context['can_create'] = provider.is_available_for_create()
+        extra_context['can_add'] = provider.is_available_for_add()
+
 
         return render_response(
             template,

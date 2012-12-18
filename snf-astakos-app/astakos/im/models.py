@@ -36,7 +36,7 @@ import uuid
 import logging
 import json
 
-from time import asctime
+from time import asctime, sleep
 from datetime import datetime, timedelta
 from base64 import b64encode
 from urlparse import urlparse
@@ -44,7 +44,7 @@ from urllib import quote
 from random import randint
 from collections import defaultdict, namedtuple
 
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction, connection
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
 from django.db import transaction
@@ -1297,21 +1297,24 @@ class ProjectApplication(models.Model):
 
     applicant               =   models.ForeignKey(
                                     AstakosUser,
-                                    related_name='my_project_applications',
-                                    db_index=True
-                                    )
+                                    related_name='projects_applied',
+                                    db_index=True)
+
+    project                 =   models.ForeignKey(Project,
+                                                  related_name='applications')
+
+    state                   =   models.CharField(max_length=80,
+                                                 default=UNKNOWN)
+
     owner                   =   models.ForeignKey(
                                     AstakosUser,
-                                    related_name='own_project_applications',
-                                    db_index=True
-                                    )
+                                    related_name='projects_owned',
+                                    db_index=True)
+
     precursor_application   =   models.OneToOneField('ProjectApplication',
                                                      null=True,
                                                      blank=True,
-                                                     db_index=True
-                                                     )
-    state                   =   models.CharField(max_length=80,
-                                                 default=UNKNOWN)
+                                                     db_index=True)
 
     name                    =   models.CharField(max_length=80)
     homepage                =   models.URLField(max_length=255, null=True,
@@ -1327,8 +1330,7 @@ class ProjectApplication(models.Model):
                                     Resource,
                                     null=True,
                                     blank=True,
-                                    through='ProjectResourceGrant'
-                                    )
+                                    through='ProjectResourceGrant')
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
 
@@ -1342,8 +1344,7 @@ class ProjectApplication(models.Model):
             ProjectResourceGrant.objects.update_or_create(
                 project_application=self,
                 resource=resource,
-                defaults={'member_capacity': uplimit}
-            )
+                defaults={'member_capacity': uplimit})
         else:
             q = self.projectresourcegrant_set
             q.create(resource=resource, member_capacity=uplimit)
@@ -1382,8 +1383,8 @@ class ProjectApplication(models.Model):
         self.comments = comments
         self.issue_date = datetime.now()
         self.state = PENDING
-        self.save()
         self.resource_policies = resource_policies
+        self.save()
 
     def _get_project(self):
         precursor = self
@@ -1419,6 +1420,7 @@ class ProjectApplication(models.Model):
         project = self._get_project()
         if project is None:
             try:
+                # needs SERIALIZABLE
                 conflicting_project = Project.objects.get(name=new_project_name)
                 if conflicting_project.is_alive:
                     m = _("cannot approve: project with name '%s' "
@@ -1450,7 +1452,8 @@ class ProjectApplication(models.Model):
         self.save()
 
         transaction.commit()
-        project.check_sync()
+        trigger_sync()
+
 
 class ProjectResourceGrant(models.Model):
 
@@ -1470,9 +1473,7 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
 
-class Project(make_synced('app_sync'),
-              make_synced('memb_sync'),
-              models.Model):
+class Project(models.Model):
 
     synced_application          =   models.OneToOneField(
                                             ProjectApplication,
@@ -1730,24 +1731,32 @@ class ExclusiveOrRaise(object):
 exclusive_or_raise = ExclusiveOrRaise(locked=False)
 
 
-class ProjectMembership(SyncedState, models.Model):
+class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
-    project             =   models.ForeignKey(Project)
     request_date        =   models.DateField(default=datetime.now())
+    project             =   models.ForeignKey(Project)
+
+    state               =   models.IntegerField(default=0)
+    application         =   models.ForeignKey(ProjectApplication, null=True)
+    pending_application =   models.ForeignKey(ProjectApplication, null=True)
+    pending_serial      =   models.BigIntegerField(null=True, db_index=True)
 
     acceptance_date     =   models.DateField(null=True, db_index=True)
     leave_request_date  =   models.DateField(null=True)
 
     REQUESTED   =   0
-    ACCEPTED    =   1
-    REMOVED     =   2
-    REJECTED    =   3   # never seen, because .delete()
-    REPLACED    =   4   # when the project definition is replaced
+    PENDING     =   1
+    ACCEPTED    =   2
+    REMOVING    =   3
+    REMOVED     =   4
+    REJECTED    =   5   # never seen, because of .delete()
+    REPLACED    =   6   # when the project definition is replaced
                         # spontaneously goes back to ACCEPTED when synced
 
     class Meta:
         unique_together = ("person", "project")
+        #index_together = [["project", "state"]]
 
     def __str__(self):
         return _("<'%s' membership in project '%s'>") % (
@@ -1773,53 +1782,26 @@ class ProjectMembership(SyncedState, models.Model):
         serial = history_item.id
 
     def accept(self):
-        state, verified = self.sync_verify_get_synced_state()
-        if not verified:
-            new_state = self.sync_get_new_state()
-            m = _("%s: cannot accept: not synched (%s -> %s)") % (
-                    self, state, new_state)
-            raise self.NotSynced(m)
-
         if state != self.REQUESTED:
-            m = _("%s: attempt to accept in state '%s'") % (self, state)
+            m = _("%s: attempt to accept in state [%s]") % (self, state)
             raise AssertionError(m)
 
         now = datetime.now()
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
-        self.sync_set_new_state(self.ACCEPTED)
-        with exclusive_or_raise:
-            self.project.status_set_flag(Project.SYNC_PENDING_MEMBERSHIP)
-            self.project.save()
+        self.state = self.PENDING
         self.save()
 
     def remove(self):
-        state, verified = self.sync_verify_get_synced_state()
-        if not verified:
-            new_state = self.sync_get_new_state()
-            m = _("%s: cannot remove: not synched (%s -> %s)") % (
-                    self, state, new_state)
-            raise self.NotSynced(m)
-
         if state != self.ACCEPTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
 
         serial = self._set_history_item(reason='REMOVE')
-        self.sync_set_new_state(self.REMOVED)
-        with exclusive_or_raise:
-            self.project.status_set_flag(Project.SYNC_PENDING_MEMBERSHIP)
-            self.project.save()
+        self.state = self.REMOVING
         self.save()
 
     def reject(self):
-        state, verified = self.sync_verify_get_synced_state()
-        if not verified:
-            new_state = self.sync_get_new_state()
-            m = _("%s: cannot reject: not synched (%s -> %s)" % (
-                    self, state, new_state))
-            raise self.NotSynced(m)
-
         if state != self.REQUESTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
@@ -1829,110 +1811,153 @@ class ProjectMembership(SyncedState, models.Model):
         self._set_history_item(reason='REJECT')
         self.delete()
 
-    def get_quotas(self, limits_list=None, factor=1):
-        if limits_list is None:
-            limits_list = []
-        append = limits_list.append
-        holder = self.person.username
-        all_grants = self.project.latest_application.resource_grants.all()
-        for grant in all_grants:
-            append(QuotaLimits(holder       = holder,
-                               resource     = grant.resource.name,
-                               capacity     = factor * grant.member_capacity,
-                               import_limit = factor * grant.member_import_limit,
-                               export_limit = factor * grant.member_export_limit))
-        return limits_list
-
-    def get_diff_quotas(self, limits_list=None, factor=1):
+    def get_diff_quotas(self, limits_list=None, remove=False):
         if limits_list is None:
             limits_list = []
 
         append = limits_list.append
         holder = self.person.username
+        key = "1"
 
-        synced_application = self.project.synced_application
-        if synced_application is None:
-            m = _("%s: attempt to read resource grants "
-                  "of an uninitialized project") % (self,)
-            raise AssertionError(m)
-
-        # first, inverse all current limits, and index them by resource name
-        cur_grants = synced_application.resource_grants.all()
-        f = factor * -1
         tmp_grants = {}
-        for grant in cur_grants:
-            name = grant.resource.name
-            tmp_grants[name] = QuotaLimits(
-                            holder       = holder,
-                            resource     = name,
-                            capacity     = f * grant.member_capacity,
-                            import_limit = f * grant.member_import_limit,
-                            export_limit = f * grant.member_export_limit)
+        synced_application = self.application
+        if synced_application is not None:
+            # first, inverse all current limits, and index them by resource name
+            cur_grants = synced_application.resource_grants.all()
+            f = -1
+            for grant in cur_grants:
+                name = grant.resource.name
+                tmp_grants[name] = QuotaLimits(
+                                holder       = holder,
+                                resource     = name,
+                                capacity     = f * grant.member_capacity,
+                                import_limit = f * grant.member_import_limit,
+                                export_limit = f * grant.member_export_limit)
 
-        # second, add each new limit to its inversed current
-        new_grants = self.project.latest_application.resource_grants.all()
-        for new_grant in new_grants:
-            name = grant.resource.name
-            cur_grant = tmp_grants.pop(name, None)
-            if cur_grant is None:
-                # if limits on a new resource, set 0 current values
-                capacity = 0
-                import_limit = 0
-                export_limit = 0
-            else:
-                capacity = cur_grant.capacity
-                import_limit = cur_grant.import_limit
-                export_limit = cur_grant.export_limit
+        if not remove:
+            # second, add each new limit to its inverted current
+            new_grants = self.pending_application.resource_grants.all()
+            for new_grant in new_grants:
+                name = grant.resource.name
+                cur_grant = tmp_grants.pop(name, None)
+                if cur_grant is None:
+                    # if limits on a new resource, set 0 current values
+                    capacity = 0
+                    import_limit = 0
+                    export_limit = 0
+                else:
+                    capacity = cur_grant.capacity
+                    import_limit = cur_grant.import_limit
+                    export_limit = cur_grant.export_limit
 
-            capacity += new_grant.member_capacity
-            import_limit += new_grant.member_import_limit
-            export_limit += new_grant.member_export_limit
+                capacity += factor * new_grant.member_capacity
+                import_limit += factor * new_grant.member_import_limit
+                export_limit += factor * new_grant.member_export_limit
 
-            append(QuotaLimits(holder       = holder,
-                               resource     = name,
-                               capacity     = capacity,
-                               import_limit = import_limit,
-                               export_limit = export_limit))
+                append(QuotaLimits(holder       = holder,
+                                   key          = key,
+                                   resource     = name,
+                                   capacity     = capacity,
+                                   import_limit = import_limit,
+                                   export_limit = export_limit))
 
-        # third, append all the inversed current limits for removed resources
+        # third, append all the inverted current limits for removed resources
         limits_list.extend(tmp_grants.itervalues())
         return limits_list
 
-    def do_sync(self):
-        state = self.sync_get_synced_state()
-        new_state = self.sync_get_new_state()
 
-        if state == self.REQUESTED and new_state == self.ACCEPTED:
-            quotas = self.get_quotas(factor=1)
-        elif state == self.ACCEPTED and new_state == self.REMOVED:
-            quotas = self.get_quotas(factor=-1)
-        elif state == self.ACCEPTED and new_state == self.REPLACED:
-            quotas = self.get_diff_quotas(factor=1)
-        else:
-            m = _("%s: sync: called on invalid state ('%s' -> '%s')") % (
-                    self, state, new_state)
+def sync_finish_serials():
+    serials_to_ack = set(quotaholder_query_sync_serials([]))
+    sfu = ProjectMembership.objects.select_for_update()
+    memberships = sfu.filter(pending_serial__isnull=False)
+
+    for membership in memberships:
+        serial = membership.serial
+        # just make sure the project row is selected for update
+        project = membership.project
+        if serial in serials_to_ack:
+            membership.set_sync()
+
+    transaction.commit()
+    quotaholder_ack_sync_serials(list(serials_to_ack))
+
+
+def sync_projects():
+    sync_finish_serials()
+
+    PENDING = ProjectMembership.PENDING
+    REMOVING = ProjectMembership.REMOVING
+    objects = ProjectMembership.objects.select_for_update()
+
+    projects = set()
+    quotas = []
+
+    serial = get_serial()
+
+    pending = objects.filter(state=PENDING)
+    for membership in pending:
+
+        if membership.pending_application:
+            m = "%s: impossible: pending_application is not None (%s)" % (
+                membership, membership.pending_application)
+            raise AssertionError(m)
+        if membership.pending_serial:
+            m = "%s: impossible: pending_serial is not None (%s)" % (
+                membership, membership.pending_serial)
             raise AssertionError(m)
 
-        quotas = self.get_quotas(factor=factor)
-        try:
-            failure = add_quota(quotas)
-            if failure:
-                m = "%s: sync: add_quota failed" % (self,)
-                raise RuntimeError(m)
-        except Exception:
-            raise
-        else:
-            self.sync_set_synced()
+        membership.pending_application = membership.project.latest_application
+        membership.pending_serial = serial
+        membership.get_diff_quotas(quotas)
+        membership.save()
 
-        # some states have instant side-effects/transitions
-        if new_state == self.REMOVED:
-            self.delete()
-        elif new_state == self.REPLACED:
-            self.sync_init_state(self.ACCEPTED)
+    removing = objects.filter(state=REMOVING)
+    for membership in removing:
 
-    def sync(self):
-        with exclusive_or_raise:
-            self.do_sync()
+        if membership.pending_application:
+            m = ("%s: impossible: removing pending_application is not None (%s)"
+                % (membership, membership.pending_application))
+            raise AssertionError(m)
+        if membership.pending_serial:
+            m = "%s: impossible: pending_serial is not None (%s)" % (
+                membership, membership.pending_serial)
+            raise AssertionError(m)
+
+        membership.pending_serial = serial
+        membership.get_diff_quotas(quotas, remove=True)
+        membership.save()
+
+    transaction.commit()
+    quotaholder_add_quotas(serial, quotas)
+    sync_finish_serials()
+
+
+def trigger_sync(retries=3, retry_wait=1.0):
+    cursor = connection.cursor()
+    locked = True
+    try:
+        while 1:
+            cursor.execute("SELECT pg_try_advisory_lock(1)")
+            r = cursor.fetchone()
+            if r is None:
+                m = "Impossible"
+                raise AssertionError(m)
+            locked = r[0]
+            if locked:
+                break
+
+            retries -= 1
+            if retries <= 0:
+                return False
+            sleep(retry_wait)
+
+        sync_projects()
+        return True
+
+    finally:
+        if locked:
+            cursor.execute("SELECT pg_advisory_unlock(1)")
+            cursor.fetchall()
 
 
 class ProjectMembershipHistory(models.Model):
@@ -1944,7 +1969,7 @@ class ProjectMembershipHistory(models.Model):
     date    =   models.DateField(default=datetime.now)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
-
+    
 
 def filter_queryset_by_property(q, property):
     """

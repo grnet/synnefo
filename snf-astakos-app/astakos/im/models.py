@@ -639,7 +639,8 @@ class AstakosUser(User):
 
     def can_add_auth_provider(self, provider, **kwargs):
         provider_settings = auth_providers.get_provider(provider)
-        if not provider_settings.is_available_for_login():
+
+        if not provider_settings.is_available_for_add():
             return False
 
         if self.has_auth_provider(provider) and \

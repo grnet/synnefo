@@ -85,8 +85,6 @@ def login(
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
-        eppn = "1234"
-        tokens[Tokens.SHIB_DISPLAYNAME] = 'Olga Brani'
         if not eppn:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN))
         if Tokens.SHIB_DISPLAYNAME in tokens:

@@ -1260,17 +1260,26 @@ def project_detail(request, application_id):
     if form.is_valid():
         sorting = form.cleaned_data.get('sorting')
 
-    return object_detail(
-        request,
-        queryset=ProjectApplication.objects.select_related(),
-        object_id=application_id,
-        template_name='im/projects/project_detail.html',
-        extra_context={
-            'resource_catalog':resource_catalog,
-            'sorting':sorting,
-            'addmembers_form':addmembers_form
-        }
-    )
+    rollback = False
+    try:
+        return object_detail(
+            request,
+            queryset=ProjectApplication.objects.select_related(),
+            object_id=application_id,
+            template_name='im/projects/project_detail.html',
+            extra_context={
+                'resource_catalog':resource_catalog,
+                'sorting':sorting,
+                'addmembers_form':addmembers_form
+                }
+            )
+    except:
+        rollback = True
+    finally:
+        if rollback == True:
+            transaction.rollback()
+        else:
+            transaction.commit()
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
@@ -1352,14 +1361,11 @@ def project_join(request, application_id):
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
-    else:
-        return project_detail(request, application_id)
     finally:
         if rollback:
             transaction.rollback()
         else:
             transaction.commit()
-    
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 

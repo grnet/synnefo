@@ -3,10 +3,11 @@
 {% load filters %}
 
 {% block page.body %}
+{% with resource_usage|populated_resource_usage as resource_usage %}
 <div class="maincol {% block innerpage.class %}{% endblock %}"> 
 	<div class="stats clearfix">
 		<ul>
-			{% for rname, rdata in resource_catalog.resources.items %}
+			{% for rname, rdata in resource_usage.resources.items %}
 		 		<li class="clearfix  {{ rdata.load_class }} {{ rname|get_value_after_dot }}">
 		 			<div class="img-wrap">&nbsp;</div>
 		 			<div class="info">
@@ -39,4 +40,5 @@
 			 
 	</div>    
 </div>
+{% endwith %}
 {% endblock %}

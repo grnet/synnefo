@@ -315,3 +315,8 @@ resource_presentation = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
 def populated_resource_catalog(resource_catalog):
     resource_presentation.populate_resource_data(resource_catalog)
     return resource_presentation
+
+@register.filter
+def populated_resource_usage(resource_usage):
+    resource_presentation.populate_report_data(resource_usage)
+    return resource_presentation

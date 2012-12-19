@@ -103,12 +103,12 @@ from astakos.im.functions import (
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
-    RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL)
+    RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
+    MODERATION_ENABLED)
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
-
-from astakos.im import settings
 from astakos.im import auth_providers
+from astakos.im.templatetags.filters import ResourcePresentation
 
 logger = logging.getLogger(__name__)
 
@@ -782,7 +782,7 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
         messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if settings.MODERATION_ENABLED:
+    if MODERATION_ENABLED:
         raise PermissionDenied
 
     extra_context = extra_context or {}
@@ -861,49 +861,17 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
 
 
 @require_http_methods(["GET"])
-@require_http_methods(["POST", "GET"])
 @valid_astakos_user_required
 def resource_usage(request):
-    def with_class(entry):
-        entry['load_class'] = 'red'
-        max_value = float(entry['maxValue'])
-        curr_value = float(entry['currValue'])
-        entry['ratio_limited']= 0
-        if max_value > 0 :
-            entry['ratio'] = (curr_value / max_value) * 100
-        else:
-            entry['ratio'] = 0
-        if entry['ratio'] < 66:
-            entry['load_class'] = 'yellow'
-        if entry['ratio'] < 33:
-            entry['load_class'] = 'green'
-        if entry['ratio']<0:
-            entry['ratio'] = 0
-        if entry['ratio']>100:
-            entry['ratio_limited'] = 100
-        else:
-            entry['ratio_limited'] = entry['ratio']
-
-        return entry
-
-    def pluralize(entry):
-        entry['plural'] = engine.plural(entry.get('name'))
-        return entry
-
+    resource_usage = None
     result = callpoint.get_user_usage(request.user.id)
     if result.is_success:
-        backenddata = map(with_class, result.data)
-        data = map(pluralize, result.data)
+        resource_usage = result.data
     else:
-        data = None
         messages.error(request, result.reason)
-    resource_catalog = result.data
-#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-#     resource_catalog.update_from_result_report(result)
     return render_response('im/resource_usage.html',
-                           data=data,
                            context_instance=get_context(request),
-                           resource_catalog=resource_catalog,
+                           resource_usage=resource_usage,
                            result=result)
 
 

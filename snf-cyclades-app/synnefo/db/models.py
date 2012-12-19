@@ -155,6 +155,9 @@ class Backend(models.Model):
                                  "with backend: %s" % self)
         else:
             # ON_DELETE = SET NULL
+            for vm in self.virtual_machines.all():
+                vm.backend = None
+                vm.save()
             self.virtual_machines.all().backend = None
             # Remove BackendNetworks of this Backend.
             # Do not use networks.all().delete(), since delete() method of
@@ -168,8 +171,11 @@ class Backend(models.Model):
         if not self.pk:
             # Generate a unique index for the Backend
             indexes = Backend.objects.all().values_list('index', flat=True)
-            first_free = [x for x in xrange(0, 16) if x not in indexes][0]
-            self.index = first_free
+            try:
+                first_free = [x for x in xrange(0, 16) if x not in indexes][0]
+                self.index = first_free
+            except IndexError:
+                raise Exception("Can not create more than 16 backends")
 
 
 # A backend job may be in one of the following possible states
@@ -520,7 +526,9 @@ class Network(models.Model):
 
         backends = [backend] if backend else Backend.objects.all()
         for backend in backends:
-            BackendNetwork.objects.create(backend=backend, network=self)
+            if not BackendNetwork.objects.filter(backend=backend, network=self)\
+                                 .exists():
+                BackendNetwork.objects.create(backend=backend, network=self)
 
     def get_pool(self):
         if not self.pool_id:

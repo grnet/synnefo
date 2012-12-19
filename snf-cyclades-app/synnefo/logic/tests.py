@@ -43,7 +43,8 @@ from synnefo.lib.utils import split_time
 from datetime import datetime
 from mock import patch
 from synnefo.api.util import allocate_resource
-from synnefo.logic.callbacks import update_db, update_net, update_network
+from synnefo.logic.callbacks import (update_db, update_net, update_network,
+                                    update_build_progress)
 
 now = datetime.now
 from time import time
@@ -428,173 +429,68 @@ class UpdateNetworkTest(TestCase):
         self.assertFalse(pool.is_reserved('10.0.0.20'))
 
 
-class ProcessOpStatusTestCase(TestCase):
-    fixtures = ['db_test_data']
-    msg_op = {
-        'instance': 'instance-name',
-        'type': 'ganeti-op-status',
-        'operation': 'OP_INSTANCE_STARTUP',
-        'jobId': 0,
-        'status': 'success',
-        'logmsg': 'unittest - simulated message'
-    }
+@patch('synnefo.lib.amqp.AMQPClient')
+class UpdateBuildProgressTest(TestCase):
+    def setUp(self):
+        self.vm = mfactory.VirtualMachineFactory()
 
-    def test_op_startup_success(self):
-        """Test notification for successful OP_INSTANCE_START"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_STARTUP'
-        msg['status'] = 'success'
+    def get_db_vm(self):
+        return VirtualMachine.objects.get(id=self.vm.id)
 
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'ACTIVE')
+    def create_msg(self, **kwargs):
+        """Create snf-progress-monitor message"""
+        msg = {'event_time': split_time(time())}
+        msg['type'] = 'image-copy-progress'
+        msg['progress'] = 0
+        for key, val in kwargs.items():
+            msg[key] = val
+        message = {'body': json.dumps(msg)}
+        return message
 
-    def test_op_shutdown_success(self):
-        """Test notification for successful OP_INSTANCE_SHUTDOWN"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_SHUTDOWN'
-        msg['status'] = 'success'
+    def test_missing_attribute(self, client):
+        update_build_progress(client, json.dumps({'body': {}}))
+        client.basic_nack.assert_called_once()
 
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'STOPPED')
+    def test_unhandled_exception(self, client):
+        update_build_progress(client, {})
+        client.basic_reject.assert_called_once()
 
-    def test_op_reboot_success(self):
-        """Test notification for successful OP_INSTANCE_REBOOT"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_REBOOT'
-        msg['status'] = 'success'
+    def test_missing_instance(self, client):
+        msg = self.create_msg(instance='foo')
+        update_build_progress(client, msg)
+        client.basic_nack.assert_called_once()
 
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'ACTIVE')
+    def test_wrong_type(self, client):
+        msg = self.create_msg(type="WRONG_TYPE")
+        update_build_progress(client, msg)
+        client.basic_ack.assert_called_once()
 
-    def test_op_create_success(self):
-        """Test notification for successful OP_INSTANCE_CREATE"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_CREATE'
-        msg['status'] = 'success'
-
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'ACTIVE')
-
-    def test_op_remove_success(self):
-        """Test notification for successful OP_INSTANCE_REMOVE"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_REMOVE'
-        msg['status'] = 'success'
-
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'DELETED')
-        self.assertTrue(vm.deleted)
-
-    def test_op_create_error(self):
-        """Test notification for failed OP_INSTANCE_CREATE"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_CREATE'
-        msg['status'] = 'error'
-
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'ERROR')
-        self.assertFalse(vm.deleted)
-
-    def test_remove_machine_in_error(self):
-        """Test notification for failed OP_INSTANCE_REMOVE, server in ERROR"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_REMOVE'
-        msg['status'] = 'error'
-
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        backend.process_op_status(vm, now(), 0, "OP_INSTANCE_CREATE", "error", "test")
-        self.assertEquals(get_rsapi_state(vm), 'ERROR')
-
-        backend.process_op_status(vm, now(), msg["jobId"], msg["operation"],
-                                  msg["status"], msg["logmsg"])
-        self.assertEquals(get_rsapi_state(vm), 'DELETED')
-        self.assertTrue(vm.deleted)
-
-
-class ProcessNetStatusTestCase(TestCase):
-    fixtures = ['db_test_data']
-
-    def test_set_ipv4(self):
-        """Test reception of a net status notification"""
-        msg = {'instance': 'instance-name',
-               'type':     'ganeti-net-status',
-               'nics': [
-                   {'ip': '10.0.0.21',
-                    'mac': 'aa:00:00:58:1e:b9',
-                    'network':'snf-net-30000'}
-               ]
-        }
-        vm = VirtualMachine.objects.get(pk=30000)
-        backend.process_net_status(vm, now(), msg['nics'])
-        self.assertEquals(vm.nics.all()[0].ipv4, '10.0.0.21')
-
-    def test_set_empty_ipv4(self):
-        """Test reception of a net status notification with no IPv4 assigned"""
-        msg = {'instance': 'instance-name',
-               'type':     'ganeti-net-status',
-               'nics': [
-                   {'ip': '',
-                    'mac': 'aa:00:00:58:1e:b9',
-                    'network':'snf-net-30000'}
-               ]
-        }
-        vm = VirtualMachine.objects.get(pk=30000)
-        backend.process_net_status(vm, now(), msg['nics'])
-        self.assertEquals(vm.nics.all()[0].ipv4, '')
-
-
-class ProcessProgressUpdateTestCase(TestCase):
-    fixtures = ['db_test_data']
-
-    def test_progress_update(self):
-        """Test reception of a create progress notification"""
-
-        # This machine is in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
+    def test_progress_update(self, client):
         rprogress = randint(10, 100)
+        msg = self.create_msg(progress=rprogress,
+                              instance=self.vm.backend_vm_id)
+        update_build_progress(client, msg)
+        client.basic_ack.assert_called_once()
+        vm = self.get_db_vm()
+        self.assertEqual(vm.buildpercentage, rprogress)
 
-        backend.process_create_progress(vm, now(), rprogress)
-        self.assertEquals(vm.buildpercentage, rprogress)
-
-        #self.assertRaises(ValueError, backend.process_create_progress,
-        #                  vm, 9, 0)
-        self.assertRaises(ValueError, backend.process_create_progress,
-                          now(), vm, -1)
-        self.assertRaises(ValueError, backend.process_create_progress,
-                          now(), vm, 'a')
-
-        # This machine is ACTIVE
-        #vm = VirtualMachine.objects.get(pk=30000)
-        #self.assertRaises(VirtualMachine.IllegalState,
-        #                  backend.process_create_progress, vm, 1)
+    def test_invalid_value(self, client):
+        old = self.vm.buildpercentage
+        for rprogress in [0, -1, 'a']:
+            msg = self.create_msg(progress=rprogress,
+                                  instance=self.vm.backend_vm_id)
+            update_build_progress(client, msg)
+            client.basic_ack.assert_called_once()
+            vm = self.get_db_vm()
+            self.assertEqual(vm.buildpercentage, old)
 
 
-class ReconciliationTestCase(TestCase):
+class ReconciliationTest(TestCase):
     SERVERS = 1000
     fixtures = ['db_test_data']
 
     def test_get_servers_from_db(self):
         """Test getting a dictionary from each server to its operstate"""
-        reconciliation.get_servers_from_db()
         self.assertEquals(reconciliation.get_servers_from_db(),
                           {30000: 'STARTED', 30001: 'STOPPED', 30002: 'BUILD'})
 
@@ -606,6 +502,29 @@ class ReconciliationTestCase(TestCase):
         G = {1: True, 3: True, 30000: True}
         self.assertEquals(reconciliation.stale_servers_in_db(D, G),
                           set([2, 30002]))
+
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_stale_building_vm(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        vm.state = 'BUILD'
+        vm.backendjobid = 42
+        vm.save()
+        D = {vm.id: 'BUILD'}
+        G = {}
+        for status in ['queued', 'waiting', 'running']:
+            client.return_value.GetJobStatus.return_value = {'status': status}
+            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
+            client.return_value.GetJobStatus.assert_called_once_with(vm.backendjobid)
+            client.reset_mock()
+        for status in ['success', 'error', 'canceled']:
+            client.return_value.GetJobStatus.return_value = {'status': status}
+            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
+            client.return_value.GetInstance.assert_called_once_with(vm.backend_vm_id)
+            client.return_value.GetJobStatus.assert_called_once_with(vm.backendjobid)
+            client.reset_mock()
+        from synnefo.logic.rapi import GanetiApiError
+        client.return_value.GetJobStatus.side_effect = GanetiApiError('Foo')
+        self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([vm.id]))
 
     def test_orphan_instances_in_ganeti(self):
         """Test discovery of orphan instances in Ganeti, without a DB entry"""

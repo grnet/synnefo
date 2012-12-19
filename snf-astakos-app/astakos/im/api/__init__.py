@@ -170,10 +170,10 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         append(item(url=absolute(request, reverse('edit_profile')),
                name="My account"))
         if with_extra_links:
-            if user.has_usable_password() and user.provider in ('local', ''):
-                append(item(
-                       url=absolute(request, reverse('password_change')),
-                       name="Change password"))
+#             if user.has_usable_password() and user.provider in ('local', ''):
+#                 append(item(
+#                        url=absolute(request, reverse('password_change')),
+#                        name="Change password"))
             if EMAILCHANGE_ENABLED:
                 append(item(
                        url=absolute(request, reverse('email_change')),

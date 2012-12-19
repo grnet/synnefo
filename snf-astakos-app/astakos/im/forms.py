@@ -965,10 +965,7 @@ class ProjectApplicationForm(forms.ModelForm):
         application = super(ProjectApplicationForm, self).save(commit=False)
         applicant = self.user
         comments = self.cleaned_data.pop('comments', None)
-        try:
-            precursor_application = self.instance.precursor_application
-        except:
-            precursor_application = None
+        precursor_application = self.instance
         return submit_application(
             application,
             self.resource_policies,

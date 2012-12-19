@@ -1889,7 +1889,9 @@ class Serial(models.Model):
 
 def new_serial():
     s = Serial.objects.create()
-    return s.serial
+    serial = s.serial
+    s.delete()
+    return serial
 
 def sync_finish_serials():
     serials_to_ack = set(qh_query_serials([]))

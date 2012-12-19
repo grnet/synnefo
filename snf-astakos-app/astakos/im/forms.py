@@ -964,7 +964,8 @@ class ProjectApplicationForm(forms.ModelForm):
                     if uplimit:
                         append(dict(service=s, resource=r, uplimit=uplimit))
                     else:
-                        append(dict(service=s, resource=r, uplimit=None))                
+                        append(dict(service=s, resource=r, uplimit=None))
+                
         return policies
     
 

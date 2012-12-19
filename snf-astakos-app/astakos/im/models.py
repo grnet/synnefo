@@ -1399,6 +1399,11 @@ class ProjectApplication(models.Model):
         resource = Resource.objects.get(service__name=service, name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
+    
+    @property
+    def grants(self):
+        return self.projectresourcegrant_set.values('member_capacity', 'resource__name', 'resource__service__name')
+            
     @property
     def resource_policies(self):
         return self.projectresourcegrant_set.all()

@@ -1781,7 +1781,7 @@ class ProjectMembership(models.Model):
 
         sub_append = sub_list.append
         add_append = add_list.append
-        holder = self.person.id
+        holder = self.person.uuid
 
         synced_application = self.application
         if synced_application is not None:

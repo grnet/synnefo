@@ -241,6 +241,10 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
 
+    third_party_token = request.GET.get('key', False)
+    if third_party_token:
+        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
     return render_response(
         template_name,
         login_form = LoginForm(request=request),
@@ -973,7 +977,7 @@ def resource_usage(request):
 #                 data['entity'], data['resource'],
 #                 data['start_date'], data['end_date'],
 #                 data['details'], data['operation'])
-# 
+#
 #     return render_response(template='im/timeline.html',
 #                            context_instance=get_context(request),
 #                            form=form,
@@ -1019,7 +1023,7 @@ def _create_object(request, model=None, template_name=None,
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
     try:
-    
+
         model, form_class = get_model_and_form_class(model, form_class)
         extra_context['edit'] = 0
         if request.method == 'POST':
@@ -1034,7 +1038,7 @@ def _create_object(request, model=None, template_name=None,
                     extra_context['show_form'] = True
                 else:
                     new_object = form.save()
-                    
+
                     msg = _("The %(verbose_name)s was created successfully.") %\
                                 {"verbose_name": model._meta.verbose_name}
                     messages.success(request, msg, fail_silently=True)
@@ -1080,11 +1084,11 @@ def _update_object(request, model=None, object_id=None, slug=None,
     if extra_context is None: extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
-    
+
     try:
         model, form_class = get_model_and_form_class(model, form_class)
         obj = lookup_object(model, object_id, slug, slug_field)
-    
+
         if request.method == 'POST':
             form = form_class(request.POST, request.FILES, instance=obj)
             if form.is_valid():
@@ -1095,7 +1099,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
                     extra_context['form_data'] = form.cleaned_data
                 elif edit == '1':
                     extra_context['show_form'] = True
-                else:                
+                else:
                     obj = form.save()
                     msg = _("The %(verbose_name)s was updated successfully.") %\
                                 {"verbose_name": model._meta.verbose_name}
@@ -1158,7 +1162,7 @@ def project_list(request):
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     q = q.order_by(sorting)
-    
+
     return object_list(
         request,
         q,
@@ -1230,7 +1234,7 @@ def project_detail(request, application_id):
                 else:
                     transaction.commit()
             addmembers_form = AddProjectMembersForm()
-    
+
     # validate sorting
     sorting = 'person__email'
     form = ProjectMembersSortForm(request.GET or request.POST)
@@ -1263,7 +1267,7 @@ def project_search(request):
             q = form.cleaned_data['q'].strip()
             queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
             queryset = queryset.filter(name__contains=q)
-    sorting = 'name'        
+    sorting = 'name'
     # validate sorting
     sort_form = ProjectSortForm(request.GET)
     if sort_form.is_valid():
@@ -1295,7 +1299,7 @@ def project_all(request):
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     q = q.order_by(sorting)
-    
+
     return object_list(
         request,
         q,
@@ -1365,7 +1369,7 @@ def project_leave(request, application_id):
             transaction.rollback()
         else:
             transaction.commit()
-    
+
     next = restrict_next(
         request.POST.get('next'),
         domain=COOKIE_DOMAIN)

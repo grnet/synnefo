@@ -431,17 +431,20 @@ def get_user_by_id(user_id):
     except AstakosUser.DoesNotExist:
         raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
 
-def create_membership(project_application_id, user_id):
+def create_membership(project, user):
+    if isinstance(project, int):
+        project = get_project_by_application_id(project)
+    if isinstance(user, int):
+        user = get_user_by_id(user)
+    m = ProjectMembership(
+        project=project,
+        person=user,
+        request_date=datetime.now())
     try:
-        project = get_project_by_application_id(project_application_id)
-        m = ProjectMembership(
-            project=project,
-            person=user_id,
-            request_date=datetime.now())
+        m.save()
     except IntegrityError, e:
         raise IOError(_(astakos_messages.MEMBERSHIP_REQUEST_EXISTS))
     else:
-        m.save()
         return m
 
 def get_membership(project, user):
@@ -546,6 +549,10 @@ def remove_membership(project, user, request_user=None):
         logger.error(e.message)
     return membership
 
+def enroll_member(project, user, request_user=None):
+    membership = create_membership(project, user)
+    accept_membership(project, user, request_user)
+    
 def leave_project(project_application_id, user_id):
     """
         Raises:

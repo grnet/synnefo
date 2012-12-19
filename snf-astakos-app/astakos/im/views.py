@@ -98,7 +98,7 @@ from astakos.im.functions import (
 #     send_group_creation_notification,
     SendNotificationError,
     accept_membership, reject_membership, remove_membership,
-    leave_project, join_project)
+    leave_project, join_project, enroll_member)
 # from astakos.im.endpoints.qh import timeline_charge
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
@@ -1188,6 +1188,7 @@ def project_update(request, application_id):
 @login_required
 @transaction.commit_manually
 def project_detail(request, application_id):
+    resource_catalog = None
     result = callpoint.list_resources()
     if not result.is_success:
         messages.error(
@@ -1196,8 +1197,6 @@ def project_detail(request, application_id):
     )
     else:
         resource_catalog = result.data
-#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-#     resource_catalog.update_from_result(result)
 
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
@@ -1205,7 +1204,8 @@ def project_detail(request, application_id):
         if addmembers_form.is_valid():
             try:
                 rollback = False
-                map(lambda u: accept_membership(
+                application_id = int(application_id)
+                map(lambda u: enroll_member(
                         application_id,
                         u,
                         request_user=request.user),
@@ -1370,7 +1370,7 @@ def project_leave(request, application_id):
 @signed_terms_required
 @login_required
 @transaction.commit_manually
-def project_approve_member(request, application_id, user_id):
+def project_accept_member(request, application_id, user_id):
     rollback = False
     try:
         application_id = int(application_id)
@@ -1391,7 +1391,7 @@ def project_approve_member(request, application_id, user_id):
             transaction.rollback()
         else:
             transaction.commit()
-    return project_detail(request, application_id)
+    return redirect(reverse('project_detail', args=(application_id,)))
 
 @require_http_methods(["GET"])
 @signed_terms_required
@@ -1418,7 +1418,7 @@ def project_remove_member(request, application_id, user_id):
             transaction.rollback()
         else:
             transaction.commit()
-    return project_detail(request, application_id)
+    return redirect(reverse('project_detail', args=(application_id,)))
 
 @require_http_methods(["GET"])
 @signed_terms_required
@@ -1445,6 +1445,6 @@ def project_reject_member(request, application_id, user_id):
             transaction.rollback()
         else:
             transaction.commit()
-    return project_detail(request, application_id)
+    return redirect(reverse('project_detail', args=(application_id,)))
 
 

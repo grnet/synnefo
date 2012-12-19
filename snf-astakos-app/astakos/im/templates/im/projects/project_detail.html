@@ -187,7 +187,7 @@
                         {% else %}
                         <td>Pending
                             {% if user == object.owner %}
-                                <a href="{% url project_approve_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
+                                <a href="{% url project_accept_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
                                 <a href="{% url project_reject_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
                             {% endif %}
                         </td>    

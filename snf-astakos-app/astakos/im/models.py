@@ -1922,6 +1922,7 @@ def trigger_sync(retries=3, retry_wait=1.0):
                 return False
             sleep(retry_wait)
 
+        transaction.commit()
         sync_projects()
         return True
 

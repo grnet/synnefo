@@ -1659,10 +1659,10 @@ class Project(models.Model):
 #         try:
 #             notification = build_notification(
 #                 settings.SERVER_EMAIL,
-#                 [self.current_application.owner.email],
+#                 [self.application.owner.email],
 #                 _(PROJECT_TERMINATION_SUBJECT) % self.__dict__,
 #                 template='im/projects/project_termination_notification.txt',
-#                 dictionary={'object':self.current_application}
+#                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
 #             logger.error(e.messages)
@@ -1675,10 +1675,10 @@ class Project(models.Model):
 #         try:
 #             notification = build_notification(
 #                 settings.SERVER_EMAIL,
-#                 [self.current_application.owner.email],
-#                 _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
+#                 [self.application.owner.email],
+#                 _(PROJECT_SUSPENSION_SUBJECT) % self.__dict__,
 #                 template='im/projects/project_suspension_notification.txt',
-#                 dictionary={'object':self.current_application}
+#                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
 #             logger.error(e.messages)
@@ -1752,6 +1752,7 @@ class ProjectMembership(models.Model):
         self.save()
 
     def remove(self):
+        state = self.state
         if state != self.ACCEPTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
@@ -1761,6 +1762,7 @@ class ProjectMembership(models.Model):
         self.save()
 
     def reject(self):
+        state = self.state
         if state != self.REQUESTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
@@ -1800,9 +1802,9 @@ class ProjectMembership(models.Model):
                 add_append(QuotaLimits(
                                holder       = holder,
                                resource     = new_grant.resource.name,
-                               capacity     = new_grant.capacity,
-                               import_limit = new_grant.import_limit,
-                               export_limit = new_grant.export_limit))
+                               capacity     = new_grant.member_capacity,
+                               import_limit = new_grant.member_import_limit,
+                               export_limit = new_grant.member_export_limit))
 
         return (sub_list, add_list)
 
@@ -1866,6 +1868,7 @@ def sync_projects():
     serial = new_serial()
 
     pending = objects.filter(state=PENDING)
+    print '###', pending
     for membership in pending:
 
         if membership.pending_application:

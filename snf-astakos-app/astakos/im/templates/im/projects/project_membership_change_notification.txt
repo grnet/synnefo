@@ -1,14 +1,14 @@
 --- A translation in English follows ---
 
 {% if action == 'accepted' %}
-Η συμμετοχή σας στο project {{object.definition.name}} έχει γίνει δεκτή.
+Η συμμετοχή σας στο project {{object.name}} έχει γίνει δεκτή.
 {% else %}
     {% if action == 'rejected' %}
-Η συμμετοχή σας στο project {{object.definition.name}} έχει απορριφθεί.
+Η συμμετοχή σας στο project {{object.name}} έχει απορριφθεί.
     {% else %}
-Η συμμετοχή σας στο project {{object.definition.name}} έχει διαγραφεί.
+Η συμμετοχή σας στο project {{object.name}} έχει διαγραφεί.
     {% endif %}
 {% endif %}
 --
 
-Your project membership ({{object.definition.name}}) has been {{action}}.
+Your project membership ({{object.name}}) has been {{action}}.

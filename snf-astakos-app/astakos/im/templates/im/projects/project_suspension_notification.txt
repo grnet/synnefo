@@ -1,7 +1,7 @@
 --- A translation in English follows ---
 
-Tο project {{object.definition.name}} έχει ανασταλεί.
+Tο project {{object.name}} έχει ανασταλεί.
 
 --
 
-Your project application request ({{object.definition.name}}) has been suspended.
+Your project application request ({{object.name}}) has been suspended.

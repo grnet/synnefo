@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
@@ -124,7 +125,7 @@ class Command(BaseCommand):
             if not user.email_verified:
                 user.email_verified = True
             if not user.activation_sent:
-                user.activation_sent = True
+                user.activation_sent = datetime.now()
         elif options.get('inactive'):
             user.is_active = False
 

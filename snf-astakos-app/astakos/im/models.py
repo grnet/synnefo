@@ -1827,7 +1827,7 @@ class ProjectMembership(models.Model):
 
         if not remove:
             # second, add each new limit to its inverted current
-            new_grants = self.pending_application.resourcegrant_set.all()
+            new_grants = self.pending_application.projectresourcegrant_set.all()
             for new_grant in new_grants:
                 name = new_grant.resource.name
                 cur_grant = tmp_grants.pop(name, None)

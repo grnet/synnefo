@@ -81,7 +81,7 @@ def call(func_name):
             if not func:
                 return ()
 
-            data = payload_func(entities, c, **kwargs)
+            data = payload_func(entities, **kwargs)
             if not data:
                 return data
 
@@ -96,7 +96,7 @@ def call(func_name):
 
 
 @call('set_quota')
-def send_quota(users, client=None):
+def send_quota(users):
     data = []
     append = data.append
     for user in users:
@@ -162,7 +162,7 @@ def qh_ack_serials(serials):
     return
 
 @call('set_quota')
-def send_resource_quantities(resources, client=None):
+def send_resource_quantities(resources):
     data = []
     append = data.append
     for resource in resources:
@@ -179,7 +179,7 @@ def send_resource_quantities(resources, client=None):
 
 
 @call('get_quota')
-def get_quota(users, client=None):
+def get_quota(users):
     data = []
     append = data.append
     for user in users:
@@ -195,7 +195,7 @@ def get_quota(users, client=None):
 
 
 @call('create_entity')
-def create_entities(entities, client=None, field=''):
+def create_entities(entities, field=''):
     data = []
     append = data.append
     for entity in entities:
@@ -211,20 +211,16 @@ def create_entities(entities, client=None, field=''):
     return data
 
 
-def register_users(users, client=None):
+def register_users(users):
     users, copy = itertools.tee(users)
-    rejected = create_entities(entities=users,
-                                       client=client,
-                                       field='email')
+    rejected = create_entities(entities=users, field='email')
     created = (e for e in copy if unicode(e) not in rejected)
     return send_quota(created)
 
 
-def register_resources(resources, client=None):
+def register_resources(resources):
     resources, copy = itertools.tee(resources)
-    rejected = create_entities(entities=resources,
-                                       client=client,
-                                       field='service')
+    rejected = create_entities(entities=resources, field='service')
     created = (e for e in copy if unicode(e) not in rejected)
     return send_resource_quantities(created)
 

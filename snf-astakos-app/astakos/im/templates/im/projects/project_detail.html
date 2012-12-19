@@ -160,15 +160,7 @@
 	    {% with page|concat:sorting as args %}
 	    {% with object.project.projectmembership_set.select_related.all|paginate:args as membership %}
             {% if membership %}
-            <form method="GET" class="minimal" action="#members-table">
-                <div class="form-row">
-                    <select name="sorting" onchange="this.form.submit();" class="dropkicked">
-                        <option value="person__email" {% if sorting == 'person__email' %}selected{% endif %}>Sort by User Id</option>
-                        <option value="person__first_name" {% if sorting == 'person__first_name' %}selected{% endif %}>Sort by Name</option>
-                        <option value="acceptance_date" {% if sorting == 'acceptance_date' %}selected{% endif %}>Sort by Acceptance Date</option>
-                    </select>
-                </div>
-            </form>
+             
              <table class="alt-style" id="members-table">
                 <caption>MEMBERS:</caption>
                 <thead>
@@ -208,10 +200,14 @@
              <div class="pagination">
                 <p class="next-prev">
                     {% if membership.has_previous %}
-                        <a href="?page={{ membership.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">previous</a>
+                        <a href="?page={{ membership.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">< previous</a>
+                    {% else %}
+                    	<a href="javascript:void()" class="disabled">< previous</a>
                     {% endif %}
                     {% if membership.has_next %}
-                        <a href="?page={{ membership.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next</a>
+                        <a href="?page={{ membership.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next ></a>
+                    {% else %}
+                    	<a href="javascript:void()" class="disabled">next ></a>    
                     {% endif %}
                 </p>
                 <p class="nums">

@@ -75,9 +75,9 @@ class EmailNotification(Notification):
                 self.recipients)
         except (SMTPException, socket.error), e:
             logger.exception(e)
-            raise NotificationError()
+            raise NotificationError(self)
 
 class NotificationError(Exception):
-    def __init__(self):
-        self.message = _(astakos_messages.DETAILED_NOTIFICATION_SEND_ERR) % self.__dict__
+    def __init__(self, nofication):
+        self.message = _(astakos_messages.DETAILED_NOTIFICATION_SEND_ERR) % nofication.__dict__
         super(NotificationError, self).__init__()

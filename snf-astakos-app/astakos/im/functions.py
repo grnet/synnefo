@@ -591,7 +591,7 @@ def submit_application(
             dictionary={'object':application})
         notification.send()
     except NotificationError, e:
-        logger.error(e.messages)
+        logger.error(e)
     return application
 
 def approve_application(application):

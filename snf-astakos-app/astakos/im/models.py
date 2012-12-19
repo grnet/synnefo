@@ -1665,7 +1665,7 @@ class Project(models.Model):
 #                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
-#             logger.error(e.messages)
+#             logger.error(e.message)
 
     def suspend(self):
         self.last_approval_date = None
@@ -1681,7 +1681,7 @@ class Project(models.Model):
 #                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
-#             logger.error(e.messages)
+#             logger.error(e.message)
 
 
 class ProjectMembership(models.Model):

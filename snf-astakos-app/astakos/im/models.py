@@ -1785,7 +1785,6 @@ class ProjectMembership(models.Model):
 
         synced_application = self.application
         if synced_application is not None:
-            # first, inverse all current limits, and index them by resource name
             cur_grants = synced_application.resource_grants.all()
             for grant in cur_grants:
                 sub_append(QuotaLimits(
@@ -1796,7 +1795,6 @@ class ProjectMembership(models.Model):
                                export_limit = grant.member_export_limit))
 
         if not remove:
-            # second, add each new limit to its inverted current
             new_grants = self.pending_application.projectresourcegrant_set.all()
             for new_grant in new_grants:
                 add_append(QuotaLimits(

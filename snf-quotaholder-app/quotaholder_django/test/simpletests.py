@@ -230,19 +230,21 @@ class QHAPITest(QHTestCase):
         resource1 = self.rand_resource()
 
         r = self.qh.set_quota(
-            set_quota=[(e0, resource0, k0) + (5, 5, 5, 5) + (0,),
+            set_quota=[(e0, resource0, k0) + (5, None, 5, 6) + (0,),
                        (e1, resource0, k1) + (5, 5, 5, 5) + (0,)])
         self.assertEqual(r, [])
 
         r = self.qh.add_quota(clientkey=self.client,
                               serial=1,
-                              add_quota=[(e0, resource0, k0, 0, (-2), None, 0),
+                              sub_quota=[(e0, resource0, k0, 0, None, 1, 1)],
+                              add_quota=[(e0, resource0, k0, 0, 3, None, 0),
+                                         # new holding
                                          (e0, resource1, k0, 0, None, 5, 5)])
         self.assertEqual(r, [])
 
         r = self.qh.get_quota(get_quota=[(e0, resource0, k0),
                                          (e0, resource1, k0)])
-        self.assertEqual(r, [(e0, resource0, 5, 5 - 2, None, 5)
+        self.assertEqual(r, [(e0, resource0, 5, 3, None, 5)
                              + DEFAULT_HOLDING + (0,),
                              (e0, resource1, 0, None, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
@@ -250,9 +252,9 @@ class QHAPITest(QHTestCase):
         # repeated serial
         r = self.qh.add_quota(clientkey=self.client,
                               serial=1,
-                              add_quota=[(e0, resource0, k0, 0, 2, None, 0),
-                                         (e0, resource1, k0, 0, None, (-5), 0)])
-        self.assertEqual(r, [(e0, resource0), (e0, resource1)])
+                              sub_quota=[(e0, resource1, k0, 0, None, (-5), 0)],
+                              add_quota=[(e0, resource0, k0, 0, 2, None, 0)])
+        self.assertEqual(r, [(e0, resource1), (e0, resource0)])
 
         r = self.qh.query_serials(clientkey=self.client, serials=[1, 2])
         self.assertEqual(r, [1])

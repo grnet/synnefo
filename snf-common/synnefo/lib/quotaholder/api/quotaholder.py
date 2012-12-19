@@ -239,6 +239,9 @@ class QuotaholderAPI(Specificator):
                 context     =   Context,
                 clientkey   =   ClientKey,
                 serial      =   Serial,
+                sub_quota   =   ListOf( Entity, Resource, Key,
+                                        QuantityDelta, CapacityDelta,
+                                        ImportLimitDelta, ExportLimitDelta ),
                 add_quota   =   ListOf( Entity, Resource, Key,
                                         QuantityDelta, CapacityDelta,
                                         ImportLimitDelta, ExportLimitDelta )

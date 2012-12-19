@@ -781,7 +781,7 @@ class AstakosUser(User):
                 message = _(astakos_messages.ACCOUNT_INACTIVE)
             else:
                 message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
-                if MODERATION_ENABLED:
+                if astakos_settings.MODERATION_ENABLED:
                     msg_extra = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
                 else:
                     url = self.get_resend_activation_url()
@@ -790,7 +790,7 @@ class AstakosUser(User):
                                 _('<a href="%s">%s?</a>') % (url,
                                 _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
         else:
-            if MODERATION_ENABLED:
+            if astakos_settings.MODERATION_ENABLED:
                 message = _(astakos_messages.ACCOUNT_PENDING_MODERATION)
             else:
                 message = astakos_messages.ACCOUNT_PENDING_ACTIVATION
@@ -1569,7 +1569,7 @@ class Project(models.Model):
 #         if self.violated_members_number_limit:
 #             return False
         return True
-    
+
     @property
     def is_suspended(self):
         if (self.is_terminated or
@@ -1998,7 +1998,7 @@ class ProjectMembershipHistory(models.Model):
     date    =   models.DateField(default=datetime.now)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
-    
+
 
 def filter_queryset_by_property(q, property):
     """

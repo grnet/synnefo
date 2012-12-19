@@ -1340,10 +1340,6 @@ class ProjectApplication(models.Model):
                                     related_name='projects_applied',
                                     db_index=True)
 
-    project                 =   models.ForeignKey('Project',
-                                                  related_name='applications',
-                                                  null=True)
-
     state                   =   models.CharField(max_length=80,
                                                 default=UNKNOWN)
 
@@ -1463,7 +1459,7 @@ class ProjectApplication(models.Model):
                     raise PermissionDenied(m) # invalid argument
             except Project.DoesNotExist:
                 pass
-            project = Project(creation_date=now)
+            project = Project(creation_date=now, name=new_project_name)
 
         project.application = self
 
@@ -1512,7 +1508,7 @@ class Project(models.Model):
 
     application                 =   models.OneToOneField(
                                             ProjectApplication,
-                                            related_name='app_project')
+                                            related_name='project')
     last_approval_date          =   models.DateTimeField(null=True)
 
     members                     =   models.ManyToManyField(
@@ -1539,7 +1535,7 @@ class Project(models.Model):
 
     @property
     def is_terminated(self):
-        return bool(self.termination)
+        return bool(self.termination_date)
 
     @property
     def is_still_approved(self):
@@ -1815,9 +1811,9 @@ class ProjectMembership(models.Model):
 
         if not remove:
             # second, add each new limit to its inverted current
-            new_grants = self.pending_application.resource_grants.all()
+            new_grants = self.pending_application.resourcegrant_set.all()
             for new_grant in new_grants:
-                name = grant.resource.name
+                name = new_grant.resource.name
                 cur_grant = tmp_grants.pop(name, None)
                 if cur_grant is None:
                     # if limits on a new resource, set 0 current values

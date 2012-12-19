@@ -1785,7 +1785,7 @@ class ProjectMembership(models.Model):
 
         synced_application = self.application
         if synced_application is not None:
-            cur_grants = synced_application.resource_grants.all()
+            cur_grants = synced_application.projectresourcegrant_set.all()
             for grant in cur_grants:
                 sub_append(QuotaLimits(
                                holder       = holder,

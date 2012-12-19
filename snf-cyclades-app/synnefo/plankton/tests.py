@@ -68,18 +68,16 @@ def astakos_user(user):
         .... make api calls ....
 
     """
-    from synnefo.plankton import util
-    orig_method = util.get_user
-
     def dummy_get_user(request, *args, **kwargs):
         request.user = {'username': user, 'groups': []}
         request.user_uniq = user
-    util.get_user = dummy_get_user
-    yield
-    util.get_user = orig_method
+
+    with patch('synnefo.plankton.util.get_user') as m:
+        m.side_effect = dummy_get_user
+        yield
 
 
-class BaseTestCase(TestCase):
+class BaseAPITest(TestCase):
     def get(self, url, user='user', *args, **kwargs):
         with astakos_user(user):
             response = self.client.get(url, *args, **kwargs)
@@ -193,7 +191,7 @@ def assert_backend_closed(func):
 
 
 @patch("synnefo.plankton.util.ImageBackend")
-class PlanktonTest(BaseTestCase):
+class PlanktonTest(BaseAPITest):
     @assert_backend_closed
     def test_list_images(self, backend):
         backend.return_value.list.return_value =\
@@ -277,7 +275,7 @@ class PlanktonTest(BaseTestCase):
         self.assertSuccess(response)
         backend.return_value.register.assert_called_once_with('dummy_name',
                                                               'dummy_location',
-                                                              {'owner': 'dummy_owner'})
+                                                      {'owner': 'dummy_owner'})
 
     @assert_backend_closed
     def test_get_image(self, backend):

@@ -35,25 +35,16 @@ from __future__ import with_statement
 
 from django.utils import simplejson as json
 from django.test import TestCase
-from django.test.client import Client
-
-from synnefo.db.models import *
-from synnefo.logic.utils import get_rsapi_state
 
 from mock import patch, Mock
-
 from contextlib import contextmanager
+from functools import wraps
+
+from synnefo.db.models import *
 from synnefo.db import models_factory as mfactory
+from synnefo.logic.utils import get_rsapi_state
 
-from synnefo.api import util
 from synnefo.api import faults
-
-
-def get_image_mock(request, *Args, **kwargs):
-    return {'backend_id': '1234',
-            'location': 'pithos://dummyimage',
-            'disk_format': 'drbd'}
-util.get_image = get_image_mock
 
 
 @contextmanager
@@ -66,45 +57,19 @@ def astakos_user(user):
         .... make api calls ....
 
     """
-    from synnefo.lib import astakos
-    from synnefo.api import util
-    orig_method = astakos.get_user
-
     def dummy_get_user(request, *args, **kwargs):
         request.user = {'username': user, 'groups': []}
         request.user_uniq = user
-    astakos.get_user = dummy_get_user
-    util.get_user = dummy_get_user
-    yield
-    astakos.get_user = orig_method
+
+    with patch('synnefo.api.util.get_user') as m:
+        m.side_effect = dummy_get_user
+        yield
 
 
-class AaiClient(Client):
-    def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = '0000'
-        return super(AaiClient, self).request(**request)
-
-
-def create_flavors(num):
-    return [mfactory.FlavorFactory() for x in range(num)]
-
-
-class APITest(TestCase):
-
-    def test_api_version(self):
-        """Check API version."""
-        with astakos_user('user'):
-            response = self.client.get('/api/v1.1/')
-        self.assertEqual(response.status_code, 200)
-        api_version = json.loads(response.content)['version']
-        self.assertEqual(api_version['id'], 'v1.1')
-        self.assertEqual(api_version['status'], 'CURRENT')
-
-
-class BaseTestCase(TestCase):
-    def get(self, url, user='user'):
+class BaseAPITest(TestCase):
+    def get(self, url, user='user', *args, **kwargs):
         with astakos_user(user):
-            response = self.client.get(url)
+            response = self.client.get(url, *args, **kwargs)
         return response
 
     def delete(self, url, user='user'):
@@ -112,22 +77,24 @@ class BaseTestCase(TestCase):
             response = self.client.delete(url)
         return response
 
-    def post(self, url, user='user', params={}, ctype='json'):
+    def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            response = self.client.post(url, params, content_type=content_type)
+            response = self.client.post(url, params, content_type=content_type,
+                                        *args, **kwargs)
         return response
 
-    def put(self, url, user='user', params={}, ctype='json'):
+    def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            response = self.client.put(url, params, content_type=content_type)
+            response = self.client.put(url, params, content_type=content_type,
+                    *args, **kwargs)
         return response
 
     def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 203])
+        self.assertTrue(response.status_code in [200, 203, 204])
 
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
@@ -141,7 +108,7 @@ class BaseTestCase(TestCase):
         self.assertFault(response, 404, 'itemNotFound')
 
 
-class FlavorAPITest(BaseTestCase):
+class FlavorAPITest(BaseAPITest):
 
     def setUp(self):
         self.flavor1 = mfactory.FlavorFactory()
@@ -150,15 +117,12 @@ class FlavorAPITest(BaseTestCase):
 
     def test_flavor_list(self):
         """Test if the expected list of flavors is returned by."""
-
-        # with astakos_user('user'):
-        #     response = self.client.get('/api/v1.1/flavors')
         response = self.get('/api/v1.1/flavors')
+        self.assertSuccess(response)
 
         flavors_from_api = json.loads(response.content)['flavors']['values']
         flavors_from_db = Flavor.objects.filter(deleted=False)
         self.assertEqual(len(flavors_from_api), len(flavors_from_db))
-        self.assertTrue(response.status_code in [200, 203])
         for flavor_from_api in flavors_from_api:
             flavor_from_db = Flavor.objects.get(id=flavor_from_api['id'])
             self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
@@ -167,6 +131,7 @@ class FlavorAPITest(BaseTestCase):
     def test_flavors_details(self):
         """Test if the flavors details are returned."""
         response = self.get('/api/v1.1/flavors/detail')
+        self.assertSuccess(response)
 
         flavors_from_db = Flavor.objects.filter(deleted=False)
         flavors_from_api = json.loads(response.content)['flavors']['values']
@@ -190,14 +155,12 @@ class FlavorAPITest(BaseTestCase):
             self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
             self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
 
-        # Check if we have the right status_code
-        self.assertTrue(response.status_code in [200, 203])
-
     def test_flavor_details(self):
         """Test if the expected flavor is returned."""
         flavor = self.flavor3
 
         response = self.get('/api/v1.1/flavors/%d' % flavor.id)
+        self.assertSuccess(response)
 
         flavor_from_api = json.loads(response.content)['flavor']
         flavor_from_db = Flavor.objects.get(id=flavor.id)
@@ -206,19 +169,19 @@ class FlavorAPITest(BaseTestCase):
         self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
         self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
         self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
-        self.assertTrue(response.status_code in [200, 203])
 
     def test_deleted_flavor_details(self):
         """Test that API returns details for deleted flavors"""
         flavor = self.flavor2
         response = self.get('/api/v1.1/flavors/%d' % flavor.id)
+        self.assertSuccess(response)
         flavor_from_api = json.loads(response.content)['flavor']
-        self.assertEqual(response.status_code, 200)
         self.assertEquals(flavor_from_api['name'], flavor.name)
 
     def test_deleted_flavors_list(self):
         """Test that deleted flavors do not appear to flavors list"""
         response = self.get('/api/v1.1/flavors')
+        self.assertSuccess(response)
         flavors_from_api = json.loads(response.content)['flavors']['values']
         self.assertEqual(len(flavors_from_api), 2)
 
@@ -226,6 +189,7 @@ class FlavorAPITest(BaseTestCase):
         """Test that deleted flavors do not appear to flavors detail list"""
         mfactory.FlavorFactory(deleted=True)
         response = self.get('/api/v1.1/flavors/detail')
+        self.assertSuccess(response)
         flavors_from_api = json.loads(response.content)['flavors']['values']
         self.assertEqual(len(flavors_from_api), 2)
 
@@ -233,10 +197,10 @@ class FlavorAPITest(BaseTestCase):
         """Test 404 result when requesting a flavor that does not exist."""
 
         response = self.get('/api/v1.1/flavors/%d' % 22)
-        self.assertTrue(response.status_code in [404])
+        self.assertItemNotFound(response)
 
 
-class ServerAPITest(BaseTestCase):
+class ServerAPITest(BaseAPITest):
     def setUp(self):
         self.user1 = 'user1'
         self.user2 = 'user2'
@@ -249,14 +213,14 @@ class ServerAPITest(BaseTestCase):
     def test_server_list_1(self):
         """Test if the expected list of servers is returned."""
         response = self.get('/api/v1.1/servers')
-        self.assertTrue(response.status_code in [200, 203])
+        self.assertSuccess(response)
         servers = json.loads(response.content)['servers']['values']
         self.assertEqual(servers, [])
 
     def test_server_list_2(self):
         """Test if the expected list of servers is returned."""
         response = self.get('/api/v1.1/servers', self.user1)
-        self.assertTrue(response.status_code in [200, 203])
+        self.assertSuccess(response)
         servers = json.loads(response.content)['servers']['values']
         db_server = self.vm1
         self.assertEqual(servers, [{'name': db_server.name,
@@ -279,7 +243,7 @@ class ServerAPITest(BaseTestCase):
             self.assertEqual(api_vm['imageRef'], db_vm.imageid)
             self.assertEqual(api_vm['name'], db_vm.name)
             self.assertEqual(api_vm['status'], get_rsapi_state(db_vm))
-            self.assertTrue(response.status_code in [200, 203])
+            self.assertSuccess(response)
 
     def test_server_detail(self):
         """Test if a server details are returned."""
@@ -300,31 +264,31 @@ class ServerAPITest(BaseTestCase):
         metadata = server['metadata']['values']
         self.assertEqual(len(metadata), 1)
         self.assertEqual(metadata[db_vm_meta.meta_key], db_vm_meta.meta_value)
-        self.assertTrue(response.status_code in [200, 203])
+        self.assertSuccess(response)
 
     def test_noauthorized(self):
         """Test 404 for detail of other user vm"""
         db_vm = self.vm2
 
         response = self.get('/api/v1.1/servers/%d' % db_vm.id, 'wrong_user')
-        self.assertEqual(response.status_code, 404)
+        self.assertItemNotFound(response)
 
     def test_wrong_server(self):
         """Test 404 response if server does not exist."""
         response = self.get('/api/v1.1/servers/%d' % 5000)
-        self.assertEqual(response.status_code, 404)
+        self.assertItemNotFound(response)
 
     def test_create_server_empty(self):
         """Test if the create server call returns a 400 badRequest if
            no attributes are specified."""
 
         response = self.post('/api/v1.1/servers', params={})
-        self.assertEqual(response.status_code, 400)
+        self.assertBadRequest(response)
 
 
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class ServerCreateAPITest(BaseTestCase):
+class ServerCreateAPITest(BaseAPITest):
     def test_create_server(self, mrapi, mimage):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
@@ -384,7 +348,7 @@ class ServerCreateAPITest(BaseTestCase):
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class ServerDestroyAPITest(BaseTestCase):
+class ServerDestroyAPITest(BaseAPITest):
     def test_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
         response = self.delete('/api/v1.1/servers/%d' % vm.id, vm.userid)
@@ -400,7 +364,7 @@ class ServerDestroyAPITest(BaseTestCase):
 
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class ServerActionAPITest(BaseTestCase):
+class ServerActionAPITest(BaseAPITest):
     def test_actions(self, mrapi, mimage):
         actions = ['start', 'shutdown', 'reboot']
         vm = mfactory.VirtualMachineFactory()
@@ -430,7 +394,7 @@ class ServerActionAPITest(BaseTestCase):
         mrapi().ModifyInstance.assert_called_once()
 
 
-class ServerMetadataAPITest(BaseTestCase):
+class ServerMetadataAPITest(BaseAPITest):
     def setUp(self):
         self.vm = mfactory.VirtualMachineFactory()
         self.metadata = mfactory.VirtualMachineMetadataFactory(vm=self.vm)
@@ -501,7 +465,7 @@ class ServerMetadataAPITest(BaseTestCase):
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class NetworkAPITest(BaseTestCase):
+class NetworkAPITest(BaseAPITest):
     def setUp(self):
         self.mac_prefixes = mfactory.MacPrefixPoolTableFactory()
         self.bridges = mfactory.BridgePoolTableFactory()
@@ -674,7 +638,7 @@ class NetworkAPITest(BaseTestCase):
         self.assertBadRequest(response)
 
 
-class ServerVNCConsole(BaseTestCase):
+class ServerVNCConsole(BaseAPITest):
 
     def test_not_active_server(self):
         """Test console req for not ACTIVE server returns badRequest"""
@@ -702,14 +666,26 @@ class ServerVNCConsole(BaseTestCase):
                          set(['type', 'host', 'port', 'password']))
 
 
+def assert_backend_closed(func):
+    @wraps(func)
+    def wrapper(self, backend):
+        result = func(self, backend)
+        if backend.called is True:
+            backend.return_value.close.assert_called_once_with()
+        return result
+    return wrapper
+
+
 @patch('synnefo.api.images.ImageBackend')
-class ImageAPITest(BaseTestCase):
+class ImageAPITest(BaseAPITest):
+    @assert_backend_closed
     def test_create_image(self, mimage):
         """Test that create image is not implemented"""
         response = self.post('/api/v1.1/images/', 'user', json.dumps(''),
                              'json')
         self.assertEqual(response.status_code, 503)
 
+    @assert_backend_closed
     def test_list_images(self, mimage):
         """Test that expected list of images is returned"""
         images = [{'id': 1, 'name': 'image-1'},
@@ -721,6 +697,7 @@ class ImageAPITest(BaseTestCase):
         api_images = json.loads(response.content)['images']['values']
         self.assertEqual(images, api_images)
 
+    @assert_backend_closed
     def test_list_images_detail(self, mimage):
         images = [{'id': 1,
                    'name': 'image-1',
@@ -770,6 +747,7 @@ class ImageAPITest(BaseTestCase):
         self.assertEqual(len(result_images), len(api_images))
         self.assertEqual(result_images, api_images)
 
+    @assert_backend_closed
     def test_get_image_details(self, mimage):
         image = {'id': 42,
                  'name': 'image-1',
@@ -793,6 +771,7 @@ class ImageAPITest(BaseTestCase):
         api_image = json.loads(response.content)['image']
         self.assertEqual(api_image, result_image)
 
+    @assert_backend_closed
     def test_invalid_image(self, mimage):
         with patch('synnefo.api.util.get_image') as m:
             m.side_effect = faults.ItemNotFound('Image not found')
@@ -804,7 +783,8 @@ class ImageAPITest(BaseTestCase):
         pass
 
 
-class ImageMetadataAPITest(BaseTestCase):
+@patch('synnefo.api.util.ImageBackend')
+class ImageMetadataAPITest(BaseAPITest):
     def setUp(self):
         self.image = {'id': 42,
                  'name': 'image-1',
@@ -821,60 +801,70 @@ class ImageMetadataAPITest(BaseTestCase):
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'metadata': {'values': {'foo': 'bar'}}}
-        self.mock_get_image = Mock('synnefo.api.util.get_image')
-        self.mock_get_image.result = self.image
-        self.mock_image_backend = Mock('synnefo.api.images.ImageBackend')
 
-    def test_list_metadata(self):
-        with patch('synnefo.api.util.get_image') as m:
-            m.return_value = self.image
-            response = self.get('/api/v1.1/images/42/meta', 'user')
+    @assert_backend_closed
+    def test_list_metadata(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        response = self.get('/api/v1.1/images/42/meta', 'user')
         self.assertSuccess(response)
         meta = json.loads(response.content)['metadata']['values']
         self.assertEqual(meta, self.image['properties'])
 
-    def test_get_metadata(self):
-        with patch('synnefo.api.util.get_image') as m:
-            m.return_value = self.image
-            response = self.get('/api/v1.1/images/42/meta/foo', 'user')
+    @assert_backend_closed
+    def test_get_metadata(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        response = self.get('/api/v1.1/images/42/meta/foo', 'user')
         self.assertSuccess(response)
         meta = json.loads(response.content)['meta']
         self.assertEqual(meta['foo'], 'bar')
 
-    def test_get_invalid_metadata(self):
-        with patch('synnefo.api.util.get_image') as m:
-            m.return_value = self.image
-            response = self.get('/api/v1.1/images/42/meta/not_found', 'user')
+    @assert_backend_closed
+    def test_get_invalid_metadata(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        response = self.get('/api/v1.1/images/42/meta/not_found', 'user')
         self.assertItemNotFound(response)
 
-    def test_delete_metadata_item(self):
-        with patch('synnefo.api.util.get_image') as m:
-            with patch('synnefo.api.images.ImageBackend') as mimage:
-                m.return_value = self.image
-                response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
-                self.assertEqual(response.status_code, 204)
-                mimage().update.assert_called_once_with('42',
-                                             {'properties': {'foo2': 'bar2'}})
+    @assert_backend_closed
+    def test_delete_metadata_item(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend") as m:
+            response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
+            self.assertEqual(response.status_code, 204)
+            m.return_value.update.assert_called_once_with('42',
+                                        {'properties': {'foo2': 'bar2'}})
 
-    def test_create_metadata_item(self):
-        with patch('synnefo.api.util.get_image') as m:
-            with patch('synnefo.api.images.ImageBackend') as mimage:
-                m.return_value = self.image
+    @assert_backend_closed
+    def test_create_metadata_item(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend") as m:
                 request = {'meta': {'foo3': 'bar3'}}
                 response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
                                     json.dumps(request), 'json')
                 self.assertEqual(response.status_code, 201)
-                mimage().update.assert_called_once_with('42',
+                m.return_value.update.assert_called_once_with('42',
                         {'properties':
                             {'foo': 'bar', 'foo2': 'bar2', 'foo3': 'bar3'}})
 
-    def test_update_metadata_item(self):
-        with patch('synnefo.api.util.get_image') as m:
-            with patch('synnefo.api.images.ImageBackend') as mimage:
-                m.return_value = self.image
+    @assert_backend_closed
+    def test_update_metadata_item(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend") as m:
                 request = {'metadata': {'foo': 'bar_new', 'foo4': 'bar4'}}
                 response = self.post('/api/v1.1/images/42/meta', 'user',
                                     json.dumps(request), 'json')
                 self.assertEqual(response.status_code, 201)
-                mimage().update.assert_called_once_with('42', {'properties':
-                        {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}})
+                m.return_value.update.assert_called_once_with('42',
+                        {'properties':
+                            {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}
+                        })
+
+
+class APITest(TestCase):
+    def test_api_version(self):
+        """Check API version."""
+        with astakos_user('user'):
+            response = self.client.get('/api/v1.1/')
+        self.assertEqual(response.status_code, 200)
+        api_version = json.loads(response.content)['version']
+        self.assertEqual(api_version['id'], 'v1.1')
+        self.assertEqual(api_version['status'], 'CURRENT')

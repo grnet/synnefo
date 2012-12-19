@@ -36,9 +36,7 @@ from django.test import TestCase
 
 from synnefo.db.models import *
 from synnefo.db import models_factory as mfactory
-from synnefo.logic import backend
 from synnefo.logic import reconciliation
-from synnefo.logic.utils import get_rsapi_state
 from synnefo.lib.utils import split_time
 from datetime import datetime
 from mock import patch

@@ -76,7 +76,7 @@ def call(func_name):
             if not QUOTAHOLDER_URL:
                 return ()
 
-            c = get_client() 
+            c = get_client()
             func = c.__dict__.get(func_name)
             if not func:
                 return ()
@@ -108,7 +108,7 @@ def send_quota(users):
             export_limit = None
             flags = 0
             args = (
-                user.id, resource, key, quantity, capacity, import_limit,
+                user.uuid, resource, key, quantity, capacity, import_limit,
                 export_limit, flags)
             append(args)
     return data
@@ -194,7 +194,7 @@ def get_quota(users):
     append = data.append
     for user in users:
         try:
-            entity = user.id
+            entity = user.uuid
         except AttributeError:
             continue
         else:
@@ -223,7 +223,7 @@ def create_entities(entities, field=''):
 
 def register_users(users):
     users, copy = itertools.tee(users)
-    rejected = create_entities(entities=users, field='id')
+    rejected = create_entities(entities=users, field='uuid')
     created = (e for e in copy if unicode(e) not in rejected)
     return send_quota(created)
 

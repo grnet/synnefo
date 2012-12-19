@@ -109,6 +109,7 @@ def authenticate_old(request, user=None):
     user_info = {
         'id': user.id,
         'username': user.username,
+        'uuid': user.uuid,
         'uniq': user.email,
         'auth_token': user.auth_token,
         'auth_token_created': user.auth_token_created.isoformat(),
@@ -147,6 +148,7 @@ def authenticate(request, user=None):
     user_info = {
         'id': user.id,
         'userid': user.username,
+        'uuid': user.uuid,
         'email': [user.email],
         'name': user.realname,
         'auth_token': user.auth_token,

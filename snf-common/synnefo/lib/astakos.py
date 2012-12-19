@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+
 from time import time, mktime
 from urlparse import urlparse
 from urllib import quote, unquote
@@ -40,6 +42,7 @@ from django.utils import simplejson as json
 
 from synnefo.lib.pool.http import get_http_connection
 
+logger = logging.getLogger(__name__)
 
 def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
     p = urlparse(authentication_url)
@@ -63,7 +66,7 @@ def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticat
 
     if status < 200 or status >= 300:
         raise Exception(data, status)
-    
+
     return json.loads(data)
 
 def user_for_token(token, authentication_url, override_users):
@@ -95,10 +98,15 @@ def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate'
     if not user:
         user = user_for_token(fallback_token, authentication_url, override_users)
     if not user:
+        logger.warning("Cannot retrieve user details from %s",
+                       authentication_url)
         return
 
+    # use user uuid, instead of email, keep email/username reference to user_id
+    request.user_uniq = user['uuid']
     request.user = user
-    request.user_uniq = user['uniq']
+    request.user_id = user['username']
+    return user
 
 
 def get_token_from_cookie(request, cookiename):

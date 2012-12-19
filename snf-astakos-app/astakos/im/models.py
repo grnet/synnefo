@@ -1790,7 +1790,7 @@ class ProjectMembership(models.Model):
             for grant in cur_grants:
                 sub_append(QuotaLimits(
                                holder       = holder,
-                               resource     = grant.resource.name,
+                               resource     = str(grant.resource),
                                capacity     = grant.member_capacity,
                                import_limit = grant.member_import_limit,
                                export_limit = grant.member_export_limit))
@@ -1801,7 +1801,7 @@ class ProjectMembership(models.Model):
             for new_grant in new_grants:
                 add_append(QuotaLimits(
                                holder       = holder,
-                               resource     = new_grant.resource.name,
+                               resource     = str(new_grant.resource),
                                capacity     = new_grant.member_capacity,
                                import_limit = new_grant.member_import_limit,
                                export_limit = new_grant.member_export_limit))

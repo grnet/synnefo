@@ -5,6 +5,7 @@
 {% block page.body %}
 {% with object.project.members as members %}
 {% with object.project.approved_members as approved_members %}
+{% with resource_catalog|populated_resource_catalog as resource_catalog%}
 <div class="projects">
 	
 
@@ -116,28 +117,34 @@
 		 {% if object.projectresourcegrant_set.all %}
 	     <dl class="alt-style">	
 	 		{% for rp in object.projectresourcegrant_set.all %}
+                {% with resource_catalog|lookup:'resources' as resource_info %}
+                    {% with rp.resource|to_unicode as resource_name %}
+                        {% with resource_info|lookup:resource_name as decorated_resource %}
+<!-- 
 	 		    <dt>
 	 		        {{rp.resource}}
 	 		    </dt>
 	 		    <dd>
 	 		        {{rp.member_capacity}}
 	 		    <dd/>
-<!-- 
+ -->
 		 		<dt>
-       				Max {% if q.is_abbreviation %}{{ q.verbose_name|upper }}{% else %}{{ q.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
+       				Max {% if decorated_resource.is_abbreviation %}{{ decorated_resource.verbose_name|upper }}{% else %}{{ decorated_resource.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
        			</dt>
 		 		<dd>
-       			{% if q.value %}
-       				 {% if q.unit %}
-       				 	{{ q.value|sizeof_fmt }}
+       			{% if rp.member_capacity %}
+       				 {% if decorated_resource.unit %}
+       				 	{{ rp.member_capacity|sizeof_fmt }}
        				 {% else %}
-       				 	{{ q.value|isinf }}
+       				 	{{ rp.member_capacity|isinf }}
        				 {% endif %}
        			{% else %}
        				Unlimited
        			{% endif %}
        			</dd>
- -->
+       			        {% endwith %}
+       			    {% endwith %}
+       			{% endwith %}
        		{% empty %}
        			No resources
 	 		{% endfor %}
@@ -246,7 +253,8 @@
      
     
 </div>
- 
+
+{% endwith %} 
 {% endwith %}
 {% endwith %}
 {% endblock %}

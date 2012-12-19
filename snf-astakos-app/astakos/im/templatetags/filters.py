@@ -75,6 +75,13 @@ def monthssince(joined_date):
 
     return months
 
+@register.filter
+def to_unicode(s):
+    return unicode(s)
+
+@register.filter
+def to_string(s):
+    return str(s)
 
 @register.filter
 def lookup(d, key):

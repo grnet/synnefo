@@ -442,6 +442,7 @@ def create_membership(project_application_id, user_id):
         raise IOError(_(astakos_messages.MEMBERSHIP_REQUEST_EXISTS))
     else:
         m.save()
+        return m
 
 def get_membership(project, user):
     if isinstance(project, int):

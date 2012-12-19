@@ -118,24 +118,33 @@ QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'import_limit',
                                          'export_limit'))
 
-def qh_add_quota(serial, quotalimits_list):
+def qh_add_quota(serial, sub_list, add_list):
     if not QUOTAHOLDER_URL:
         return ()
 
     context = {}
     c = get_client()
 
-    data = []
-    append = data.append
-    for ql in quotalimits_list:
+    sub_quota = []
+    sub_append = sub_quota.append
+    add_quota = []
+    add_append = add_quota.append
+
+    for ql in sub_quota:
         args = (ql.holder, ql.resource, ENTITY_KEY,
                 0, ql.capacity, ql.import_limit, ql.export_limit)
-        append(args)
+        sub_append(args)
+
+    for ql in add_quota:
+        args = (ql.holder, ql.resource, ENTITY_KEY,
+                0, ql.capacity, ql.import_limit, ql.export_limit)
+        add_append(args)
 
     result = c.add_quota(context=context,
                          clientkey=clientkey,
                          serial=serial,
-                         add_quota=data)
+                         sub_quota=sub_quota,
+                         add_quota=add_quota)
 
     return result
 

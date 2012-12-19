@@ -1501,9 +1501,6 @@ class ProjectApplication(models.Model):
         self.state = APPROVED
         self.save()
 
-        transaction.commit()
-        trigger_sync()
-
 
 class ProjectResourceGrant(models.Model):
 
@@ -1682,41 +1679,6 @@ class Project(models.Model):
 #             logger.error(e.messages)
 
 
-
-class ExclusiveOrRaise(object):
-    """Context Manager to exclusively execute a critical code section.
-       The exclusion must be global.
-       (IPC semaphores will not protect across OS,
-        DB locks will if it's the same DB)
-    """
-
-    class Busy(Exception):
-        pass
-
-    def __init__(self, locked=False):
-        init = 0 if locked else 1
-        from multiprocessing import Semaphore
-        self._sema = Semaphore(init)
-
-    def enter(self):
-        acquired = self._sema.acquire(False)
-        if not acquired:
-            raise self.Busy()
-
-    def leave(self):
-        self._sema.release()
-
-    def __enter__(self):
-        self.enter()
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.leave()
-
-
-exclusive_or_raise = ExclusiveOrRaise(locked=False)
-
-
 class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
@@ -1783,7 +1745,6 @@ class ProjectMembership(models.Model):
         self._set_history_item(reason='ACCEPT', date=now)
         self.state = self.PENDING
         self.save()
-        trigger_sync()
 
     def remove(self):
         if state != self.ACCEPTED:
@@ -1793,7 +1754,6 @@ class ProjectMembership(models.Model):
         self._set_history_item(reason='REMOVE')
         self.state = self.REMOVING
         self.save()
-        trigger_sync()
 
     def reject(self):
         if state != self.REQUESTED:
@@ -1805,59 +1765,41 @@ class ProjectMembership(models.Model):
         self._set_history_item(reason='REJECT')
         self.delete()
 
-    def get_diff_quotas(self, limits_list=None, remove=False):
-        if limits_list is None:
-            limits_list = []
+    def get_diff_quotas(self, sub_list=None, add_list=None, remove=False):
+        if sub_list is None:
+            sub_list = []
 
-        append = limits_list.append
+        if add_list is None:
+            add_list = []
+
+        sub_append = sub_list.append
+        add_append = add_list.append
         holder = self.person.username
-        key = "1"
 
-        tmp_grants = {}
         synced_application = self.application
         if synced_application is not None:
             # first, inverse all current limits, and index them by resource name
             cur_grants = synced_application.resource_grants.all()
-            f = -1
             for grant in cur_grants:
-                name = grant.resource.name
-                tmp_grants[name] = QuotaLimits(
-                                holder       = holder,
-                                resource     = name,
-                                capacity     = f * grant.member_capacity,
-                                import_limit = f * grant.member_import_limit,
-                                export_limit = f * grant.member_export_limit)
+                sub_append(QuotaLimits(
+                               holder       = holder,
+                               resource     = grant.resource.name,
+                               capacity     = grant.member_capacity,
+                               import_limit = grant.member_import_limit,
+                               export_limit = grant.member_export_limit))
 
         if not remove:
             # second, add each new limit to its inverted current
             new_grants = self.pending_application.projectresourcegrant_set.all()
             for new_grant in new_grants:
-                name = new_grant.resource.name
-                cur_grant = tmp_grants.pop(name, None)
-                if cur_grant is None:
-                    # if limits on a new resource, set 0 current values
-                    capacity = 0
-                    import_limit = 0
-                    export_limit = 0
-                else:
-                    capacity = cur_grant.capacity
-                    import_limit = cur_grant.import_limit
-                    export_limit = cur_grant.export_limit
+                add_append(QuotaLimits(
+                               holder       = holder,
+                               resource     = new_grant.resource.name,
+                               capacity     = new_grant.capacity,
+                               import_limit = new_grant.import_limit,
+                               export_limit = new_grant.export_limit))
 
-                capacity += new_grant.member_capacity
-                import_limit += new_grant.member_import_limit
-                export_limit += new_grant.member_export_limit
-
-                append(QuotaLimits(holder       = holder,
-                                   key          = key,
-                                   resource     = name,
-                                   capacity     = capacity,
-                                   import_limit = import_limit,
-                                   export_limit = export_limit))
-
-        # third, append all the inverted current limits for removed resources
-        limits_list.extend(tmp_grants.itervalues())
-        return limits_list
+        return (sub_list, add_list)
 
     def set_sync(self):
         state = self.state
@@ -1914,7 +1856,7 @@ def sync_projects():
     REMOVING = ProjectMembership.REMOVING
     objects = ProjectMembership.objects.select_for_update()
 
-    quotas = []
+    sub_quota, add_quota = [], []
 
     serial = new_serial()
 
@@ -1932,7 +1874,7 @@ def sync_projects():
 
         membership.pending_application = membership.project.application
         membership.pending_serial = serial
-        membership.get_diff_quotas(quotas)
+        membership.get_diff_quotas(sub_quota, add_quota)
         membership.save()
 
     removing = objects.filter(state=REMOVING)
@@ -1948,7 +1890,7 @@ def sync_projects():
             raise AssertionError(m)
 
         membership.pending_serial = serial
-        membership.get_diff_quotas(quotas, remove=True)
+        membership.get_diff_quotas(sub_quota, add_quota, remove=True)
         membership.save()
 
     transaction.commit()
@@ -1957,7 +1899,7 @@ def sync_projects():
     # which has been scheduled to sync with the old project.application
     # Need to check in ProjectMembership.set_sync()
 
-    qh_add_quota(serial, quotas)
+    qh_add_quota(serial, sub_quota, add_quota)
     sync_finish_serials()
 
 
@@ -1980,6 +1922,7 @@ def trigger_sync(retries=3, retry_wait=1.0):
                 return False
             sleep(retry_wait)
 
+        transaction.commit()
         sync_projects()
         return True
 
@@ -2136,3 +2079,4 @@ def renew_token(sender, instance, **kwargs):
         instance.renew_token()
 pre_save.connect(renew_token, sender=AstakosUser)
 pre_save.connect(renew_token, sender=Service)
+

@@ -506,64 +506,72 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def add_quota(self, context={}, clientkey=None, serial=None, add_quota=()):
+    def add_quota(self, context={}, clientkey=None, serial=None,
+                  sub_quota=(), add_quota=()):
         rejected = []
         append = rejected.append
-        all_pairs = [(q[0], q[1]) for q in add_quota]
 
         if serial is not None:
             if clientkey is None:
+                all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
                 raise ReturnButFail(all_pairs)
             try:
                 cs = CallSerial.objects.get(serial=serial, clientkey=clientkey)
+                all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
                 raise ReturnButFail(all_pairs)
             except CallSerial.DoesNotExist:
                 pass
 
-        for (   entity, resource, key,
-                quantity, capacity,
-                import_limit, export_limit ) in add_quota:
+        for removing, source in [(True, sub_quota), (False, add_quota)]:
+            for (   entity, resource, key,
+                    quantity, capacity,
+                    import_limit, export_limit ) in source:
 
-                try:
-                    e = Entity.objects.get(entity=entity, key=key)
-                except Entity.DoesNotExist:
-                    append((entity, resource))
-                    continue
+                    try:
+                        e = Entity.objects.get(entity=entity, key=key)
+                    except Entity.DoesNotExist:
+                        append((entity, resource))
+                        continue
 
-                try:
-                    h = db_get_holding(entity=entity, resource=resource,
-                                       for_update=True)
-                    p = h.policy
-                except Holding.DoesNotExist:
-                    h = Holding(entity=e, resource=resource, flags=0)
-                    p = None
+                    try:
+                        h = db_get_holding(entity=entity, resource=resource,
+                                           for_update=True)
+                        p = h.policy
+                    except Holding.DoesNotExist:
+                        if removing:
+                            append((entity, resource))
+                            continue
+                        h = Holding(entity=e, resource=resource, flags=0)
+                        p = None
 
-                policy = newname('policy_')
-                newp = Policy(policy=policy)
+                    policy = newname('policy_')
+                    newp = Policy(policy=policy)
 
-                newp.quantity = _add(p.quantity if p else 0, quantity)
-                newp.capacity = _add(p.capacity if p else 0, capacity)
-                newp.import_limit = _add(p.import_limit if p else 0,
-                                              import_limit)
-                newp.export_limit = _add(p.export_limit if p else 0,
-                                              export_limit)
+                    newp.quantity = _add(p.quantity if p else 0, quantity,
+                                         invert=removing)
+                    newp.capacity = _add(p.capacity if p else 0, capacity,
+                                         invert=removing)
+                    newp.import_limit = _add(p.import_limit if p else 0,
+                                                  import_limit, invert=removing)
+                    newp.export_limit = _add(p.export_limit if p else 0,
+                                                  export_limit, invert=removing)
 
-                new_values = [newp.capacity,
-                              newp.import_limit, newp.export_limit]
-                if any(map(_isneg, new_values)):
-                    append((entity, resource))
-                    continue
+                    new_values = [newp.capacity,
+                                  newp.import_limit, newp.export_limit]
+                    if any(map(_isneg, new_values)):
+                        append((entity, resource))
+                        continue
 
-                h.policy = newp
+                    h.policy = newp
 
-                # the order is intentionally reversed so that it
-                # would break if we are not within a transaction.
-                # Has helped before.
-                h.save()
-                newp.save()
+                    # the order is intentionally reversed so that it
+                    # would break if we are not within a transaction.
+                    # Has helped before.
+                    h.save()
+                    newp.save()
 
-                if p is not None and p.holding_set.count() == 0:
-                    p.delete()
+                    if p is not None and p.holding_set.count() == 0:
+                        p.delete()
 
         if rejected:
             raise ReturnButFail(rejected)
@@ -964,10 +972,12 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return timeline
 
-def _add(x, y):
+def _add(x, y, invert=False):
+    if invert and y is None:
+        return 0
     if x is None or y is None:
         return None
-    return x + y
+    return x + y if not invert else x - y
 
 def _update(dest, source, attr, delta):
     dest_attr = getattr(dest, attr)

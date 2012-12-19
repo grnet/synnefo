@@ -46,7 +46,6 @@ from django.shortcuts import get_object_or_404
 from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context
-
 from astakos.im.views import requires_anonymous, render_response, \
         requires_auth_provider, required_auth_methods_assigned
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL

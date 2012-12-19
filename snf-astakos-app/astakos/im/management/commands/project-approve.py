@@ -37,7 +37,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from astakos.im.models import ProjectApplication
-
+from astakos.im.functions import approve_application
+ 
 class Command(BaseCommand):
     args = "<project application id>"
     help = "Update project state"
@@ -58,7 +59,7 @@ class Command(BaseCommand):
             except ProjectApplication.DoesNotExist:
                 raise CommandError('Invalid id')
             try:
-                app.approve()
+                approve_application(app)
             except BaseException, e:
                 transaction.rollback()
                 raise CommandError(e)

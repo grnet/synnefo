@@ -603,9 +603,7 @@ def submit_application(
 
 def approve_application(application):
     application.approve()
-    print '>>>'
     trigger_sync()
-    print '<<<'
     
     try:
         notification = build_notification(

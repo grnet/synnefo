@@ -1781,7 +1781,7 @@ class ProjectMembership(models.Model):
 
         sub_append = sub_list.append
         add_append = add_list.append
-        holder = self.person.username
+        holder = self.person.id
 
         synced_application = self.application
         if synced_application is not None:
@@ -1868,7 +1868,6 @@ def sync_projects():
     serial = new_serial()
 
     pending = objects.filter(state=PENDING)
-    print '###', pending
     for membership in pending:
 
         if membership.pending_application:
@@ -1907,7 +1906,7 @@ def sync_projects():
     # which has been scheduled to sync with the old project.application
     # Need to check in ProjectMembership.set_sync()
 
-    qh_add_quota(serial, sub_quota, add_quota)
+    r = qh_add_quota(serial, sub_quota, add_quota)
     sync_finish_serials()
 
 

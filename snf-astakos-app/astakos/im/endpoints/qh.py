@@ -108,12 +108,13 @@ def send_quota(users):
             export_limit = None
             flags = 0
             args = (
-                user.email, resource, key, quantity, capacity, import_limit,
+                user.id, resource, key, quantity, capacity, import_limit,
                 export_limit, flags)
             append(args)
     return data
 
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
+                                         'resource',
                                          'capacity',
                                          'import_limit',
                                          'export_limit'))
@@ -124,18 +125,18 @@ def qh_add_quota(serial, sub_list, add_list):
 
     context = {}
     c = get_client()
-
+    
     sub_quota = []
     sub_append = sub_quota.append
     add_quota = []
     add_append = add_quota.append
 
-    for ql in sub_quota:
+    for ql in sub_list:
         args = (ql.holder, ql.resource, ENTITY_KEY,
                 0, ql.capacity, ql.import_limit, ql.export_limit)
         sub_append(args)
 
-    for ql in add_quota:
+    for ql in add_list:
         args = (ql.holder, ql.resource, ENTITY_KEY,
                 0, ql.capacity, ql.import_limit, ql.export_limit)
         add_append(args)
@@ -193,7 +194,7 @@ def get_quota(users):
     append = data.append
     for user in users:
         try:
-            entity = user.email
+            entity = user.id
         except AttributeError:
             continue
         else:
@@ -222,7 +223,7 @@ def create_entities(entities, field=''):
 
 def register_users(users):
     users, copy = itertools.tee(users)
-    rejected = create_entities(entities=users, field='email')
+    rejected = create_entities(entities=users, field='id')
     created = (e for e in copy if unicode(e) not in rejected)
     return send_quota(created)
 

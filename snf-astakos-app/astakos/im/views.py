@@ -73,6 +73,7 @@ from astakos.im.models import (
 #     AstakosGroup, Membership
     EmailChange, GroupKind,
     RESOURCE_SEPARATOR, AstakosUserAuthProvider,
+    PendingThirdPartyUser,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)

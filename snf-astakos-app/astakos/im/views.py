@@ -166,7 +166,7 @@ def requires_anonymous(func):
 
 def signed_terms_required(func):
     """
-    Decorator checkes whether the request.user is Anonymous and in that case
+    Decorator checks whether the request.user is Anonymous and in that case
     redirects to `logout`.
     """
     @wraps(func)
@@ -178,6 +178,38 @@ def signed_terms_required(func):
             return HttpResponseRedirect(terms_uri)
         return func(request, *args, **kwargs)
     return wrapper
+
+
+def required_auth_methods_assigned(only_warn=False):
+    """
+    Decorator that checks whether the request.user has all required auth providers
+    assigned.
+    """
+    required_providers = auth_providers.REQUIRED_PROVIDERS.keys()
+
+    def decorator(func):
+        if not required_providers:
+            return func
+
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if request.user.is_authenticated():
+                for required in required_providers:
+                    if not request.user.has_auth_provider(required):
+                        provider = auth_providers.get_provider(required)
+                        if only_warn:
+                            messages.error(request,
+                                           _(astakos_messages.AUTH_PROVIDER_REQUIRED  % {
+                                               'provider': provider.get_title_display}))
+                        else:
+                            return HttpResponseRedirect(reverse('edit_profile'))
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def valid_astakos_user_required(func):
+    return signed_terms_required(required_auth_methods_assigned()(login_required(func)))
 
 
 @require_http_methods(["GET", "POST"])
@@ -217,8 +249,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
 
 
 @require_http_methods(["GET", "POST"])
-@login_required
-@signed_terms_required
+@valid_astakos_user_required
 @transaction.commit_manually
 def invite(request, template_name='im/invitations.html', extra_context=None):
     """
@@ -296,6 +327,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
 
 
 @require_http_methods(["GET", "POST"])
+@required_auth_methods_assigned(only_warn=True)
 @login_required
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
@@ -493,6 +525,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
 
 
 @require_http_methods(["GET", "POST"])
+@required_auth_methods_assigned(only_warn=True)
 @login_required
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
@@ -668,8 +701,7 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 
 @require_http_methods(["GET", "POST"])
-@login_required
-@signed_terms_required
+@valid_astakos_user_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -723,6 +755,10 @@ def change_email(request, activation_key=None,
 
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
 
+    if request.user.is_authenticated():
+        messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
+        return HttpResponseRedirect(reverse('edit_profile'))
+
     if settings.MODERATION_ENABLED:
         raise PermissionDenied
 
@@ -746,510 +782,6 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             extra_context
         )
     )
-
-# class ResourcePresentation():
-# 
-#     def __init__(self, data):
-#         self.data = data
-# 
-#     def update_from_result(self, result):
-#         if result.is_success:
-#             for r in result.data:
-#                 rname = '%s%s%s' % (r.get('service'), RESOURCE_SEPARATOR, r.get('name'))
-#                 if not rname in self.data['resources']:
-#                     self.data['resources'][rname] = {}
-# 
-#                 self.data['resources'][rname].update(r)
-#                 self.data['resources'][rname]['id'] = rname
-#                 group = r.get('group')
-#                 if not group in self.data['groups']:
-#                     self.data['groups'][group] = {}
-# 
-#                 self.data['groups'][r.get('group')].update({'name': r.get('group')})
-# 
-#     def test(self, quota_dict):
-#         for k, v in quota_dict.iteritems():
-#             rname = k
-#             value = v
-#             if not rname in self.data['resources']:
-#                 self.data['resources'][rname] = {}
-# 
-# 
-#             self.data['resources'][rname]['value'] = value
-# 
-# 
-#     def update_from_result_report(self, result):
-#         if result.is_success:
-#             for r in result.data:
-#                 rname = r.get('name')
-#                 if not rname in self.data['resources']:
-#                     self.data['resources'][rname] = {}
-# 
-#                 self.data['resources'][rname].update(r)
-#                 self.data['resources'][rname]['id'] = rname
-#                 group = r.get('group')
-#                 if not group in self.data['groups']:
-#                     self.data['groups'][group] = {}
-# 
-#                 self.data['groups'][r.get('group')].update({'name': r.get('group')})
-# 
-#     def get_group_resources(self, group):
-#         return dict(filter(lambda t: t[1].get('group') == group, self.data['resources'].iteritems()))
-# 
-#     def get_groups_resources(self):
-#         for g in self.data['groups']:
-#             yield g, self.get_group_resources(g)
-# 
-#     def get_quota(self, group_quotas):
-#         for r, v in group_quotas:
-#             rname = str(r)
-#             quota = self.data['resources'].get(rname)
-#             quota['value'] = v
-#             yield quota
-# 
-# 
-#     def get_policies(self, policies_data):
-#         for policy in policies_data:
-#             rname = '%s%s%s' % (policy.get('service'), RESOURCE_SEPARATOR, policy.get('resource'))
-#             policy.update(self.data['resources'].get(rname))
-#             yield policy
-# 
-#     def __repr__(self):
-#         return self.data.__repr__()
-# 
-#     def __iter__(self, *args, **kwargs):
-#         return self.data.__iter__(*args, **kwargs)
-# 
-#     def __getitem__(self, *args, **kwargs):
-#         return self.data.__getitem__(*args, **kwargs)
-# 
-#     def get(self, *args, **kwargs):
-#         return self.data.get(*args, **kwargs)
-
-
-
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# def group_add(request, kind_name='default'):
-#     result = callpoint.list_resources()
-#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-#     resource_catalog.update_from_result(result)
-# 
-#     if not result.is_success:
-#         messages.error(
-#             request,
-#             'Unable to retrieve system resources: %s' % result.reason
-#     )
-# 
-#     try:
-#         kind = GroupKind.objects.get(name=kind_name)
-#     except:
-#         return HttpResponseBadRequest(_(astakos_messages.GROUPKIND_UNKNOWN))
-# 
-# 
-# 
-#     post_save_redirect = '/im/group/%(id)s/'
-#     context_processors = None
-#     model, form_class = get_model_and_form_class(
-#         model=None,
-#         form_class=AstakosGroupCreationForm
-#     )
-# 
-#     if request.method == 'POST':
-#         form = form_class(request.POST, request.FILES)
-#         if form.is_valid():
-#             policies = form.policies()
-#             return render_response(
-#                 template='im/astakosgroup_form_summary.html',
-#                 context_instance=get_context(request),
-#                 form=AstakosGroupCreationSummaryForm(form.cleaned_data),
-#                 policies=resource_catalog.get_policies(policies)
-#             )
-#     else:
-#         now = datetime.now()
-#         data = {
-#             'kind': kind,
-#         }
-#         for group, resources in resource_catalog.get_groups_resources():
-#             data['is_selected_%s' % group] = False
-#             for resource in resources:
-#                 data['%s_uplimit' % resource] = ''
-# 
-#         form = form_class(data)
-# 
-#     # Create the template, context, response
-#     template_name = "%s/%s_form.html" % (
-#         model._meta.app_label,
-#         model._meta.object_name.lower()
-#     )
-#     t = template_loader.get_template(template_name)
-#     c = RequestContext(request, {
-#         'form': form,
-#         'kind': kind,
-#         'resource_catalog':resource_catalog,
-#     }, context_processors)
-#     return HttpResponse(t.render(c))
-
-
-##@require_hsttp_methods(["POST"])
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# @transaction.commit_manually
-# def group_add_complete(request):
-#     model = AstakosGroup
-#     form = AstakosGroupCreationSummaryForm(request.POST)
-#     if form.is_valid():
-#         d = form.cleaned_data
-#         d['owners'] = [request.user]
-#         result = callpoint.create_groups((d,)).next()
-#         if result.is_success:
-#             new_object = result.data[0]
-#             # send notification
-#             try:
-#                 send_group_creation_notification(
-#                     template_name='im/group_creation_notification.txt',
-#                     dictionary={
-#                         'group': new_object,
-#                         'owner': request.user,
-#                         'policies': d.get('policies', [])
-#                     }
-#                 )
-#             except SendNotificationError, e:
-#                 messages.error(request, e, fail_silently=True)
-#                 transaction.rollback()
-#             else:
-#                 msg = _(astakos_messages.OBJECT_CREATED) %\
-#                     {"verbose_name": model._meta.verbose_name}
-#                 message = _(astakos_messages.NOTIFICATION_SENT) % 'a project'
-#                 messages.success(request, msg, fail_silently=True)
-#                 transaction.commit()
-#         else:
-#             d = {"verbose_name": model._meta.verbose_name,
-#                  "reason":result.reason}
-#             msg = _(astakos_messages.OBJECT_CREATED_FAILED) % d
-#             messages.error(request, msg, fail_silently=True)
-#     return render_response(
-#         template='im/astakosgroup_form_summary.html',
-#         context_instance=get_context(request),
-#         form=form,
-#         policies=form.cleaned_data.get('policies')
-#     )
-
-##@require_http_methods(["GET"])
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# def group_list(request):
-#     none = request.user.astakos_groups.none()
-#     query = """
-#         SELECT auth_group.id,
-#         auth_group.name AS groupname,
-#         im_groupkind.name AS kindname,
-#         im_astakosgroup.*,
-#         owner.email AS groupowner,
-#         (SELECT COUNT(*) FROM im_membership
-#             WHERE group_id = im_astakosgroup.group_ptr_id
-#             AND date_joined IS NOT NULL) AS approved_members_num,
-#         (SELECT CASE WHEN(
-#                     SELECT date_joined FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND person_id = %(id)s) IS NULL
-#                     THEN 0 ELSE 1 END) AS membership_status
-#         FROM im_astakosgroup
-#         INNER JOIN im_membership ON (
-#             im_astakosgroup.group_ptr_id = im_membership.group_id)
-#         INNER JOIN auth_group ON(im_astakosgroup.group_ptr_id = auth_group.id)
-#         INNER JOIN im_groupkind ON (im_astakosgroup.kind_id = im_groupkind.id)
-#         LEFT JOIN im_astakosuser_owner ON (
-#             im_astakosuser_owner.astakosgroup_id = im_astakosgroup.group_ptr_id)
-#         LEFT JOIN auth_user as owner ON (
-#             im_astakosuser_owner.astakosuser_id = owner.id)
-#         WHERE im_membership.person_id = %(id)s
-#         AND im_groupkind.name != 'default'
-#         """ % request.user.__dict__
-# 
-#     # validate sorting
-#     sorting = 'groupname'
-#     sort_form = AstakosGroupSortForm(request.GET)
-#     if sort_form.is_valid():
-#         sorting = sort_form.cleaned_data.get('sorting')
-#     query = query+" ORDER BY %s ASC" %sorting
-#     
-#     q = AstakosGroup.objects.raw(query)
-#     
-#     # Create the template, context, response
-#     template_name = "%s/%s_list.html" % (
-#         q.model._meta.app_label,
-#         q.model._meta.object_name.lower()
-#     )
-#     extra_context = dict(
-#         is_search=False,
-#         q=q,
-#         sorting=sorting,
-#         page=request.GET.get('page', 1)
-#     )
-#     return render_response(template_name,
-#                            context_instance=get_context(request, extra_context)
-#     )
-
-
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# def group_detail(request, group_id):
-#     q = AstakosGroup.objects.select_related().filter(pk=group_id)
-#     q = q.extra(select={
-#         'is_member': """SELECT CASE WHEN EXISTS(
-#                             SELECT id FROM im_membership
-#                             WHERE group_id = im_astakosgroup.group_ptr_id
-#                             AND person_id = %s)
-#                         THEN 1 ELSE 0 END""" % request.user.id,
-#         'is_owner': """SELECT CASE WHEN EXISTS(
-#                         SELECT id FROM im_astakosuser_owner
-#                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
-#                         AND astakosuser_id = %s)
-#                         THEN 1 ELSE 0 END""" % request.user.id,
-#         'is_active_member': """SELECT CASE WHEN(
-#                         SELECT date_joined FROM im_membership
-#                         WHERE group_id = im_astakosgroup.group_ptr_id
-#                         AND person_id = %s) IS NULL
-#                         THEN 0 ELSE 1 END""" % request.user.id,
-#         'kindname': """SELECT name FROM im_groupkind
-#                        WHERE id = im_astakosgroup.kind_id"""})
-# 
-#     model = q.model
-#     context_processors = None
-#     mimetype = None
-#     try:
-#         obj = q.get()
-#     except AstakosGroup.DoesNotExist:
-#         raise Http404("No %s found matching the query" % (
-#             model._meta.verbose_name))
-# 
-#     update_form = AstakosGroupUpdateForm(instance=obj)
-#     addmembers_form = AddGroupMembersForm()
-#     if request.method == 'POST':
-#         update_data = {}
-#         addmembers_data = {}
-#         for k, v in request.POST.iteritems():
-#             if k in update_form.fields:
-#                 update_data[k] = v
-#             if k in addmembers_form.fields:
-#                 addmembers_data[k] = v
-#         update_data = update_data or None
-#         addmembers_data = addmembers_data or None
-#         update_form = AstakosGroupUpdateForm(update_data, instance=obj)
-#         addmembers_form = AddGroupMembersForm(addmembers_data)
-#         if update_form.is_valid():
-#             update_form.save()
-#         if addmembers_form.is_valid():
-#             try:
-#                 map(obj.approve_member, addmembers_form.valid_users)
-#             except AssertionError:
-#                 msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
-#                 messages.error(request, msg)
-#             addmembers_form = AddGroupMembersForm()
-# 
-#     template_name = "%s/%s_detail.html" % (
-#         model._meta.app_label, model._meta.object_name.lower())
-#     t = template_loader.get_template(template_name)
-#     c = RequestContext(request, {
-#         'object': obj,
-#     }, context_processors)
-# 
-#     # validate sorting
-#     sorting = 'person__email'
-#     form = MembersSortForm(request.GET)
-#     if form.is_valid():
-#         sorting = form.cleaned_data.get('sorting')
-#     
-#     result = callpoint.list_resources()
-#     resource_catalog = ResourcePresentation(RESOURCES_PRESENTATION_DATA)
-#     resource_catalog.update_from_result(result)
-# 
-# 
-#     if not result.is_success:
-#         messages.error(
-#             request,
-#             'Unable to retrieve system resources: %s' % result.reason
-#     )
-# 
-#     extra_context = {'update_form': update_form,
-#                      'addmembers_form': addmembers_form,
-#                      'page': request.GET.get('page', 1),
-#                      'sorting': sorting,
-#                      'resource_catalog':resource_catalog,
-#                      'quota':resource_catalog.get_quota(obj.quota)}
-#     for key, value in extra_context.items():
-#         if callable(value):
-#             c[key] = value()
-#         else:
-#             c[key] = value
-#     response = HttpResponse(t.render(c), mimetype=mimetype)
-#     populate_xheaders(
-#         request, response, model, getattr(obj, obj._meta.pk.name))
-#     return response
-
-
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# def group_search(request, extra_context=None, **kwargs):
-#     q = request.GET.get('q')
-#     if request.method == 'GET':
-#         form = AstakosGroupSearchForm({'q': q} if q else None)
-#     else:
-#         form = AstakosGroupSearchForm(get_query(request))
-#         if form.is_valid():
-#             q = form.cleaned_data['q'].strip()
-#     
-#     sorting = 'groupname'
-#     if q:
-#         queryset = AstakosGroup.objects.select_related()
-#         queryset = queryset.filter(~Q(kind__name='default'))
-#         queryset = queryset.filter(name__contains=q)
-#         queryset = queryset.filter(approval_date__isnull=False)
-#         queryset = queryset.extra(select={
-#                                   'groupname': "auth_group.name",
-#                                   'kindname': "im_groupkind.name",
-#                                   'approved_members_num': """
-#                     SELECT COUNT(*) FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND date_joined IS NOT NULL""",
-#                                   'membership_approval_date': """
-#                     SELECT date_joined FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND person_id = %s""" % request.user.id,
-#                                   'is_member': """
-#                     SELECT CASE WHEN EXISTS(
-#                     SELECT date_joined FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND person_id = %s)
-#                     THEN 1 ELSE 0 END""" % request.user.id,
-#                                   'is_owner': """
-#                     SELECT CASE WHEN EXISTS(
-#                     SELECT id FROM im_astakosuser_owner
-#                     WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
-#                     AND astakosuser_id = %s)
-#                     THEN 1 ELSE 0 END""" % request.user.id,
-#                     'is_owner': """SELECT CASE WHEN EXISTS(
-#                         SELECT id FROM im_astakosuser_owner
-#                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
-#                         AND astakosuser_id = %s)
-#                         THEN 1 ELSE 0 END""" % request.user.id,
-#                     })
-#         
-#         # validate sorting
-#         sort_form = AstakosGroupSortForm(request.GET)
-#         if sort_form.is_valid():
-#             sorting = sort_form.cleaned_data.get('sorting')
-#         queryset = queryset.order_by(sorting)
-# 
-#     else:
-#         queryset = AstakosGroup.objects.none()
-#     return object_list(
-#         request,
-#         queryset,
-#         paginate_by=PAGINATE_BY_ALL,
-#         page=request.GET.get('page') or 1,
-#         template_name='im/astakosgroup_list.html',
-#         extra_context=dict(form=form,
-#                            is_search=True,
-#                            q=q,
-#                            sorting=sorting))
-
-
-# @require_http_methods(["GET", "POST"])
-# @signed_terms_required
-# @login_required
-# def group_all(request, extra_context=None, **kwargs):
-#     q = AstakosGroup.objects.select_related()
-#     q = q.filter(~Q(kind__name='default'))
-#     q = q.filter(approval_date__isnull=False)
-#     q = q.extra(select={
-#                 'groupname': "auth_group.name",
-#                 'kindname': "im_groupkind.name",
-#                 'approved_members_num': """
-#                     SELECT COUNT(*) FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND date_joined IS NOT NULL""",
-#                 'membership_approval_date': """
-#                     SELECT date_joined FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND person_id = %s""" % request.user.id,
-#                 'is_member': """
-#                     SELECT CASE WHEN EXISTS(
-#                     SELECT date_joined FROM im_membership
-#                     WHERE group_id = im_astakosgroup.group_ptr_id
-#                     AND person_id = %s)
-#                     THEN 1 ELSE 0 END""" % request.user.id,
-#                  'is_owner': """SELECT CASE WHEN EXISTS(
-#                         SELECT id FROM im_astakosuser_owner
-#                         WHERE astakosgroup_id = im_astakosgroup.group_ptr_id
-#                         AND astakosuser_id = %s)
-#                         THEN 1 ELSE 0 END""" % request.user.id,   })
-#     
-#     # validate sorting
-#     sorting = 'groupname'
-#     sort_form = AstakosGroupSortForm(request.GET)
-#     if sort_form.is_valid():
-#         sorting = sort_form.cleaned_data.get('sorting')
-#     q = q.order_by(sorting)
-#     
-#     return object_list(
-#         request,
-#         q,
-#         paginate_by=PAGINATE_BY_ALL,
-#         page=request.GET.get('page') or 1,
-#         template_name='im/astakosgroup_list.html',
-#         extra_context=dict(form=AstakosGroupSearchForm(),
-#                            is_search=True,
-#                            sorting=sorting))
-
-
-##@require_http_methods(["POST"])
-# @require_http_methods(["POST", "GET"])
-# @signed_terms_required
-# @login_required
-# def group_join(request, group_id):
-#     m = Membership(group_id=group_id,
-#                    person=request.user,
-#                    date_requested=datetime.now())
-#     try:
-#         m.save()
-#         post_save_redirect = reverse(
-#             'group_detail',
-#             kwargs=dict(group_id=group_id))
-#         return HttpResponseRedirect(post_save_redirect)
-#     except IntegrityError, e:
-#         logger.exception(e)
-#         msg = _(astakos_messages.GROUP_JOIN_FAILURE)
-#         messages.error(request, msg)
-#         return group_search(request)
-# 
-# 
-# @require_http_methods(["POST"])
-# @signed_terms_required
-# @login_required
-# def group_leave(request, group_id):
-#     try:
-#         m = Membership.objects.select_related().get(
-#             group__id=group_id,
-#             person=request.user)
-#     except Membership.DoesNotExist:
-#         return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
-#     if request.user in m.group.owner.all():
-#         return HttpResponseForbidden(_(astakos_messages.OWNER_CANNOT_LEAVE_GROUP))
-#     return delete_object(
-#         request,
-#         model=Membership,
-#         object_id=m.id,
-#         template_name='im/astakosgroup_list.html',
-#         post_delete_redirect=reverse(
-#             'group_detail',
-#             kwargs=dict(group_id=group_id)))
 
 
 # def handle_membership(func):
@@ -1307,8 +839,7 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
 
 @require_http_methods(["GET"])
 @require_http_methods(["POST", "GET"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def resource_usage(request):
     def with_class(entry):
         entry['load_class'] = 'red'

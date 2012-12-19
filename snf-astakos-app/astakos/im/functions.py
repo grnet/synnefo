@@ -63,7 +63,7 @@ from astakos.im.settings import (
     PROJECT_MEMBERSHIP_CHANGE_SUBJECT)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
-    ProjectMembership, ProjectApplication)
+    ProjectMembership, ProjectApplication, trigger_sync)
 
 import astakos.im.messages as astakos_messages
 
@@ -471,6 +471,7 @@ def accept_membership(request, project, user, request_user=None):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
 
     membership.accept()
+    trigger_sync()
 
     try:
         notification = build_notification(
@@ -527,6 +528,7 @@ def remove_membership(project, user, request_user=None):
         raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % membership.project.__dict__)
 
     membership.remove()
+    trigger_sync()
 
     try:
         notification = build_notification(
@@ -554,6 +556,7 @@ def leave_project(project_application_id, user_id):
     membership = get_membership(project_application_id, user_id)
     if leave_policy == get_auto_accept_leave():
         membership.remove()
+        trigger_sync()
     else:
         membership.leave_request_date = datetime.now()
         membership.save()
@@ -574,6 +577,7 @@ def join_project(project_application_id, user_id):
 
     if join_policy == get_auto_accept_join():
         membership.accept()
+        trigger_sync()
     return membership
     
 def submit_application(
@@ -596,8 +600,8 @@ def submit_application(
 
 def approve_application(application):
     application.approve()
-#     rejected = application.project.sync()
-
+    trigger_sync()
+    
     try:
         notification = build_notification(
             settings.SERVER_EMAIL,

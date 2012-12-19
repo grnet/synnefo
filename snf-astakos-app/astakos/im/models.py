@@ -1233,7 +1233,7 @@ def get_closed_leave():
     except:
         closed = None
     _closed_leave = closed
-    return closeds
+    return closed
 
 
 ### PROJECTS ###

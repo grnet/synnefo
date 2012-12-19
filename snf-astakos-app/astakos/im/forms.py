@@ -914,9 +914,15 @@ class ProjectApplicationForm(forms.ModelForm):
             _(astakos_messages.DOMAIN_VALUE_ERR),
             'invalid'
         )],
-        widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
-        help_text="Name should be in the form of dns"
+        widget=forms.TextInput(attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
+        help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization "
     )
+    homepage = forms.URLField(
+        help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
+        widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
+        
+        required=False
+     )
     comments = forms.CharField(widget=forms.Textarea, required=False)
     
     class Meta:

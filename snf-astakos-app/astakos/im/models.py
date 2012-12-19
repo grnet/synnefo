@@ -1839,10 +1839,16 @@ def new_serial():
     s.delete()
     return serial
 
-def sync_finish_serials():
-    serials_to_ack = set(qh_query_serials([]))
+def sync_finish_serials(serials_to_ack=None):
+    if serials_to_ack is None:
+        serials_to_ack = qh_query_serials([])
+
+    serials_to_ack = set(serials_to_ack)
     sfu = ProjectMembership.objects.select_for_update()
-    memberships = sfu.filter(pending_serial__isnull=False)
+    memberships = list(sfu.filter(pending_serial__isnull=False))
+
+    if not memberships:
+        return 0
 
     for membership in memberships:
         serial = membership.pending_serial
@@ -1853,6 +1859,7 @@ def sync_finish_serials():
 
     transaction.commit()
     qh_ack_serials(list(serials_to_ack))
+    return len(memberships)
 
 def sync_projects():
     sync_finish_serials()
@@ -1905,7 +1912,11 @@ def sync_projects():
     # Need to check in ProjectMembership.set_sync()
 
     r = qh_add_quota(serial, sub_quota, add_quota)
-    sync_finish_serials()
+    if r:
+        m = "cannot sync serial: %d" % serial
+        raise RuntimeError(m)
+
+    sync_finish_serials([serial])
 
 
 def trigger_sync(retries=3, retry_wait=1.0):

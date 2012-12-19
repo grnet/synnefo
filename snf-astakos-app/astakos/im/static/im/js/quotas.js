@@ -35,12 +35,12 @@ $(document).ready(function() {
 	$('.quotas-form ul li a').click(function(e){
 		
 		// check the hidden input field
-		$(this).siblings('input[type="hidden"]').attr('checked','checked');
+		$(this).siblings('input[type="hidden"]').val("1");
 		
 		// get the hidden input field without the proxy
 		// and check the python form field
 	 	hidden_name = $(this).siblings('input[type="hidden"]').attr('name').replace("proxy_","");
-	 	$("input[name='"+hidden_name+"']").attr('checked','checked');  
+	 	$("input[name='"+hidden_name+"']").val("1");  
 		
  		// prevent extra actions if it is checked		 
 		if ( $(this).hasClass('selected')){
@@ -78,12 +78,12 @@ $(document).ready(function() {
 		$('.quotas-form ul li a').each(function() {
 			if($(this).attr('id')==group_class) {
 				$(this).removeClass('selected');
-				$(this).siblings('input[type="hidden"]').removeAttr('checked');
+				$(this).siblings('input[type="hidden"]').val('0');
 				
 				// get the hidden input field without the proxy
 				// and check the python form field
 			 	hidden_name = $(this).siblings('input[type="hidden"]').attr('name').replace("proxy_","");
-			 	$("input[name='"+hidden_name+"']").removeAttr('checked');  
+			 	$("input[name='"+hidden_name+"']").val('0');  
 				
 			}
 		}); 
@@ -226,11 +226,11 @@ $(document).ready(function() {
 	
 	// if hidden checkboxes are checked, the right group is selected 
 	$('.with-info input[name^="is_selected_"]').each(function() {
-		if ($(this).attr('checked')){
+		if ( ($(this).val()) == 1 ){
 			
 			// get hidden input name
 			hidden_name = $(this).attr('name');
-			$("input[name='proxy_"+hidden_name+"']").attr('checked','checked'); 
+			$("input[name='proxy_"+hidden_name+"']").val("1"); 
 			
 			// pretend to check the ul li a
 			// show the relevant fieldsets
@@ -241,7 +241,7 @@ $(document).ready(function() {
 	}); 
 	
 	
-	
+	/*
 	// if input_uplimit fields are filled,
 	// fill the _uplimit_proxy ones
 	 
@@ -297,6 +297,64 @@ $(document).ready(function() {
 			
 			 
 		}
-	}); 
+	});*/
+	// if input_uplimit fields are filled,
+	// fill the _uplimit_proxy ones
+	 
+	$('.group input[name$="_uplimit_proxy"]').each(function() {
+		if ($(this).val()){
+			
+			// get value from input
+	 		var value = $(this).val();
+			
+			
+			// get hidden input name
+			hidden_name = $(this).attr('name');
+			hidden_field_name = hidden_name.replace("_proxy","");
+			$("input[name='"+hidden_field_name+"']").val(value);
+			var field = $(this); 
+			
+			
+			if ( (field.hasClass('dehumanize')) && !($(this).parents('.form-row').hasClass('with-errors'))) {
+				// for dehumanize fields transform bytes to KB, MB, etc
+				// unless there is an error
+				field.val(bytesToSize2(value))
+			} else {
+				// else just return the value
+				field.val(value);	
+			}
+			
+			var group_class = field.parents('div[class^="group"]').attr('class').replace('group ', '');
+			
+			 
+			 
+			
+			// select group icon
+			$('.quotas-form ul li a').each(function() {
+				
+				if($(this).attr('id') == group_class) {
+					$(this).addClass('selected');
+					$(this).siblings('input[type="hidden"]').val("1");
+					
+					// get the hidden input field without the proxy
+					// and check the python form field
+				 	hidden_name = $(this).siblings('input[type="hidden"]').attr('name').replace("proxy_","");
+				 	$("input[name='"+hidden_name+"']").val("1");  
+				 	
+				 	group_form_show_resources($(this));
+					
+				}
+			}); 
+			
+		
+			
+			// if the field has class error, transfer error to the proxy fields
+			if ( $(this).parents('.form-row').hasClass('with-errors') ) {
+				field.parents('.form-row').addClass('with-errors');
+			}
+			
+			 
+		}
+	});  
 	
 });

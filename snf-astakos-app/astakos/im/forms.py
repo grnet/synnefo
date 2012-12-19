@@ -958,12 +958,15 @@ class ProjectApplicationForm(forms.ModelForm):
                 resource = Resource.objects.get(service__name=s, name=r)
 
                 # keep only resource limits for selected resource groups
-#                 if self.data.get(
-#                     'is_selected_%s' % resource.group, False
-#                 ):
-                if uplimit:
-                    append(dict(service=s, resource=r, uplimit=uplimit))
+                if self.data.get(
+                    'is_selected_%s' % resource.group, "0"
+                 ) == "1":
+                    if uplimit:
+                        append(dict(service=s, resource=r, uplimit=uplimit))
+                    else:
+                        append(dict(service=s, resource=r, uplimit=None))                
         return policies
+    
 
     def save(self, commit=True):
         application = super(ProjectApplicationForm, self).save(commit=False)

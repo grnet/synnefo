@@ -1689,7 +1689,7 @@ def project_list(request):
     return object_list(
         request,
         q,
-        paginate_by=PAGINATE_BY_ALL,
+        paginate_by=PAGINATE_BY,
         page=request.GET.get('page') or 1,
         template_name='im/projects/project_list.html',
         extra_context={

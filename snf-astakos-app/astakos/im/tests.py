@@ -152,7 +152,10 @@ class ShibbolethTests(TestCase):
         # shibboleth views validation
         # eepn required
         r = client.get('/im/login/shibboleth?', follow=True)
-        self.assertContains(r, messages.SHIBBOLETH_MISSING_EPPN)
+        self.assertContains(r, messages.SHIBBOLETH_MISSING_EPPN % {
+            'domain': astakos_settings.BASEURL,
+            'contact_email': astakos_settings.DEFAULT_CONTACT_EMAIL
+        })
         client.set_tokens(eppn="kpapeppn")
 
         astakos_settings.SHIBBOLETH_REQUIRE_NAME_INFO = True

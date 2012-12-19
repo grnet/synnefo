@@ -94,7 +94,12 @@ EMAIL_USED                              =   'This email address is already in us
 SHIBBOLETH_EMAIL_USED                   =   'This email is already associated with another shibboleth account.'
 SHIBBOLETH_INACTIVE_ACC                 =   'This email is already associated with an inactive account. \
                                                You need to wait to be activated before being able to switch to a shibboleth account.'
-SHIBBOLETH_MISSING_EPPN                 =   'Missing unique token in request.'
+SHIBBOLETH_MISSING_EPPN = 'Your request is missing a unique ' + \
+                          'token. This means your academic ' + \
+                          'institution does not yet allow its users to log ' + \
+                          'into %(domain)s with their academic ' + \
+                          'credentials. Please contact %(contact_email)s' + \
+                          ' for more information.'
 SHIBBOLETH_MISSING_NAME                 =   'Missing user name in request.'
 
 SIGN_TERMS                              =   'You have to agree with the terms.'

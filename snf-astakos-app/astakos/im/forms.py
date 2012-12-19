@@ -926,6 +926,10 @@ class ProjectApplicationForm(forms.ModelForm):
             'resource_grants', 'id', 'applicant', 'owner',
             'precursor_application', 'state', 'issue_date')
 
+    def __init__(self, *args, **kwargs):
+        self.precursor_application = kwargs.get('instance')
+        super(ProjectApplicationForm, self).__init__(*args, **kwargs)
+    
     def clean(self):
         userid = self.data.get('user', None)
         self.user = None
@@ -965,13 +969,12 @@ class ProjectApplicationForm(forms.ModelForm):
         application = super(ProjectApplicationForm, self).save(commit=False)
         applicant = self.user
         comments = self.cleaned_data.pop('comments', None)
-        precursor_application = self.instance
         return submit_application(
             application,
             self.resource_policies,
             applicant,
             comments,
-            precursor_application
+            self.precursor_application
         )
 
 class ProjectSortForm(forms.Form):

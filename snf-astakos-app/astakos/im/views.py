@@ -1337,13 +1337,14 @@ def project_all(request):
 @login_required
 @transaction.commit_manually
 def project_join(request, application_id):
-    next = request.POST.get('next')
+    next = request.GET.get('next')
     if not next:
         return HttpResponseBadRequest(
             _(astakos_messages.MISSING_NEXT_PARAMETER))
 
     rollback = False
     try:
+        application_id = int(application_id)
         join_project(application_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
@@ -1352,16 +1353,14 @@ def project_join(request, application_id):
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
     else:
-        return project_detail(request, id)
+        return project_detail(request, application_id)
     finally:
         if rollback:
             transaction.rollback()
         else:
             transaction.commit()
-
-    next = restrict_next(
-        request.POST.get('next'),
-        domain=COOKIE_DOMAIN)
+    
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
 @require_http_methods(["POST"])
@@ -1369,19 +1368,20 @@ def project_join(request, application_id):
 @login_required
 @transaction.commit_manually
 def project_leave(request, application_id):
-    next = request.POST.get('next')
+    next = request.GET.get('next')
     if not next:
         return HttpResponseBadRequest(
             _(astakos_messages.MISSING_NEXT_PARAMETER))
 
     rollback = False
     try:
+        application_id = int(application_id)
         leave_project(application_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
         logger.exception(e)
-        messages.error(_(astakos_messages.GENERIC_ERRO))
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
     finally:
         if rollback:
@@ -1389,9 +1389,7 @@ def project_leave(request, application_id):
         else:
             transaction.commit()
 
-    next = restrict_next(
-        request.POST.get('next'),
-        domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
 @require_http_methods(["GET"])
@@ -1401,12 +1399,14 @@ def project_leave(request, application_id):
 def project_approve_member(request, application_id, user_id):
     rollback = False
     try:
+        application_id = int(application_id)
+        user_id = int(user_id)
         m = accept_membership(application_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
         logger.exception(e)
-        messages.error(_(astakos_messages.GENERIC_ERRO))
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
     else:
         realname = m.person.realname
@@ -1426,12 +1426,14 @@ def project_approve_member(request, application_id, user_id):
 def project_remove_member(request, application_id, user_id):
     rollback = False
     try:
+        application_id = int(application_id)
+        user_id = int(user_id)
         m = remove_membership(application_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
         logger.exception(e)
-        messages.error(_(astakos_messages.GENERIC_ERRO))
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
     else:
         realname = m.person.realname
@@ -1451,12 +1453,14 @@ def project_remove_member(request, application_id, user_id):
 def project_reject_member(request, application_id, user_id):
     rollback = False
     try:
+        application_id = int(application_id)
+        user_id = int(user_id)
         m = reject_membership(application_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
         logger.exception(e)
-        messages.error(_(astakos_messages.GENERIC_ERRO))
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
         rollback = True
     else:
         realname = m.person.realname

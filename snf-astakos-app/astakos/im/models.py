@@ -1372,16 +1372,16 @@ class ProjectApplication(models.Model):
                                                      blank=True,
                                                      db_index=True)
 
-    name                    =   models.CharField(max_length=80)
+    name                    =   models.CharField(max_length=80, help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization ",)
     homepage                =   models.URLField(max_length=255, null=True,
-                                                blank=True)
-    description             =   models.TextField(null=True, blank=True)
-    start_date              =   models.DateTimeField()
-    end_date                =   models.DateTimeField()
+                                                blank=True,help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",)
+    description             =   models.TextField(null=True, blank=True,help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. ")
+    start_date              =   models.DateTimeField(help_text= "Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date.")
+    end_date                =   models.DateTimeField(help_text= "Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  ")
     member_join_policy      =   models.ForeignKey(MemberJoinPolicy)
     member_leave_policy     =   models.ForeignKey(MemberLeavePolicy)
     limit_on_members_number =   models.PositiveIntegerField(null=True,
-                                                            blank=True)
+                                                            blank=True,help_text= "Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. ")
     resource_grants         =   models.ManyToManyField(
                                     Resource,
                                     null=True,
@@ -1399,6 +1399,11 @@ class ProjectApplication(models.Model):
         resource = Resource.objects.get(service__name=service, name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
+    
+    @property
+    def grants(self):
+        return self.projectresourcegrant_set.values('member_capacity', 'resource__name', 'resource__service__name')
+            
     @property
     def resource_policies(self):
         return self.projectresourcegrant_set.all()
@@ -1654,13 +1659,13 @@ class Project(models.Model):
 #         try:
 #             notification = build_notification(
 #                 settings.SERVER_EMAIL,
-#                 [self.current_application.owner.email],
+#                 [self.application.owner.email],
 #                 _(PROJECT_TERMINATION_SUBJECT) % self.__dict__,
 #                 template='im/projects/project_termination_notification.txt',
-#                 dictionary={'object':self.current_application}
+#                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
-#             logger.error(e.messages)
+#             logger.error(e.message)
 
     def suspend(self):
         self.last_approval_date = None
@@ -1670,13 +1675,13 @@ class Project(models.Model):
 #         try:
 #             notification = build_notification(
 #                 settings.SERVER_EMAIL,
-#                 [self.current_application.owner.email],
-#                 _(PROJECT_SUSPENSION_SUBJECT) % self.definition.__dict__,
+#                 [self.application.owner.email],
+#                 _(PROJECT_SUSPENSION_SUBJECT) % self.__dict__,
 #                 template='im/projects/project_suspension_notification.txt',
-#                 dictionary={'object':self.current_application}
+#                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
-#             logger.error(e.messages)
+#             logger.error(e.message)
 
 
 class ProjectMembership(models.Model):
@@ -1747,6 +1752,7 @@ class ProjectMembership(models.Model):
         self.save()
 
     def remove(self):
+        state = self.state
         if state != self.ACCEPTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
@@ -1756,6 +1762,7 @@ class ProjectMembership(models.Model):
         self.save()
 
     def reject(self):
+        state = self.state
         if state != self.REQUESTED:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
@@ -1774,30 +1781,28 @@ class ProjectMembership(models.Model):
 
         sub_append = sub_list.append
         add_append = add_list.append
-        holder = self.person.username
+        holder = self.person.id
 
         synced_application = self.application
         if synced_application is not None:
-            # first, inverse all current limits, and index them by resource name
             cur_grants = synced_application.resource_grants.all()
             for grant in cur_grants:
                 sub_append(QuotaLimits(
                                holder       = holder,
-                               resource     = grant.resource.name,
+                               resource     = str(grant.resource),
                                capacity     = grant.member_capacity,
                                import_limit = grant.member_import_limit,
                                export_limit = grant.member_export_limit))
 
         if not remove:
-            # second, add each new limit to its inverted current
             new_grants = self.pending_application.projectresourcegrant_set.all()
             for new_grant in new_grants:
                 add_append(QuotaLimits(
                                holder       = holder,
-                               resource     = new_grant.resource.name,
-                               capacity     = new_grant.capacity,
-                               import_limit = new_grant.import_limit,
-                               export_limit = new_grant.export_limit))
+                               resource     = str(new_grant.resource),
+                               capacity     = new_grant.member_capacity,
+                               import_limit = new_grant.member_import_limit,
+                               export_limit = new_grant.member_export_limit))
 
         return (sub_list, add_list)
 
@@ -1899,7 +1904,7 @@ def sync_projects():
     # which has been scheduled to sync with the old project.application
     # Need to check in ProjectMembership.set_sync()
 
-    qh_add_quota(serial, sub_quota, add_quota)
+    r = qh_add_quota(serial, sub_quota, add_quota)
     sync_finish_serials()
 
 

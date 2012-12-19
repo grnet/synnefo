@@ -1,6 +1,7 @@
 {% extends "im/account_base.html" %}
 
 {% load filters %}
+{% load astakos_tags %}
 {% block headjs %}
 	{{ block.super }}	 
 	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
@@ -8,7 +9,8 @@
 
 {% block page.body %}
 
-{% with resource_catalog|populated_resource_catalog as resource_catalog%}
+ 
+{% with resource_catalog|populated_resource_catalog as resource_catalog %}
 {% if show_form %}
 <form action="?verify=1#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 
@@ -94,6 +96,8 @@
 											{% with rname|add:'_uplimit' as input_value %}
 											value = "{{ request.POST|lookup:input_value }}"
 											{% endwith %}
+										{% else %}
+											value = "{% get_grant_value rname form %}"
 										{% endif %}
 			       						/> 
 			       			<span class="extra-img">&nbsp;</span>

@@ -3,7 +3,7 @@
 {% load astakos_tags %}
 {% load filters %}
 
-{% block page.body %}
+{% block page.body %} 
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="projects">
 	    <h2>PROJECTS</h2>
@@ -17,6 +17,7 @@
 		        </div>
 		    </form>
 	    {% else %}
+	     
     	<div class="two-cols clearfix">
 			<div class="rt">
 				 &nbsp;
@@ -58,24 +59,9 @@
     {% with page_obj.object_list as object_list %}
     <!-- Search project -->
     {% if is_search %}
-        <div>
-            {% comment %}
-        	<form method="GET" class="minimal" action="#searchResults"> 
-				<div class="form-row">
-					<select name="sorting" onchange="this.form.submit();" class="dropkicked" tabindex="1">
-					    <option value="name">Sort by Name</option>
-			            <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
-			            <option value="start_date" {% if sorting == 'start_date' %}selected{% endif %}>Sort by Start Date</option>
-			            <option value="end_date" {% if sorting == 'end_date' %}selected{% endif %}>Sort by End Date</option>
-			            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> --> 
-			            <option value="state" {% if sorting == 'state' %}selected{% endif %}>Sort by Status</option> 
-			            <option value="member_join_policy__description" {% if sorting == 'member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
-			            <option value="member_leave_policy__description" {% if sorting == 'member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 
-					</select>
-					<input type="hidden" name="q" value="{{q}}"/>
-				</div>
-			</form>
-			{% endcomment %}
+   		
+    	{% if object_list %}
+        <div> 
             <table class="alt-style complex" id="searchResults">
                 <caption>
                     {% if q %}SEARCH RESULTS{% else %}ALL PROJECTS{% endif %}
@@ -101,17 +87,17 @@
                   {% with o.project.members.all as members %}
                   {% with o.project.approved_members as approved_members%}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
-	                    <td style="width:22%"><a href="{% url project_detail o.id %}" title="visit project page">{{o.name|truncatename}}</a></td>
+	                    <td><a href="{% url project_detail o.id %}" title="visit project page">{{o.name|truncatename}}</a></td>
 	                    <!--td>{{o.kindname|capfirst}}</td-->
-	                    <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
-	                    <td style="width:13%">{{o.start_date|date:"d/m/Y"}}</td>
-	                    <td style="width:13%">{{o.end_date|date:"d/m/Y"}}</td>
-	                    <td style="width:11%">{{approved_members|length}}</td>
-	                    <td style="width:11%">
+	                    <td>{{o.issue_date|date:"d/m/Y"}}</td>
+	                    <td>{{o.start_date|date:"d/m/Y"}}</td>
+	                    <td>{{o.end_date|date:"d/m/Y"}}</td>
+	                    <td>{{approved_members|length}}</td>
+	                    <td>
 	                        {{o.state}}
 	                    </td>
 	                    <td>{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}</td>
-	                    <td style="width:17%">
+	                    <td>
 	                    	<div class="msg-wrap">
 	                        {% if user == o.owner %}
 	                            Owner
@@ -128,7 +114,7 @@
 	                        {% endif %}
 	                    	</div>
 	                    </td>
-	                    <td style="width:15%">
+	                    <td>
 	                    	<div class="msg-wrap">
 	                    		 
 		                    {% if user in members %}
@@ -150,7 +136,7 @@
 		                            &nbsp;
 		                        {% endif %}
 		                    {% else %}
-		                        {% if o.project.is_alive %}
+		                       {% if o.project.is_alive and not user == o.owner %}
 		                                <form action="{% url project_join o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
 		                                    <input type="submit"   value="+ join group" class="join_group join" />
 		                                </form>
@@ -165,12 +151,12 @@
 		                    {% endif %}
 	                    	</div>
 	                    </td>
-			            <td class="centered" style="width:9%">{{o.member_join_policy}}</td>
-	                    <td class="centered" style="width:9%">{{o.member_leave_policy}}</td>
+			            <td class="centered">{{o.member_join_policy}}</td>
+	                    <td class="centered">{{o.member_leave_policy}}</td>
 	                    <!--td><a href="#" class="more-info" title="more info">+ more info</a></td-->
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-                    <td colspan="7" class="info-td">
+                    <td colspan="11" class="info-td">
                         <div>
                             <p>{{o.desc}}</p>
                             <p>{% if o.homepage%}
@@ -209,6 +195,9 @@
 	            </span>
 			</p>
 	   </div>
+	   
+	   {% endif %}
+      
       <!-- Group listing -->
        {% else %}
        		{% if not form %}
@@ -217,22 +206,7 @@
         	 	{% with o.project.members as members %}
                 {% with o.project.approved_members as approved_members %}  
 	      	    <div>
-	      	        {% comment %}
-					<form method="GET" class="minimal" action="#allGroups" id="mygroups">
-						<div class="form-row">
-						    <select name="sorting"  class="dropkicked"  tabindex="1">
-							    <option value="name">Sort by Name</option>
-			                    <option value="issue_date" {% if sorting == 'issue_date' %}selected{% endif %}>Sort by Issue date</option>			
-					            <option value="start_date" {% if sorting == 'start_date' %}selected{% endif %}>Sort by Start Date</option>
-					            <option value="end_date" {% if sorting == 'expiration_date' %}selected{% endif %}>Sort by Expiration Date</option>
-					            <!-- <option value="approved_members_num" {% if sorting == 'approved_members_num' %}selected{% endif %}>Sort by Participants</option> -->
-					            <option value="state" {% if sorting == 'state' %}selected{% endif %}>Sort by Status</option> 
-                                <option value="member_join_policy__description" {% if sorting == 'member_join_policy__description' %}selected{% endif %}>Sort by Member Join Policy</option> 
-                                <option value="member_leave_policy__description" {% if sorting == 'member_leave_policy__description' %}selected{% endif %}>Sort by Member Leave Policy</option> 		
-							</select>
-						</div>
-					</form>
-					{% endcomment %}
+	      	        
 					<table class="alt-style complex" id="allGroups">
 			            <caption>MY PROJECTS</caption>
 			            <thead>
@@ -254,76 +228,75 @@
 			            <tbody>
 			              {% for o in object_list %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
-			                <td style="width:22%"><a  href="{% url project_detail o.id %}" title="visit group page">{{o.name|truncatename }}</a></td>
-			                <!--td>{{o.kindname|capfirst}}</td-->
-			                <td style="width:13%">{{o.issue_date|date:"d/m/Y"}}</td>
-			                <td style="width:13%">{{o.start_date|date:"d/m/Y"}}</td>
-			                <td style="width:13%">{{o.end_date|date:"d/m/Y"}}</td>
-			                <td style="width:11%">{{approved_members|length}}</td>
-			                <td style="width:11%">
+			                <td><a  href="{% url project_detail o.id %}" title="visit group page">{{o.name|truncatename }}</a></td>
+			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
+			                <td>{{o.start_date|date:"d/m/Y"}}</td>
+			                <td>{{o.end_date|date:"d/m/Y"}}</td>
+			                <td>{{approved_members|length}}</td>
+			                <td>
 		                        {{o.state}}
 		                    </td>
 		                    <td>{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}</td>
-			                <td style="width:17%">
-	                    	<div class="msg-wrap">
-	                        {% if user == o.owner %}
-	                            Owner
-	                        {% else %}
-	                            {% if not user in members %}
-	                                Not member
-	                            {% else %}
-	                                {% if user in approved_members %}
-	                                    Registered
-	                                {% else %}
-	                                    Activation pending
-	                                {% endif %}
-	                            {% endif %}
-	                        {% endif %}
-	                    	</div>
-	                    </td>
-	                    <td style="width:15%">
-	                    	<div class="msg-wrap">
-	                    		 
-		                    {% if user in members %}
-		                        {% if user in approved_members %}    
-			                       	{% if not user == o.owner %}
-			                            <form action="{% url project_leave o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
-			                                 <input type="submit"  value="x leave group" class="leave"/>
-			                            </form>
-			                            <div class="dialog">
-					                		Are you sure you what to leave this project?<br>
-					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
-					                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>       		
-					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
-					                	</div>
-			                        {% else %}
-			                        	 &nbsp;
-			                        {% endif %}
+			                <td>
+		                    	 
+		                        {% if user == o.owner %}
+		                            Owner
 		                        {% else %}
-		                            &nbsp;
+		                            {% if not user in members %}
+		                                Not member
+		                            {% else %}
+		                                {% if user in approved_members %}
+		                                    Registered
+		                                {% else %}
+		                                    Activation pending
+		                                {% endif %}
+		                            {% endif %}
 		                        {% endif %}
-		                    {% else %}
-		                        {% if o.project.is_alive %}
-		                                <form action="{% url project_join o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
-		                                    <input type="submit"   value="+ join group" class="join_group join" />
-		                                </form>
-		                                <div class="dialog">
-					                		Are you sure you what to join this project?<br>
-					                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
-					                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>
-					                		
-					                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
-					                	</div>
-		                        {% endif %}
-		                    {% endif %}
-	                    	</div>
-	                    </td>
-			            <td class="centered" style="width:9%">{{o.member_join_policy}}</td>
-	                    <td class="centered" style="width:9%">{{o.member_leave_policy}}</td>
-			               <!-- <td><a href="#" class="more-info" title="more info">+ more info </a></td>-->
+		                    	 
+		                    </td>
+		                    <td>
+		                    	<div class="msg-wrap">
+		                    		 
+			                    {% if user in members %}
+			                        {% if user in approved_members %}    
+				                       	{% if not user == o.owner %}
+				                            <form action="{% url project_leave o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
+				                                 <input type="submit"  value="x leave group" class="leave"/>
+				                            </form>
+				                            <div class="dialog">
+						                		Are you sure you what to leave this project?<br>
+						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
+						                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>       		
+						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+						                	</div>
+				                        {% else %}
+				                        	 &nbsp;
+				                        {% endif %}
+			                        {% else %}
+			                            &nbsp;
+			                        {% endif %}
+			                    {% else %}
+			                        {% if o.project.is_alive and not user == o.owner %}
+			                                <form action="{% url project_join o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
+			                                    <input type="submit"   value="+ join group" class="join_group join" />
+			                                </form>
+			                                <div class="dialog">
+						                		Are you sure you what to join this project?<br>
+						                		Name: <a  href="{% url project_detail o.id %}" title="visit group page">{{o.name}}</a><br>
+						                		{% if o.description %}Description:{{o.description|truncatewords:30}}{% endif %}<br><br>
+						                		
+						                		<a href="#" class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
+						                	</div>
+			                        {% endif %}
+			                    {% endif %}
+		                    	</div>
+		                    </td>
+				            <td class="centered" >{{o.member_join_policy}}</td>
+		                    <td class="centered">{{o.member_leave_policy}}</td>
+				               <!-- <td><a href="#" class="more-info" title="more info">+ more info </a></td>-->
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
-			                <td colspan="8" class="info-td">
+			                <td colspan="11" class="info-td">
 			                	<div>
 			                		<p>{{o.description}}</p>
 					                <p>{% if o.homepage%}

@@ -1,7 +1,7 @@
 --- A translation in English follows ---
 
-Το project {{object.definition.name}} έχει τερματιστεί.
+Το project {{object.name}} έχει τερματιστεί.
 
 --
 
-Your project application request ({{object.definition.name}}) has been terminated.
+Your project application request ({{object.name}}) has been terminated.

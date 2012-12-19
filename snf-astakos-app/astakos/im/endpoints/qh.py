@@ -114,6 +114,7 @@ def send_quota(users):
     return data
 
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
+                                         'resource',
                                          'capacity',
                                          'import_limit',
                                          'export_limit'))
@@ -124,18 +125,18 @@ def qh_add_quota(serial, sub_list, add_list):
 
     context = {}
     c = get_client()
-
+    
     sub_quota = []
     sub_append = sub_quota.append
     add_quota = []
     add_append = add_quota.append
 
-    for ql in sub_quota:
+    for ql in sub_list:
         args = (ql.holder, ql.resource, ENTITY_KEY,
                 0, ql.capacity, ql.import_limit, ql.export_limit)
         sub_append(args)
 
-    for ql in add_quota:
+    for ql in add_list:
         args = (ql.holder, ql.resource, ENTITY_KEY,
                 0, ql.capacity, ql.import_limit, ql.export_limit)
         add_append(args)

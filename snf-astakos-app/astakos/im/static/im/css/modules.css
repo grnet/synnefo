@@ -233,7 +233,7 @@ table.alt-style tr th							{ font-weight:normal; color:#3582AC }
 table.alt-style tr td							{ color:#222; }
 table.alt-style tr td:first-child,
 table.alt-style tr th:first-child				{ padding-left:5px; }
-table.alt-style tr td a							{ margin:0 0 0 20px; }
+table.alt-style tr td a							{ margin:0 0 0 5px; }
 table.alt-style tr td:first-child a				{ margin:0; }
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 }

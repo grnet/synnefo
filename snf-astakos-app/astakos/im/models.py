@@ -1665,7 +1665,7 @@ class Project(models.Model):
 #                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
-#             logger.error(e.messages)
+#             logger.error(e.message)
 
     def suspend(self):
         self.last_approval_date = None
@@ -1681,7 +1681,7 @@ class Project(models.Model):
 #                 dictionary={'object':self.application}
 #             ).send()
 #         except NotificationError, e:
-#             logger.error(e.messages)
+#             logger.error(e.message)
 
 
 class ProjectMembership(models.Model):
@@ -1785,23 +1785,21 @@ class ProjectMembership(models.Model):
 
         synced_application = self.application
         if synced_application is not None:
-            # first, inverse all current limits, and index them by resource name
             cur_grants = synced_application.resource_grants.all()
             for grant in cur_grants:
                 sub_append(QuotaLimits(
                                holder       = holder,
-                               resource     = grant.resource.name,
+                               resource     = str(grant.resource),
                                capacity     = grant.member_capacity,
                                import_limit = grant.member_import_limit,
                                export_limit = grant.member_export_limit))
 
         if not remove:
-            # second, add each new limit to its inverted current
             new_grants = self.pending_application.projectresourcegrant_set.all()
             for new_grant in new_grants:
                 add_append(QuotaLimits(
                                holder       = holder,
-                               resource     = new_grant.resource.name,
+                               resource     = str(new_grant.resource),
                                capacity     = new_grant.member_capacity,
                                import_limit = new_grant.member_import_limit,
                                export_limit = new_grant.member_export_limit))

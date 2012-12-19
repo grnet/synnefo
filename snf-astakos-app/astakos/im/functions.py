@@ -486,7 +486,7 @@ def accept_membership(project, user, request_user=None):
             dictionary={'object':membership.project.application, 'action':'accepted'})
         notification.send()
     except NotificationError, e:
-        logger.error(e.messages)
+        logger.error(e.message)
     return membership
 
 def reject_membership(project, user, request_user=None):
@@ -514,7 +514,7 @@ def reject_membership(project, user, request_user=None):
             dictionary={'object':membership.project.application, 'action':'rejected'})
         notification.send()
     except NotificationError, e:
-        logger.error(e.messages)
+        logger.error(e.message)
     return membership
 
 def remove_membership(project, user, request_user=None):
@@ -543,7 +543,7 @@ def remove_membership(project, user, request_user=None):
             dictionary={'object':membership.project.application, 'action':'removed'})
         notification.send()
     except NotificationError, e:
-        logger.error(e.messages)
+        logger.error(e.message)
     return membership
 
 def leave_project(project_application_id, user_id):
@@ -615,4 +615,4 @@ def approve_application(application):
             dictionary={'object':application})
         notification.send()
     except NotificationError, e:
-        logger.error(e.messages)
+        logger.error(e.message)

@@ -118,6 +118,7 @@ $(document).ready(function() {
 		    
 		}
 	});
+    $('.with-info select').dropkick();
     
     $('.top-msg .success').parents('.top-msg').addClass('success');
     $('.top-msg .error').parents('.top-msg').addClass('error');

@@ -1734,7 +1734,7 @@ class ProjectMembership(models.Model):
                             serial=self.id,
                             person=self.person,
                             project=self.project,
-                            date=date,
+                            date=date or datetime.now(),
                             reason=reason)
         history_item.save()
         serial = history_item.id

@@ -1477,7 +1477,7 @@ class ProjectApplication(models.Model):
             # needs SERIALIZABLE
             conflicting_project = Project.objects.get(name=new_project_name)
             if (conflicting_project.is_alive and
-                (project is None or conflicting_project.id != project.id)):
+                conflicting_project != project):
                 m = (_("cannot approve: project with name '%s' "
                        "already exists (serial: %s)") % (
                         new_project_name, conflicting_project.id))

@@ -1861,19 +1861,18 @@ def sync_finish_serials(serials_to_ack=None):
     sfu = ProjectMembership.objects.select_for_update()
     memberships = list(sfu.filter(pending_serial__isnull=False))
 
-    if not memberships:
-        return 0
+    if memberships:
+        for membership in memberships:
+            serial = membership.pending_serial
+            # just make sure the project row is selected for update
+            project = membership.project
+            if serial in serials_to_ack:
+                membership.set_sync()
+            else:
+                membership.reset_sync()
 
-    for membership in memberships:
-        serial = membership.pending_serial
-        # just make sure the project row is selected for update
-        project = membership.project
-        if serial in serials_to_ack:
-            membership.set_sync()
-	else:
-            membership.reset_sync()
+        transaction.commit()
 
-    transaction.commit()
     qh_ack_serials(list(serials_to_ack))
     return len(memberships)
 

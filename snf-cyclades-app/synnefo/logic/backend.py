@@ -221,7 +221,7 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.operstate = state_for_success
 
     if status in ('canceled', 'error') and opcode == 'OP_NETWORK_ADD':
-        utils.update_state(back_network, 'ERROR')
+        back_network.operstate = 'ERROR'
         back_network.backendtime = etime
 
     if opcode == 'OP_NETWORK_REMOVE':

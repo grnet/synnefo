@@ -50,7 +50,7 @@ class Cookie():
     def __init__(self, request, response=None):
         cookies = getattr(request, 'COOKIES', {})
         cookie = unquote(cookies.get(COOKIE_NAME, ''))
-        self.email, sep, self.auth_token = cookie.partition('|')
+        self.uuid, sep, self.auth_token = cookie.partition('|')
         self.request = request
         self.response = response
     

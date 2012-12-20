@@ -560,7 +560,7 @@ def leave_project(project_application_id, user_id):
             IOError
     """
     project = get_project_by_application_id(project_application_id)
-    leave_policy = project.application.member_join_policy
+    leave_policy = project.application.member_leave_policy
     if leave_policy == get_closed_leave():
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 

@@ -3,7 +3,6 @@
 {% load filters %}
 
 {% block page.body %}
-{% with object.project.members as members %}
 {% with object.project.approved_members as approved_members %}
 {% with resource_catalog|populated_resource_catalog as resource_catalog%}
 <div class="projects">
@@ -12,11 +11,7 @@
 	<h2>
         <em>
             {% if user == object.owner %}
-                {% if object.is_active %}
-                    [ ADMINISTRATOR - ACTIVE ]
-                {% else %}
-                    [ ADMINISTRATOR - PENDING ]
-                {% endif %}
+                [ ADMINISTRATOR - {{ object.state|upper }}]
             {%  else %}
                 {% if  user in approve_members %}
                     [ ENROLLED - ACTIVE ]
@@ -28,33 +23,6 @@
 	 	<span>{{ object.name|upper }}</span>
 	 </h2>
 	 
-<!-- 
-	 <div class="details">
-	 	<h3>
-	 		GENERAL INFO
-		 	{% if user == object.owner %}
-		 		<a href="#" class="edit">EDIT</a>
-		 	{% endif %}
-	 	</h3>
-	 	
-	 	<div class="data">
-		 	<p class="restricted">{{ object.description|safe }}</p>
-		 	<dl class="alt-style">
-			 </dl>
-		</div>
-		<div class="editable" style="display:none;">
-		<form action="{% url project_detail object.id %}" method="post"
-	            class="withlabels">{% csrf_token %}
-	            {% with update_form as form %}
-                    {% include "im/form_render.html" %}
-                    <div class="form-row submit">
-                        <input type="submit" class="submit altcol" value="SAVE" />
-                    </div>
-	            {% endwith %}
-	    </form>
-		</div>
-	 </div>
- -->
 	 <div class="full-dotted">
 		 <h3>DETAILS</h3>
 		 <dl class="alt-style">
@@ -120,14 +88,6 @@
                 {% with resource_catalog|lookup:'resources' as resource_info %}
                     {% with rp.resource|to_unicode as resource_name %}
                         {% with resource_info|lookup:resource_name as decorated_resource %}
-<!-- 
-	 		    <dt>
-	 		        {{rp.resource}}
-	 		    </dt>
-	 		    <dd>
-	 		        {{rp.member_capacity}}
-	 		    <dd/>
- -->
 		 		<dt>
        				Max {% if decorated_resource.is_abbreviation %}{{ decorated_resource.verbose_name|upper }}{% else %}{{ decorated_resource.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
        			</dt>
@@ -251,6 +211,5 @@
 </div>
 
 {% endwith %} 
-{% endwith %}
 {% endwith %}
 {% endblock %}

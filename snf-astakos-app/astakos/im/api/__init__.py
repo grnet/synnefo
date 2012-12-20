@@ -40,7 +40,7 @@ from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from astakos.im.models import AstakosUser, GroupKind, Service, Resource
+from astakos.im.models import AstakosUser, Service, Resource
 from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
 from astakos.im.settings import (
     INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL)

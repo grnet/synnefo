@@ -40,7 +40,6 @@ from smtplib import SMTPException
 
 from astakos.im.models import (
     AstakosUser,
-#     AstakosGroup, GroupKind,
     Resource, Service, RESOURCE_SEPARATOR,
     Project, ProjectApplication, ProjectMembership, filter_queryset_by_property)
 from astakos.im.api.backends.base import (
@@ -304,18 +303,3 @@ class DjangoBackend(BaseBackend):
         q = Resource.objects.filter(service__id=service_id,
                                 id__in=ids)
         q.delete()
-
-#     @safe
-#     def create_group(self, **kwargs):
-#         policies = kwargs.pop('policies', ())
-#         permissions = kwargs.pop('permissions', ())
-#         members = kwargs.pop('members', ())
-#         owners = kwargs.pop('owners', ())
-# 
-#         g = self._create_object(AstakosGroup, **kwargs)
-# 
-#         g.permissions = permissions
-#         g.policies = policies
-# #        g.members = members
-#         g.owners = owners
-#         return self._details(g)

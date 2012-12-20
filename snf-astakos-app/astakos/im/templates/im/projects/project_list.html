@@ -102,10 +102,10 @@
 	                        {% if user == o.owner %}
 	                            Owner
 	                        {% else %}
-	                            {% if not user in members %}
+	                            {% if not user in o.project.members.all %}
 	                                Not member
 	                            {% else %}
-	                                {% if user in approved_members %}
+	                                {% if user in o.project.approved_members %}
 	                                    Registered
 	                                {% else %}
 	                                    Activation pending
@@ -242,10 +242,10 @@
 		                        {% if user == o.owner %}
 		                            Owner
 		                        {% else %}
-		                            {% if not user in members %}
+		                            {% if not user in o.project.members.all %}
 		                                Not member
 		                            {% else %}
-		                                {% if user in approved_members %}
+		                                {% if user in o.project.approved_members %}
 		                                    Registered
 		                                {% else %}
 		                                    Activation pending

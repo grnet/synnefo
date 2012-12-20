@@ -143,8 +143,8 @@ class ModularBackend(BaseBackend):
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
-                 queue_module=None, queue_hosts=None,
-                 queue_exchange=None, quotaholder_url=None,
+                 queue_module=None, queue_hosts=None, queue_exchange=None,
+                 quotaholder_url=None, quotaholder_token=None,
                  free_versioning=True):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
@@ -202,7 +202,8 @@ class ModularBackend(BaseBackend):
             self.queue = NoQueue()
 
         self.quotaholder_url = quotaholder_url
-        self.quotaholder = QuotaholderClient(quotaholder_url)
+        self.quotaholder_token = quotaholder_token
+        self.quotaholder = QuotaholderClient(quotaholder_url, quotaholder_token)
         self.serials = []
         self.messages = []
 

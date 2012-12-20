@@ -1269,7 +1269,7 @@ class ModularBackend(BaseBackend):
         
         serial = self.quotaholder.issue_commission(
                 context     =   {},
-                target      =   account,
+                target      =   user.uuid,
                 key         =   '1',
                 clientkey   =   'pithos',
                 ownerkey    =   '',

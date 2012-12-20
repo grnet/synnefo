@@ -182,7 +182,7 @@ def send_resource_quantities(resources):
         import_limit = None
         export_limit = None
         flags = 0
-        args = (resource.service.name, resource.name, key, quantity, capacity,
+        args = (resource.service.name, str(resource), key, quantity, capacity,
                 import_limit, export_limit, flags)
         append(args)
     return data

@@ -1472,19 +1472,23 @@ class ProjectApplication(models.Model):
 
         now = datetime.now()
         project = self._get_project()
-        if project is None:
-            try:
-                # needs SERIALIZABLE
-                conflicting_project = Project.objects.get(name=new_project_name)
-                if conflicting_project.is_alive:
-                    m = _("cannot approve: project with name '%s' "
-                          "already exists (serial: %s)") % (
-                            new_project_name, conflicting_project.id)
-                    raise PermissionDenied(m) # invalid argument
-            except Project.DoesNotExist:
-                pass
-            project = Project(creation_date=now, name=new_project_name)
 
+        try:
+            # needs SERIALIZABLE
+            conflicting_project = Project.objects.get(name=new_project_name)
+            if (conflicting_project.is_alive and
+                (project is None or conflicting_project.id != project.id)):
+                m = (_("cannot approve: project with name '%s' "
+                       "already exists (serial: %s)") % (
+                        new_project_name, conflicting_project.id))
+                raise PermissionDenied(m) # invalid argument
+        except Project.DoesNotExist:
+            pass
+
+        if project is None:
+            project = Project(creation_date=now)
+
+        project.name = new_project_name
         project.application = self
 
         # This will block while syncing,

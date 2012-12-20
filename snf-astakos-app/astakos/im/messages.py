@@ -173,6 +173,7 @@ ADD_PROJECT_MEMBERS_Q_HELP              =   'Add a comma separated list of user 
 MISSING_IDENTIFIER                      =   'Missing identifier.'
 UNKNOWN_USER_ID                         =   'There is no user identified by %s.'
 UNKNOWN_PROJECT_APPLICATION_ID          =   'There is no project application identified by %s.'
+UNKNOWN_PROJECT_ID                      =   'There is no project identified by %s.'
 UNKNOWN_IDENTIFIER                      =   'Unknown identifier.'
 PENDING_MEMBERSHIP_LEAVE                =   'Your request is pending moderation by the Project owner.'
 USER_JOINED_PROJECT                     =   '%(realname)s has joined the Project.'

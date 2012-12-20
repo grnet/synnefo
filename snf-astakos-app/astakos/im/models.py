@@ -1644,43 +1644,15 @@ class Project(models.Model):
         m = ProjectMembership.objects.get(person=user, project=self)
         m.remove()
 
-    def terminate(self):
+    def set_termination_start_date(self):
         self.termination_start_date = datetime.now()
         self.terminaton_date = None
         self.save()
 
-        rejected = self.sync()
-        if not rejected:
-            self.termination_start_date = None
-            self.termination_date = datetime.now()
-            self.save()
-
-#         try:
-#             notification = build_notification(
-#                 settings.SERVER_EMAIL,
-#                 [self.application.owner.email],
-#                 _(PROJECT_TERMINATION_SUBJECT) % self.__dict__,
-#                 template='im/projects/project_termination_notification.txt',
-#                 dictionary={'object':self.application}
-#             ).send()
-#         except NotificationError, e:
-#             logger.error(e.message)
-
-    def suspend(self):
-        self.last_approval_date = None
+    def set_termination_date(self):
+        self.termination_start_date = None
+        self.termination_date = datetime.now()
         self.save()
-        self.sync()
-
-#         try:
-#             notification = build_notification(
-#                 settings.SERVER_EMAIL,
-#                 [self.application.owner.email],
-#                 _(PROJECT_SUSPENSION_SUBJECT) % self.__dict__,
-#                 template='im/projects/project_suspension_notification.txt',
-#                 dictionary={'object':self.application}
-#             ).send()
-#         except NotificationError, e:
-#             logger.error(e.message)
 
 
 class ProjectMembership(models.Model):

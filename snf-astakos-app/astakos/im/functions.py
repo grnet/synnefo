@@ -165,14 +165,6 @@ def send_account_creation_notification(template_name, dictionary=None):
     return _send_admin_notification(template_name, dictionary, subject=subject)
 
 
-def send_group_creation_notification(template_name, dictionary=None):
-    group = dictionary.get('group')
-    if not group:
-        return
-    subject = _(GROUP_CREATION_SUBJECT) % {'group':group.get('name', '')}
-    return _send_admin_notification(template_name, dictionary, subject=subject)
-
-
 def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
     """
     Send email to DEFAULT_CONTACT_EMAIL to notify for a new user activation.
@@ -425,6 +417,13 @@ def get_project_by_application_id(project_application_id):
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % project_application_id)
 
+def get_project_by_id(project_id):
+    try:
+        return Project.objects.get(id=project_id)
+    except Project.DoesNotExist:
+        raise IOError(
+            _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
+
 def get_user_by_id(user_id):
     try:
         return AstakosUser.objects.get(id=user_id)
@@ -621,5 +620,39 @@ def approve_application(application):
             template='im/projects/project_approval_notification.txt',
             dictionary={'object':application})
         notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+def terminate(project_id):
+    project = get_project_by_id(project_id)
+    project.set_termination_start_date()
+    trigger_sync()
+    project.set_termination_date()
+
+    try:
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [project.application.owner.email],
+            _(PROJECT_TERMINATION_SUBJECT) % project.__dict__,
+            template='im/projects/project_termination_notification.txt',
+            dictionary={'object':project.application}
+        ).send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+def suspend(project_id):
+    project = get_project_by_id(project_id)
+    project.last_approval_date = None
+    project.save()
+    trigger_sync()
+    
+    try:
+        notification = build_notification(
+            settings.SERVER_EMAIL,
+            [project.application.owner.email],
+            _(PROJECT_SUSPENSION_SUBJECT) % project.__dict__,
+            template='im/projects/project_suspension_notification.txt',
+            dictionary={'object':project.application}
+        ).send()
     except NotificationError, e:
         logger.error(e.message)

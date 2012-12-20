@@ -41,7 +41,9 @@ from django.http import Http404
 from astakos.im.models import (
     ProjectApplication, Project)
 
-@transaction.commit_on_success
+from astakos.im.functions import terminate, suspend
+
+@transaction.commit_manually
 class Command(BaseCommand):
     args = "<project id>"
     help = "Update project state"
@@ -69,15 +71,12 @@ class Command(BaseCommand):
             raise CommandError('Invalid id')
         else:
             try:
-                # Is it a project id?
-                p = lookup_object(Project, id, None, None)
-            except Http404:
-                raise CommandError('Invalid id')
+                if options['terminate']:
+                    terminate(id)
+                elif options['suspend']:
+                    suspend(id)
+            except BaseException, e:
+                transaction.rollback()
+                raise CommandError(e)
             else:
-                try:
-                    if options['terminate']:
-                        p.terminate()
-                    elif options['suspend']:
-                        p.suspend()
-                except BaseException, e:
-                    raise CommandError(e)
+                transaction.commit()

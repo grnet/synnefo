@@ -34,7 +34,8 @@
 
 from django.test import TestCase
 from synnefo.db.pools import (PoolManager, EmptyPool, BridgePool,
-                              MacPrefixPool, IPPool)
+                              MacPrefixPool, IPPool, find_padding,
+                              bitarray_to_map)
 from bitarray import bitarray
 
 
@@ -136,6 +137,37 @@ class PoolManagerTestCase(TestCase):
         self.assertEqual(pool.available, bitarray('1' * 39 + '0' * 1))
         self.assertEqual(pool.reserved, bitarray('1' * 39 + '0' * 1))
 
+    def test_shrink_in_use(self):
+        obj = DummyObject(8)
+        pool = DummyPool(obj)
+        pool._reserve(6)
+        self.assertRaises(Exception, pool.shrink, 3)
+
+    def test_count(self):
+        obj = DummyObject(10)
+        pool = DummyPool(obj)
+        pool._reserve(1)
+        pool._reserve(3)
+        pool._reserve(4)
+        pool._reserve(2, external=True)
+        self.assertEqual(pool.count_available(), 6)
+        self.assertEqual(pool.count_unavailable(), 4)
+        self.assertEqual(pool.count_reserved(), 1)
+        self.assertEqual(pool.count_unreserved(), 9)
+
+
+class HelpersTestCase(TestCase):
+    def test_find_padding(self):
+        self.assertEqual(find_padding(1), 7)
+        self.assertEqual(find_padding(8), 0)
+        self.assertEqual(find_padding(12), 4)
+        self.assertEqual(find_padding(16), 0)
+
+    def test_bitarray_to_map(self):
+        bt = bitarray('01001100101')
+        map_ = bitarray_to_map(bt)
+        self.assertEqual(map_, 'X.XX..XX.X.')
+
 
 class BridgePoolTestCase(TestCase):
     def test_bridge_conversion(self):
@@ -158,6 +190,21 @@ class MacPrefixPoolTestCase(TestCase):
         pool = MacPrefixPool(obj)
         for i in range(0, 65536):
             self.assertEqual(pool.is_available(i, index=True), False)
+
+    def test_mac_prefix_conversion(self):
+        obj = DummyObject(13)
+        obj.base = 'aa:00:0'
+        pool = MacPrefixPool(obj)
+        for i in range(1, 9):
+            self.assertEqual("aa:00:%s" % i, pool.get())
+
+    def test_value_to_index(self):
+        obj = DummyObject(13)
+        obj.base = 'aa:00:0'
+        pool = MacPrefixPool(obj)
+        index = pool.value_to_index('aa:bc:ee')
+        val = pool.index_to_value(index)
+        self.assertEqual(val, 'aa:bc:ee')
 
 
 class IPPoolTestCase(TestCase):

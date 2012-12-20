@@ -84,6 +84,24 @@ class UpdateDBTest(TestCase):
         update_db(client, msg)
         client.basic_ack.assert_called_once()
 
+    def test_old_msg(self, client):
+        from time import sleep
+        from datetime import datetime
+        old_time = time()
+        sleep(0.01)
+        new_time = datetime.fromtimestamp(time())
+        vm = mfactory.VirtualMachineFactory(backendtime=new_time)
+        vm.operstate = 'STOPPED'
+        vm.save()
+        msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
+                              event_time=split_time(old_time),
+                              instance=vm.backend_vm_id)
+        update_db(client, msg)
+        client.basic_ack.assert_called_once()
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEquals(db_vm.operstate, "STOPPED")
+        self.assertEquals(db_vm.backendtime, new_time)
+
     def test_start(self, client):
         vm = mfactory.VirtualMachineFactory()
         msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
@@ -541,3 +559,6 @@ class ReconciliationTest(TestCase):
                           set([(2, 'STARTED', False),
                            (3, 'BUILD', True), (4, 'STARTED', False),
                            (50, 'BUILD', True)]))
+
+from synnefo.logic.test.rapi_pool_tests import *
+from synnefo.logic.test.utils_tests import *

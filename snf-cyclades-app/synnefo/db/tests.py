@@ -192,6 +192,12 @@ class BackendNetworkTest(TestCase):
         self.assertTrue(backend.index < 10)
         self.assertEqual(bnet.mac_prefix, 'aa:bb:c%s' % backend.index)
 
+    def test_invalid_mac(self):
+        network = mfact.NetworkFactory(mac_prefix='zz:bb:c')
+        backend = mfact.BackendFactory()
+        self.assertRaises(utils.InvalidMacAddress,
+                mfact.BackendNetworkFactory, network=network, backend=backend)
+
 
 class BridgePoolTest(TestCase):
     def test_no_pool(self):

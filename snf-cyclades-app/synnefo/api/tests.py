@@ -249,6 +249,9 @@ class ServerAPITest(BaseAPITest):
         """Test if a server details are returned."""
         db_vm = self.vm2
         user = self.vm2.userid
+        net = mfactory.NetworkFactory()
+        nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net)
+
         db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
 
         response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
@@ -260,6 +263,13 @@ class ServerAPITest(BaseAPITest):
         self.assertEqual(server['imageRef'], db_vm.imageid)
         self.assertEqual(server['name'], db_vm.name)
         self.assertEqual(server['status'], get_rsapi_state(db_vm))
+        api_nic = server['attachments']['values'][0]
+        self.assertEqual(api_nic['network_id'], str(net.id))
+        self.assertEqual(api_nic['mac_address'], nic.mac)
+        self.assertEqual(api_nic['firewallProfile'], nic.firewall_profile)
+        self.assertEqual(api_nic['ipv4'], nic.ipv4)
+        self.assertEqual(api_nic['ipv6'], nic.ipv6)
+        self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
 
         metadata = server['metadata']['values']
         self.assertEqual(len(metadata), 1)
@@ -284,6 +294,14 @@ class ServerAPITest(BaseAPITest):
 
         response = self.post('/api/v1.1/servers', params={})
         self.assertBadRequest(response)
+
+    def test_rename_server(self):
+        vm = self.vm2
+        request = {'server': {'name': 'new_name'}}
+        response = self.put('/api/v1.1/servers/%d' % vm.id, vm.userid,
+                            json.dumps(request), 'json')
+        self.assertSuccess(response)
+        self.assertEqual(VirtualMachine.objects.get(id=vm.id).name, "new_name")
 
 
 @patch('synnefo.api.util.get_image')
@@ -359,7 +377,7 @@ class ServerDestroyAPITest(BaseAPITest):
         vm = mfactory.VirtualMachineFactory()
         response = self.delete('/api/v1.1/servers/%d' % 42, vm.userid)
         self.assertItemNotFound(response)
-        mrapi().DeleteInstance.assert_not_called()
+        self.assertFalse(mrapi.mock_calls)
 
 
 @patch('synnefo.api.util.get_image')
@@ -383,6 +401,23 @@ class ServerActionAPITest(BaseAPITest):
                 self.assertEqual(VirtualMachine.objects.get(id=vm.id).action,
                                  action.upper())
 
+    def test_action_in_building_vm(self, mrapi, mimage):
+        """Test building in progress"""
+        vm = mfactory.VirtualMachineFactory()
+        request = {'start': '{}'}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(mrapi.mock_calls)
+
+    def test_destroy_build_vm(self, mrapi, mimage):
+        """Test building in progress"""
+        vm = mfactory.VirtualMachineFactory()
+        response = self.delete('/api/v1.1/servers/%d' % vm.id,
+                             vm.userid)
+        self.assertSuccess(response)
+        mrapi().RemoveInstance.assert_called_once()
+
     def test_firewall(self, mrapi, mimage):
         vm = mfactory.VirtualMachineFactory()
         vm.operstate = "STOPPED"
@@ -392,6 +427,16 @@ class ServerActionAPITest(BaseAPITest):
                              vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().ModifyInstance.assert_called_once()
+
+    def test_unsupported_firewall(self, mrapi, mimage):
+        vm = mfactory.VirtualMachineFactory()
+        vm.operstate = "STOPPED"
+        vm.save()
+        request = {'firewallProfile': {'profile': 'FOO'}}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+        self.assertFalse(mrapi.mock_calls)
 
 
 class ServerMetadataAPITest(BaseAPITest):
@@ -590,7 +635,16 @@ class NetworkAPITest(BaseAPITest):
         response = self.delete('/api/v1.1/networks/%d' % net.id,
                                 self.net2.userid)
         self.assertFault(response, 403, 'forbidden')
-        mrapi.DeleteNetwork.assert_not_called()
+        self.assertFalse(mrapi.mock_calls)
+
+    def test_delete_network_in_use(self, mrapi):
+        net = mfactory.NetworkFactory(deleted=False)
+        vm = mfactory.VirtualMachineFactory()
+        mfactory.NetworkInterfaceFactory(machine=vm, network=net)
+        response = self.delete('/api/v1.1/networks/%d' % net.id,
+                                net.userid)
+        self.assertFault(response, 421, 'networkInUse')
+        self.assertFalse(mrapi.mock_calls)
 
     def test_add_nic(self, mrapi):
         user = 'userr'
@@ -601,6 +655,15 @@ class NetworkAPITest(BaseAPITest):
                              net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
 
+    def test_add_nic_to_public_network(self, mrapi):
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', userid=user, public=True)
+        request = {'add': {'serverRef': vm.id}}
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        self.assertFault(response, 403, 'forbidden')
+
     def test_add_nic_malformed(self, mrapi):
         user = 'userr'
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
@@ -609,6 +672,36 @@ class NetworkAPITest(BaseAPITest):
         response = self.post('/api/v1.1/networks/%d/action' % net.id,
                              net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
+
+    def test_add_nic_not_active(self, mrapi):
+        """Test connecting VM to non-active network"""
+        user = 'dummy'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='PENDING', subnet='10.0.0.0/31',
+                                      userid=user)
+        request = {'add': {'serveRef': vm.id}}
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        # Test that returns BuildInProgress
+        self.assertEqual(response.status_code, 409)
+
+    def test_add_nic_full_network(self, mrapi):
+        """Test connecting VM to a full network"""
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', subnet='10.0.0.0/30',
+                                      userid=user, dhcp=True)
+        pool = net.get_pool()
+        while not pool.empty():
+            pool.get()
+        pool.save()
+        pool = net.get_pool()
+        self.assertTrue(pool.empty())
+        request = {'add': {'serverRef': vm.id}}
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        # Test that returns OverLimit
+        self.assertEqual(response.status_code, 413)
 
     def test_remove_nic(self, mrapi):
         user = 'userr'
@@ -632,6 +725,17 @@ class NetworkAPITest(BaseAPITest):
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
         request = {'remove':
                     {'att234achment': 'nic-%s-%s' % (vm.id, nic.index)}
+                  }
+        response = self.post('/api/v1.1/networks/%d/action' % net.id,
+                             net.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_remove_nic_malformed_2(self, mrapi):
+        user = 'userr'
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
+        request = {'remove':
+                    {'attachment': 'nic-%s' % vm.id}
                   }
         response = self.post('/api/v1.1/networks/%d/action' % net.id,
                              net.userid, json.dumps(request), 'json')
@@ -665,6 +769,16 @@ class ServerVNCConsole(BaseAPITest):
         self.assertEqual(set(console.keys()),
                          set(['type', 'host', 'port', 'password']))
 
+    def test_wrong_console_type(self):
+        """Test console req for ACTIVE server"""
+        vm = mfactory.VirtualMachineFactory()
+        vm.operstate = 'STARTED'
+        vm.save()
+
+        data = json.dumps({'console': {'type': 'foo'}})
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, data, 'json')
+        self.assertBadRequest(response)
 
 def assert_backend_closed(func):
     @wraps(func)
@@ -846,6 +960,42 @@ class ImageMetadataAPITest(BaseAPITest):
                             {'foo': 'bar', 'foo2': 'bar2', 'foo3': 'bar3'}})
 
     @assert_backend_closed
+    def test_create_metadata_malformed_1(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend"):
+                request = {'met': {'foo3': 'bar3'}}
+                response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                                    json.dumps(request), 'json')
+                self.assertBadRequest(response)
+
+    @assert_backend_closed
+    def test_create_metadata_malformed_2(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend"):
+                request = {'meta': [('foo3', 'bar3')]}
+                response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                                    json.dumps(request), 'json')
+                self.assertBadRequest(response)
+
+    @assert_backend_closed
+    def test_create_metadata_malformed_3(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend"):
+            request = {'met': {'foo3': 'bar3', 'foo4': 'bar4'}}
+            response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                                    json.dumps(request), 'json')
+            self.assertBadRequest(response)
+
+    @assert_backend_closed
+    def test_create_metadata_malformed_4(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend"):
+            request = {'met': {'foo3': 'bar3'}}
+            response = self.put('/api/v1.1/images/42/meta/foo4', 'user',
+                                    json.dumps(request), 'json')
+            self.assertBadRequest(response)
+
+    @assert_backend_closed
     def test_update_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
         with patch("synnefo.api.images.ImageBackend") as m:
@@ -857,6 +1007,15 @@ class ImageMetadataAPITest(BaseAPITest):
                         {'properties':
                             {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}
                         })
+
+    @assert_backend_closed
+    def test_update_metadata_malformed(self, backend):
+        backend.return_value.get_image.return_value = self.image
+        with patch("synnefo.api.images.ImageBackend"):
+                request = {'meta': {'foo': 'bar_new', 'foo4': 'bar4'}}
+                response = self.post('/api/v1.1/images/42/meta', 'user',
+                                    json.dumps(request), 'json')
+                self.assertBadRequest(response)
 
 
 class APITest(TestCase):

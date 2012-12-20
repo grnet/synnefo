@@ -1140,6 +1140,7 @@ def project_add(request):
 @login_required
 def project_list(request):
     q = ProjectApplication.objects.filter(owner=request.user)
+    q |= ProjectApplication.objects.filter(applicant=request.user)
     q |= ProjectApplication.objects.filter(
         project__in=request.user.projectmembership_set.values_list('project', flat=True)
     )
@@ -1253,22 +1254,33 @@ def project_detail(request, application_id):
 @signed_terms_required
 @login_required
 def project_search(request):
+    q = request.GET.get('q')
     queryset = ProjectApplication.objects
+    
     if request.method == 'GET':
         form = ProjectSearchForm()
-        queryset = queryset.none()
+        q = q.strip()
+        queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
+        queryset = queryset.filter(name__contains=q)
     else:
         form = ProjectSearchForm(request.POST)
+        
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
+            
             queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
+           
             queryset = queryset.filter(name__contains=q)
+        else:
+            queryset = queryset.none()
+             
     sorting = 'name'
     # validate sorting
     sort_form = ProjectSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     queryset = queryset.order_by(sorting)
+    
     return object_list(
         request,
         queryset,
@@ -1278,7 +1290,8 @@ def project_search(request):
         extra_context=dict(
             form=form,
             is_search=True,
-            sorting=sorting
+            sorting=sorting,
+            q=q,
         )
     )
 

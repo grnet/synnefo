@@ -118,6 +118,8 @@ $(document).ready(function() {
 		    
 		}
 	});
+	
+	$('.with-info select').attr('tabindex','1');
     $('.with-info select').dropkick();
     
     $('.top-msg .success').parents('.top-msg').addClass('success');

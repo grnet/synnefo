@@ -1283,26 +1283,17 @@ def project_detail(request, application_id):
 @signed_terms_required
 @login_required
 def project_search(request):
-    q = request.GET.get('q')
-    queryset = ProjectApplication.objects
-    
-    if request.method == 'GET':
-        form = ProjectSearchForm()
-        q = q.strip()
-        queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
+    user_projects = request.user.projectmembership_set.filter(
+        ~Q(acceptance_date__isnull=True)).values('project')
+    queryset = ProjectApplication.objects.filter(state=ProjectApplication.APPROVED)
+    queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
+    queryset = queryset.exclude(project__in=user_projects)
+    queryset = queryset.select_related()
+    form = ProjectSearchForm(request.POST or request.GET)
+    q = None
+    if form.is_valid():
+        q = form.cleaned_data['q'].strip()
         queryset = queryset.filter(name__contains=q)
-    else:
-        form = ProjectSearchForm(request.POST)
-        
-        if form.is_valid():
-            q = form.cleaned_data['q'].strip()
-            
-            queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-           
-            queryset = queryset.filter(name__contains=q)
-        else:
-            queryset = queryset.none()
-             
     sorting = 'name'
     # validate sorting
     sort_form = ProjectSortForm(request.GET)
@@ -1322,33 +1313,6 @@ def project_search(request):
             sorting=sorting,
             q=q,
         )
-    )
-
-
-@require_http_methods(["GET"])
-@signed_terms_required
-@login_required
-def project_all(request):
-    q = ProjectApplication.objects.filter(
-        ~Q(project__last_approval_date__isnull=True))
-    q = q.select_related()
-    sorting = 'name'
-    sort_form = ProjectSortForm(request.GET)
-    if sort_form.is_valid():
-        sorting = sort_form.cleaned_data.get('sorting')
-    q = q.order_by(sorting)
-
-    return object_list(
-        request,
-        q,
-        paginate_by=PAGINATE_BY_ALL,
-        page=request.GET.get('page') or 1,
-        template_name='im/projects/project_list.html',
-        extra_context={
-            'form':ProjectSearchForm(),
-            'is_search':True,
-            'sorting':sorting
-        }
     )
 
 @require_http_methods(["POST"])

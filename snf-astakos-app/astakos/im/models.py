@@ -85,8 +85,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
 
-PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
-
 def get_content_type():
     global _content_type
     if _content_type is not None:
@@ -1353,7 +1351,7 @@ SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
 class ProjectApplication(models.Model):
-
+    PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
                                     AstakosUser,
                                     related_name='projects_applied',
@@ -1389,9 +1387,6 @@ class ProjectApplication(models.Model):
                                     through='ProjectResourceGrant')
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
-
-    states_list =   [PENDING, APPROVED, REPLACED, UNKNOWN]
-    states      =   dict((k, v) for v, k in enumerate(states_list))
 
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
@@ -1436,7 +1431,7 @@ class ProjectApplication(models.Model):
         self.applicant = applicant
         self.comments = comments
         self.issue_date = datetime.now()
-        self.state = PENDING
+        self.state = self.PENDING
         self.save()
         self.resource_policies = resource_policies
 
@@ -1465,7 +1460,7 @@ class ProjectApplication(models.Model):
             raise AssertionError("NOPE")
 
         new_project_name = self.name
-        if self.state != PENDING:
+        if self.state != self.PENDING:
             m = _("cannot approve: project '%s' in state '%s'") % (
                     new_project_name, self.state)
             raise PermissionDenied(m) # invalid argument
@@ -1503,11 +1498,11 @@ class ProjectApplication(models.Model):
 
         precursor = self.precursor_application
         while precursor:
-            precursor.state = REPLACED
+            precursor.state = self.REPLACED
             precursor.save()
             precursor = precursor.precursor_application
 
-        self.state = APPROVED
+        self.state = self.APPROVED
         self.save()
 
 

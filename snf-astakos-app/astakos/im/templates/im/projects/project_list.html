@@ -13,7 +13,7 @@
 		            {% include "im/form_render.html" %}
 		        <div class="form-row submit">
 		                <input type="submit" class="submit altcol" value="SEARCH" />
-		                {% if q %}<a href="{% url project_all %}">clear</a>{% endif %}
+		                {% if q %}<a href="{% url project_search %}">clear</a>{% endif %}
 		        </div>
 		    </form>
 	    {% else %}
@@ -45,10 +45,10 @@
 				<li class="join">
 					<div>
 						<div class="wrap">
-							<p class="centered"><a href="{% url project_all %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+							<p class="centered"><a href="{% url project_search %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
 							<p class="txt">Become a member of an existing Project and instantly gain access to the resources it has to offer you. Search for open Projects and join for free. Contact the closed Projects administrators, if you think they will accept you. In two words: try to Join now. </p>
 							
-							<p><a href="{% url project_all %}">join a project ></a></p>
+							<p><a href="{% url project_search %}">join a project ></a></p>
 						</div>
 					</div>
 				</li>

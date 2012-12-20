@@ -70,7 +70,6 @@ import astakos.im.messages as astakos_messages
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
-#     AstakosGroup, Membership
     EmailChange, GroupKind,
     RESOURCE_SEPARATOR, AstakosUserAuthProvider,
     PendingThirdPartyUser,
@@ -81,11 +80,6 @@ from astakos.im.forms import (
     LoginForm, InvitationForm, ProfileForm,
     FeedbackForm, SignApprovalTermsForm,
     EmailChangeForm,
-#     AstakosGroupCreationForm, AstakosGroupSearchForm,
-#     AstakosGroupUpdateForm, AddGroupMembersForm,
-#     MembersSortForm, AstakosGroupSortForm,
-#     TimelineForm, PickResourceForm,
-#     AstakosGroupCreationSummaryForm,
     ProjectApplicationForm, ProjectSortForm,
     AddProjectMembersForm, ProjectSearchForm,
     ProjectMembersSortForm)
@@ -95,7 +89,6 @@ from astakos.im.functions import (
     activate as activate_func,
     invite,
     send_activation as send_activation_func,
-#     send_group_creation_notification,
     SendNotificationError,
     accept_membership, reject_membership, remove_membership,
     leave_project, join_project, enroll_member)
@@ -808,59 +801,6 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
     )
 
 
-# def handle_membership(func):
-#     @wraps(func)
-#     def wrapper(request, group_id, user_id):
-#         try:
-#             m = Membership.objects.select_related().get(
-#                 group__id=group_id,
-#                 person__id=user_id)
-#         except Membership.DoesNotExist:
-#             return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
-#         else:
-#             if request.user not in m.group.owner.all():
-#                 return HttpResponseForbidden(_(astakos_messages.NOT_OWNER))
-#             func(request, m)
-#             return group_detail(request, group_id)
-#     return wrapper
-
-
-#@require_http_methods(["POST"])
-# @require_http_methods(["POST", "GET"])
-# @signed_terms_required
-# @login_required
-# @handle_membership
-# def approve_member(request, membership):
-#     try:
-#         membership.approve()
-#         realname = membership.person.realname
-#         msg = _(astakos_messages.MEMBER_JOINED_GROUP) % locals()
-#         messages.success(request, msg)
-#     except AssertionError:
-#         msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
-#         messages.error(request, msg)
-#     except BaseException, e:
-#         logger.exception(e)
-#         realname = membership.person.realname
-#         msg = _(astakos_messages.GENERIC_ERROR)
-#         messages.error(request, msg)
-
-
-# @signed_terms_required
-# @login_required
-# @handle_membership
-# def disapprove_member(request, membership):
-#     try:
-#         membership.disapprove()
-#         realname = membership.person.realname
-#         msg = astakos_messages.MEMBER_REMOVED % locals()
-#         messages.success(request, msg)
-#     except BaseException, e:
-#         logger.exception(e)
-#         msg = _(astakos_messages.GENERIC_ERROR)
-#         messages.error(request, msg)
-
-
 @require_http_methods(["GET"])
 @valid_astakos_user_required
 def resource_usage(request):
@@ -903,13 +843,6 @@ def resource_usage(request):
                            context_instance=get_context(request),
                            resource_usage=backenddata,
                            result=result)
-
-
-# def group_create_list(request):
-#     form = PickResourceForm()
-#     return render_response(
-#         template='im/astakosgroup_create_list.html',
-#         context_instance=get_context(request),)
 
 
 ##@require_http_methods(["GET"])

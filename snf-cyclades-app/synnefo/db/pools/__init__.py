@@ -109,7 +109,7 @@ class PoolManager(object):
         return self.pool.count(AVAILABLE)
 
     def count_unavailable(self):
-        return self.pool.count(UNAVAILABLE)
+        return self.pool_size - self.count_available()
 
     def count_reserved(self):
         return self.reserved[:self.pool_size].count(UNAVAILABLE)

@@ -863,15 +863,44 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
 @require_http_methods(["GET"])
 @valid_astakos_user_required
 def resource_usage(request):
+
+    def with_class(entry):
+         entry['load_class'] = 'red'
+         max_value = float(entry['maxValue'])
+         curr_value = float(entry['currValue'])
+         entry['ratio_limited']= 0
+         if max_value > 0 :
+             entry['ratio'] = (curr_value / max_value) * 100
+         else:
+             entry['ratio'] = 0
+         if entry['ratio'] < 66:
+             entry['load_class'] = 'yellow'
+         if entry['ratio'] < 33:
+             entry['load_class'] = 'green'
+         if entry['ratio']<0:
+             entry['ratio'] = 0
+         if entry['ratio']>100:
+             entry['ratio_limited'] = 100
+         else:
+             entry['ratio_limited'] = entry['ratio']
+         return entry
+
+    def pluralize(entry):
+        entry['plural'] = engine.plural(entry.get('name'))
+        return entry
+
     resource_usage = None
     result = callpoint.get_user_usage(request.user.id)
     if result.is_success:
         resource_usage = result.data
+        backenddata = map(with_class, result.data)
+        backenddata = map(with_class, backenddata)
+
     else:
         messages.error(request, result.reason)
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
-                           resource_usage=resource_usage,
+                           resource_usage=backenddata,
                            result=result)
 
 

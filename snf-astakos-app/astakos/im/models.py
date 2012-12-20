@@ -1472,19 +1472,23 @@ class ProjectApplication(models.Model):
 
         now = datetime.now()
         project = self._get_project()
-        if project is None:
-            try:
-                # needs SERIALIZABLE
-                conflicting_project = Project.objects.get(name=new_project_name)
-                if conflicting_project.is_alive:
-                    m = _("cannot approve: project with name '%s' "
-                          "already exists (serial: %s)") % (
-                            new_project_name, conflicting_project.id)
-                    raise PermissionDenied(m) # invalid argument
-            except Project.DoesNotExist:
-                pass
-            project = Project(creation_date=now, name=new_project_name)
 
+        try:
+            # needs SERIALIZABLE
+            conflicting_project = Project.objects.get(name=new_project_name)
+            if (conflicting_project.is_alive and
+                conflicting_project != project):
+                m = (_("cannot approve: project with name '%s' "
+                       "already exists (serial: %s)") % (
+                        new_project_name, conflicting_project.id))
+                raise PermissionDenied(m) # invalid argument
+        except Project.DoesNotExist:
+            pass
+
+        if project is None:
+            project = Project(creation_date=now)
+
+        project.name = new_project_name
         project.application = self
 
         # This will block while syncing,
@@ -1830,6 +1834,16 @@ class ProjectMembership(models.Model):
             m = _("%s: attempt to sync in state '%s'") % (self, state)
             raise AssertionError(m)
 
+    def reset_sync(self):
+        state = self.state
+        if state in [self.PENDING, self.REMOVING]:
+            self.pending_application = None
+            self.pending_serial = None
+            self.save()
+        else:
+            m = _("%s: attempt to reset sync in state '%s'") % (self, state)
+            raise AssertionError(m)
+
 class Serial(models.Model):
     serial  =   models.AutoField(primary_key=True)
 
@@ -1847,17 +1861,18 @@ def sync_finish_serials(serials_to_ack=None):
     sfu = ProjectMembership.objects.select_for_update()
     memberships = list(sfu.filter(pending_serial__isnull=False))
 
-    if not memberships:
-        return 0
+    if memberships:
+        for membership in memberships:
+            serial = membership.pending_serial
+            # just make sure the project row is selected for update
+            project = membership.project
+            if serial in serials_to_ack:
+                membership.set_sync()
+            else:
+                membership.reset_sync()
 
-    for membership in memberships:
-        serial = membership.pending_serial
-        # just make sure the project row is selected for update
-        project = membership.project
-        if serial in serials_to_ack:
-            membership.set_sync()
+        transaction.commit()
 
-    transaction.commit()
     qh_ack_serials(list(serials_to_ack))
     return len(memberships)
 

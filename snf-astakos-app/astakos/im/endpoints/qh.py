@@ -182,7 +182,7 @@ def send_resource_quantities(resources):
         import_limit = None
         export_limit = None
         flags = 0
-        args = (resource.service, resource, key, quantity, capacity,
+        args = (resource.service.name, str(resource), key, quantity, capacity,
                 import_limit, export_limit, flags)
         append(args)
     return data
@@ -205,14 +205,28 @@ def get_quota(users):
 
 
 @call('create_entity')
-def create_entities(entities, field=''):
+def create_user_entities(entities):
     data = []
     append = data.append
     for entity in entities:
-        try:
-            entity = entity.__getattribute__(field)
-        except AttributeError:
+        entity = entity.uuid
+        owner = 'system'
+        key = ENTITY_KEY
+        ownerkey = ''
+        args = entity, owner, key, ownerkey
+        append(args)
+    return data
+
+@call('create_entity')
+def create_service_entities(entities):
+    data = []
+    append = data.append
+    l = []
+    for entity in entities:
+        entity = entity.service.name
+        if entity in l:
             continue
+        l.append(entity)
         owner = 'system'
         key = ENTITY_KEY
         ownerkey = ''
@@ -223,14 +237,14 @@ def create_entities(entities, field=''):
 
 def register_users(users):
     users, copy = itertools.tee(users)
-    rejected = create_entities(entities=users, field='uuid')
+    rejected = create_user_entities(entities=users)
     created = (e for e in copy if unicode(e) not in rejected)
     return send_quota(created)
 
 
 def register_resources(resources):
     resources, copy = itertools.tee(resources)
-    rejected = create_entities(entities=resources, field='service')
+    rejected = create_service_entities(entities=resources)
     created = (e for e in copy if unicode(e) not in rejected)
     return send_resource_quantities(created)
 

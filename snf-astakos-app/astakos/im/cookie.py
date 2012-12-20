@@ -50,13 +50,13 @@ class Cookie():
     def __init__(self, request, response=None):
         cookies = getattr(request, 'COOKIES', {})
         cookie = unquote(cookies.get(COOKIE_NAME, ''))
-        self.email, sep, self.auth_token = cookie.partition('|')
+        self.uuid, sep, self.auth_token = cookie.partition('|')
         self.request = request
         self.response = response
     
     @property
-    def email(self):
-        return getattr(self, 'email', '')
+    def uuid(self):
+        return getattr(self, 'uuid', '')
     
     @property
     def auth_token(self):
@@ -69,7 +69,7 @@ class Cookie():
     
     @property
     def is_valid(self):
-        return self.email == getattr(self.user, 'email', '') and \
+        return self.uuid == getattr(self.user, 'uuid', '') and \
             self.auth_token == getattr(self.user, 'auth_token', '')
     
     @property
@@ -81,7 +81,7 @@ class Cookie():
             raise ValueError(_(astakos_messages.NO_RESPONSE))
         user = self.user
         expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-        cookie_value = quote(user.email + '|' + user.auth_token)
+        cookie_value = quote(user.uuid + '|' + user.auth_token)
         self.response.set_cookie(
             COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
             domain=COOKIE_DOMAIN, secure=COOKIE_SECURE

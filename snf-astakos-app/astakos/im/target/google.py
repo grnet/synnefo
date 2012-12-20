@@ -174,6 +174,7 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
+            messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
             response.set_cookie('astakos_last_login_method', 'google')
             return response
         else:

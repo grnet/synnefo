@@ -102,10 +102,10 @@
 	                        {% if user == o.owner %}
 	                            Owner
 	                        {% else %}
-	                            {% if not user in o.project.members.all %}
+	                            {% if not user in members %}
 	                                Not member
 	                            {% else %}
-	                                {% if user in o.project.approved_members %}
+	                                {% if user in approved_members %}
 	                                    Registered
 	                                {% else %}
 	                                    Activation pending
@@ -203,8 +203,6 @@
        		{% if not form %}
              
         	 	{% if page_obj.object_list  %}
-        	 	{% with o.project.members as members %}
-                {% with o.project.approved_members as approved_members %}  
 	      	    <div>
 	      	        
 					<table class="alt-style complex" id="allGroups">
@@ -226,7 +224,9 @@
 			              </tr>
 			            </thead>
 			            <tbody>
-			              {% for o in object_list %}
+                            {% for o in object_list %}
+                            {% with o.project.members.all as members %}
+                            {% with o.project.approved_members as approved_members %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
 			                <td><a  href="{% url project_detail o.id %}" title="visit group page">{{o.name|truncatename }}</a></td>
 			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
@@ -242,10 +242,10 @@
 		                        {% if user == o.owner %}
 		                            Owner
 		                        {% else %}
-		                            {% if not user in o.project.members.all %}
+		                            {% if not user in members %}
 		                                Not member
 		                            {% else %}
-		                                {% if user in o.project.approved_members %}
+		                                {% if user in approved_members %}
 		                                    Registered
 		                                {% else %}
 		                                    Activation pending
@@ -306,7 +306,9 @@
 			                	</div>	
 			                </td>
 			              </tr>
-			              {% endfor %}
+                        {% endwith %}
+                        {% endwith %}
+                        {% endfor %}
 			            </tbody>
 			        </table>
 				</div>
@@ -330,8 +332,6 @@
                         </span>
 					</p>
 			   </div>
-			    {% endwith %} 
-	      	    {% endwith %} 
 		 	{% endif %}
         	 
 	      	{% endif %}

@@ -1834,6 +1834,16 @@ class ProjectMembership(models.Model):
             m = _("%s: attempt to sync in state '%s'") % (self, state)
             raise AssertionError(m)
 
+    def reset_sync(self):
+        state = self.state
+        if state in [self.PENDING, self.REMOVING]:
+            self.pending_application = None
+            self.pending_serial = None
+            self.save()
+        else:
+            m = _("%s: attempt to reset sync in state '%s'") % (self, state)
+            raise AssertionError(m)
+
 class Serial(models.Model):
     serial  =   models.AutoField(primary_key=True)
 
@@ -1860,6 +1870,8 @@ def sync_finish_serials(serials_to_ack=None):
         project = membership.project
         if serial in serials_to_ack:
             membership.set_sync()
+	else:
+            membership.reset_sync()
 
     transaction.commit()
     qh_ack_serials(list(serials_to_ack))

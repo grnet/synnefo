@@ -168,7 +168,7 @@ class ShibbolethTests(TestCase):
         client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn",
                           cn="Kostas Papadimitriou",
                           ep_affiliation="Test Affiliation")
-        r = client.get('/im/login/shibboleth?')
+        r = client.get('/im/login/shibboleth?', follow=True)
         self.assertEqual(r.status_code, 200)
 
         # astakos asks if we want to add shibboleth
@@ -232,7 +232,7 @@ class ShibbolethTests(TestCase):
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertContains(r, messages.ACCOUNT_PENDING_MODERATION)
         r = client.get("/im/profile", follow=True)
-        self.assertRedirects(r, 'http://testserver/im/?next=%2Fim%2Fprofile')
+        self.assertRedirects(r, 'http://testserver/im/?next=/im/profile')
 
         # admin activates our user
         u = AstakosUser.objects.get(username="kpap@grnet.gr")
@@ -512,6 +512,7 @@ class LocalUserTests(TestCase):
         user = AstakosUser.objects.get(pk=user.pk)
         self.assertTrue(user.activation_sent)
         self.assertFalse(user.email_verified)
+        self.assertFalse(user.is_active)
         self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 1)
 
         # user forgot she got registered and tries to submit registration
@@ -522,11 +523,12 @@ class LocalUserTests(TestCase):
         r = self.client.post("/im/signup", data)
         self.assertContains(r, messages.EMAIL_USED)
 
-        # hmmm, email exists; lets get the password
+        # hmmm, email exists; lets request a password change
         r = self.client.get('/im/local/password_reset')
         self.assertEqual(r.status_code, 200)
         r = self.client.post('/im/local/password_reset', {'email':
-                                                          'kpap@grnet.gr'})
+                                                          'kpap@grnet.gr'},
+                            follow=True)
         # she can't because account is not active yet
         self.assertContains(r, "doesn&#39;t have an associated user account")
 
@@ -631,8 +633,7 @@ class LocalUserTests(TestCase):
         r = self.client.post('/im/local/password_reset', {'email':
                                                           'kpap@grnet.gr'})
         # she can't because account is not active yet
-        self.assertContains(r, "Password change for this account is not"
-                                " supported")
+        self.assertContains(r, messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD)
 
 class UserActionsTests(TestCase):
 

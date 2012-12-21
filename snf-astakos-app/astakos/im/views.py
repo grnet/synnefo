@@ -70,9 +70,8 @@ import astakos.im.messages as astakos_messages
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
-    EmailChange, GroupKind,
-    RESOURCE_SEPARATOR, AstakosUserAuthProvider,
-    PendingThirdPartyUser,
+    EmailChange, RESOURCE_SEPARATOR,
+    AstakosUserAuthProvider, PendingThirdPartyUser,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
@@ -1094,7 +1093,7 @@ def project_add(request):
         resource_catalog = result.data
     extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
     return _create_object(request, template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect='/im/project/list/',
+        extra_context=extra_context, post_save_redirect=reverse('project_list'),
         form_class=ProjectApplicationForm)
 
 

@@ -40,11 +40,6 @@ class Boolean(Integer):
 Boolean = Boolean()
 
 
-# class GroupKind(Integer):
-#     def init(self):
-#         self.opts.update({'minimum': 1, 'maximum': 5})
-# GroupKind = GroupKind()
-
 Timepoint = Text(classname='Timepoint', maxlen=24)
 
 

@@ -41,7 +41,7 @@ from smtplib import SMTPException
 from astakos.im.models import (
     AstakosUser,
     Resource, Service, RESOURCE_SEPARATOR,
-    Project, ProjectApplication, ProjectMembership, filter_queryset_by_property)
+    Project, ProjectApplication, ProjectMembership)
 from astakos.im.api.backends.base import (
     BaseBackend, SuccessResult, FailureResult)
 from astakos.im.api.backends.errors import (

@@ -105,6 +105,7 @@ from astakos.im.settings import (
     LOGGING_LEVEL, PAGINATE_BY,
     RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
     MODERATION_ENABLED)
+from astakos.im import settings as astakos_settings
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
@@ -782,7 +783,7 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
         messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if MODERATION_ENABLED:
+    if astakos_settings.MODERATION_ENABLED:
         raise PermissionDenied
 
     extra_context = extra_context or {}
@@ -1283,24 +1284,33 @@ def project_detail(request, application_id):
 @signed_terms_required
 @login_required
 def project_search(request):
-    user_projects = request.user.projectmembership_set.filter(
-        ~Q(acceptance_date__isnull=True)).values('project')
-    queryset = ProjectApplication.objects.filter(state=ProjectApplication.APPROVED)
-    queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-    queryset = queryset.exclude(project__in=user_projects)
-    queryset = queryset.select_related()
-    form = ProjectSearchForm(request.POST or request.GET)
-    q = None
-    if form.is_valid():
-        q = form.cleaned_data['q'].strip()
+    q = request.GET.get('q')
+    queryset = ProjectApplication.objects
+
+    if request.method == 'GET':
+        form = ProjectSearchForm()
+        q = q.strip()
+        queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
         queryset = queryset.filter(name__contains=q)
+    else:
+        form = ProjectSearchForm(request.POST)
+
+        if form.is_valid():
+            q = form.cleaned_data['q'].strip()
+
+            queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
+
+            queryset = queryset.filter(name__contains=q)
+        else:
+            queryset = queryset.none()
+
     sorting = 'name'
     # validate sorting
     sort_form = ProjectSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     queryset = queryset.order_by(sorting)
-    
+
     return object_list(
         request,
         queryset,

@@ -46,8 +46,9 @@ class CallError(Exception):
         return self
 
     def __init__(self, *args, **kw):
-        self.call_error = kw.get('call_error', self.__class__.__name__)
+        self.call_error = kw.pop('call_error', self.__class__.__name__)
         self.args = args
+        self.kwargs = kw
 
     def __str__(self):
         return '\n--------\n'.join(str(x) for x in self.args)
@@ -71,7 +72,7 @@ class CallError(Exception):
 
     def to_dict(self):
         return {'call_error': self.call_error,
-                'error_args': self.args}
+                'error_args': (self.args, self.kwargs)}
 
     @classmethod
     def from_dict(cls, dictobj):
@@ -86,8 +87,11 @@ class CallError(Exception):
         if args is None:
             args = (str(dictobj),)
             call_error = 'UnknownError'
+            kw = {}
+        else:
+            args, kw = args
 
-        self = cls(*args, call_error=call_error)
+        self = cls(*args, call_error=call_error, **kw)
         return self
 
 def register_exceptions(*exceptions):

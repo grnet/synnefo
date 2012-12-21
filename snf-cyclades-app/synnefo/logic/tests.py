@@ -346,6 +346,20 @@ class UpdateNetworkTest(TestCase):
         back_net = BackendNetwork.objects.get(id=back_network.id)
         self.assertEqual(back_net.operstate, 'ACTIVE')
 
+    def test_create_offline_backend(self, client):
+        """Test network creation when a backend is offline"""
+        net = mfactory.NetworkFactory()
+        bn1 = mfactory.BackendNetworkFactory(network=net)
+        bn2 = mfactory.BackendNetworkFactory(network=net,
+                                             backend__offline=True)
+        msg = self.create_msg(operation='OP_NETWORK_CONNECT',
+                              network=net.backend_id,
+                              cluster=bn1.backend.clustername)
+        update_network(client, msg)
+        client.basic_ack.assert_called_once()
+        new_net = Network.objects.get(id=net.id)
+        self.assertEqual(new_net.state, 'ACTIVE')
+
     def test_disconnect(self, client):
         bn1 = mfactory.BackendNetworkFactory(operstate='ACTIVE')
         net1 = bn1.network
@@ -395,6 +409,23 @@ class UpdateNetworkTest(TestCase):
                 if flavor == 'MAC_FILTERED':
                     pool = MacPrefixPoolTable.get_pool()
                     self.assertTrue(pool.is_available(net.mac_prefix))
+
+    def test_remove_offline_backend(self, client):
+        """Test network removing when a backend is offline"""
+        mfactory.MacPrefixPoolTableFactory()
+        net = mfactory.NetworkFactory(state='ACTIVE')
+        bn1 = mfactory.BackendNetworkFactory(network=net)
+        mfactory.BackendNetworkFactory(network=net,
+                                             backend__offline=True)
+        msg = self.create_msg(operation='OP_NETWORK_REMOVE',
+                              network=net.backend_id,
+                              cluster=bn1.backend.clustername)
+        update_network(client, msg)
+        client.basic_ack.assert_called_once()
+        new_net = Network.objects.get(id=net.id)
+        self.assertTrue(new_net.state, 'DELETED')
+        self.assertTrue(new_net.deleted)
+
 
     def test_error_opcode(self, client):
         for state, _ in Network.OPER_STATES:

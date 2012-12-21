@@ -34,6 +34,7 @@
 import logging
 import datetime
 import time
+import urllib
 
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
@@ -266,3 +267,11 @@ def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
             tree[field_name] = value
 
     return tree
+
+def login_url(request):
+    attrs = {}
+    for attr in ['login', 'key', 'code']:
+        val = request.REQUEST.get(attr, None)
+        if val:
+            attrs[attr] = val
+    return "%s?%s" % (reverse('login'), urllib.urlencode(attrs))

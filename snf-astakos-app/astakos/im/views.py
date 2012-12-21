@@ -1216,7 +1216,7 @@ def project_detail(request, application_id):
 @signed_terms_required
 @login_required
 def project_search(request):
-    q = request.GET.get('q')
+    q = request.GET.get('q', '')
     queryset = ProjectApplication.objects
 
     if request.method == 'GET':

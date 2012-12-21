@@ -468,23 +468,24 @@ class SendInvitationForm(forms.Form):
 
 class ExtendedPasswordResetForm(PasswordResetForm):
     """
-    Extends PasswordResetForm by overriding save method:
-    passes a custom from_email in send_mail.
+    Extends PasswordResetForm by overriding
 
-    Since Django 1.3 this is useless since ``django.contrib.auth.views.reset_password``
-    accepts a from_email argument.
+    save method: to pass a custom from_email in send_mail.
+    clean_email: to handle local auth provider checks
     """
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email__iexact=email)
+            user = AstakosUser.objects.get_by_identifier(email)
+
+            if not user.is_active:
+                raise forms.ValidationError(_(astakos_messages.ACCOUNT_INACTIVE))
+
             if not user.has_usable_password():
                 raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
 
             if not user.can_change_password():
-                raise forms.ValidationError(_('Password change for this account'
-                                              ' is not supported.'))
-
+                raise forms.ValidationError(_(astakos_messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD))
         except AstakosUser.DoesNotExist, e:
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
@@ -619,7 +620,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #     )
 #     desc = forms.CharField(
 #         label= 'Description',
-#         widget=forms.Textarea, 
+#         widget=forms.Textarea,
 #         help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "
 #     )
 #     issue_date = forms.DateTimeField(
@@ -641,22 +642,22 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         required=True, min_value=1,
 #         help_text="Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. "
 #     )
-# 
+#
 #     class Meta:
 #         model = AstakosGroup
-# 
+#
 #     def __init__(self, *args, **kwargs):
 #         #update QueryDict
 #         args = list(args)
 #         qd = args.pop(0).copy()
 #         members_unlimited = qd.pop('members_unlimited', False)
 #         members_uplimit = qd.pop('members_uplimit', None)
-# 
+#
 #         #substitue QueryDict
 #         args.insert(0, qd)
-# 
+#
 #         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-#         
+#
 #         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
 #                                 'issue_date', 'expiration_date',
 #                                 'moderation_enabled', 'max_participants']
@@ -670,7 +671,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         map(add_fields,
 #             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
 #         )
-# 
+#
 #         def add_fields((k, v)):
 #             self.fields[k] = forms.BooleanField(
 #                 required=False,
@@ -679,26 +680,26 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         map(add_fields,
 #             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
 #         )
-# 
+#
 #     def policies(self):
 #         self.clean()
 #         policies = []
 #         append = policies.append
 #         for name, uplimit in self.cleaned_data.iteritems():
-# 
+#
 #             subs = name.split('_uplimit')
 #             if len(subs) == 2:
 #                 prefix, suffix = subs
 #                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
 #                 resource = Resource.objects.get(service__name=s, name=r)
-# 
+#
 #                 # keep only resource limits for selected resource groups
 #                 if self.cleaned_data.get(
 #                     'is_selected_%s' % resource.group, False
 #                 ):
 #                     append(dict(service=s, resource=r, uplimit=uplimit))
 #         return policies
-# 
+#
 # class AstakosGroupCreationSummaryForm(forms.ModelForm):
 #     kind = forms.ModelChoiceField(
 #         queryset=GroupKind.objects.all(),
@@ -717,20 +718,20 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #     max_participants = forms.IntegerField(
 #         required=False, min_value=1
 #     )
-# 
+#
 #     class Meta:
 #         model = AstakosGroup
-# 
+#
 #     def __init__(self, *args, **kwargs):
 #         #update QueryDict
 #         args = list(args)
 #         qd = args.pop(0).copy()
 #         members_unlimited = qd.pop('members_unlimited', False)
 #         members_uplimit = qd.pop('members_uplimit', None)
-# 
+#
 #         #substitue QueryDict
 #         args.insert(0, qd)
-# 
+#
 #         super(AstakosGroupCreationSummaryForm, self).__init__(*args, **kwargs)
 #         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
 #                                 'issue_date', 'expiration_date',
@@ -744,7 +745,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         map(add_fields,
 #             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
 #         )
-# 
+#
 #         def add_fields((k, v)):
 #             self.fields[k] = forms.BooleanField(
 #                 required=False,
@@ -755,7 +756,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         )
 #         for f in self.fields.values():
 #             f.widget = forms.HiddenInput()
-# 
+#
 #     def clean(self):
 #         super(AstakosGroupCreationSummaryForm, self).clean()
 #         self.cleaned_data['policies'] = []
@@ -769,7 +770,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #                 prefix, suffix = subs
 #                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
 #                 resource = Resource.objects.get(service__name=s, name=r)
-# 
+#
 #                 # keep only resource limits for selected resource groups
 #                 if self.cleaned_data.get(
 #                     'is_selected_%s' % resource.group, False
@@ -778,19 +779,19 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         for name in tbd:
 #             self.cleaned_data.pop(name, None)
 #         return self.cleaned_data
-# 
+#
 # class AstakosGroupUpdateForm(forms.ModelForm):
 #     class Meta:
 #         model = AstakosGroup
 #         fields = ( 'desc','homepage', 'moderation_enabled')
-# 
-# 
+#
+#
 # class AddGroupMembersForm(forms.Form):
 #     q = forms.CharField(
 #         max_length=800, widget=forms.Textarea, label=_('Add members'),
 #         help_text=_(astakos_messages.ADD_GROUP_MEMBERS_Q_HELP),
 #         required=True)
-# 
+#
 #     def clean(self):
 #         q = self.cleaned_data.get('q') or ''
 #         users = q.split(',')
@@ -801,19 +802,19 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #             raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
 #         self.valid_users = db_entries
 #         return self.cleaned_data
-# 
+#
 #     def get_valid_users(self):
 #         """Should be called after form cleaning"""
 #         try:
 #             return self.valid_users
 #         except:
 #             return ()
-# 
-# 
+#
+#
 # class AstakosGroupSearchForm(forms.Form):
 #     q = forms.CharField(max_length=200, label='Search project')
-# 
-# 
+#
+#
 # class TimelineForm(forms.Form):
 #     entity = forms.ModelChoiceField(
 #         queryset=AstakosUser.objects.filter(is_active=True)
@@ -830,7 +831,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #                  ('charge_usage', 'Charge Usage'),
 #                  ('charge_traffic', 'Charge Traffic'), )
 #     )
-# 
+#
 #     def clean(self):
 #         super(TimelineForm, self).clean()
 #         d = self.cleaned_data
@@ -844,8 +845,8 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         if 'entity' in d:
 #             d['entity'] = d['entity'].email
 #         return d
-# 
-# 
+#
+#
 # class AstakosGroupSortForm(forms.Form):
 #     sorting = forms.ChoiceField(
 #         label='Sort by',
@@ -859,7 +860,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         ),
 #         required=True
 #     )
-# 
+#
 # class MembersSortForm(forms.Form):
 #     sorting = forms.ChoiceField(
 #         label='Sort by',
@@ -869,7 +870,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 #         ),
 #         required=True
 #     )
-# 
+#
 # class PickResourceForm(forms.Form):
 #     resource = forms.ModelChoiceField(
 #         queryset=Resource.objects.select_related().all()
@@ -920,11 +921,11 @@ class ProjectApplicationForm(forms.ModelForm):
     homepage = forms.URLField(
         help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
         widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
-        
+
         required=False
      )
     comments = forms.CharField(widget=forms.Textarea, required=False)
-    
+
     class Meta:
         model = ProjectApplication
         exclude = (
@@ -935,7 +936,7 @@ class ProjectApplicationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.precursor_application = kwargs.get('instance')
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
-    
+
     def clean(self):
         userid = self.data.get('user', None)
         self.user = None
@@ -948,7 +949,7 @@ class ProjectApplicationForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.NO_APPLICANT))
         super(ProjectApplicationForm, self).clean()
         return self.cleaned_data
-    
+
     @property
     def resource_policies(self):
         policies = []
@@ -971,9 +972,9 @@ class ProjectApplicationForm(forms.ModelForm):
                         append(dict(service=s, resource=r, uplimit=uplimit))
                     else:
                         append(dict(service=s, resource=r, uplimit=None))
-                
+
         return policies
-    
+
 
     def save(self, commit=True):
         application = super(ProjectApplicationForm, self).save(commit=False)

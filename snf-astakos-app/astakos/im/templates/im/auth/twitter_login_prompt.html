@@ -1,2 +1,0 @@
-<br />{{ provider.get_login_prompt_display }}
-<a href="/im/login/twitter?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}" alt="{{ provider.get_title_display }}">{{ provider.get_title_display }}</a>

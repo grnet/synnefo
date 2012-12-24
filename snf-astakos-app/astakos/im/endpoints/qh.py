@@ -65,59 +65,100 @@ def get_client():
     _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
     return _client
 
-def call(func_name):
-    """Decorator function for Quotaholder client calls."""
-    def decorator(payload_func):
-        @wraps(payload_func)
-        def wrapper(entities=(), **kwargs):
-            if not entities:
-                return ()
+def set_quota(payload):
+    c = get_client()
+    if not c:
+        return
+    result = c.set_quota(context={}, clientkey=clientkey, set_quota=payload)
+    print 'set_quota: %s rejected: %s' % (payload, result)
+    logger.info('set_quota: %s rejected: %s' % (payload, result))
+    return result
 
-            if not QUOTAHOLDER_URL:
-                return ()
+def get_quota(payload):
+    c = get_client()
+    if not c:
+        return
+    result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
+    print 'get_quota: %s rejected: %s' % (payload, result)
+    logger.info('get_quota: %s rejected: %s' % (payload, result))
+    return result
 
-            c = get_client()
-            func = c.__dict__.get(func_name)
-            if not func:
-                return ()
+def create_entity(payload):
+    c = get_client()
+    if not c:
+        return
+    result = c.create_entity(context={}, clientkey=clientkey, create_entity=payload)
+    print 'create_entity: %s rejected: %s' % (payload, result)
+    logger.info('create_entity: %s rejected: %s' % (payload, result))
+    return result
 
-            data = payload_func(entities, **kwargs)
-            if not data:
-                return data
+SetQuotaPayload = namedtuple('SetQuotaPayload', ('holder',
+                                                 'resource',
+                                                 'key',
+                                                 'quantity',
+                                                 'capacity',
+                                                 'import_limit',
+                                                 'export_limit',
+                                                 'flags'))
 
-            funcname = func.__name__
-            kwargs = {'context': {}, funcname: data}
-            rejected = func(**kwargs)
-            msg = _('%s: %s - Rejected: %s' % (funcname, data, rejected,))
-            logger.log(LOGGING_LEVEL, msg)
-            return rejected
-        return wrapper
-    return decorator
+GetQuotaPayload = namedtuple('GetQuotaPayload', ('holder',
+                                                 'resource',
+                                                 'key'))
 
-
-@call('set_quota')
-def send_quota(users):
-    data = []
-    append = data.append
-    for user in users:
-        for resource, uplimit in user.quota.iteritems():
-            key = ENTITY_KEY
-            quantity = None
-            capacity = uplimit if uplimit != inf else None
-            import_limit = None
-            export_limit = None
-            flags = 0
-            args = (
-                user.uuid, resource, key, quantity, capacity, import_limit,
-                export_limit, flags)
-            append(args)
-    return data
-
+CreateEntityPayload = namedtuple('CreateEntityPayload', ('entity',
+                                                        'owner',
+                                                        'key',
+                                                        'ownerkey'))
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',
                                          'import_limit',
                                          'export_limit'))
+
+def register_users(users):
+    payload = list(CreateEntityPayload(
+                    entity=u.uuid,
+                    owner='system',
+                    key=ENTITY_KEY,
+                    ownerkey='') for u in users)
+    rejected = create_entity(payload)
+    if not rejected:
+        payload = []
+        append = payload.append
+        for u in users:
+            for resource, uplimit in u.quota.iteritems():
+                append( SetQuotaPayload(
+                                holder=u.uuid,
+                                resource=resource,
+                                key=ENTITY_KEY,
+                                quantity=None,
+                                capacity=uplimit if uplimit != inf else None,
+                                import_limit=None,
+                                export_limit=None,
+                                flags=0))
+        return set_quota(payload)
+
+
+def register_resources(resources):
+    rdata = ((r.service, r) for r in resources)
+    services = set(r.service for r in resources)
+    payload = list(CreateEntityPayload(
+                    entity=service,
+                    owner='system',
+                    key=ENTITY_KEY,
+                    ownerkey='') for service in set(services))
+    rejected = create_entity(payload)
+    if not rejected:
+        payload = list(SetQuotaPayload(
+                        holder=resource.service,
+                        resource=resource,
+                        key=ENTITY_KEY,
+                        quantity=None,
+                        capacity=None,
+                        import_limit=None,
+                        export_limit=None,
+                        flags=0) for resource in resources)
+        return set_quota(payload)
 
 def qh_add_quota(serial, sub_list, add_list):
     if not QUOTAHOLDER_URL:
@@ -170,84 +211,6 @@ def qh_ack_serials(serials):
                            clientkey=clientkey,
                            serials=serials)
     return
-
-@call('set_quota')
-def send_resource_quantities(resources):
-    data = []
-    append = data.append
-    for resource in resources:
-        key = ENTITY_KEY
-        quantity = resource.meta.filter(key='quantity') or None
-        capacity = None
-        import_limit = None
-        export_limit = None
-        flags = 0
-        args = (resource.service.name, str(resource), key, quantity, capacity,
-                import_limit, export_limit, flags)
-        append(args)
-    return data
-
-
-@call('get_quota')
-def get_quota(users):
-    data = []
-    append = data.append
-    for user in users:
-        try:
-            entity = user.uuid
-        except AttributeError:
-            continue
-        else:
-            for r in user.quota.keys():
-                args = entity, r, ENTITY_KEY
-                append(args)
-    return data
-
-
-@call('create_entity')
-def create_user_entities(entities):
-    data = []
-    append = data.append
-    for entity in entities:
-        entity = entity.uuid
-        owner = 'system'
-        key = ENTITY_KEY
-        ownerkey = ''
-        args = entity, owner, key, ownerkey
-        append(args)
-    return data
-
-@call('create_entity')
-def create_service_entities(entities):
-    data = []
-    append = data.append
-    l = []
-    for entity in entities:
-        entity = entity.service.name
-        if entity in l:
-            continue
-        l.append(entity)
-        owner = 'system'
-        key = ENTITY_KEY
-        ownerkey = ''
-        args = entity, owner, key, ownerkey
-        append(args)
-    return data
-
-
-def register_users(users):
-    users, copy = itertools.tee(users)
-    rejected = create_user_entities(entities=users)
-    created = (e for e in copy if unicode(e) not in rejected)
-    return send_quota(created)
-
-
-def register_resources(resources):
-    resources, copy = itertools.tee(resources)
-    rejected = create_service_entities(entities=resources)
-    created = (e for e in copy if unicode(e) not in rejected)
-    return send_resource_quantities(created)
-
 
 from datetime import datetime
 

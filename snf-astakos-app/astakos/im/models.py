@@ -71,7 +71,7 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quota, register_resources, qh_add_quota, QuotaLimits,
+    register_users, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials)
 from astakos.im import auth_providers
 #from astakos.im.endpoints.aquarium.producer import report_user_event

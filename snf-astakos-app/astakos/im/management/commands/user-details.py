@@ -74,7 +74,7 @@ class Command(BaseCommand):
                 'providers': user.auth_providers_display,
                 'verified': format_bool(user.is_verified),
                 'has_credits': format_bool(user.has_credits),
-                'groups': [elem.name for elem in user.astakos_groups.all()],
+                'groups': [elem.name for elem in user.groups.all()],
                 'permissions': [elem.codename for elem in user.user_permissions.all()],
                 'group_permissions': user.get_group_permissions(),
                 'email_verified': format_bool(user.email_verified),

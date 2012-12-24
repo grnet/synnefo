@@ -1219,21 +1219,23 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             pass
 
+        new_project = False
         if project is None:
+            new_project = True
             project = Project(creation_date=now)
 
         project.name = new_project_name
         project.application = self
+        project.last_approval_date = now
+        project.save()
+
+        if new_project:
+            project.add_member(self.owner)
 
         # This will block while syncing,
         # but unblock before setting the membership state.
         # See ProjectMembership.set_sync()
         project.set_membership_pending_sync()
-
-        project.last_approval_date = now
-        project.save()
-        #ProjectMembership.add_to_project(self)
-        project.add_member(self.owner)
 
         precursor = self.precursor_application
         while precursor:

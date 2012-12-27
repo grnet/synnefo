@@ -61,6 +61,7 @@
     {% if is_search %}
    		
     	{% if object_list %}
+    	 
         <div> 
             <table class="alt-style complex" id="searchResults">
                 <caption>
@@ -68,17 +69,16 @@
                 </caption>
                 <thead>
                   <tr>
-                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'name' %}-name{% else %}name{% endif %}#searchResults">Name</a></th>
-                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'issue_date' %}-issue_date{% else %}issue_date{% endif %}#searchResults">Issue Date</a></th>
-                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'start_date' %}-start_date{% else %}start_date{% endif %}#searchResults">Start Date</a></th>
-                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'end_date' %}-end_date{% else %}end_date{% endif %}#searchResults">End Date</a></th>
-                    <th><a href="#searchResults">Enrolled</a></th>
-                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'state' %}-state{% else %}state{% endif %}#searchResults">Status</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'name' %}-name{% else %}name{% endif %}#searchResults" class="sortable {% if sorting == 'name' %}asc{% endif %}">Name</a></th>
+                    
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'start_date' %}-start_date{% else %}start_date{% endif %}#searchResults" class="sortable {% if sorting == 'start_date' %}asc{% endif %}">Start Date</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'end_date' %}-end_date{% else %}end_date{% endif %}#searchResults" class="sortable {% if sorting == 'end_date' %}asc{% endif %}">End Date</a></th>
+                    <th ><a href="#searchResults">Members</a></th>
+                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'state' %}-state{% else %}state{% endif %}#searchResults" class="sortable {% if sorting == 'state' %}asc{% endif %}">Status</a></th>
                     <th>&nbsp;</th>
 			        <th><a href="#searchResults">Membership Status</a></th>
                     <th>&nbsp;</th>
-			        <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'member_join_policy__description' %}-member_join_policy__description{% else %}member_join_policy__description{%endif%}#searchResults">Member Join Policy</a></th>
-                    <th><a href="?{% if q %}q={{q}}&{% endif %}sorting={% if sorting == 'member_leave_policy__description' %}-member_leave_policy__description{% else %}member_leave_policy__description{%endif%}#searchResults">Member Leave Policy</a></th>
+			         
                     <!-- <th>&nbsp;</th>-->
                   </tr>
                 </thead>
@@ -88,15 +88,14 @@
                   {% with o.project.approved_members as approved_members%}
                    <tr class="{% cycle 'tr1' 'tr2' %}">
 	                    <td><a href="{% url project_detail o.id %}" title="visit project page">{{o.name|truncatename}}</a></td>
-	                    <!--td>{{o.kindname|capfirst}}</td-->
-	                    <td>{{o.issue_date|date:"d/m/Y"}}</td>
+	                    
 	                    <td>{{o.start_date|date:"d/m/Y"}}</td>
 	                    <td>{{o.end_date|date:"d/m/Y"}}</td>
 	                    <td>{{approved_members|length}}</td>
 	                    <td>
 	                        {{o.state}}
 	                    </td>
-	                    <td>{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}</td>
+	                    <td>{% if user == o.owner %}{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}{% else %}&nbsp;{% endif %}</td>
 	                    <td>
 	                    	<div class="msg-wrap">
 	                        {% if user == o.owner %}
@@ -121,7 +120,7 @@
 		                        {% if user in approved_members %}    
 			                       	{% if not user == o.owner %}
 			                            <form action="{% url project_leave o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
-			                                 <input type="submit"  value="x leave group" class="leave"/>
+			                                 <input type="submit"  value="x leave" class="leave"/>
 			                            </form>
 			                            <div class="dialog">
 					                		Are you sure you what to leave this project?<br>
@@ -138,7 +137,7 @@
 		                    {% else %}
 		                       {% if o.project.is_alive and not user == o.owner %}
 		                                <form action="{% url project_join o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
-		                                    <input type="submit"   value="+ join group" class="join_group join" />
+		                                    <input type="submit"   value="+ join" class="join_group join" />
 		                                </form>
 		                                <div class="dialog">
 					                		Are you sure you what to join this project?<br>
@@ -151,8 +150,7 @@
 		                    {% endif %}
 	                    	</div>
 	                    </td>
-			            <td class="centered">{{o.member_join_policy}}</td>
-	                    <td class="centered">{{o.member_leave_policy}}</td>
+			            
 	                    <!--td><a href="#" class="more-info" title="more info">+ more info</a></td-->
                   </tr>
                   <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
@@ -172,7 +170,8 @@
                   {% endfor %}
                 </tbody>
             </table>
-           
+            <br><br><br><br><br>
+            
         </div>
         
      
@@ -195,7 +194,8 @@
 	            </span>
 			</p>
 	   </div>
-	   
+	   {% else %}
+	   		<h2>No projects found!</h2>
 	   {% endif %}
       
       <!-- Group listing -->
@@ -209,17 +209,16 @@
 			            <caption>MY PROJECTS</caption>
 			            <thead>
 			              <tr>
-		                    <th><a href="?sorting={% if sorting == 'name' %}-name{% else %}name{% endif %}#allGroups">Name</a></th>
-                            <th><a href="?sorting={% if sorting == 'issue_date' %}-issue_date{% else %}issue_date{% endif %}#allGroups">Issue Date</a></th>
-                            <th><a href="?sorting={% if sorting == 'start_date' %}-start_date{% else %}start_date{% endif %}#allGroups">Start Date</a></th>
-                            <th><a href="?sorting={% if sorting == 'end_date' %}-end_date{% else %}end_date{% endif %}#allGroups">End Date</a></th>
-                            <th><a href="#allGroups">Enrolled</a></th>
-                            <th><a href="?sorting={% if sorting == 'state' %}-state{% else %}state{% endif %}#allGroups">Status</a></th>
+		                    <th><a href="?sorting={% if sorting == 'name' %}-name{% else %}name{% endif %}#allGroups" class="sortable {% if sorting == 'name' %}asc{% endif %}">Name</a></th>
+                             
+                            <th><a href="?sorting={% if sorting == 'start_date' %}-start_date{% else %}start_date{% endif %}#allGroups" class="sortable {% if sorting == 'start_date' %}asc{% endif %}">Start Date</a></th>
+                            <th><a href="?sorting={% if sorting == 'end_date' %}-end_date{% else %}end_date{% endif %}#allGroups" class="sortable {% if sorting == 'end_date' %}asc{% endif %}">End Date</a></th>
+                            <th><a href="#allGroups">Members</a></th>
+                            <th><a href="?sorting={% if sorting == 'state' %}-state{% else %}state{% endif %}#allGroups" class="sortable {% if sorting == 'status' %}asc{% endif %}">Status</a></th>
                             <th>&nbsp;</th>
                             <th><a href="#allGroups">Membership Status</a></th>
                             <th>&nbsp;</th>
-                            <th><a href="?sorting={% if sorting == 'member_join_policy__description' %}-member_join_policy__description{% else %}member_join_policy__description{% endif %}#allGroups">Member Join Policy</a></th>
-                            <th><a href="?sorting={% if sorting == 'member_leave_policy__description' %}-member_leave_policy__description{% else %}member_leave_policy__description{% endif %}#allGroups">Member Leave Policy</a></th>
+                             
                             <!-- <th>&nbsp;</th>-->
 			              </tr>
 			            </thead>
@@ -229,14 +228,14 @@
                             {% with o.project.approved_members as approved_members %}
 			              <tr class="{% cycle 'tr1' 'tr2' %}">
 			                <td><a  href="{% url project_detail o.id %}" title="visit group page">{{o.name|truncatename }}</a></td>
-			                <td>{{o.issue_date|date:"d/m/Y"}}</td>
+			                
 			                <td>{{o.start_date|date:"d/m/Y"}}</td>
 			                <td>{{o.end_date|date:"d/m/Y"}}</td>
 			                <td>{{approved_members|length}}</td>
 			                <td>
 		                        {{o.state}}
 		                    </td>
-		                    <td>{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}</td>
+		                    <td>{% if user == o.owner %}{% if o.state != 'Replaced' %}<a href="{% url project_update o.id %}">Update</a>{% endif %}{% else %}&nbsp;{% endif %}</td>
 			                <td>
 		                    	 
 		                        {% if user == o.owner %}
@@ -261,7 +260,7 @@
 			                        {% if user in approved_members %}    
 				                       	{% if not user == o.owner %}
 				                            <form action="{% url project_leave o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
-				                                 <input type="submit"  value="x leave group" class="leave"/>
+				                                 <input type="submit"  value="x leave" class="leave"/>
 				                            </form>
 				                            <div class="dialog">
 						                		Are you sure you what to leave this project?<br>
@@ -278,7 +277,7 @@
 			                    {% else %}
 			                        {% if o.project.is_alive and not user == o.owner %}
 			                                <form action="{% url project_join o.id %}?next={{request.path}}" method="post" class="link-like">{% csrf_token %}
-			                                    <input type="submit"   value="+ join group" class="join_group join" />
+			                                    <input type="submit"   value="+ join" class="join_group join" />
 			                                </form>
 			                                <div class="dialog">
 						                		Are you sure you what to join this project?<br>
@@ -291,9 +290,8 @@
 			                    {% endif %}
 		                    	</div>
 		                    </td>
-				            <td class="centered" >{{o.member_join_policy}}</td>
-		                    <td class="centered">{{o.member_leave_policy}}</td>
-				               <!-- <td><a href="#" class="more-info" title="more info">+ more info </a></td>-->
+				            
+				            <!-- <td><a href="#" class="more-info" title="more info">+ more info </a></td>-->
 			              </tr>
 			              <tr class="{% cycle 'tmore1' 'tmore2' %}" style="display:none">
 			                <td colspan="11" class="info-td">
@@ -332,6 +330,8 @@
                         </span>
 					</p>
 			   </div>
+			{% else %}
+				No projects found!
 		 	{% endif %}
         	 
 	      	{% endif %}

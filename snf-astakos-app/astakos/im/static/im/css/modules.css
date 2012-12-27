@@ -230,11 +230,14 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 table.alt-style 								{ color:#000; width:100%; }
 table.alt-style caption							{ font-weight:normal;  font-size:1.154em; margin-bottom:15px;}
 table.alt-style tr th							{ font-weight:normal; color:#3582AC }
+table.alt-style tr th a							{ color:#3582AC }
 table.alt-style tr td							{ color:#222; }
 table.alt-style tr td:first-child,
 table.alt-style tr th:first-child				{ padding-left:5px; }
 table.alt-style tr td a							{ margin:0 0 0 5px; }
 table.alt-style tr td:first-child a				{ margin:0; }
+table.complex tr th a.sortable					{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
+table.complex tr th a.asc						{ background-position:right 6px }
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 }
 dl.alt-style  									{ width:500px; }
@@ -388,7 +391,7 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 .quotas-form legend span						{ color:#222; font-size:0.867em; }
 form.quotas-form legend span.info				{ position:relative; display:inline-block; top:auto; left:auto;  margin-left:10px; vertical-align:middle; margin-top:-2px;}
 form.quotas-form legend span.info em			{ position:static; }
-form.quotas-form legend span.info span			{ width:500px; }
+form.quotas-form legend span.info span			{ width:530px; }
 form.quotas-form  span.info span				{ width:285px;  }
 .quotas-form .with-checkbox .checkbox-widget	{ margin-top:9px; } 
 .quotas-form .with-checkbox span.info 			{ top:12px; }

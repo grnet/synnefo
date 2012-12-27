@@ -8,7 +8,7 @@
 {% endblock %}	
 
 {% block page.body %}
-
+<h2>CREATE PROJECT</h2>
  
 {% with resource_catalog|populated_resource_catalog as resource_catalog %}
 {% if show_form %}
@@ -16,30 +16,80 @@
 
     <fieldset class="with-info" id="top">
     	<legend>
-    		1. CREATE GROUP
+    		1. PROJECT DETAILS
 			<span class="info"> 
 		    	<em>more info</em>
-		    	<span>Fill in the required fields to create a group. Group details will be visible to the users of the group.</span>
+		    	<span> To create a new Project, first enter the following required fields. The information you enter will be visible to all ~okeanos users. </span>
 	    	</span>    		
     	</legend>
-        
-        {% include "im/form_render.html" %}
+    	{% for field in form %}
+     
+    	{% if  field.name in details_fields %}
+	        <div class="form-row {% if field.errors|length %}with-errors{% endif %}  {% if field.is_hidden %}with-hidden{% endif %}">
+		        {{ field.errors }}
+			     <p class="clearfix {% if field.blank %}required{% endif %}">
+			        {{ field.label_tag }}
+			        {{ field|safe }}
+			        <span class="extra-img">&nbsp;</span>
+			        {%  if field.help_text %}
+			        	<span class="info"> 
+						    <em>more info</em>
+						    <span>{{ field.help_text|safe }}</span>
+					    </span>
+			        {% endif %}
+			     </p>
+			</div>
+		{% endif %}
+		{% endfor %}
+		
+		
+		
         
         {% for g, resources in resource_catalog.get_groups_resources %}
 	    	{% for rname in resources.keys %}
 	    	    {% with object|resource_grants|lookup:rname as value %}
-	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %}">
+	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %}" />
                 {% endwith %}
             {% endfor %}
         {% endfor %}
     </fieldset>
+    <fieldset class="with-info">
+    	<legend>
+    		2. MEMBERSHIP OPTIONS
+			<span class="info"> 
+		    	<em>more info</em>
+		    	<span> Membership options </span>
+	    	</span>    		
+    	</legend>
+    	{% for field in form %}
+    	 
+    	{% if  field.name in membership_fields %}
+	        <div class="form-row {% if field.errors|length %}with-errors{% endif %}  {% if field.is_hidden %}with-hidden{% endif %}">
+		        {{ field.errors }}
+			     <p class="clearfix {% if field.blank %}required{% endif %}">
+			        {{ field.label_tag }}
+			        {{ field|safe }}
+			        <span class="extra-img">&nbsp;</span>
+			        {%  if field.help_text %}
+			        	<span class="info"> 
+						    <em>more info</em>
+						    <span>{{ field.help_text|safe }}</span>
+					    </span>
+			        {% endif %}
+			     </p>
+			</div>
+		{% endif %}
+		{% endfor %}
+
+        
+    </fieldset>
     
     <fieldset id="icons">
     	<legend>
-    		2. ADD RESOURCES
+    		3. RESOURCES
     		<span class="info"> 
 		    	<em>more info</em>
-		    	<span>You need to specify at least one resource</span>
+		    	<span>Here you add resources to your Project. Each resource you specify here, will be granted to *EACH* user of this Project. So the total resources will be: &lt;Total number of members&gt; * &lt;amount_of_resource&gt; for each resource. </span>
 	    	</span>    
     	</legend>
     	<ul class="clearfix">
@@ -115,7 +165,7 @@
     
 	<input type="hidden" name="user"  id="id_user" value="{{user.id}}">  
 	<div class="form-row submit">
-   		<input type="submit" value="CONTINUE" class="submit altcol" autocomplete="off">
+   		<input type="submit" value="CONTINUE" class="submit altcol" >
 	</div>
 </form>
 {% else %}

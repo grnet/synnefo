@@ -1027,7 +1027,7 @@ def how_it_works(request):
 @transaction.commit_manually
 def _create_object(request, model=None, template_name=None,
         template_loader=template_loader, extra_context=None, post_save_redirect=None,
-        login_required=False, context_processors=None, form_class=None):
+        login_required=False, context_processors=None, form_class=None ):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
@@ -1055,7 +1055,7 @@ def _create_object(request, model=None, template_name=None,
                 else:
                     new_object = form.save()
 
-                    msg = _("The %(verbose_name)s was created successfully.") %\
+                    msg = _("The %(verbose_name)s has been received and is under consideration .") %\
                                 {"verbose_name": model._meta.verbose_name}
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, new_object)
@@ -1117,7 +1117,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
                     extra_context['show_form'] = True
                 else:
                     obj = form.save()
-                    msg = _("The %(verbose_name)s was updated successfully.") %\
+                    msg = _("The %(verbose_name)s has been received and is under consideration .") %\
                                 {"verbose_name": model._meta.verbose_name}
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, obj)
@@ -1151,6 +1151,8 @@ def _update_object(request, model=None, object_id=None, slug=None,
 @login_required
 def project_add(request):
     result = callpoint.list_resources()
+    details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
+    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
     if not result.is_success:
         messages.error(
             request,
@@ -1158,10 +1160,10 @@ def project_add(request):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
     return _create_object(request, template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect='/im/project/list/',
-        form_class=ProjectApplicationForm)
+        form_class=ProjectApplicationForm )
 
 
 @require_http_methods(["GET"])
@@ -1309,7 +1311,6 @@ def project_search(request):
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     queryset = queryset.order_by(sorting)
-    
     return object_list(
         request,
         queryset,

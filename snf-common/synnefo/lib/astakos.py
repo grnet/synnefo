@@ -34,21 +34,39 @@
 import logging
 
 from time import time, mktime
-from urlparse import urlparse
+from urlparse import urlparse, urlsplit, urlunsplit
 from urllib import quote, unquote
 
 from django.conf import settings
 from django.utils import simplejson as json
+from django.utils.http import urlencode
 
 from synnefo.lib.pool.http import get_http_connection
 
 logger = logging.getLogger(__name__)
 
-def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
-    p = urlparse(authentication_url)
+def retry(howmany):
+    def execute(func):
+        def f(*args, **kwargs):
+            attempts = 0
+            while attempts < howmany:
+                try:
+                    return func(*args, **kwargs)
+                except Exception, e:
+                    if e.args:
+                        status = e.args[-1]
+                        # In case of Unauthorized response or Not Found return directly
+                        if status == 401 or status == 404:
+                            raise e
+                    attempts += 1
+        return f
+    return execute
+
+def call(token, url, headers={}):
+    p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = {}
+    kwargs['headers'] = headers
     kwargs['headers']['X-Auth-Token'] = token
     kwargs['headers']['Content-Length'] = 0
 
@@ -68,6 +86,30 @@ def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticat
         raise Exception(data, status)
 
     return json.loads(data)
+
+
+def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
+    return call(token, authentication_url)
+
+@retry(3)
+def get_username(token, uuid, url='http://127.0.0.1:8000/im/service/api/v2.0/users'):
+    try:
+        data = call(token, url, {'X-User-Uuid': uuid})
+    except Exception, e:
+        raise e
+    else:
+        return data.get('username')
+
+
+@retry(3)
+def get_user_uuid(token, username, url='http://127.0.0.1:8000/im/service/api/v2.0/users'):
+    try:
+        data = call(token, url, {'X-User-Username': username})
+    except Exception, e:
+        raise e
+    else:
+        return data.get('uuid')
+
 
 def user_for_token(token, authentication_url, override_users):
     if not token:

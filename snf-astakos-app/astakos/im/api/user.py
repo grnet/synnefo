@@ -39,10 +39,9 @@ from time import time, mktime
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-from astakos.im.api.faults import (
-    Fault, Unauthorized, InternalServerError, BadRequest,
-    Forbidden)
-from astakos.im.api import render_fault, _get_user_by_email, _get_user_by_username
+from .faults import (
+    Fault, Unauthorized, InternalServerError, BadRequest, Forbidden)
+from . import render_fault
 from astakos.im.models import AstakosUser
 from astakos.im.util import epoch
 
@@ -85,7 +84,7 @@ def api_method(http_method=None, token_required=False, perms=None):
 
 
 @api_method(http_method='GET', token_required=True)
-def authenticate_old(request, user=None):
+def authenticate(request, user=None):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
@@ -110,77 +109,12 @@ def authenticate_old(request, user=None):
         'id': user.id,
         'username': user.username,
         'uuid': user.uuid,
-        'uniq': user.email,
-        'auth_token': user.auth_token,
-        'auth_token_created': user.auth_token_created.isoformat(),
-        'auth_token_expires': user.auth_token_expires.isoformat(),
-        'has_credits': user.has_credits,
-        'has_signed_terms': user.signed_terms,
-        'groups': [g.name for g in user.groups.all()]}
-    response.content = json.dumps(user_info)
-    response['Content-Type'] = 'application/json; charset=UTF-8'
-    response['Content-Length'] = len(response.content)
-    return response
-
-
-@api_method(http_method='GET', token_required=True)
-def authenticate(request, user=None):
-    # Normal Response Codes: 204
-    # Error Response Codes: internalServerError (500)
-    #                       badRequest (400)
-    #                       unauthorised (401)
-    if not user:
-        raise BadRequest('No user')
-
-    # Check if the is active.
-    if not user.is_active:
-        raise Unauthorized('User inactive')
-
-    # Check if the token has expired.
-    if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-        raise Unauthorized('Authentication expired')
-
-    if not user.signed_terms:
-        raise Unauthorized('Pending approval terms')
-
-    response = HttpResponse()
-    response.status = 204
-    user_info = {
-        'id': user.id,
-        'userid': user.username,
-        'uuid': user.uuid,
         'email': [user.email],
         'name': user.realname,
-        'auth_token': user.auth_token,
         'auth_token_created': epoch(user.auth_token_created),
         'auth_token_expires': epoch(user.auth_token_expires),
-        'has_credits': user.has_credits,
-        'is_active': user.is_active,
-        'groups': [g.name for g in user.groups.all()]}
+        'has_credits': user.has_credits}
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
-
-
-@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
-def get_user_by_email(request, user=None):
-    # Normal Response Codes: 200
-    # Error Response Codes: internalServerError (500)
-    #                       badRequest (400)
-    #                       unauthorised (401)
-    #                       forbidden (403)
-    #                       itemNotFound (404)
-    email = request.GET.get('name')
-    return _get_user_by_email(email)
-
-
-@api_method(http_method='GET', token_required=True, perms=['im.can_access_userinfo'])
-def get_user_by_username(request, user_id, user=None):
-    # Normal Response Codes: 200
-    # Error Response Codes: internalServerError (500)
-    #                       badRequest (400)
-    #                       unauthorised (401)
-    #                       forbidden (403)
-    #                       itemNotFound (404)
-    return _get_user_by_username(user_id)

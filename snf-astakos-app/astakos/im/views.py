@@ -68,6 +68,7 @@ from django.core.exceptions import PermissionDenied
 import astakos.im.messages as astakos_messages
 
 from astakos.im.activation_backends import get_backend, SimpleBackend
+from astakos.im import tables
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
     EmailChange, GroupKind,
@@ -1102,27 +1103,17 @@ def project_add(request):
 @signed_terms_required
 @login_required
 def project_list(request):
-    q = ProjectApplication.objects.filter(owner=request.user)
-    q |= ProjectApplication.objects.filter(applicant=request.user)
-    q |= ProjectApplication.objects.filter(
-        project__in=request.user.projectmembership_set.values_list('project', flat=True)
-    )
-    q = q.select_related()
-    sorting = 'name'
-    sort_form = ProjectSortForm(request.GET)
-    if sort_form.is_valid():
-        sorting = sort_form.cleaned_data.get('sorting')
-    q = q.order_by(sorting)
+    projects = ProjectApplication.objects.user_projects(request.user).select_related()
+    table = tables.UserProjectApplicationsTable(projects, user=request.user, prefix="my_projects")
+    table.paginate(page=request.GET.get('my_projectspage', 1), per_page=PAGINATE_BY)
 
     return object_list(
         request,
-        q,
-        paginate_by=PAGINATE_BY,
-        page=request.GET.get('page') or 1,
+        projects,
         template_name='im/projects/project_list.html',
         extra_context={
             'is_search':False,
-            'sorting':sorting
+            'table': table,
         }
     )
 
@@ -1213,12 +1204,13 @@ def project_detail(request, application_id):
         else:
             transaction.commit()
 
+
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def project_search(request):
-    q = request.GET.get('q')
-    queryset = ProjectApplication.objects
+    q = request.GET.get('q', '')
+    queryset = ProjectApplication.objects.filter()
 
     if request.method == 'GET':
         form = ProjectSearchForm()
@@ -1230,9 +1222,7 @@ def project_search(request):
 
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-
             queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-
             queryset = queryset.filter(name__contains=q)
         else:
             queryset = queryset.none()

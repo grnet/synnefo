@@ -1350,6 +1350,15 @@ def make_synced(prefix='sync', name='SyncedState'):
 SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
+class ProjectApplicationManager(models.Manager):
+
+    def user_projects(self, user):
+        """
+        Return projects accessed by specified user.
+        """
+        return self.filter(Q(owner=user) | Q(applicant=user) | \
+                        Q(project__in=user.projectmembership_set.filter()))
+
 class ProjectApplication(models.Model):
     PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
@@ -1388,17 +1397,33 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
 
+    objects                 =   ProjectApplicationManager()
+
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
         resource = Resource.objects.get(service__name=service, name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
-    
+    def member_status(self, user):
+        if user == self.owner:
+            status = 100
+        else:
+            try:
+                membership = self.project.projectmembership_set.get(person=user)
+                status = membership.state
+            except Project.DoesNotExist:
+                status = -1
+
+        return status
+
+    def members_count(self):
+        return self.project.approved_memberships.count()
+
     @property
     def grants(self):
         return self.projectresourcegrant_set.values('member_capacity', 'resource__name', 'resource__service__name')
-            
+
     @property
     def resource_policies(self):
         return self.projectresourcegrant_set.all()

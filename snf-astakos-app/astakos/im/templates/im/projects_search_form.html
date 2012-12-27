@@ -1,0 +1,9 @@
+<p>Search for existing Projects and join the ones you like. Please search by Project name. </p>
+<form action="{% url project_search %}" method="post" class="withlabels signup submit-inline">{% csrf_token %}
+        {% include "im/form_render.html" %}
+    <div class="form-row submit">
+            <input type="submit" class="submit altcol" value="SEARCH" />
+            {% if q %}<a href="{% url project_search %}">clear</a>{% endif %}
+    </div>
+</form>
+

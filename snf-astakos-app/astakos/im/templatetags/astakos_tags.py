@@ -67,10 +67,6 @@ class MessagesNode(template.Node):
 
 
 @register.simple_tag
-def olga(v):
-    return v+'a'
-
-@register.simple_tag
 def get_grant_value(rname, form):
     grants = form.instance.grants
     service_name, resource_name = rname.split('.',1)

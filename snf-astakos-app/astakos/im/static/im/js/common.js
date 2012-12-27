@@ -249,25 +249,7 @@ $(document).ready(function() {
 		$(this).hide();
 	})
 
-	// todo den doulevei
-	$('#group_create_form').submit(function(){
-		if ($('.quotas-form .group .form-row.with-errors').length>0 ){
-			return false;
-		}
-		var flag = 0;
-		$('.quotas-form .group input[type="text"]').each(function() {
-			// get value from input
-	 		var value = $(this).val();
-			if (value){
-				flag =1;
-			}
-		});
-		if (flag =='0') {
-			$('#icons span.info').addClass('error-msg');
-			return false;
-			
-		}
-	});
+	
 	
 	
 	

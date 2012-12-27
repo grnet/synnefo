@@ -109,9 +109,7 @@
     	
     </fieldset>
    
-    <div class="visible">
-    	
-    </div>
+    <div class="visible">&nbsp;</div>
     <div class="not-visible">
     	{% for gname, resources in resource_catalog.get_groups_resources %}
     	    <div class="group {{'group_'|add:gname}}" id="{{ gname }}">
@@ -133,7 +131,7 @@
 			    	<div class="form-row">
 			    		<p class="clearfix">
 			    			<label for="{{'id_'|add:rname|add:'_uplimit'}}_proxy" >
-								Amount to grant per user
+								Total {% if rdata.unit %}amount{% else %}units{% endif %}   per user
 							</label>
 			    			<input 	type="text" 
 			       						id="{{'id_'|add:rname|add:'_uplimit'}}_proxy" 
@@ -152,8 +150,8 @@
 			       						/> 
 			       			<span class="extra-img">&nbsp;</span>
 			         		<span class="info"><em>more info</em><span>{{ rdata.help_text_input_each }}</span></span>
-			         		<p class="error-msg">Invalid format</p>
 			    		</p>
+			    		<p class="error-msg">Invalid format</p>
 			    		<p class="msg"></p>
 			    	</div>
 				</fieldset>	

@@ -379,7 +379,8 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 
 /* quotas-form  */
 
-.quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:3em; position:relative; }
+.quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:5em; position:relative; }
+.quotas-form fieldset#icons						{ padding-bottom:3em; }
 .quotas-form legend								{ color:#55B577; font-size:1.308em;   position:relative; }
 
 /* workaround for fixing bug with legend margin*/
@@ -519,4 +520,4 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .login-section {}
 .main-login-method { margin-bottom: 20px;}
 
-.quotas-form span.info							{ z-index:2; }
+.1quotas-form span.info							{ z-index:2; }

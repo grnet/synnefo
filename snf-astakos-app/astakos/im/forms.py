@@ -918,6 +918,7 @@ class ProjectApplicationForm(forms.ModelForm):
         help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization "
     )
     homepage = forms.URLField(
+        label="Homepage Url",
         help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
         widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
         

@@ -27,7 +27,7 @@ def get_uuid(account):
     try:
         uuid = get_user_uuid(SERVICE_TOKEN, account, USER_INFO_URL)
     except Exception, e:
-        print e
+        print 'Unable to retrieve uuid for %s: %s' % (account, e)
         return
     else:
         if uuid:
@@ -43,7 +43,7 @@ def get_username(account):
     try:
         username = get_user_username(SERVICE_TOKEN, account, USER_INFO_URL)
     except Exception, e:
-        print e
+        print 'Unable to retrieve username for %s: %s' % (account, e)
         return
     else:
         if username:

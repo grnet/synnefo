@@ -49,10 +49,13 @@ def retry(howmany):
     def execute(func):
         def f(*args, **kwargs):
             attempts = 0
-            while attempts < howmany:
+            while True:
                 try:
                     return func(*args, **kwargs)
                 except Exception, e:
+                    is_last_attempt = attempts == howmany - 1
+                    if is_last_attempt:
+                        raise e
                     if e.args:
                         status = e.args[-1]
                         # In case of Unauthorized response or Not Found return directly

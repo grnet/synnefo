@@ -1,43 +1,19 @@
 # encoding: utf-8
 import datetime
-import uuid
-
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
-from django.core.validators import email_re
 
-class Migration(DataMigration):
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        for u in orm.AstakosUser.objects.all():
-            save = False
-            while not u.uuid:
-                uuid_val =  str(uuid.uuid4())
-                try:
-                    orm.AstakosUser.objects.get(uuid=uuid_val)
-                except orm.AstakosUser.DoesNotExist, e:
-                    u.uuid = uuid_val
-                    save = True
-            if not email_re.match(u.username):
-                u.username = u.email[:30].lower() # !!!
-                save = True
-            if save:
-                u.save()
+        db.alter_column('auth_user', 'username', models.CharField(max_length=75))
+
+
 
     def backwards(self, orm):
-        for u in orm.AstakosUser.objects.all():
-            u.uuid = None
-            if email_re.match(u.username):
-                username = None
-                while not username:
-                    username_val =  uuid.uuid4().hex[:30]
-                    try:
-                        orm.AstakosUser.objects.get(username = username_val)
-                    except orm.AstakosUser.DoesNotExist, e:
-                        username = username_val
-                u.username = username
-            u.save()
+        db.alter_column('auth_user', 'username', models.CharField(max_length=30))
+
 
     models = {
         'auth.group': {
@@ -67,7 +43,7 @@ class Migration(DataMigration):
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
-            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
+            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '75'})
         },
         'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
@@ -84,7 +60,7 @@ class Migration(DataMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 27, 10, 35, 30, 526021)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 28, 9, 53, 50, 925949)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
@@ -135,7 +111,7 @@ class Migration(DataMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 27, 10, 35, 30, 527719)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 28, 9, 53, 50, 927617)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchanges'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.invitation': {
@@ -215,7 +191,7 @@ class Migration(DataMigration):
             'pending_serial': ('django.db.models.fields.BigIntegerField', [], {'null': 'True', 'db_index': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
-            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 27, 10, 35, 30, 535980)'}),
+            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2012, 12, 28, 9, 53, 50, 935918)'}),
             'state': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
         'im.projectmembershiphistory': {

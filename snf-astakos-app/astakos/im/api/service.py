@@ -99,8 +99,7 @@ def get_user_info(request):
     user_info = None
     if username:
         try:
-            #user = query.get(username__iexact=username)
-            user = query.get(username__iexact=username[:30])
+            user = query.get(username__iexact=username)
         except AstakosUser.DoesNotExist:
             raise ItemNotFound('Invalid username: %s' % username)
         else:

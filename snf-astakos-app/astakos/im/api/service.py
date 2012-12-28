@@ -66,8 +66,9 @@ def api_method(http_method=None, token_required=False):
                         service = Service.objects.get(auth_token=x_auth_token)
 
                         # Check if the token has expired.
-                        if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
-                            raise Unauthorized('Authentication expired')
+                        if service.auth_token_expires:
+                            if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
+                                raise Unauthorized('Authentication expired')
                     except Service.DoesNotExist, e:
                         raise Unauthorized('Invalid X-Auth-Token')
                 response = func(request, *args, **kwargs)

@@ -111,7 +111,7 @@ class Service(models.Model):
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
 
-    def renew_token(self):
+    def renew_token(self, expiration_date=None):
         md5 = hashlib.md5()
         md5.update(self.name.encode('ascii', 'ignore'))
         md5.update(self.url.encode('ascii', 'ignore'))
@@ -119,8 +119,10 @@ class Service(models.Model):
 
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
-        self.auth_token_expires = self.auth_token_created + \
-            timedelta(hours=AUTH_TOKEN_DURATION)
+        if expiration_date:
+            self.auth_token_expires = expiration_date
+        else:
+            self.auth_token_expires = None
 
     def __str__(self):
         return self.name

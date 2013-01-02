@@ -70,16 +70,18 @@ def set_quota(payload):
     if not c:
         return
     result = c.set_quota(context={}, clientkey=clientkey, set_quota=payload)
-    print 'set_quota: %s rejected: %s' % (payload, result)
     logger.info('set_quota: %s rejected: %s' % (payload, result))
     return result
 
-def get_quota(payload):
+def get_quota(user):
     c = get_client()
     if not c:
         return
+    payload = []
+    append = payload.append
+    for r in user.quota.keys():
+        append((user.uuid, r, ENTITY_KEY),)
     result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
-    print 'get_quota: %s rejected: %s' % (payload, result)
     logger.info('get_quota: %s rejected: %s' % (payload, result))
     return result
 
@@ -88,7 +90,6 @@ def create_entity(payload):
     if not c:
         return
     result = c.create_entity(context={}, clientkey=clientkey, create_entity=payload)
-    print 'create_entity: %s rejected: %s' % (payload, result)
     logger.info('create_entity: %s rejected: %s' % (payload, result))
     return result
 
@@ -106,9 +107,9 @@ GetQuotaPayload = namedtuple('GetQuotaPayload', ('holder',
                                                  'key'))
 
 CreateEntityPayload = namedtuple('CreateEntityPayload', ('entity',
-                                                        'owner',
-                                                        'key',
-                                                        'ownerkey'))
+                                                         'owner',
+                                                         'key',
+                                                         'ownerkey'))
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',

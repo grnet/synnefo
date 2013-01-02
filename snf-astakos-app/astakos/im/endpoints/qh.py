@@ -131,10 +131,10 @@ def register_users(users):
                                 holder=u.uuid,
                                 resource=resource,
                                 key=ENTITY_KEY,
-                                quantity=None,
+                                quantity=0,
                                 capacity=uplimit if uplimit != inf else None,
-                                import_limit=None,
-                                export_limit=None,
+                                import_limit=0,
+                                export_limit=0,
                                 flags=0))
         return set_quota(payload)
 

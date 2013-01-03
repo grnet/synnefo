@@ -1,9 +1,149 @@
-Synnefo Projects
-================
+Synnefo Projects: General Design Notes
+======================================
 
-Projects can be thought of as contracts between the infrastructure
-and the members of the project, so that resources can be allocated
-by the members and used for a specified period in time.
+Projects can be thought of as "contracts" between the infrastructure
+and the members of the Project, so that members can allocate and use
+resources for a specified period in time.
+For every Project there is an *application*, and a *membership set*.
+The application must be approved before the Project "contract"
+comes in effect, and before any members join.
+
+Applications contain a Project *definition* that formally includes
+all the policy of the Project "contract", such as name, ownership,
+dates, and resource limits.
+Applications and the definitions they contain are, like contracts,
+immutable objects that can be tracked and effected in their entirety.
+Every change made to a pending application or an existing Project
+must be applied for through a new application.
+
+Project Synchronization
+-----------------------
+A Project has two kinds of effects, global and per-membership.
+Global effects are encoded within the Project object itself,
+and may include services (e.g. dns name, website, forum/collaboration),
+project-wide resources (e.g. VMs, IPs, diskspace), etc.
+Per-membership effects are encoded within Membership objects,
+and are prescribed by the policy in the project definition.
+
+By design, the effects of the project are expected to extend
+beyond the database system that records the project approval,
+therefore these effects cannot be relied to be implemented
+instantly and atomically upon request.
+For example, project creation or modification may involve
+updating resource management services, notification services,
+project website services, which may all have their own separate
+database systems.
+
+Consequently, once a policy is (atomically) registered as being in effect,
+it must be propagated for implementation with separate (non-atomic) procedures,
+collectively called Project Synchronization.
+
+Currently, the general approach for Synchronization of synnefo Projects,
+is to maintain appropriate states for the objects encoding policy effects
+(i.e. Project and Membership objects), and execute careful transitions
+among those states, respecting semanting dependencies and limitations,
+and remote system accesses.
+For example, a project cannot be considered "synchronized" unless
+all its Memberships are also considered "synchronized",
+or you cannot declare a Membership as synchronized if the newly-set
+quotas have not been acknowledged by the remote quota service.
+
+Creating and Modifying Projects
+-------------------------------
+Projects are created and modified by issuing a corresponding application.
+Applications that refer to the same Project are chained by including
+a reference to the precursor application into the new one.
+Applications that do not specify a precursor always create a new Project
+(that is, a new project object with a new membership set).
+Project applications that have not yet been approved may also be modified.
+When an unapproved application is modified (ie. it is succeeded by another),
+it may or may not be automatically rejected, depending on policy.
+
+Projects once created, are expected to always remain in record,
+even if they have been deactivated (i.e. their policies removed from effect).
+Deactivating a project may be the result of a policy-specific action,
+such as *termination* on a pre-defined date or *suspension* following
+an administrative decision.
+Deactivated projects retain both their Definition and their Membership sets,
+allowing them to be reactivated by another kind of policy-specific action.
+
+Adding and Removing Project Members
+-----------------------------------
+Memberships once created, are also expected to remain in historical record,
+even if they have been marked as removed by a policy-specific action,
+such as the user leaving the project,
+or the project owner suspending, or terminating them altogether.
+
+
+
+Reference Schema for Projects
+=============================
+
+General Terms
+-------------
+For clarity and precision, we (try to) use different terms for similar meanings.
+We also separate low-level technical primitives from related higher-level
+policy actions that include them.
+
+synchronize, synchronized, synchronization
+    A low-level term for Projects and Memberships.
+    Refers to the controlled (non-atomic) process that implements
+    a newly modified policy (i.e. adds or removes policy effects
+    such as quota limits).
+
+activate, deactivate, active, inactive
+    A low-level term for Projects and Memberships.
+    A Project or Membership is considered active as long as
+    its policy is in effect.
+
+suspend, suspended, suspension
+    A policy term for Projects and Memberships,
+    implying temporary deactivation by an administrative action
+    (e.g. abuse report, limits violation).
+
+terminate, terminated, termination
+    A policyu term for Projects and Memberships,
+    implying permanent deactivation, especially
+    according to a pre-defined end-of-life event
+    (e.g. project/contract "expiration").
+
+add or remove membership
+    Low-level terms for managing memberships to projects.
+
+join or leave project
+    Policy terms for when users request their addition or removal
+    from a project membership set.
+
+accept or reject membership request
+    Policy terms for a project administrator to decide on
+    join or leave requests.
+
+approve or disapprove project
+    Policy terms for service administrators to decide whether
+    to create/activate a project according or not
+
+alter project
+    Low-level term for changes made to the global (i.e. not Membership)
+    project status (e.g. new application, suspension).
+
+modify project
+    Policy term for submitting a new application as a successor
+    to an existing one, to alter the definition of a project.
+
+project leader
+    The user who has authority over a project,
+    to accept or reject membership requests,
+    or to perform other actions according to policy.
+
+project applicant
+    The user who submits a project application for creation
+    or modification of a project.
+    The applicant can be a different user than the leader.
+
+project administrator
+    A user who has authority to approve, disapprove, and modify
+    projects of a certain class (e.g. according to their domain names).
+
 
 Definition
 ----------
@@ -17,10 +157,10 @@ or modification of a project, has the following attributes:
     *text describing the project for the public*
 
 ``start_date``
-    *when the project is to be started*
+    *when the project is requested to become active*
 
 ``end_date``
-    *when the project is to be ended*
+    *when the project is to be deactivatedended*
 
 ``member_join_policy``
     *an enumeration of policies on how new join requests are to be accepted.
@@ -48,7 +188,7 @@ or modification of a project, has the following attributes:
     ``closed``
         *no member can leave the project*
 
-``limit_on_members_number``
+``limit_on_member_count``
     *the maximum number of members that can be admitted to the project*
 
 ``limits_on_resources``
@@ -62,7 +202,7 @@ or modification of a project, has the following attributes:
 Application for a Project
 -------------------------
 An **application** for a project must be issued by a user and
-approved by the Service before any resources are granted.
+*approved* by the service before any resources are granted.
 Its attributes are:
 
 ``serial``
@@ -96,14 +236,14 @@ The *application status* can be:
     :(2b):  rejected
     :(3):   replaced
 
-When an application becomes *approved* and set to the project,
-its precursor must automatically be set to *replaced*.
+When an application becomes *approved* and therefore defines
+a the project, its precursor (if any) must atomically be set to *replaced*.
+
 
 
 Project Membership
 -------------------------
-A *project membership* object maps a user to a project and holds
-state for this mapping.
+A *project membership* maps a user to a project and holds state for this mapping.
 There are no inherent constraints to this mapping,
 any user might be a member to any project.
 
@@ -117,13 +257,15 @@ The **state** of membership can be:
     :(5):   *removed, pending synchronization*
     :(6):   *removed*
 
-The transitions from 2b to 3, and 5 to 6, must first
-commit their starting state and then only update to the next state
+The transitions from 2b to 3, and 5 to 6, must first commit
+their starting state and then only update to the next state
 after the *Synchronize Membership* procedure has been
 acknowledged as successful.
 
-Except states 2b and 5 which explicitly state that they are *pending*,
-all other states are considered *synchronized*
+Except states 2b and 5, which explicitly state that they are
+*pending synchronization*, all other states are considered *synchronized*
+**Synchronization** refers to all external communication 
+(i.e. not within the limits to) required
 
 
 
@@ -142,19 +284,6 @@ The attributes for a project are:
 ``application``
     *the last application that was successfully synchronized with Quotaholder.*
 
-``last_application_approved``
-    *the application which has created or modified the project.
-    An application is approved by setting it to this attribute.
-
-    Normally, this is the same as the ``application`` above.
-    However, on approval, only ``last_application_approved`` is set
-    so the two attributes differ, marking the project as pending definition
-    synchronization. Upon successful synchronization with Quotaholder,
-    ``application`` is also set, marking the project definition synchronized.
-    Note that if during the synchronization another approval
-    updates ``last_application_approved``, then after synchronization
-    the project is still out of sync, and needs another loop.*
-
 ``creation_date``
     *when the project was created (i.e. was first approved)*
 
@@ -162,27 +291,21 @@ The attributes for a project are:
     *when was the last approval (i.e. creation or modification).
     Null if the project has not been approved or has been suspended.*
 
-``termination_start_date``
-    *when the project was ordered to terminate,
+``deactivation_start_date``
+    *when the project was ordered to deactivate,
     and declared out of sync for its resource grants to be removed.
-    (is null if the project has not been ordered to terminate)*
+    (is null if the project has not been ordered to deactivate)*
 
-``termination_date``
-    *when the project termination was actually completed by the service
-    following the successful revocation of resource grants.
-    (is null if the project has not been terminated)*
+``deactivation_date``
+    *when the project deactivation was actually registered as completed
+    by the service following the successful revocation of resource grants.
+    (is null if the project has not been deactivated)*
+
+``deactivation_reason``
+    *Text indicating indicating the reason for deactivation.*
 
 ``members``
-    *the set of members for this project*
-
-``membership_dirty``
-    *boolean attribute declaring that the project
-    needs membership synchronization.
-    It must be atomically set and committed before
-    any synchronization begins.
-    It must be unset only after synchronization
-    has been confirmed as successful.*
-
+    *the set of memberships for this project*
 
 
 Rules
@@ -194,99 +317,78 @@ Rules
 
 2. **Active projects**
 
-    A project is declared **active** when its resource grants are in effect.
+    A project is declared **active** when its resource grants and
+    general policy is in effect (even if partially),
+    and no order of deactivation has been given.
+
     A valid project can be active if and only if
-    - its ``last_approval_date`` is not null
-    - its ``termination_date`` is null
-    - its ``limit_on_members_number`` and ``limits_on_resources`` are not violated
+    - its ``deactivation_start_date`` is null
 
-2. **Terminated projects**
+2. **Inactive projects**
 
-    A valid project is declared **terminated**, if and only if
-    its ``termination_date`` is not null
+    A valid project is declared **inactive** when its resource grants
+    and general policy is not in effect, or is in effect and
 
-4. **Suspended projects**
+    A valid project is inactive if and only if,
+    its ``deactivation_start_date`` is not null
 
-    A valid project is declared **suspended** if and only if
-
-    - its ``termination_date`` is null
-    - its ``last_approval_date`` is null,
-      or its ``limit_on_members_number`` and ``limits_on_resources`` are violated
-
-5. **Alive projects**
-
-    Projects are declared **alive** if they are either *active*, or *suspended*.
-    Users and owners are always able to interact with alive projects.
-
-6. **Life status**
-
-    The status of being alive, active, suspended, terminated.
-
-7. **Project states**
+3. **Project states**
 
     The states of a project that are significant from a control flow aspect,
     are the following:
 
     :(0):   pending approval
-    :(1a):  alive, pending definition sync
-    :(1b):  alive, pending membership sync
-    :(1c):  alive, pending total sync
-    :(2):   alive
-    :(3a):  terminated, pending definition sync
-    :(3b):  terminated, pending membership sync
-    :(3c):  terminated, pending total sync
-    :(4):   terminated
+    :(1a):  active, pending definition sync
+    :(1b):  active, pending membership sync
+    :(1c):  active, pending total sync
+    :(2):   active
+    :(3a):  inactive, pending definition sync
+    :(3b):  inactive, pending membership sync
+    :(3c):  inactive, pending total sync
+    :(4):   inactive
 
 
-7. **Synchronization status**
+4. **Synchronization status**
 
     The status of the project's synchronization with Quotaholder
+    and other remote services,
     can be either **synchronized** or **unsyncrhonized**.
-
-    An alive project is declared synchronized by setting
-    ``application`` to be equal to ``last_application_approved``,
-    and setting ``membership_dirty`` to false,
 
     Semantically, the project becomes synchronized when its application
     definition has been fully implemented and committed to quotaholder,
     and all its memberships are also synchronized.
 
-    The alive project loses its synchronization on two occasions.
+    The active project loses its synchronization on two occasions.
     On the approval of a new application modifying the project,
     and on the addition or removal of any of its memberships.
 
-    In general, also considering projects under termination,
+    In general, also considering projects being deactivated,
     a project is declared synchronized if and only if:
 
-    - ``last_application_approved`` equals ``application``
-    - ``membership_dirty`` is false
-    - ``termination_start_date`` is null or ``termination_date`` is set
+    - None of its Memberships is unsynchronized
+    - ``deactivation_start_date`` is null or ``deactivation_date`` is set
 
-    Depending on which of the previous three clauses fail,
-    a synchronizing process knows what to do:
-    definition, membership, or termination and combinations.
-
-8. **Unique project names**
+5. **Unique project names**
 
     The project name (as specified in its application's definition)
     must be unique among all *alive* projects.
 
-9. **Inconsistent dates**
+6. **Inconsistent dates**
 
     If either ``creation_date`` or ``last_approval_date``
     is in the future, the project state is declared **inconsistent**
     but the project is still considered created or approved, respectively.
 
-    If ``termination_date`` is in the future, the project state is declared
-    **inconsistent** but the project is still considered terminated.
+    If ``deactivation_date`` is in the future, the project is declared
+    **inconsistent** but the project is still considered inactive.
 
-10. **No project without application**
+7. **No project without application**
 
     A project can only exist in reference of the application that has defined it.
     The attributes in the definition such as its name, resource grants
     cannot be modified without a new application that must be approved.
 
-11. **Creating and modifying projects with follow-up applications**
+8. **Creating and modifying projects with follow-up applications**
 
     Every application for a project can be followed up with another one.
     The new application points back to it with its ``precursor`` attribute.
@@ -308,12 +410,59 @@ Rules
     If the precursor of an application *is* associated with a valid project,
     then the same project entry is used and is re-initialized according
     to the new application's definition.
-    The project is made alive (if terminated) and its previous state
-    is maintained (mainly, the member set).
-    If the new definition causes the project to exceed its limits,
-    it will be suspended as required.
+    The project is made active (if inactive) and its previous state
+    is preserved (mainly, the member set).
 
 
+Scenarios
+---------
+
+Project applicant not confident for his numbers
+'''''''''''''''''''''''''''''''''''''''''''''''
+Researcher requests resources to create a cluster for a protein-folding
+computation experiment. He knows how exactly how many machines,
+memory, and disk he needs but is not certain how many CPU cores
+he should request.
+
+He leaves the corresponding resource unspecified,
+and leaves a comment noting the issue.
+
+The project administrator responsible for the application
+uses his expertise, and/or consults others to formulate an appropriate
+limit for the resource.
+Then he modifies the (not-yet-approved) project, fills in the resource limit,
+then submits and approves the new application.
+
+
+Using participation to support an project application
+'''''''''''''''''''''''''''''''''''''''''''''''''''''
+An applicant knows that his application will be rejected unless
+a lot of people support it.
+
+Therefore, he applies for a project with no resource grants,
+and notes his rationale in the comments.
+
+The project administrator accepts his application in good faith,
+and then the project begins to accept members.
+
+Once many and important enough members have joined,
+the project leader modifies the project with a new application
+that now includes significant resource grants.
+
+The project administrator reviews the application and membership list,
+and is convinced that the project deserves the grants.
+However, he wants to make sure that this remains so,
+by ensuring that the membership of the project cannot
+include other users without further review.
+
+Therefore, he further modifies the (not-yet-approved) application,
+and sets the member accept policy to be 'closed', that is,
+that no new members may join the project.
+Then he sumbits and approves the application.
+
+
+
+-------- gtsouk REVIEW STOPS HERE ---------
 
 Procedures
 ----------
@@ -366,7 +515,7 @@ with a user's resource quotas is assumed to be available.
 
 #. Suspend a project
 
-   A project is suspended by setting ``last_approval_date`` to None
+   A project is suspended by setting ``last_approval_date`` to None.
 
 #. Terminate a project
 

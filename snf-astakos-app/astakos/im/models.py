@@ -67,7 +67,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, SERVICES, MODERATION_ENABLED)
+    SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     register_users, register_resources, qh_add_quota, QuotaLimits,
@@ -149,6 +149,15 @@ class ResourceMetadata(models.Model):
     key = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
     value = models.CharField(_('Value'), max_length=255)
 
+_presentation_data = {}
+def get_presentation(resource):
+    global _presentation_data
+    presentation = _presentation_data.get(resource, {})
+    if not presentation:
+        resource_presentation = RESOURCES_PRESENTATION_DATA.get('resources', {})
+        presentation = resource_presentation.get(resource, {})
+        _presentation_data[resource] = presentation
+    return presentation 
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255)
@@ -163,6 +172,31 @@ class Resource(models.Model):
 
     def __str__(self):
         return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
+
+    @property
+    def help_text(self):
+        return get_presentation(str(self)).get('help_text', '')
+    
+    @property
+    def help_text_input_each(self):
+        return get_presentation(str(self)).get('help_text_input_each', '')
+
+    @property
+    def is_abbreviation(self):
+        return get_presentation(str(self)).get('is_abbreviation', False)
+
+    @property
+    def report_desc(self):
+        return get_presentation(str(self)).get('report_desc', '')
+
+    @property
+    def placeholder(self):
+        return get_presentation(str(self)).get('placeholder', '')
+
+    @property
+    def verbose_name(self):
+        return get_presentation(str(self)).get('verbose_name', '')
+
 
 _default_quota = {}
 def get_default_quota():
@@ -317,7 +351,6 @@ class AstakosUser(User):
             grants = p.application.projectresourcegrant_set.all()
             for g in grants:
                 d[str(g.resource)] += g.member_capacity or inf
-        # TODO set default for remaining
         return d
 
     @property
@@ -1717,13 +1750,11 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
     register_users((instance,))
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
-
 def resource_post_save(sender, instance, created, **kwargs):
     if not created:
         return
     register_resources((instance,))
 post_save.connect(resource_post_save, sender=Resource)
-
 
 def renew_token(sender, instance, **kwargs):
     if not instance.auth_token:

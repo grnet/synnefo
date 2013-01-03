@@ -837,6 +837,7 @@ def resource_usage(request):
         backenddata = map(pluralize , backenddata)
     else:
         messages.error(request, result.reason)
+        backenddata = []
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
                            resource_usage=backenddata,
@@ -1131,6 +1132,8 @@ def project_list(request):
 @login_required
 def project_update(request, application_id):
     result = callpoint.list_resources()
+    details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
+    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
     if not result.is_success:
         messages.error(
             request,
@@ -1138,12 +1141,12 @@ def project_update(request, application_id):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
     return _update_object(
         request,
         object_id=application_id,
         template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect='/im/project/list/',
+        extra_context=extra_context, post_save_redirect=reverse('project_list'),
         form_class=ProjectApplicationForm)
 
 

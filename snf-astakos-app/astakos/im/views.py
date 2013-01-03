@@ -834,8 +834,7 @@ def resource_usage(request):
     if result.is_success:
         resource_usage = result.data
         backenddata = map(with_class, result.data)
-        backenddata = map(with_class, backenddata)
-
+        backenddata = map(pluralize , backenddata)
     else:
         messages.error(request, result.reason)
     return render_response('im/resource_usage.html',

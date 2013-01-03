@@ -165,11 +165,6 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     'cyclades': {
         'url': 'https://node1.example.com/ui/',
         'resources': [{
-            'name':'vm',
-            'group':'compute',
-            'uplimit':2,
-            'desc': 'Number of virtual machines'
-            },{
             'name':'disk',
             'group':'compute',
             'uplimit':30*1024*1024*1024,
@@ -186,6 +181,11 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
             'uplimit':6*1024*1024*1024,
             'unit':'bytes',
             'desc': 'Virtual machines'
+            },{
+            'name':'vm',
+            'group':'compute',
+            'uplimit':2,
+            'desc': 'Number of virtual machines'
             },{
             'name':'network.private',
             'group':'network',
@@ -251,14 +251,6 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'placeholder':'eg. 10GB',
                 'verbose_name':'Storage Space',
             },
-            'cyclades.vm': {
-                'help_text':'These are the VMs one can create on the Cyclades UI ',
-                'help_text_input_each':'This is the total number of VMs that will be granted to each user of this Project ',
-                'is_abbreviation':True,
-                'report_desc':'Virtual Machines',
-                'placeholder':'eg. 2',
-                'verbose_name':'vm',
-            },
             'cyclades.disk': {
                 'help_text':'This is the System Disk that the VMs have that run the OS ',
                 'help_text_input_each':"This is the total amount of System Disk that will be granted to each user of this Project (this refers to the total System Disk of all VMs, not each VM's System Disk)  ",
@@ -282,6 +274,14 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'report_desc':'CPUs',
                 'placeholder':'eg. 1',
                 'verbose_name':'cpu'
+            },
+            'cyclades.vm': {
+                'help_text':'These are the VMs one can create on the Cyclades UI ',
+                'help_text_input_each':'This is the total number of VMs that will be granted to each user of this Project ',
+                'is_abbreviation':True,
+                'report_desc':'Virtual Machines',
+                'placeholder':'eg. 2',
+                'verbose_name':'vm',
             },
             'cyclades.network.private': {
                 'help_text':'These are the Private Networks one can create on the Cyclades UI. ',

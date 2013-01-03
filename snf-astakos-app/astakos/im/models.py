@@ -1100,6 +1100,13 @@ class ProjectApplicationManager(models.Manager):
         return self.filter(Q(owner=user) | Q(applicant=user) | \
                         Q(project__in=user.projectmembership_set.filter()))
 
+    def search_by_name(self, *search_strings):
+        q = Q()
+        for s in search_strings:
+            q = q | Q(name__icontains=s)
+        return self.filter(q)
+
+
 class ProjectApplication(models.Model):
     PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
@@ -1153,7 +1160,7 @@ class ProjectApplication(models.Model):
             try:
                 membership = self.project.projectmembership_set.get(person=user)
                 status = membership.state
-            except Project.DoesNotExist:
+            except ProjectMembership.DoesNotExist:
                 status = -1
 
         return status

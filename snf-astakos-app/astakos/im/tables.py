@@ -3,6 +3,7 @@ import django_tables2 as tables
 from django.utils.translation import ugettext as _
 from django_tables2 import A
 from astakos.im.models import *
+from django.utils.safestring import mark_safe
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -35,7 +36,8 @@ class UserProjectApplicationsTable(tables.Table):
     issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     state = tables.Column(verbose_name="Status")
-    members_count = tables.Column(verbose_name="Enrolled", default=0)
+    members_count = tables.Column(verbose_name="Enrolled", default=0,
+                                  sortable=False)
     membership_status = tables.Column(verbose_name="My status", empty_values=(),
                                       orderable=False)
 

@@ -9,12 +9,14 @@
     <div class="projects">
 	    <h2>PROJECTS</h2>
 	    {% if form %}
-	        {% include "im/projects_list.html" %}
+	        {% include "im/projects/search_form.html" %}
 	    {% else %}
-	        {% include "im/projects_index.html" %}
+	        {% include "im/projects/intro.html" %}
 		</div>
-    	{% endif %}
-    	{% render_table table %}
+        {% endif %}
+        {% if table %}
+            {% render_table table %}
+        {% endif %}
 </div>
 </div>  
 {% endblock %}

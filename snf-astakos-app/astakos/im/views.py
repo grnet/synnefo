@@ -41,6 +41,8 @@ from urllib import quote
 from functools import wraps
 from datetime import datetime
 
+from django_tables2 import RequestConfig
+
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -1086,7 +1088,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
 def project_add(request):
     result = callpoint.list_resources()
     details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
-    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
+    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"]
     if not result.is_success:
         messages.error(
             request,
@@ -1097,7 +1099,7 @@ def project_add(request):
     extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
     return _create_object(request, template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect=reverse('project_list'),
-        form_class=ProjectApplicationForm) 
+        form_class=ProjectApplicationForm)
 
 
 @require_http_methods(["GET"])
@@ -1106,7 +1108,7 @@ def project_add(request):
 def project_list(request):
     projects = ProjectApplication.objects.user_projects(request.user).select_related()
     table = tables.UserProjectApplicationsTable(projects, user=request.user, prefix="my_projects")
-    table.paginate(page=request.GET.get('my_projectspage', 1), per_page=PAGINATE_BY)
+    RequestConfig(request).configure(table)
 
     return object_list(
         request,
@@ -1124,7 +1126,7 @@ def project_list(request):
 def project_update(request, application_id):
     result = callpoint.list_resources()
     details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
-    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
+    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"]
     if not result.is_success:
         messages.error(
             request,
@@ -1132,7 +1134,9 @@ def project_update(request, application_id):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True,
+                     'details_fields':details_fields,
+                     'membership_fields':membership_fields}
     return _update_object(
         request,
         object_id=application_id,
@@ -1213,43 +1217,35 @@ def project_detail(request, application_id):
 @login_required
 def project_search(request):
     q = request.GET.get('q', '')
-    queryset = ProjectApplication.objects.filter()
+    form = ProjectSearchForm()
+    q = q.strip()
 
-    if request.method == 'GET':
-        form = ProjectSearchForm()
-        q = q.strip()
-        queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-        queryset = queryset.filter(name__contains=q)
-    else:
+    if request.method == "POST":
         form = ProjectSearchForm(request.POST)
-
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-            queryset = queryset.filter(name__contains=q)
         else:
-            queryset = queryset.none()
+            q = None
 
-    sorting = 'name'
-    # validate sorting
-    sort_form = ProjectSortForm(request.GET)
-    if sort_form.is_valid():
-        sorting = sort_form.cleaned_data.get('sorting')
-    queryset = queryset.order_by(sorting)
- 
+    if q is None:
+        projects = ProjectApplication.objects.none()
+    else:
+        projects = ProjectApplication.objects.search_by_name(q)
+        projects = projects.filter(~Q(project__last_approval_date__isnull=True))
+
+    table = tables.UserProjectApplicationsTable(projects, user=request.user, prefix="my_projects")
+    RequestConfig(request).configure(table)
+
     return object_list(
         request,
-        queryset,
-        paginate_by=PAGINATE_BY_ALL,
-        page=request.GET.get('page') or 1,
+        projects,
         template_name='im/projects/project_list.html',
-        extra_context=dict(
-            form=form,
-            is_search=True,
-            sorting=sorting,
-            q=q,
-        )
-    )
+        extra_context={
+          'form': form,
+          'is_search': True,
+          'q': q,
+          'table': table
+        })
 
 @require_http_methods(["POST"])
 @signed_terms_required

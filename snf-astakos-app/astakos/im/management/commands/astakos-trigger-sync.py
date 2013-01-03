@@ -31,44 +31,22 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import Group
-from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import NoArgsCommand, CommandError
+from django.db import transaction
 
-from ._common import add_group_permission
+from astakos.im.models import trigger_sync
+
+import logging
+logger = logging.getLogger(__name__)
 
 
-class Command(BaseCommand):
-    args = "<groupname> <permission> [<permissions> ...]"
-    help = "Add group permissions"
+class Command(NoArgsCommand):
+    help = "Trigger quota syncing in the Quotaholder"
 
-    def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError(
-                "Please provide a group name and at least one permission")
-
-        group = None
+    @transaction.commit_on_success
+    def handle_noargs(self, **options):
         try:
-            if args[0].isdigit():
-                group = Group.objects.get(id=args[0])
-            else:
-                group = Group.objects.get(name=args[0])
-        except Group.DoesNotExist, e:
-            raise CommandError("Invalid group")
-
-        try:
-            content_type = ContentType.objects.get(app_label='im',
-                                                   model='astakosuser')
-            for pname in args[1:]:
-                r, created = add_group_permission(group, pname)
-                if created:
-                    self.stdout.write(
-                        'Permission: %s created successfully\n' % pname)
-                if r == 0:
-                    self.stdout.write(
-                        'Group has already permission: %s\n' % pname)
-                else:
-                    self.stdout.write(
-                        'Permission: %s added successfully\n' % pname)
-        except Exception, e:
-            raise CommandError(e)
+            trigger_sync()
+        except BaseException, e:
+            logger.exception(e)
+            raise CommandError("Syncing failed.")

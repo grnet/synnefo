@@ -42,6 +42,7 @@ from astakos.im import settings as astakos_settings
 from astakos.im import messages as astakos_messages
 
 import logging
+import urllib
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +88,17 @@ class AuthProvider(object):
         msg = 'AUTH_PROVIDER_%s' % msg
         return override_msg or getattr(astakos_messages, msg, msg) % params
 
+    @property
+    def add_url(self):
+        return reverse(self.login_view)
+
     def __init__(self, user=None):
         self.user = user
+        for tpl in ['login_prompt', 'login', 'signup_prompt']:
+            tpl_name = '%s_%s' % (tpl, 'template')
+            override = self.get_setting(tpl_name)
+            if override:
+                setattr(self, tpl_name, override)
 
     def __getattr__(self, key):
         if not key.startswith('get_'):
@@ -141,11 +151,7 @@ class LocalAuthProvider(AuthProvider):
     login_prompt = _('if you already have a username and password')
     signup_prompt = _('New to ~okeanos ?')
     signup_link_prompt = _('create an account now')
-
-
-    @property
-    def add_url(self):
-        return reverse('password_change')
+    login_view = 'password_change'
 
     one_per_user = True
 
@@ -171,13 +177,10 @@ class ShibbolethAuthProvider(AuthProvider):
     primary_login_prompt = _('If you are a student/researcher/faculty you can'
                              ' login using your university-credentials in'
                              ' the following page')
-
-    @property
-    def add_url(self):
-        return reverse('astakos.im.target.shibboleth.login')
+    login_view = 'astakos.im.target.shibboleth.login'
 
     login_template = 'im/auth/shibboleth_login.html'
-    login_prompt_template = 'im/auth/shibboleth_login_prompt.html'
+    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
 
 
 class TwitterAuthProvider(AuthProvider):
@@ -186,10 +189,7 @@ class TwitterAuthProvider(AuthProvider):
     add_prompt = _('Allows you to login to your account using Twitter')
     details_tpl = _('Twitter screen name: %(info_screen_name)s')
     user_title = _('Twitter (%(info_screen_name)s)')
-
-    @property
-    def add_url(self):
-        return reverse('astakos.im.target.twitter.login')
+    login_view = 'astakos.im.target.twitter.login'
 
     login_template = 'im/auth/third_party_provider_generic_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
@@ -201,10 +201,7 @@ class GoogleAuthProvider(AuthProvider):
     add_prompt = _('Allows you to login to your account using Google')
     details_tpl = _('Google account: %(info_email)s')
     user_title = _('Google (%(info_email)s)')
-
-    @property
-    def add_url(self):
-        return reverse('astakos.im.target.google.login')
+    login_view = 'astakos.im.target.google.login'
 
     login_template = 'im/auth/third_party_provider_generic_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
@@ -216,10 +213,7 @@ class LinkedInAuthProvider(AuthProvider):
     add_prompt = _('Allows you to login to your account using LinkedIn')
     user_title = _('LinkedIn (%(info_emailAddress)s)')
     details_tpl = _('LinkedIn account: %(info_emailAddress)s')
-
-    @property
-    def add_url(self):
-        return reverse('astakos.im.target.linkedin.login')
+    login_view = 'astakos.im.target.linkedin.login'
 
     login_template = 'im/auth/third_party_provider_generic_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'

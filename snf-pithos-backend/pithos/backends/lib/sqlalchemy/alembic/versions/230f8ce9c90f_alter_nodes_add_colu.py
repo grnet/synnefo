@@ -20,15 +20,17 @@ import sqlalchemy as sa
 def upgrade():
     op.add_column('nodes', sa.Column('latest_version', sa.INTEGER))
 
-    n = table('nodes',
-              column('node', sa.Integer),
-              column('latest_version', sa.Integer)
-              )
-    v = table('versions',
-              column('node', sa.Integer),
-              column('mtime', sa.Integer),
-              column('serial', sa.Integer),
-              )
+    n = table(
+        'nodes',
+        column('node', sa.Integer),
+        column('latest_version', sa.Integer)
+    )
+    v = table(
+        'versions',
+        column('node', sa.Integer),
+        column('mtime', sa.Integer),
+        column('serial', sa.Integer),
+    )
 
     s = sa.select(
         [v.c.serial]).where(n.c.node == v.c.node).order_by(v.c.mtime).limit(1)

@@ -37,7 +37,6 @@ from astakos.im.settings import (
     GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS)
 from astakos.im.api import get_menu
 from astakos.im.util import get_query
-from astakos.im.models import GroupKind
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
 from django.utils import simplejson as json
@@ -108,8 +107,3 @@ def menu(request):
         return {}
     else:
         return {'menu': menu_items}
-
-
-def group_kinds(request):
-    return {'group_kinds': GroupKind.objects.exclude(
-        name='default').values_list('name', flat=True)}

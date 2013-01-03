@@ -94,7 +94,12 @@ SHIBBOLETH_EMAIL_USED                   =   'This email is already associated wi
 SHIBBOLETH_INACTIVE_ACC                 =   'This email is already associated with an account that is not yet activated. \
                                                If that is your account, you need to activate it before being able to \
                                                associate it with this shibboleth account.'
-SHIBBOLETH_MISSING_EPPN                 =   'This request is missing the unique token.'
+SHIBBOLETH_MISSING_EPPN = 'Your request is missing a unique ' + \
+                          'token. This means your academic ' + \
+                          'institution does not yet allow its users to log ' + \
+                          'into %(domain)s with their academic ' + \
+                          'credentials. Please contact %(contact_email)s' + \
+                          ' for more information.'
 SHIBBOLETH_MISSING_NAME                 =   'This request is missing the user name.'
 
 SIGN_TERMS                              =   'Please, you need to \'Agree with the terms\' before proceeding.'
@@ -168,6 +173,7 @@ ADD_PROJECT_MEMBERS_Q_HELP              =   'Add a comma separated list of user 
 MISSING_IDENTIFIER                      =   'Missing identifier.'
 UNKNOWN_USER_ID                         =   'There is no user identified by %s.'
 UNKNOWN_PROJECT_APPLICATION_ID          =   'There is no project application identified by %s.'
+UNKNOWN_PROJECT_ID                      =   'There is no project identified by %s.'
 UNKNOWN_IDENTIFIER                      =   'Unknown identifier.'
 PENDING_MEMBERSHIP_LEAVE                =   'Your request is pending moderation by the Project owner.'
 USER_JOINED_PROJECT                     =   '%(realname)s has joined the Project.'
@@ -185,7 +191,7 @@ AUTH_PROVIDER_ADD_EXISTS                     =   "Account already assigned to an
 AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be assigned once you login to your account."
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
 AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is required. Add one from your profile page."
-
+AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD         =   "Changing password is not supported."
 
 messages = locals().keys()
 for msg in messages:

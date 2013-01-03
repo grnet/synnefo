@@ -40,7 +40,7 @@ from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from astakos.im.models import AstakosUser, GroupKind, Service, Resource
+from astakos.im.models import AstakosUser, Service, Resource
 from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
 from astakos.im.settings import (
     INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL)
@@ -86,58 +86,6 @@ def api_method(http_method=None):
     return decorator
 
 
-def _get_user_by_username(user_id):
-    try:
-        user = AstakosUser.objects.get(username=user_id)
-    except AstakosUser.DoesNotExist:
-        raise ItemNotFound('Invalid userid')
-    else:
-        response = HttpResponse()
-        response.status = 200
-        user_info = {'id': user.id,
-                     'username': user.username,
-                     'email': [user.email],
-                     'name': user.realname,
-                     'auth_token_created': user.auth_token_created.strftime(format),
-                     'auth_token_expires': user.auth_token_expires.strftime(format),
-                     'has_credits': user.has_credits,
-                     'enabled': user.is_active,
-                     'groups': [g.name for g in user.groups.all()]}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
-
-
-def _get_user_by_email(email):
-    if not email:
-        raise BadRequest('Email missing')
-    try:
-        user = AstakosUser.objects.get(email__iexact=email)
-    except AstakosUser.DoesNotExist:
-        raise ItemNotFound('Invalid email')
-
-    if not user.is_active:
-        raise ItemNotFound('Inactive user')
-    else:
-        response = HttpResponse()
-        response.status = 200
-        user_info = {'id': user.id,
-                     'username': user.username,
-                     'email': [user.email],
-                     'enabled': user.is_active,
-                     'name': user.realname,
-                     'auth_token_created': user.auth_token_created.strftime(format),
-                     'auth_token_expires': user.auth_token_expires.strftime(format),
-                     'has_credits': user.has_credits,
-                     'groups': [g.name for g in user.groups.all()],
-                     'user_permissions': [p.codename for p in user.user_permissions.all()]}
-        response.content = json.dumps(user_info)
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-        response['Content-Length'] = len(response.content)
-        return response
-
-
 @api_method(http_method='GET')
 def get_services(request):
     callback = request.GET.get('callback', None)
@@ -170,10 +118,6 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         append(item(url=absolute(request, reverse('edit_profile')),
                name="My account"))
         if with_extra_links:
-#             if user.has_usable_password() and user.provider in ('local', ''):
-#                 append(item(
-#                        url=absolute(request, reverse('password_change')),
-#                        name="Change password"))
             if EMAILCHANGE_ENABLED:
                 append(item(
                        url=absolute(request, reverse('email_change')),
@@ -184,24 +128,6 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                        name="Invitations"))
             
             if QUOTAHOLDER_URL:
-#                 append(item(
-#                        url=absolute(request, reverse('group_list')),
-#                        name="Projects",
-#     #                    submenu=(item(
-#     #                             url=absolute(request,
-#     #                                          reverse('group_list')),
-#     #                             name="Overview"),
-#     #                             item(
-#     #                                 url=absolute(request,
-#     #                                              reverse('group_create_list')),
-#     #                                 name="Create"),
-#     #                             item(
-#     #                                 url=absolute(request,
-#     #                                              reverse('group_search')),
-#     #                                 name="Join"),
-#     #                     )
-#                     )
-#                 )
                 append(item(
                        url=absolute(request, reverse('project_list')),
                        name="Projects"))
@@ -211,12 +137,6 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(
                    url=absolute(request, reverse('feedback')),
                    name="Contact"))
-#            append(item(
-#                   url=absolute(request, reverse('billing')),
-#                   name="Billing"))
-#            append(item(
-#                   url=absolute(request, reverse('timeline')),
-#                   name="Timeline"))
         if with_signout:
             append(item(
                    url=absolute(request, reverse('logout')),

@@ -45,7 +45,7 @@ from django.shortcuts import get_object_or_404
 
 from urlparse import urlunsplit, urlsplit
 
-from astakos.im.util import prepare_response, get_context
+from astakos.im.util import prepare_response, get_context, login_url
 from astakos.im.views import (
     requires_anonymous, render_response, requires_auth_provider)
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
@@ -54,12 +54,14 @@ from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import auth_providers
 from astakos.im import settings
+from astakos.im.target import add_pending_auth_provider, get_pending_key, \
+    handle_third_party_signup
 
 import astakos.im.messages as astakos_messages
-
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -72,6 +74,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
+
 @requires_auth_provider('shibboleth', login=True)
 @require_http_methods(["GET", "POST"])
 def login(
@@ -82,6 +85,7 @@ def login(
     extra_context = extra_context or {}
 
     tokens = request.META
+    third_party_key = get_pending_key(request)
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
@@ -101,17 +105,20 @@ def login(
                 raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
             else:
                 realname = ''
+
     except KeyError, e:
         # invalid shibboleth headers, redirect to login, display message
         messages.error(request, e.message)
-        return HttpResponseRedirect(reverse('login'))
+        return HttpResponseRedirect(login_url(request))
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     email = tokens.get(Tokens.SHIB_MAIL, '')
     provider_info = {'eppn': eppn, 'email': email, 'name': realname}
+    userid = eppn
 
     # an existing user accessed the view
     if request.user.is_authenticated():
+
         if request.user.has_auth_provider('shibboleth', identifier=eppn):
             return HttpResponseRedirect(reverse('edit_profile'))
 
@@ -136,52 +143,27 @@ def login(
             identifier=eppn
         )
         if user.is_active:
+
             # authenticate user
             response = prepare_response(request,
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
             messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
+            add_pending_auth_provider(request, third_party_key)
             response.set_cookie('astakos_last_login_method', 'local')
             return response
         else:
             message = user.get_inactive_message()
             messages.error(request, message)
-            return HttpResponseRedirect(reverse('login'))
+            return HttpResponseRedirect(login_url(request))
 
     except AstakosUser.DoesNotExist, e:
-        provider = auth_providers.get_provider('shibboleth')
-        if not provider.is_available_for_create():
-            messages.error(request,
-                           _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
-            return HttpResponseRedirect(reverse('login'))
-
-        # eppn not stored in astakos models, create pending profile
-        user, created = PendingThirdPartyUser.objects.get_or_create(
-            third_party_identifier=eppn,
-            provider='shibboleth'
-        )
-        # update pending user
-        user.realname = realname
-        user.affiliation = affiliation
-        user.email = email
-        user.info = json.dumps(provider_info)
-        user.generate_token()
-        user.save()
-
-        extra_context['provider'] = 'shibboleth'
-        extra_context['provider_title'] = provider.get_title_display
-        extra_context['token'] = user.token
-        extra_context['signup_url'] = reverse('signup') + \
-                                    "?third_party_token=%s" % user.token
-        extra_context['add_url'] = reverse('index') + \
-                                    "?key=%s#other-login-methods" % user.token
-        extra_context['can_create'] = provider.is_available_for_create()
-        extra_context['can_add'] = provider.is_available_for_add()
-
-
-        return render_response(
-            template,
-            context_instance=get_context(request, extra_context)
-        )
+        user_info = {'affiliation': affiliation, 'realname': realname}
+        return handle_third_party_signup(request, userid, 'shibboleth',
+                                         third_party_key,
+                                         provider_info,
+                                         user_info,
+                                         template,
+                                         extra_context)
 

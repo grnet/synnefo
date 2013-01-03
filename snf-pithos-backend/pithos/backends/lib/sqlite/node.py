@@ -412,6 +412,7 @@ class Node(DBWorker):
         else:
             prepopulation, presize = r
         population += prepopulation
+        population = max(population, 0)
         size += presize
         self.execute(qu, (node, population, size, mtime, cluster))
 

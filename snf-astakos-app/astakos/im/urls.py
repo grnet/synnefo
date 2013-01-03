@@ -56,31 +56,18 @@ urlpatterns = patterns(
 #    url(r'^billing/?$', 'billing', {}, name='billing'),
 #    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
 
-#     url(r'^group/add/complete/?$', 'group_add_complete', {}, name='group_add_complete'),
-#     url(r'^group/add/(?P<kind_name>\w+)?$', 'group_add', {}, name='group_add'),
-#     url(r'^group/list/?$', 'group_list', {}, name='group_list'),
-#     url(r'^group/(?P<group_id>\d+)/?$', 'group_detail', {}, name='group_detail'),
-#     url(r'^group/search/?$', 'group_search', {}, name='group_search'),
-#     url(r'^group/all/?$', 'group_all', {}, name='group_all'),
-#     url(r'^group/(?P<group_id>\d+)/join/?$', 'group_join', {}, name='group_join'),
-#     url(r'^group/(?P<group_id>\d+)/leave/?$', 'group_leave', {}, name='group_leave'),
-#     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/approve/?$', 'approve_member', {}, name='approve_member'),
-#     url(r'^group/(?P<group_id>\d+)/(?P<user_id>\d+)/disapprove/?$', 'disapprove_member', {}, name='disapprove_member'),
-#     url(r'^group/create/?$', 'group_create_list', {}, name='group_create_list'),
+    url(r'^projects/add/?$', 'project_add', {}, name='project_add'),
+    url(r'^projects/update/(?P<application_id>\d+)/?$', 'project_update', {}, name='project_update'),
+    url(r'^projects/?$', 'project_list', {}, name='project_list'),
+    url(r'^projects/search/?$', 'project_search', {}, name='project_search'),
+    url(r'^projects/(?P<application_id>\d+)/?$', 'project_detail', {}, name='project_detail'),
+    url(r'^projects/(?P<application_id>\d+)/join/?$', 'project_join', {}, name='project_join'),
+    url(r'^projects/(?P<application_id>\d+)/leave/?$', 'project_leave', {}, name='project_leave'),
+    url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
+    url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
+    url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
     
-    url(r'^project/add/?$', 'project_add', {}, name='project_add'),
-    url(r'^project/update/(?P<application_id>\w+)/?$', 'project_update', {}, name='project_update'),
-    url(r'^project/list/?$', 'project_list', {}, name='project_list'),
-    url(r'^project/search/?$', 'project_search', {}, name='project_search'),
-    url(r'^project/all/?$', 'project_all', {}, name='project_all'),
-    url(r'^project/(?P<application_id>\w+)/?$', 'project_detail', {}, name='project_detail'),
-    url(r'^project/(?P<application_id>\w+)/join/?$', 'project_join', {}, name='project_join'),
-    url(r'^project/(?P<application_id>\w+)/leave/?$', 'project_leave', {}, name='project_leave'),
-    url(r'^project/(?P<application_id>\w+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
-    url(r'^project/(?P<application_id>\w+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
-    url(r'^project/(?P<application_id>\w+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
-    
-    url(r'^group/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
+    url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {}, name='remove_auth_provider'),
 )
 
@@ -164,18 +151,10 @@ urlpatterns += patterns(
     url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
-    'astakos.im.api.admin',
-    url(r'^authenticate/?$', 'authenticate_old'),
-    #url(r'^authenticate/v2/?$', 'authenticate'),
-    url(r'^admin/api/v2.0/users/?$', 'get_user_by_email'),
-    url(r'^admin/api/v2.0/users/(?P<user_id>.+?)/?$',
-        'get_user_by_username'))
+    'astakos.im.api.user',
+    url(r'^authenticate/?$', 'authenticate'))
 
 urlpatterns += patterns(
     'astakos.im.api.service',
-    #url(r'^service/api/v2.0/tokens/(?P<token_id>.+?)/?$', 'validate_token'),
     url(r'^service/api/v2.0/feedback/?$', 'send_feedback'),
-    url(r'^service/api/v2.0/users/?$',
-        'get_user_by_email'),
-    url(r'^service/api/v2.0/users/(?P<user_id>.+?)/?$',
-        'get_user_by_username'))
+    url(r'^service/api/v2.0/users/?$', 'get_user_info'))

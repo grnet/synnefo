@@ -659,53 +659,78 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             if quantity < 0:
                 release = 1
 
+            # Source limits checks
             try:
                 h = db_get_holding(entity=entity, resource=resource,
                                    for_update=True)
             except Holding.DoesNotExist:
                 m = ("There is not enough quantity "
                      "to allocate from in %s.%s" % (entity, resource))
-                raise NoQuantityError(m)
+                raise NoQuantityError(m,
+                                      source=entity, target=target,
+                                      resource=resource, requested=quantity,
+                                      current=0, limit=0)
 
             hp = h.policy
 
-            if (hp.export_limit is not None and
-                h.exporting + quantity > hp.export_limit):
+            if hp.export_limit is not None:
+                current = h.exporting
+                limit = hp.export_limit
+                if current + quantity > limit:
                     m = ("Export limit reached for %s.%s" % (entity, resource))
-                    raise ExportLimitError(m)
+                    raise ExportLimitError(m,
+                                           source=entity, target=target,
+                                           resource=resource, requested=quantity,
+                                           current=current, limit=limit)
 
             if hp.quantity is not None:
-                available = (+ hp.quantity + h.imported + h.returned
-                             - h.exporting - h.releasing)
-
-                if available - quantity < 0:
+                limit = hp.quantity
+                current = (+ h.exporting + h.releasing
+                           - h.imported - h.returned)
+                if current + quantity > limit:
                     m = ("There is not enough quantity "
                          "to allocate from in %s.%s" % (entity, resource))
-                    raise NoQuantityError(m)
+                    raise NoQuantityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=current, limit=limit)
 
+            # Target limits checks
             try:
                 th = db_get_holding(entity=target, resource=resource,
                                     for_update=True)
             except Holding.DoesNotExist:
                 m = ("There is not enough capacity "
                      "to allocate into in %s.%s" % (target, resource))
-                raise NoCapacityError(m)
+                raise NoCapacityError(m,
+                                      source=entity, target=target,
+                                      resource=resource, requested=quantity,
+                                      current=0, limit=0)
 
             tp = th.policy
 
-            if (tp.import_limit is not None and
-                th.importing + quantity > tp.import_limit):
+            if tp.import_limit is not None:
+                limit = tp.import_limit
+                current = th.importing
+                if current + quantity > limit:
                     m = ("Import limit reached for %s.%s" % (target, resource))
-                    raise ImportLimitError(m)
+                    raise ImportLimitError(m,
+                                           source=entity, target=target,
+                                           resource=resource, requested=quantity,
+                                           current=current, limit=limit)
 
             if tp.capacity is not None:
-                capacity = (+ tp.capacity + th.exported + th.released
-                            - th.importing - th.returning)
+                limit = tp.capacity
+                current = (+ th.importing + th.returning
+                           - th.exported - th.released)
 
-                if capacity - quantity < 0:
+                if current + quantity > limit:
                         m = ("There is not enough capacity "
                              "to allocate into in %s.%s" % (target, resource))
-                        raise NoCapacityError(m)
+                        raise NoCapacityError(m,
+                                              source=entity, target=target,
+                                              resource=resource, requested=quantity,
+                                              current=current, limit=limit)
 
             Provision.objects.create(   serial      =   commission,
                                         entity      =   e,

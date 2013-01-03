@@ -71,7 +71,7 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quota, register_resources, qh_add_quota, QuotaLimits,
+    register_users, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials)
 from astakos.im import auth_providers
 #from astakos.im.endpoints.aquarium.producer import report_user_event
@@ -84,8 +84,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
-
-PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
 
 def get_content_type():
     global _content_type
@@ -113,7 +111,7 @@ class Service(models.Model):
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
 
-    def renew_token(self):
+    def renew_token(self, expiration_date=None):
         md5 = hashlib.md5()
         md5.update(self.name.encode('ascii', 'ignore'))
         md5.update(self.url.encode('ascii', 'ignore'))
@@ -121,8 +119,10 @@ class Service(models.Model):
 
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
-        self.auth_token_expires = self.auth_token_created + \
-            timedelta(hours=AUTH_TOKEN_DURATION)
+        if expiration_date:
+            self.auth_token_expires = expiration_date
+        else:
+            self.auth_token_expires = None
 
     def __str__(self):
         return self.name
@@ -166,156 +166,6 @@ class Resource(models.Model):
 
     def __str__(self):
         return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
-
-
-class GroupKind(models.Model):
-    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
-
-    def __str__(self):
-        return self.name
-
-
-class AstakosGroup(Group):
-    kind = models.ForeignKey(GroupKind)
-    homepage = models.URLField(
-        _('Homepage Url'), max_length=255, null=True, blank=True)
-    desc = models.TextField(_('Description'), null=True)
-    policy = models.ManyToManyField(
-        Resource,
-        null=True,
-        blank=True,
-        through='AstakosGroupQuota'
-    )
-    creation_date = models.DateTimeField(
-        _('Creation date'),
-        default=datetime.now()
-    )
-    issue_date = models.DateTimeField(
-        _('Start date'),
-        null=True
-    )
-    expiration_date = models.DateTimeField(
-        _('Expiration date'),
-        null=True
-    )
-    moderation_enabled = models.BooleanField(
-        _('Moderated membership?'),
-        default=True
-    )
-    approval_date = models.DateTimeField(
-        _('Activation date'),
-        null=True,
-        blank=True
-    )
-    estimated_participants = models.PositiveIntegerField(
-        _('Estimated #members'),
-        null=True,
-        blank=True,
-    )
-    max_participants = models.PositiveIntegerField(
-        _('Maximum numder of participants'),
-        null=True,
-        blank=True
-    )
-
-    @property
-    def is_disabled(self):
-        if not self.approval_date:
-            return True
-        return False
-
-    @property
-    def is_enabled(self):
-        if self.is_disabled:
-            return False
-        if not self.issue_date:
-            return False
-        if not self.expiration_date:
-            return True
-        now = datetime.now()
-        if self.issue_date > now:
-            return False
-        if now >= self.expiration_date:
-            return False
-        return True
-
-    def enable(self):
-        if self.is_enabled:
-            return
-        self.approval_date = datetime.now()
-        self.save()
-        quota_disturbed.send(sender=self, users=self.approved_members)
-        #propagate_groupmembers_quota.apply_async(
-        #    args=[self], eta=self.issue_date)
-        #propagate_groupmembers_quota.apply_async(
-        #    args=[self], eta=self.expiration_date)
-
-    def disable(self):
-        if self.is_disabled:
-            return
-        self.approval_date = None
-        self.save()
-        quota_disturbed.send(sender=self, users=self.approved_members)
-
-    def approve_member(self, person):
-        m, created = self.membership_set.get_or_create(person=person)
-        m.approve()
-
-    @property
-    def members(self):
-        q = self.membership_set.select_related().all()
-        return [m.person for m in q]
-
-    @property
-    def approved_members(self):
-        q = self.membership_set.select_related().all()
-        return [m.person for m in q if m.is_approved]
-
-    @property
-    def quota(self):
-        d = defaultdict(int)
-        for q in self.astakosgroupquota_set.select_related().all():
-            d[q.resource] += q.uplimit or inf
-        return d
-
-    def add_policy(self, service, resource, uplimit, update=True):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(service__name=service, name=resource)
-        if update:
-            AstakosGroupQuota.objects.update_or_create(
-                group=self,
-                resource=resource,
-                defaults={'uplimit': uplimit}
-            )
-        else:
-            q = self.astakosgroupquota_set
-            q.create(resource=resource, uplimit=uplimit)
-
-    @property
-    def policies(self):
-        return self.astakosgroupquota_set.select_related().all()
-
-    @policies.setter
-    def policies(self, policies):
-        for p in policies:
-            service = p.get('service', None)
-            resource = p.get('resource', None)
-            uplimit = p.get('uplimit', 0)
-            update = p.get('update', True)
-            self.add_policy(service, resource, uplimit, update)
-
-    @property
-    def owners(self):
-        return self.owner.all()
-
-    @property
-    def owner_details(self):
-        return self.owner.select_related().all()
-
-    @owners.setter
-    def owners(self, l):
-        self.owner = l
-        map(self.approve_member, l)
 
 _default_quota = {}
 def get_default_quota():
@@ -405,20 +255,11 @@ class AstakosUser(User):
 
     uuid = models.CharField(max_length=255, null=True, blank=False, unique=True)
 
-    astakos_groups = models.ManyToManyField(
-        AstakosGroup, verbose_name=_('agroups'), blank=True,
-        help_text=_(astakos_messages.ASTAKOSUSER_GROUPS_HELP),
-        through='Membership')
-
     __has_signed_terms = False
     disturbed_quota = models.BooleanField(_('Needs quotaholder syncing'),
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
-
-
-    owner = models.ManyToManyField(
-        AstakosGroup, related_name='owner', null=True)
 
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
@@ -523,13 +364,6 @@ class AstakosUser(User):
     @property
     def extended_groups(self):
         return self.membership_set.select_related().all()
-
-    @extended_groups.setter
-    def extended_groups(self, groups):
-        #TODO exceptions
-        for name in (groups or ()):
-            group = AstakosGroup.objects.get(name=name)
-            self.membership_set.create(group=group)
 
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
@@ -893,43 +727,6 @@ class AstakosUserAuthProvider(models.Model):
         return super(AstakosUserAuthProvider, self).save(*args, **kwargs)
 
 
-class Membership(models.Model):
-    person = models.ForeignKey(AstakosUser)
-    group = models.ForeignKey(AstakosGroup)
-    date_requested = models.DateField(default=datetime.now(), blank=True)
-    date_joined = models.DateField(null=True, db_index=True, blank=True)
-
-    class Meta:
-        unique_together = ("person", "group")
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            if not self.group.moderation_enabled:
-                self.date_joined = datetime.now()
-        super(Membership, self).save(*args, **kwargs)
-
-    @property
-    def is_approved(self):
-        if self.date_joined:
-            return True
-        return False
-
-    def approve(self):
-        if self.is_approved:
-            return
-        if self.group.max_participants:
-            assert len(self.group.approved_members) + 1 <= self.group.max_participants, \
-            'Maximum participant number has been reached.'
-        self.date_joined = datetime.now()
-        self.save()
-        quota_disturbed.send(sender=self, users=(self.person,))
-
-    def disapprove(self):
-        approved = self.is_approved()
-        self.delete()
-        if approved:
-            quota_disturbed.send(sender=self, users=(self.person,))
-
 class ExtendedManager(models.Manager):
     def _update_or_create(self, **kwargs):
         assert kwargs, \
@@ -959,15 +756,6 @@ class ExtendedManager(models.Manager):
 
     update_or_create = _update_or_create
 
-class AstakosGroupQuota(models.Model):
-    objects = ExtendedManager()
-    limit = models.PositiveIntegerField(_('Limit'), null=True)    # obsolete field
-    uplimit = models.BigIntegerField(_('Up limit'), null=True)
-    resource = models.ForeignKey(Resource)
-    group = models.ForeignKey(AstakosGroup, blank=True)
-
-    class Meta:
-        unique_together = ("resource", "group")
 
 class AstakosUserQuota(models.Model):
     objects = ExtendedManager()
@@ -1173,6 +961,10 @@ class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
 
+
+### PROJECTS ###
+################
+
 class MemberJoinPolicy(models.Model):
     policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
     description = models.CharField(_('Description'), max_length=80)
@@ -1186,59 +978,6 @@ class MemberLeavePolicy(models.Model):
 
     def __str__(self):
         return self.policy
-
-_auto_accept_join = False
-def get_auto_accept_join():
-    global _auto_accept_join
-    if _auto_accept_join is not False:
-        return _auto_accept_join
-    try:
-        auto_accept = MemberJoinPolicy.objects.get(policy='auto_accept')
-    except:
-        auto_accept = None
-    _auto_accept_join = auto_accept
-    return auto_accept
-
-_closed_join = False
-def get_closed_join():
-    global _closed_join
-    if _closed_join is not False:
-        return _closed_join
-    try:
-        closed = MemberJoinPolicy.objects.get(policy='closed')
-    except:
-        closed = None
-    _closed_join = closed
-    return closed
-
-_auto_accept_leave = False
-def get_auto_accept_leave():
-    global _auto_accept_leave
-    if _auto_accept_leave is not False:
-        return _auto_accept_leave
-    try:
-        auto_accept = MemberLeavePolicy.objects.get(policy='auto_accept')
-    except:
-        auto_accept = None
-    _auto_accept_leave = auto_accept
-    return auto_accept
-
-_closed_leave = False
-def get_closed_leave():
-    global _closed_leave
-    if _closed_leave is not False:
-        return _closed_leave
-    try:
-        closed = MemberLeavePolicy.objects.get(policy='closed')
-    except:
-        closed = None
-    _closed_leave = closed
-    return closed
-
-
-### PROJECTS ###
-################
-
 
 def synced_model_metaclass(class_name, class_parents, class_attributes):
 
@@ -1353,7 +1092,7 @@ SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
 class ProjectApplication(models.Model):
-
+    PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
                                     AstakosUser,
                                     related_name='projects_applied',
@@ -1389,9 +1128,6 @@ class ProjectApplication(models.Model):
                                     through='ProjectResourceGrant')
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
-
-    states_list =   [PENDING, APPROVED, REPLACED, UNKNOWN]
-    states      =   dict((k, v) for v, k in enumerate(states_list))
 
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
@@ -1436,7 +1172,7 @@ class ProjectApplication(models.Model):
         self.applicant = applicant
         self.comments = comments
         self.issue_date = datetime.now()
-        self.state = PENDING
+        self.state = self.PENDING
         self.save()
         self.resource_policies = resource_policies
 
@@ -1465,7 +1201,7 @@ class ProjectApplication(models.Model):
             raise AssertionError("NOPE")
 
         new_project_name = self.name
-        if self.state != PENDING:
+        if self.state != self.PENDING:
             m = _("cannot approve: project '%s' in state '%s'") % (
                     new_project_name, self.state)
             raise PermissionDenied(m) # invalid argument
@@ -1485,29 +1221,31 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             pass
 
+        new_project = False
         if project is None:
+            new_project = True
             project = Project(creation_date=now)
 
         project.name = new_project_name
         project.application = self
+        project.last_approval_date = now
+        project.save()
+
+        if new_project:
+            project.add_member(self.owner)
 
         # This will block while syncing,
         # but unblock before setting the membership state.
         # See ProjectMembership.set_sync()
         project.set_membership_pending_sync()
 
-        project.last_approval_date = now
-        project.save()
-        #ProjectMembership.add_to_project(self)
-        project.add_member(self.owner)
-
         precursor = self.precursor_application
         while precursor:
-            precursor.state = REPLACED
+            precursor.state = self.REPLACED
             precursor.save()
             precursor = precursor.precursor_application
 
-        self.state = APPROVED
+        self.state = self.APPROVED
         self.save()
 
 
@@ -1649,43 +1387,15 @@ class Project(models.Model):
         m = ProjectMembership.objects.get(person=user, project=self)
         m.remove()
 
-    def terminate(self):
+    def set_termination_start_date(self):
         self.termination_start_date = datetime.now()
         self.terminaton_date = None
         self.save()
 
-        rejected = self.sync()
-        if not rejected:
-            self.termination_start_date = None
-            self.termination_date = datetime.now()
-            self.save()
-
-#         try:
-#             notification = build_notification(
-#                 settings.SERVER_EMAIL,
-#                 [self.application.owner.email],
-#                 _(PROJECT_TERMINATION_SUBJECT) % self.__dict__,
-#                 template='im/projects/project_termination_notification.txt',
-#                 dictionary={'object':self.application}
-#             ).send()
-#         except NotificationError, e:
-#             logger.error(e.message)
-
-    def suspend(self):
-        self.last_approval_date = None
+    def set_termination_date(self):
+        self.termination_start_date = None
+        self.termination_date = datetime.now()
         self.save()
-        self.sync()
-
-#         try:
-#             notification = build_notification(
-#                 settings.SERVER_EMAIL,
-#                 [self.application.owner.email],
-#                 _(PROJECT_SUSPENSION_SUBJECT) % self.__dict__,
-#                 template='im/projects/project_suspension_notification.txt',
-#                 dictionary={'object':self.application}
-#             ).send()
-#         except NotificationError, e:
-#             logger.error(e.message)
 
 
 class ProjectMembership(models.Model):
@@ -1973,31 +1683,8 @@ class ProjectMembershipHistory(models.Model):
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
 
-
-def filter_queryset_by_property(q, property):
-    """
-    Incorporate list comprehension for filtering querysets by property
-    since Queryset.filter() operates on the database level.
-    """
-    return (p for p in q if getattr(p, property, False))
-
-def get_alive_projects():
-    return filter_queryset_by_property(
-        Project.objects.all(),
-        'is_alive'
-    )
-
-def get_active_projects():
-    return filter_queryset_by_property(
-        Project.objects.all(),
-        'is_active'
-    )
-
-def _create_object(model, **kwargs):
-    o = model.objects.create(**kwargs)
-    o.save()
-    return o
-
+### SIGNALS ###
+################
 
 def create_astakos_user(u):
     try:
@@ -2026,38 +1713,27 @@ def user_post_save(sender, instance, created, **kwargs):
     create_astakos_user(instance)
 post_save.connect(user_post_save, sender=User)
 
-
-# def astakosuser_pre_save(sender, instance, **kwargs):
-#     instance.aquarium_report = False
-#     instance.new = False
-#     try:
-#         db_instance = AstakosUser.objects.get(id=instance.id)
-#     except AstakosUser.DoesNotExist:
-#         # create event
-#         instance.aquarium_report = True
-#         instance.new = True
-#     else:
-#         get = AstakosUser.__getattribute__
-#         l = filter(lambda f: get(db_instance, f) != get(instance, f),
-#                    BILLING_FIELDS)
-#         instance.aquarium_report = True if l else False
-# pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
-
-# def set_default_group(user):
-#     try:
-#         default = AstakosGroup.objects.get(name='default')
-#         Membership(
-#             group=default, person=user, date_joined=datetime.now()).save()
-#     except AstakosGroup.DoesNotExist, e:
-#         logger.exception(e)
-
+def astakosuser_pre_save(sender, instance, **kwargs):
+    instance.aquarium_report = False
+    instance.new = False
+    try:
+        db_instance = AstakosUser.objects.get(id=instance.id)
+    except AstakosUser.DoesNotExist:
+        # create event
+        instance.aquarium_report = True
+        instance.new = True
+    else:
+        get = AstakosUser.__getattribute__
+        l = filter(lambda f: get(db_instance, f) != get(instance, f),
+                   BILLING_FIELDS)
+        instance.aquarium_report = True if l else False
+pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
 
 def astakosuser_post_save(sender, instance, created, **kwargs):
-#     if instance.aquarium_report:
-#         report_user_event(instance, create=instance.new)
+    if instance.aquarium_report:
+        report_user_event(instance, create=instance.new)
     if not created:
         return
-#     set_default_group(instance)
     # TODO handle socket.error & IOError
     register_users((instance,))
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
@@ -2068,41 +1744,6 @@ def resource_post_save(sender, instance, created, **kwargs):
         return
     register_resources((instance,))
 post_save.connect(resource_post_save, sender=Resource)
-
-
-# def on_quota_disturbed(sender, users, **kwargs):
-# #     print '>>>', locals()
-#     if not users:
-#         return
-#     send_quota(users)
-#
-# quota_disturbed = Signal(providing_args=["users"])
-# quota_disturbed.connect(on_quota_disturbed)
-
-
-# def send_quota_disturbed(sender, instance, **kwargs):
-#     users = []
-#     extend = users.extend
-#     if sender == Membership:
-#         if not instance.group.is_enabled:
-#             return
-#         extend([instance.person])
-#     elif sender == AstakosUserQuota:
-#         extend([instance.user])
-#     elif sender == AstakosGroupQuota:
-#         if not instance.group.is_enabled:
-#             return
-#         extend(instance.group.astakosuser_set.all())
-#     elif sender == AstakosGroup:
-#         if not instance.is_enabled:
-#             return
-#     quota_disturbed.send(sender=sender, users=users)
-# post_delete.connect(send_quota_disturbed, sender=AstakosGroup)
-# post_delete.connect(send_quota_disturbed, sender=Membership)
-# post_save.connect(send_quota_disturbed, sender=AstakosUserQuota)
-# post_delete.connect(send_quota_disturbed, sender=AstakosUserQuota)
-# post_save.connect(send_quota_disturbed, sender=AstakosGroupQuota)
-# post_delete.connect(send_quota_disturbed, sender=AstakosGroupQuota)
 
 
 def renew_token(sender, instance, **kwargs):

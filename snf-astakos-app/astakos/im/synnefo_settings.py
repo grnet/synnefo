@@ -58,7 +58,6 @@ context_processors = [
     'astakos.im.context_processors.invitations',
     'astakos.im.context_processors.menu',
     'astakos.im.context_processors.custom_messages',
-    'astakos.im.context_processors.group_kinds',
     'astakos.im.context_processors.last_login_method',
     'synnefo.lib.context_processors.cloudbar'
 ]
@@ -85,7 +84,8 @@ static_files = {'astakos.im': ''}
 AUTHENTICATION_BACKENDS = (
 	'astakos.im.auth_backends.EmailBackend',
     'astakos.im.auth_backends.TokenBackend')
-LOGIN_URL = '/im'
+
+LOGIN_URL = '/im/'
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 

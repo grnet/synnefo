@@ -70,10 +70,8 @@ import astakos.im.messages as astakos_messages
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
-#     AstakosGroup, Membership
-    EmailChange, GroupKind,
-    RESOURCE_SEPARATOR, AstakosUserAuthProvider,
-    PendingThirdPartyUser,
+    EmailChange, RESOURCE_SEPARATOR,
+    AstakosUserAuthProvider, PendingThirdPartyUser,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
@@ -81,11 +79,6 @@ from astakos.im.forms import (
     LoginForm, InvitationForm, ProfileForm,
     FeedbackForm, SignApprovalTermsForm,
     EmailChangeForm,
-#     AstakosGroupCreationForm, AstakosGroupSearchForm,
-#     AstakosGroupUpdateForm, AddGroupMembersForm,
-#     MembersSortForm, AstakosGroupSortForm,
-#     TimelineForm, PickResourceForm,
-#     AstakosGroupCreationSummaryForm,
     ProjectApplicationForm, ProjectSortForm,
     AddProjectMembersForm, ProjectSearchForm,
     ProjectMembersSortForm)
@@ -95,7 +88,6 @@ from astakos.im.functions import (
     activate as activate_func,
     invite,
     send_activation as send_activation_func,
-#     send_group_creation_notification,
     SendNotificationError,
     accept_membership, reject_membership, remove_membership,
     leave_project, join_project, enroll_member)
@@ -105,6 +97,7 @@ from astakos.im.settings import (
     LOGGING_LEVEL, PAGINATE_BY,
     RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
     MODERATION_ENABLED)
+from astakos.im import settings as astakos_settings
 #from astakos.im.tasks import request_billing
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
@@ -782,7 +775,7 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
         messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if MODERATION_ENABLED:
+    if astakos_settings.MODERATION_ENABLED:
         raise PermissionDenied
 
     extra_context = extra_context or {}
@@ -805,59 +798,6 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             extra_context
         )
     )
-
-
-# def handle_membership(func):
-#     @wraps(func)
-#     def wrapper(request, group_id, user_id):
-#         try:
-#             m = Membership.objects.select_related().get(
-#                 group__id=group_id,
-#                 person__id=user_id)
-#         except Membership.DoesNotExist:
-#             return HttpResponseBadRequest(_(astakos_messages.NOT_MEMBER))
-#         else:
-#             if request.user not in m.group.owner.all():
-#                 return HttpResponseForbidden(_(astakos_messages.NOT_OWNER))
-#             func(request, m)
-#             return group_detail(request, group_id)
-#     return wrapper
-
-
-#@require_http_methods(["POST"])
-# @require_http_methods(["POST", "GET"])
-# @signed_terms_required
-# @login_required
-# @handle_membership
-# def approve_member(request, membership):
-#     try:
-#         membership.approve()
-#         realname = membership.person.realname
-#         msg = _(astakos_messages.MEMBER_JOINED_GROUP) % locals()
-#         messages.success(request, msg)
-#     except AssertionError:
-#         msg = _(astakos_messages.GROUP_MAX_PARTICIPANT_NUMBER_REACHED)
-#         messages.error(request, msg)
-#     except BaseException, e:
-#         logger.exception(e)
-#         realname = membership.person.realname
-#         msg = _(astakos_messages.GENERIC_ERROR)
-#         messages.error(request, msg)
-
-
-# @signed_terms_required
-# @login_required
-# @handle_membership
-# def disapprove_member(request, membership):
-#     try:
-#         membership.disapprove()
-#         realname = membership.person.realname
-#         msg = astakos_messages.MEMBER_REMOVED % locals()
-#         messages.success(request, msg)
-#     except BaseException, e:
-#         logger.exception(e)
-#         msg = _(astakos_messages.GENERIC_ERROR)
-#         messages.error(request, msg)
 
 
 @require_http_methods(["GET"])
@@ -902,13 +842,6 @@ def resource_usage(request):
                            context_instance=get_context(request),
                            resource_usage=backenddata,
                            result=result)
-
-
-# def group_create_list(request):
-#     form = PickResourceForm()
-#     return render_response(
-#         template='im/astakosgroup_create_list.html',
-#         context_instance=get_context(request),)
 
 
 ##@require_http_methods(["GET"])
@@ -1162,8 +1095,8 @@ def project_add(request):
         resource_catalog = result.data
     extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
     return _create_object(request, template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect='/im/project/list/',
-        form_class=ProjectApplicationForm )
+        extra_context=extra_context, post_save_redirect=reverse('project_list'),
+        form_class=ProjectApplicationForm) 
 
 
 @require_http_methods(["GET"])
@@ -1285,9 +1218,9 @@ def project_detail(request, application_id):
 @signed_terms_required
 @login_required
 def project_search(request):
-    q = request.GET.get('q')
+    q = request.GET.get('q', '')
     queryset = ProjectApplication.objects
-    
+
     if request.method == 'GET':
         form = ProjectSearchForm()
         q = q.strip()
@@ -1295,22 +1228,23 @@ def project_search(request):
         queryset = queryset.filter(name__contains=q)
     else:
         form = ProjectSearchForm(request.POST)
-        
+
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-            
+
             queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-           
+
             queryset = queryset.filter(name__contains=q)
         else:
             queryset = queryset.none()
-             
+
     sorting = 'name'
     # validate sorting
     sort_form = ProjectSortForm(request.GET)
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     queryset = queryset.order_by(sorting)
+ 
     return object_list(
         request,
         queryset,
@@ -1323,33 +1257,6 @@ def project_search(request):
             sorting=sorting,
             q=q,
         )
-    )
-
-
-@require_http_methods(["GET"])
-@signed_terms_required
-@login_required
-def project_all(request):
-    q = ProjectApplication.objects.filter(
-        ~Q(project__last_approval_date__isnull=True))
-    q = q.select_related()
-    sorting = 'name'
-    sort_form = ProjectSortForm(request.GET)
-    if sort_form.is_valid():
-        sorting = sort_form.cleaned_data.get('sorting')
-    q = q.order_by(sorting)
-
-    return object_list(
-        request,
-        q,
-        paginate_by=PAGINATE_BY_ALL,
-        page=request.GET.get('page') or 1,
-        template_name='im/projects/project_list.html',
-        extra_context={
-            'form':ProjectSearchForm(),
-            'is_search':True,
-            'sorting':sorting
-        }
     )
 
 @require_http_methods(["POST"])

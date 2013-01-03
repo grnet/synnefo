@@ -104,16 +104,17 @@ def login(request):
             except ValidationError, e:
                 return HttpResponseBadRequest(e)
             # authenticate before login
-            user = authenticate(email=request.user.email,
-                                auth_token=request.user.auth_token
-                                )
+            user = authenticate(
+                username=request.user.username,
+                auth_token=request.user.auth_token
+            )
             auth_login(request, user)
-            logger.info('Token reset for %s' % request.user.email)
+            logger.info('Token reset for %s' % user.username)
         parts = list(urlsplit(next))
-        parts[3] = urlencode({'user': request.user.email,
-                              'token': request.user.auth_token
-                              }
-                             )
+        parts[3] = urlencode({
+            'user': request.user.uuid,
+            'token': request.user.auth_token
+        })
         url = urlunsplit(parts)
         response['Location'] = url
         response.status_code = 302
@@ -138,3 +139,4 @@ def login(request):
         response['Location'] = url
         response.status_code = 302
         return response
+

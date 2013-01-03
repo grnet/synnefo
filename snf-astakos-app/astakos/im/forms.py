@@ -55,7 +55,6 @@ from django.contrib.auth.models import AnonymousUser
 
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
-#     AstakosGroup, GroupKind,
     Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
     ProjectApplication)
 from astakos.im.settings import (
@@ -468,23 +467,24 @@ class SendInvitationForm(forms.Form):
 
 class ExtendedPasswordResetForm(PasswordResetForm):
     """
-    Extends PasswordResetForm by overriding save method:
-    passes a custom from_email in send_mail.
+    Extends PasswordResetForm by overriding
 
-    Since Django 1.3 this is useless since ``django.contrib.auth.views.reset_password``
-    accepts a from_email argument.
+    save method: to pass a custom from_email in send_mail.
+    clean_email: to handle local auth provider checks
     """
     def clean_email(self):
         email = super(ExtendedPasswordResetForm, self).clean_email()
         try:
-            user = AstakosUser.objects.get(email__iexact=email)
+            user = AstakosUser.objects.get_by_identifier(email)
+
+            if not user.is_active:
+                raise forms.ValidationError(_(astakos_messages.ACCOUNT_INACTIVE))
+
             if not user.has_usable_password():
                 raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
 
             if not user.can_change_password():
-                raise forms.ValidationError(_('Password change for this account'
-                                              ' is not supported.'))
-
+                raise forms.ValidationError(_(astakos_messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD))
         except AstakosUser.DoesNotExist, e:
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
@@ -596,287 +596,6 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
             pass
         return super(ExtendedPasswordChangeForm, self).save(commit=commit)
 
-
-# class AstakosGroupCreationForm(forms.ModelForm):
-#     kind = forms.ModelChoiceField(
-#         queryset=GroupKind.objects.all(),
-#         label="",
-#         widget=forms.HiddenInput()
-#     )
-#     name = forms.CharField(
-#         validators=[validators.RegexValidator(
-#             DOMAIN_VALUE_REGEX,
-#             _(astakos_messages.DOMAIN_VALUE_ERR), 'invalid'
-#         )],
-#         widget=forms.TextInput(attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
-#         help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization "
-#     )
-#     homepage = forms.URLField(
-#         label= 'Homepage Url',
-#         widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
-#         help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
-#         required=False
-#     )
-#     desc = forms.CharField(
-#         label= 'Description',
-#         widget=forms.Textarea, 
-#         help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "
-#     )
-#     issue_date = forms.DateTimeField(
-#         label= 'Start date',
-#         help_text= "Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date."
-#     )
-#     expiration_date = forms.DateTimeField(
-#         label= 'End date',
-#         help_text= "Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  "
-#     )
-#     moderation_enabled = forms.BooleanField(
-#         label= 'Moderated',
-#         help_text="Select this to approve each member manually, before they become a part of your Project (default). Be sure you know what you are doing, if you uncheck this option. ",
-#         required=False,
-#         initial=True
-#     )
-#     max_participants = forms.IntegerField(
-#         label='Total number of members',
-#         required=True, min_value=1,
-#         help_text="Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. "
-#     )
-# 
-#     class Meta:
-#         model = AstakosGroup
-# 
-#     def __init__(self, *args, **kwargs):
-#         #update QueryDict
-#         args = list(args)
-#         qd = args.pop(0).copy()
-#         members_unlimited = qd.pop('members_unlimited', False)
-#         members_uplimit = qd.pop('members_uplimit', None)
-# 
-#         #substitue QueryDict
-#         args.insert(0, qd)
-# 
-#         super(AstakosGroupCreationForm, self).__init__(*args, **kwargs)
-#         
-#         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
-#                                 'issue_date', 'expiration_date',
-#                                 'moderation_enabled', 'max_participants']
-#         def add_fields((k, v)):
-#             k = k.partition('_proxy')[0]
-#             self.fields[k] = forms.IntegerField(
-#                 required=False,
-#                 widget=forms.HiddenInput(),
-#                 min_value=1
-#             )
-#         map(add_fields,
-#             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
-#         )
-# 
-#         def add_fields((k, v)):
-#             self.fields[k] = forms.BooleanField(
-#                 required=False,
-#                 #widget=forms.HiddenInput()
-#             )
-#         map(add_fields,
-#             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
-#         )
-# 
-#     def policies(self):
-#         self.clean()
-#         policies = []
-#         append = policies.append
-#         for name, uplimit in self.cleaned_data.iteritems():
-# 
-#             subs = name.split('_uplimit')
-#             if len(subs) == 2:
-#                 prefix, suffix = subs
-#                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
-#                 resource = Resource.objects.get(service__name=s, name=r)
-# 
-#                 # keep only resource limits for selected resource groups
-#                 if self.cleaned_data.get(
-#                     'is_selected_%s' % resource.group, False
-#                 ):
-#                     append(dict(service=s, resource=r, uplimit=uplimit))
-#         return policies
-# 
-# class AstakosGroupCreationSummaryForm(forms.ModelForm):
-#     kind = forms.ModelChoiceField(
-#         queryset=GroupKind.objects.all(),
-#         label="",
-#         widget=forms.HiddenInput()
-#     )
-#     name = forms.CharField(
-#         widget=forms.TextInput(attrs={'placeholder': 'eg. foo.ece.ntua.gr'}),
-#         help_text="Name should be in the form of dns"
-#     )
-#     moderation_enabled = forms.BooleanField(
-#         help_text="Check if you want to approve members participation manually",
-#         required=False,
-#         initial=True
-#     )
-#     max_participants = forms.IntegerField(
-#         required=False, min_value=1
-#     )
-# 
-#     class Meta:
-#         model = AstakosGroup
-# 
-#     def __init__(self, *args, **kwargs):
-#         #update QueryDict
-#         args = list(args)
-#         qd = args.pop(0).copy()
-#         members_unlimited = qd.pop('members_unlimited', False)
-#         members_uplimit = qd.pop('members_uplimit', None)
-# 
-#         #substitue QueryDict
-#         args.insert(0, qd)
-# 
-#         super(AstakosGroupCreationSummaryForm, self).__init__(*args, **kwargs)
-#         self.fields.keyOrder = ['kind', 'name', 'homepage', 'desc',
-#                                 'issue_date', 'expiration_date',
-#                                 'moderation_enabled', 'max_participants']
-#         def add_fields((k, v)):
-#             self.fields[k] = forms.IntegerField(
-#                 required=False,
-#                 widget=forms.TextInput(),
-#                 min_value=1
-#             )
-#         map(add_fields,
-#             ((k, v) for k,v in qd.iteritems() if k.endswith('_uplimit'))
-#         )
-# 
-#         def add_fields((k, v)):
-#             self.fields[k] = forms.BooleanField(
-#                 required=False,
-#                 widget=forms.HiddenInput()
-#             )
-#         map(add_fields,
-#             ((k, v) for k,v in qd.iteritems() if k.startswith('is_selected_'))
-#         )
-#         for f in self.fields.values():
-#             f.widget = forms.HiddenInput()
-# 
-#     def clean(self):
-#         super(AstakosGroupCreationSummaryForm, self).clean()
-#         self.cleaned_data['policies'] = []
-#         append = self.cleaned_data['policies'].append
-#         #tbd = [f for f in self.fields if (f.startswith('is_selected_') and (not f.endswith('_proxy')))]
-#         tbd = [f for f in self.fields if f.startswith('is_selected_')]
-#         for name, uplimit in self.cleaned_data.iteritems():
-#             subs = name.split('_uplimit')
-#             if len(subs) == 2:
-#                 tbd.append(name)
-#                 prefix, suffix = subs
-#                 s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
-#                 resource = Resource.objects.get(service__name=s, name=r)
-# 
-#                 # keep only resource limits for selected resource groups
-#                 if self.cleaned_data.get(
-#                     'is_selected_%s' % resource.group, False
-#                 ):
-#                     append(dict(service=s, resource=r, uplimit=uplimit))
-#         for name in tbd:
-#             self.cleaned_data.pop(name, None)
-#         return self.cleaned_data
-# 
-# class AstakosGroupUpdateForm(forms.ModelForm):
-#     class Meta:
-#         model = AstakosGroup
-#         fields = ( 'desc','homepage', 'moderation_enabled')
-# 
-# 
-# class AddGroupMembersForm(forms.Form):
-#     q = forms.CharField(
-#         max_length=800, widget=forms.Textarea, label=_('Add members'),
-#         help_text=_(astakos_messages.ADD_GROUP_MEMBERS_Q_HELP),
-#         required=True)
-# 
-#     def clean(self):
-#         q = self.cleaned_data.get('q') or ''
-#         users = q.split(',')
-#         users = list(u.strip() for u in users if u)
-#         db_entries = AstakosUser.objects.filter(email__in=users)
-#         unknown = list(set(users) - set(u.email for u in db_entries))
-#         if unknown:
-#             raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
-#         self.valid_users = db_entries
-#         return self.cleaned_data
-# 
-#     def get_valid_users(self):
-#         """Should be called after form cleaning"""
-#         try:
-#             return self.valid_users
-#         except:
-#             return ()
-# 
-# 
-# class AstakosGroupSearchForm(forms.Form):
-#     q = forms.CharField(max_length=200, label='Search project')
-# 
-# 
-# class TimelineForm(forms.Form):
-#     entity = forms.ModelChoiceField(
-#         queryset=AstakosUser.objects.filter(is_active=True)
-#     )
-#     resource = forms.ModelChoiceField(
-#         queryset=Resource.objects.all()
-#     )
-#     start_date = forms.DateTimeField()
-#     end_date = forms.DateTimeField()
-#     details = forms.BooleanField(required=False, label="Detailed Listing")
-#     operation = forms.ChoiceField(
-#         label='Charge Method',
-#         choices=(('', '-------------'),
-#                  ('charge_usage', 'Charge Usage'),
-#                  ('charge_traffic', 'Charge Traffic'), )
-#     )
-# 
-#     def clean(self):
-#         super(TimelineForm, self).clean()
-#         d = self.cleaned_data
-#         if 'resource' in d:
-#             d['resource'] = str(d['resource'])
-#         if 'start_date' in d:
-#             d['start_date'] = d['start_date'].strftime(
-#                 "%Y-%m-%dT%H:%M:%S.%f")[:24]
-#         if 'end_date' in d:
-#             d['end_date'] = d['end_date'].strftime("%Y-%m-%dT%H:%M:%S.%f")[:24]
-#         if 'entity' in d:
-#             d['entity'] = d['entity'].email
-#         return d
-# 
-# 
-# class AstakosGroupSortForm(forms.Form):
-#     sorting = forms.ChoiceField(
-#         label='Sort by',
-#         choices=(
-#             ('groupname', 'Name'),
-#             ('issue_date', 'Issue Date'),
-#             ('expiration_date', 'Expiration Date'),
-#             ('approved_members_num', 'Participants'),
-#             ('moderation_enabled', 'Moderation'),
-#             ('membership_status', 'Enrollment Status')
-#         ),
-#         required=True
-#     )
-# 
-# class MembersSortForm(forms.Form):
-#     sorting = forms.ChoiceField(
-#         label='Sort by',
-#         choices=(('person__email', 'User Id'),
-#                  ('person__first_name', 'Name'),
-#                  ('date_joined', 'Status')
-#         ),
-#         required=True
-#     )
-# 
-# class PickResourceForm(forms.Form):
-#     resource = forms.ModelChoiceField(
-#         queryset=Resource.objects.select_related().all()
-#     )
-#     resource.widget.attrs["onchange"] = "this.form.submit()"
-
-
 class ExtendedSetPasswordForm(SetPasswordForm):
     """
     Extends SetPasswordForm by enabling user
@@ -921,11 +640,11 @@ class ProjectApplicationForm(forms.ModelForm):
         label="Homepage Url",
         help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
         widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
-        
+
         required=False
      )
     comments = forms.CharField(widget=forms.Textarea, required=False)
-    
+
     class Meta:
         model = ProjectApplication
         exclude = (
@@ -936,7 +655,7 @@ class ProjectApplicationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.precursor_application = kwargs.get('instance')
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
-    
+
     def clean(self):
         userid = self.data.get('user', None)
         self.user = None
@@ -949,7 +668,7 @@ class ProjectApplicationForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.NO_APPLICANT))
         super(ProjectApplicationForm, self).clean()
         return self.cleaned_data
-    
+
     @property
     def resource_policies(self):
         policies = []
@@ -972,9 +691,9 @@ class ProjectApplicationForm(forms.ModelForm):
                         append(dict(service=s, resource=r, uplimit=uplimit))
                     else:
                         append(dict(service=s, resource=r, uplimit=None))
-                
+
         return policies
-    
+
 
     def save(self, commit=True):
         application = super(ProjectApplicationForm, self).save(commit=False)
@@ -1046,4 +765,4 @@ class ProjectMembersSortForm(forms.Form):
     )
 
 class ProjectSearchForm(forms.Form):
-    q = forms.CharField(max_length=200, label='Search project')
+    q = forms.CharField(max_length=200, label='Search project', required=False)

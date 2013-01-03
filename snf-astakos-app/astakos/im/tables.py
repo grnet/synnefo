@@ -59,7 +59,7 @@ class ProjectApplicationMembersTable(tables.Table):
 
 
     def render_name(self, value, record, *args, **kwargs):
-        return record.person.last_name
+        return record.person.realname
 
     def render_status(self, value, *args, **kwargs):
         return MEMBER_STATUS_DISPLAY.get(value, 'Unknown')

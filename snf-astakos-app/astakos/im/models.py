@@ -1212,7 +1212,8 @@ class ProjectApplication(models.Model):
         precursor = self
         while precursor:
             try:
-                project = precursor.project
+                objects = Project.objects.select_for_update()
+                project = objects.get(application=precursor)
                 return project
             except Project.DoesNotExist:
                 pass

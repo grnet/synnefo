@@ -1476,8 +1476,8 @@ class ProjectMembership(models.Model):
 
         history_item = ProjectMembershipHistory(
                             serial=self.id,
-                            person=self.person,
-                            project=self.project,
+                            person=self.person.uuid,
+                            project=self.project_id,
                             date=date or datetime.now(),
                             reason=reason)
         history_item.save()
@@ -1708,8 +1708,8 @@ class ProjectMembershipHistory(models.Model):
     reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']
     reasons         =   dict((k, v) for v, k in enumerate(reasons_list))
 
-    person  =   models.ForeignKey(AstakosUser)
-    project =   models.ForeignKey(Project)
+    person  =   models.CharField(max_length=255)
+    project =   models.BigIntegerField()
     date    =   models.DateField(default=datetime.now)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()

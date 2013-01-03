@@ -1096,7 +1096,9 @@ def project_add(request):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True,
+                     'details_fields':details_fields,
+                     'membership_fields':membership_fields}
     return _create_object(request, template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect=reverse('project_list'),
         form_class=ProjectApplicationForm)
@@ -1107,7 +1109,8 @@ def project_add(request):
 @login_required
 def project_list(request):
     projects = ProjectApplication.objects.user_projects(request.user).select_related()
-    table = tables.UserProjectApplicationsTable(projects, user=request.user, prefix="my_projects")
+    table = tables.UserProjectApplicationsTable(projects, user=request.user,
+                                                prefix="my_projects_")
     RequestConfig(request).configure(table)
 
     return object_list(
@@ -1184,13 +1187,14 @@ def project_detail(request, application_id):
                     transaction.commit()
             addmembers_form = AddProjectMembersForm()
 
-    # validate sorting
-    sorting = 'person__email'
-    form = ProjectMembersSortForm(request.GET or request.POST)
-    if form.is_valid():
-        sorting = form.cleaned_data.get('sorting')
-
     rollback = False
+
+    application = get_object_or_404(ProjectApplication, pk=application_id)
+    members = application.project.projectmembership_set.select_related()
+    members_table = tables.ProjectApplicationMembersTable(members,
+                                                          prefix="members_")
+    RequestConfig(request).configure(members_table)
+
     try:
         return object_detail(
             request,
@@ -1199,11 +1203,10 @@ def project_detail(request, application_id):
             template_name='im/projects/project_detail.html',
             extra_context={
                 'resource_catalog':resource_catalog,
-                'sorting':sorting,
-                'addmembers_form':addmembers_form
-                }
-            )
-    except:
+                'addmembers_form':addmembers_form,
+                'members_table': members_table
+            })
+    except Exception, e:
         rollback = True
     finally:
         if rollback == True:
@@ -1233,7 +1236,8 @@ def project_search(request):
         projects = ProjectApplication.objects.search_by_name(q)
         projects = projects.filter(~Q(project__last_approval_date__isnull=True))
 
-    table = tables.UserProjectApplicationsTable(projects, user=request.user, prefix="my_projects")
+    table = tables.UserProjectApplicationsTable(projects, user=request.user,
+                                                prefix="my_projects_")
     RequestConfig(request).configure(table)
 
     return object_list(

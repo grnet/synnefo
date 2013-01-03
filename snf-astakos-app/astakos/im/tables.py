@@ -31,15 +31,15 @@ class UserProjectApplicationsTable(tables.Table):
 
         super(UserProjectApplicationsTable, self).__init__(*args, **kwargs)
 
-
     name = tables.LinkColumn('astakos.im.views.project_detail', args=(A('pk'),))
     issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     state = tables.Column(verbose_name="Status")
-    members_count = tables.Column(verbose_name="Enrolled", default=0,
+    members_count = tables.Column(verbose_name=_("Enrolled"), default=0,
                                   sortable=False)
-    membership_status = tables.Column(verbose_name="My status", empty_values=(),
+    membership_status = tables.Column(verbose_name=_("My status"), empty_values=(),
                                       orderable=False)
+
 
     def render_membership_status(self, *args, **kwargs):
         return MEMBER_STATUS_DISPLAY.get(kwargs.get('record').member_status(self.user))
@@ -48,4 +48,25 @@ class UserProjectApplicationsTable(tables.Table):
         model = ProjectApplication
         fields = ('name', 'membership_status', 'issue_date', 'start_date',
                   'state', 'members_count')
+        attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
+        caption = _('My projects')
+        template = "im/table_render.html"
+
+
+class ProjectApplicationMembersTable(tables.Table):
+    name = tables.Column(accessor="person.last_name", verbose_name=_('Name'))
+    status = tables.Column(accessor="state", verbose_name=_('Status'))
+
+
+    def render_name(self, value, record, *args, **kwargs):
+        return record.person.last_name
+
+    def render_status(self, value, *args, **kwargs):
+        return MEMBER_STATUS_DISPLAY.get(value, 'Unknown')
+
+    class Meta:
+        template = "im/table_render.html"
+        model = ProjectMembership
+        fields = ('name', 'status')
+        attrs = {'id': 'members-table', 'class': 'members-table alt-style'}
 

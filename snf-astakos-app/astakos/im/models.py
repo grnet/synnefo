@@ -1675,6 +1675,8 @@ def sync_projects():
 
 
 def trigger_sync(retries=3, retry_wait=1.0):
+    transaction.commit()
+
     cursor = connection.cursor()
     locked = True
     try:
@@ -1693,7 +1695,6 @@ def trigger_sync(retries=3, retry_wait=1.0):
                 return False
             sleep(retry_wait)
 
-        transaction.commit()
         sync_projects()
         return True
 

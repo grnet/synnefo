@@ -519,6 +519,4 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 
 /* login section */
 .login-section {}
-.main-login-method { margin-bottom: 20px;}
-
-.1quotas-form span.info							{ z-index:2; }
+.main-login-method 								{ margin-bottom: 20px;}

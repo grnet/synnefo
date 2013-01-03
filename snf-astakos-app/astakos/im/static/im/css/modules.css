@@ -401,6 +401,7 @@ form.quotas-form  span.info span				{ width:285px;  }
 .quotas-form input[type="submit"]:hover			{ background:#55B577 }
 .quotas-form input[type="submit"]:focus			{ border-color: #B3B3B3}
 .quotas-form input[type="submit"]:focus:hover	{ border-color: #55B577}
+.quotas-form input[type="submit"].lt			{ position:absolute; left:0; top:0; }
 .quotas-form fieldset ul						{ padding:0; margin:0 0 1em; position:relative; }
 .quotas-form fieldset ul li						{ list-style:none outside none; float:left; margin:0 0 0 60px; padding:0; }
 .quotas-form fieldset ul li:first-child			{ margin-left:0; }

@@ -48,7 +48,7 @@
         {% for g, resources in resource_catalog.get_groups_resources %}
 	    	{% for rname in resources.keys %}
 	    	    {% with object|resource_grants|lookup:rname as value %}
-	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %}" />
+	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %} />
                 {% endwith %}
             {% endfor %}
         {% endfor %}

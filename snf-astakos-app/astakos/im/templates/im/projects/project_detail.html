@@ -11,7 +11,7 @@
 	<h2>
         <em>
             {% if user == object.owner %}
-                [ ADMINISTRATOR - {{ object.state|upper }}]
+                [ ADMINISTRATOR - {{ object.state|upper }} ]
             {%  else %}
                 {% if  user in approve_members %}
                     [ ENROLLED - ACTIVE ]

@@ -1061,16 +1061,6 @@ def project_update(request, application_id):
 @login_required
 @transaction.commit_manually
 def project_detail(request, application_id):
-    resource_catalog = None
-    result = callpoint.list_resources()
-    if not result.is_success:
-        messages.error(
-            request,
-            'Unable to retrieve system resources: %s' % result.reason
-    )
-    else:
-        resource_catalog = result.data
-
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
         addmembers_form = AddProjectMembersForm(request.POST)
@@ -1109,7 +1099,6 @@ def project_detail(request, application_id):
             object_id=application_id,
             template_name='im/projects/project_detail.html',
             extra_context={
-                'resource_catalog':resource_catalog,
                 'sorting':sorting,
                 'addmembers_form':addmembers_form
                 }

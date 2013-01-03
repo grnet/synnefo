@@ -101,7 +101,9 @@ $(document).ready(function() {
 	// if you fill _proxy fields do stuff 
 	$('.quotas-form .quota input[type="text"]').change(function () {
 	 	
-	 	
+	 	if ( $('#icons span.info').hasClass('error-msg')){
+			$('#icons span.info').find('span').html('Here you add resources to your Project. Each resource you specify here, will be granted to *EACH* user of this Project. So the total resources will be: &lt;Total number of members&gt; * &lt;amount_of_resource&gt; for each resource.');
+	 	}
 	 	 
 	 	// get value from input
 	 	var value = $(this).val();
@@ -128,7 +130,7 @@ $(document).ready(function() {
 					if ( num == '0' ) { 
 						flag = 1 ; msg="zero"
 					} else {
-						if ( value && !num ) { flag = 1 ; msg="Invalid format"}
+						if ( value && !num ) { flag = 1 ; msg="Invalid format. Try something like 10GB, 2MB etc"}
 				 	
 					 	var bytes = num;
 				 		
@@ -356,5 +358,30 @@ $(document).ready(function() {
 			 
 		}
 	});  
+	
+	// todo den doulevei
+	$('#group_create_form').submit(function(){
+		if ($('.quotas-form .group .form-row.with-errors').length>0 ){
+			return false;
+		}
+		var flag = 0;
+		$('.quotas-form .group input[type="text"]').each(function() {
+			// get value from input
+	 		var value = $(this).val();
+			if (value){
+				flag =1;
+			}
+		});
+		if (flag =='0') {
+			$('#icons span.info').addClass('error-msg');
+			$('#icons span.info').find('span').html('You must fill in at least one resource');
+			return false;
+			
+		}
+	});
+
+
+	
+	
 	
 });

@@ -12,31 +12,34 @@
 	            <input type="hidden" name="{{k}}"  id="{{'id_'|add:k}}" value="{{v}}">
 	        {% endif %}
 	    {% endfor %}
-		<legend>CONFIRMATION REQUEST</legend>
+		<legend>CONFIRM REQUEST</legend>
 		<P>These are the specifications of the Project you want to create. If you hit the "Submit" button this form will be officially sent to GRNET for review. Please make sure the following reflect exactly your request. After submitting, there is no way to modify your Project request. </P>
 		<div class="full-dotted">
-			<h3>GENERAL INFO</h3>
-			<p class="restricted">{{ form_data.desc|safe }}</p>
-			<dl class="alt-style">			    
-				<dt>Homepage Url</dt>
-				<dd>{{ form_data.homepage }}&nbsp;</dd>
-				<dt>Member join policy</dt>
-			 	<dd>{{ form_data.member_join_policy }}</dd>
-			 	<dt>Member leave policy</dt>
-			 	<dd>{{ form_data.member_leave_policy }}</dd>
-			</dl>
-		</div>
-		<div class="full-dotted">
-			 <h3>DETAILS</h3>
-			 <dl class="alt-style">			    
-			    <dt>Name</dt>
+			<h3>PROJECT DETAILS</h3>
+			<p class="restricted">{{ form_data.desc }}</p>
+			<dl class="alt-style">
+				<dt>Name</dt>
 			 	<dd>{{ form_data.name }}&nbsp;</dd>
-			 	<!--<dt>Type</dt>
-			 	<dd>Course&nbsp;</dd>-->
+			 	<dt>Homepage Url</dt>
+				<dd>{{ form_data.homepage }}&nbsp;</dd>
+				<dt>Description</dt>
+				<dd>{{ form_data.description }}&nbsp;</dd>
 			 	<dt>Start date</dt>
 			 	<dd>{{ form_data.start_date|date:"d/m/Y"}}&nbsp;</dd>
 			 	<dt>End Date</dt>
-			 	<dd>{{ form_data.end_date|date:"d/m/Y"}}&nbsp;</dd>
+			 	<dd>{{ form_data.end_date|date:"d/m/Y"}}&nbsp;</dd>		
+			 	<dt>Comments</dt>
+				<dd>{{ form_data.comments }}&nbsp;</dd>	    
+				
+			</dl>
+		</div>
+		<div class="full-dotted">
+			 <h3>MEMBERSHIP OPTIONS</h3>
+			 <dl class="alt-style">			    
+                <dt>Member join policy</dt>
+			 	<dd>{{ form_data.member_join_policy }}</dd>
+			 	<dt>Member leave policy</dt>
+			 	<dd>{{ form_data.member_leave_policy }}</dd>			   
 			 	<dt>Total number of members</dt>
 			 	<dd>{{ form_data.limit_on_members_number }}</dd>
 			 </dl>
@@ -81,8 +84,8 @@
 		 
 		<input type="hidden" name="user"  id="id_user" value="{{user.id}}">
 		<div class="form-row submit">
-            <input type="submit" value="BACK" class="submit altcol" autocomplete="off" onclick='this.form.action="?edit=1&verify=0";'>
-            <input type="submit" value="SUBMIT" class="submit altcol" autocomplete="off">
+            <input type="submit" value="BACK" class="submit lt" autocomplete="off" onclick='this.form.action="?edit=1&verify=0";'>
+            <input type="submit" value="SUBMIT" class="submit" autocomplete="off">
         </div>
 	</form>
     

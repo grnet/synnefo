@@ -139,8 +139,6 @@ class ShibbolethTests(TestCase):
     fixtures = ['groups']
 
     def setUp(self):
-        kind = GroupKind.objects.create(name="default")
-        AstakosGroup.objects.create(name="default", kind=kind)
         self.client = ShibbolethClient()
         settings.ASTAKOS_IM_MODULES = ['local', 'shibboleth']
         settings.ASTAKOS_MODERATION_ENABLED = True
@@ -413,8 +411,6 @@ class LocalUserTests(TestCase):
     fixtures = ['groups']
 
     def setUp(self):
-        kind = GroupKind.objects.create(name="default")
-        AstakosGroup.objects.create(name="default", kind=kind)
         from django.conf import settings
         settings.ADMINS = (('admin', 'support@cloud.grnet.gr'),)
         settings.SERVER_EMAIL = 'no-reply@grnet.gr'
@@ -636,10 +632,6 @@ class LocalUserTests(TestCase):
         self.assertContains(r, messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD)
 
 class UserActionsTests(TestCase):
-
-    def setUp(self):
-        kind = GroupKind.objects.create(name="default")
-        AstakosGroup.objects.create(name="default", kind=kind)
 
     def test_email_change(self):
         # to test existing email validation

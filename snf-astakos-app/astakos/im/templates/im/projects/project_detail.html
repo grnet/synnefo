@@ -11,7 +11,7 @@
 	<h2>
         <em>
             {% if user == object.owner %}
-                [ ADMINISTRATOR - {{ object.state|upper }}]
+                [ ADMINISTRATOR - {{ object.state|upper }} ]
             {%  else %}
                 {% if  user in approve_members %}
                     [ ENROLLED - ACTIVE ]
@@ -24,13 +24,11 @@
 	 </h2>
 	 
 	 <div class="full-dotted">
-		 <h3>DETAILS</h3>
+		 <h3>PROJECT DETAILS</h3>
 		 <dl class="alt-style">
 		 	<dt>Name</dt>
 		 	<dd>{{ object.name }}&nbsp;</dd>
-		 	<dt>Description</dt>
-		 	<dd>{{ object.description|safe }}&nbsp;</dd>
-            <dt>Homepage url</dt>
+		 	<dt>Homepage url</dt>
             <dd>
                 {% if object.homepage%}
                     <a href="{{ object.homepage }}">{{ object.homepage }}</a>
@@ -38,20 +36,18 @@
                     Not set yet
                 {% endif %}
             </dd>
-            <dt>Member join policy</dt>
-            <dd>
-                {{ object.member_join_policy }}
-            </dd>
-		 	<dt>Member leave policy</dt>
-            <dd>
-                {{ object.member_leave_policy }}
-            </dd>
-		 	<dt>Issue date:</dt>
+		 	<dt>Description</dt>
+		 	<dd>{{ object.description }}&nbsp;</dd>
+            
+            
+		 	<dt>Issue date</dt>
 		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>Start date:</dt>
+		 	<dt>Start date</dt>
 		 	<dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
 		 	<dt>End Date</dt>
 		 	<dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
+		 	<dt>Comments</dt>
+		 	<dd>{{ object.comments }}&nbsp;</dd>
 		 	<dt>Status</dt>
 		 	<dd>{{ object.state }}</dd>
 		 	<dt>Owner</dt>
@@ -62,8 +58,7 @@
                 {% endif %}
                 &nbsp;
             </dd>
-            <dt>Max participants</dt>
-		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
+            
 		 	<dt>Precursor Application</dt>
 		 	<dd>
 		 	    {% if object.precursor_application %}
@@ -78,6 +73,21 @@
                 {% endif %}
                 &nbsp;
 		 	</dd>
+		 </dl>
+	 </div>
+	 <div class="full-dotted">
+		 <h3>MEMBERSHIP OPTIONS</h3>
+		 <dl class="alt-style">
+		 	<dt>Max participants</dt>
+		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
+		 	<dt>Member join policy</dt>
+            <dd>
+                {{ object.member_join_policy }}
+            </dd>
+		 	<dt>Member leave policy</dt>
+            <dd>
+                {{ object.member_leave_policy }}
+            </dd>
 		 </dl>
 	 </div>
 	 <div class="full-dotted">
@@ -198,11 +208,8 @@
     </div>
     {% endif %}
     <div class="full-dotted">
-    	<p>
-    		<a href="{% url project_search %}">back to All Projects &gt;</a></li>
-    	</p>
         <p>
-        	<a href="{% url project_list %}">back to My Projects &gt;</a>
+        	<a href="{% url project_list %}">back to Projects &gt;</a>
         </p>
         </ul>
     </div>

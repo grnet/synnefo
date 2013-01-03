@@ -37,7 +37,12 @@ from config import rand_string
 from config import printf
 
 from synnefo.lib.commissioning import CallError
-from synnefo.lib.quotaholder.api import InvalidDataError, NoEntityError
+from synnefo.lib.quotaholder.api import (
+                            InvalidDataError,
+                            InvalidKeyError, NoEntityError,
+                            NoQuantityError, NoCapacityError,
+                            ExportLimitError, ImportLimitError,
+                            DuplicateError)
 from synnefo.lib.quotaholder.api.quotaholder import (
     Name, Key, Quantity, Capacity, ImportLimit, ExportLimit, Resource, Flags,
     Imported, Exported, Returned, Released)
@@ -215,8 +220,9 @@ class QHAPITest(QHTestCase):
         self.assertEqual(r, [(e, resource) + limits1 +
                              DEFAULT_HOLDING + (f,)])
 
-    def new_quota(self, entity, key, resource):
-        limits = self.rand_limits()
+    def new_quota(self, entity, key, resource, limits=None):
+        if limits is None:
+            limits = self.rand_limits()
         f = self.rand_flags()
         r = self.qh.set_quota(
             set_quota=[(entity, resource, key) + limits + (f,)])
@@ -293,7 +299,7 @@ class QHAPITest(QHTestCase):
                              (e0, resource1, 0, None, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
 
-    def test_009_commissions(self):
+    def test_0090_commissions(self):
         e0, k0 = self.new_entity()
         e1, k1 = self.new_entity()
         resource = self.rand_resource()
@@ -317,6 +323,69 @@ class QHAPITest(QHTestCase):
                                                 max_serial=1, accept_set=[1])
         r = self.qh.get_pending_commissions(clientkey=self.client)
         self.assertEqual(r, [])
+
+    def test_0091_commissions_exceptions(self):
+        es1, ks1 = self.new_entity()
+        es2, ks2 = self.new_entity()
+        et1, kt1 = self.new_entity()
+        et2, kt2 = self.new_entity()
+        resource = self.rand_resource()
+        self.new_quota(es1, ks1, resource, (10, 5, 5, 15))
+        self.new_quota(es2, ks2, resource, (10, 5, 5, 10))
+        self.new_quota(et1, kt1, resource, (0, 15, 3, 20))
+        self.new_quota(et2, kt2, resource, (0, 15, 20, 20))
+
+        try:
+            self.qh.issue_commission(clientkey=self.client, target=et1, key=kt1,
+                                     name='something',
+                                     provisions=[(es1, resource, 12)])
+        except NoQuantityError, e:
+            self.assertEqual(e.source, es1)
+            self.assertEqual(e.target, et1)
+            self.assertEqual(e.resource, resource)
+            self.assertEqual(e.limit, 10)
+            self.assertEqual(e.requested, 12)
+            self.assertEqual(e.current, 0)
+
+            r = self.qh.issue_commission(clientkey=self.client, target=et1,
+                                         key=kt1,
+                                         name='something',
+                                         provisions=[(es1, resource, 2)])
+            self.assertGreater(r, 0)
+
+        try:
+            self.qh.issue_commission(clientkey=self.client, target=et1, key=kt1,
+                                     name='something',
+                                     provisions=[(es1, resource, 2)])
+        except ImportLimitError, e:
+            self.assertEqual(e.source, es1)
+            self.assertEqual(e.target, et1)
+            self.assertEqual(e.resource, resource)
+            self.assertEqual(e.limit, 3)
+            self.assertEqual(e.requested, 2)
+            self.assertEqual(e.current, 2)
+
+            r = self.qh.issue_commission(clientkey=self.client, target=et2,
+                                         key=kt2,
+                                         name='something',
+                                         provisions=[(es2, resource, 9)])
+            self.assertGreater(r, 0)
+
+        try:
+            self.qh.issue_commission(clientkey=self.client, target=et2,
+                                     key=kt2,
+                                     name='something',
+                                     provisions=[(es2, resource, 1),
+                                                 (es1, resource, 2)])
+        except NoCapacityError, e:
+            self.assertEqual(e.source, es1)
+            self.assertEqual(e.target, et2)
+            self.assertEqual(e.resource, resource)
+            self.assertEqual(e.limit, 10)
+            self.assertEqual(e.requested, 2)
+            # 9 actual + 1 from the first provision
+            self.assertEqual(e.current, 10)
+
 
     def test_010_list_holdings(self):
         e0, k0 = ('list_holdings_one', '1')

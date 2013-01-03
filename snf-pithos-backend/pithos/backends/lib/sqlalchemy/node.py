@@ -492,6 +492,7 @@ class Node(DBWorker):
         else:
             prepopulation, presize = r
         population += prepopulation
+        population = max(population, 0)
         size += presize
 
         #insert or replace

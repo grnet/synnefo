@@ -65,8 +65,8 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    trigger_sync, get_closed_join, get_auto_accept_join,
-    get_auto_accept_leave, get_closed_leave)
+    MemberLeavePolicy, MemberJoinPolicy,
+    trigger_sync)
 
 import astakos.im.messages as astakos_messages
 
@@ -366,6 +366,7 @@ class SendNotificationError(SendMailError):
 
 
 ### PROJECT VIEWS ###
+
 def get_join_policy(str_policy):
     try:
         return MemberJoinPolicy.objects.get(policy=str_policy)
@@ -375,37 +376,37 @@ def get_join_policy(str_policy):
 def get_leave_policy(str_policy):
     try:
         return MemberLeavePolicy.objects.get(policy=str_policy)
-    except:
+    except BaseException, e:
         return None
     
-_auto_accept_join = False
+_auto_accept_join = None
 def get_auto_accept_join_policy():
     global _auto_accept_join
-    if _auto_accept_join is not False:
+    if _auto_accept_join is not None:
         return _auto_accept_join
     _auto_accept = get_join_policy('auto_accept')
     return _auto_accept
 
-_closed_join = False
+_closed_join = None
 def get_closed_join_policy():
     global _closed_join
-    if _closed_join is not False:
+    if _closed_join is not None:
         return _closed_join
     _closed_join = get_join_policy('closed')
     return _closed_join
 
-_auto_accept_leave = False
+_auto_accept_leave = None
 def get_auto_accept_leave_policy():
     global _auto_accept_leave
-    if _auto_accept_leave is not False:
+    if _auto_accept_leave is not None:
         return _auto_accept_leave
     _auto_accept_leave = get_leave_policy('auto_accept')
     return _auto_accept_leave
 
-_closed_leave = False
+_closed_leave = None
 def get_closed_leave_policy():
     global _closed_leave
-    if _closed_leave is not False:
+    if _closed_leave is not None:
         return _closed_leave
     _closed_leave = get_leave_policy('closed')
     return _closed_leave
@@ -560,11 +561,12 @@ def leave_project(project_application_id, user_id):
     """
     project = get_project_by_application_id(project_application_id)
     leave_policy = project.application.member_leave_policy
-    if leave_policy == get_closed_leave():
+    print '>>>', leave_policy, get_closed_leave_policy()
+    if leave_policy == get_closed_leave_policy():
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
     membership = get_membership(project_application_id, user_id)
-    if leave_policy == get_auto_accept_leave():
+    if leave_policy == get_auto_accept_leave_policy():
         membership.remove()
         trigger_sync()
     else:
@@ -580,12 +582,12 @@ def join_project(project_application_id, user_id):
     """
     project = get_project_by_application_id(project_application_id)
     join_policy = project.application.member_join_policy
-    if join_policy == get_closed_join():
+    if join_policy == get_closed_join_policy():
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
 
     membership = create_membership(project_application_id, user_id)
 
-    if join_policy == get_auto_accept_join():
+    if join_policy == get_auto_accept_join_policy():
         membership.accept()
         trigger_sync()
     return membership

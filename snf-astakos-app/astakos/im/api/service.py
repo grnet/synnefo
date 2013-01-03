@@ -38,9 +38,11 @@ from time import time, mktime
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import simplejson as json
 
-from astakos.im.api.faults import Fault, Unauthorized, InternalServerError, BadRequest
-from astakos.im.api import render_fault, _get_user_by_email, _get_user_by_username
+from . import render_fault
+from .faults import (
+    Fault, Unauthorized, InternalServerError, BadRequest, ItemNotFound)
 from astakos.im.models import AstakosUser, Service
 from astakos.im.forms import FeedbackForm
 from astakos.im.functions import send_feedback as send_feedback_func
@@ -64,8 +66,9 @@ def api_method(http_method=None, token_required=False):
                         service = Service.objects.get(auth_token=x_auth_token)
 
                         # Check if the token has expired.
-                        if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
-                            raise Unauthorized('Authentication expired')
+                        if service.auth_token_expires:
+                            if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
+                                raise Unauthorized('Authentication expired')
                     except Service.DoesNotExist, e:
                         raise Unauthorized('Invalid X-Auth-Token')
                 response = func(request, *args, **kwargs)
@@ -81,26 +84,40 @@ def api_method(http_method=None, token_required=False):
 
 
 @api_method(http_method='GET', token_required=True)
-def get_user_by_email(request, user=None):
+def get_user_info(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    #                       forbidden (403)
     #                       itemNotFound (404)
-    email = request.GET.get('name')
-    return _get_user_by_email(email)
+    username = request.META.get('HTTP_X_USER_USERNAME')
+    uuid = request.META.get('HTTP_X_USER_UUID')
+    if not username and not uuid:
+        raise BadRequest('Either username or uuid is required.')
 
+    query = AstakosUser.objects.all()
+    user_info = None
+    if username:
+        try:
+            user = query.get(username__iexact=username)
+        except AstakosUser.DoesNotExist:
+            raise ItemNotFound('Invalid username: %s' % username)
+        else:
+            user_info = {'uuid': user.uuid}
+    else:
+        try:
+            user = query.get(uuid=uuid)
+        except AstakosUser.DoesNotExist:
+            raise ItemNotFound('Invalid uuid: %s' % uuid)
+        else:
+            user_info = {'username': user.username}
 
-@api_method(http_method='GET', token_required=True)
-def get_user_by_username(request, user_id, user=None):
-    # Normal Response Codes: 200
-    # Error Response Codes: internalServerError (500)
-    #                       badRequest (400)
-    #                       unauthorised (401)
-    #                       forbidden (403)
-    #                       itemNotFound (404)
-    return _get_user_by_username(user_id)
+    response = HttpResponse()
+    response.status = 200
+    response.content = json.dumps(user_info)
+    response['Content-Type'] = 'application/json; charset=UTF-8'
+    response['Content-Length'] = len(response.content)
+    return response
 
 
 @csrf_exempt

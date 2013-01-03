@@ -71,9 +71,8 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import tables
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
-    EmailChange, GroupKind,
-    RESOURCE_SEPARATOR, AstakosUserAuthProvider,
-    PendingThirdPartyUser,
+    EmailChange, RESOURCE_SEPARATOR,
+    AstakosUserAuthProvider, PendingThirdPartyUser,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
@@ -836,10 +835,10 @@ def resource_usage(request):
     if result.is_success:
         resource_usage = result.data
         backenddata = map(with_class, result.data)
-        backenddata = map(with_class, backenddata)
-
+        backenddata = map(pluralize , backenddata)
     else:
         messages.error(request, result.reason)
+        backenddata = []
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
                            resource_usage=backenddata,
@@ -962,7 +961,7 @@ def how_it_works(request):
 @transaction.commit_manually
 def _create_object(request, model=None, template_name=None,
         template_loader=template_loader, extra_context=None, post_save_redirect=None,
-        login_required=False, context_processors=None, form_class=None):
+        login_required=False, context_processors=None, form_class=None ):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
@@ -990,7 +989,7 @@ def _create_object(request, model=None, template_name=None,
                 else:
                     new_object = form.save()
 
-                    msg = _("The %(verbose_name)s was created successfully.") %\
+                    msg = _("The %(verbose_name)s has been received and is under consideration .") %\
                                 {"verbose_name": model._meta.verbose_name}
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, new_object)
@@ -1052,7 +1051,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
                     extra_context['show_form'] = True
                 else:
                     obj = form.save()
-                    msg = _("The %(verbose_name)s was updated successfully.") %\
+                    msg = _("The %(verbose_name)s has been received and is under consideration .") %\
                                 {"verbose_name": model._meta.verbose_name}
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, obj)
@@ -1086,6 +1085,8 @@ def _update_object(request, model=None, object_id=None, slug=None,
 @login_required
 def project_add(request):
     result = callpoint.list_resources()
+    details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
+    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
     if not result.is_success:
         messages.error(
             request,
@@ -1093,10 +1094,10 @@ def project_add(request):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
     return _create_object(request, template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect='/im/project/list/',
-        form_class=ProjectApplicationForm)
+        extra_context=extra_context, post_save_redirect=reverse('project_list'),
+        form_class=ProjectApplicationForm) 
 
 
 @require_http_methods(["GET"])
@@ -1122,6 +1123,8 @@ def project_list(request):
 @login_required
 def project_update(request, application_id):
     result = callpoint.list_resources()
+    details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
+    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
     if not result.is_success:
         messages.error(
             request,
@@ -1129,12 +1132,12 @@ def project_update(request, application_id):
     )
     else:
         resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True}
+    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
     return _update_object(
         request,
         object_id=application_id,
         template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect='/im/project/list/',
+        extra_context=extra_context, post_save_redirect=reverse('project_list'),
         form_class=ProjectApplicationForm)
 
 
@@ -1233,7 +1236,7 @@ def project_search(request):
     if sort_form.is_valid():
         sorting = sort_form.cleaned_data.get('sorting')
     queryset = queryset.order_by(sorting)
-
+ 
     return object_list(
         request,
         queryset,

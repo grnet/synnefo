@@ -66,16 +66,13 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
-    AUTH_TOKEN_DURATION, BILLING_FIELDS,
-    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
+    AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
     SITENAME, SERVICES, MODERATION_ENABLED)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     register_users, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials)
 from astakos.im import auth_providers
-#from astakos.im.endpoints.aquarium.producer import report_user_event
-#from astakos.im.tasks import propagate_groupmembers_quota
 
 import astakos.im.messages as astakos_messages
 from .managers import ForUpdateManager
@@ -1713,25 +1710,7 @@ def user_post_save(sender, instance, created, **kwargs):
     create_astakos_user(instance)
 post_save.connect(user_post_save, sender=User)
 
-def astakosuser_pre_save(sender, instance, **kwargs):
-    instance.aquarium_report = False
-    instance.new = False
-    try:
-        db_instance = AstakosUser.objects.get(id=instance.id)
-    except AstakosUser.DoesNotExist:
-        # create event
-        instance.aquarium_report = True
-        instance.new = True
-    else:
-        get = AstakosUser.__getattribute__
-        l = filter(lambda f: get(db_instance, f) != get(instance, f),
-                   BILLING_FIELDS)
-        instance.aquarium_report = True if l else False
-pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
-
 def astakosuser_post_save(sender, instance, created, **kwargs):
-    if instance.aquarium_report:
-        report_user_event(instance, create=instance.new)
     if not created:
         return
     # TODO handle socket.error & IOError

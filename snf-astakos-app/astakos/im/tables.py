@@ -34,20 +34,23 @@ class UserProjectApplicationsTable(tables.Table):
     name = tables.LinkColumn('astakos.im.views.project_detail', args=(A('pk'),))
     issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
-    state = tables.Column(verbose_name="Status")
+    membership_status = tables.Column(verbose_name=_("Status"), empty_values=(),
+                                      orderable=False)
     members_count = tables.Column(verbose_name=_("Enrolled"), default=0,
                                   sortable=False)
-    membership_status = tables.Column(verbose_name=_("My status"), empty_values=(),
-                                      orderable=False)
+    
 
 
-    def render_membership_status(self, *args, **kwargs):
-        return MEMBER_STATUS_DISPLAY.get(kwargs.get('record').member_status(self.user))
+    def render_membership_status(self, record, *args, **kwargs):
+        status = record.member_status(self.user)
+        if status == 100:
+            return record.state
+        else:
+            return MEMBER_STATUS_DISPLAY.get(status, 'Unknown')
 
     class Meta:
         model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'start_date',
-                  'state', 'members_count')
+        fields = ('name', 'membership_status', 'issue_date', 'start_date', 'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         caption = _('My projects')
         template = "im/table_render.html"

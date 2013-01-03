@@ -1111,7 +1111,7 @@ def project_list(request):
     projects = ProjectApplication.objects.user_projects(request.user).select_related()
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
-    RequestConfig(request).configure(table)
+    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
@@ -1193,7 +1193,7 @@ def project_detail(request, application_id):
     members = application.project.projectmembership_set.select_related()
     members_table = tables.ProjectApplicationMembersTable(members,
                                                           prefix="members_")
-    RequestConfig(request).configure(members_table)
+    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
 
     try:
         return object_detail(
@@ -1238,7 +1238,7 @@ def project_search(request):
 
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
-    RequestConfig(request).configure(table)
+    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
 
     return object_list(
         request,

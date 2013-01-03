@@ -1326,10 +1326,10 @@ class Project(models.Model):
     def violated_resource_grants(self):
         return False
 
-    @property
-    def violated_members_number_limit(self):
+    def violates_members_limit(self, adding=0):
         application = self.application
-        return len(self.approved_members) > application.limit_on_members_number
+        return (len(self.approved_members) + adding >
+                application.limit_on_members_number)
 
     @property
     def is_terminated(self):

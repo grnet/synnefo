@@ -159,6 +159,7 @@ def authenticated(
         user = request.user
         if not request.user.can_add_auth_provider('google',
                                                   identifier=userid):
+            # TODO: handle existing uuid message separately
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
                           u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
             return HttpResponseRedirect(reverse('edit_profile'))

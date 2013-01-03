@@ -1159,6 +1159,8 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
 
+    objects     =   ForUpdateManager()
+
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
@@ -1316,6 +1318,8 @@ class Project(models.Model):
                                             max_length=80,
                                             db_index=True,
                                             unique=True)
+
+    objects     =   ForUpdateManager()
 
     @property
     def violated_resource_grants(self):

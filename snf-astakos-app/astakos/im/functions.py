@@ -418,9 +418,23 @@ def get_project_by_application_id(project_application_id):
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % project_application_id)
 
+def get_project_id_of_application_id(project_application_id):
+    try:
+        return Project.objects.get(application__id=project_application_id).id
+    except Project.DoesNotExist:
+        raise IOError(
+            _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % project_application_id)
+
 def get_project_by_id(project_id):
     try:
         return Project.objects.get(id=project_id)
+    except Project.DoesNotExist:
+        raise IOError(
+            _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
+
+def get_project_for_update(project_id):
+    try:
+        return Project.objects.select_for_update().get(id=project_id)
     except Project.DoesNotExist:
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
@@ -433,7 +447,7 @@ def get_user_by_id(user_id):
 
 def create_membership(project, user):
     if isinstance(project, int):
-        project = get_project_by_application_id(project)
+        project = get_project_by_id(project)
     if isinstance(user, int):
         user = get_user_by_id(user)
     m = ProjectMembership(
@@ -447,36 +461,41 @@ def create_membership(project, user):
     else:
         return m
 
-def get_membership(project, user):
+def get_membership_for_update(project, user):
     if isinstance(project, int):
-        project = get_project_by_application_id(project)
+        project = get_project_by_id(project)
     if isinstance(user, int):
         user = get_user_by_id(user)
     try:
-        return ProjectMembership.objects.select_related().get(
+        return ProjectMembership.objects.select_for_update().get(
             project=project,
             person=user)
     except ProjectMembership.DoesNotExist:
         raise IOError(_(astakos_messages.NOT_MEMBERSHIP_REQUEST))
 
-def accept_membership(project, user, request_user=None):
+def accept_membership(project_application_id, user, request_user=None):
     """
         Raises:
             django.core.exceptions.PermissionDenied
             IOError
     """
-    membership = get_membership(project, user)
+    project_id = get_project_id_of_application_id(project_application_id)
+    return do_accept_membership(project_id, user, request_user)
+
+def do_accept_membership(project_id, user, request_user=None):
+    project = get_project_for_update(project_id)
+
     if request_user and \
-        (not membership.project.application.owner == request_user and \
+        (not project.application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-    if not membership.project.is_alive:
+    if not project.is_alive:
         raise PermissionDenied(
-            _(astakos_messages.NOT_ALIVE_PROJECT) % membership.project.__dict__)
-    if len(membership.project.approved_members) + 1 > \
-        membership.project.application.limit_on_members_number:
+            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+    if project.violates_members_limit(adding=1):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
 
+    membership = get_membership_for_update(project, user)
     membership.accept()
     trigger_sync()
 
@@ -484,56 +503,68 @@ def accept_membership(project, user, request_user=None):
         notification = build_notification(
             settings.SERVER_EMAIL,
             [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % membership.project.__dict__,
+            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
             template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':membership.project.application, 'action':'accepted'})
+            dictionary={'object':project.application, 'action':'accepted'})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)
     return membership
 
-def reject_membership(project, user, request_user=None):
+def reject_membership(project_application_id, user, request_user=None):
     """
         Raises:
             django.core.exceptions.PermissionDenied
             IOError
     """
-    membership = get_membership(project, user)
+    project_id = get_project_id_of_application_id(project_application_id)
+    return do_reject_membership(project_id, user, request_user)
+
+def do_reject_membership(project_id, user, request_user=None):
+    project = get_project_for_update(project_id)
+
     if request_user and \
-        (not membership.project.application.owner == request_user and \
+        (not project.application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-    if not membership.project.is_alive:
-        raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % membership.project.__dict__)
+    if not project.is_alive:
+        raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
 
+    membership = get_membership_for_update(project, user)
     membership.reject()
 
     try:
         notification = build_notification(
             settings.SERVER_EMAIL,
             [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % membership.project.__dict__,
+            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
             template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':membership.project.application, 'action':'rejected'})
+            dictionary={'object':project.application, 'action':'rejected'})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)
     return membership
 
-def remove_membership(project, user, request_user=None):
+def remove_membership(project_application_id, user, request_user=None):
     """
         Raises:
             django.core.exceptions.PermissionDenied
             IOError
     """
-    membership = get_membership(project, user)
+    project_id = get_project_id_of_application_id(project_application_id)
+    return do_remove_membership(project_id, user, request_user)
+
+def do_remove_membership(project_id, user, request_user=None):
+    project = get_project_for_update(project_id)
+
     if request_user and \
-        (not membership.project.application.owner == request_user and \
+        (not project.application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-    if not membership.project.is_alive:
-        raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % membership.project.__dict__)
+    if not project.is_alive:
+        raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
 
+    membership = get_membership_for_update(project, user)
     membership.remove()
     trigger_sync()
 
@@ -541,31 +572,43 @@ def remove_membership(project, user, request_user=None):
         notification = build_notification(
             settings.SERVER_EMAIL,
             [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % membership.project.__dict__,
+            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
             template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':membership.project.application, 'action':'removed'})
+            dictionary={'object':project.application, 'action':'removed'})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)
     return membership
 
-def enroll_member(project, user, request_user=None):
-    membership = create_membership(project, user)
-    accept_membership(project, user, request_user)
-    
+def enroll_member(project_application_id, user, request_user=None):
+    project_id = get_project_id_of_application_id(project_application_id)
+    return do_enroll_member(project_id, user, request_user)
+
+def do_enroll_member(project_id, user, request_user=None):
+    membership = create_membership(project_id, user)
+    return do_accept_membership(project_id, user, request_user)
+
 def leave_project(project_application_id, user_id):
     """
         Raises:
             django.core.exceptions.PermissionDenied
             IOError
     """
-    project = get_project_by_application_id(project_application_id)
+    project_id = get_project_id_of_application_id(project_application_id)
+    return do_leave_project(project_id, user_id)
+
+def do_leave_project(project, user_id):
+    project = get_project_for_update(project_id)
+
+    if not project.is_alive:
+        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
+        raise PermissionDenied(m)
+
     leave_policy = project.application.member_leave_policy
-    print '>>>', leave_policy, get_closed_leave_policy()
     if leave_policy == get_closed_leave_policy():
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
-    membership = get_membership(project_application_id, user_id)
+    membership = get_membership_for_update(project, user_id)
     if leave_policy == get_auto_accept_leave_policy():
         membership.remove()
         trigger_sync()
@@ -580,18 +623,27 @@ def join_project(project_application_id, user_id):
             django.core.exceptions.PermissionDenied
             IOError
     """
-    project = get_project_by_application_id(project_application_id)
+    project_id = get_project_id_of_application_id(project_application_id)
+    return do_join_project(project_id, user_id)
+
+def do_join_project(project_id, user_id):
+    project = get_project_for_update(project)
+
+    if not project.is_alive:
+        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
+        raise PermissionDenied(m)
+
     join_policy = project.application.member_join_policy
     if join_policy == get_closed_join_policy():
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
 
-    membership = create_membership(project_application_id, user_id)
+    membership = create_membership(project, user_id)
 
     if join_policy == get_auto_accept_join_policy():
         membership.accept()
         trigger_sync()
     return membership
-    
+
 def submit_application(
     application, resource_policies, applicant, comments, precursor_application=None):
 
@@ -610,10 +662,33 @@ def submit_application(
         logger.error(e)
     return application
 
-def approve_application(application):
+def update_application(app_id, **kw):
+    app = ProjectApplication.objects.get(id=app_id)
+    app.id = None
+    app.state = app.PENDING
+    app.precursor_application_id = app_id
+    app.issue_date = datetime.now()
+
+    resource_policies = kw.pop('resource_policies', None)
+    for k, v in kw:
+        setattr(app, k, v)
+    app.save()
+    app.resource_policies = resource_policies
+    return app.id
+
+def approve_application(app):
+
+    app_id = app if isinstance(app, int) else app.id
+
+    try:
+        objects = ProjectApplication.objects.select_for_update()
+        application = objects.get(id=app_id)
+    except ProjectApplication.DoesNotExist:
+        raise PermissionDenied()
+
     application.approve()
     trigger_sync()
-    
+
     try:
         notification = build_notification(
             settings.SERVER_EMAIL,

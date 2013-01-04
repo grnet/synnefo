@@ -172,6 +172,7 @@ def action_extra_context(project, table, self):
 
 # Table classes
 class UserProjectApplicationsTable(tables.Table):
+    caption = _('My projects')
 
     def __init__(self, *args, **kwargs):
         self.user = None
@@ -187,10 +188,11 @@ class UserProjectApplicationsTable(tables.Table):
     name = tables.LinkColumn('astakos.im.views.project_detail', args=(A('pk'),))
     issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
+    end_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     members_count = tables.Column(verbose_name=_("Enrolled"), default=0,
                                   sortable=False)
-    membership_status = tables.Column(verbose_name=_("My status"), empty_values=(),
-                                      orderable=False)
+    membership_status = tables.Column(verbose_name=_("Status"), empty_values=(),
+                                      sortable=False)
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=action_extra_context,
                                     sortable=False)
@@ -205,9 +207,8 @@ class UserProjectApplicationsTable(tables.Table):
 
     class Meta:
         model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'start_date', 'members_count')
+        fields = ('name', 'membership_status', 'issue_date', 'start_date','end_date', 'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
-        caption = _('My projects')
         template = "im/table_render.html"
 
 

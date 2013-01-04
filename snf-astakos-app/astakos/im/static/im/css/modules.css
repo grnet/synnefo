@@ -234,14 +234,15 @@ table.alt-style tr th a							{ color:#3582AC }
 table.alt-style tr td							{ color:#222; }
 table.alt-style tr td:first-child,
 table.alt-style tr th:first-child				{ padding-left:5px; }
-table.alt-style tr td a							{ margin:0 0 0 5px; }
+table.alt-style tr td a							{ margin:0; }
 table.alt-style tr td:first-child a				{ margin:0; }
-table.complex tr th a.sortable					{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
-table.complex tr th a.asc						{ background-position:right 6px }
+table.alt-style tr th.sortable a					{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
+table.alt-style tr th.asc a						{ background-position:right 6px }
+table.alt-style tr th:first-child,
+table.alt-style tr td:first-child				{ width:40% }  
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
-table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 }
-dl.alt-style  									{ width:500px; }
-dl.alt-style dt									{ width:50%; float:left; color:#3582AC; font-weight:normal;}
+table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
+dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}
 dl.alt-style dt:nth-child(2n)					{ background:black; }
 .projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}

@@ -22,13 +22,14 @@
 .1form-row .dk_options							{ display:block; }
 .form-row .dk_options							{ box-shadow:none; border-radius:0; z-index:3; margin:6px -1px 0; width:auto; left:0;}
 .form-row .dk_options li						{ float:none; margin:0; padding:0; }
-.form-row .dk_options a							{ font-weight:normal;color:#808080; padding:5px 0;  text-indent:1.5em; border-bottom-color: #ccc;height:auto; width:auto;  }
+.form-row .dk_options a							{ font-weight:normal;color:#808080; padding:5px 1.5em;  border-bottom-color: #ccc;height:auto; width:auto;  }
 .form-row .dk_options a:hover					{ border-bottom-color: #ccc }
 .form-row .dk_options_inner						{ padding:0; margin:0; box-shadow:none; text-shadow:none;  border-radius:0; border:1px solid #ccc ; margin-top:4px;}
 .form-row .dk-options_inner li					{ list-style:none outside; }
 .form-row .dk_options a:hover, 
 .form-row .dk_option_current a					{ text-shadow:none; background-color: #fff; text-decoration:none; color:#F89A1C}
-
+.form-row .dk_toggle 							{ height:17px; overflow:hidden; }
+.form-row .dk_toggle span						{ padding-right:45px; }
 /* end custom theme */
 
 

@@ -38,11 +38,11 @@ form select									{ font-family: 'Didact Gothic', Verdana, sans-serif; font-we
 form textarea:focus,
 form input.text:focus,
 form input[type="text"]:focus,
-form input[type="password"]:focus 			{position: relative; border: 1px solid #000; z-index: 100;}
+form input[type="password"]:focus 			{position: relative; border: 1px solid #000; z-index: 3;}
 form textarea:focus label,
 form input.text:focus label,
 form input[type="text"]:focus label,
-form input[type="password"]:focus label 	{ z-index: 300;}
+form input[type="password"]:focus label 	{ z-index: 5;}
 form input.submit, 
 form input[type="submit"],
 a.submit									{ font-family: 'Open Sans', sans-serif; font-size: 14px; font-weight: normal; line-height: 22px; letter-spacing:1px;  background-color: #f89a1c;color: #ffffff; border: none; padding: 10px 22px;font-size: 1em; margin:15px 0 0 223px; height:43px; }
@@ -72,7 +72,7 @@ div.form-stacked 							{ margin-bottom: 4em; }
 form.withlabels .checkbox-widget			{ margin-top:12px; }
 form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; }
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
-form span.info								{ position:absolute;z-index:101; top:10px;  }
+form span.info								{ position:absolute;z-index:7; top:10px;  }
 form.innerlabels span.info					{ left: 290px; }
 form.withlabels span.info					{ left:485px;  }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }

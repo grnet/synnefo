@@ -4,7 +4,7 @@
         "pk": 1,
         "fields": {
             "policy": "auto_accept",
-            "description": "remove requests are automatically accepted by the system"
+            "description": "automatically accepted by the system"
         }
     },
     {
@@ -12,7 +12,7 @@
         "pk": 2,
         "fields": {
             "policy": "owner_accepts",
-            "description": "remove requests must be accepted by the owner of the project"
+            "description": "accepted by the owner of the project"
         }
     },
     {

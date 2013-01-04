@@ -639,7 +639,8 @@ def do_join_project(project_id, user_id):
 
     membership = create_membership(project, user_id)
 
-    if join_policy == get_auto_accept_join_policy():
+    if (join_policy == get_auto_accept_join_policy() and
+        not project.violates_members_limit(adding=1)):
         membership.accept()
         trigger_sync()
     return membership

@@ -154,19 +154,23 @@ def action_extra_context(project, table, self):
         action = _('Update')
         confirm = False
         prompt = ''
-    elif user.is_project_member(project):
+    elif user.is_project_accepted_member(project):
         url = 'astakos.im.views.project_leave'
         action = _('- Leave')
         confirm = True
         prompt = _('Are you sure you want to leave from the project ?')
-    else:
+    elif not user.is_project_member(project):
         url = 'astakos.im.views.project_join'
         action = _('+ Join')
         confirm = True
         prompt = _('Are you sure you want to join this project ?')
+    else:
+        action = _('Pending')
 
-    return {'action': action, 'confirm': confirm,
-            'url': reverse(url, args=(project.pk, )) + append_url,
+    url = reverse(url, args=(project.pk, )) + append_url if url else ''
+    return {'action': action,
+            'confirm': confirm,
+            'url': url,
             'prompt': prompt}
 
 

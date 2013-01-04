@@ -246,6 +246,7 @@ class DjangoBackend(BaseBackend):
             service, sep, resource = name.partition(RESOURCE_SEPARATOR)
             resource = Resource.objects.select_related().get(
                 service__name=service, name=resource)
+            currValue=quantity + imported - released - exported + returned
             d = dict(name=name,
                      description=resource.desc,
                      unit=resource.unit or '',
@@ -256,7 +257,7 @@ class DjangoBackend(BaseBackend):
                      placeholder=resource.placeholder,
                      verbose_name=resource.verbose_name,
                      maxValue=quantity + capacity,
-                     currValue=quantity + imported - released - exported + returned)
+                     currValue=currValue)
             append(d)
         return resources
 

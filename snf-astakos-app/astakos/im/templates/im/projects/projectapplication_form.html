@@ -9,8 +9,7 @@
 
 {% block page.body %}
 <h2>CREATE PROJECT</h2>
- 
-{% with resource_catalog|populated_resource_catalog as resource_catalog %}
+
 {% if show_form %}
 <form action="?verify=1#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 
@@ -25,7 +24,9 @@
     	{% for field in form %}
      
     	{% if  field.name in details_fields %}
-	        <div class="form-row {% if field.errors|length %}with-errors{% endif %}  {% if field.is_hidden %}with-hidden{% endif %}">
+	        <div class="form-row {% if field.errors|length %}with-errors
+        {% endif %}
+        {% if field.is_hidden %}with-hidden{% endif %}">
 		        {{ field.errors }}
 			     <p class="clearfix {% if field.blank %}required{% endif %}">
 			        {{ field.label_tag }}
@@ -45,10 +46,12 @@
 		
 		
         
-        {% for g, resources in resource_catalog.get_groups_resources %}
-	    	{% for rname in resources.keys %}
+        {% for g, resources in resource_catalog %}
+	    	{% for r in resources %}
+                {% with r.str_repr as rname %}
 	    	    {% with object|resource_grants|lookup:rname as value %}
 	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %} />
+                {% endwith %}
                 {% endwith %}
             {% endfor %}
         {% endfor %}
@@ -94,7 +97,7 @@
     	</legend>
     	<ul class="clearfix">
     	    {% with object|resource_groups as groups %}
-            {% for g, group_info in resource_catalog.groups.items %}
+            {% for g, group_info in resource_groups.items %}
                 {% if g %}
 	    		<li>
 	    		    <a href="#{{ g }}" id="{{'group_'|add:g}}" {% if g in groups %}class="selected"{% endif %}><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
@@ -111,10 +114,11 @@
    
     <div class="visible">&nbsp;</div>
     <div class="not-visible">
-    	{% for gname, resources in resource_catalog.get_groups_resources %}
+    	{% for gname, resources in resource_catalog %}
     	    <div class="group {{'group_'|add:gname}}" id="{{ gname }}">
 	    		<a href="#icons" class="delete">X remove resource</a>	
-	    		{% for rname, rdata in resources.items %}
+	    		{% for rdata in resources %}
+                {% with rdata.str_repr as rname %}
 	    		<fieldset class="quota">
 			    	
 			    	<legend>
@@ -155,6 +159,7 @@
 			    		<p class="msg"></p>
 			    	</div>
 				</fieldset>	
+                {% endwith %}
 				{% endfor %}
 	    	</div>
 	    	 
@@ -174,5 +179,4 @@
 	
 </script>	 
 
-{% endwith %}
 {% endblock %}

@@ -99,7 +99,6 @@ from astakos.im.settings import (
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
-from astakos.im.templatetags.filters import ResourcePresentation
 
 logger = logging.getLogger(__name__)
 
@@ -866,7 +865,8 @@ def how_it_works(request):
 @transaction.commit_manually
 def _create_object(request, model=None, template_name=None,
         template_loader=template_loader, extra_context=None, post_save_redirect=None,
-        login_required=False, context_processors=None, form_class=None ):
+        login_required=False, context_processors=None, form_class=None,
+        msg=None):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
@@ -893,9 +893,9 @@ def _create_object(request, model=None, template_name=None,
                     extra_context['show_form'] = True
                 else:
                     new_object = form.save()
-
-                    msg = _("The %(verbose_name)s has been received and is under consideration .") %\
-                                {"verbose_name": model._meta.verbose_name}
+                    if not msg:
+                        msg = _("The %(verbose_name)s was created successfully.")
+                    msg = msg % model._meta.__dict__
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, new_object)
         else:
@@ -928,7 +928,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
         slug_field='slug', template_name=None, template_loader=template_loader,
         extra_context=None, post_save_redirect=None, login_required=False,
         context_processors=None, template_object_name='object',
-        form_class=None):
+        form_class=None, msg=None):
     """
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
@@ -956,8 +956,10 @@ def _update_object(request, model=None, object_id=None, slug=None,
                     extra_context['show_form'] = True
                 else:
                     obj = form.save()
-                    msg = _("The %(verbose_name)s has been received and is under consideration .") %\
-                                {"verbose_name": model._meta.verbose_name}
+                    if not msg:
+                        msg = _("The %(verbose_name)s was created successfully.")
+                    msg = msg % model._meta.__dict__
+                    messages.success(request, msg, fail_silently=True)
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, obj)
         else:
@@ -989,20 +991,36 @@ def _update_object(request, model=None, object_id=None, slug=None,
 @signed_terms_required
 @login_required
 def project_add(request):
+    resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
+    resource_catalog = ()
     result = callpoint.list_resources()
-    details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
-    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
+    details_fields = [
+        "name", "homepage", "description","start_date","end_date", "comments"]
+    membership_fields =[
+        "member_join_policy", "member_leave_policy", "limit_on_members_number"]
     if not result.is_success:
         messages.error(
             request,
             'Unable to retrieve system resources: %s' % result.reason
     )
     else:
-        resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
-    return _create_object(request, template_name='im/projects/projectapplication_form.html',
-        extra_context=extra_context, post_save_redirect=reverse('project_list'),
-        form_class=ProjectApplicationForm) 
+        resource_catalog = [
+            (g, filter(lambda r: r.get('group', '') == g, result.data)) \
+                for g in resource_groups]
+    extra_context = {
+        'resource_catalog':resource_catalog,
+        'resource_groups':resource_groups,
+        'show_form':True,
+        'details_fields':details_fields,
+        'membership_fields':membership_fields}
+    return _create_object(
+        request,
+        template_name='im/projects/projectapplication_form.html',
+        extra_context=extra_context,
+        post_save_redirect=reverse('project_list'),
+        form_class=ProjectApplicationForm,
+        msg=_("The %(verbose_name)s has been received and \
+                 is under consideration."))
 
 
 @require_http_methods(["GET"])
@@ -1012,8 +1030,8 @@ def project_list(request):
     q = ProjectApplication.objects.filter(owner=request.user)
     q |= ProjectApplication.objects.filter(applicant=request.user)
     q |= ProjectApplication.objects.filter(
-        project__in=request.user.projectmembership_set.values_list('project', flat=True)
-    )
+            project__in=request.user.projectmembership_set.values_list(
+                'project', flat=True))
     q = q.select_related()
     sorting = 'name'
     sort_form = ProjectSortForm(request.GET)
@@ -1037,23 +1055,36 @@ def project_list(request):
 @signed_terms_required
 @login_required
 def project_update(request, application_id):
+    resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
+    resource_catalog = ()
     result = callpoint.list_resources()
-    details_fields = ["name", "homepage", "description","start_date","end_date", "comments"]
-    membership_fields =["member_join_policy", "member_leave_policy", "limit_on_members_number"] 
+    details_fields = [
+        "name", "homepage", "description","start_date","end_date", "comments"]
+    membership_fields =[
+        "member_join_policy", "member_leave_policy", "limit_on_members_number"] 
     if not result.is_success:
         messages.error(
             request,
             'Unable to retrieve system resources: %s' % result.reason
     )
     else:
-        resource_catalog = result.data
-    extra_context = {'resource_catalog':resource_catalog, 'show_form':True, 'details_fields':details_fields, 'membership_fields':membership_fields}
+        resource_catalog = [
+            (g, filter(lambda r: r.get('group', '') == g, result.data)) \
+                for g in resource_groups]
+    extra_context = {
+        'resource_catalog':resource_catalog,
+        'resource_groups':resource_groups,
+        'show_form':True,
+        'details_fields':details_fields,
+        'membership_fields':membership_fields}
     return _update_object(
         request,
         object_id=application_id,
         template_name='im/projects/projectapplication_form.html',
         extra_context=extra_context, post_save_redirect=reverse('project_list'),
-        form_class=ProjectApplicationForm)
+        form_class=ProjectApplicationForm,
+        msg = _("The %(verbose_name)s has been received and \
+                    is under consideration."))
 
 
 @require_http_methods(["GET", "POST"])

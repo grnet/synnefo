@@ -65,7 +65,7 @@ from astakos.im.settings import (
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application
 
-from astakos.im.util import reserved_email, get_query
+from astakos.im.util import reserved_email, get_query, model_to_dict
 from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
@@ -687,10 +687,12 @@ class ProjectApplicationForm(forms.ModelForm):
                 if self.data.get(
                     'is_selected_%s' % resource.group, "0"
                  ) == "1":
+                    d = model_to_dict(resource)
                     if uplimit:
-                        append(dict(service=s, resource=r, uplimit=uplimit))
+                        d.update(dict(service=s, resource=r, uplimit=uplimit))
                     else:
-                        append(dict(service=s, resource=r, uplimit=None))
+                        d.update(dict(service=s, resource=r, uplimit=None))
+                    append(d)
 
         return policies
 

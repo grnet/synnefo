@@ -1377,6 +1377,11 @@ class Project(models.Model):
 
     objects     =   ForUpdateManager()
 
+    def __str__(self):
+        return _("<project %s '%s'>") % (self.id, self.application.name)
+
+    __repr__ = __str__
+
     @property
     def violated_resource_grants(self):
         return False
@@ -1521,8 +1526,8 @@ class ProjectMembership(models.Model):
         #index_together = [["project", "state"]]
 
     def __str__(self):
-        return _("<'%s' membership in project '%s'>") % (
-                self.person.username, self.project.application)
+        return _("<'%s' membership in '%s'>") % (
+                self.person.username, self.project)
 
     __repr__ = __str__
 
@@ -1616,7 +1621,7 @@ class ProjectMembership(models.Model):
             pending_application = self.pending_application
             if pending_application is None:
                 m = _("%s: attempt to sync an empty pending application") % (
-                    self, state)
+                    self,)
                 raise AssertionError(m)
             self.application = pending_application
             self.pending_application = None

@@ -670,6 +670,9 @@ class AstakosUser(User):
     def is_project_member(self, project):
         return project.user_status(self) in [0,1,2,3]
 
+    def is_project_accepted_member(self, project):
+        return project.user_status(self) == 2
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 

@@ -314,7 +314,7 @@ def configure_logging():
 class EncodedStdOut(object):
     def __init__(self, stdout):
         self.encoding = stdout.encoding or locale.getpreferredencoding()
-        self.original_sdout = stdout
+        self.original_stdout = stdout
 
     def write(self, string):
         if isinstance(string, unicode):

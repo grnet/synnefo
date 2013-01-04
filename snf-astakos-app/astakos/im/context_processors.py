@@ -35,7 +35,7 @@ from astakos.im.settings import (
     IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL,
     LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES,
     GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS)
-from astakos.im.api import get_menu, get_services
+from astakos.im.api import get_menu
 from astakos.im.util import get_query
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
@@ -107,11 +107,3 @@ def menu(request):
         return {}
     else:
         return {'menu': menu_items}
-
-def services(request):
-    try:
-        resp = get_services(request)
-    except Exception, e:
-        return {}
-    else:
-        return {'services': json.loads(resp.content)}

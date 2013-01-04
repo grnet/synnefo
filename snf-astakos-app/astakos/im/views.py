@@ -66,6 +66,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
+from django.utils import simplejson as json
 
 import astakos.im.messages as astakos_messages
 
@@ -99,6 +100,7 @@ from astakos.im.settings import (
     LOGGING_LEVEL, PAGINATE_BY,
     RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
     MODERATION_ENABLED)
+from astakos.im.api import get_services
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
@@ -397,6 +399,13 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     # providers that user can add
     user_available_providers = request.user.get_available_auth_providers()
 
+    try:
+        resp = get_services(request)
+    except Exception, e:
+        services = ()
+    else:
+        services = json.loads(resp.content)
+    extra_context['services'] = services
     return render_response(template_name,
                            profile_form = form,
                            user_providers = user_providers,

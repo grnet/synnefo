@@ -59,6 +59,7 @@ from synnefo.util.version import get_component_version
 from synnefo.lib.dictconfig import dictConfig
 
 import sys
+import locale
 import os
 import imp
 
@@ -310,12 +311,23 @@ def configure_logging():
         log.warning("SNF_MANAGE_LOGGING_SETUP setting missing.")
 
 
+class EncodedStdOut(object):
+    def __init__(self):
+        self.encoding = sys.__stdout__.encoding or locale.getpreferredencoding()
+
+    def write(self, string):
+        if isinstance(string, unicode):
+            string = string.encode(self.encoding)
+        sys.__stdout__.write(string)
+
+
 def main():
     # no need to run setup_environ
     # we already know our project
     os.environ['DJANGO_SETTINGS_MODULE'] = os.environ.get('DJANGO_SETTINGS_MODULE',
                                                           'synnefo.settings')
     configure_logging()
+    sys.stdout = EncodedStdOut()
     mu = SynnefoManagementUtility(sys.argv)
     mu.execute()
 

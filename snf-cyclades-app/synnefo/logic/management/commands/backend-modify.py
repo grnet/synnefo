@@ -57,7 +57,6 @@ class Command(BaseCommand):
         make_option('--drained',
             dest='drained',
             action='store_true',
-            default=False,
             help="Set the backend as drained to exclude from allocation "\
                  "operations"),
         make_option('--no-drained',
@@ -66,7 +65,6 @@ class Command(BaseCommand):
         make_option('--offline',
             dest='offline',
             action='store_true',
-            default=False,
             help="Set the backend as offline to not communicate in order "\
                  "to avoid delays"),
         make_option('--no-offline',

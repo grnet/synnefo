@@ -972,7 +972,6 @@ def _update_object(request, model=None, object_id=None, slug=None,
                         msg = _("The %(verbose_name)s was created successfully.")
                     msg = msg % model._meta.__dict__
                     messages.success(request, msg, fail_silently=True)
-                    messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, obj)
         else:
             form = form_class(instance=obj)

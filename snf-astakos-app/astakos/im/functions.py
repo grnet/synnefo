@@ -702,10 +702,14 @@ def approve_application(app):
         logger.error(e.message)
 
 def terminate(project_id):
-    project = get_project_by_id(project_id)
-    project.set_termination_start_date()
+    project = get_project_for_update(project_id)
+
+    if not project.is_alive:
+        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
+        raise PermissionDenied(m)
+
+    project.terminate()
     trigger_sync()
-    project.set_termination_date()
 
     try:
         notification = build_notification(

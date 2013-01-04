@@ -346,7 +346,7 @@ class AstakosUser(User):
             if not m.acceptance_date:
                 continue
             p = m.project
-            if not p.is_active:
+            if not p.is_active():
                 continue
             grants = p.application.projectresourcegrant_set.all()
             for g in grants:
@@ -1366,14 +1366,18 @@ class Project(models.Model):
                                             AstakosUser,
                                             through='ProjectMembership')
 
-    termination_start_date      =   models.DateTimeField(null=True)
-    termination_date            =   models.DateTimeField(null=True)
+    deactivation_reason         =   models.CharField(max_length=255, null=True)
+    deactivation_start_date     =   models.DateTimeField(null=True)
+    deactivation_date           =   models.DateTimeField(null=True)
 
     creation_date               =   models.DateTimeField()
     name                        =   models.CharField(
                                             max_length=80,
                                             db_index=True,
                                             unique=True)
+
+    TERMINATED  =   'TERMINATED'
+    SUSPENDED   =   'SUSPENDED'
 
     objects     =   ForUpdateManager()
 
@@ -1382,8 +1386,37 @@ class Project(models.Model):
 
     __repr__ = __str__
 
-    @property
-    def violated_resource_grants(self):
+    def is_deactivating(self):
+        return bool(self.deactivation_start_date)
+
+    def is_deactivated_synced(self):
+        return bool(self.deactivation_date)
+
+    def is_deactivated(self):
+        return self.is_deactivated_synced() or self.is_deactivating()
+
+    def is_still_approved(self):
+        return bool(self.last_approval_date)
+
+    def is_active(self):
+        return not(self.is_deactivated())
+
+    def is_inconsistent(self):
+        now = datetime.now()
+        dates = [self.creation_date,
+                 self.last_approval_date,
+                 self.deactivation_start_date,
+                 self.deactivation_date]
+        return any([date > now for date in dates])
+
+    def set_deactivation_start_date(self):
+        self.deactivation_start_date = datetime.now()
+
+    def set_deactivation_date(self):
+        self.deactivation_start_date = None
+        self.deactivation_date = datetime.now()
+
+    def violates_resource_grants(self):
         return False
 
     def violates_members_limit(self, adding=0):
@@ -1392,64 +1425,22 @@ class Project(models.Model):
                 application.limit_on_members_number)
 
     @property
-    def is_terminated(self):
-        return bool(self.termination_date)
-
-    @property
-    def is_still_approved(self):
-        return bool(self.last_approval_date)
-
-    @property
-    def is_active(self):
-        if (self.is_terminated or
-            not self.is_still_approved or
-            self.violated_resource_grants):
-            return False
-#         if self.violated_members_number_limit:
-#             return False
-        return True
-
-    @property
-    def is_suspended(self):
-        if (self.is_terminated or
-            self.is_still_approved or
-            not self.violated_resource_grants):
-            return False
-#             if not self.violated_members_number_limit:
-#                 return False
-        return True
-
-    @property
     def is_alive(self):
-        return self.is_active or self.is_suspended
-
-    @property
-    def is_inconsistent(self):
-        now = datetime.now()
-        if self.creation_date > now:
-            return True
-        if self.last_approval_date > now:
-            return True
-        if self.terminaton_date > now:
-            return True
-        return False
+        return self.is_active()
 
     @property
     def approved_memberships(self):
-        ACCEPTED = ProjectMembership.ACCEPTED
-        PENDING  = ProjectMembership.PENDING
-        return self.projectmembership_set.filter(
-            Q(state=ACCEPTED) | Q(state=PENDING))
+        query = ProjectMembership.query_approved()
+        return self.projectmembership_set.filter(query)
 
     @property
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
 
     def set_membership_pending_sync(self):
-        ACCEPTED = ProjectMembership.ACCEPTED
-        PENDING  = ProjectMembership.PENDING
+        query = ProjectMembership.query_approved()
         sfu = self.projectmembership_set.select_for_update()
-        members = sfu.filter(Q(state=ACCEPTED) | Q(state=PENDING))
+        members = sfu.filter(query)
 
         for member in members:
             member.state = member.PENDING
@@ -1482,16 +1473,19 @@ class Project(models.Model):
         m = ProjectMembership.objects.get(person=user, project=self)
         m.remove()
 
-    def set_termination_start_date(self):
-        self.termination_start_date = datetime.now()
-        self.terminaton_date = None
+    def terminate(self):
+        self.set_deactivation_start_date()
+        self.deactivation_reason = self.TERMINATED
         self.save()
 
-    def set_termination_date(self):
-        self.termination_start_date = None
-        self.termination_date = datetime.now()
-        self.save()
+    @property
+    def is_terminated(self):
+        return (self.is_deactivated() and
+                self.deactivation_reason == self.TERMINATED)
 
+    @property
+    def is_suspended(self):
+        return False
 
 class ProjectMembership(models.Model):
 
@@ -1520,6 +1514,15 @@ class ProjectMembership(models.Model):
     ACCEPTED    =   2
     REMOVING    =   3
     REMOVED     =   4
+    INACTIVE    =   5
+
+    APPROVED_SET    =   [PENDING, ACCEPTED, INACTIVE]
+
+    @classmethod
+    def query_approved(cls):
+        return (Q(state=cls.PENDING) |
+                Q(state=cls.ACCEPTED) |
+                Q(state=cls.INACTIVE))
 
     class Meta:
         unique_together = ("person", "project")
@@ -1551,18 +1554,19 @@ class ProjectMembership(models.Model):
     def accept(self):
         state = self.state
         if state != self.REQUESTED:
-            m = _("%s: attempt to accept in state [%s]") % (self, state)
+            m = _("%s: attempt to accept in state '%s'") % (self, state)
             raise AssertionError(m)
 
         now = datetime.now()
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
-        self.state = self.PENDING
+        self.state = (self.PENDING if self.project.is_active()
+                      else self.INACTIVE)
         self.save()
 
     def remove(self):
         state = self.state
-        if state != self.ACCEPTED:
+        if state not in [self.ACCEPTED, self.INACTIVE]:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
 
@@ -1573,7 +1577,7 @@ class ProjectMembership(models.Model):
     def reject(self):
         state = self.state
         if state != self.REQUESTED:
-            m = _("%s: attempt to remove in state '%s'") % (self, state)
+            m = _("%s: attempt to reject in state '%s'") % (self, state)
             raise AssertionError(m)
 
         # rejected requests don't need sync,
@@ -1633,6 +1637,15 @@ class ProjectMembership(models.Model):
             if self.application == self.project.application:
                 self.state = self.ACCEPTED
             self.save()
+        elif state == self.ACCEPTED:
+            if self.pending_application:
+                m = _("%s: attempt to sync in state '%s' "
+                      "with a pending application") % (self, state)
+                raise AssertionError(m)
+            self.application = None
+            self.pending_serial = None
+            self.state = self.INACTIVE
+            self.save()
         elif state == self.REMOVING:
             self.delete()
         else:
@@ -1641,7 +1654,7 @@ class ProjectMembership(models.Model):
 
     def reset_sync(self):
         state = self.state
-        if state in [self.PENDING, self.REMOVING]:
+        if state in [self.PENDING, self.ACCEPTED, self.REMOVING]:
             self.pending_application = None
             self.pending_serial = None
             self.save()
@@ -1669,8 +1682,6 @@ def sync_finish_serials(serials_to_ack=None):
     if memberships:
         for membership in memberships:
             serial = membership.pending_serial
-            # just make sure the project row is selected for update
-            project = membership.project
             if serial in serials_to_ack:
                 membership.set_sync()
             else:
@@ -1681,7 +1692,7 @@ def sync_finish_serials(serials_to_ack=None):
     qh_ack_serials(list(serials_to_ack))
     return len(memberships)
 
-def sync_projects():
+def sync_all_projects():
     sync_finish_serials()
 
     PENDING = ProjectMembership.PENDING
@@ -1738,6 +1749,69 @@ def sync_projects():
 
     sync_finish_serials([serial])
 
+def sync_deactivating_projects():
+
+    ACCEPTED = ProjectMembership.ACCEPTED
+    PENDING = ProjectMembership.PENDING
+    REMOVING = ProjectMembership.REMOVING
+
+    psfu = Project.objects.select_for_update()
+    projects = psfu.filter(deactivation_start_date__isnull=False)
+
+    if not projects:
+        return
+
+    sub_quota, add_quota = [], []
+
+    serial = new_serial()
+
+    for project in projects:
+        objects = project.projectmembership_set.select_for_update()
+        memberships = objects.filter(Q(state=ACCEPTED) |
+                                     Q(state=PENDING) | Q(state=REMOVING))
+        for membership in memberships:
+            if membership.state in (PENDING, REMOVING):
+                m = "cannot sync deactivating project '%s'" % project
+                raise RuntimeError(m)
+
+            # state == ACCEPTED
+            if membership.pending_application:
+                m = "%s: impossible: pending_application is not None (%s)" % (
+                    membership, membership.pending_application)
+                raise AssertionError(m)
+            if membership.pending_serial:
+                m = "%s: impossible: pending_serial is not None (%s)" % (
+                    membership, membership.pending_serial)
+                raise AssertionError(m)
+
+            membership.pending_serial = serial
+            membership.get_diff_quotas(sub_quota, add_quota, remove=True)
+            membership.save()
+
+    transaction.commit()
+
+    r = qh_add_quota(serial, sub_quota, add_quota)
+    if r:
+        m = "cannot sync serial: %d" % serial
+        raise RuntimeError(m)
+
+    sync_finish_serials([serial])
+
+    # finalize deactivating projects
+    deactivating_projects = psfu.filter(deactivation_start_date__isnull=False)
+    for project in deactivating_projects:
+        objects = project.projectmembership_set.select_for_update()
+        memberships = list(objects.filter(Q(state=ACCEPTED) |
+                                          Q(state=PENDING) | Q(state=REMOVING)))
+        if not memberships:
+            project.set_deactivation_date()
+            project.save()
+
+    transaction.commit()
+
+def sync_projects():
+    sync_all_projects()
+    sync_deactivating_projects()
 
 def trigger_sync(retries=3, retry_wait=1.0):
     transaction.commit()

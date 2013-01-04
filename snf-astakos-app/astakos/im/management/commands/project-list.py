@@ -53,8 +53,8 @@ class Command(NoArgsCommand):
         apps = ProjectApplication.objects.select_related().all().order_by('id')
         
         labels = (
-            'application.id', 'application.state', 'project.id', 'name', 
-            'is_active', 'is_alive', 'is_suspended', 'is_terminated'
+            'application.id', 'application.state', 'project.id', 'name',
+            'is_alive', 'is_suspended', 'is_terminated'
         )
         columns = (15, 10, 20, 10, 10, 10, 10, 10)
 
@@ -67,13 +67,11 @@ class Command(NoArgsCommand):
         for app in apps:
             try:
                 project_id = str(app.project.id)
-                is_active = app.project.is_active
                 is_alive = app.project.is_alive
                 is_suspended = app.project.is_suspended
                 is_terminated = app.project.is_terminated
             except:
                 project_id = ''
-                is_active = ''
                 is_alive = ''
                 is_suspended = ''
                 is_terminated = ''
@@ -82,7 +80,6 @@ class Command(NoArgsCommand):
                 app.state,
                 str(project_id),
                 app.name,
-                format_bool(is_active),
                 format_bool(is_alive),
                 format_bool(is_suspended),
                 format_bool(is_terminated)

@@ -1175,6 +1175,8 @@ class ProjectApplication(models.Model):
             try:
                 membership = self.project.projectmembership_set.get(person=user)
                 status = membership.state
+            except Project.DoesNotExist:
+                status = -1
             except ProjectMembership.DoesNotExist:
                 status = -1
 

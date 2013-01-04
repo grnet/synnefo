@@ -43,6 +43,7 @@ installed_apps = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django_tables2',
 #    'debug_toolbar',
 ]
 

@@ -781,3 +781,4 @@ class ProjectMembersSortForm(forms.Form):
 
 class ProjectSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search project', required=False)
+

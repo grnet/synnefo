@@ -180,7 +180,6 @@ def authenticated(
             # authenticate user
             response = prepare_response(request,
                                     user,
-                                    userid,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
             messages.success(request, _(astakos_messages.LOGIN_SUCCESS))

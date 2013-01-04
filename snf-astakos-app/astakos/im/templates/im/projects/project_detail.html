@@ -1,6 +1,6 @@
 {% extends "im/account_base.html" %}
 
-{% load filters %}
+{% load astakos_tags filters django_tables2 %}
 
 {% block page.body %}
 {% with object.project.approved_members as approved_members %}
@@ -120,70 +120,10 @@
 	 </div>
      {% if object.project.is_alive %}
 	 <div class="full-dotted">
-	    {% with page|concat:sorting as args %}
-	    {% with object.project.projectmembership_set.select_related.all|paginate:args as membership %}
-            {% if membership %}
-             
-             <table class="alt-style" id="members-table">
-                <caption>MEMBERS:</caption>
-                <thead>
-                    <tr>
-                        {%if user.is_superuser or user == object.owner %}<th>User Email</th>{% endif %}
-                        <th>Name</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for m in membership.object_list %}
-                  <tr>
-                    {%if user.is_superuser or user == object.owner %}<td>{{m.person.email}}</td>{% endif %}
-                    <td>{{m.person.realname}}</td>
-                    {% if m.person == object.owner %}
-                    <td>Owner</td>
-                    {% else %}
-                        {% if m.acceptance_date %}
-                        <td>Approved {% if m.leave_request_date%}(User has requested to leave the project on:{{m.leave_request_date}}){% endif %}
-                            {% if user == object.owner and user != m.person %}
-                                <a href="{% url project_remove_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Remove</a>
-                            {% endif %}
-                        </td>
-                        {% else %}
-                        <td>Pending
-                            {% if user == object.owner %}
-                                <a href="{% url project_accept_member object.id m.person.id %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Accept</a>
-                                <a href="{% url project_reject_member object.id m.person.id  %}?{% if page %}page={{ page }}{% endif %}{% if sorting %}&sorting={{sorting}}{% endif %}">Reject</a>
-                            {% endif %}
-                        </td>    
-                        {% endif %}
-                    {% endif %}
-                  </tr>
-                {% endfor %}
-                </tbody>
-             </table>
-             <div class="pagination">
-                <p class="next-prev">
-                    {% if membership.has_previous %}
-                        <a href="?page={{ membership.previous_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">< previous</a>
-                    {% else %}
-                    	<a href="javascript:void()" class="disabled">< previous</a>
-                    {% endif %}
-                    {% if membership.has_next %}
-                        <a href="?page={{ membership.next_page_number }}{% if sorting %}&sorting={{sorting}}{% endif %}">next ></a>
-                    {% else %}
-                    	<a href="javascript:void()" class="disabled">next ></a>    
-                    {% endif %}
-                </p>
-                <p class="nums">
-                    <span class="current">
-                        Page {{ membership.number }} of {{ membership.paginator.num_pages }}
-                    </span>
-                </p>
-            </div>
-             {% else %}
-                <p>No members yet!</p>
-            {% endif %}
-        {% endwith %}
-        {% endwith %}
+         <h3>MEMBERS</h3>
+         {% if members_table %}
+              {% render_table members_table %}
+         {% endif %}
 	 </div>
      
      

@@ -41,6 +41,8 @@ from urllib import quote
 from functools import wraps
 from datetime import datetime
 
+from django_tables2 import RequestConfig
+
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -68,6 +70,7 @@ from django.core.exceptions import PermissionDenied
 import astakos.im.messages as astakos_messages
 
 from astakos.im.activation_backends import get_backend, SimpleBackend
+from astakos.im import tables
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
     EmailChange, RESOURCE_SEPARATOR,
@@ -1027,27 +1030,18 @@ def project_add(request):
 @signed_terms_required
 @login_required
 def project_list(request):
-    q = ProjectApplication.objects.filter(owner=request.user)
-    q |= ProjectApplication.objects.filter(applicant=request.user)
-    q |= ProjectApplication.objects.filter(
-            project__in=request.user.projectmembership_set.values_list(
-                'project', flat=True))
-    q = q.select_related()
-    sorting = 'name'
-    sort_form = ProjectSortForm(request.GET)
-    if sort_form.is_valid():
-        sorting = sort_form.cleaned_data.get('sorting')
-    q = q.order_by(sorting)
+    projects = ProjectApplication.objects.user_projects(request.user).select_related()
+    table = tables.UserProjectApplicationsTable(projects, user=request.user,
+                                                prefix="my_projects_")
+    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
-        q,
-        paginate_by=PAGINATE_BY,
-        page=request.GET.get('page') or 1,
+        projects,
         template_name='im/projects/project_list.html',
         extra_context={
             'is_search':False,
-            'sorting':sorting
+            'table': table,
         }
     )
 
@@ -1116,13 +1110,14 @@ def project_detail(request, application_id):
                     transaction.commit()
             addmembers_form = AddProjectMembersForm()
 
-    # validate sorting
-    sorting = 'person__email'
-    form = ProjectMembersSortForm(request.GET or request.POST)
-    if form.is_valid():
-        sorting = form.cleaned_data.get('sorting')
-
     rollback = False
+
+    application = get_object_or_404(ProjectApplication, pk=application_id)
+    members = application.project.projectmembership_set.select_related()
+    members_table = tables.ProjectApplicationMembersTable(members,
+                                                          prefix="members_")
+    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
+
     try:
         return object_detail(
             request,
@@ -1130,11 +1125,11 @@ def project_detail(request, application_id):
             object_id=application_id,
             template_name='im/projects/project_detail.html',
             extra_context={
-                'sorting':sorting,
-                'addmembers_form':addmembers_form
-                }
-            )
-    except:
+                'resource_catalog':resource_catalog,
+                'addmembers_form':addmembers_form,
+                'members_table': members_table
+            })
+    except Exception, e:
         rollback = True
     finally:
         if rollback == True:
@@ -1142,50 +1137,42 @@ def project_detail(request, application_id):
         else:
             transaction.commit()
 
+
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
 def project_search(request):
     q = request.GET.get('q', '')
-    queryset = ProjectApplication.objects
+    form = ProjectSearchForm()
+    q = q.strip()
 
-    if request.method == 'GET':
-        form = ProjectSearchForm()
-        q = q.strip()
-        queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-        queryset = queryset.filter(name__contains=q)
-    else:
+    if request.method == "POST":
         form = ProjectSearchForm(request.POST)
-
         if form.is_valid():
             q = form.cleaned_data['q'].strip()
-
-            queryset = queryset.filter(~Q(project__last_approval_date__isnull=True))
-
-            queryset = queryset.filter(name__contains=q)
         else:
-            queryset = queryset.none()
+            q = None
 
-    sorting = 'name'
-    # validate sorting
-    sort_form = ProjectSortForm(request.GET)
-    if sort_form.is_valid():
-        sorting = sort_form.cleaned_data.get('sorting')
-    queryset = queryset.order_by(sorting)
- 
+    if q is None:
+        projects = ProjectApplication.objects.none()
+    else:
+        projects = ProjectApplication.objects.search_by_name(q)
+        projects = projects.filter(~Q(project__last_approval_date__isnull=True))
+
+    table = tables.UserProjectApplicationsTable(projects, user=request.user,
+                                                prefix="my_projects_")
+    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
+
     return object_list(
         request,
-        queryset,
-        paginate_by=PAGINATE_BY_ALL,
-        page=request.GET.get('page') or 1,
+        projects,
         template_name='im/projects/project_list.html',
-        extra_context=dict(
-            form=form,
-            is_search=True,
-            sorting=sorting,
-            q=q,
-        )
-    )
+        extra_context={
+          'form': form,
+          'is_search': True,
+          'q': q,
+          'table': table
+        })
 
 @require_http_methods(["POST"])
 @signed_terms_required
@@ -1194,8 +1181,7 @@ def project_search(request):
 def project_join(request, application_id):
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(
-            _(astakos_messages.MISSING_NEXT_PARAMETER))
+        next = reverse('astakos.im.views.project_list')
 
     rollback = False
     try:
@@ -1222,8 +1208,7 @@ def project_join(request, application_id):
 def project_leave(request, application_id):
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(
-            _(astakos_messages.MISSING_NEXT_PARAMETER))
+        next = reverse('astakos.im.views.project_list')
 
     rollback = False
     try:

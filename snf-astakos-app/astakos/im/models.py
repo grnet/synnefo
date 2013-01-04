@@ -664,6 +664,12 @@ class AstakosUser(User):
 
         return mark_safe(message + u' '+ msg_extra)
 
+    def owns_project(self, project):
+        return project.user_status(self) == 100
+
+    def is_project_member(self, project):
+        return project.user_status(self) in [0,1,2,3]
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -1121,6 +1127,22 @@ def make_synced(prefix='sync', name='SyncedState'):
 SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
+class ProjectApplicationManager(ForUpdateManager):
+
+    def user_projects(self, user):
+        """
+        Return projects accessed by specified user.
+        """
+        return self.filter(Q(owner=user) | Q(applicant=user) | \
+                        Q(project__in=user.projectmembership_set.filter()))
+
+    def search_by_name(self, *search_strings):
+        q = Q()
+        for s in search_strings:
+            q = q | Q(name__icontains=s)
+        return self.filter(q)
+
+
 class ProjectApplication(models.Model):
     PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
@@ -1159,7 +1181,8 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
 
-    objects     =   ForUpdateManager()
+
+    objects                 =   ProjectApplicationManager()
 
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
@@ -1167,11 +1190,36 @@ class ProjectApplication(models.Model):
         resource = Resource.objects.get(service__name=service, name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
-    
+    def user_status(self, user):
+        """
+        100 OWNER
+        0   REQUESTED
+        1   PENDING
+        2   ACCEPTED
+        3   REMOVING
+        4   REMOVED
+       -1   User has no association with the project
+        """
+        if user == self.owner:
+            status = 100
+        else:
+            try:
+                membership = self.project.projectmembership_set.get(person=user)
+                status = membership.state
+            except Project.DoesNotExist:
+                status = -1
+            except ProjectMembership.DoesNotExist:
+                status = -1
+
+        return status
+
+    def members_count(self):
+        return self.project.approved_memberships.count()
+
     @property
     def grants(self):
         return self.projectresourcegrant_set.values('member_capacity', 'resource__name', 'resource__service__name')
-            
+
     @property
     def resource_policies(self):
         return self.projectresourcegrant_set.all()

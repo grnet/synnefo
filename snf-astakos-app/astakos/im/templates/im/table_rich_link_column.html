@@ -1,4 +1,5 @@
 <div class="msg-wrap">
+{% if url %}
 {% if confirm %}
 <form method="{{ col.method }}" 
   action="{{ url }}#{{ table.attr.id }}"
@@ -17,5 +18,8 @@
 </div>
 {% else %}
 <a href="{{ url }}">{{ action }}</a>
+{% endif %}
+{% else %}
+{{ action }}
 {% endif %}
 </div>

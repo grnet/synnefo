@@ -1050,8 +1050,8 @@ def project_list(request):
         extra_context={
             'is_search':False,
             'table': table,
-        }
-    )
+        })
+
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
@@ -1063,7 +1063,7 @@ def project_update(request, application_id):
     details_fields = [
         "name", "homepage", "description","start_date","end_date", "comments"]
     membership_fields =[
-        "member_join_policy", "member_leave_policy", "limit_on_members_number"] 
+        "member_join_policy", "member_leave_policy", "limit_on_members_number"]
     if not result.is_success:
         messages.error(
             request,
@@ -1125,7 +1125,10 @@ def project_detail(request, application_id):
         members = application.project.projectmembership_set.select_related()
     except Project.DoesNotExist:
         members = ProjectMembership.objects.none()
-    members_table = tables.ProjectApplicationMembersTable(members,
+
+    members_table = tables.ProjectApplicationMembersTable(application,
+                                                          members,
+                                                          user=request.user,
                                                           prefix="members_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
 

@@ -88,16 +88,20 @@ class RichLinkColumn(tables.TemplateColumn):
         # If the table is being rendered using `render_table`, it hackily
         # attaches the context to the table as a gift to `TemplateColumn`. If
         # the table is being rendered via `Table.as_html`, this won't exist.
-        context = getattr(table, 'context', Context())
-        context.update(self.get_template_context(record, table, value,
-                                                 bound_column, **kwargs))
-        try:
-            if self.template_code:
-                return Template(self.template_code).render(context)
-            else:
-                return render_to_string(self.template_name, context)
-        finally:
-            context.pop()
+        content = ''
+        for extra_context in self.get_template_context(record, table, value,
+                                                       bound_column, **kwargs):
+            context = getattr(table, 'context', Context())
+            context.update(extra_context)
+            try:
+                if self.template_code:
+                    content += Template(self.template_code).render(context)
+                else:
+                    content += render_to_string(self.template_name, context)
+            finally:
+                context.pop()
+
+        return mark_safe(content)
 
     def get_confirm(self, record, table):
         if callable(self.confirm):
@@ -139,9 +143,19 @@ class RichLinkColumn(tables.TemplateColumn):
                   }
 
         if self.extra_context:
-            context.update(self.extra_context(record, table, self))
+            contexts = []
+            extra_contexts = self.extra_context(record, table, self)
+            if isinstance(extra_contexts, list):
+                for extra_context in extra_contexts:
+                    newcontext = dict(context)
+                    newcontext.update(extra_context)
+                    contexts.append(newcontext)
+            else:
+                context.update(extra_contexts)
+        else:
+            contexts = [context]
 
-        return context
+        return contexts
 
 
 def action_extra_context(project, table, self):
@@ -165,7 +179,9 @@ def action_extra_context(project, table, self):
         confirm = True
         prompt = _('Are you sure you want to join this project ?')
     else:
-        action = _('Pending')
+        action = ''
+        confirm = False
+        url = None
 
     url = reverse(url, args=(project.pk, )) + append_url if url else ''
     return {'action': action,
@@ -174,9 +190,7 @@ def action_extra_context(project, table, self):
             'prompt': prompt}
 
 
-# Table classes
-class UserProjectApplicationsTable(tables.Table):
-    caption = _('My projects')
+class UserTable(tables.Table):
 
     def __init__(self, *args, **kwargs):
         self.user = None
@@ -187,7 +201,12 @@ class UserProjectApplicationsTable(tables.Table):
         if 'user' in kwargs:
             self.user = kwargs.pop('user')
 
-        super(UserProjectApplicationsTable, self).__init__(*args, **kwargs)
+        super(UserTable, self).__init__(*args, **kwargs)
+
+
+# Table classes
+class UserProjectApplicationsTable(UserTable):
+    caption = _('My projects')
 
     name = tables.LinkColumn('astakos.im.views.project_detail', args=(A('pk'),))
     issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
@@ -214,11 +233,40 @@ class UserProjectApplicationsTable(tables.Table):
         fields = ('name', 'membership_status', 'issue_date', 'start_date','end_date', 'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
+        empty_text = _('No projects')
 
 
-class ProjectApplicationMembersTable(tables.Table):
+def member_action_extra_context(membership, table, col):
+    urls, actions, prompts, confirms = [], [], [], []
+
+    if membership.state == ProjectMembership.REQUESTED:
+        urls = ['astakos.im.views.project_reject_member',
+                'astakos.im.views.project_accept_member']
+        actions = [_('Reject'), _('Approve')]
+        prompts = [_('Are you sure you want to reject this member ?'),
+                   _('Are you sure you want to approve this member ?')]
+        confirms = [True, True]
+
+    if membership.state == ProjectMembership.ACCEPTED:
+        urls = ['astakos.im.views.project_remove_member']
+        actions = [_('Remove')]
+        prompts = [_('Are you sure you want to remove this member ?')]
+        confirms = [True, True]
+
+
+class ProjectApplicationMembersTable(UserTable):
     name = tables.Column(accessor="person.last_name", verbose_name=_('Name'))
     status = tables.Column(accessor="state", verbose_name=_('Status'))
+    project_action = RichLinkColumn(verbose_name=_('Action'),
+                                    extra_context=member_action_extra_context,
+                                    sortable=False)
+
+
+    def __init__(self, project, *args, **kwargs):
+        self.project = project
+        super(ProjectApplicationMembersTable, self).__init__(*args, **kwargs)
+        if not self.user.owns_project(self.project):
+            self.exclude = ('project_action', )
 
 
     def render_name(self, value, record, *args, **kwargs):
@@ -232,4 +280,5 @@ class ProjectApplicationMembersTable(tables.Table):
         model = ProjectMembership
         fields = ('name', 'status')
         attrs = {'id': 'members-table', 'class': 'members-table alt-style'}
+        empty_text = _('No members')
 

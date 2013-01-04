@@ -1000,14 +1000,14 @@ class MemberJoinPolicy(models.Model):
     description = models.CharField(_('Description'), max_length=80)
 
     def __str__(self):
-        return self.policy
+        return self.description.capitalize()
 
 class MemberLeavePolicy(models.Model):
     policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
     description = models.CharField(_('Description'), max_length=80)
 
     def __str__(self):
-        return self.policy
+        return self.description.capitalize()
 
 def synced_model_metaclass(class_name, class_parents, class_attributes):
 
@@ -1141,7 +1141,7 @@ class ProjectApplication(models.Model):
                                                      blank=True,
                                                      db_index=True)
 
-    name                    =   models.CharField(max_length=80, help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization ",)
+    name                    =   models.CharField(max_length=80, help_text="The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization ",)
     homepage                =   models.URLField(max_length=255, null=True,
                                                 blank=True,help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",)
     description             =   models.TextField(null=True, blank=True,help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. ")

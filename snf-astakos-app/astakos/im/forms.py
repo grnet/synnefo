@@ -56,7 +56,7 @@ from django.contrib.auth.models import AnonymousUser
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
     Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
-    ProjectApplication)
+    ProjectApplication, MemberJoinPolicy, MemberLeavePolicy)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
@@ -633,17 +633,30 @@ class ProjectApplicationForm(forms.ModelForm):
             _(astakos_messages.DOMAIN_VALUE_ERR),
             'invalid'
         )],
-        widget=forms.TextInput(attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
-        help_text=" The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization "
+        widget=forms.TextInput(
+            attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
+            help_text="""The Project's name should be in a domain format.
+                         The domain shouldn't neccessarily exist in the real
+                         world but is helpful to imply a structure.
+                         e.g.: myproject.mylab.ntua.gr or
+                         myservice.myteam.myorganization"""
     )
     homepage = forms.URLField(
         label="Homepage Url",
-        help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",
+        help_text="""This should be a URL pointing at your project's site.
+                     e.g.: http://myproject.com""",
         widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
 
         required=False
      )
     comments = forms.CharField(widget=forms.Textarea, required=False)
+    member_join_policy = forms.ModelChoiceField(
+        queryset=MemberJoinPolicy.objects.all(),
+        empty_label=None)
+    member_leave_policy = forms.ModelChoiceField(
+        queryset=MemberLeavePolicy.objects.all(),
+        empty_label=None)
+
 
     class Meta:
         model = ProjectApplication

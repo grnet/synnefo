@@ -56,12 +56,13 @@ from django.contrib.auth.models import AnonymousUser
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
     Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
-    ProjectApplication, MemberJoinPolicy, MemberLeavePolicy)
+    ProjectApplication)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
-    MODERATION_ENABLED)
+    MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
+    PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application
 
@@ -650,13 +651,10 @@ class ProjectApplicationForm(forms.ModelForm):
         required=False
      )
     comments = forms.CharField(widget=forms.Textarea, required=False)
-    member_join_policy = forms.ModelChoiceField(
-        queryset=MemberJoinPolicy.objects.all(),
-        empty_label=None)
-    member_leave_policy = forms.ModelChoiceField(
-        queryset=MemberLeavePolicy.objects.all(),
-        empty_label=None)
-
+    member_join_policy = forms.ChoiceField(
+        choices=PROJECT_MEMBER_JOIN_POLICIES.iteritems())
+    member_leave_policy = forms.ChoiceField(
+        choices=PROJECT_MEMBER_LEAVE_POLICIES.iteritems())
 
     class Meta:
         model = ProjectApplication

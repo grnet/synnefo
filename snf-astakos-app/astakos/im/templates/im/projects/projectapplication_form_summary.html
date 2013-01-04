@@ -37,9 +37,9 @@
 			 <h3>MEMBERSHIP OPTIONS</h3>
 			 <dl class="alt-style">			    
                 <dt>Member join policy</dt>
-			 	<dd>{{ form_data.member_join_policy }}</dd>
+			 	<dd>{{ join_policies|lookup:form_data.member_join_policy }}</dd>
 			 	<dt>Member leave policy</dt>
-			 	<dd>{{ form_data.member_leave_policy }}</dd>			   
+			 	<dd>{{ leave_policies|lookup:form_data.member_leave_policy }}</dd>
 			 	<dt>Total number of members</dt>
 			 	<dd>{{ form_data.limit_on_members_number }}</dd>
 			 </dl>

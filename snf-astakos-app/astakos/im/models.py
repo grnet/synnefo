@@ -1004,20 +1004,6 @@ class SessionCatalog(models.Model):
 ### PROJECTS ###
 ################
 
-class MemberJoinPolicy(models.Model):
-    policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
-    description = models.CharField(_('Description'), max_length=80)
-
-    def __str__(self):
-        return self.description.capitalize()
-
-class MemberLeavePolicy(models.Model):
-    policy = models.CharField(_('Policy'), max_length=255, unique=True, db_index=True)
-    description = models.CharField(_('Description'), max_length=80)
-
-    def __str__(self):
-        return self.description.capitalize()
-
 def synced_model_metaclass(class_name, class_parents, class_attributes):
 
     new_attributes = {}
@@ -1176,8 +1162,8 @@ class ProjectApplication(models.Model):
                                                  help_text=_("Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "))
     start_date              =   models.DateTimeField(help_text=_("Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date."))
     end_date                =   models.DateTimeField(help_text=_("Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  "))
-    member_join_policy      =   models.ForeignKey(MemberJoinPolicy)
-    member_leave_policy     =   models.ForeignKey(MemberLeavePolicy)
+    member_join_policy      =   models.IntegerField()
+    member_leave_policy     =   models.IntegerField()
     limit_on_members_number =   models.PositiveIntegerField(null=True,
                                                             blank=True,help_text=_("Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. "))
     resource_grants         =   models.ManyToManyField(

@@ -61,11 +61,11 @@ from astakos.im.settings import (
     EMAIL_CHANGE_EMAIL_SUBJECT,
     PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
     PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
-    PROJECT_MEMBERSHIP_CHANGE_SUBJECT)
+    PROJECT_MEMBERSHIP_CHANGE_SUBJECT,
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    MemberLeavePolicy, MemberJoinPolicy,
     trigger_sync)
 
 import astakos.im.messages as astakos_messages
@@ -368,17 +368,11 @@ class SendNotificationError(SendMailError):
 ### PROJECT VIEWS ###
 
 def get_join_policy(str_policy):
-    try:
-        return MemberJoinPolicy.objects.get(policy=str_policy)
-    except:
-        return None
+    return PROJECT_MEMBER_JOIN_POLICIES.get(str_policy)
 
 def get_leave_policy(str_policy):
-    try:
-        return MemberLeavePolicy.objects.get(policy=str_policy)
-    except BaseException, e:
-        return None
-    
+    return PROJECT_MEMBER_LEAVE_POLICIES.get(str_policy)
+
 _auto_accept_join = None
 def get_auto_accept_join_policy():
     global _auto_accept_join

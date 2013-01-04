@@ -81,11 +81,11 @@
 		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
 		 	<dt>Member join policy</dt>
             <dd>
-                {{ object.member_join_policy }}
+                {{ join_policies|lookup:object.member_join_policy }}
             </dd>
 		 	<dt>Member leave policy</dt>
             <dd>
-                {{ object.member_leave_policy }}
+                {{ leave_policies|lookup:object.member_leave_policy }}
             </dd>
 		 </dl>
 	 </div>

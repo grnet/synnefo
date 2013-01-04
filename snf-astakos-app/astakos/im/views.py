@@ -1166,8 +1166,11 @@ def project_search(request):
     if q is None:
         projects = ProjectApplication.objects.none()
     else:
+        accepted_projects = request.user.projectmembership_set.filter(
+            ~Q(acceptance_date__isnull=True)).values_list('project', flat=True)
         projects = ProjectApplication.objects.search_by_name(q)
         projects = projects.filter(~Q(project__last_approval_date__isnull=True))
+        projects = projects.exclude(project__in=accepted_projects)
 
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")

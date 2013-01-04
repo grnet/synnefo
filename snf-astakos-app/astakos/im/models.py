@@ -1166,16 +1166,20 @@ class ProjectApplication(models.Model):
                                                      blank=True,
                                                      db_index=True)
 
-    name                    =   models.CharField(max_length=80, help_text="The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization ",)
-    homepage                =   models.URLField(max_length=255, null=True,
-                                                blank=True,help_text="This should be a URL pointing at your project's site. e.g.: http://myproject.com ",)
-    description             =   models.TextField(null=True, blank=True,help_text= "Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. ")
-    start_date              =   models.DateTimeField(help_text= "Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date.")
-    end_date                =   models.DateTimeField(help_text= "Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  ")
+    name                    =   models.CharField(max_length=80,
+                                                 help_text=_("The Project's name should be in a domain format. The domain shouldn't neccessarily exist in the real world but is helpful to imply a structure. e.g.: myproject.mylab.ntua.gr or myservice.myteam.myorganization"))
+    homepage                =   models.URLField(max_length=255,
+                                                null=True,
+                                                blank=True,help_text=_("This should be a URL pointing at your project's site. e.g.: http://myproject.com ",))
+    description             =   models.TextField(null=True,
+                                                 blank=True,
+                                                 help_text=_("Please provide a short but descriptive abstract of your Project, so that anyone searching can quickly understand what this Project is about. "))
+    start_date              =   models.DateTimeField(help_text=_("Here you specify the date you want your Project to start granting its resources. Its members will get the resources coming from this Project on this exact date."))
+    end_date                =   models.DateTimeField(help_text=_("Here you specify the date you want your Project to cease. This means that after this date all members will no longer be able to allocate resources from this Project.  "))
     member_join_policy      =   models.ForeignKey(MemberJoinPolicy)
     member_leave_policy     =   models.ForeignKey(MemberLeavePolicy)
     limit_on_members_number =   models.PositiveIntegerField(null=True,
-                                                            blank=True,help_text= "Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. ")
+                                                            blank=True,help_text=_("Here you specify the number of members this Project is going to have. This means that this number of people will be granted the resources you will specify in the next step. This can be '1' if you are the only one wanting to get resources. "))
     resource_grants         =   models.ManyToManyField(
                                     Resource,
                                     null=True,

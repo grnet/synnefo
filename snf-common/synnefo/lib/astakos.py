@@ -58,7 +58,8 @@ def retry(howmany):
                         raise e
                     if e.args:
                         status = e.args[-1]
-                        # In case of Unauthorized response or Not Found return directly
+                        # In case of Unauthorized response
+                        # or Not Found return directly
                         if status == 401 or status == 404:
                             raise e
                     attempts += 1
@@ -91,11 +92,18 @@ def call(token, url, headers={}):
     return json.loads(data)
 
 
-def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
+def authenticate(
+        token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
     return call(token, authentication_url)
 
 @retry(3)
-def get_username(token, uuid, url='http://127.0.0.1:8000/im/service/api/v2.0/users'):
+def get_username(
+        token,
+        uuid,
+        url='http://127.0.0.1:8000/im/service/api/v2.0/users',
+        override_users={}):
+    if override_users:
+        return uuid
     try:
         data = call(token, url, {'X-User-Uuid': uuid})
     except Exception, e:
@@ -105,7 +113,13 @@ def get_username(token, uuid, url='http://127.0.0.1:8000/im/service/api/v2.0/use
 
 
 @retry(3)
-def get_user_uuid(token, username, url='http://127.0.0.1:8000/im/service/api/v2.0/users'):
+def get_user_uuid(
+        token,
+        username,
+        url='http://127.0.0.1:8000/im/service/api/v2.0/users',
+        override_users={}):
+    if override_users:
+        return username
     try:
         data = call(token, url, {'X-User-Username': username})
     except Exception, e:
@@ -120,7 +134,7 @@ def user_for_token(token, authentication_url, override_users):
 
     if override_users:
         try:
-            return {'uniq': override_users[token].decode('utf8')}
+            return {'uuid': override_users[token].decode('utf8')}
         except:
             return None
 
@@ -132,16 +146,25 @@ def user_for_token(token, authentication_url, override_users):
             return None
         raise e
 
-def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate', override_users={}, fallback_token=None):
+def get_user(
+        request,
+        authentication_url='http://127.0.0.1:8000/im/authenticate',
+        override_users={},
+        fallback_token=None):
     request.user = None
     request.user_uniq = None
 
     # Try to find token in a parameter or in a request header.
-    user = user_for_token(request.GET.get('X-Auth-Token'), authentication_url, override_users)
+    user = user_for_token(
+        request.GET.get('X-Auth-Token'), authentication_url, override_users)
     if not user:
-        user = user_for_token(request.META.get('HTTP_X_AUTH_TOKEN'), authentication_url, override_users)
+        user = user_for_token(
+            request.META.get('HTTP_X_AUTH_TOKEN'),
+            authentication_url,
+            override_users)
     if not user:
-        user = user_for_token(fallback_token, authentication_url, override_users)
+        user = user_for_token(
+            fallback_token, authentication_url, override_users)
     if not user:
         logger.warning("Cannot retrieve user details from %s",
                        authentication_url)
@@ -150,7 +173,7 @@ def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate'
     # use user uuid, instead of email, keep email/username reference to user_id
     request.user_uniq = user['uuid']
     request.user = user
-    request.user_id = user['username']
+    request.user_id = user.get('username')
     return user
 
 

@@ -51,15 +51,17 @@
 			<p>The following ~okeanos resources will be granted to each member of this Project:</p>
 		 	<dl class="alt-style">
 		 	    {% for rp in form.resource_policies %}
-		 	        {% with resource_catalog|lookup:'resources' as resource_info %}
-		 		        {% with rp.service|add:'.'|add:rp.resource as resource_name %}
-		 	                {% with resource_info|lookup:resource_name as resource %}
 		 		    <dt>
-           				Max {% if resource.is_abbreviation %}{{ resource.verbose_name|upper }}{% else %}{{ resource.verbose_name }}{% endif %}{% if not resource.unit %}s {% endif  %}  per user
+           				Max {% if rp.is_abbreviation %}
+                                {{ rp.verbose_name|upper }}
+                            {% else %}
+                                {{ rp.verbose_name }}
+                            {% endif %}
+                            {% if not rp.unit %}s {% endif  %}  per user
            			</dt>
 			 		<dd>
            			{% if rp.uplimit %}
-           				 {% if resource.unit %}
+           				 {% if rp.unit %}
            				 	{{ rp.uplimit|sizeof_fmt }}
            				 {% else %}
            				 	{{ rp.uplimit }}
@@ -68,9 +70,6 @@
            				Unlimited
            			{% endif %}
            			</dd>
-           			        {% endwith %}
-           			    {% endwith %}
-           			{% endwith %}
            		{% empty %}
            			No resources
 		 		{% endfor %}

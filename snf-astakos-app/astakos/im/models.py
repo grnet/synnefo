@@ -66,16 +66,13 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
-    AUTH_TOKEN_DURATION, BILLING_FIELDS,
-    EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, SERVICES, MODERATION_ENABLED)
+    AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
+    SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     register_users, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials)
 from astakos.im import auth_providers
-#from astakos.im.endpoints.aquarium.producer import report_user_event
-#from astakos.im.tasks import propagate_groupmembers_quota
 
 import astakos.im.messages as astakos_messages
 from .managers import ForUpdateManager
@@ -152,6 +149,15 @@ class ResourceMetadata(models.Model):
     key = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
     value = models.CharField(_('Value'), max_length=255)
 
+_presentation_data = {}
+def get_presentation(resource):
+    global _presentation_data
+    presentation = _presentation_data.get(resource, {})
+    if not presentation:
+        resource_presentation = RESOURCES_PRESENTATION_DATA.get('resources', {})
+        presentation = resource_presentation.get(resource, {})
+        _presentation_data[resource] = presentation
+    return presentation 
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255)
@@ -166,6 +172,31 @@ class Resource(models.Model):
 
     def __str__(self):
         return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
+
+    @property
+    def help_text(self):
+        return get_presentation(str(self)).get('help_text', '')
+    
+    @property
+    def help_text_input_each(self):
+        return get_presentation(str(self)).get('help_text_input_each', '')
+
+    @property
+    def is_abbreviation(self):
+        return get_presentation(str(self)).get('is_abbreviation', False)
+
+    @property
+    def report_desc(self):
+        return get_presentation(str(self)).get('report_desc', '')
+
+    @property
+    def placeholder(self):
+        return get_presentation(str(self)).get('placeholder', '')
+
+    @property
+    def verbose_name(self):
+        return get_presentation(str(self)).get('verbose_name', '')
+
 
 _default_quota = {}
 def get_default_quota():
@@ -320,7 +351,6 @@ class AstakosUser(User):
             grants = p.application.projectresourcegrant_set.all()
             for g in grants:
                 d[str(g.resource)] += g.member_capacity or inf
-        # TODO set default for remaining
         return d
 
     @property
@@ -1129,6 +1159,8 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField()
 
+    objects     =   ForUpdateManager()
+
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
@@ -1180,7 +1212,8 @@ class ProjectApplication(models.Model):
         precursor = self
         while precursor:
             try:
-                project = precursor.project
+                objects = Project.objects.select_for_update()
+                project = objects.get(application=precursor)
                 return project
             except Project.DoesNotExist:
                 pass
@@ -1287,14 +1320,16 @@ class Project(models.Model):
                                             db_index=True,
                                             unique=True)
 
+    objects     =   ForUpdateManager()
+
     @property
     def violated_resource_grants(self):
         return False
 
-    @property
-    def violated_members_number_limit(self):
+    def violates_members_limit(self, adding=0):
         application = self.application
-        return len(self.approved_members) > application.limit_on_members_number
+        return (len(self.approved_members) + adding >
+                application.limit_on_members_number)
 
     @property
     def is_terminated(self):
@@ -1446,8 +1481,8 @@ class ProjectMembership(models.Model):
 
         history_item = ProjectMembershipHistory(
                             serial=self.id,
-                            person=self.person,
-                            project=self.project,
+                            person=self.person.uuid,
+                            project=self.project_id,
                             date=date or datetime.now(),
                             reason=reason)
         history_item.save()
@@ -1645,6 +1680,8 @@ def sync_projects():
 
 
 def trigger_sync(retries=3, retry_wait=1.0):
+    transaction.commit()
+
     cursor = connection.cursor()
     locked = True
     try:
@@ -1663,7 +1700,6 @@ def trigger_sync(retries=3, retry_wait=1.0):
                 return False
             sleep(retry_wait)
 
-        transaction.commit()
         sync_projects()
         return True
 
@@ -1677,8 +1713,8 @@ class ProjectMembershipHistory(models.Model):
     reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']
     reasons         =   dict((k, v) for v, k in enumerate(reasons_list))
 
-    person  =   models.ForeignKey(AstakosUser)
-    project =   models.ForeignKey(Project)
+    person  =   models.CharField(max_length=255)
+    project =   models.BigIntegerField()
     date    =   models.DateField(default=datetime.now)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
@@ -1713,38 +1749,18 @@ def user_post_save(sender, instance, created, **kwargs):
     create_astakos_user(instance)
 post_save.connect(user_post_save, sender=User)
 
-def astakosuser_pre_save(sender, instance, **kwargs):
-    instance.aquarium_report = False
-    instance.new = False
-    try:
-        db_instance = AstakosUser.objects.get(id=instance.id)
-    except AstakosUser.DoesNotExist:
-        # create event
-        instance.aquarium_report = True
-        instance.new = True
-    else:
-        get = AstakosUser.__getattribute__
-        l = filter(lambda f: get(db_instance, f) != get(instance, f),
-                   BILLING_FIELDS)
-        instance.aquarium_report = True if l else False
-pre_save.connect(astakosuser_pre_save, sender=AstakosUser)
-
 def astakosuser_post_save(sender, instance, created, **kwargs):
-    if instance.aquarium_report:
-        report_user_event(instance, create=instance.new)
     if not created:
         return
     # TODO handle socket.error & IOError
     register_users((instance,))
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
-
 def resource_post_save(sender, instance, created, **kwargs):
     if not created:
         return
     register_resources((instance,))
 post_save.connect(resource_post_save, sender=Resource)
-
 
 def renew_token(sender, instance, **kwargs):
     if not instance.auth_token:

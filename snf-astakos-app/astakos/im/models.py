@@ -634,6 +634,12 @@ class AstakosUser(User):
 
         return mark_safe(message + u' '+ msg_extra)
 
+    def owns_project(self, project):
+        return project.user_status(self) == 100
+
+    def is_project_member(self, project):
+        return project.user_status(self) in [0,1,2,3]
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -1153,7 +1159,16 @@ class ProjectApplication(models.Model):
         resource = Resource.objects.get(service__name=service, name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
-    def member_status(self, user):
+    def user_status(self, user):
+        """
+        100 OWNER
+        0   REQUESTED
+        1   PENDING
+        2   ACCEPTED
+        3   REMOVING
+        4   REMOVED
+       -1   User has no association with the project
+        """
         if user == self.owner:
             status = 100
         else:

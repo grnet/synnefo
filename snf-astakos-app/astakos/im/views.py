@@ -1122,7 +1122,10 @@ def project_detail(request, application_id):
     rollback = False
 
     application = get_object_or_404(ProjectApplication, pk=application_id)
-    members = application.project.projectmembership_set.select_related()
+    try:
+        members = application.project.projectmembership_set.select_related()
+    except Project.DoesNotExist:
+        members = ProjectMembership.objects.none()
     members_table = tables.ProjectApplicationMembersTable(members,
                                                           prefix="members_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
@@ -1134,7 +1137,6 @@ def project_detail(request, application_id):
             object_id=application_id,
             template_name='im/projects/project_detail.html',
             extra_context={
-                'resource_catalog':resource_catalog,
                 'addmembers_form':addmembers_form,
                 'members_table': members_table
             })

@@ -97,6 +97,7 @@ $(document).ready(function() {
 		 
 		 
 	});
+	  
 	 	 
 	// if you fill _proxy fields do stuff 
 	$('.quotas-form .quota input[type="text"]').change(function () {
@@ -107,12 +108,13 @@ $(document).ready(function() {
 	 	 
 	 	// get value from input
 	 	var value = $(this).val();
-	 	
+	 	 
 	 	//get input name without _proxy
 	 	hidden_name = $(this).attr('name').replace("_proxy","");
 	 	var hidden_input = $("input[name='"+hidden_name+"']");
 	 	
 	 	if (value) {
+	 		 
 		 	// actions for humanize fields
 		 	if ($(this).hasClass('dehumanize')){
 		 		
@@ -171,14 +173,8 @@ $(document).ready(function() {
 					 		}  
 					 		 
 					 	}
-					}
-				 	
-		 			
-		 			
-		 		}
-		 		
-		 		 
-			 	
+					}		 			
+		 		} 
 			 	
 			 	if ( flag == '1' ){ 
 			 		$(this).parents('.form-row').addClass('with-errors');
@@ -219,6 +215,7 @@ $(document).ready(function() {
 		 	}
 	 	
 	 	} else {
+	; 		$(this).parents('.with-errors').removeClass('with-errors')
 	 		hidden_input.removeAttr('value');
 	 	}
 	 	$('#icons span.info').removeClass('error-msg');
@@ -242,66 +239,7 @@ $(document).ready(function() {
 		}
 	}); 
 	
-	
-	/*
-	// if input_uplimit fields are filled,
-	// fill the _uplimit_proxy ones
-	 
-	$('.with-info input[name$="_uplimit"]').each(function() {
-		if ($(this).val()){
-			
-			// get value from input
-	 		var value = $(this).val();
-			
-			
-			// get hidden input name
-			hidden_name = $(this).attr('name');
-			var field = $("input[name='"+hidden_name+"_proxy']"); 
-			
-			
-			if ( (field.hasClass('dehumanize')) && !($(this).parents('.form-row').hasClass('with-errors'))) {
-				// for dehumanize fields transform bytes to KB, MB, etc
-				// unless there is an error
-				field.val(bytesToSize2(value))
-			} else {
-				// else just return the value
-				field.val(value);	
-			}
-			
-			var group_class = field.parents('div[class^="group"]').attr('class').replace('group ', '');
-			
-			 
-			 
-			
-			// select group icon
-			$('.quotas-form ul li a').each(function() {
-				
-				if($(this).attr('id') == group_class) {
-					$(this).addClass('selected');
-					$(this).siblings('input[type="hidden"]').attr('checked', 'checked');
-					
-					// get the hidden input field without the proxy
-					// and check the python form field
-				 	hidden_name = $(this).siblings('input[type="hidden"]').attr('name').replace("proxy_","");
-				 	$("input[name='"+hidden_name+"']").attr('checked', 'checked');  
-				 	
-				 	group_form_show_resources($(this));
-					
-				}
-			}); 
-			
-		
-			
-			// if the field has class error, transfer error to the proxy fields
-			if ( $(this).parents('.form-row').hasClass('with-errors') ) {
-				field.parents('.form-row').addClass('with-errors');
-			}
-			
-			 
-		}
-	});*/
-	// if input_uplimit fields are filled,
-	// fill the _uplimit_proxy ones
+ 
 	 
 	$('.group input[name$="_uplimit_proxy"]').each(function() {
 		if ($(this).val()){
@@ -359,25 +297,40 @@ $(document).ready(function() {
 		}
 	});  
 	
-	// todo den doulevei
+	function goToByScroll(id){
+	     $('html,body').animate({scrollTop: $("#"+id).offset().top},'slow');
+	}
+	
+	
 	$('#group_create_form').submit(function(){
-		if ($('.quotas-form .group .form-row.with-errors').length>0 ){
-			return false;
-		}
-		var flag = 0;
+		
+		var flag = 0;		 
 		$('.quotas-form .group input[type="text"]').each(function() {
-			// get value from input
 	 		var value = $(this).val();
 			if (value){
-				flag =1;
+				flag = 1;
 			}
 		});
+		
+		console.info(flag);
+		
 		if (flag =='0') {
+			$('#icons').focus();
 			$('#icons span.info').addClass('error-msg');
 			$('#icons span.info').find('span').html('You must fill in at least one resource');
+			goToByScroll("icons");
+
 			return false;
 			
 		}
+		if ($('.quotas-form .group .form-row.with-errors').length>0 ){
+			$('.quotas-form .group .form-row.with-errors input[type="text"]')[0].focus();
+			return false;
+			
+		} 
+		 		
+		  
+		 
 	});
 
 

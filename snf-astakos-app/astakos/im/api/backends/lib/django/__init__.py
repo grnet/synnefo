@@ -234,7 +234,9 @@ class DjangoBackend(BaseBackend):
     @safe
     def get_resource_usage(self, user_id):
         user = self._lookup_user(user_id)
-        data = get_quota((user,))
+        data = get_quota(user)
+        if not data:
+            return ()
         resources = []
         append = resources.append
         for t in data:
@@ -244,11 +246,18 @@ class DjangoBackend(BaseBackend):
             service, sep, resource = name.partition(RESOURCE_SEPARATOR)
             resource = Resource.objects.select_related().get(
                 service__name=service, name=resource)
+            currValue=quantity + imported - released - exported + returned
             d = dict(name=name,
                      description=resource.desc,
                      unit=resource.unit or '',
+                     help_text=resource.help_text,
+                     help_text_input_each=resource.help_text_input_each,
+                     is_abbreviation=resource.is_abbreviation,
+                     report_desc=resource.report_desc,
+                     placeholder=resource.placeholder,
+                     verbose_name=resource.verbose_name,
                      maxValue=quantity + capacity,
-                     currValue=quantity + imported - released - exported + returned)
+                     currValue=currValue)
             append(d)
         return resources
 

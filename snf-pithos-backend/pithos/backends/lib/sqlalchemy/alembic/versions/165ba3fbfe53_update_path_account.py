@@ -11,10 +11,11 @@ revision = '165ba3fbfe53'
 down_revision = '3dd56e750a3'
 
 from alembic import op
-from sqlalchemy.sql import table, column
+from sqlalchemy.sql import table, column, literal, and_
 
 from synnefo.lib.astakos import get_user_uuid, get_username as get_user_username
-from pithos.api.settings import SERVICE_TOKEN, USER_INFO_URL
+from pithos.api.settings import (
+    SERVICE_TOKEN, USER_INFO_URL, AUTHENTICATION_USERS)
 
 import sqlalchemy as sa
 
@@ -25,7 +26,8 @@ def get_uuid(account):
     if uuid:
         return uuid
     try:
-        uuid = get_user_uuid(SERVICE_TOKEN, account, USER_INFO_URL)
+        uuid = get_user_uuid(
+            SERVICE_TOKEN, account, USER_INFO_URL, AUTHENTICATION_USERS)
     except Exception, e:
         print 'Unable to retrieve uuid for %s: %s' % (account, e)
         return
@@ -41,7 +43,8 @@ def get_username(account):
     if username:
         return username
     try:
-        username = get_user_username(SERVICE_TOKEN, account, USER_INFO_URL)
+        username = get_user_username(
+            SERVICE_TOKEN, account, USER_INFO_URL, AUTHENTICATION_USERS)
     except Exception, e:
         print 'Unable to retrieve username for %s: %s' % (account, e)
         return
@@ -67,6 +70,14 @@ x = table(
     column('feature_id', sa.Integer),
     column('path', sa.String(2048))
 )
+
+xvals =  table(
+    'xfeaturevals',
+    column('feature_id', sa.Integer),
+    column('key', sa.Integer),
+    column('value', sa.String(256))
+)
+
 
 def upgrade():
     connection = op.get_bind()
@@ -104,6 +115,23 @@ def upgrade():
         u = x.update().where(x.c.feature_id == id).values({'path':path})
         connection.execute(u)
 
+    s = sa.select([xvals.c.feature_id, xvals.c.key, xvals.c.value])
+    s = s.where(xvals.c.value != '*')
+    xfeaturevals = connection.execute(s).fetchall()
+    for feature_id, key, value in xfeaturevals:
+        account, sep, group = value.partition(':')
+        uuid = get_uuid(account)
+        if not uuid:
+            continue
+        new_value = sep.join([uuid, group])
+        u = xvals.update()
+        u = u.where(and_(
+                xvals.c.feature_id == feature_id,
+                xvals.c.key == key,
+                xvals.c.value == value))
+        u = u.values({'value':new_value})
+        connection.execute(u)
+
 
 def downgrade():
     connection = op.get_bind()
@@ -139,4 +167,21 @@ def downgrade():
             continue
         path = sep.join([username, rest])
         u = x.update().where(x.c.feature_id == id).values({'path':path})
+        connection.execute(u)
+
+    s = sa.select([xvals.c.feature_id, xvals.c.key, xvals.c.value])
+    s = s.where(xvals.c.value != '*')
+    xfeaturevals = connection.execute(s).fetchall()
+    for feature_id, key, value in xfeaturevals:
+        account, sep, group = value.partition(':')
+        username = get_username(account)
+        if not username:
+            continue
+        new_value = sep.join([username, group])
+        u = xvals.update()
+        u = u.where(and_(
+                xvals.c.feature_id == feature_id,
+                xvals.c.key == key,
+                xvals.c.value ==value))
+        u = u.values({'value':new_value})
         connection.execute(u)

@@ -100,6 +100,11 @@ class AuthProvider(object):
             if override:
                 setattr(self, tpl_name, override)
 
+        for key in ['one_per_user']:
+            override = self.get_setting(key)
+            if override != None:
+                setattr(self, key, override)
+
     def __getattr__(self, key):
         if not key.startswith('get_'):
             return super(AuthProvider, self).__getattribute__(key)
@@ -118,6 +123,7 @@ class AuthProvider(object):
         attr_sec = 'ASTAKOS_%s_%s' % (self.module.upper(), name.upper())
         if not hasattr(settings, attr):
             return getattr(settings, attr_sec, default)
+
         return getattr(settings, attr, default)
 
     def is_available_for_login(self):

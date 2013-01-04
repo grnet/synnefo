@@ -157,7 +157,7 @@ def get_presentation(resource):
         resource_presentation = RESOURCES_PRESENTATION_DATA.get('resources', {})
         presentation = resource_presentation.get(resource, {})
         _presentation_data[resource] = presentation
-    return presentation 
+    return presentation
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255)
@@ -176,7 +176,7 @@ class Resource(models.Model):
     @property
     def help_text(self):
         return get_presentation(str(self)).get('help_text', '')
-    
+
     @property
     def help_text_input_each(self):
         return get_presentation(str(self)).get('help_text_input_each', '')
@@ -1137,7 +1137,7 @@ class ProjectApplicationManager(ForUpdateManager):
         Return projects accessed by specified user.
         """
         return self.filter(Q(owner=user) | Q(applicant=user) | \
-                        Q(project__in=user.projectmembership_set.filter()))
+                        Q(project__projectmembership__person=user))
 
     def search_by_name(self, *search_strings):
         q = Q()

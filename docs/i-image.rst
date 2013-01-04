@@ -49,3 +49,7 @@ and create snf-image-helper with:
 .. code-block:: console
 
    # snf-image-update-helper -y
+
+
+Test your Setup:
+++++++++++++++++

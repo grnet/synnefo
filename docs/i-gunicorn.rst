@@ -45,3 +45,7 @@ In `/etc/gunicorn.d/synnefo` add:
       '--log-level=debug',
     ),
    }
+
+
+Test your Setup:
+++++++++++++++++

@@ -99,3 +99,7 @@ After configuration is done, restart services:
 
    # /etc/init.d/gunicorn restart
    # /etc/init.d/apache2 restart
+
+
+Test your Setup:
+++++++++++++++++

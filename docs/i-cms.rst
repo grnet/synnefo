@@ -129,3 +129,7 @@ and finally run:
     # snf-manage loaddata /tmp/sites.json
     # snf-manage loaddata /tmp/page.json
     # snf-manage createsuperuser --username=admin --email=admin@example --noinput
+
+
+Test your Setup:
+++++++++++++++++

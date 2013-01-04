@@ -43,3 +43,7 @@ Import the additional repos' GPG key and get the packages list:
    # apt-key add rabbitmq-signing-key-public.asc
    # curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
    # apt-get update
+
+
+Test your Setup:
+++++++++++++++++

@@ -505,7 +505,8 @@ class Network(models.Model):
 
         old_state = self.state
 
-        backend_states = [s.operstate for s in self.backend_networks.all()]
+        backend_states = [s.operstate for s in
+                          self.backend_networks.filter(backend__offline=False)]
         if not backend_states:
             self.state = 'PENDING'
             self.save()
@@ -534,7 +535,8 @@ class Network(models.Model):
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""
 
-        backends = [backend] if backend else Backend.objects.all()
+        backends = [backend] if backend\
+                             else Backend.objects.filter(offline=False)
         for backend in backends:
             BackendNetwork.objects.create(backend=backend, network=self)
 

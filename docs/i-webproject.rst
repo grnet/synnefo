@@ -53,3 +53,7 @@ In `/etc/synnefo/snf-webproject.conf` add:
    USE_X_FORWARDED_HOST = True
 
    SECRET_KEY = 'sy6)mw6a7x%n)-example_secret_key#zzk4jo6f2=uqu!1o%)'
+
+
+Test your Setup:
+++++++++++++++++

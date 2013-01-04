@@ -63,3 +63,7 @@ to connect to the database. Add the following line:
 .. code-block:: console
 
    # /etc/init.d/postgresql restart
+
+
+Test your Setup:
+++++++++++++++++

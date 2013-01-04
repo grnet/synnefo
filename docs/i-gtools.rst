@@ -49,3 +49,7 @@ and enable ``snf-ganeti-eventd``:
    # sed -i 's/false/true/' /etc/default/snf-ganeti-eventd
    # /etc/init.d/snf-ganeti-eventd start
 
+
+
+Test your Setup:
+++++++++++++++++

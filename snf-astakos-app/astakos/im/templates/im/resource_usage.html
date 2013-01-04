@@ -7,7 +7,6 @@
 	<div class="stats clearfix">
 		<ul>
 			{% for rdata in resource_usage %}
-                {{rdata}}
 		 		<li class="clearfix  {{ rdata.load_class }} {{ rdata.name|get_value_after_dot }}">
 		 			<div class="img-wrap">&nbsp;</div>
 		 			<div class="info">

@@ -37,7 +37,7 @@ import socket
 from smtplib import SMTPException
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.utils.translation import ugettext as _
 from django.template.loader import render_to_string
 
@@ -72,7 +72,8 @@ class EmailNotification(Notification):
                 self.subject,
                 self.message,
                 self.sender,
-                self.recipients)
+                self.recipients,
+                connection=get_connection())
         except (SMTPException, socket.error), e:
             logger.exception(e)
             raise NotificationError(self)

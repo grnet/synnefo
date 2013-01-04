@@ -56,11 +56,12 @@ def get_backend(request):
     """
     Returns an instance of an activation backend,
     according to the INVITATIONS_ENABLED setting
-    (if True returns ``astakos.im.activation_backends.InvitationsBackend`` and if False
+    (if True returns ``astakos.im.activation_backends.InvitationsBackend``
+    and if False
     returns ``astakos.im.activation_backends.SimpleBackend``).
 
-    If the backend cannot be located ``django.core.exceptions.ImproperlyConfigured``
-    is raised.
+    If the backend cannot be located
+    ``django.core.exceptions.ImproperlyConfigured`` is raised.
     """
     module = 'astakos.im.activation_backends'
     prefix = 'Invitations' if INVITATIONS_ENABLED else 'Simple'
@@ -73,7 +74,9 @@ def get_backend(request):
     try:
         backend_class = getattr(mod, backend_class_name)
     except AttributeError:
-        raise ImproperlyConfigured('Module "%s" does not define a activation backend named "%s"' % (module, backend_class_name))
+        raise ImproperlyConfigured(
+            'Module "%s" does not define a activation backend named "%s"' % (
+                module, backend_class_name))
     return backend_class(request)
 
 

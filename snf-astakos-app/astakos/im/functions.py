@@ -597,7 +597,7 @@ def leave_project(project_application_id, user_id):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_leave_project(project_id, user_id)
 
-def do_leave_project(project, user_id):
+def do_leave_project(project_id, user_id):
     project = get_project_for_update(project_id)
 
     if not project.is_alive:
@@ -627,7 +627,7 @@ def join_project(project_application_id, user_id):
     return do_join_project(project_id, user_id)
 
 def do_join_project(project_id, user_id):
-    project = get_project_for_update(project)
+    project = get_project_for_update(project_id)
 
     if not project.is_alive:
         m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__

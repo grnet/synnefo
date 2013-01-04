@@ -22,9 +22,9 @@
 
 <div class="full-dotted right-align">
 	<ul class="options">
-		<li><a href="https://cyclades.okeanos.grnet.gr/ui/" class="blue">Take me to cyclades ></a></li>
-		<li><a href="https://pithos.okeanos.grnet.gr/ui/" class="blue">Take me to pithos+ ></a></li>
-		<li><a href="https://okeanos.grnet.gr/home/" class="blue">~okeanos homepage ></a></li>
+        {% for s in services %}
+		    <li><a href="{{s.url}}" class="blue">Take me to {{s.name}}></a></li>
+        {% endfor %}
 	</ul>
 		 
 </div>

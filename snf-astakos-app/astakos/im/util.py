@@ -218,6 +218,9 @@ def get_query(request):
     except AttributeError:
         return {}
 
+def get_properties(obj):
+    return (i for i in vars(obj.__class__) \
+        if isinstance(getattr(obj.__class__, i), property))
 
 def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
                   include_empty=True):
@@ -265,6 +268,10 @@ def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
             value = unicode(value) if value is not None else value
         if value or include_empty:
             tree[field_name] = value
+    properties = list(get_properties(obj))
+    for p in properties:
+       tree[p] = getattr(obj, p)
+    tree['str_repr'] = obj.__str__()
 
     return tree
 

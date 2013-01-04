@@ -312,13 +312,14 @@ def configure_logging():
 
 
 class EncodedStdOut(object):
-    def __init__(self):
-        self.encoding = sys.__stdout__.encoding or locale.getpreferredencoding()
+    def __init__(self, stdout):
+        self.encoding = stdout.encoding or locale.getpreferredencoding()
+        self.original_sdout = stdout
 
     def write(self, string):
         if isinstance(string, unicode):
             string = string.encode(self.encoding)
-        sys.__stdout__.write(string)
+        self.original_stdout.write(string)
 
 
 def main():
@@ -327,7 +328,7 @@ def main():
     os.environ['DJANGO_SETTINGS_MODULE'] = os.environ.get('DJANGO_SETTINGS_MODULE',
                                                           'synnefo.settings')
     configure_logging()
-    sys.stdout = EncodedStdOut()
+    sys.stdout = EncodedStdOut(sys.stdout)
     mu = SynnefoManagementUtility(sys.argv)
     mu.execute()
 

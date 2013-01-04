@@ -1258,8 +1258,7 @@ def project_search(request):
 def project_join(request, application_id):
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(
-            _(astakos_messages.MISSING_NEXT_PARAMETER))
+        next = reverse('astakos.im.views.project_list')
 
     rollback = False
     try:
@@ -1286,8 +1285,7 @@ def project_join(request, application_id):
 def project_leave(request, application_id):
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(
-            _(astakos_messages.MISSING_NEXT_PARAMETER))
+        next = reverse('astakos.im.views.project_list')
 
     rollback = False
     try:

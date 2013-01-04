@@ -65,7 +65,8 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        return HttpResponseBadRequest(_(astakos_messages.MISSING_NEXT_PARAMETER))
+        next = reverse('astakos.im.views.home')
+
     if not restrict_next(
         next, domain=COOKIE_DOMAIN, allowed_schemes=('pithos',)
     ):

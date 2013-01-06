@@ -1336,9 +1336,8 @@ class ModularBackend(BaseBackend):
             self.store.map_delete(hash)
             return size
         elif self.free_versioning:
-            version_size = self.node.version_lookup(
-                node, inf, CLUSTER_NORMAL)[3]
-            return version_size
+            return self.node.version_get_properties(
+                version_id, keys=('size',))[0]
         return 0
 
     # Access control functions.

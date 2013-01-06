@@ -714,6 +714,8 @@ def object_read(request, v_account, v_container, v_object):
                                               v_container, v_object)
         except NotAllowedError:
             raise Forbidden('Not allowed')
+        except ItemNotExists:
+            raise ItemNotFound('Object does not exist')
         d = {'versions': v}
         if request.serialization == 'xml':
             d['object'] = v_object

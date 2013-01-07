@@ -1188,12 +1188,15 @@ def project_search(request):
 def project_join(request, application_id):
     next = request.GET.get('next')
     if not next:
-        next = reverse('astakos.im.views.project_list')
+        next = reverse('astakos.im.views.project_detail',
+                       args=(application_id,))
 
     rollback = False
     try:
         application_id = int(application_id)
         join_project(application_id, request.user)
+        # TODO: distinct messages for request/auto accept ???
+        messages.success(request, _(astakos_messages.USER_JOIN_REQUEST_SUBMITED))
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:

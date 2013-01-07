@@ -367,43 +367,11 @@ class SendNotificationError(SendMailError):
 
 ### PROJECT VIEWS ###
 
-def get_join_policy(str_policy):
-    return PROJECT_MEMBER_JOIN_POLICIES.get(str_policy)
+AUTO_ACCEPT_POLICY = 1
+MODERATED_POLICY   = 2
+CLOSED_POLICY      = 3
 
-def get_leave_policy(str_policy):
-    return PROJECT_MEMBER_LEAVE_POLICIES.get(str_policy)
-
-_auto_accept_join = None
-def get_auto_accept_join_policy():
-    global _auto_accept_join
-    if _auto_accept_join is not None:
-        return _auto_accept_join
-    _auto_accept = get_join_policy('auto_accept')
-    return _auto_accept
-
-_closed_join = None
-def get_closed_join_policy():
-    global _closed_join
-    if _closed_join is not None:
-        return _closed_join
-    _closed_join = get_join_policy('closed')
-    return _closed_join
-
-_auto_accept_leave = None
-def get_auto_accept_leave_policy():
-    global _auto_accept_leave
-    if _auto_accept_leave is not None:
-        return _auto_accept_leave
-    _auto_accept_leave = get_leave_policy('auto_accept')
-    return _auto_accept_leave
-
-_closed_leave = None
-def get_closed_leave_policy():
-    global _closed_leave
-    if _closed_leave is not None:
-        return _closed_leave
-    _closed_leave = get_leave_policy('closed')
-    return _closed_leave
+POLICIES = [ AUTO_ACCEPT_POLICY, MODERATED_POLICY, CLOSED_POLICY ]
 
 def get_project_by_application_id(project_application_id):
     try:
@@ -486,6 +454,11 @@ def do_accept_membership(project_id, user, request_user=None):
     if not project.is_alive:
         raise PermissionDenied(
             _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+
+    join_policy = project.application.member_join_policy
+    if join_policy == CLOSED_POLICY:
+        raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
+
     if project.violates_members_limit(adding=1):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
 
@@ -558,6 +531,10 @@ def do_remove_membership(project_id, user, request_user=None):
     if not project.is_alive:
         raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
 
+    leave_policy = project.application.member_leave_policy
+    if leave_policy == CLOSED_POLICY:
+        raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
+
     membership = get_membership_for_update(project, user)
     membership.remove()
     trigger_sync()
@@ -599,11 +576,11 @@ def do_leave_project(project_id, user_id):
         raise PermissionDenied(m)
 
     leave_policy = project.application.member_leave_policy
-    if leave_policy == get_closed_leave_policy():
+    if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
     membership = get_membership_for_update(project, user_id)
-    if leave_policy == get_auto_accept_leave_policy():
+    if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
         trigger_sync()
     else:
@@ -628,12 +605,12 @@ def do_join_project(project_id, user_id):
         raise PermissionDenied(m)
 
     join_policy = project.application.member_join_policy
-    if join_policy == get_closed_join_policy():
+    if join_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
 
     membership = create_membership(project, user_id)
 
-    if (join_policy == get_auto_accept_join_policy() and
+    if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
         trigger_sync()

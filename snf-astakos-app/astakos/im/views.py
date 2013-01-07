@@ -1236,7 +1236,7 @@ def project_leave(request, application_id):
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually

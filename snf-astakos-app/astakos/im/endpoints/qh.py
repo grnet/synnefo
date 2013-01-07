@@ -46,6 +46,7 @@ if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
 
 ENTITY_KEY = '1'
+PRACTICALLY_INF = pow(2, 70)
 
 inf = float('inf')
 
@@ -134,8 +135,8 @@ def register_users(users):
                                 key=ENTITY_KEY,
                                 quantity=0,
                                 capacity=uplimit if uplimit != inf else None,
-                                import_limit=0,
-                                export_limit=0,
+                                import_limit=PRACTICALLY_INF,
+                                export_limit=PRACTICALLY_INF,
                                 flags=0))
         return set_quota(payload)
 
@@ -154,10 +155,10 @@ def register_resources(resources):
                         holder=resource.service,
                         resource=resource,
                         key=ENTITY_KEY,
-                        quantity=None,
-                        capacity=None,
-                        import_limit=None,
-                        export_limit=None,
+                        quantity=0,
+                        capacity=0,
+                        import_limit=PRACTICALLY_INF,
+                        export_limit=PRACTICALLY_INF,
                         flags=0) for resource in resources)
         return set_quota(payload)
 

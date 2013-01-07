@@ -35,7 +35,7 @@ import logging
 
 from time import time, mktime
 from urlparse import urlparse, urlsplit, urlunsplit
-from urllib import quote, unquote
+from urllib import quote, unquote, urlencode
 
 from django.conf import settings
 from django.utils import simplejson as json
@@ -76,7 +76,7 @@ def call(token, url, headers={}):
 
     conn = get_http_connection(p.netloc, p.scheme)
     try:
-        conn.request('GET', p.path, **kwargs)
+        conn.request('GET', p.path + '?' + p.query, **kwargs)
         response = conn.getresponse()
         headers = response.getheaders()
         headers = dict((unquote(h), unquote(v)) for h,v in headers)
@@ -93,8 +93,14 @@ def call(token, url, headers={}):
 
 
 def authenticate(
-        token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
+        token, authentication_url='http://127.0.0.1:8000/im/authenticate',
+        usage=False):
+
+    if usage:
+        authentication_url += "?usage=1"
+
     return call(token, authentication_url)
+
 
 @retry(3)
 def get_username(
@@ -128,7 +134,7 @@ def get_user_uuid(
         return data.get('uuid')
 
 
-def user_for_token(token, authentication_url, override_users):
+def user_for_token(token, authentication_url, override_users, usage=False):
     if not token:
         return None
 
@@ -139,7 +145,7 @@ def user_for_token(token, authentication_url, override_users):
             return None
 
     try:
-        return authenticate(token, authentication_url)
+        return authenticate(token, authentication_url, usage=usage)
     except Exception, e:
         # In case of Unauthorized response return None
         if e.args and e.args[-1] == 401:
@@ -150,25 +156,29 @@ def get_user(
         request,
         authentication_url='http://127.0.0.1:8000/im/authenticate',
         override_users={},
-        fallback_token=None):
+        fallback_token=None,
+        usage=False):
     request.user = None
     request.user_uniq = None
 
     # Try to find token in a parameter or in a request header.
     user = user_for_token(
-        request.GET.get('X-Auth-Token'), authentication_url, override_users)
+        request.GET.get('X-Auth-Token'), authentication_url, override_users,
+        usage=usage)
     if not user:
         user = user_for_token(
             request.META.get('HTTP_X_AUTH_TOKEN'),
             authentication_url,
-            override_users)
+            override_users,
+            usage=usage)
     if not user:
         user = user_for_token(
-            fallback_token, authentication_url, override_users)
+            fallback_token, authentication_url, override_users,
+            usage=usage)
     if not user:
         logger.warning("Cannot retrieve user details from %s",
                        authentication_url)
-        return
+        return None
 
     # use user uuid, instead of email, keep email/username reference to user_id
     request.user_uniq = user['uuid']

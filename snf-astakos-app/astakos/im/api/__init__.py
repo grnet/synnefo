@@ -86,14 +86,17 @@ def api_method(http_method=None):
     return decorator
 
 
-@api_method(http_method='GET')
-def get_services(request):
-    callback = request.GET.get('callback', None)
+def get_services_dict():
     services = Service.objects.all()
     data = tuple({'id': s.pk, 'name': s.name, 'url': s.url, 'icon':
                  s.icon} for s in services)
-    data = json.dumps(data)
+    return data
+
+@api_method(http_method=None)
+def get_services(request):
+    callback = request.GET.get('callback', None)
     mimetype = 'application/json'
+    data = json.dumps(get_services_dict())
 
     if callback:
         mimetype = 'application/javascript'
@@ -126,7 +129,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                 append(item(
                        url=absolute(request, reverse('invite')),
                        name="Invitations"))
-            
+
             if QUOTAHOLDER_URL:
                 append(item(
                        url=absolute(request, reverse('project_list')),

@@ -581,7 +581,7 @@ def get_sharing(request):
             [replace_permissions_username(x) for x in ret.get('read', [])]
         ret['write'] = \
             [replace_permissions_username(x) for x in ret.get('write', [])]
-    except ItemNotFound, e:
+    except ItemNotExists, e:
         raise BadRequest(
             'Bad X-Object-Sharing header value: unknown account: %s' % e)
 

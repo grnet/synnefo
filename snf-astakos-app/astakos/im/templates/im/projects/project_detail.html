@@ -9,7 +9,7 @@
 
 	<h2>
         <em>
-            {% if user == object.owner %}
+            {% if user_owns_project %}
                 [ ADMINISTRATOR - {{ object.state|upper }} ]
             {%  else %}
                 {% if  user in approve_members %}
@@ -117,28 +117,31 @@
 		{% else %}
             <p>No resources</p>
         {% endif %} 
-	 </div>
-     {% if object.project.is_alive %}
-	 <div class="full-dotted">
-         <h3>MEMBERS</h3>
-         {% if members_table %}
-              {% render_table members_table %}
-         {% endif %}
-	 </div>
-     
-     
-    
-    <div class="full-dotted">
-        <form action="{% url project_detail object.id %}#members-table" method="post" class="withlabels" >{% csrf_token %}
-            <h2>Enroll more members</h2>
-                {% with addmembers_form as form %}
-                    {% include "im/form_render.html" %}
-                {% endwith %}
-                <div class="form-row submit">
-                    <input type="submit" class="submit altcol" value="ADD MEMBERS" />
-                </div>
-        </form>
     </div>
+
+     {% if user_owns_project %}
+         {% if object.project.is_alive %}
+         <div class="full-dotted">
+             <h3>MEMBERS</h3>
+             {% if members_table %}
+                  {% render_table members_table %}
+             {% endif %}
+         </div>
+         
+         
+        
+        <div class="full-dotted">
+            <form action="{% url project_detail object.id %}#members-table" method="post" class="withlabels" >{% csrf_token %}
+                <h2>Enroll more members</h2>
+                    {% with addmembers_form as form %}
+                        {% include "im/form_render.html" %}
+                    {% endwith %}
+                    <div class="form-row submit">
+                        <input type="submit" class="submit altcol" value="ADD MEMBERS" />
+                    </div>
+            </form>
+        </div>
+        {% endif %}
     {% endif %}
     <div class="full-dotted">
         <p>

@@ -1138,7 +1138,8 @@ def project_detail(request, application_id):
         template_name='im/projects/project_detail.html',
         extra_context={
             'addmembers_form':addmembers_form,
-            'members_table': members_table
+            'members_table': members_table,
+            'user_owns_project': request.user.owns_project(application)
             })
 
 @require_http_methods(["GET", "POST"])

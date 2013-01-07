@@ -1,10 +1,17 @@
+{% load i18n %}
 <div class="two-cols clearfix">
   <div class="rt">
     &nbsp;
   </div>
   <div class="lt">
-    <p>~okeanos gives the opportunity to Greek Academic or Research Organizations/Institutions/Faculty to run their own projects remotely on virtual infrastructure. Simple, fast and with minimal to no cost at all.</p>
-    <p><a href="{% url how_it_works %}" style="font-size:1.154em;">How it works ></a></p>
+
+    <p>
+    {% blocktrans %}
+    ~okeanos gives the opportunity to Greek Academic or Research Organizations/Institutions/Faculty 
+    to run their own projects remotely on virtual infrastructure. Simple, fast and with minimal to no cost at all.
+    {% endblocktrans %}
+    </p>
+    <p><a href="{% url how_it_works %}" style="font-size:1.154em;">{% trans "How it works &gt;" %}</a></p>
   </div>
 </div>
 
@@ -17,7 +24,13 @@
       <div class="wrap">
 
         <p class="centered"><a href="{% url project_add %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
-        <p class="txt">Create a new Project in seconds. Specify how many members it will have, which and how many virtual resources it will provide to its members. Describe its purpose. Submit your request and if accepted, you and your colleagues are ready to deploy!<br><br> </p>
+        <p class="txt">
+        {% blocktrans %}
+        Create a new Project in seconds. 
+        Specify how many members it will have, which and how many virtual 
+        resources it will provide to its members. Describe its purpose. 
+        Submit your request and if accepted, you and your colleagues are ready to deploy!<br><br> </p>
+        {% endblocktrans %}
         <p><a href="{% url project_add %}">create a project ></a></p>
       </div>
     </div>
@@ -26,8 +39,12 @@
     <div>
       <div class="wrap">
         <p class="centered"><a href="{% url project_search %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
-        <p class="txt">Become a member of an existing Project and instantly gain access to the resources it has to offer you. Search for open Projects and join for free. Contact the closed Projects administrators, if you think they will accept you. In two words: try to Join now. </p>
-
+        <p class="txt">
+        {% blocktrans %}
+        Become a member of an existing Project and instantly gain access to the resources 
+        it has to offer you. Search for open Projects and join for free. Contact the closed 
+        Projects administrators, if you think they will accept you. In two words: try to Join now. </p>
+        {% endblocktrans %}
         <p><a href="{% url project_search %}">join a project ></a></p>
       </div>
     </div>

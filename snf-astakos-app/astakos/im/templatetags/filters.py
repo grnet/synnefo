@@ -134,7 +134,7 @@ def paginate(l, args):
         paginator.len
     except AttributeError:
         paginator._count = len(list(l))
-    
+
     try:
         page_number = int(page)
     except ValueError:
@@ -197,22 +197,21 @@ def sizeof_fmt(num):
             return '1 byte'
         else:
            return '0'
-   
+
 @register.filter
 def isinf(v):
     if math.isinf(v):
         return 'Unlimited'
     else:
         return v
-    
+
 @register.filter
-def truncatename(v):
-    max = 18
+def truncatename(v, max=18, append="..."):
     length = len(v)
     if length>max:
-        return v[:max]+'...'
+        return v[:max] + append
     else:
-        return v[:20]
+        return v
 
 @register.filter
 def resource_groups(project_definition):

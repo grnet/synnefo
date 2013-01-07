@@ -42,6 +42,7 @@ from django_tables2 import A
 import django_tables2 as tables
 
 from astakos.im.models import *
+from astakos.im.templatetags.filters import truncatename
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -55,6 +56,18 @@ MEMBER_STATUS_DISPLAY = {
       4: _('Removed'),
      -1: _('Unregistered'),
 }
+
+class TruncatedLinkColumn(tables.LinkColumn):
+
+    def __init__(self, *args, **kwargs):
+        self.truncate_chars = kwargs.pop('truncate_chars', 10)
+        super(TruncatedLinkColumn, self).__init__(*args, **kwargs)
+
+
+    def render_link(self, uri, text, attrs=None):
+        text = truncatename(text, self.truncate_chars)
+        return super(TruncatedLinkColumn, self).render_link(uri, text, attrs)
+
 
 # Helper columns
 class RichLinkColumn(tables.TemplateColumn):
@@ -213,7 +226,9 @@ class UserTable(tables.Table):
 class UserProjectApplicationsTable(UserTable):
     caption = _('My projects')
 
-    name = tables.LinkColumn('astakos.im.views.project_detail', args=(A('pk'),))
+    name = TruncatedLinkColumn('astakos.im.views.project_detail',
+                                                truncate_chars=25,
+                                                args=(A('pk'),))
     issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     end_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)

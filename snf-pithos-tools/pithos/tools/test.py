@@ -1864,14 +1864,11 @@ class ListSharing(BaseTestCase):
             self.client.share_object('c1', 'o1', (account,), read=True)
             break
         
-    def tearDown(self):
-        pass
-    
     def test_list_other_shared(self):
         self.other = Pithos_Client(get_url(),
                               self.o1_sharing[0],
                               self.o1_sharing[1])
-        self.assertTrue(get_user() in self.other.list_shared_by_others())
+        self.assertTrue(get_user() in self.other.list_shared_with_me())
 
     def test_list_my_shared(self):
         my_shared_containers = self.client.list_containers(shared=True)
@@ -2337,7 +2334,7 @@ class TestPermissions(BaseTestCase):
         for token, account in OTHER_ACCOUNTS.items():
             if account in self.authorized:
                 self.other = Pithos_Client(get_url(), token, account)
-                self.assertTrue(get_user() in self.other.list_shared_by_others())
+                self.assertTrue(get_user() in self.other.list_shared_with_me())
 
 class TestPublish(BaseTestCase):
     def test_publish(self):

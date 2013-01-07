@@ -78,6 +78,12 @@ xvals =  table(
     column('value', sa.String(256))
 )
 
+g =  table(
+    'groups',
+    column('owner', sa.String(256)),
+    column('name', sa.String(256)),
+    column('member', sa.String(256))
+)
 
 def upgrade():
     connection = op.get_bind()
@@ -132,6 +138,24 @@ def upgrade():
         u = u.values({'value':new_value})
         connection.execute(u)
 
+    s = sa.select([g.c.owner, g.c.name, g.c.member])
+    groups = connection.execute(s).fetchall()
+    for owner, name, member in groups:
+        owner_uuid = get_uuid(owner)
+        member_uuid = get_uuid(member)
+        if owner_uuid or member_uuid:
+            u = g.update()
+            u = u.where(and_(
+                g.c.owner == owner,
+                g.c.name == name,
+                g.c.member == member))
+            values = {}
+            if owner_uuid:
+                values['owner'] = owner_uuid
+            if member_uuid:
+                values['member'] = member_uuid
+            u = u.values(values)
+            connection.execute(u)
 
 def downgrade():
     connection = op.get_bind()
@@ -185,3 +209,22 @@ def downgrade():
                 xvals.c.value ==value))
         u = u.values({'value':new_value})
         connection.execute(u)
+
+    s = sa.select([g.c.owner, g.c.name, g.c.member])
+    groups = connection.execute(s).fetchall()
+    for owner, name, member in groups:
+        owner_username = get_username(owner)
+        member_username = get_username(member)
+        if owner_username or member_username:
+            u = g.update()
+            u = u.where(and_(
+                g.c.owner == owner,
+                g.c.name == name,
+                g.c.member == member))
+            values = {}
+            if owner_username:
+                values['owner'] = owner_username
+            if member_username:
+                values['member'] = member_username
+            u = u.values(values)
+            connection.execute(u)

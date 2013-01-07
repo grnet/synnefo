@@ -959,12 +959,15 @@ class Pithos_Client(OOS_Client):
                                       delimiter=delimiter,
                                       **headers)
 
-    def list_shared_by_others(self, limit=None, marker=None, format='text'):
+    def list_shared_with_me(self, limit=None, marker=None, format='text',
+            translate=None):
         """lists other accounts that share objects to the user"""
         l = ['limit', 'marker']
         params = {}
         for elem in [elem for elem in l if eval(elem)]:
             params[elem] = eval(elem)
+        if translate is not None:
+            params['translate'] = ''
         return self._list('', format, params)
 
     def share_object(self, container, object, l, read=True):

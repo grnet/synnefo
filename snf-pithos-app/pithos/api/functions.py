@@ -53,7 +53,8 @@ from pithos.api.util import (
     put_object_headers, update_manifest_meta, update_sharing_meta, update_public_meta,
     validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
     copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
-    SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
+    SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method,
+    retrieve_username, retrieve_uuid)
 from pithos.api.settings import UPDATE_MD5
 
 from pithos.backends.base import NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists, VersionNotExists, ContainerExists
@@ -175,6 +176,8 @@ def account_list(request):
             # The cloudfiles python bindings expect 200 if json/xml.
             response.status_code = 204
             return response
+        if 'translate' in request.GET:
+            accounts = [retrieve_username(x) for x in accounts]
         response.status_code = 200
         response.content = '\n'.join(accounts) + '\n'
         return response
@@ -190,6 +193,8 @@ def account_list(request):
         except NotAllowedError:
             raise Forbidden('Not allowed')
         else:
+            if 'translate' in request.GET:
+                meta['name'] = retrieve_username(x)
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(
                 meta, 'until_timestamp', 'x_account_until_timestamp')
@@ -219,6 +224,8 @@ def account_meta(request, v_account):
             request.user_uniq, v_account, 'pithos', until)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
+        for k in groups:
+            groups[k] = [retrieve_username(x) for x in groups[k]]
         policy = request.backend.get_account_policy(
             request.user_uniq, v_account)
     except NotAllowedError:
@@ -239,6 +246,12 @@ def account_update(request, v_account):
     #                       badRequest (400)
 
     meta, groups = get_account_headers(request)
+    for k in groups:
+        try:
+            groups[k] = [retrieve_uuid(x) for x in groups[k]]
+        except ItemNotExists, e:
+            raise BadRequest(
+                'Bad X-Account-Group header value: unknown account: %s' % e)
     replace = True
     if 'update' in request.GET:
         replace = False

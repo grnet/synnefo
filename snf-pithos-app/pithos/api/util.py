@@ -65,9 +65,11 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
-                                 SERVICE_TOKEN, COOKIE_NAME)
+                                 SERVICE_TOKEN, COOKIE_NAME, USER_INFO_URL)
 from pithos.backends import connect_backend
-from pithos.backends.base import NotAllowedError, QuotaError, ItemNotExists, VersionNotExists
+from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
+                                  VersionNotExists)
+from synnefo.lib.astakos import get_user_uuid, get_username
 
 import logging
 import re
@@ -275,13 +277,56 @@ def update_manifest_meta(request, v_account, meta):
         meta['checksum'] = md5.hexdigest().lower()
 
 
+def retrieve_username(uuid):
+    try:
+        return get_username(
+            SERVICE_TOKEN, uuid, USER_INFO_URL, AUTHENTICATION_USERS)
+    except:
+        # if it fails just leave the metadata intact
+        return uuid
+
+def retrieve_uuid(username):
+    try:
+        return get_user_uuid(
+            SERVICE_TOKEN, username, USER_INFO_URL, AUTHENTICATION_USERS)
+    except Exception, e:
+        if e.args:
+            status = e.args[-1]
+            if status == 404:
+                raise ItemNotExists(username)
+        raise
+
+def replace_permissions_username(holder):
+    try:
+        # check first for a group permission
+        account, group = holder.split(':')
+    except ValueError:
+        return retrieve_uuid(holder)
+    else:
+        return ':'.join([retrieve_uuid(account), group])
+
+def replace_permissions_uuid(holder):
+    try:
+        # check first for a group permission
+        account, group = holder.split(':')
+    except ValueError:
+        return retrieve_username(holder)
+    else:
+        return ':'.join([retrieve_username(account), group])
+
 def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
     if permissions is None:
         return
     allowed, perm_path, perms = permissions
     if len(perms) == 0:
         return
+
+    perms['read'] = [replace_permissions_uuid(x) for x in perms.get('read', [])]
+    perms['write'] = \
+        [replace_permissions_uuid(x) for x in perms.get('write', [])]
+
     ret = []
+
     r = ','.join(perms.get('read', []))
     if r:
         ret.append('read=' + r)
@@ -514,7 +559,8 @@ def get_sharing(request):
             if '*' in ret['read']:
                 ret['read'] = ['*']
             if len(ret['read']) == 0:
-                raise BadRequest('Bad X-Object-Sharing header value')
+                raise BadRequest(
+                    'Bad X-Object-Sharing header value: invalid length')
         elif perm.startswith('write='):
             ret['write'] = list(set(
                 [v.replace(' ', '').lower() for v in perm[6:].split(',')]))
@@ -523,9 +569,21 @@ def get_sharing(request):
             if '*' in ret['write']:
                 ret['write'] = ['*']
             if len(ret['write']) == 0:
-                raise BadRequest('Bad X-Object-Sharing header value')
+                raise BadRequest(
+                    'Bad X-Object-Sharing header value: invalid length')
         else:
-            raise BadRequest('Bad X-Object-Sharing header value')
+            raise BadRequest(
+                'Bad X-Object-Sharing header value: missing prefix')
+
+    # replace username with uuid
+    try:
+        ret['read'] = \
+            [replace_permissions_username(x) for x in ret.get('read', [])]
+        ret['write'] = \
+            [replace_permissions_username(x) for x in ret.get('write', [])]
+    except ItemNotFound, e:
+        raise BadRequest(
+            'Bad X-Object-Sharing header value: unknown account: %s' % e)
 
     # Keep duplicates only in write list.
     dups = [x for x in ret.get(

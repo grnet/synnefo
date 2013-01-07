@@ -39,6 +39,8 @@ from os import environ
 from sys import argv, exit, stdin, stdout
 from datetime import datetime
 
+from django.core.validators import email_re
+
 from pithos.tools.lib.client import Pithos_Client, Fault
 from pithos.tools.lib.util import get_user, get_auth, get_url
 from pithos.tools.lib.transfer import upload, download
@@ -51,7 +53,6 @@ import time as _time
 import os
 
 _cli_commands = {}
-
 
 def cli_command(*args):
     def decorator(cls):
@@ -93,6 +94,13 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
 
+        if email_re.match(self.user):
+            try:
+                from synnefo.lib.astakos import get_user_uuid
+                from pithos.api.settings import SERVICE_TOKEN
+                self.user = get_user_uuid(SERVICE_TOKEN, self.user)
+            except ImportError:
+                pass
         self.client = Pithos_Client(
             self.url, self.token, self.user, self.verbose,
             self.debug)
@@ -763,8 +771,9 @@ class SharingObject(Command):
         attrs = ['limit', 'marker']
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
+        args['translate'] = ''
 
-        print_list(self.client.list_shared_by_others(**args))
+        print_list(self.client.list_shared_with_me(**args))
 
 
 @cli_command('send')

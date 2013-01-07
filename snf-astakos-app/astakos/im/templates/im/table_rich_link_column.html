@@ -5,8 +5,7 @@
   action="{{ url }}#{{ table.attr.id }}"
   class="link-like">
   {% csrf_token %}
-<input type="submit" value="{{ action }}" class="join_group join"
-  autocomplete="off" />
+<input type="submit" value="{{ action }}" class="join_group join" />
 </form>
 <div class="dialog" style="display: none">
   {{ prompt }}

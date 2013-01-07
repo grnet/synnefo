@@ -60,7 +60,7 @@
           $("form.innerlabels label").inFieldLabels();
           $("form").each(function(){
             if ($(this).hasClass("login")) { return }
-            $(this).find("input").attr("autocomplete","off");
+            
           })
           $("form .form-row").formErrors();
           $("form .form-row input[type=checkbox]").formCheckBoxes();

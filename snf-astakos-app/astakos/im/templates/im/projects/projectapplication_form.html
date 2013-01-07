@@ -52,7 +52,7 @@
 	    	{% for r in resources %}
                 {% with r.str_repr as rname %}
 	    	    {% with object|resource_grants|lookup:rname as value %}
-	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}" autocomplete="off" {% if value %}value="{{value}}"{% endif %} />
+	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}"  {% if value %}value="{{value}}"{% endif %} />
                 {% endwith %}
                 {% endwith %}
             {% endfor %}

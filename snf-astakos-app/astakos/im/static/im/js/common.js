@@ -78,7 +78,7 @@ $(document).ready(function() {
 	
 	 
     setContainerMinHeight('.container .wrapper');
-    tableFixedCols('my-projects', 20);
+    tableFixedCols('my-projects', 25);
 	
     $('.show-extra').click(function(e) {
         e.preventDefault();

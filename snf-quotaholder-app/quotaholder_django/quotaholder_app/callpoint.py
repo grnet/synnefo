@@ -33,6 +33,7 @@
 
 from synnefo.lib.quotaholder.api import (
                             QuotaholderAPI,
+                            QH_PRACTICALLY_INFINITE,
                             InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
                             ExportLimitError, ImportLimitError,
@@ -363,7 +364,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         except Holding.DoesNotExist:
             h = Holding(entity=entity, resource=resource)
             p = Policy.objects.create(policy=self._new_policy_name(),
-                                      quantity=0)
+                                      quantity=0,
+                                      capacity=QH_PRACTICALLY_INFINITE,
+                                      import_limit=QH_PRACTICALLY_INFINITE,
+                                      export_limit=QH_PRACTICALLY_INFINITE)
             h.policy = p
         h.imported += amount
         h.save()

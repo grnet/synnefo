@@ -251,7 +251,7 @@ def user_quota(request):
         if 'cyclades.vm' in quota:
             vms_limit_for_user = quota['cyclades.vm']['maxValue']
         if 'cyclades.network.private' in quota:
-            vms_limit_for_user = quota['cyclades.network.private']['maxValue']
+            networks_limit_for_user = quota['cyclades.network.private']['maxValue']
 
     return HttpResponse('{"vms_quota":%d, "networks_quota":%d}' % (vms_limit_for_user,
                                                                networks_limit_for_user),

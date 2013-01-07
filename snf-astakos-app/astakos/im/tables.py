@@ -244,6 +244,7 @@ class UserProjectApplicationsTable(UserTable):
 def member_action_extra_context(membership, table, col):
 
     context = []
+    urls, actions, prompts, confirms = [], [], [], []
 
     if membership.state == ProjectMembership.REQUESTED:
         urls = ['astakos.im.views.project_reject_member',

@@ -1092,7 +1092,6 @@ def project_update(request, application_id):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
 def project_detail(request, application_id):
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
@@ -1132,24 +1131,15 @@ def project_detail(request, application_id):
                                                           prefix="members_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
 
-    try:
-        return object_detail(
-            request,
-            queryset=ProjectApplication.objects.select_related(),
-            object_id=application_id,
-            template_name='im/projects/project_detail.html',
-            extra_context={
-                'addmembers_form':addmembers_form,
-                'members_table': members_table
+    return object_detail(
+        request,
+        queryset=ProjectApplication.objects.select_related(),
+        object_id=application_id,
+        template_name='im/projects/project_detail.html',
+        extra_context={
+            'addmembers_form':addmembers_form,
+            'members_table': members_table
             })
-    except Exception, e:
-        rollback = True
-    finally:
-        if rollback == True:
-            transaction.rollback()
-        else:
-            transaction.commit()
-
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required

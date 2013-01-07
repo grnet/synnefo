@@ -233,13 +233,11 @@ table.alt-style tr th							{ font-weight:normal; color:#3582AC }
 table.alt-style tr th a							{ color:#3582AC }
 table.alt-style tr td							{ color:#222; }
 table.alt-style tr td:first-child,
-table.alt-style tr th:first-child				{ padding-left:5px; }
+table.alt-style tr th:first-child				{ padding-left:5px; overflow:hidden; }
 table.alt-style tr td a							{ margin:0; }
 table.alt-style tr td:first-child a				{ margin:0; }
 table.alt-style tr th.asc a						{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
 table.alt-style tr th.desc a					{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right 6px; }
-table.alt-style tr th:first-child,
-table.alt-style tr td:first-child				{ width:30% }  
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
 dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}
@@ -469,7 +467,7 @@ form.quotas-form  span.info span				{ width:285px;  }
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
 
 
-table .msg-wrap									{ position:relative; }
+table .msg-wrap									{ position:relative; display:inline-block; }
 table .msg-wrap .dialog							{ position:absolute; border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; right:0; background:#fff; display:none; }
 table .msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
 table .msg-wrap .dialog .no.submit				{ float:right; }

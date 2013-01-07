@@ -157,58 +157,23 @@ $(document).ready(function() {
     );
     
     
-   
     
     
-    ///if ($('.widjets'.length > 0)) {
-		///$('.widjets li div .txt').equalHeights();
-	///}
-    
-    $(function() {
-    	if($("#id_issue_date").length > 0 ){
-			$( "#id_issue_date" ).datepicker({
-				defaultDate: "+0", 
-				dateFormat: "yy-mm-dd",
-				onSelect: function( selectedDate ) {
-					$( "#id_expiration_date" ).datepicker( "option", "minDate", selectedDate );
-				}
-			});
-			$( "#id_expiration_date" ).datepicker({
-				defaultDate: "+1w", 
-				dateFormat: "yy-mm-dd",
-				onSelect: function( selectedDate ) {
-					$( "#id_issue_date" ).datepicker( "option", "maxDate", selectedDate );
-				}
-			});
-		}
-		
-		if($("#id_issue_date_demo").length > 0 ){
-			$( "#id_issue_date_demo" ).datepicker({
-				defaultDate: "+0", 
-				dateFormat: "yy-mm-dd",
-				onSelect: function( selectedDate ) {
-					$( "#id_expiration_date_demo" ).datepicker( "option", "minDate", selectedDate );
-				}
-			});
-			$( "#id_expiration_date_demo" ).datepicker({
-				defaultDate: "+1w", 
-				dateFormat: "yy-mm-dd",
-				onSelect: function( selectedDate ) {
-					$( "#id_issue_date_demo" ).datepicker( "option", "maxDate", selectedDate );
-				}
-			});
-		}
+    $(function() {		 
 		$( "#id_start_date" ).datepicker({
+			minDate: 0,
+			defaultDate: "+0", 
             dateFormat: "yy-mm-dd",
             onSelect: function( selectedDate ) {
-                $( "#id_start_date" ).datepicker( "option", "maxDate", selectedDate );
+                $( "#id_end_date" ).datepicker( "option", "minDate", selectedDate );
             }
         });
         
         $( "#id_end_date" ).datepicker({
+        	defaultDate: "+3w", 
             dateFormat: "yy-mm-dd",
             onSelect: function( selectedDate ) {
-                $( "#id_end_date" ).datepicker( "option", "maxDate", selectedDate );
+                $( "#id_start_date" ).datepicker( "option", "maxDate", selectedDate );
             }
         });
 	});

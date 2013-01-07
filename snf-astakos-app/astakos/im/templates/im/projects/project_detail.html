@@ -97,7 +97,7 @@
 	     <dl class="alt-style">	
 	 		{% for rp in object.projectresourcegrant_set.all %}
 		 		<dt>
-       				Max {% if rp.resource.is_abbreviation %}{{ rp.resource.verbose_name|upper }}{% else %}{{ rp.resource.verbose_name }}{% endif %}{% if not q.unit %}s {% endif  %}  per user
+       				Max {% if rp.resource.is_abbreviation %}{{ rp.resource.verbose_name|upper }}{% else %}{{ rp.resource.verbose_name }}{% endif %}{% if not rp.resource.unit %}s {% endif  %}  per user
        			</dt>
 		 		<dd>
        			{% if rp.member_capacity %}

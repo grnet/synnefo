@@ -130,7 +130,7 @@ $(document).ready(function() {
 		 		} else {
 		 			var num = parseInt(value);
 					if ( num == '0' ) { 
-						flag = 1 ; msg="zero"
+						flag = 1 ; msg="This value can not be zero. Try something like 10GB, 2MB etc"
 					} else {
 						if ( value && !num ) { flag = 1 ; msg="Invalid format. Try something like 10GB, 2MB etc"}
 				 	
@@ -169,7 +169,7 @@ $(document).ready(function() {
 					 	} else {
 					 		if (num) {
 					 		 	flag = 1;
-					 		 	msg ="You must specify correct units" 
+					 		 	msg ="You must specify correct units. Try something like 10GB, 2MB etc" 
 					 		}  
 					 		 
 					 	}

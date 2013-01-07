@@ -627,41 +627,128 @@ class ExtendedSetPasswordForm(SetPasswordForm):
         return super(ExtendedSetPasswordForm, self).save(commit=commit)
 
 
-class ProjectApplicationForm(forms.ModelForm):
-    name = forms.CharField(
-        validators=[validators.RegexValidator(
-            DOMAIN_VALUE_REGEX,
-            _(astakos_messages.DOMAIN_VALUE_ERR),
-            'invalid'
-        )],
-        widget=forms.TextInput(
-            attrs={'placeholder': 'myproject.mylab.ntua.gr'}),
-            help_text="""The Project's name should be in a domain format.
-                         The domain shouldn't neccessarily exist in the real
-                         world but is helpful to imply a structure.
-                         e.g.: myproject.mylab.ntua.gr or
-                         myservice.myteam.myorganization"""
-    )
-    homepage = forms.URLField(
-        label="Homepage Url",
-        help_text="""This should be a URL pointing at your project's site.
-                     e.g.: http://myproject.com""",
-        widget=forms.TextInput(attrs={'placeholder': 'http://myproject.com'}),
 
-        required=False
-     )
-    comments = forms.CharField(widget=forms.Textarea, required=False)
-    member_join_policy = forms.ChoiceField(
-        choices=PROJECT_MEMBER_JOIN_POLICIES.iteritems())
+
+app_name_label       =  "Project name"
+app_name_placeholder = _("myproject.mylab.ntua.gr")
+app_name_validator   =  validators.RegexValidator(
+                            DOMAIN_VALUE_REGEX,
+                            _(astakos_messages.DOMAIN_VALUE_ERR),
+                            'invalid')
+app_name_help        =  _("""
+        The Project's name should be in a domain format.
+        The domain shouldn't neccessarily exist in the real
+        world but is helpful to imply a structure.
+        e.g.: myproject.mylab.ntua.gr or
+        myservice.myteam.myorganization""")
+app_name_widget      =  forms.TextInput(
+                            attrs={'placeholder': app_name_placeholder})
+
+
+app_home_label       =  "Homepage URL"
+app_home_placeholder =  'http://myteam.myinstitution.org/myproject/'
+app_home_help        =  _("""
+        URL pointing at your project's site.
+        e.g.: http://myteam.myinstitution.org/myproject.
+        Leave blank if there is no website.""")
+app_home_widget      =  forms.TextInput(
+                            attrs={'placeholder': app_home_placeholder})
+
+app_desc_label       =  _("Description")
+app_desc_help        =  _("""
+        Please provide a short but descriptive abstract of your Project,
+        so that anyone searching can quickly understand
+        what this Project is about.""")
+
+app_comment_label    =  _("Comments for review (private)")
+app_comment_help     =  _("""
+        Write down any comments you may have for the reviewer
+        of this application (e.g. background and rationale to
+        support your request).
+        The comments are strictly for the review process
+        and will not be published.""")
+
+app_start_date_label =  _("Start date")
+app_start_date_help  =  _("""
+        Provide a date when your need your project to be created,
+        and members to be able to join and get resources.
+        This date is only a hint to help prioritize reviews.""")
+
+app_end_date_label   =  _("Termination date")
+app_end_date_help    =  _("""
+        At this date, the project will be automatically terminated
+        and its resource grants revoked from all members.
+        Unless you know otherwise,
+        it is best to start with a conservative estimation.
+        You can always re-apply for an extension, if you need.""")
+
+join_policy_label    =  _("Joining policy")
+leave_policy_label   =  _("Leaving policy")
+
+max_members_label    =  _("Maximum member count")
+max_members_help     =  _("""
+        Specify the maximum number of members this project may have,
+        including the owner. Beyond this number, no new members
+        may join the project and be granted the project resources.
+        Unless you certainly for otherwise,
+        it is best to start with a conservative limit.
+        You can always request a raise when you need it.""")
+
+join_policies = PROJECT_MEMBER_JOIN_POLICIES.iteritems()
+leave_policies = PROJECT_MEMBER_LEAVE_POLICIES.iteritems()
+
+class ProjectApplicationForm(forms.ModelForm):
+
+    name = forms.CharField(
+        label     = app_name_label,
+        help_text = app_name_help,
+        widget    = app_name_widget,
+        validators = [app_name_validator])
+
+    homepage = forms.URLField(
+        label     = app_home_label,
+        help_text = app_home_help,   
+        widget    = app_home_widget,
+        required  = False)
+
+    description = forms.CharField(
+        label     = app_desc_label,
+        help_text = app_desc_help,
+        widget    = forms.Textarea,
+        required  = False)
+
+    comments = forms.CharField(
+        label     = app_comment_label,
+        help_text = app_comment_help,
+        widget    = forms.Textarea,
+        required  = False)
+
+    start_date = forms.DateTimeField(
+        label     = app_start_date_label,
+        help_text = app_start_date_help,
+        required  = False)
+
+    end_date = forms.DateTimeField(
+        label     = app_end_date_label,
+        help_text = app_end_date_help)
+
+    member_join_policy  = forms.ChoiceField(
+        label     = join_policy_label,
+        choices   = join_policies)
+
     member_leave_policy = forms.ChoiceField(
-        choices=PROJECT_MEMBER_LEAVE_POLICIES.iteritems())
+        label     = leave_policy_label,
+        choices   = leave_policies)
+
+    limit_on_members_number = forms.IntegerField(
+        label     = max_members_label,
+        help_text = max_members_help,
+        required  = False)
 
     class Meta:
         model = ProjectApplication
-        exclude = (
-            'project',
-            'resource_grants', 'id', 'applicant', 'owner',
-            'precursor_application', 'state', 'issue_date')
+        #include = ( 'name', 'homepage', 'description',
+        #            'start_date', 'end_date', 'comments')
 
     def __init__(self, *args, **kwargs):
         self.precursor_application = kwargs.get('instance')

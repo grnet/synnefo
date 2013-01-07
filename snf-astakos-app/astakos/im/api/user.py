@@ -45,6 +45,9 @@ from . import render_fault
 from astakos.im.models import AstakosUser
 from astakos.im.util import epoch
 
+from astakos.im.api.callpoint import AstakosCallpoint
+callpoint = AstakosCallpoint()
+
 logger = logging.getLogger(__name__)
 format = ('%a, %d %b %Y %H:%M:%S GMT')
 
@@ -114,6 +117,17 @@ def authenticate(request, user=None):
         'auth_token_created': epoch(user.auth_token_created),
         'auth_token_expires': epoch(user.auth_token_expires),
         'has_credits': user.has_credits}
+
+    # append usage data if requested
+    if request.REQUEST.get('usage', None):
+        resource_usage = None
+        result = callpoint.get_user_usage(user.id)
+        if result.is_success:
+            resource_usage = result.data
+        else:
+            resource_usage = []
+        user_info['usage'] = resource_usage
+
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)

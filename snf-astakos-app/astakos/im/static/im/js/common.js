@@ -219,6 +219,7 @@ $(document).ready(function() {
 	
 	
 	$("input.leave, input.join").click(function () {
+		$('dialog').hide();
 		$(this).parents('.msg-wrap').find('.dialog').show();
 		return false;      
 		

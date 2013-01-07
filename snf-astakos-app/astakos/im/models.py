@@ -1177,6 +1177,9 @@ class ProjectApplication(models.Model):
 
     objects                 =   ProjectApplicationManager()
 
+    def __unicode__(self):
+        return "%s applied by %s" % (self.name, self.applicant)
+
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set

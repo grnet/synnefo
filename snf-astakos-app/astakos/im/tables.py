@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from collections import defaultdict
+
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.template import Context, Template
@@ -142,6 +144,8 @@ class RichLinkColumn(tables.TemplateColumn):
                    'confirm': self.get_confirm(record, table)
                   }
 
+        # decide whether to return dict or a list of dicts in case we want to
+        # display multiple actions within a cell.
         if self.extra_context:
             contexts = []
             extra_contexts = self.extra_context(record, table, self)
@@ -152,6 +156,7 @@ class RichLinkColumn(tables.TemplateColumn):
                     contexts.append(newcontext)
             else:
                 context.update(extra_contexts)
+                contexts = [context]
         else:
             contexts = [context]
 
@@ -237,7 +242,8 @@ class UserProjectApplicationsTable(UserTable):
 
 
 def member_action_extra_context(membership, table, col):
-    urls, actions, prompts, confirms = [], [], [], []
+
+    context = []
 
     if membership.state == ProjectMembership.REQUESTED:
         urls = ['astakos.im.views.project_reject_member',
@@ -253,6 +259,13 @@ def member_action_extra_context(membership, table, col):
         prompts = [_('Are you sure you want to remove this member ?')]
         confirms = [True, True]
 
+
+    for i, url in enumerate(urls):
+        context.append(dict(url=reverse(url, args=(table.project.pk,
+                                                   membership.person.pk)),
+                            action=actions[i], prompt=prompts[i],
+                            confirm=confirms[i]))
+    return context
 
 class ProjectApplicationMembersTable(UserTable):
     name = tables.Column(accessor="person.last_name", verbose_name=_('Name'))

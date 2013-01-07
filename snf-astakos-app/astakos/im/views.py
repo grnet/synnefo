@@ -1262,7 +1262,7 @@ def project_accept_member(request, application_id, user_id):
             transaction.commit()
     return redirect(reverse('project_detail', args=(application_id,)))
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually
@@ -1289,7 +1289,7 @@ def project_remove_member(request, application_id, user_id):
             transaction.commit()
     return redirect(reverse('project_detail', args=(application_id,)))
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually

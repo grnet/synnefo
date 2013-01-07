@@ -29,7 +29,7 @@
 .form-row .dk_options a:hover, 
 .form-row .dk_option_current a					{ text-shadow:none; background-color: #fff; text-decoration:none; color:#F89A1C}
 .form-row .dk_toggle 							{ height:17px; overflow:hidden; }
-.form-row .dk_toggle span						{ width:240px; overflow:hidden; display:block; }
+.form-row .dk_toggle span						{ width:220px;white-space: nowrap; overflow: hidden; /*text-overflow: ellipsis;*/ display:block; }
 /* end custom theme */
 
 

@@ -8,7 +8,18 @@
  *                        <http://twitter.com/JamieLottering>
  * 
  */
+
 (function ($, window, document) {
+
+  function fixLabel (lbl){
+    if ( lbl.length > 30 ) {
+    	return lbl.substring(0,30)+'...';
+    } else {
+    	return lbl;
+    }
+   	console.info(lbl.length);
+     
+  }
 
   var ie6 = false;
 
@@ -108,7 +119,7 @@
         data.label     = $original.text();
         data.options   = $options;
       }
-
+	  data.label = fixLabel(data.label);
       // Build the dropdown HTML
       $dk = _build(dropdownTemplate, data);
 
@@ -175,7 +186,7 @@
         $current  = $dk.find('li').first()
       ;
 
-      $dk.find('.dk_label').text(listData.label);
+      $dk.find('.dk_label').text(fixLabel(listData.label));
       $dk.find('.dk_options_inner').animate({ scrollTop: 0 }, 0);
 
       _setCurrent($current, $dk);
@@ -263,7 +274,7 @@
     $select = data.$select;
     $select.val(value);
 
-    $dk.find('.dk_label').text(label);
+    $dk.find('.dk_label').text(fixLabel(label));
 
     reset = reset || false;
 

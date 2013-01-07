@@ -100,7 +100,7 @@ $(document).ready(function() {
 	  
 	 	 
 	// if you fill _proxy fields do stuff 
-	$('.quotas-form .quota input[type="text"]').change(function () {
+	$('.quotas-form .quota input[type="text"]').keyup(function () {
 	 	
 	 	if ( $('#icons span.info').hasClass('error-msg')){
 			$('#icons span.info').find('span').html('Here you add resources to your Project. Each resource you specify here, will be granted to *EACH* user of this Project. So the total resources will be: &lt;Total number of members&gt; * &lt;amount_of_resource&gt; for each resource.');
@@ -194,8 +194,7 @@ $(document).ready(function() {
 		 	 
 		 	// validation actions for int fields
 		 	else {
-	
-		 		var is_int = value.match (new RegExp('^[0-9]*$'));
+		 		var is_int = value.match (new RegExp('^[1-9][0-9]*$'));
 		 		if ( !is_int ){ 
 		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive integer');
 			 		$(this).parents('.form-row').addClass('with-errors');

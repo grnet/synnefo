@@ -236,8 +236,9 @@ table.alt-style tr td:first-child,
 table.alt-style tr th:first-child				{ padding-left:5px; overflow:hidden; }
 table.alt-style tr td a							{ margin:0; }
 table.alt-style tr td:first-child a				{ margin:0; }
-table.alt-style tr th.asc a						{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
-table.alt-style tr th.desc a					{ padding-right:20px; background:url(../images/arrow_th_bg.png) no-repeat right 6px; }
+table.alt-style tr th a							{ padding-right:20px; }
+table.alt-style tr th.asc a						{ background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
+table.alt-style tr th.desc a					{ background:url(../images/arrow_th_bg.png) no-repeat right 6px; }
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
 dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}

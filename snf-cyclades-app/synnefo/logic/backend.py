@@ -242,7 +242,8 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 def update_network_state(serials, network):
     old_state = network.state
 
-    backend_states = [s.operstate for s in network.backend_networks.all()]
+    backend_states = [s.operstate for s in
+                     network.backend_networks.filter(backend__offline=False)]
     if not backend_states:
         network.state = 'PENDING'
         network.save()

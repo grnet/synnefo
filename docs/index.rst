@@ -3,10 +3,13 @@ Welcome to Synnefo's documentation
 
 .. image:: /images/synnefo-logo.png
 
-Synnefo is opensource software, used to create massively scalable IaaS clouds.
+| Synnefo is open source cloud software, used to create massively scalable IaaS
+  clouds.
+| Synnefo uses `Google Ganeti <http://code.google.com/p/ganeti/>`_ for the low
+  level VM management part.
 
 | You can see Synnefo in action, powering GRNET's
-  `~okeanos cloud service <https://okeanos.grnet.gr>`_.
+  `~okeanos public cloud service <http://okeanos.io>`_.
 | It is a collection of components (snf-*), most of them written in python, that
   are used as the building bricks to provide the following services:
 
@@ -22,6 +25,7 @@ Synnefo is opensource software, used to create massively scalable IaaS clouds.
    Volume Storage Service (codename: archipelago) <archipelago>
 
 .. image:: images/synnefo-overview.png
+   :target: _images/synnefo-overview.png
 
 There are also components for:
 
@@ -43,10 +47,27 @@ ability to either deploy the above services independently and standalone, or
 interconnected with each other, in large configurations.
 
 
+Synnefo General Architecture
+============================
+
+The following graph shows the whole Synnefo architecture and how it interacts
+with multiple Ganeti clusters. Right click on the image and select "Open image
+in new tab" to be able to zoom in.
+
+.. image:: images/synnefo-architecture1.png
+   :width: 100%
+   :target: _images/synnefo-architecture1.png
+
+
 Synnefo Guides
 ==============
 
-There are 4 guides for Synnefo.
+There are 5 guides for Synnefo.
+
+The installation overview walks through the synnefo components and defines roles
+per node so that each role can be installed separately. Please note that
+different roles can still coexist in the same node and there is also a posibility
+to install everything on one node. For the sake of scalability this is not recommended.
 
 The quick installation guide describes how to install the whole synnefo stack
 in just two physical nodes, for testing purposes. This guide is useful to those
@@ -64,10 +85,16 @@ Integrator's Guide targets developers, who want to actually
 extend/modify/change Synnefo itself, so describes Synnefo's indepth
 architecture and the internals of Synnefo components.
 
+
 .. toctree::
    :maxdepth: 1
 
-   Quick Installation Guide <quick-install-admin-guide>
+   Installation Guide/Overview <i-synnefo>
+
+.. toctree::
+   :maxdepth: 1
+
+   Quick Installation Guide (on two nodes) <quick-install-admin-guide>
 
 .. toctree::
    :maxdepth: 2
@@ -110,8 +137,10 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
 Contact
 =======
 
-You can contact the Synnefo team at: synnefo@lists.grnet.gr
+You can contact the Synnefo team at the following mailing lists:
 
+ * Users list: synnefo@googlegroups.com
+ * Developers list: synnefo-devel@googlegroups.com
 
 Indices and tables
 ==================

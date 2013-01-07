@@ -7,7 +7,11 @@ v0.12.0
 FIXES:
   UI:
 	* Fix unclosed DIV's and other minor html fixes.
-	* 
+	* Fix multiple network actions #2298
+	* Handle multiple image users #2297
+	* Fix double escaping of image details in vm creation view
+	* Set ownership information for authorized_keys personality files
+
 
 NEW FEATURES:
   UI:
@@ -15,6 +19,26 @@ NEW FEATURES:
 	  Configurable by the UI_GROUP_PUBLIC_NETWORKS setting (defaults to True).
 	* New setting UI_CHANGES_SINCE_ALIGMENT to allow aligment of the date used
 	  by ui in api calls that support changes-since parameter.
+	* New setting UI_AUTOMATIC_NETWORK_RANGE_FORMAT which is used by ui so
+	  that automatic private network subnet does not conflict with exising 
+	  user network subnets.
+	* New settings added to allow fine grain of vm connection information:
+		- UI_VM_HOSTNAME_FORMAT
+		- UI_CONNECT_PROMPT_MESSAGES 
+		- UI_EXTRA_RDP_CONTENT
+	* New setting UI_CUSTOM_IMAGE_HELP_URL added. URL that links to a custom
+	  image creation guide.
+	* UI is now quota agnostic. Prevent user from creating network/vms that
+	  would exceed the users available quotas.
+	* Warn user against untrustworthy image owners #3012
+	  
+
+  HELPDESK:
+  	* New helpdesk view (accessible from /helpdesk url) added. View is only 
+	  accessible from users that belong to `helpdesk` group in astakos. 
+	  Helpdesk view provides all available vms/networks information that is 
+	  stored in cyclades database for a specific user id.
+	  
 
   PLANKTON:
 	* Pool connections to Pithos backend.
@@ -26,6 +50,7 @@ NEW FEATURES:
 	* Support for RabbitMQ dead-letter-exchange in dispatcher
 	* Support for rejecting messages from rejecting messages from dispatcher
 	* Process Ganeti messages about network reserved_ips
+
 
 v0.11.0
 *******

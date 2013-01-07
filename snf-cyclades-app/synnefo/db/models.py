@@ -524,7 +524,8 @@ class Network(models.Model):
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""
 
-        backends = [backend] if backend else Backend.objects.all()
+        backends = [backend] if backend\
+                             else Backend.objects.filter(offline=False)
         for backend in backends:
             if not BackendNetwork.objects.filter(backend=backend, network=self)\
                                  .exists():

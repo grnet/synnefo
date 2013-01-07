@@ -39,6 +39,15 @@ For the rest of the documentation we will refer to the first physical node as
 are "node1.example.com" and "node2.example.com" and their IPs are "4.3.2.1" and
 "4.3.2.2" respectively.
 
+.. note:: It is import that the two machines are under the same domain name.
+    If they are not, you can do this by editting the file ``/etc/hosts``
+    on both machines, and add the following lines:
+
+    .. code-block:: console
+
+        4.3.2.1     node1.example.com
+        4.3.2.2     node2.example.com
+
 
 General Prerequisites
 =====================
@@ -51,6 +60,7 @@ lines in your ``/etc/apt/sources.list`` file:
 
 | ``deb http://apt.dev.grnet.gr squeeze main``
 | ``deb-src http://apt.dev.grnet.gr squeeze main``
+| ``deb http://apt.dev.grnet.gr squeeze-backports main``
 
 and import the repo's GPG key:
 
@@ -68,13 +78,17 @@ data inside this directory. By 'all data', we mean files, images, and pithos
 specific mapping data. If you plan to upload more than one basic image, this
 directory should have at least 50GB of free space. During this guide, we will
 assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
-to node2. Node2 has this directory mounted under ``/srv/pithos``, too.
+to node2 (be sure to set no_root_squash flag). Node2 has this directory
+mounted under ``/srv/pithos``, too.
 
 Before starting the synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe
 each node's general prerequisites separately. Any additional configuration,
 specific to a synnefo service for each node, will be described at the service's
 section.
+
+Finally, it is required for Cyclades and Ganeti nodes to have synchronized
+system clocks (e.g. by running ntpd).
 
 Node1
 -----
@@ -86,12 +100,13 @@ General Synnefo dependencies
  * gunicorn (WSGI http server)
  * postgresql (database)
  * rabbitmq (message queue)
+ * ntp (NTP daemon)
 
-You can install the above by running:
+You can install apache2, progresql and ntp by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql rabbitmq-server
+   # apt-get install apache2 postgresql ntp
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -106,6 +121,27 @@ python-psycopg2 package:
 .. code-block:: console
 
    # apt-get install python-psycopg2
+
+To install RabbitMQ>=2.8.4, use the RabbitMQ APT repository by adding the
+following line to ``/etc/apt/sources.list``:
+
+.. code-block:: console
+
+  deb http://www.rabbitmq.com/debian testing main
+
+Add RabbitMQ public key, to trusted key list:
+
+.. code-block:: console
+
+  # wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+  # apt-key add rabbitmq-signing-key-public.asc
+
+Finally, to install the package run:
+
+.. code-block:: console
+
+  # apt-get update
+  # apt-get install rabbitmq-server
 
 Database setup
 ~~~~~~~~~~~~~~
@@ -173,7 +209,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
     'group': 'www-data',
     'args': (
       '--bind=127.0.0.1:8080',
-      '--workers=4',
+      '--workers=8',
       '--log-level=debug',
     ),
    }
@@ -270,7 +306,7 @@ exchanges:
 
 .. code-block:: console
 
-   # rabbitmqctl add_user synnefo "examle_rabbitmq_passw0rd"
+   # rabbitmqctl add_user synnefo "example_rabbitmq_passw0rd"
    # rabbitmqctl set_permissions synnefo ".*" ".*" ".*"
 
 We do not need to initialize the exchanges. This will be done automatically,
@@ -302,12 +338,13 @@ General Synnefo dependencies
  * apache (http server)
  * gunicorn (WSGI http server)
  * postgresql (database)
+ * ntp (NTP daemon)
 
 You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql
+   # apt-get install apache2 postgresql ntp
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -498,7 +535,7 @@ uncomment and edit the ``DATABASES`` block to reflect our database:
          # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
         'NAME': 'snf_apps',
         'USER': 'synnefo',                      # Not used with sqlite3.
-        'PASSWORD': 'examle_passw0rd',          # Not used with sqlite3.
+        'PASSWORD': 'example_passw0rd',         # Not used with sqlite3.
         # Set to empty string for localhost. Not used with sqlite3.
         'HOST': '4.3.2.1',
         # Set to empty string for default. Not used with sqlite3.
@@ -520,25 +557,33 @@ For astakos specific configuration, edit the following options in
 
 .. code-block:: console
 
-   ASTAKOS_IM_MODULES = ['local']
+   ASTAKOS_DEFAULT_ADMIN_EMAIL = None
 
    ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
    ASTAKOS_BASEURL = 'https://node1.example.com'
 
-   ASTAKOS_SITENAME = '~okeanos demo example'
+The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
+services). ``ASTAKOS_BASEURL`` is the astakos home page.
 
-   ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
-   ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
+``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
+Every time a new account is created a notification is sent to this email.
+For this we need access to a running mail server, so we have disabled
+it for now by setting its value to None. For more informations on this,
+read the relative :ref:`section <mail-server>`.
 
-   ASTAKOS_RECAPTCHA_USE_SSL = True
+.. note:: For the purpose of this guide, we don't enable recaptcha authentication.
+    If you would like to enable it, you have to edit the following options:
 
-``ASTAKOS_IM_MODULES`` refers to the astakos login methods. For now only local
-is supported. The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our
-domain (for all services). ``ASTAKOS_BASEURL`` is the astakos home page.
+    .. code-block:: console
 
-For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
-go to https://www.google.com/recaptcha/admin/create and create your own pair.
+        ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
+        ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
+        ASTAKOS_RECAPTCHA_USE_SSL = True
+        ASTAKOS_RECAPTCHA_ENABLED = True
+
+    For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and ``ASTAKOS_RECAPTCHA_PRIVATE_KEY``
+    go to https://www.google.com/recaptcha/admin/create and create your own pair.
 
 Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
@@ -556,6 +601,78 @@ node1 which is where we have installed Astakos.
 
 If you are an advanced user and want to use the Shibboleth Authentication method,
 read the relative :ref:`section <shibboleth-auth>`.
+
+.. note:: Because Cyclades and Astakos are running on the same machine
+    in our example, we have to deactivate the CSRF verification. We can do so
+    by adding to
+    ``/etc/synnefo/99-local.conf``:
+
+    .. code-block:: console
+
+        MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
+        TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
+
+Enable Pooling
+--------------
+
+This section can be bypassed, but we strongly recommend you apply the following,
+since they result in a significant performance boost.
+
+Synnefo includes a pooling DBAPI driver for PostgreSQL, as a thin wrapper
+around Psycopg2. This allows independent Django requests to reuse pooled DB
+connections, with significant performance gains.
+
+To use, first monkey-patch psycopg2. For Django, run this before the
+``DATABASES`` setting in ``/etc/synnefo/10-snf-webproject-database.conf``:
+
+.. code-block:: console
+
+   from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
+   monkey_patch_psycopg2()
+
+If running with greenlets, we should modify psycopg2 behavior, so it works
+properly in a greenlet context:
+
+.. code-block:: console
+
+   from synnefo.lib.db.psyco_gevent import make_psycopg_green
+   make_psycopg_green()
+
+Use the Psycopg2 driver as usual. For Django, this means using
+``django.db.backends.postgresql_psycopg2`` without any modifications. To enable
+connection pooling, pass a nonzero ``synnefo_poolsize`` option to the DBAPI
+driver, through ``DATABASES.OPTIONS`` in django.
+
+All the above will result in an ``/etc/synnefo/10-snf-webproject-database.conf``
+file that looks like this:
+
+.. code-block:: console
+
+   # Monkey-patch psycopg2
+   from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
+   monkey_patch_psycopg2()
+
+   # If running with greenlets
+   from synnefo.lib.db.psyco_gevent import make_psycopg_green
+   make_psycopg_green()
+
+   DATABASES = {
+    'default': {
+        # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
+        'ENGINE': 'postgresql_psycopg2',
+        'OPTIONS': {'synnefo_poolsize': 8},
+
+         # ATTENTION: This *must* be the absolute path if using sqlite3.
+         # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
+        'NAME': 'snf_apps',
+        'USER': 'synnefo',                      # Not used with sqlite3.
+        'PASSWORD': 'example_passw0rd',         # Not used with sqlite3.
+        # Set to empty string for localhost. Not used with sqlite3.
+        'HOST': '4.3.2.1',
+        # Set to empty string for default. Not used with sqlite3.
+        'PORT': '5432',
+    }
+   }
 
 Database Initialization
 -----------------------
@@ -693,7 +810,7 @@ has to do with snf-common or snf-webproject. Everything is set at node1. You
 only need to change settings that have to do with pithos+. Specifically:
 
 Edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``. There you need to set
-only the two options:
+this options:
 
 .. code-block:: console
 
@@ -771,6 +888,46 @@ The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos service'
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 pithos+ web client to get from astakos all the information needed to fill its
 own cloudbar. So we put our astakos deployment urls there.
+
+Pooling and Greenlets
+---------------------
+
+Pithos is pooling-ready without the need of further configuration, because it
+doesn't use a Django DB. It pools HTTP connections to Astakos and pithos
+backend objects for access to the Pithos DB.
+
+However, as in Astakos, if running with Greenlets, it is also recommended to
+modify psycopg2 behavior so it works properly in a greenlet context. This means
+adding the following lines at the top of your
+``/etc/synnefo/10-snf-webproject-database.conf`` file:
+
+.. code-block:: console
+
+   from synnefo.lib.db.psyco_gevent import make_psycopg_green
+   make_psycopg_green()
+
+Furthermore, add the ``--worker-class=gevent`` argument on your
+``/etc/gunicorn.d/synnefo`` configuration file. The file should look something like
+this:
+
+.. code-block:: console
+
+   CONFIG = {
+    'mode': 'django',
+    'environment': {
+      'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
+    },
+    'working_dir': '/etc/synnefo',
+    'user': 'www-data',
+    'group': 'www-data',
+    'args': (
+      '--bind=127.0.0.1:8080',
+      '--workers=4',
+      '--worker-class=gevent',
+      '--log-level=debug',
+      '--timeout=43200'
+    ),
+   }
 
 Servers Initialization
 ----------------------
@@ -858,26 +1015,55 @@ the above assumed setup by running on both nodes:
 
 .. code-block:: console
 
-   # apt-get install ganeti2
-   # apt-get install ganeti-htools
+   # apt-get install -t squeeze-backports ganeti2 ganeti-htools
    # modprobe drbd minor_count=255 usermode_helper=/bin/true
 
 Unfortunatelly, stock Ganeti doesn't support IP pool management yet (we are
 working hard to merge it upstream for Ganeti 2.7). Synnefo depends on the IP
 pool functionality of Ganeti, so you have to use GRNET's patches for now. To
-do so you have to build your own package from source:
+do so you have to build your own package from source. Please clone our local
+repo:
 
 .. code-block:: console
 
-   # apt-get install python-bitarray
-   # apt-get install git-buildpackage
    # git clone https://code.grnet.gr/git/ganeti-local
-   # mkdir build-area
    # cd ganeti-local
-   # git checkout stable-2.6-grnet
-   # git checkout debian-2.6-grnet
-   # git-buildpackage --git-upstream-branch=stable-2.6-grnet \
-                   --git-debian-branch=debian-2.6-grnet \
+   # git checkout stable-2.6-ippool-hotplug-esi
+   # git checkout debian-2.6
+
+Then please check if you can complile ganeti:
+
+.. code-block:: console
+
+   # cd ganeti-local
+   # ./automake.sh
+   # ./configure
+   # make
+
+To do so you must have a correct build environment. Please refer to INSTALL
+file in the source tree. Most of the packages needed are refered here:
+
+.. code-block:: console
+
+   #  apt-get install graphviz automake lvm2 ssh bridge-utils iproute iputils-arping \
+                      ndisc6 python python-pyopenssl openssl \
+                      python-pyparsing python-simplejson \
+                      python-pyinotify python-pycurl socat \
+                      python-elementtree kvm qemu-kvm \
+                      ghc6 libghc6-json-dev libghc6-network-dev \
+                      libghc6-parallel-dev libghc6-curl-dev \
+                      libghc-quickcheck2-dev hscolour hlint
+                      python-support python-paramiko \
+                      python-fdsend python-ipaddr python-bitarray libjs-jquery fping
+
+Now let try to build the package:
+
+.. code-block:: console
+
+   # apt-get install git-buildpackage
+   # mkdir ../build-area
+   # git-buildpackage --git-upstream-branch=stable-2.6-ippool-hotplug-esi \
+                   --git-debian-branch=debian-2.6 \
                    --git-export=INDEX \
                    --git-ignore-new
 
@@ -886,7 +1072,8 @@ nodes:
 
 .. code-block:: console
 
-   # dpkg -i build-area/\*deb
+   # dpkg -i ../build-area/snf-ganeti.*deb
+   # dpkg -i ../build-area/ganeti-htools.*deb
    # apt-get install -f
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
@@ -898,15 +1085,15 @@ a bridge interface on the host machines (e.g: br0). Then run on node1:
 
 .. code-block:: console
 
-   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init
-                                   --no-etc-hosts --vg-name=ganeti
-                                   --nic-parameters link=br0 --master-netdev eth0
+   root@node1:~ # gnt-cluster init --enabled-hypervisors=kvm --no-ssh-init \
+                                   --no-etc-hosts --vg-name=ganeti \
+                                   --nic-parameters link=br0 --master-netdev eth0 \
                                    ganeti.node1.example.com
    root@node1:~ # gnt-cluster modify --default-iallocator hail
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:kernel_path=
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:vnc_bind_address=0.0.0.0
 
-   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes
+   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes \
                                --vm-capable=yes node2.example.com
    root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
    root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
@@ -1327,27 +1514,6 @@ The above will do the following :
 You can run ``brctl show`` on both nodes to see if everything was setup
 correctly.
 
-Synnefo Setup
-~~~~~~~~~~~~~
-
-As long as those resourses have been provisioned, admin has to define two
-different pools in Synnefo:
-
- - MAC prefix Pool
- - Bridge Pool
-
-.. code-block:: console
-
-   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
-
-   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
-
-Change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
-
-.. code-block:: console
-
-   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
-
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1616,9 +1782,15 @@ Add the Ganeti backend
 ----------------------
 
 In our installation we assume that we only have one Ganeti cluster, the one we
-setup earlier in the ``/etc/synnefo/20-snf-cyclades-app-backend.conf`` file.
-Cyclades will set up this backend automatically by looking at the above
-configuration file. You can see everything has been setup correctly by running:
+setup earlier.  At this point you have to add this backend (Ganeti cluster) to
+cyclades assuming that you have setup the :ref:`Rapi User <rapi-user>`
+correctly.
+
+.. code-block:: console
+
+   $ snf-manage backend-add --clustername=ganeti.node1.example.com --user=cyclades --pass=example_rapi_passw0rd
+
+You can see everything has been setup correctly by running:
 
 .. code-block:: console
 
@@ -1640,12 +1812,8 @@ domain that resolves to the master IP, than the IP itself, to ensure Cyclades
 can talk to Ganeti even after a Ganeti master-failover.
 
 ``user`` and ``pass`` denote the RAPI user's username and the RAPI user's
-password. We set the above to reflect our :ref:`RAPI User setup <rapi-user>`.
-The port is already set to the default RAPI port; you need to change it, only
-if you have changed it in your Ganeti cluster setup.
-
-Once we setup the first backend to point at our Ganeti cluster, we update the
-Cyclades backends status by running:
+password.  Once we setup the first backend to point at our Ganeti cluster, we
+update the Cyclades backends status by running:
 
 .. code-block:: console
 
@@ -1666,12 +1834,12 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
 
 .. code-block:: console
 
-   $ snf-manage network-create --subnet=5.6.7.0/27
-                               --gateway=5.6.7.1
-                               --subnet6=2001:648:2FFC:1322::/64
-                               --gateway6=2001:648:2FFC:1322::1
-                               --public --dhcp --type=CUSTOM_BRIDGED
-                               --name=public_network
+   $ snf-manage network-create --subnet=5.6.7.0/27 \
+                               --gateway=5.6.7.1 \
+                               --subnet6=2001:648:2FFC:1322::/64 \
+                               --gateway6=2001:648:2FFC:1322::1 \
+                               --public --dhcp --type=CUSTOM_BRIDGED \
+                               --name=public_network \
                                --backend-id=1
 
 This will create the Public Network on both Cyclades and the Ganeti backend. To
@@ -1700,6 +1868,32 @@ Ganeti MASTER:
 
    $ gnt-network list
    $ gnt-network info <network_name>
+
+
+Create pools for Private Networks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To prevent duplicate assignment of resources to different private networks,
+Cyclades supports two types of pools:
+
+ - MAC prefix Pool
+ - Bridge Pool
+
+As long as those resourses have been provisioned, admin has to define two
+these pools in Synnefo:
+
+
+.. code-block:: console
+
+   root@testvm1:~ # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
+
+   root@testvm1:~ # snf-manage pool-create --type=bridge --base=prv --size=20
+
+Also, change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
+
+.. code-block:: console
+
+   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
 
 Servers restart
 ---------------
@@ -1819,10 +2013,10 @@ installation. We do this by running:
 .. code-block:: console
 
    $ kamaki config set astakos.url "https://node1.example.com"
-   $ kamaki config set compute.url="https://node1.example.com/api/v1.1"
-   $ kamaki config set image.url "https://node1.examle.com/plankton"
-   $ kamaki config set storage.url "https://node2.example.com/v1"
-   $ kamaki config set storage.account "user@example.com"
+   $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
+   $ kamaki config set image.url "https://node1.example.com/plankton"
+   $ kamaki config set store.url "https://node2.example.com/v1"
+   $ kamaki config set global.account "user@example.com"
    $ kamaki config set global.token "bdY_example_user_tokenYUff=="
 
 The token at the last kamaki command is our user's (``user@example.com``) token,
@@ -1876,17 +2070,17 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 
 .. code-block:: console
 
-   $ kamaki image register "Debian Base"
-                           pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump
-                           --public
-                           --disk-format=diskdump
-                           --property OSFAMILY=linux --property ROOT_PARTITION=1
-                           --property description="Debian Squeeze Base System"
-                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI"
+   $ kamaki image register "Debian Base" \
+                           pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump \
+                           --public \
+                           --disk-format=diskdump \
+                           --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+                           --property description="Debian Squeeze Base System" \
+                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
                            --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos+ file
-``pithos://user@examle.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
+``pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
 Image in Plankton. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest

@@ -412,20 +412,22 @@ class UpdateNetworkTest(TestCase):
 
     def test_remove_offline_backend(self, client):
         """Test network removing when a backend is offline"""
-        mfactory.MacPrefixPoolTableFactory()
-        net = mfactory.NetworkFactory(state='ACTIVE')
+        print 'in'
+        mfactory.BridgePoolTableFactory()
+        net = mfactory.NetworkFactory(flavor='PHYSICAL_VLAN',
+                                      state='ACTIVE',
+                                      link='prv12')
         bn1 = mfactory.BackendNetworkFactory(network=net)
         mfactory.BackendNetworkFactory(network=net,
-                                             backend__offline=True)
+                                       backend__offline=True)
         msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                               network=net.backend_id,
                               cluster=bn1.backend.clustername)
         update_network(client, msg)
         client.basic_ack.assert_called_once()
         new_net = Network.objects.get(id=net.id)
-        self.assertTrue(new_net.state, 'DELETED')
+        self.assertEqual(new_net.state, 'DELETED')
         self.assertTrue(new_net.deleted)
-
 
     def test_error_opcode(self, client):
         for state, _ in Network.OPER_STATES:

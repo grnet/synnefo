@@ -1092,6 +1092,7 @@ def project_update(request, application_id):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
+@transaction.commit_on_success
 def project_detail(request, application_id):
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
@@ -1188,12 +1189,15 @@ def project_search(request):
 def project_join(request, application_id):
     next = request.GET.get('next')
     if not next:
-        next = reverse('astakos.im.views.project_list')
+        next = reverse('astakos.im.views.project_detail',
+                       args=(application_id,))
 
     rollback = False
     try:
         application_id = int(application_id)
         join_project(application_id, request.user)
+        # TODO: distinct messages for request/auto accept ???
+        messages.success(request, _(astakos_messages.USER_JOIN_REQUEST_SUBMITED))
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1236,7 +1240,7 @@ def project_leave(request, application_id):
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually

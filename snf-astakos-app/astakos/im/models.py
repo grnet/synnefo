@@ -1123,7 +1123,7 @@ class ProjectApplicationManager(ForUpdateManager):
         Return projects accessed by specified user.
         """
         return self.filter(Q(owner=user) | Q(applicant=user) | \
-                        Q(project__projectmembership__person=user))
+                        Q(project__projectmembership__person=user)).distinct()
 
     def search_by_name(self, *search_strings):
         q = Q()

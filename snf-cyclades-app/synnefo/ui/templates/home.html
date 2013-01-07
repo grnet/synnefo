@@ -341,7 +341,6 @@
                var footerTop = 0;
                var $footer = $("#footer-container");
 
-               positionFooter();
                function positionFooter() {
                    footerHeight = 80;
                    footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
@@ -370,7 +369,8 @@
                        }
                    }
 
-                   }
+               }
+               positionFooter();
                window.positionFooter = _.throttle(positionFooter, 100);
                $(window).scroll(positionFooter).resize(positionFooter)
         });

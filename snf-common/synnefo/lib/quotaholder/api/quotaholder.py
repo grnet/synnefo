@@ -59,6 +59,8 @@ class Positive(Integer):
     def init(self):
         self.opts.update({'minimum': 1})
 
+QH_PRACTICALLY_INFINITE =   10**32
+
 Serial              =   Positive(classname='Serial')
 
 ClientKey           =   Name(classname='ClientKey')
@@ -72,14 +74,14 @@ OwnerKey            =   Text(classname='OwnerKey')
 Resource            =   Name(classname='Resource')
 Policy              =   Name(classname='Policy')
 
-Quantity            =   Integer(classname='Quantity', null=True)
-Capacity            =   Nonnegative(classname='Capacity', null=True)
-ImportLimit         =   Nonnegative(classname='ImportLimit', null=True)
-ExportLimit         =   Nonnegative(classname='ExportLimit', null=True)
-QuantityDelta       =   Integer(classname='QuantityDelta', null=True)
-CapacityDelta       =   Integer(classname='CapacityDelta', null=True)
-ImportLimitDelta    =   Integer(classname='ImportLimitDelta', null=True)
-ExportLimitDelta    =   Integer(classname='ExportLimitDelta', null=True)
+Quantity            =   Integer(classname='Quantity')
+Capacity            =   Nonnegative(classname='Capacity')
+ImportLimit         =   Nonnegative(classname='ImportLimit')
+ExportLimit         =   Nonnegative(classname='ExportLimit')
+QuantityDelta       =   Integer(classname='QuantityDelta')
+CapacityDelta       =   Integer(classname='CapacityDelta')
+ImportLimitDelta    =   Integer(classname='ImportLimitDelta')
+ExportLimitDelta    =   Integer(classname='ExportLimitDelta')
 Imported            =   Nonnegative(classname='Imported')
 Exported            =   Nonnegative(classname='Exported')
 Returned            =   Nonnegative(classname='Returned')

@@ -38,6 +38,7 @@ from config import printf
 
 from synnefo.lib.commissioning import CallError
 from synnefo.lib.quotaholder.api import (
+                            QH_PRACTICALLY_INFINITE,
                             InvalidDataError,
                             InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
@@ -236,30 +237,35 @@ class QHAPITest(QHTestCase):
         resource1 = self.rand_resource()
 
         r = self.qh.set_quota(
-            set_quota=[(e0, resource0, k0) + (5, None, 5, 6) + (0,),
+            set_quota=[(e0, resource0, k0) + (5, QH_PRACTICALLY_INFINITE, 5, 6) + (0,),
                        (e1, resource0, k1) + (5, 5, 5, 5) + (0,)])
         self.assertEqual(r, [])
 
         r = self.qh.add_quota(clientkey=self.client,
                               serial=1,
-                              sub_quota=[(e0, resource0, k0, 0, None, 1, 1)],
-                              add_quota=[(e0, resource0, k0, 0, 3, None, 0),
+                              sub_quota=[(e0, resource0, k0,
+                                          0, QH_PRACTICALLY_INFINITE, 1, 1)],
+                              add_quota=[(e0, resource0, k0,
+                                          0, 3, QH_PRACTICALLY_INFINITE, 0),
                                          # new holding
-                                         (e0, resource1, k0, 0, None, 5, 5)])
+                                         (e0, resource1, k0,
+                                          0, QH_PRACTICALLY_INFINITE, 5, 5)])
         self.assertEqual(r, [])
 
         r = self.qh.get_quota(get_quota=[(e0, resource0, k0),
                                          (e0, resource1, k0)])
-        self.assertEqual(r, [(e0, resource0, 5, 3, None, 5)
+        self.assertEqual(r, [(e0, resource0, 5, 3, QH_PRACTICALLY_INFINITE+4, 5)
                              + DEFAULT_HOLDING + (0,),
-                             (e0, resource1, 0, None, 5, 5)
+                             (e0, resource1, 0, QH_PRACTICALLY_INFINITE, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
 
         # repeated serial
         r = self.qh.add_quota(clientkey=self.client,
                               serial=1,
-                              sub_quota=[(e0, resource1, k0, 0, None, (-5), 0)],
-                              add_quota=[(e0, resource0, k0, 0, 2, None, 0)])
+                              sub_quota=[(e0, resource1, k0,
+                                          0, QH_PRACTICALLY_INFINITE, (-5), 0)],
+                              add_quota=[(e0, resource0, k0,
+                                          0, 2, QH_PRACTICALLY_INFINITE, 0)])
         self.assertEqual(r, [(e0, resource1), (e0, resource0)])
 
         r = self.qh.query_serials(clientkey=self.client, serials=[1, 2])
@@ -282,13 +288,15 @@ class QHAPITest(QHTestCase):
         # serial has been deleted
         r = self.qh.add_quota(clientkey=self.client,
                               serial=1,
-                              add_quota=[(e0, resource0, k0, 0, 2, None, 0)])
+                              add_quota=[(e0, resource0, k0,
+                                          0, 2, QH_PRACTICALLY_INFINITE, 0)])
         self.assertEqual(r, [])
 
         # none is committed
         r = self.qh.add_quota(clientkey=self.client,
                               serial=2,
-                              add_quota=[(e1, resource0, k1, 0, (-10), None, 0),
+                              add_quota=[(e1, resource0, k1,
+                                          0, (-10), QH_PRACTICALLY_INFINITE, 0),
                                          (e0, resource1, k0, 1, 0, 0, 0)])
         self.assertEqual(r, [(e1, resource0)])
 
@@ -296,8 +304,32 @@ class QHAPITest(QHTestCase):
                                          (e0, resource1, k0)])
         self.assertEqual(r, [(e1, resource0, 5, 5 , 5, 5)
                              + DEFAULT_HOLDING + (0,),
-                             (e0, resource1, 0, None, 5, 5)
+                             (e0, resource1, 0, QH_PRACTICALLY_INFINITE, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
+
+    def test_0082_max_quota(self):
+        e0, k0 = self.new_entity()
+        e1, k1 = self.new_entity()
+        resource0 = self.rand_resource()
+        resource1 = self.rand_resource()
+
+        r = self.qh.set_quota(
+            set_quota=[(e0, resource0, k0) +
+                       (5, QH_PRACTICALLY_INFINITE, 5, 6) + (0,)])
+        self.assertEqual(r, [])
+
+        r = self.qh.add_quota(clientkey=self.client,
+                              serial=3,
+                              add_quota=[(e0, resource0, k0,
+                                          0, QH_PRACTICALLY_INFINITE, 0, 0)])
+
+        self.assertEqual(r, [])
+
+        r = self.qh.get_quota(get_quota=[(e0, resource0, k0)])
+        self.assertEqual(r, [(e0, resource0, 5, 2*QH_PRACTICALLY_INFINITE, 5, 6)
+                             + DEFAULT_HOLDING + (0,)])
+
+
 
     def test_0090_commissions(self):
         e0, k0 = self.new_entity()
@@ -398,9 +430,15 @@ class QHAPITest(QHTestCase):
         if r:
             raise AssertionError("cannot create entities")
 
-        self.qh.set_quota(set_quota=[(sys, resource, '', 10, 0, None, None, 0),
-                                     (e0, resource, k0, 0, 10, None, None, 0),
-                                     (e1, resource, k1, 0, 10, None, None, 0)])
+        self.qh.set_quota(set_quota=[(sys, resource, '', 10, 0,
+                                      QH_PRACTICALLY_INFINITE,
+                                      QH_PRACTICALLY_INFINITE, 0),
+                                     (e0, resource, k0, 0, 10,
+                                      QH_PRACTICALLY_INFINITE,
+                                      QH_PRACTICALLY_INFINITE, 0),
+                                     (e1, resource, k1, 0, 10,
+                                      QH_PRACTICALLY_INFINITE,
+                                      QH_PRACTICALLY_INFINITE, 0)])
 
         s0 = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
                                       name='a commission',

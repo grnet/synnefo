@@ -33,6 +33,7 @@
 
 from synnefo.lib.quotaholder.api import (
                             QuotaholderAPI,
+                            QH_PRACTICALLY_INFINITE,
                             InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
                             ExportLimitError, ImportLimitError,
@@ -363,7 +364,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         except Holding.DoesNotExist:
             h = Holding(entity=entity, resource=resource)
             p = Policy.objects.create(policy=self._new_policy_name(),
-                                      quantity=0)
+                                      quantity=0,
+                                      capacity=QH_PRACTICALLY_INFINITE,
+                                      import_limit=QH_PRACTICALLY_INFINITE,
+                                      export_limit=QH_PRACTICALLY_INFINITE)
             h.policy = p
         h.imported += amount
         h.save()
@@ -673,27 +677,25 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             hp = h.policy
 
-            if hp.export_limit is not None:
-                current = h.exporting
-                limit = hp.export_limit
-                if current + quantity > limit:
-                    m = ("Export limit reached for %s.%s" % (entity, resource))
-                    raise ExportLimitError(m,
-                                           source=entity, target=target,
-                                           resource=resource, requested=quantity,
-                                           current=current, limit=limit)
+            current = h.exporting
+            limit = hp.export_limit
+            if current + quantity > limit:
+                m = ("Export limit reached for %s.%s" % (entity, resource))
+                raise ExportLimitError(m,
+                                       source=entity, target=target,
+                                       resource=resource, requested=quantity,
+                                       current=current, limit=limit)
 
-            if hp.quantity is not None:
-                limit = hp.quantity
-                current = (+ h.exporting + h.releasing
-                           - h.imported - h.returned)
-                if current + quantity > limit:
-                    m = ("There is not enough quantity "
-                         "to allocate from in %s.%s" % (entity, resource))
-                    raise NoQuantityError(m,
-                                          source=entity, target=target,
-                                          resource=resource, requested=quantity,
-                                          current=current, limit=limit)
+            limit = hp.quantity
+            current = (+ h.exporting + h.releasing
+                       - h.imported - h.returned)
+            if current + quantity > limit:
+                m = ("There is not enough quantity "
+                     "to allocate from in %s.%s" % (entity, resource))
+                raise NoQuantityError(m,
+                                      source=entity, target=target,
+                                      resource=resource, requested=quantity,
+                                      current=current, limit=limit)
 
             # Target limits checks
             try:
@@ -709,28 +711,26 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             tp = th.policy
 
-            if tp.import_limit is not None:
-                limit = tp.import_limit
-                current = th.importing
-                if current + quantity > limit:
-                    m = ("Import limit reached for %s.%s" % (target, resource))
-                    raise ImportLimitError(m,
-                                           source=entity, target=target,
-                                           resource=resource, requested=quantity,
-                                           current=current, limit=limit)
+            limit = tp.import_limit
+            current = th.importing
+            if current + quantity > limit:
+                m = ("Import limit reached for %s.%s" % (target, resource))
+                raise ImportLimitError(m,
+                                       source=entity, target=target,
+                                       resource=resource, requested=quantity,
+                                       current=current, limit=limit)
 
-            if tp.capacity is not None:
-                limit = tp.capacity
-                current = (+ th.importing + th.returning
-                           - th.exported - th.released)
+            limit = tp.capacity
+            current = (+ th.importing + th.returning
+                       - th.exported - th.released)
 
-                if current + quantity > limit:
-                        m = ("There is not enough capacity "
-                             "to allocate into in %s.%s" % (target, resource))
-                        raise NoCapacityError(m,
-                                              source=entity, target=target,
-                                              resource=resource, requested=quantity,
-                                              current=current, limit=limit)
+            if current + quantity > limit:
+                    m = ("There is not enough capacity "
+                         "to allocate into in %s.%s" % (target, resource))
+                    raise NoCapacityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=current, limit=limit)
 
             Provision.objects.create(   serial      =   commission,
                                         entity      =   e,
@@ -998,10 +998,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         return timeline
 
 def _add(x, y, invert=False):
-    if invert and y is None:
-        return 0
-    if x is None or y is None:
-        return None
     return x + y if not invert else x - y
 
 def _update(dest, source, attr, delta):
@@ -1009,8 +1005,6 @@ def _update(dest, source, attr, delta):
     dest_attr = _add(getattr(source, attr, 0), delta)
 
 def _isneg(x):
-    if x is None:
-        return False
     return x < 0
 
 API_Callpoint = QuotaholderDjangoDBCallpoint

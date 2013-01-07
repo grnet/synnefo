@@ -750,6 +750,11 @@ class ProjectApplicationForm(forms.ModelForm):
         #include = ( 'name', 'homepage', 'description',
         #            'start_date', 'end_date', 'comments')
 
+        fields = ( 'name', 'homepage', 'description',
+                    'start_date', 'end_date', 'comments',
+                    'member_join_policy', 'member_leave_policy',
+                    'limit_on_members_number')
+
     def __init__(self, *args, **kwargs):
         self.precursor_application = kwargs.get('instance')
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)

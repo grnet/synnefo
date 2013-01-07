@@ -1092,6 +1092,7 @@ def project_update(request, application_id):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
+@transaction.commit_on_success
 def project_detail(request, application_id):
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':

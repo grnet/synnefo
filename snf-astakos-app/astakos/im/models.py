@@ -77,6 +77,9 @@ from astakos.im import auth_providers
 import astakos.im.messages as astakos_messages
 from .managers import ForUpdateManager
 
+from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
+from synnefo.lib.db.intdecimalfield import intDecimalField
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
@@ -1325,12 +1328,12 @@ class ProjectResourceGrant(models.Model):
     resource                =   models.ForeignKey(Resource)
     project_application     =   models.ForeignKey(ProjectApplication,
                                                   null=True)
-    project_capacity        =   models.BigIntegerField(null=True)
-    project_import_limit    =   models.BigIntegerField(null=True)
-    project_export_limit    =   models.BigIntegerField(null=True)
-    member_capacity         =   models.BigIntegerField(null=True)
-    member_import_limit     =   models.BigIntegerField(null=True)
-    member_export_limit     =   models.BigIntegerField(null=True)
+    project_capacity        =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
+    project_import_limit    =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
+    project_export_limit    =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
+    member_capacity         =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
+    member_import_limit     =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
+    member_export_limit     =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
 
     objects = ExtendedManager()
 

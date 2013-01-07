@@ -33,37 +33,12 @@
 
 
 from synnefo.lib.commissioning import CorruptedError
+from synnefo.lib.db.intdecimalfield import intDecimalField
 
-from django.core import exceptions
 from django.db.models import (Model, BigIntegerField, CharField,
-                              IntegerField, SubfieldBase,
-                              ForeignKey, AutoField, DecimalField)
+                              ForeignKey, AutoField)
 from django.db import transaction
 from .managers import ForUpdateManager
-
-class IntDecimalField(IntegerField):
-
-    __metaclass__ = SubfieldBase
-
-    def __init__(self, max_digits=None, **kwargs):
-        self.max_digits, self.decimal_places = max_digits, 0
-        IntegerField.__init__(self, **kwargs)
-
-    def get_internal_type(self):
-        return "DecimalField"
-
-    def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return long(value)
-        except (ValueError, TypeError):
-            raise exceptions.ValidationError(self.error_messages['invalid'])
-
-DECIMAL_DIGITS  =   38
-
-def intDecimalField(**kwargs):
-    return IntDecimalField(max_digits=DECIMAL_DIGITS, **kwargs)
 
 class Holder(Model):
 

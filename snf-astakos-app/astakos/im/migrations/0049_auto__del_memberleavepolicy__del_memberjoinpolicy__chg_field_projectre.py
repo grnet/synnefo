@@ -14,6 +14,24 @@ class Migration(SchemaMigration):
         # Deleting model 'MemberJoinPolicy'
         db.delete_table('im_memberjoinpolicy')
 
+        # Changing field 'ProjectResourceGrant.project_export_limit'
+        db.alter_column('im_projectresourcegrant', 'project_export_limit', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(max_digits=38, decimal_places=0))
+
+        # Changing field 'ProjectResourceGrant.project_import_limit'
+        db.alter_column('im_projectresourcegrant', 'project_import_limit', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(max_digits=38, decimal_places=0))
+
+        # Changing field 'ProjectResourceGrant.member_export_limit'
+        db.alter_column('im_projectresourcegrant', 'member_export_limit', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(max_digits=38, decimal_places=0))
+
+        # Changing field 'ProjectResourceGrant.member_capacity'
+        db.alter_column('im_projectresourcegrant', 'member_capacity', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(max_digits=38, decimal_places=0))
+
+        # Changing field 'ProjectResourceGrant.member_import_limit'
+        db.alter_column('im_projectresourcegrant', 'member_import_limit', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(max_digits=38, decimal_places=0))
+
+        # Changing field 'ProjectResourceGrant.project_capacity'
+        db.alter_column('im_projectresourcegrant', 'project_capacity', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(max_digits=38, decimal_places=0))
+
         # Renaming column for 'ProjectApplication.member_join_policy' to match new field type.
         db.rename_column('im_projectapplication', 'member_join_policy_id', 'member_join_policy')
         # Changing field 'ProjectApplication.member_join_policy'
@@ -33,12 +51,6 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         
-        # Adding index on 'ProjectApplication', fields ['member_leave_policy']
-        db.create_index('im_projectapplication', ['member_leave_policy_id'])
-
-        # Adding index on 'ProjectApplication', fields ['member_join_policy']
-        db.create_index('im_projectapplication', ['member_join_policy_id'])
-
         # Adding model 'MemberLeavePolicy'
         db.create_table('im_memberleavepolicy', (
             ('policy', self.gf('django.db.models.fields.CharField')(max_length=255, unique=True, db_index=True)),
@@ -55,6 +67,24 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('im', ['MemberJoinPolicy'])
 
+        # Changing field 'ProjectResourceGrant.project_export_limit'
+        db.alter_column('im_projectresourcegrant', 'project_export_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True))
+
+        # Changing field 'ProjectResourceGrant.project_import_limit'
+        db.alter_column('im_projectresourcegrant', 'project_import_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True))
+
+        # Changing field 'ProjectResourceGrant.member_export_limit'
+        db.alter_column('im_projectresourcegrant', 'member_export_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True))
+
+        # Changing field 'ProjectResourceGrant.member_capacity'
+        db.alter_column('im_projectresourcegrant', 'member_capacity', self.gf('django.db.models.fields.BigIntegerField')(null=True))
+
+        # Changing field 'ProjectResourceGrant.member_import_limit'
+        db.alter_column('im_projectresourcegrant', 'member_import_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True))
+
+        # Changing field 'ProjectResourceGrant.project_capacity'
+        db.alter_column('im_projectresourcegrant', 'project_capacity', self.gf('django.db.models.fields.BigIntegerField')(null=True))
+
         # Renaming column for 'ProjectApplication.member_join_policy' to match new field type.
         db.rename_column('im_projectapplication', 'member_join_policy', 'member_join_policy_id')
         # Changing field 'ProjectApplication.member_join_policy'
@@ -64,6 +94,12 @@ class Migration(SchemaMigration):
         db.rename_column('im_projectapplication', 'member_leave_policy', 'member_leave_policy_id')
         # Changing field 'ProjectApplication.member_leave_policy'
         db.alter_column('im_projectapplication', 'member_leave_policy_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['im.MemberLeavePolicy']))
+
+        # Adding index on 'ProjectApplication', fields ['member_leave_policy']
+        db.create_index('im_projectapplication', ['member_leave_policy_id'])
+
+        # Adding index on 'ProjectApplication', fields ['member_join_policy']
+        db.create_index('im_projectapplication', ['member_join_policy_id'])
 
 
     models = {
@@ -111,7 +147,7 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 4, 18, 59, 31, 212689)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 7, 15, 0, 24, 50514)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
@@ -127,9 +163,9 @@ class Migration(SchemaMigration):
             'email_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_credits': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_signed_terms': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'invitations': ('django.db.models.fields.IntegerField', [], {'default': '100'}),
+            'invitations': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'is_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'level': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'level': ('django.db.models.fields.IntegerField', [], {'default': '4'}),
             'policy': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.Resource']", 'null': 'True', 'through': "orm['im.AstakosUserQuota']", 'symmetrical': 'False'}),
             'provider': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'third_party_identifier': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
@@ -162,7 +198,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 4, 18, 59, 31, 214577)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 7, 15, 0, 24, 51288)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchanges'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.invitation': {
@@ -194,12 +230,13 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Project'},
             'application': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'project'", 'unique': 'True', 'to': "orm['im.ProjectApplication']"}),
             'creation_date': ('django.db.models.fields.DateTimeField', [], {}),
+            'deactivation_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'deactivation_reason': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'deactivation_start_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_approval_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'members': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.AstakosUser']", 'through': "orm['im.ProjectMembership']", 'symmetrical': 'False'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80', 'db_index': 'True'}),
-            'termination_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
-            'termination_start_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'})
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80', 'db_index': 'True'})
         },
         'im.projectapplication': {
             'Meta': {'object_name': 'ProjectApplication'},
@@ -207,10 +244,10 @@ class Migration(SchemaMigration):
             'comments': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'end_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'homepage': ('django.db.models.fields.URLField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'homepage': ('django.db.models.fields.URLField', [], {'max_length': '255', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'issue_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'limit_on_members_number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'limit_on_members_number': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'member_join_policy': ('django.db.models.fields.IntegerField', [], {}),
             'member_leave_policy': ('django.db.models.fields.IntegerField', [], {}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
@@ -230,7 +267,7 @@ class Migration(SchemaMigration):
             'pending_serial': ('django.db.models.fields.BigIntegerField', [], {'null': 'True', 'db_index': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
-            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2013, 1, 4, 18, 59, 31, 222965)'}),
+            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2013, 1, 7, 15, 0, 24, 54113)'}),
             'state': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
         'im.projectmembershiphistory': {
@@ -245,13 +282,13 @@ class Migration(SchemaMigration):
         'im.projectresourcegrant': {
             'Meta': {'unique_together': "(('resource', 'project_application'),)", 'object_name': 'ProjectResourceGrant'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'member_capacity': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
-            'member_export_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
-            'member_import_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'member_capacity': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'member_export_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'member_import_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
             'project_application': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.ProjectApplication']", 'null': 'True'}),
-            'project_capacity': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
-            'project_export_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
-            'project_import_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'project_capacity': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'project_export_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'project_import_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
         },
         'im.resource': {

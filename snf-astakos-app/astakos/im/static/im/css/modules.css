@@ -443,9 +443,20 @@ form.quotas-form  span.info span				{ width:285px;  }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}
 .stats .bar										{ padding: 0; text-align:center;  float:left; width:200px;}
 .stats .bar div									{ width:340px; height:30px; border:1px solid #000; margin-top:20px; overflow:hidden;}
-.stats .bar span								{ text-align:right; display:block; height:100%; float:left; }
-.stats .bar span em								{ color:#fff; float:right; }
-.stats .bar em									{ font-style:normal; color:#222;  line-height:30px; font-size:1.231em; padding-left:10px; float:left  }
+.stats .bar span								{ text-align:right; display:block; height:100%; position: relative; overflow: visible; }
+.stats .bar span.value							{ background-color: transparent !important; }
+.stats .bar span em								{ color:#000; }
+.stats .bar span em.hovered 					{ color:#fff; }
+.stats .bar em { 
+    font-style:normal; 
+    color:#222;  
+    line-height:30px; 
+    font-size:1.231em; 
+    padding-left:10px; 
+    position: absolute;
+    right: 10px;
+    left: 10px;
+}
 .stats .red .bar span							{ background:#ef4f54; }
 .stats .yellow .bar span						{ background:#f6921e; }
 .stats .green .bar span							{ background:#55b577; }
@@ -520,3 +531,19 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 /* login section */
 .login-section {}
 .main-login-method 								{ margin-bottom: 20px;}
+
+
+
+.stats .bar span {
+    transition: width 1s, background-color 0.3s;
+    -moz-transition: width 1s, background-color 0.3s; /* Firefox 4 */
+    -webkit-transition: width 1s, background-color 0.3s; /* Safari and Chrome */
+    -o-transition: width 1s, background-color 0.3s; /* Opera */
+}
+
+.stats .bar em {
+    transition: width 1s, color 0.2s;
+    -moz-transition: width 1s, color 0.2s; /* Firefox 4 */
+    -webkit-transition: width 1s, color 0.2s; /* Safari and Chrome */
+    -o-transition: width 1s, color 0.2s; /* Opera */
+}

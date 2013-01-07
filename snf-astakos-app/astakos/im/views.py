@@ -841,9 +841,16 @@ def resource_usage(request):
     else:
         messages.error(request, result.reason)
         backenddata = []
+        resource_usage = []
+
+    if request.REQUEST.get('json', None):
+        return HttpResponse(json.dumps(backenddata),
+                            mimetype="application/json")
+
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
                            resource_usage=backenddata,
+                           usage_update_interval=astakos_settings.USAGE_UPDATE_INTERVAL,
                            result=result)
 
 # TODO: action only on POST and user should confirm the removal

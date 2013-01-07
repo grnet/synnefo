@@ -252,7 +252,7 @@ class QHAPITest(QHTestCase):
 
         r = self.qh.get_quota(get_quota=[(e0, resource0, k0),
                                          (e0, resource1, k0)])
-        self.assertEqual(r, [(e0, resource0, 5, 3, QH_MAX_INT, 5)
+        self.assertEqual(r, [(e0, resource0, 5, 3, QH_MAX_INT+4, 5)
                              + DEFAULT_HOLDING + (0,),
                              (e0, resource1, 0, QH_MAX_INT, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
@@ -422,9 +422,9 @@ class QHAPITest(QHTestCase):
         if r:
             raise AssertionError("cannot create entities")
 
-        self.qh.set_quota(set_quota=[(sys, resource, '', 10, 0, None, None, 0),
-                                     (e0, resource, k0, 0, 10, None, None, 0),
-                                     (e1, resource, k1, 0, 10, None, None, 0)])
+        self.qh.set_quota(set_quota=[(sys, resource, '', 10, 0, QH_MAX_INT, QH_MAX_INT, 0),
+                                     (e0, resource, k0, 0, 10, QH_MAX_INT, QH_MAX_INT, 0),
+                                     (e1, resource, k1, 0, 10, QH_MAX_INT, QH_MAX_INT, 0)])
 
         s0 = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
                                       name='a commission',

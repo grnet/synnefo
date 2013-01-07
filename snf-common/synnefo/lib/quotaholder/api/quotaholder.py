@@ -59,6 +59,8 @@ class Positive(Integer):
     def init(self):
         self.opts.update({'minimum': 1})
 
+QH_PRACTICALLY_INFINITE =   10**32
+
 Serial              =   Positive(classname='Serial')
 
 ClientKey           =   Name(classname='ClientKey')

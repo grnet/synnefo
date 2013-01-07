@@ -178,6 +178,7 @@ UNKNOWN_IDENTIFIER                      =   'Unknown identifier.'
 PENDING_MEMBERSHIP_LEAVE                =   'Your request is pending moderation by the Project owner.'
 USER_JOINED_PROJECT                     =   '%(realname)s has joined the Project.'
 USER_LEFT_PROJECT                       =   '%(realname)s has left the Project.'
+USER_JOIN_REQUEST_SUBMITED              =   'Join request submitted.'
 
 # Auth providers messages
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled."

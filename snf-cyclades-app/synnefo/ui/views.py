@@ -66,6 +66,7 @@ UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
                                 3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
+QUOTAS_UPDATE_INTERVAL = getattr(settings, "UI_QUOTAS_UPDATE_INTERVAL", 10000)
 
 # predefined values settings
 VM_IMAGE_COMMON_METADATA = getattr(settings, "UI_VM_IMAGE_COMMON_METADATA", ["OS", "users"])
@@ -179,6 +180,7 @@ def home(request):
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
+               'quotas_update_interval': QUOTAS_UPDATE_INTERVAL,
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,

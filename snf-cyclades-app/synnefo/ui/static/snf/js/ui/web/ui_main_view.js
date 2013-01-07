@@ -768,6 +768,8 @@
             }
         },
         
+        quota_handlers_initialized: false,
+
         load_user_quotas: function() {
           var main_view = this;
           snf.api.sync('read', undefined, {
@@ -776,7 +778,21 @@
               snf.user.quotas = {};
               snf.user.quotas['vms'] = d.vms_quota;
               snf.user.quotas['networks'] = d.networks_quota;
-              main_view.init_quotas_handlers(['vms','networks']);
+              if (!main_view.quota_handlers_initialized) {
+                  main_view.init_quotas_handlers(['vms','networks']);
+                  main_view.quota_handlers_initialized = true;
+              }
+              try {
+                main_view.check_quotas('vms');
+                main_view.check_quotas('networks');
+              } catch (err) {
+                console.error(err);
+              }
+            },
+            complete: function() {
+                setTimeout(function(){
+                    main_view.load_user_quotas();
+                }, synnefo.config.quotas_update_interval || 10000);
             }
           });
         },

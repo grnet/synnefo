@@ -638,6 +638,7 @@
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
             synnefo.config.quota_url = '{% url synnefo.ui.views.user_quota %}';
             synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
+            synnefo.config.quotas_update_interval = {{ quotas_update_interval }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,

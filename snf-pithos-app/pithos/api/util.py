@@ -276,6 +276,13 @@ def update_manifest_meta(request, v_account, meta):
         md5.update(etag)
         meta['checksum'] = md5.hexdigest().lower()
 
+def is_uuid(str):
+    try:
+        uuid.UUID(str)
+    except ValueError:
+       return False
+    else:
+       return True
 
 def retrieve_username(uuid):
     try:
@@ -286,6 +293,8 @@ def retrieve_username(uuid):
         return uuid
 
 def retrieve_uuid(username):
+    if is_uuid(username):
+	return username
     try:
         return get_user_uuid(
             SERVICE_TOKEN, username, USER_INFO_URL, AUTHENTICATION_USERS)

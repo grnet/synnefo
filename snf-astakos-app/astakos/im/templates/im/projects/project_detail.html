@@ -57,7 +57,8 @@
                 {% endif %}
                 &nbsp;
             </dd>
-            
+
+            {% comment %}
 		 	<dt>Precursor Application</dt>
 		 	<dd>
 		 	    {% if object.precursor_application %}
@@ -71,7 +72,8 @@
                     <a href="{% url project_detail object.follower.id %}">{{object.follower.id}}</a>
                 {% endif %}
                 &nbsp;
-		 	</dd>
+            </dd>
+            {% endcomment %}
 		 </dl>
 	 </div>
 	 <div class="full-dotted">

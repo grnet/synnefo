@@ -243,6 +243,7 @@ table.alt-style tr th.desc a					{ background:url(../images/arrow_th_bg.png) no-
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
 dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}
 dl.alt-style dt:nth-child(2n)					{ background:black; }
+dl.alt-style dd									{ overflow:hidden; }
 .projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}
 .projects h2 em									{ float:right; }
@@ -491,7 +492,9 @@ table .msg-wrap .dialog							{ position:absolute; border:1px dashed #ccc;  padd
 table .msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
 table .msg-wrap .dialog .no.submit				{ float:right; }
 table.alt-style .centered						{ text-align:center; }
-table.alt-style form.link-like					{ float:none }
+table.alt-style form.link-like					{ float:none}
+table.alt-style .project_action div:first-child form	{ margin:0; }
+
 form.quotas-form span.error-msg span			{ display:block; color:red; }
 form.quotas-form span.error-msg em,
 form.quotas-form span.error-msg:hover em		{ background-position:-58px -3px; }

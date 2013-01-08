@@ -11,7 +11,7 @@
 <h2>CREATE PROJECT</h2>
 
 {% if show_form %}
-<form action="?verify=1#top" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
+<form action="?verify=1" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 
     <fieldset class="with-info" id="top">
     	<legend>
@@ -153,7 +153,8 @@
 										{% else %}
 											value = "{% get_grant_value rname form %}"
 										{% endif %}
-			       						/> 
+			       						autocomplete="off"			
+							> 
 			       			<span class="extra-img">&nbsp;</span>
 			         		<span class="info"><em>more info</em><span>{{ rdata.help_text_input_each }}</span></span>
 			    		</p>

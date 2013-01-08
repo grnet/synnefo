@@ -322,17 +322,13 @@ $(document).ready(function() {
 			return false;
 			
 		}
-		if ($('.quotas-form .group .form-row.with-errors').length>0 ){
-			$('.quotas-form .group .form-row.with-errors input[type="text"]')[0].focus();
-			return false;
-			
-		} 
-		 		
+		 	
 		  
 		 
 	});
 
 
+	$('.quotas-form .form-row.with-errors input[type="text"]').first().focus();
 	
 	
 	

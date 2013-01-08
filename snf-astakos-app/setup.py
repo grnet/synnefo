@@ -47,11 +47,11 @@ from astakos import get_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 try:
-    # try to update the version file
-    from synnefo.util import version
-    version.update_version('astakos', 'version', HERE)
+    # use devtools to update the version file
+    from devtools.version import update_version
+    update_version('astakos', 'common', HERE)
 except ImportError:
-    pass
+    raise RuntimeError("devtools is a build dependency")
 
 from astakos.version import __version__
 

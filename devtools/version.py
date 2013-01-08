@@ -39,6 +39,8 @@ import re
 import sys
 import pprint
 import subprocess
+import git
+
 from distutils import log
 from collections import namedtuple
 
@@ -64,17 +66,6 @@ BRANCH_TYPES = {
 BASE_VERSION_FILE = "version"
 
 
-def callgit(cmd):
-    p = subprocess.Popen(["/bin/sh", "-c", cmd],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE)
-    output = p.communicate()[0].strip()
-    if p.returncode != 0:
-        log.error("Command '%s' failed with output:\n%s" % (cmd, output))
-        raise subprocess.CalledProcessError(p.returncode, cmd, output)
-    return output
-
-
 def vcs_info():
     """
     Return current git HEAD commit information.
@@ -88,11 +79,12 @@ def vcs_info():
 
     """
     try:
-        branch = callgit("git rev-parse --abbrev-ref HEAD")
-        revid = callgit("git rev-parse --short HEAD")
-        revno = int(callgit("git rev-list HEAD|wc -l"))
-        desc = callgit("git describe --tags")
-        toplevel = callgit("git rev-parse --show-toplevel")
+        repo = git.Repo(".")
+        branch = repo.head.reference
+        revid = branch.commit.hexsha[0:7]
+        revno = len(list(repo.iter_commits()))
+        desc = repo.git.describe("--tags")
+        toplevel = repo.working_dir
     except subprocess.CalledProcessError:
         log.error("Could not retrieve git information. " +
                   "Current directory not a git repository?")
@@ -101,7 +93,7 @@ def vcs_info():
     info = namedtuple("vcs_info", ["branch", "revid", "revno",
                                    "desc", "toplevel"])
 
-    return info(branch=branch, revid=revid, revno=revno, desc=desc,
+    return info(branch=branch.name, revid=revid, revno=revno, desc=desc,
                 toplevel=toplevel)
 
 

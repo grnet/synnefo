@@ -507,7 +507,7 @@ def do_reject_membership(
 
     if not bypass_checks:
         do_reject_membership_checks(project, request_user)
-    
+
     membership = get_membership_for_update(project, user)
     membership.reject()
 
@@ -599,7 +599,7 @@ def do_leave_project(project_id, user_id, bypass_checks=False):
     project = get_project_for_update(project_id)
 
     if not bypass_checks:
-        do_leave_project_checks(projetc)
+        do_leave_project_checks(project)
 
     membership = get_membership_for_update(project, user_id)
 
@@ -651,7 +651,7 @@ def submit_application(
 
     application.submit(
         resource_policies, applicant, comments, precursor_application)
-    
+
     try:
         notification = build_notification(
             settings.SERVER_EMAIL,
@@ -728,7 +728,7 @@ def suspend(project_id):
     project.last_approval_date = None
     project.save()
     trigger_sync()
-    
+
     try:
         notification = build_notification(
             settings.SERVER_EMAIL,

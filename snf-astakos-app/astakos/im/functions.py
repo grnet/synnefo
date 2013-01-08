@@ -602,6 +602,8 @@ def do_leave_project(project_id, user_id, bypass_checks=False):
         do_leave_project_checks(projetc)
 
     membership = get_membership_for_update(project, user_id)
+
+    leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
         trigger_sync()
@@ -636,6 +638,7 @@ def do_join_project(project_id, user_id, bypass_checks=False):
 
     membership = create_membership(project, user_id)
 
+    join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()

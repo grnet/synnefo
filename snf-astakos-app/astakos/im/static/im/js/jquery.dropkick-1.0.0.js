@@ -12,8 +12,8 @@
 (function ($, window, document) {
 
   function fixLabel (lbl){
-    if ( lbl.length > 26 ) {
-    	return lbl.substring(0,26)+'...';
+    if ( lbl.length > 25 ) {
+    	return lbl.substring(0,25)+'...';
     } else {
     	return lbl;
     }

@@ -307,12 +307,12 @@ SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
 
 PROJECT_MEMBER_JOIN_POLICIES = getattr(settings,
                                 'ASTAKOS_PROJECT_MEMBER_JOIN_POLICIES',
-                                {1:'automatically accepted by the system',
-                                 2:'accepted by the owner of the project',
-                                 3:'members can not join the project'})
+                                {'1':'automatically accepted by the system',
+                                 '2':'accepted by the owner of the project',
+                                 '3':'members can not join the project'})
 
 PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
                                 'ASTAKOS_PROJECT_MEMBER_LEAVE_POLICIES',
-                                {1:'automatically accepted by the system',
-                                 2:'accepted by the owner of the project',
-                                 3:'members can not leave the project'})
+                                {'1':'automatically accepted by the system',
+                                 '2':'accepted by the owner of the project',
+                                 '3':'members can not leave the project'})

@@ -412,7 +412,6 @@ class UpdateNetworkTest(TestCase):
 
     def test_remove_offline_backend(self, client):
         """Test network removing when a backend is offline"""
-        print 'in'
         mfactory.BridgePoolTableFactory()
         net = mfactory.NetworkFactory(flavor='PHYSICAL_VLAN',
                                       state='ACTIVE',

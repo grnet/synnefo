@@ -38,13 +38,6 @@ from django.test import TestCase
 
 from mock import patch
 from contextlib import contextmanager
-from functools import wraps
-
-from synnefo.db.models import *
-from synnefo.db import models_factory as mfactory
-
-from synnefo.api import faults
-
 
 
 @contextmanager

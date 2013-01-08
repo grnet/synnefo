@@ -68,6 +68,10 @@ from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
     trigger_sync)
 from astakos.im.models import submit_application as models_submit_application
+from astakos.im.project_notif import (
+    membership_change_notify,
+    application_submit_notify, application_approve_notify,
+    project_termination_notify, project_suspension_notify)
 
 import astakos.im.messages as astakos_messages
 
@@ -475,16 +479,8 @@ def do_accept_membership(project_id, user, request_user=None):
     membership.accept()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':project.application, 'action':'accepted'})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    membership_change_notify(project, membership.person, 'accepted')
+
     return membership
 
 def reject_membership(project_application_id, user, request_user=None):
@@ -507,16 +503,8 @@ def do_reject_membership(project_id, user, request_user=None):
     membership = get_membership_for_update(project, user)
     membership.reject()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':project.application, 'action':'rejected'})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    membership_change_notify(project, membership.person, 'rejected')
+
     return membership
 
 def remove_membership(project_application_id, user, request_user=None):
@@ -544,16 +532,8 @@ def do_remove_membership(project_id, user, request_user=None):
     membership.remove()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':project.application, 'action':'removed'})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    membership_change_notify(project, membership.person, 'removed')
+
     return membership
 
 def enroll_member(project_application_id, user, request_user=None):
@@ -648,17 +628,8 @@ def submit_application(kw, request_user=None):
 
     application = models_submit_application(**kw)
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [i[1] for i in settings.ADMINS],
-            _(PROJECT_CREATION_SUBJECT) % application.__dict__,
-            template='im/projects/project_creation_notification.txt',
-            dictionary={'object':application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e)
-    return application.id
+    application_submit_notify(application)
+    return application
 
 def update_application(app_id, **kw):
     app = ProjectApplication.objects.get(id=app_id)
@@ -687,16 +658,7 @@ def approve_application(app):
     application.approve()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [application.owner.email],
-            _(PROJECT_APPROVED_SUBJECT) % application.__dict__,
-            template='im/projects/project_approval_notification.txt',
-            dictionary={'object':application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    application_approve_notify(application)
 
 def terminate(project_id):
     project = get_project_for_update(project_id)
@@ -705,16 +667,7 @@ def terminate(project_id):
     project.terminate()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [project.application.owner.email],
-            _(PROJECT_TERMINATION_SUBJECT) % project.__dict__,
-            template='im/projects/project_termination_notification.txt',
-            dictionary={'object':project.application}
-        ).send()
-    except NotificationError, e:
-        logger.error(e.message)
+    project_termination_notify(project)
 
 def suspend(project_id):
     project = get_project_by_id(project_id)
@@ -722,13 +675,4 @@ def suspend(project_id):
     project.save()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [project.application.owner.email],
-            _(PROJECT_SUSPENSION_SUBJECT) % project.__dict__,
-            template='im/projects/project_suspension_notification.txt',
-            dictionary={'object':project.application}
-        ).send()
-    except NotificationError, e:
-        logger.error(e.message)
+    project_suspension_notify(project)

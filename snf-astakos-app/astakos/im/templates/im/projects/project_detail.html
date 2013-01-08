@@ -12,7 +12,7 @@
             {% if user_owns_project %}
                 [ PROJECT {{ object.state_display|upper }} ]
             {%  else %}
-                {% if user in approve_members %}
+                {% if user in approved_members %}
                     [ ACCEPTED MEMBER ]
                 {% else %}
                 {% if member_status == 0 %}

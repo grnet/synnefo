@@ -52,11 +52,12 @@ from django.db import transaction
 from django.utils.encoding import smart_unicode
 from django.core import validators
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied
 
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
     Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
-    ProjectApplication)
+    ProjectApplication, Project)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
@@ -64,7 +65,8 @@ from astakos.im.settings import (
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
     PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
-from astakos.im.functions import send_change_email, submit_application
+from astakos.im.functions import (
+    send_change_email, submit_application, do_accept_membership_checks)
 
 from astakos.im.util import reserved_email, get_query, model_to_dict
 from astakos.im import auth_providers
@@ -102,7 +104,8 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
     """
     Extends the built in UserCreationForm in several ways:
 
-    * Adds email, first_name, last_name, recaptcha_challenge_field, recaptcha_response_field field.
+    * Adds email, first_name, last_name, recaptcha_challenge_field,
+    * recaptcha_response_field field.
     * The username field isn't visible and it is assigned a generated id.
     * User created is not active.
     """
@@ -841,17 +844,29 @@ class ProjectSortForm(forms.Form):
 class AddProjectMembersForm(forms.Form):
     q = forms.CharField(
         max_length=800, widget=forms.Textarea, label=_('Add members'),
-        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP),
-        required=True)
+        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP), required=True)
 
+    def __init__(self, *args, **kwargs):
+        application_id = kwargs.pop('application_id', None)
+        if application_id:
+            self.project = Project.objects.get(application__id=application_id)
+        self.request_user = kwargs.pop('request_user', None)
+        super(AddProjectMembersForm, self).__init__(*args, **kwargs)
+        
     def clean(self):
+        try:
+            do_accept_membership_checks(self.project, self.request_user)
+        except PermissionDenied, e:
+            raise forms.ValidationError(e)
+
         q = self.cleaned_data.get('q') or ''
         users = q.split(',')
         users = list(u.strip() for u in users if u)
         db_entries = AstakosUser.objects.filter(email__in=users)
         unknown = list(set(users) - set(u.email for u in db_entries))
         if unknown:
-            raise forms.ValidationError(_(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
+            raise forms.ValidationError(
+                _(astakos_messages.UNKNOWN_USERS) % ','.join(unknown))
         self.valid_users = db_entries
         return self.cleaned_data
 

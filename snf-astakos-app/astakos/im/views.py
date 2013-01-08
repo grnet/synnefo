@@ -1097,7 +1097,10 @@ def project_update(request, application_id):
 def project_detail(request, application_id):
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
-        addmembers_form = AddProjectMembersForm(request.POST)
+        addmembers_form = AddProjectMembersForm(
+            request.POST,
+            application_id=int(application_id),
+            request_user=request.user)
         if addmembers_form.is_valid():
             try:
                 rollback = False

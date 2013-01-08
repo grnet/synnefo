@@ -646,13 +646,20 @@ def do_join_project(project_id, user_id, bypass_checks=False):
         trigger_sync()
     return membership
 
-def submit_application(**kw):
+def submit_application(kw, request_user=None):
+
+    kw['applicant'] = request_user
 
     precursor_id = kw.get('precursor_application', None)
     if precursor_id is not None:
         sfu = ProjectApplication.objects.select_for_update()
         precursor = sfu.get(id=precursor_id)
         kw['precursor_application'] = precursor
+
+        if request_user and \
+            (not precursor.owner == request_user and \
+                not request_user.is_superuser):
+            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
 
     application = models_submit_application(**kw)
 

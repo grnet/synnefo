@@ -434,9 +434,16 @@ form.quotas-form  span.info span				{ width:285px;  }
 .quotas-form .with-info .with-checkbox			{ margin-bottom:12px; }	 
 .quotas-form .quota input[type="text"]			{ width:150px;}
 .quotas-form .quota .error-msg 					{ display:none; color:red; font-size:0.8em; margin:0; margin-left:224px; margin-bottom:5px; padding:5px; }
-.quotas-form .quota .with-errors .error-msg		{ display:block;}	 
-::-webkit-input-placeholder 					{ color: #D4D4D4; font-style:italic; }
-:-moz-placeholder 								{ color: #D4D4D4;font-style:italic; }
+.quotas-form .quota .with-errors .error-msg		{ display:block;}	  
+form input[type="text"]::-webkit-input-placeholder,
+form textarea::-webkit-input-placeholder 								{ color: #D4D4D4; font-style:italic; }
+form input[type="text"]:-moz-placeholder,
+form textarea:-moz-placeholder 											{ color: #D4D4D4; font-style:italic; }
+form input[type="text"]::-moz-placeholder,
+ form textarea::-moz-placeholder										{ color: #D4D4D4; font-style:italic; }
+form input[type="text"]:-ms-input-placeholder,
+ form textarea:-ms-input-placeholder 									{ color: #D4D4D4; font-style:italic; }
+
 
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }

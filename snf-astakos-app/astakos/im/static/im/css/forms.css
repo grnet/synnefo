@@ -92,6 +92,8 @@ form.withlabels .extra-img					{ left:485px; bottom:12px; }
 form.innerlabels .extra-img					{ bottom:10px; left:290px }
 form .with-checkbox .extra-img				{   } 
 form .with-errors .extra-img 				{ background:url(../images/symbols.png) no-repeat -58px -3px;  z-index:101;}
+form .with-errors .extra-img:hover + span.info,
+form .with-errors .extra-img:hover + span.info span				{ display:block; }
 form .with-errors textarea+.extra-img,
 form .with-errors noscript+.extra-img		{ background:transparent;}
 form .with-errors input[type="text"],

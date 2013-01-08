@@ -646,10 +646,10 @@ app_name_widget      =  forms.TextInput(
 
 
 app_home_label       =  "Homepage URL"
-app_home_placeholder =  'http://myteam.myinstitution.org/myproject/'
+app_home_placeholder =  'myinstitution.org/myproject/'
 app_home_help        =  _("""
         URL pointing at your project's site.
-        e.g.: http://myteam.myinstitution.org/myproject.
+        e.g.: myinstitution.org/myproject/.
         Leave blank if there is no website.""")
 app_home_widget      =  forms.TextInput(
                             attrs={'placeholder': app_home_placeholder})

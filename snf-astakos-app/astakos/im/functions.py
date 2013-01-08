@@ -642,7 +642,7 @@ def update_application(app_id, **kw):
     app.issue_date = datetime.now()
 
     resource_policies = kw.pop('resource_policies', None)
-    for k, v in kw:
+    for k, v in kw.iteritems():
         setattr(app, k, v)
     app.save()
     app.resource_policies = resource_policies

@@ -51,12 +51,12 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         apps = ProjectApplication.objects.select_related().all().order_by('id')
-        
+
         labels = (
-            'application.id', 'application.state', 'project.id', 'name',
-            'is_alive', 'is_suspended', 'is_terminated'
+            'ApplID', 'PrecApplID', 'ApplState', 'ProjectID', 'name',
+            'ProjectStatus'
         )
-        columns = (15, 10, 20, 10, 10, 10, 10, 10)
+        columns = (10, 10, 10, 10, 20, 10)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -65,24 +65,31 @@ class Command(NoArgsCommand):
             self.stdout.write(sep + '\n')
 
         for app in apps:
+            precursor = app.precursor_application
+            prec_id = precursor.id if precursor else ''
+
             try:
-                project_id = str(app.project.id)
-                is_alive = app.project.is_alive
-                is_suspended = app.project.is_suspended
-                is_terminated = app.project.is_terminated
+                project = app.project
+                project_id = project.id
+                if project.is_alive:
+                    status = 'ALIVE'
+                elif project.is_terminated:
+                    status = 'TERMINATED'
+                elif project.is_suspended:
+                    status = 'SUSPENDED'
+                else:
+                    status = 'UNKNOWN'
             except:
                 project_id = ''
-                is_alive = ''
-                is_suspended = ''
-                is_terminated = ''
+                status     = ''
+
             fields = (
                 str(app.id),
+                str(prec_id),
                 app.state,
                 str(project_id),
                 app.name,
-                format_bool(is_alive),
-                format_bool(is_suspended),
-                format_bool(is_terminated)
+                status
             )
 
             if options['csv']:

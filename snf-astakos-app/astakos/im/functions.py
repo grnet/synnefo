@@ -444,9 +444,7 @@ def accept_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_accept_membership(project_id, user, request_user)
 
-def do_accept_membership(project_id, user, request_user=None):
-    project = get_project_for_update(project_id)
-
+def do_accept_membership_checks(project, request_user):
     if request_user and \
         (not project.application.owner == request_user and \
             not request_user.is_superuser):
@@ -461,6 +459,13 @@ def do_accept_membership(project_id, user, request_user=None):
 
     if project.violates_members_limit(adding=1):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
+
+def do_accept_membership(
+        project_id, user, request_user=None, bypass_checks=False):
+    project = get_project_for_update(project_id)
+
+    if not bypass_checks:
+        do_accept_membership_checks(project, request_user)
 
     membership = get_membership_for_update(project, user)
     membership.accept()
@@ -487,16 +492,22 @@ def reject_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_reject_membership(project_id, user, request_user)
 
-def do_reject_membership(project_id, user, request_user=None):
-    project = get_project_for_update(project_id)
-
+def do_reject_membership_checks(project, request_user):
     if request_user and \
         (not project.application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
     if not project.is_alive:
-        raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        raise PermissionDenied(
+            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
 
+def do_reject_membership(
+        project_id, user, request_user=None, bypass_checks=False):
+    project = get_project_for_update(project_id)
+
+    if not bypass_checks:
+        do_reject_membership_checks(project, request_user)
+    
     membership = get_membership_for_update(project, user)
     membership.reject()
 
@@ -521,15 +532,21 @@ def remove_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_remove_membership(project_id, user, request_user)
 
-def do_remove_membership(project_id, user, request_user=None):
-    project = get_project_for_update(project_id)
-
+def do_remove_membership_checks(project, membership):
     if request_user and \
         (not project.application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
     if not project.is_alive:
-        raise PermissionDenied(_(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+        raise PermissionDenied(
+            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+
+def do_remove_membership(
+        project_id, user, request_user=None, bypass_checks=False):
+    project = get_project_for_update(project_id)
+
+    if not bypass_checks:
+        do_remove_membership_checks(project, request_user)
 
     leave_policy = project.application.member_leave_policy
     if leave_policy == CLOSED_POLICY:
@@ -557,7 +574,8 @@ def enroll_member(project_application_id, user, request_user=None):
 
 def do_enroll_member(project_id, user, request_user=None):
     membership = create_membership(project_id, user)
-    return do_accept_membership(project_id, user, request_user)
+    return do_accept_membership(
+        project_id, user, request_user, bypass_checks=True)
 
 def leave_project(project_application_id, user_id):
     """
@@ -568,9 +586,7 @@ def leave_project(project_application_id, user_id):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_leave_project(project_id, user_id)
 
-def do_leave_project(project_id, user_id):
-    project = get_project_for_update(project_id)
-
+def do_leave_project_checks(project):
     if not project.is_alive:
         m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
         raise PermissionDenied(m)
@@ -578,6 +594,12 @@ def do_leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
+
+def do_leave_project(project_id, user_id, bypass_checks=False):
+    project = get_project_for_update(project_id)
+
+    if not bypass_checks:
+        do_leave_project_checks(projetc)
 
     membership = get_membership_for_update(project, user_id)
     if leave_policy == AUTO_ACCEPT_POLICY:
@@ -597,9 +619,7 @@ def join_project(project_application_id, user_id):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_join_project(project_id, user_id)
 
-def do_join_project(project_id, user_id):
-    project = get_project_for_update(project_id)
-
+def do_join_project_checks(project):
     if not project.is_alive:
         m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
         raise PermissionDenied(m)
@@ -607,6 +627,12 @@ def do_join_project(project_id, user_id):
     join_policy = project.application.member_join_policy
     if join_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
+
+def do_join_project(project_id, user_id, bypass_checks=False):
+    project = get_project_for_update(project_id)
+
+    if not bypass_checks:
+        do_join_project_checks(project)
 
     membership = create_membership(project, user_id)
 
@@ -617,7 +643,8 @@ def do_join_project(project_id, user_id):
     return membership
 
 def submit_application(
-    application, resource_policies, applicant, comments, precursor_application=None):
+        application, resource_policies, applicant, comments,
+        precursor_application=None):
 
     application.submit(
         resource_policies, applicant, comments, precursor_application)

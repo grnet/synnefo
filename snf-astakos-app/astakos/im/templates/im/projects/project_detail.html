@@ -10,16 +10,42 @@
 	<h2>
         <em>
             {% if user_owns_project %}
-                [ ADMINISTRATOR - {{ object.state|upper }} ]
+                [ PROJECT {{ object.state_display|upper }} ]
             {%  else %}
-                {% if  user in approve_members %}
-                    [ ENROLLED - ACTIVE ]
+                {% if user in approve_members %}
+                    [ ACCEPTED MEMBER ]
                 {% else %}
-                    [ ENROLLED - PENDING ]
+                {% if member_status == 0 %}
+                    [ JOIN REQUESTED ]
+                {% else %}
+                    [ NOT A MEMBER ]
                 {% endif %}
+                {% endif %}
+                {% endif %}
+                {% if user_owns_project %}
+            {% if object.last_follower %}<br />
+            <a style="font-size:0.7em" 
+                href="{% url astakos.im.views.project_detail object.last_follower.pk %}">MODIFICATION PENDING</a>
+            {% endif %}
+            {% else %}
             {% endif %}
         </em>
-	 	<span>{{ object.name|upper }}</span>
+        <span>{{ object.name|upper }}</span>
+        {% if user_owns_project %}
+        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">REQUEST MODIFICATION</a>
+        {% else %}
+        {% if member_status == -1 %}
+         - 
+            <a style="font-size:0.7em" 
+href="{% url astakos.im.views.project_join object.pk %}">JOIN</a>
+        {% endif %}
+            {% if  user in approve_members %}
+         - 
+            <a style="font-size:0.7em" 
+href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
+            {% else %}
+            {% endif %}
+            {% endif %}
 	 </h2>
 	 
 	 <div class="full-dotted">

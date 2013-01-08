@@ -1144,7 +1144,9 @@ def project_detail(request, application_id):
         extra_context={
             'addmembers_form':addmembers_form,
             'members_table': members_table,
-            'user_owns_project': request.user.owns_project(application)
+            'user_owns_project': request.user.owns_project(application),
+            'modifications_table': modifications_table,
+            'member_status': application.user_status(request.user)
             })
 
 @require_http_methods(["GET", "POST"])
@@ -1186,7 +1188,7 @@ def project_search(request):
           'table': table
         })
 
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually

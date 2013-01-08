@@ -176,32 +176,36 @@ class RichLinkColumn(tables.TemplateColumn):
         return contexts
 
 
-def action_extra_context(project, table, self):
+def action_extra_context(application, table, self):
     user = table.user
     url, action, confirm, prompt = '', '', True, ''
     append_url = ''
 
-    if user.owns_project(project):
-        url = 'astakos.im.views.project_update'
-        action = _('Update')
-        confirm = False
-        prompt = ''
-    elif user.is_project_accepted_member(project):
-        url = 'astakos.im.views.project_leave'
-        action = _('- Leave')
-        confirm = True
-        prompt = _('Are you sure you want to leave from the project ?')
-    elif not user.is_project_member(project):
-        url = 'astakos.im.views.project_join'
-        action = _('+ Join')
-        confirm = True
-        prompt = _('Are you sure you want to join this project ?')
-    else:
-        action = ''
-        confirm = False
-        url = None
+    can_join = True
 
-    url = reverse(url, args=(project.pk, )) + append_url if url else ''
+    try:
+        project = Project.objects.get(application=application)
+        do_join_project_checks(project)
+    except (PermissionDenied, Project.DoesNotExist), e:
+        can_join = False
+
+    if can_join:
+        if user.is_project_accepted_member(application):
+            url = 'astakos.im.views.project_leave'
+            action = _('Leave')
+            confirm = True
+            prompt = _('Are you sure you want to leave from the project ?')
+        elif not user.is_project_member(application):
+            url = 'astakos.im.views.project_join'
+            action = _('Join')
+            confirm = True
+            prompt = _('Are you sure you want to join this project ?')
+        else:
+            action = ''
+            confirm = False
+            url = None
+
+    url = reverse(url, args=(application.pk, )) + append_url if url else ''
     return {'action': action,
             'confirm': confirm,
             'url': url,
@@ -272,6 +276,8 @@ def member_action_extra_context(membership, table, col):
     if membership.state == ProjectMembership.ACCEPTED:
         urls = ['astakos.im.views.project_remove_member']
         actions = [_('Remove')]
+        if table.user == membership.person:
+            actions = [_('Leave')]
         prompts = [_('Are you sure you want to remove this member ?')]
         confirms = [True, True]
 
@@ -302,7 +308,7 @@ class ProjectApplicationMembersTable(UserTable):
         return record.person.realname
 
     def render_status(self, value, *args, **kwargs):
-        return MEMBER_STATUS_DISPLAY.get(value, 'Unknown')
+        return USER_STATUS_DISPLAY.get(value, 'Unknown')
 
     class Meta:
         template = "im/table_render.html"

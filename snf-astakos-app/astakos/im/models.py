@@ -668,7 +668,7 @@ class AstakosUser(User):
         return mark_safe(message + u' '+ msg_extra)
 
     def owns_project(self, project):
-        return project.user_status(self) == 100
+        return project.owner == self
 
     def is_project_member(self, project):
         return project.user_status(self) in [0,1,2,3]
@@ -1135,6 +1135,23 @@ class ProjectApplicationManager(ForUpdateManager):
         return self.filter(q)
 
 
+PROJECT_STATE_DISPLAY = {
+    'Pending': _('Pending review'),
+    'Approved': _('Active'),
+    'Replaced': _('Replaced'),
+    'Unknown': _('Unknown')
+}
+
+USER_STATUS_DISPLAY = {
+    100: _('Owner'),
+      0: _('Join requested'),
+      1: _('Pending'),
+      2: _('Accepted member'),
+      3: _('Removing'),
+      4: _('Removed'),
+     -1: _('Not a member'),
+}
+
 class ProjectApplication(models.Model):
     PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
@@ -1177,6 +1194,9 @@ class ProjectApplication(models.Model):
     def __unicode__(self):
         return "%s applied by %s" % (self.name, self.applicant)
 
+    def state_display(self):
+        return PROJECT_STATE_DISPLAY.get(self.state, _('Unknown'))
+
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
@@ -1193,18 +1213,18 @@ class ProjectApplication(models.Model):
         4   REMOVED
        -1   User has no association with the project
         """
-        if user == self.owner:
-            status = 100
-        else:
-            try:
-                membership = self.project.projectmembership_set.get(person=user)
-                status = membership.state
-            except Project.DoesNotExist:
-                status = -1
-            except ProjectMembership.DoesNotExist:
-                status = -1
+        try:
+            membership = self.project.projectmembership_set.get(person=user)
+            status = membership.state
+        except Project.DoesNotExist:
+            status = -1
+        except ProjectMembership.DoesNotExist:
+            status = -1
 
         return status
+
+    def user_status_display(self, user):
+        return USER_STATUS_DISPLAY.get(self.user_status(user), _('Unknown'))
 
     def members_count(self):
         return self.project.approved_memberships.count()

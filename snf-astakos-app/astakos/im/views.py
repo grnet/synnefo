@@ -1136,6 +1136,15 @@ def project_detail(request, application_id):
                                                           prefix="members_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
 
+    modifications_table = None
+    if application.follower:
+        following_applications = list(application.followers())
+        following_applications.reverse()
+        modifications_table = \
+            tables.ProjectModificationApplicationsTable(following_applications,
+                                                       user=request.user,
+                                                       prefix="modifications_")
+
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),

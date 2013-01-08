@@ -1125,8 +1125,12 @@ class ProjectApplicationManager(ForUpdateManager):
         """
         Return projects accessed by specified user.
         """
-        return self.filter(Q(owner=user) | Q(applicant=user) | \
-                        Q(project__projectmembership__person=user)).order_by('pk').distinct()
+        participates_fitlers = Q(owner=user) | Q(applicant=user) | \
+                               Q(project__projectmembership__person=user)
+        state_filters = (Q(state=ProjectApplication.PENDING) & \
+                        Q(precursor_application__isnull=True)) | \
+                        Q(state=ProjectApplication.APPROVED)
+        return self.filter(participates_fitlers & state_filters).order_by('issue_date').distinct()
 
     def search_by_name(self, *search_strings):
         q = Q()
@@ -1251,6 +1255,21 @@ class ProjectApplication(models.Model):
             return ProjectApplication.objects.get(precursor_application=self)
         except ProjectApplication.DoesNotExist:
             return
+
+    def followers(self):
+        current = self
+        try:
+            while current.projectapplication:
+                yield current.follower
+                current = current.follower
+        except:
+            pass
+
+    def last_follower(self):
+        try:
+            return list(self.followers())[-1]
+        except IndexError:
+            return None
 
     def submit(self, resource_policies, applicant, comments,
                precursor_application=None):

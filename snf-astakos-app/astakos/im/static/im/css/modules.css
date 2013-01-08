@@ -557,3 +557,5 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
     -webkit-transition: width 1s, color 0.2s; /* Safari and Chrome */
     -o-transition: width 1s, color 0.2s; /* Opera */
 }
+
+i.tiny { font-size: 0.8em; color: #999;}

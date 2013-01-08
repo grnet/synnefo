@@ -109,11 +109,11 @@ href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
 		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
 		 	<dt>Member join policy</dt>
             <dd>
-                {{ join_policies|lookup:object.member_join_policy }}
+                {{ join_policies|lookup:object.member_join_policy|title }}
             </dd>
 		 	<dt>Member leave policy</dt>
             <dd>
-                {{ leave_policies|lookup:object.member_leave_policy }}
+                {{ leave_policies|lookup:object.member_leave_policy|title }}
             </dd>
 		 </dl>
 	 </div>
@@ -170,6 +170,14 @@ href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
             </form>
         </div>
         {% endif %}
+        {% comment %}
+        {% if modifications_table %}
+         <div class="full-dotted">
+             <h3>MODIFICATION REQUESTS</h3>
+             {% render_table modifications_table %}
+         </div>
+         {% endif %}
+         {% endcomment %}
     {% endif %}
     <div class="full-dotted">
         <p>

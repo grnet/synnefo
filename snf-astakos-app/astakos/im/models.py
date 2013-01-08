@@ -1271,23 +1271,6 @@ class ProjectApplication(models.Model):
         except IndexError:
             return None
 
-    def submit(self, resource_policies, applicant, comments,
-               precursor_application=None):
-
-        if precursor_application:
-            self.precursor_application = precursor_application
-            self.owner = precursor_application.owner
-        else:
-            self.owner = applicant
-
-        self.id = None
-        self.applicant = applicant
-        self.comments = comments
-        self.issue_date = datetime.now()
-        self.state = self.PENDING
-        self.save()
-        self.resource_policies = resource_policies
-
     def _get_project(self):
         precursor = self
         while precursor:

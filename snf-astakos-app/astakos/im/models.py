@@ -1164,7 +1164,7 @@ class ProjectApplication(models.Model):
                                     db_index=True)
 
     state                   =   models.CharField(max_length=80,
-                                                default=UNKNOWN)
+                                                default=PENDING)
 
     owner                   =   models.ForeignKey(
                                     AstakosUser,
@@ -1190,7 +1190,7 @@ class ProjectApplication(models.Model):
                                     blank=True,
                                     through='ProjectResourceGrant')
     comments                =   models.TextField(null=True, blank=True)
-    issue_date              =   models.DateTimeField()
+    issue_date              =   models.DateTimeField(default=datetime.now)
 
 
     objects                 =   ProjectApplicationManager()

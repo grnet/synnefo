@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 from urlparse import urljoin
 from random import random
+from datetime import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
@@ -808,15 +809,15 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def save(self, commit=True):
         application = super(ProjectApplicationForm, self).save(commit=False)
-        applicant = self.user
-        comments = self.cleaned_data.pop('comments', None)
-        return submit_application(
-            application,
-            self.resource_policies,
-            applicant,
-            comments,
-            self.precursor_application
-        )
+        data = dict(self.fields)
+        data['precursor_application'] = self.instance.id
+        data['applicant'] = self.user
+        data['owner'] = self.user
+        data['comments'] = self.cleaned_data.pop('comments', None)
+        data['resource_policies'] = self.resource_policies
+        submit_application(**data)
+
+
 
 class ProjectSortForm(forms.Form):
     sorting = forms.ChoiceField(

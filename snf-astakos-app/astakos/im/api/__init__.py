@@ -172,7 +172,7 @@ class MenuItem(dict):
     def __set_is_active__(self):
         if self.get('is_active'):
             return
-        if self.current_path == self.get('url'):
+        if self.current_path.startswith(self.get('url')):
             self.__setitem__('is_active', True)
         else:
             submenu = self.get('submenu', ())

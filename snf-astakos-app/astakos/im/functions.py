@@ -67,6 +67,7 @@ from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
     trigger_sync)
+from astakos.im.models import submit_application as models_submit_application
 
 import astakos.im.messages as astakos_messages
 
@@ -646,22 +647,14 @@ def do_join_project(project_id, user_id, bypass_checks=False):
     return membership
 
 def submit_application(**kw):
-    precursor_id = kw.pop('precursor_application', None)
+
+    precursor_id = kw.get('precursor_application', None)
     if precursor_id is not None:
-        app = ProjectApplication.objects.get(id=precursor_id)
-        app.id = None
-        app.precursor_application_id = precursor_id
-    else:
-        app = ProjectApplication()
+        sfu = ProjectApplication.objects.select_for_update()
+        precursor = sfu.get(id=precursor_id)
+        kw['precursor_application'] = precursor
 
-    app.state = app.PENDING
-    app.issue_date = datetime.now()
-
-    resource_policies = kw.pop('resource_policies', None)
-    for k, v in kw.iteritems():
-        setattr(app, k, v)
-    app.save()
-    app.resource_policies = resource_policies
+    application = models_submit_application(**kw)
 
     try:
         notification = build_notification(
@@ -673,7 +666,7 @@ def submit_application(**kw):
         notification.send()
     except NotificationError, e:
         logger.error(e)
-    return app.id
+    return application.id
 
 def update_application(app_id, **kw):
     app = ProjectApplication.objects.get(id=app_id)

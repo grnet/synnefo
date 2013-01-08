@@ -806,18 +806,13 @@ class ProjectApplicationForm(forms.ModelForm):
 
         return policies
 
-
     def save(self, commit=True):
-        application = super(ProjectApplicationForm, self).save(commit=False)
-        data = dict(self.fields)
+        data = dict(self.cleaned_data)
         data['precursor_application'] = self.instance.id
         data['applicant'] = self.user
         data['owner'] = self.user
-        data['comments'] = self.cleaned_data.pop('comments', None)
         data['resource_policies'] = self.resource_policies
         submit_application(**data)
-
-
 
 class ProjectSortForm(forms.Form):
     sorting = forms.ChoiceField(

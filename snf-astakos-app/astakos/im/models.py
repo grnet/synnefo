@@ -1361,6 +1361,20 @@ class ProjectApplication(models.Model):
         self.state = self.APPROVED
         self.save()
 
+def submit_application(**kw):
+
+    resource_policies = kw.pop('resource_policies', None)
+    application = ProjectApplication(**kw)
+
+    precursor = kw['precursor_application']
+
+    if precursor is not None:
+        precursor.state = ProjectApplication.REPLACED
+        precursor.save()
+
+    application.save()
+    application.resource_policies = resource_policies
+    return application
 
 class ProjectResourceGrant(models.Model):
 

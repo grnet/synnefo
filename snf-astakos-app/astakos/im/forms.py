@@ -707,7 +707,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     homepage = forms.URLField(
         label     = app_home_label,
-        help_text = app_home_help,   
+        help_text = app_home_help,
         widget    = app_home_widget,
         required  = False)
 
@@ -732,12 +732,15 @@ class ProjectApplicationForm(forms.ModelForm):
         label     = app_end_date_label,
         help_text = app_end_date_help)
 
-    member_join_policy  = forms.ChoiceField(
+    member_join_policy  = forms.TypedChoiceField(
         label     = join_policy_label,
+        initial   = 2,
+        coerce    = int,
         choices   = join_policies)
 
-    member_leave_policy = forms.ChoiceField(
+    member_leave_policy = forms.TypedChoiceField(
         label     = leave_policy_label,
+        coerce    = int,
         choices   = leave_policies)
 
     limit_on_members_number = forms.IntegerField(

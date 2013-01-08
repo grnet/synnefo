@@ -1158,7 +1158,7 @@ class ProjectApplication(models.Model):
     name                    =   models.CharField(max_length=80)
     homepage                =   models.URLField(max_length=255, null=True)
     description             =   models.TextField(null=True, blank=True)
-    start_date              =   models.DateTimeField()
+    start_date              =   models.DateTimeField(null=True, blank=True)
     end_date                =   models.DateTimeField()
     member_join_policy      =   models.IntegerField()
     member_leave_policy     =   models.IntegerField()

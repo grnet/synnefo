@@ -46,7 +46,7 @@ if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
 
 ENTITY_KEY = '1'
-PRACTICALLY_INF = pow(2, 30)
+PRACTICALLY_INF = pow(2, 70)
 
 inf = float('inf')
 
@@ -168,7 +168,7 @@ def qh_add_quota(serial, sub_list, add_list):
 
     context = {}
     c = get_client()
-    
+
     sub_quota = []
     sub_append = sub_quota.append
     add_quota = []

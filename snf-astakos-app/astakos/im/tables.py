@@ -274,6 +274,7 @@ class UserProjectApplicationsTable(UserTable):
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
+        exclude = ('start_date', )
 
 class ProjectModificationApplicationsTable(UserProjectApplicationsTable):
     name = LinkColumn('astakos.im.views.project_detail',

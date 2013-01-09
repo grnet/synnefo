@@ -53,10 +53,9 @@ class Command(NoArgsCommand):
         apps = ProjectApplication.objects.select_related().all().order_by('id')
 
         labels = (
-            'ApplID', 'PrecApplID', 'ApplState', 'ProjectID', 'name',
-            'ProjectStatus'
+            'Application', 'Precursor', 'Status', 'Name', 'Project', 'Status'
         )
-        columns = (10, 10, 10, 10, 20, 10)
+        columns = (11, 10, 10, 30, 10, 10)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -87,8 +86,8 @@ class Command(NoArgsCommand):
                 str(app.id),
                 str(prec_id),
                 app.state,
-                str(project_id),
                 app.name,
+                str(project_id),
                 status
             )
 

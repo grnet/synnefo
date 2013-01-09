@@ -97,7 +97,8 @@ dialog --yesno "Create Snapshot?" 5 20 && snap=true && dchextra=-S && mrgextra= 
 
 # merge local branch into tmp branch with a nice commit message,
 # so it can be pushed as is to upstream debian
-git merge --no-edit $mrgextra ${mrgextra:+"$mrgmsg"} $LOCALBRANCH
+GIT_MERGE_AUTOEDIT=no
+git merge $mrgextra ${mrgextra:+"$mrgmsg"} $LOCALBRANCH
 
 # auto edit Debian changelog depending on Snapshot or Release mode
 export EDITOR=/usr/bin/vim

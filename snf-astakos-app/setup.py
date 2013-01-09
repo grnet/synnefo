@@ -49,7 +49,7 @@ HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 try:
     # use devtools to update the version file
     from devtools.version import update_version
-    update_version('astakos', 'common', HERE)
+    update_version('astakos', 'version', HERE)
 except ImportError:
     raise RuntimeError("devtools is a build dependency")
 

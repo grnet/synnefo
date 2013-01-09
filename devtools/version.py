@@ -85,10 +85,10 @@ def vcs_info():
         revno = len(list(repo.iter_commits()))
         desc = repo.git.describe("--tags")
         toplevel = repo.working_dir
-    except subprocess.CalledProcessError:
+    except git.InvalidGitRepositoryError:
         log.error("Could not retrieve git information. " +
                   "Current directory not a git repository?")
-        raise
+        return None
 
     info = namedtuple("vcs_info", ["branch", "revid", "revno",
                                    "desc", "toplevel"])
@@ -160,7 +160,7 @@ def python_version(base_version, vcs_info, mode):
     develop and feature branches.
 
     The suffix 'rc' is used to denote release candidates. 'rc' versions live
-    only release and hotfix branches.
+    only in release and hotfix branches.
 
     Suffixes 'next' and 'rc' have been chosen to ensure proper ordering
     according to setuptools rules:
@@ -244,18 +244,14 @@ def python_version(base_version, vcs_info, mode):
     if brnorm == "debian":
         brnorm = "debian-master"
     if brnorm.startswith("debian-"):
-        brnorm = brnorm.split("debian-")[1]
+        brnorm = brnorm.replace("debian-", "", 1)
 
     # Sanity checks
     if "-" in brnorm:
         btypestr = brnorm.split("-")[0]
-        bverstr = brnorm.split("-")[1]
-        if bverstr == "":
-            raise ValueError("Malformed branch name '%s'" % branch)
-        versioned = True
     else:
-        btypestr = branch
-        versioned = False
+        btypestr = brnorm
+
     try:
         btype = BRANCH_TYPES[btypestr]
     except KeyError:
@@ -263,27 +259,33 @@ def python_version(base_version, vcs_info, mode):
         raise ValueError("Malformed branch name '%s', cannot classify as one "
                          "of %s" % (btypestr, allowed_branches))
 
-    if versioned != btype.versioned:
-        raise ValueError(("Branch name '%s' should %s contain version" %
-                          (branch, "not" if versioned else "")))
-    if btype.versioned and not re.match(VERSION_RE, bverstr):
-        raise ValueError(("Malformed version '%s' in branch name '%s'" %
-                          (bverstr, branch)))
+    if btype.versioned:
+        try:
+            bverstr = brnorm.split("-")[1]
+        except IndexError:
+            # No version
+            raise ValueError("Branch name '%s' should contain version" %
+                             branch)
+
+        # Check that version is well-formed
+        if not re.match(VERSION_RE, bverstr):
+            raise ValueError("Malformed version '%s' in branch name '%s'" %
+                             (bverstr, branch))
 
     m = re.match(btype.allowed_version_re, base_version)
     if not m or (btype.versioned and m.groupdict()["bverstr"] != bverstr):
-        raise ValueError(("Base version '%s' unsuitable for branch name '%s'" %
-                         (base_version, branch)))
+        raise ValueError("Base version '%s' unsuitable for branch name '%s'" %
+                         (base_version, branch))
 
     if mode not in ["snapshot", "release"]:
-        raise ValueError(("Specified mode '%s' should be one of 'snapshot' or "
-                          "'release'" % mode))
+        raise ValueError("Specified mode '%s' should be one of 'snapshot' or "
+                         "'release'" % mode)
     snap = (mode == "snapshot")
 
     if ((snap and not btype.builds_snapshot) or
         (not snap and not btype.builds_release)):
-        raise ValueError(("Invalid mode '%s' in branch type '%s'" %
-                          (mode, btypestr)))
+        raise ValueError("Invalid mode '%s' in branch type '%s'" %
+                         (mode, btypestr))
 
     if snap:
         v = "%s_%d_%s" % (base_version, vcs_info.revno, vcs_info.revid)
@@ -361,12 +363,18 @@ def debian_version_from_python_version(pyver):
     True
 
     """
-    return pyver.replace("_", "~").replace("rc", "~rc")
+    return pyver.replace("_", "~").replace("rc", "~rc") + "-1"
 
 
 def debian_version(base_version, vcs_info, mode):
     p = python_version(base_version, vcs_info, mode)
     return debian_version_from_python_version(p)
+
+
+def user_info():
+    import getpass
+    import socket
+    return "%s@%s" % (getpass.getuser(), socket.getfqdn())
 
 
 def update_version(module, name="version", root="."):
@@ -378,18 +386,23 @@ def update_version(module, name="version", root="."):
 
     """
 
-    # FIXME: exit or fail if not in development environment?
     v = vcs_info()
+    if not v:
+        # Return early if not in development environment
+        return
     b = base_version(v)
     mode = build_mode()
     paths = [root] + module.split(".") + ["%s.py" % name]
     module_filename = os.path.join(*paths)
+    version = python_version(b, v, mode)
     content = """
 __version__ = "%(version)s"
-__version_info__ = __version__.split(".")
+__version_info__ = %(version_info)s
 __version_vcs_info__ = %(vcs_info)s
-    """ % dict(version=python_version(b, v, mode),
-            vcs_info=pprint.PrettyPrinter().pformat(dict(v._asdict())))
+__version_user_info__ = %(user_info)s
+    """ % dict(version=version, version_info=version.split("."),
+               vcs_info=pprint.PrettyPrinter().pformat(dict(v._asdict())),
+               user_info=user_info())
 
     module_file = file(module_filename, "w+")
     module_file.write(content)

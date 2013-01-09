@@ -44,11 +44,10 @@ from astakos.im.settings import (
 
 if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
+    from kamaki.clients.quotaholder import QH_PRACTICALLY_INFINITE
 
 ENTITY_KEY = '1'
-PRACTICALLY_INF = pow(2, 70)
 
-inf = float('inf')
 
 logger = logging.getLogger(__name__)
 
@@ -135,8 +134,8 @@ def register_users(users):
                                 key=ENTITY_KEY,
                                 quantity=0,
                                 capacity=uplimit if uplimit != inf else None,
-                                import_limit=PRACTICALLY_INF,
-                                export_limit=PRACTICALLY_INF,
+                                import_limit=QH_PRACTICALLY_INFINITE,
+                                export_limit=QH_PRACTICALLY_INFINITE,
                                 flags=0))
         return set_quota(payload)
 
@@ -155,10 +154,10 @@ def register_resources(resources):
                         holder=resource.service,
                         resource=resource,
                         key=ENTITY_KEY,
-                        quantity=PRACTICALLY_INF,
+                        quantity=QH_PRACTICALLY_INFINITE,
                         capacity=0,
-                        import_limit=PRACTICALLY_INF,
-                        export_limit=PRACTICALLY_INF,
+                        import_limit=QH_PRACTICALLY_INFINITE,
+                        export_limit=QH_PRACTICALLY_INFINITE,
                         flags=0) for resource in resources)
         return set_quota(payload)
 

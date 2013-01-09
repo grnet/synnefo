@@ -1392,6 +1392,22 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
 
+class ProjectManager(ForUpdateManager):
+
+    def deactivating_projects(self):
+        return self.filter(state__gt=Project.ACTIVE)
+
+    def _q_terminated(self):
+        return Q(state=Project.TERMINATED) | Q(state=Project.TERMINATING)
+
+    def terminated_projects(self):
+        q = self._q_terminated()
+        return self.filter(q)
+
+    def not_terminated_projects(self):
+        q = ~self._q_terminated()
+        return self.filter(q)
+
 class Project(models.Model):
 
     application                 =   models.OneToOneField(
@@ -1404,7 +1420,6 @@ class Project(models.Model):
                                             through='ProjectMembership')
 
     deactivation_reason         =   models.CharField(max_length=255, null=True)
-    deactivation_start_date     =   models.DateTimeField(null=True)
     deactivation_date           =   models.DateTimeField(null=True)
 
     creation_date               =   models.DateTimeField()
@@ -1413,45 +1428,98 @@ class Project(models.Model):
                                             db_index=True,
                                             unique=True)
 
-    TERMINATED  =   'TERMINATED'
-    SUSPENDED   =   'SUSPENDED'
+    ACTIVE      = 1 << 8
+    TERMINATED  = 1
+    SUSPENDED   = 2
 
-    objects     =   ForUpdateManager()
+    INACTIVE    = 0
+    TERMINATING = TERMINATED | ACTIVE
+    SUSPENDING  = SUSPENDED | ACTIVE
+
+    state                       =   models.IntegerField(default=ACTIVE,
+                                                        db_index=True)
+
+    objects     =   ProjectManager()
 
     def __str__(self):
         return _("<project %s '%s'>") % (self.id, self.application.name)
 
     __repr__ = __str__
 
-    def is_deactivating(self):
-        return bool(self.deactivation_start_date)
 
-    def is_deactivated_synced(self):
-        return bool(self.deactivation_date)
+    ### Internal state manipulation
 
-    def is_deactivated(self):
-        return self.is_deactivated_synced() or self.is_deactivating()
+    def _active_bit(self):
+        return self.state & self.ACTIVE
 
-    def is_still_approved(self):
-        return bool(self.last_approval_date)
+    def is_active_bit(self):
+        return self._active_bit() == self.ACTIVE
 
-    def is_active(self):
-        return not(self.is_deactivated())
+    def is_active_strict(self):
+        return self.state == self.ACTIVE
+
+    def is_modulo_active(self, s):
+        return self.state & (~self.ACTIVE) == s
+
+    def set_modulo_active(self, s):
+        self.state = s | self._active_bit()
+
+    def set_inactive(self):
+        self.state &= (~self.ACTIVE)
+
+    def is_deactivating(self, reason=None):
+        return (self.is_active_bit() and
+                (self.is_modulo_active(reason) if reason
+                 else not self.is_active_strict()))
+
+    def is_deactivated_synced(self, reason=None):
+        if reason:
+            return self.state == reason
+        return not self.is_active_bit()
+
+    def is_deactivated(self, reason=None):
+        return (self.is_deactivated_synced(reason) or
+                self.is_deactivating(reason))
+
+
+    ### Deactivation calls
+
+    def set_deactivation_date(self):
+        self.deactivation_date = datetime.now()
+
+    def deactivate(self):
+        self.set_deactivation_date()
+        self.set_inactive()
+
+    def terminate(self):
+        self.deactivation_reason = 'TERMINATED'
+        self.set_modulo_active(self.TERMINATED)
+        self.save()
+
+
+    ### Logical checks
 
     def is_inconsistent(self):
         now = datetime.now()
         dates = [self.creation_date,
                  self.last_approval_date,
-                 self.deactivation_start_date,
                  self.deactivation_date]
         return any([date > now for date in dates])
 
-    def set_deactivation_start_date(self):
-        self.deactivation_start_date = datetime.now()
+    def is_active(self):
+        return self.is_active_strict()
 
-    def set_deactivation_date(self):
-        self.deactivation_start_date = None
-        self.deactivation_date = datetime.now()
+    @property
+    def is_alive(self):
+        return self.is_active()
+
+    @property
+    def is_terminated(self):
+        return self.is_deactivated(self.TERMINATED)
+
+    @property
+    def is_suspended(self):
+        return False
 
     def violates_resource_grants(self):
         return False
@@ -1461,9 +1529,8 @@ class Project(models.Model):
         return (len(self.approved_members) + adding >
                 application.limit_on_members_number)
 
-    @property
-    def is_alive(self):
-        return self.is_active()
+
+    ### Other
 
     @property
     def approved_memberships(self):
@@ -1509,20 +1576,6 @@ class Project(models.Model):
 
         m = ProjectMembership.objects.get(person=user, project=self)
         m.remove()
-
-    def terminate(self):
-        self.set_deactivation_start_date()
-        self.deactivation_reason = self.TERMINATED
-        self.save()
-
-    @property
-    def is_terminated(self):
-        return (self.is_deactivated() and
-                self.deactivation_reason == self.TERMINATED)
-
-    @property
-    def is_suspended(self):
-        return False
 
 class ProjectMembership(models.Model):
 
@@ -1793,7 +1846,7 @@ def sync_deactivating_projects():
     REMOVING = ProjectMembership.REMOVING
 
     psfu = Project.objects.select_for_update()
-    projects = psfu.filter(deactivation_start_date__isnull=False)
+    projects = psfu.deactivating_projects()
 
     if not projects:
         return
@@ -1835,7 +1888,7 @@ def sync_deactivating_projects():
     sync_finish_serials([serial])
 
     # finalize deactivating projects
-    deactivating_projects = psfu.filter(deactivation_start_date__isnull=False)
+    deactivating_projects = psfu.deactivating_projects()
     for project in deactivating_projects:
         objects = project.projectmembership_set.select_for_update()
         memberships = list(objects.filter(Q(state=ACCEPTED) |

@@ -46,6 +46,7 @@ from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
                                 NetworkInUse, OverLimit)
+from synnefo import quotas
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
@@ -89,7 +90,7 @@ def network_to_dict(network, user_id, detail=True):
         d['gateway'] = network.gateway
         d['gateway6'] = network.gateway6
         d['dhcp'] = network.dhcp
-        d['type'] = network.type
+        d['type'] = network.flavor
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
@@ -145,8 +146,9 @@ def list_networks(request, detail=False):
 
 
 @util.api_method('POST')
+@quotas.uses_commission
 @transaction.commit_on_success
-def create_network(request):
+def create_network(serials, request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -167,7 +169,7 @@ def create_network(request):
         subnet6 = d.get('cidr6', None)
         gateway = d.get('gateway', None)
         gateway6 = d.get('gateway6', None)
-        net_type = d.get('type', 'PRIVATE_MAC_FILTERED')
+        flavor = d.get('type', 'MAC_FILTERED')
         public = d.get('public', False)
         dhcp = d.get('dhcp', True)
     except (KeyError, ValueError):
@@ -176,48 +178,45 @@ def create_network(request):
     if public:
         raise Forbidden('Can not create a public network.')
 
-    if net_type not in ['PUBLIC_ROUTED', 'PRIVATE_MAC_FILTERED',
-                        'PRIVATE_PHYSICAL_VLAN', 'CUSTOM_ROUTED',
-                        'CUSTOM_BRIDGED']:
-        raise BadRequest("Invalid network type: %s", net_type)
-    if net_type not in settings.ENABLED_NETWORKS:
-        raise Forbidden("Can not create %s network" % net_type)
+    if flavor not in Network.FLAVORS.keys():
+        raise BadRequest("Invalid network flavors %s" % flavor)
 
-    networks_user_limit = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                                         settings.MAX_NETWORKS_PER_USER)
-
-    user_networks = len(Network.objects.filter(userid=request.user_uniq,
-                                               deleted=False))
-
-    if user_networks >= networks_user_limit:
-        raise OverLimit('Network count limit exceeded for your account.')
+    if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+        raise Forbidden("Can not create %s network" % flavor)
 
     cidr_block = int(subnet.split('/')[1])
     if not util.validate_network_size(cidr_block):
         raise OverLimit("Unsupported network size.")
 
-    try:
-        link, mac_prefix = util.net_resources(net_type)
-        if not link:
-            raise Exception("Can not create network. No connectivity link.")
+    user_id = request.user_uniq
+    serial = quotas.issue_network_commission(user_id)
+    serials.append(serial)
+    # Make the commission accepted, since in the end of this
+    # transaction the Network will have been created in the DB.
+    serial.accepted = True
+    serial.save()
 
+    try:
+        mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
         network = Network.objects.create(
                 name=name,
-                userid=request.user_uniq,
+                userid=user_id,
                 subnet=subnet,
                 subnet6=subnet6,
                 gateway=gateway,
                 gateway6=gateway6,
                 dhcp=dhcp,
-                type=net_type,
+                flavor=flavor,
+                mode=mode,
                 link=link,
                 mac_prefix=mac_prefix,
+                tags=tags,
                 action='CREATE',
-                state='PENDING')
+                state='PENDING',
+                serial=serial)
     except EmptyPool:
         log.error("Failed to allocate resources for network of type: %s",
-                  net_type)
+                  flavor)
         raise ServiceUnavailable("Failed to allocate resources for network")
 
     # Create BackendNetwork entries for each Backend
@@ -227,7 +226,9 @@ def create_network(request):
     backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
-    return render_network(request, networkdict, status=202)
+    response = render_network(request, networkdict, status=202)
+
+    return response
 
 
 @util.api_method('GET')

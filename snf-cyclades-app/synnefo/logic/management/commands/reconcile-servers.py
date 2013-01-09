@@ -43,7 +43,9 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
-from synnefo.logic import reconciliation, backend, utils
+from synnefo.logic import reconciliation, utils
+from synnefo.logic import backend as backend_mod
+from synnefo.management.common import get_backend
 
 
 class Command(BaseCommand):
@@ -85,11 +87,18 @@ class Command(BaseCommand):
                     dest='fix_unsynced_nics', default=False,
                     help='Fix unsynced nics between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
-                    default=False, help='Enable all --fix-* arguments'))
+                    default=False, help='Enable all --fix-* arguments'),
+        make_option('--backend-id', default=None, dest='backend-id',
+                    help='Reconcilie VMs only for this backend'),
+        )
 
     def _process_args(self, options):
         keys_detect = [k for k in options.keys() if k.startswith('detect_')]
         keys_fix = [k for k in options.keys() if k.startswith('fix_')]
+
+        if not reduce(lambda x, y: x or y,
+                      map(lambda x: options[x], keys_detect)):
+            options['detect_all'] = True
 
         if options['detect_all']:
             for kd in keys_detect:
@@ -97,10 +106,6 @@ class Command(BaseCommand):
         if options['fix_all']:
             for kf in keys_fix:
                 options[kf] = True
-
-        if not reduce(lambda x, y: x or y,
-                      map(lambda x: options[x], keys_detect)):
-            raise CommandError("At least one of --detect-* must be specified")
 
         for kf in keys_fix:
             kd = kf.replace('fix_', 'detect_', 1)
@@ -111,12 +116,14 @@ class Command(BaseCommand):
     def handle(self, **options):
         verbosity = int(options['verbosity'])
         self._process_args(options)
+        backend_id = options['backend-id']
+        backend = get_backend(backend_id) if backend_id else None
 
-        D = reconciliation.get_servers_from_db()
-        G = reconciliation.get_instances_from_ganeti()
+        D = reconciliation.get_servers_from_db(backend)
+        G, GNics = reconciliation.get_instances_from_ganeti(backend)
 
-        DBNics = reconciliation.get_nics_from_db()
-        GNics = reconciliation.get_nics_from_ganeti()
+        DBNics = reconciliation.get_nics_from_db(backend)
+
         #
         # Detect problems
         #
@@ -170,7 +177,7 @@ class Command(BaseCommand):
 
             unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
             if len(unsynced_nics) > 0:
-                print >> sys.stderr, "The NICs of servers with the folloing IDs "\
+                print >> sys.stderr, "The NICs of servers with the following IDs "\
                                      "are unsynced:"
                 for id, nics in unsynced_nics.items():
                     print ''.ljust(2) + '%6d:' % id
@@ -190,7 +197,7 @@ class Command(BaseCommand):
                 "servers in the DB:" % len(stale)
             for vm in VirtualMachine.objects.filter(pk__in=stale):
                 event_time = datetime.datetime.now()
-                backend.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
                     opcode='OP_INSTANCE_REMOVE', status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -216,7 +223,7 @@ class Command(BaseCommand):
                 opcode = "OP_INSTANCE_REBOOT" if ganeti_up \
                          else "OP_INSTANCE_SHUTDOWN"
                 event_time = datetime.datetime.now()
-                backend.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
                     opcode=opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -227,7 +234,7 @@ class Command(BaseCommand):
             for id in build_errors:
                 vm = VirtualMachine.objects.get(pk=id)
                 event_time = datetime.datetime.now()
-                backend.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
                     opcode="OP_INSTANCE_CREATE", status='error',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -260,7 +267,7 @@ class Command(BaseCommand):
                         print 'Network of nic %d of vm %s is None. ' \
                               'Can not reconcile' % (i, vm.backend_vm_id)
                 event_time = datetime.datetime.now()
-                backend.process_net_status(vm=vm, etime=event_time, nics=final_nics)
+                backend_mod.process_net_status(vm=vm, etime=event_time, nics=final_nics)
             print >> sys.stderr, "    ...done"
 
 

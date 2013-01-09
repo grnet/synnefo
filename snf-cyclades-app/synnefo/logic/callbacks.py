@@ -51,6 +51,7 @@ def handle_message_delivery(func):
     @wraps(func)
     def wrapper(client, message, *args, **kwargs):
         try:
+            msg = None
             msg = json.loads(message['body'])
             func(msg)
             client.basic_ack(message)
@@ -62,7 +63,10 @@ def handle_message_delivery(func):
                       e, message)
             client.basic_nack(message)
         except Exception as e:
-            log.exception("Unexpected error: %s, msg: %s", e, msg)
+            if msg:
+                log.exception("Unexpected error: %s, msg: %s", e, msg)
+            else:
+                log.exception("Unexpected error: %s", e)
             client.basic_reject(message)
 
     return wrapper

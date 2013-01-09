@@ -49,6 +49,7 @@ class Command(BaseCommand):
                     help="Type of pool"
                     ),
         make_option('--offset', dest='offset'),
+        make_option('--size', dest='size'),
         make_option('--base', dest='base'),
         make_option('--add-reserved', dest='add-reserved',
                     help="Comma-seperated list of values to reserve"),
@@ -90,4 +91,23 @@ class Command(BaseCommand):
         if base:
             pool_row.base = base
 
+        # Save now, to avoid conflict with resizing pool.save()
         pool_row.save()
+
+        if size:
+            try:
+                size = int(size)
+            except ValueError:
+                raise CommandError("Invalid size")
+            pool = pool_row.get_pool()
+            self.resize_pool(pool, pool_row.size, size)
+            pool.save()
+
+    def resize_pool(self, pool, old_size, new_size):
+        if new_size == old_size:
+            return
+        elif new_size > old_size:
+            pool.extend(new_size - old_size)
+        else:
+            pool.shrink(old_size - new_size)
+        pool.save()

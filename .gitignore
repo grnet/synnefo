@@ -31,3 +31,6 @@ pithos/data
 !*/synnefo/versions/__init__.py
 snf-astakos-app/astakos/version.py
 snf-tools/synnefo_tools/version.py
+snf-quotaholder-app/quotaholder_django/version.py
+*.iml
+*.graffle

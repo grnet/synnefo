@@ -34,7 +34,8 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import format_bool, filter_results
+from synnefo.management.common import (format_bool, filter_results,
+                                       pprint_table)
 
 from synnefo.db.models import Flavor
 
@@ -67,15 +68,6 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        labels = ('id', 'name', 'cpus', 'ram', 'disk', 'template', 'deleted')
-        columns = (3, 12, 6, 6, 6, 10, 7)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
         if options['deleted']:
             flavors = Flavor.objects.all()
         else:
@@ -85,7 +77,8 @@ class Command(BaseCommand):
         if filter_by:
             flavors = filter_results(flavors, filter_by)
 
-
+        headers = ('id', 'name', 'cpus', 'ram', 'disk', 'template', 'deleted')
+        table = []
         for flavor in flavors.order_by('id'):
             id = str(flavor.id)
             cpu = str(flavor.cpu)
@@ -95,9 +88,7 @@ class Command(BaseCommand):
             fields = (id, flavor.name, cpu, ram, disk, flavor.disk_template,
                       deleted)
 
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+            table.append(fields)
 
-            self.stdout.write(line.encode('utf8') + '\n')
+        separator = " | " if options['csv'] else None
+        pprint_table(self.stdout, table, headers, separator)

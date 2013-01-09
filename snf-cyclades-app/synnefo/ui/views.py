@@ -131,7 +131,7 @@ DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
                 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
 # network settings
-DEFAULT_NETWORK_TYPES = {'PRIVATE_MAC_FILTERED': 'mac-filtering'}
+DEFAULT_NETWORK_TYPES = {'MAC_FILTERED': 'mac-filtering', 'PHYSICAL_VLAN': 'physical-vlan'}
 NETWORK_TYPES = getattr(settings,
                     'UI_NETWORK_AVAILABLE_NETWORK_TYPES', DEFAULT_NETWORK_TYPES)
 DEFAULT_NETWORK_SUBNETS = ['10.0.0.0/24', '192.168.1.1/24']

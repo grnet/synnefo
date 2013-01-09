@@ -52,6 +52,16 @@ def format_bool(b):
     return 'YES' if b else 'NO'
 
 
+def parse_bool(string):
+    if string == "True":
+        return True
+    elif string == "False":
+        return False
+    else:
+        raise Exception("Can not parse string %s to bool" % string)
+
+
+
 def format_date(d):
     if not d:
         return ''
@@ -217,3 +227,33 @@ def check_backend_credentials(clustername, port, username, password):
     if info_name != clustername:
         raise CommandError("Invalid clustername value. Please use the"
                            " Ganeti Cluster name: %s" % info_name)
+
+
+def pprint_table(out, table, headers=None, separator=None):
+    """Print a pretty, aligned string representation of table.
+
+    Works by finding out the max width of each column and padding to data
+    to this value.
+    """
+
+    sep = separator if separator else "  "
+
+    if headers:
+        table.insert(0, headers)
+
+    # Find out the max width of each column
+    widths = [max(map(len, col)) for col in zip(*table)]
+
+    t_length = sum(widths) + len(sep) * (len(widths) - 1)
+    if headers:
+        # pretty print the headers
+        print >> out, sep.join((val.rjust(width) for val, width \
+                                                 in zip(headers, widths)))
+        print >> out, "-" * t_length
+        # remove headers
+        table = table[1:]
+
+    # print the rest table
+    for row in table:
+        print >> out, sep.join((val.rjust(width).encode('utf8') \
+                                for val, width in zip(row, widths)))

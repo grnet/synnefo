@@ -73,7 +73,7 @@ from datetime import datetime, timedelta
 
 from synnefo.db.models import (VirtualMachine, pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.logic.backend import get_ganeti_instances
+from synnefo.logic.backend import get_ganeti_instances, get_backends
 from synnefo.logic import utils
 
 
@@ -160,14 +160,16 @@ def instances_with_build_errors(D, G):
     return failed
 
 
-def get_servers_from_db():
-    vms = VirtualMachine.objects.filter(deleted=False, backend__offline=False)
+def get_servers_from_db(backend=None):
+    backends = get_backends(backend)
+    vms = VirtualMachine.objects.filter(deleted=False, backend__in=backends)
     return dict(map(lambda x: (x.id, x.operstate), vms))
 
 
-def get_instances_from_ganeti():
-    ganeti_instances = get_ganeti_instances(bulk=True)
+def get_instances_from_ganeti(backend=None):
+    ganeti_instances = get_ganeti_instances(backend=backend, bulk=True)
     snf_instances = {}
+    snf_nics = {}
 
     prefix = settings.BACKEND_PREFIX_ID
     for i in ganeti_instances:
@@ -185,17 +187,18 @@ def get_instances_from_ganeti():
                 continue
 
             snf_instances[id] = i['oper_state']
+            snf_nics[id] = get_nics_from_instance(i)
 
-    return snf_instances
+    return snf_instances, snf_nics
 
 #
 # Nics
 #
-def get_nics_from_ganeti():
+def get_nics_from_ganeti(backend=None):
     """Get network interfaces for each ganeti instance.
 
     """
-    instances = get_ganeti_instances(bulk=True)
+    instances = get_ganeti_instances(backend=backend, bulk=True)
     prefix = settings.BACKEND_PREFIX_ID
 
     snf_instances_nics = {}
@@ -212,25 +215,31 @@ def get_nics_from_ganeti():
                     i['name'])
                 continue
 
-            ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
-            macs = zip(itertools.repeat('mac'), i['nic.macs'])
-            networks = zip(itertools.repeat('network'), i['nic.networks'])
-            # modes = zip(itertools.repeat('mode'), i['nic.modes'])
-            # links = zip(itertools.repeat('link'), i['nic.links'])
-            # nics = zip(ips,macs,modes,networks,links)
-            nics = zip(ips, macs, networks)
-            nics = map(lambda x:dict(x), nics)
-            nics = dict(enumerate(nics))
-            snf_instances_nics[id] = nics
+            snf_instances_nics[id] = get_nics_from_instance(i)
 
     return snf_instances_nics
 
 
-def get_nics_from_db():
+def get_nics_from_instance(i):
+    ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
+    macs = zip(itertools.repeat('mac'), i['nic.macs'])
+    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    # modes = zip(itertools.repeat('mode'), i['nic.modes'])
+    # links = zip(itertools.repeat('link'), i['nic.links'])
+    # nics = zip(ips,macs,modes,networks,links)
+    nics = zip(ips, macs, networks)
+    nics = map(lambda x: dict(x), nics)
+    nics = dict(enumerate(nics))
+    return nics
+
+
+def get_nics_from_db(backend=None):
     """Get network interfaces for each vm in DB.
 
     """
-    instances = VirtualMachine.objects.filter(deleted=False)
+    backends = get_backends(backend)
+    instances = VirtualMachine.objects.filter(deleted=False,
+                                              backend__in=backends)
     instances_nics = {}
     for instance in instances:
         nics = {}

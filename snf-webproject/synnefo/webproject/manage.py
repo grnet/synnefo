@@ -313,13 +313,20 @@ def configure_logging():
 
 class EncodedStdOut(object):
     def __init__(self, stdout):
-        self.encoding = stdout.encoding or locale.getpreferredencoding()
+        try:
+            std_encoding = stdout.encoding
+        except AttributeError:
+            std_encoding = None
+        self.encoding = std_encoding or locale.getpreferredencoding()
         self.original_stdout = stdout
 
     def write(self, string):
         if isinstance(string, unicode):
             string = string.encode(self.encoding)
         self.original_stdout.write(string)
+
+    def __getattr__(self, name):
+        return getattr(self.original_stdout, name)
 
 
 def main():

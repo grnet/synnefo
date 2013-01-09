@@ -110,6 +110,10 @@ class Service(models.Model):
     auth_token_created = models.DateTimeField(_('Token creation date'), null=True)
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ('order', )
 
     def renew_token(self, expiration_date=None):
         md5 = hashlib.md5()

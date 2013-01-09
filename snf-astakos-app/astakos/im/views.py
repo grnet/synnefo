@@ -1079,6 +1079,7 @@ def project_update(request, application_id):
         'resource_groups':resource_groups,
         'show_form':True,
         'details_fields':details_fields,
+        'update_form': True,
         'membership_fields':membership_fields}
     return _update_object(
         request,

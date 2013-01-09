@@ -51,6 +51,11 @@ LOCALBRANCH="$CURRENT_BRANCH"
 LOCALDEBIAN=$1
 DEBIANBRANCH=${LOCALDEBIAN:- origin/$REMOTEDEBIAN}
 
+MODIFIED=$(git status --short | grep -v "??")
+if [[ -n $MODIFIED ]]; then
+        echo "error: Repository is dirty. Commit your local changes."
+        exit 1
+fi
 
 
 set -e
@@ -100,6 +105,7 @@ dialog --yesno "Create Snapshot?" 5 20 && snap=true && dchextra=-S && mrgextra= 
 GIT_MERGE_AUTOEDIT=no
 git merge $mrgextra ${mrgextra:+"$mrgmsg"} $LOCALBRANCH
 
+lo
 # auto edit Debian changelog depending on Snapshot or Release mode
 export EDITOR=/usr/bin/vim
 git-dch --debian-branch=$TMPDEBIAN --git-author --ignore-regex=".*" --multimaint-merge --since=HEAD $dchextra

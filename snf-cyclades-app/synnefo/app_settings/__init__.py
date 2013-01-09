@@ -5,9 +5,11 @@ synnefo_web_apps = [
     'synnefo.db',
     'synnefo.logic',
     'synnefo.plankton',
+    'synnefo.vmapi',
     'synnefo.helpdesk',
     'synnefo.ui.userdata',
     'synnefo.helpdesk',
+    'synnefo.quotas',
 ]
 
 synnefo_web_middleware = []

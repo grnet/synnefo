@@ -106,12 +106,6 @@ def get_rsapi_state(vm):
     return r
 
 
-def update_state(vm, new_operstate):
-    """Wrapper around updates of the VirtualMachine.operstate field"""
-
-    vm.operstate = new_operstate
-
-
 def hide_pass(kw):
     if 'osparams' in kw and 'img_passwd' in kw['osparams']:
         kw1 = deepcopy(kw)

@@ -81,7 +81,7 @@ class Command(BaseCommand):
 
         step = (type_ == 'bridge') and 64 or 80
         print_map('Pool', pool.to_map(), step, self.stdout)
-        print_map('Reserved', bitarray_to_map(pool.reserved), step, self.stdout)
+        print_map('Reserved', bitarray_to_map(pool.reserved[:pool_row.size]), step, self.stdout)
 
 
 def print_map(name, pool_map, step, out):

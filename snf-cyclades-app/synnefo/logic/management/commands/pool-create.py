@@ -71,6 +71,9 @@ class Command(BaseCommand):
 
         pool_table = pool_table_from_type(type_)
 
+        if pool_table.objects.exists():
+            raise CommandError("Pool of type %s already exists" % type_)
+
         pool_table.objects.create(available_map="",
                                   reserved_map="",
                                   size=size,

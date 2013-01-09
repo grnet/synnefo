@@ -97,9 +97,9 @@ the dictionary as the account string to identify the user accessible resources.
 Registration Flow
 -----------------
 
-Responsible for handling the account registration and activation requests is the ``signup`` view. This view checks whether it is a request for a local account. If this is not the case, the user is navigated to the third-party provider to authenticate against it and upon success is redirected back in the ``signup`` view. If the supplied information is valid and an inactive account is created. Then the appropriate ``ActivationBackend`` handles the account activation: the ``InvitationsBackend`` if the invitation mechanism is enabled and the ``SimpleBackend`` otherwise. 
+Responsible for handling the account registration and activation requests is the ``signup`` view. This view checks whether it is a request for a local account. If this is not the case, the user is navigated to the third-party provider to authenticate against it and upon success is redirected back in the ``signup`` view. If the supplied information is valid and an inactive account is created. Then the appropriate ``ActivationBackend`` handles the account activation: the ``InvitationsBackend`` if the invitation mechanism is enabled and the ``SimpleBackend`` otherwise.
 
-In the first case, if the request is accompanied with a valid invitation code the user is automatically activated and since it's email address (where received the invitation) is verified, acquires a valid token and is logged in the system. If there is no invitation associated with the request, the system check whether the email matches any of the ASTAKOS_RE_USER_EMAIL_PATTERNS and if it does it sends an email to the user to verify the email address, otherwise the system sends a notification email to the administrators and informs the user that the account activation will be moderated by them.
+In the first case, if the request is accompanied with a valid invitation code the user is automatically activated and since its email address (where received the invitation) is verified, acquires a valid token and is logged in the system. If there is no invitation associated with the request, the system check whether the email matches any of the ASTAKOS_RE_USER_EMAIL_PATTERNS and if it does it sends an email to the user to verify the email address, otherwise the system sends a notification email to the administrators and informs the user that the account activation will be moderated by them.
 
 If the invitation mechanism is not enabled, the ``SimpleBackend`` checks if the email address matches any of the ASTAKOS_RE_USER_EMAIL_PATTERNS or the moderation is not enabled and it sends a verification email, otherwise informs the user that the account is pending approval and sends a notification email to the admins.
 
@@ -108,7 +108,7 @@ The verification email contains a link that navigates the user to ``activate`` v
 If FORCE_PROFILE_UPDATE is set, after the first successful login the user is navigated first to the ``profile`` view, before been redirected to the ``next`` parameter value.
 
 .. image:: images/astakos-signup.jpg
-    :scale: 100%
+    :scale: 80%
 
 Login Flow
 ----------
@@ -120,7 +120,7 @@ If ASTAKOS_RECAPTCHA_ENABLED is set and the user fails several times (ASTAKOS_RA
 Upon success, the system renews the token (if it has been expired), logins the user and sets the cookie, before redirecting the user to the ``next`` parameter value.
 
 .. image:: images/astakos-login.jpg
-    :scale: 100%
+    :scale: 80%
 
 Approval Terms
 --------------

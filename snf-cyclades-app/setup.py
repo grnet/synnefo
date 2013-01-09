@@ -92,6 +92,7 @@ EXTRAS_REQUIRES = {
 }
 
 TESTS_REQUIRES = [
+    'factory_boy'
 ]
 
 

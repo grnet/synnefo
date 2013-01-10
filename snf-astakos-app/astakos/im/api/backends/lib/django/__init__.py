@@ -159,13 +159,13 @@ class DjangoBackend(BaseBackend):
         return self._details(u)
 
     @safe
-    def add_policies(self, user_id, update=False, policies=()):
+    def add_policies(self, user_id, policies=()):
         user = self._lookup_user(user_id)
         rejected = []
         append = rejected.append
         for p in policies:
             try:
-                user.add_resource_policy(**p, update=update)
+                user.add_resource_policy(**p)
             except (ObjectDoesNotExist, IntegrityError), e:
                 append((service, resource, e))
         return rejected

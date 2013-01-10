@@ -81,9 +81,9 @@ class AstakosCallpoint():
         rejected = (b.update_user(**u) for u in users)
         return rejected
 
-    def add_user_policies(self, user_id, update=False, policies=()):
+    def add_user_policies(self, user_id, policies=()):
         b = get_backend()
-        rejected = b.add_policies(user_id, update, policies)
+        rejected = b.add_policies(user_id, policies)
         return rejected
 
     def remove_user_policies(self, user_id, policies=()):

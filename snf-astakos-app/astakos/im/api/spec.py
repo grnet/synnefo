@@ -62,7 +62,7 @@ class AstakosAPI(Specificator):
             email_verified=Boolean),
         policies=ListOf(
             resource=Name, capacity=Nonnegative, quantity=Nonnegative,
-            import_limit, export_limit),
+            import_limit=Nonnegative, export_limit=Nonnegative),
         groups=ListOf(Name),
         permissions=ListOf(Name)
     ):
@@ -96,8 +96,9 @@ class AstakosAPI(Specificator):
     def add_user_policies(
         self,
         pk=Nonnegative,
-        update=Boolean,
-        policies=ListOf(service=Name, resource=Name, upimit=Nonnegative)
+        policies=ListOf(
+            resource=Name, capacity=Nonnegative, quantity=Nonnegative,
+            import_limit=Nonnegative, export_limit=Nonnegative, update=Boolean)
     ):
         rejected = ListOf(resource=Name, reason=Text())
         return rejected

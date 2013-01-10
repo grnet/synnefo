@@ -66,7 +66,7 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    trigger_sync)
+    trigger_sync, PendingMembershipError)
 from astakos.im.models import submit_application as models_submit_application
 from astakos.im.project_notif import (
     membership_change_notify,
@@ -434,9 +434,11 @@ def get_membership_for_update(project, user):
     if isinstance(user, int):
         user = get_user_by_id(user)
     try:
-        return ProjectMembership.objects.select_for_update().get(
-            project=project,
-            person=user)
+        sfu = ProjectMembership.objects.select_for_update()
+        m = sfu.get(project=project, person=user)
+        if m.is_pending:
+            raise PendingMembershipError()
+        return m
     except ProjectMembership.DoesNotExist:
         raise IOError(_(astakos_messages.NOT_MEMBERSHIP_REQUEST))
 

@@ -763,8 +763,14 @@ class ProjectApplicationForm(forms.ModelForm):
                     'limit_on_members_number')
 
     def __init__(self, *args, **kwargs):
-        self.precursor_application = kwargs.get('instance')
+        instance = kwargs.get('instance')
+        self.precursor_application = instance
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
+        if not instance:
+            # remove closed join policy
+            policies = PROJECT_MEMBER_JOIN_POLICIES.copy()
+            policies.pop('3')
+            self.fields['member_join_policy'].choices = policies.iteritems()
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')

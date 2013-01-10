@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 from urlparse import urljoin
 from random import random
+from datetime import datetime, timedelta
 
 from django import forms
 from django.utils.translation import ugettext as _
@@ -764,6 +765,26 @@ class ProjectApplicationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.precursor_application = kwargs.get('instance')
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
+
+    def clean_start_date(self):
+        start_date = self.cleaned_data.get('start_date')
+        now = datetime.now()
+        if start_date and now - start_date > timedelta(days=1):
+            raise forms.ValidationError(
+                _(astakos_messages.INVALID_PROJECT_START_DATE))
+        return start_date
+
+    def clean_end_date(self):
+        start_date = self.cleaned_data.get('start_date')
+        end_date = self.cleaned_data.get('end_date')
+        now = datetime.now()
+        if end_date and now - end_date > timedelta(days=1):
+            raise forms.ValidationError(
+                _(astakos_messages.INVALID_PROJECT_END_DATE))
+        if start_date and end_date <= start_date:
+            raise forms.ValidationError(
+                _(astakos_messages.INCONSISTENT_PROJECT_DATES))
+        return end_date
 
     def clean(self):
         userid = self.data.get('user', None)

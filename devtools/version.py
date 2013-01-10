@@ -399,7 +399,7 @@ def update_version(module, name="version", root="."):
 __version__ = "%(version)s"
 __version_info__ = %(version_info)s
 __version_vcs_info__ = %(vcs_info)s
-__version_user_info__ = %(user_info)s
+__version_user_info__ = "%(user_info)s"
     """ % dict(version=version, version_info=version.split("."),
                vcs_info=pprint.PrettyPrinter().pformat(dict(v._asdict())),
                user_info=user_info())

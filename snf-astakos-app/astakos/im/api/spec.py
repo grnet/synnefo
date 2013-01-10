@@ -60,7 +60,9 @@ class AstakosAPI(Specificator):
             is_verified=Boolean,
             third_party_identifier=Name,
             email_verified=Boolean),
-        policies=ListOf(resource=Name, supimit=Nonnegative),
+        policies=ListOf(
+            resource=Name, capacity=Nonnegative, quantity=Nonnegative,
+            import_limit, export_limit),
         groups=ListOf(Name),
         permissions=ListOf(Name)
     ):

@@ -31,47 +31,53 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import os
+
 from optparse import make_option
+from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
 
-from pithos.api.settings import (BACKEND_QUOTA, BACKEND_VERSIONING)
+from astakos.im.models import AstakosUser
 
-from pithos.api.util import get_backend
+AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
+                                              'quantity',
+                                              'capacity',
+                                              'import_limit',
+                                              'export_limit'))
 
 class Command(BaseCommand):
-    args = "<user>"
-    help = "Get/set a user's quota"
-
-    option_list = BaseCommand.option_list + (
-        make_option('--set-quota',
-                    dest='quota',
-                    metavar='BYTES',
-                    help="Set user's quota"),
-    )
+    help = "Import account quota policies"
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a user")
+            raise CommandError('Invalid number of arguments')
+ 
+        location = os.path.abspath(args[0])
+        try:
+            f = open(location, 'r')
+        except IOError, e:
+            raise CommandError(e)
 
-        user = args[0]
-        quota = options.get('quota')
-        if quota is not None:
+        for line in f.readlines():
             try:
-                quota = int(quota)
-            except ValueError:
-                raise CommandError("Invalid quota")
-
-        backend = get_backend()
-        backend.default_policy['quota'] = BACKEND_QUOTA
-        backend.default_policy['versioning'] = BACKEND_VERSIONING
-
-        if backend.using_external_quotaholder:
-            raise CommandError("The system uses an extrenal quota holder.")
-
-        if quota is not None:
-            backend.update_account_policy(user, user, {'quota': quota})
-        else:
-            self.stdout.write("Quota for %s: %s\n" % (
-                user, backend.get_account_policy(user, user)['quota']))
-        backend.close()
+                t = line.rstrip('\n').split(' ')
+                user = t[0]
+                args = AddResourceArgs(*t[1:])
+            except(IndexError, TypeError):
+                self.stdout.write('Invalid line format: %s:\n' % t)
+                continue
+            else:
+                try:
+                    user = AstakosUser.objects.get(uuid=user)
+                except AstakosUser.DoesNotExist:
+                    self.stdout.write('Not found user having uuid: %s\n' % uuid)
+                    continue
+                else:
+                    try:
+                        user.add_resource_policy(*args)
+                    except Exception, e:
+                        self.stdout.write('Failed to policy: %s\n' % e)
+                        continue
+            finally:
+                f.close()

@@ -89,7 +89,8 @@ def create_entity(payload):
     c = get_client()
     if not c:
         return
-    result = c.create_entity(context={}, clientkey=clientkey, create_entity=payload)
+    result = c.create_entity(
+        context={}, clientkey=clientkey, create_entity=payload)
     logger.info('create_entity: %s rejected: %s' % (payload, result))
     return result
 
@@ -127,13 +128,13 @@ def register_users(users):
         payload = []
         append = payload.append
         for u in users:
-            for resource, uplimit in u.quota.iteritems():
+            for resource, capacity in u.quota.iteritems():
                 append( SetQuotaPayload(
                                 holder=u.uuid,
                                 resource=resource,
                                 key=ENTITY_KEY,
                                 quantity=0,
-                                capacity=uplimit if uplimit != inf else None,
+                                capacity=capacity if capacity != inf else None,
                                 import_limit=QH_PRACTICALLY_INFINITE,
                                 export_limit=QH_PRACTICALLY_INFINITE,
                                 flags=0))

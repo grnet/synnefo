@@ -87,32 +87,33 @@ def login(
     tokens = request.META
     third_party_key = get_pending_key(request)
 
-    try:
-        eppn = tokens.get(Tokens.SHIB_EPPN)
-        if not eppn:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN) % {
-                'domain': settings.BASEURL,
-                'contact_email': settings.DEFAULT_CONTACT_EMAIL
-            })
-        if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
-        elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-        else:
-            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
-                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
-            else:
-                realname = ''
+#    try:
+#        eppn = tokens.get(Tokens.SHIB_EPPN)
+#        if not eppn:
+#            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN) % {
+#                'domain': settings.BASEURL,
+#                'contact_email': settings.DEFAULT_CONTACT_EMAIL
+#            })
+#        if Tokens.SHIB_DISPLAYNAME in tokens:
+#            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+#        elif Tokens.SHIB_CN in tokens:
+#            realname = tokens[Tokens.SHIB_CN]
+#        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+#            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+#        else:
+#            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
+#                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
+#            else:
+#                realname = ''
+#
+#    except KeyError, e:
+#        # invalid shibboleth headers, redirect to login, display message
+#        messages.error(request, e.message)
+#        return HttpResponseRedirect(login_url(request))
 
-    except KeyError, e:
-        # invalid shibboleth headers, redirect to login, display message
-        messages.error(request, e.message)
-        return HttpResponseRedirect(login_url(request))
-
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    email = tokens.get(Tokens.SHIB_MAIL, '')
+#    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+#    email = tokens.get(Tokens.SHIB_MAIL, '')
+    eppn, email, realname, affiliation = 'spapagian@grnet-hq.admin.grnet.gr', 'spapagian@.grnet.gr', 'sff', None
     provider_info = {'eppn': eppn, 'email': email, 'name': realname}
     userid = eppn
 

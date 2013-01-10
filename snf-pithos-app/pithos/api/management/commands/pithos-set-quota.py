@@ -60,6 +60,7 @@ table = {}
 table['nodes'] = backend.node.nodes
 table['versions'] = backend.node.versions
 table['statistics'] = backend.node.statistics
+table['policy'] = backend.node.policy
 conn = backend.node.conn
 
 def _compute_statistics(nodes):
@@ -90,7 +91,7 @@ def _compute_statistics(nodes):
             cluster=cluster))
     return statistics
 
-def _get_verified_quota(statistics):
+def _get_verified_quota(statistics, default_quota=0):
     """ Verify statistics and set quotaholder account quota """
     add_quota = []
     append = add_quota.append
@@ -109,12 +110,19 @@ def _get_verified_quota(statistics):
             print e
             continue
         else:
+            s = select([table['policy'].c.value])
+            s = s.where(table['policy'].c.node == item.node)
+            s = s.where(table['policy'].c.key == 'quota')
+            policy = conn.execute(s).fetchone()
+            capacity = policy.value if policy else 0
+            if capacity:
+                capacity -= default_quota
             append(AddQuotaPayload(
                 holder=item.path,
                 resource='pithos+.diskspace',
                 key=ENTITY_KEY,
                 quantity=db_item.size,
-                capacity=0,
+                capacity=capacity,
                 import_limit=0,
                 export_limit=0))
     return add_quota
@@ -138,7 +146,8 @@ class Command(NoArgsCommand):
             account_nodes = conn.execute(s).fetchall()
             
             # compute account statistics
-            statistics = _compute_statistics(account_nodes)
+            statistics = _compute_statistics(
+                account_nodes, default_quota=backend.DEFAULT_QUOTA)
 
             # verify and send quota
             add_quota = _get_verified_quota(statistics)

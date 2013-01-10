@@ -164,11 +164,8 @@ class DjangoBackend(BaseBackend):
         rejected = []
         append = rejected.append
         for p in policies:
-            service = p.get('service')
-            resource = p.get('resource')
-            uplimit = p.get('uplimit')
             try:
-                user.add_policy(service, resource, uplimit, update)
+                user.add_resource_policy(**p, update=update)
             except (ObjectDoesNotExist, IntegrityError), e:
                 append((service, resource, e))
         return rejected
@@ -184,7 +181,7 @@ class DjangoBackend(BaseBackend):
             service = p.get('service')
             resource = p.get('resource')
             try:
-                user.delete_policy(service, resource)
+                user.remove_resource_policy(service, resource)
             except ObjectDoesNotExist, e:
                 append((service, resource, e))
         return rejected

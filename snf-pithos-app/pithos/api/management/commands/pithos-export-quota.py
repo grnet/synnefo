@@ -33,45 +33,47 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand, CommandError
 
-from pithos.api.settings import (BACKEND_QUOTA, BACKEND_VERSIONING)
+from sqlalchemy.sql import select, and_
 
 from pithos.api.util import get_backend
 
-class Command(BaseCommand):
-    args = "<user>"
-    help = "Get/set a user's quota"
+import os
 
-    option_list = BaseCommand.option_list + (
-        make_option('--set-quota',
-                    dest='quota',
-                    metavar='BYTES',
-                    help="Set user's quota"),
+backend = get_backend()
+table = {}
+table['nodes'] = backend.node.nodes
+table['policy'] = backend.node.policy
+conn = backend.node.conn
+
+class Command(NoArgsCommand):
+    help = "Export account quota policies"
+
+    option_list = NoArgsCommand.option_list + (
+        make_option('--location',
+                    dest='location',
+                    default='exported_policies',
+                    help="Where to save the output file"),
     )
 
-    def handle(self, *args, **options):
-        if len(args) != 1:
-            raise CommandError("Please provide a user")
+    def handle_noargs(self, **options):
+        # retrieve account policies
+        s = select([table['nodes'].c.path, table['policy'].c.value])
+        s = s.where(and_(table['nodes'].c.node != 0,
+                         table['nodes'].c.parent == 0))
+        s = s.where(table['nodes'].c.node == table['policy'].c.node)
+        s = s.where(table['policy'].c.key == 'quota')
+    
+        location = os.path.abspath(options['location'])
+        try:
+            f = open(location, 'w')
+        except IOError, e:
+            raise CommandError(e)
 
-        user = args[0]
-        quota = options.get('quota')
-        if quota is not None:
-            try:
-                quota = int(quota)
-            except ValueError:
-                raise CommandError("Invalid quota")
-
-        backend = get_backend()
-        backend.default_policy['quota'] = BACKEND_QUOTA
-        backend.default_policy['versioning'] = BACKEND_VERSIONING
-
-        if backend.using_external_quotaholder:
-            raise CommandError("The system uses an extrenal quota holder.")
-
-        if quota is not None:
-            backend.update_account_policy(user, user, {'quota': quota})
-        else:
-            self.stdout.write("Quota for %s: %s\n" % (
-                user, backend.get_account_policy(user, user)['quota']))
+        for p in conn.execute(s).fetchall():
+            f.write(' '.join(
+                [p.path, 'pithos+.diskspace', p.value, '0', '0', '0']))
+            f.write('\n')
+        f.close()
         backend.close()

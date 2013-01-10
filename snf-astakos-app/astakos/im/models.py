@@ -136,17 +136,6 @@ class Service(models.Model):
         for s in resources:
             self.resource_set.create(**s)
 
-    def add_resource(self, service, resource, uplimit, update=True):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(service__name=service, name=resource)
-        if update:
-            AstakosUserQuota.objects.update_or_create(user=self,
-                                                      resource=resource,
-                                                      defaults={'uplimit': uplimit})
-        else:
-            q = self.astakosuserquota_set
-            q.create(resource=resource, uplimit=uplimit)
-
 
 class ResourceMetadata(models.Model):
     key = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
@@ -344,7 +333,7 @@ class AstakosUser(User):
         default_quota = get_default_quota()
         d.update(default_quota)
         for q in self.policies:
-            d[q.resource] += q.uplimit or inf
+            d[q.resource] = q.capacity or inf
         for m in self.projectmembership_set.select_related().all():
             if not m.acceptance_date:
                 continue
@@ -363,24 +352,34 @@ class AstakosUser(User):
     @policies.setter
     def policies(self, policies):
         for p in policies:
-            service = policies.get('service', None)
-            resource = policies.get('resource', None)
-            uplimit = policies.get('uplimit', 0)
-            update = policies.get('update', True)
-            self.add_policy(service, resource, uplimit, update)
+            p.setdefault('resource', '')
+            p.setdefault('capacity', 0)
+            p.setdefault('quantity', 0)
+            p.setdefault('import_limit', 0)
+            p.setdefault('export_limit', 0)
+            p.setdefault('update', True)
+            self.add_resource_policy(**p)
 
-    def add_policy(self, service, resource, uplimit, update=True):
+    def add_resource_policy(
+            self, resource, capacity, quantity, import_limit,
+            export_limit, update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(service__name=service, name=resource)
+        s, sep, r = resource.partition(RESOURCE_SEPARATOR)
+        resource = Resource.objects.get(service__name=s, name=r)
         if update:
-            AstakosUserQuota.objects.update_or_create(user=self,
-                                                      resource=resource,
-                                                      defaults={'uplimit': uplimit})
+            AstakosUserQuota.objects.update_or_create(
+                user=self, resource=resource, defaults={
+                    'capacity':capacity,
+                    'quantity': quantity,
+                    'import_limit':import_limit,
+                    'export_limit':export_limit})
         else:
             q = self.astakosuserquota_set
-            q.create(resource=resource, uplimit=uplimit)
+            q.create(
+                resource=resource, capacity=capacity, quanity=quantity,
+                import_limit=import_limit, export_limit=export_limit)
 
-    def remove_policy(self, service, resource):
+    def remove_resource_policy(self, service, resource):
         """Raises ObjectDoesNotExist, IntegrityError"""
         resource = Resource.objects.get(service__name=service, name=resource)
         q = self.policies.get(resource=resource).delete()
@@ -393,10 +392,6 @@ class AstakosUser(User):
             except AstakosUser.DoesNotExist, e:
                 self.uuid = uuid_val
         return self.uuid
-
-    @property
-    def extended_groups(self):
-        return self.membership_set.select_related().all()
 
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
@@ -801,8 +796,10 @@ class ExtendedManager(models.Manager):
 
 class AstakosUserQuota(models.Model):
     objects = ExtendedManager()
-    limit = models.PositiveIntegerField(_('Limit'), null=True)    # obsolete field
-    uplimit = models.BigIntegerField(_('Up limit'), null=True)
+    capacity = models.BigIntegerField(_('Capacity'), null=True)
+    quantity = models.BigIntegerField(_('Quantity'), null=True)
+    export_limit = models.BigIntegerField(_('Export limit'), null=True)
+    import_limit = models.BigIntegerField(_('Import limit'), null=True)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 

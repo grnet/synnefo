@@ -39,6 +39,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
+from astakos.im.functions import activate, deactivate
 from ._common import remove_user_permission, add_user_permission
 
 
@@ -83,7 +84,7 @@ class Command(BaseCommand):
                     action='store_true',
                     dest='active',
                     default=False,
-                    help="Change user's state to inactive"),
+                    help="Change user's state to active"),
         make_option('--set-inactive',
                     action='store_true',
                     dest='inactive',
@@ -121,13 +122,9 @@ class Command(BaseCommand):
             user.is_superuser = False
 
         if options.get('active'):
-            user.is_active = True
-            if not user.email_verified:
-                user.email_verified = True
-            if not user.activation_sent:
-                user.activation_sent = datetime.now()
+            activate(user)
         elif options.get('inactive'):
-            user.is_active = False
+            deactivate(user)
 
         invitations = options.get('invitations')
         if invitations is not None:

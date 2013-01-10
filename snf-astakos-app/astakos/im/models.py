@@ -70,7 +70,7 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, register_resources, qh_add_quota, QuotaLimits,
+    register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials)
 from astakos.im import auth_providers
 
@@ -1962,10 +1962,8 @@ def user_post_save(sender, instance, created, **kwargs):
 post_save.connect(user_post_save, sender=User)
 
 def astakosuser_post_save(sender, instance, created, **kwargs):
-    if not created:
-        return
-    # TODO handle socket.error & IOError
-    register_users((instance,))
+    pass
+
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
 def resource_post_save(sender, instance, created, **kwargs):

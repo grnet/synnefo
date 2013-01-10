@@ -72,6 +72,7 @@ from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
     project_termination_notify, project_suspension_notify)
+from astakos.im.endpoints.qh import qh_register_user
 
 import astakos.im.messages as astakos_messages
 
@@ -297,8 +298,13 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
+    qh_register_user(user)
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
+
+def deactivate(user):
+    user.is_active = False
+    user.save()
 
 def invite(inviter, email, realname):
     inv = Invitation(inviter=inviter, username=email, realname=realname)

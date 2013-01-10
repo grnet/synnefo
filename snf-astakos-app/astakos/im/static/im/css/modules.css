@@ -81,6 +81,8 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .faq ul li                                      { padding:0; margin:0 0 8px 0; list-style:none outside none;line-height:140%;  }
 .faq ul li a                                    { color:#222222; border:0 none; } 
 .faq .faq-category								{ margin: 0 0 1.5em;}
+.faq .question.details ul li					{ list-style:circle inside none; }
+.faq .question.details ul li a					{ color:#F6921E } 
 .follow h3 a                                    { color:#4085A6;}
 .follow a				                    	{ border:0 none;}
 .follow ul                                      { margin:0; padding:0;}

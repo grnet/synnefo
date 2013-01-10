@@ -754,9 +754,6 @@ class ProjectApplicationForm(forms.ModelForm):
 
     class Meta:
         model = ProjectApplication
-        #include = ( 'name', 'homepage', 'description',
-        #            'start_date', 'end_date', 'comments')
-
         fields = ( 'name', 'homepage', 'description',
                     'start_date', 'end_date', 'comments',
                     'member_join_policy', 'member_leave_policy',
@@ -766,17 +763,18 @@ class ProjectApplicationForm(forms.ModelForm):
         instance = kwargs.get('instance')
         self.precursor_application = instance
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
+        # in case of new application remove closed join policy
         if not instance:
-            # remove closed join policy
             policies = PROJECT_MEMBER_JOIN_POLICIES.copy()
             policies.pop('3')
             self.fields['member_join_policy'].choices = policies.iteritems()
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
-        now = datetime.now()
-        if start_date and now - start_date > timedelta(days=1):
-            raise forms.ValidationError(
+        if not self.precursor_application:
+            now = datetime.now()
+            if start_date and now - start_date > timedelta(days=1):
+                raise forms.ValidationError(
                 _(astakos_messages.INVALID_PROJECT_START_DATE))
         return start_date
 

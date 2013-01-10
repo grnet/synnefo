@@ -12,6 +12,8 @@
 ./docs/images/synnefo-logo.png
 ./docs/images/cyclades-ganeti-communication.png
 ./docs/images/synnefo-software-stack.png
+docs/images/synnefo-logo.png
+docs/images/synnefo-logo.png.old
 ./snf-astakos-app/astakos/im/static/im/cloudbar/home-icon.png
 ./snf-astakos-app/astakos/im/static/im/images/local.png
 ./snf-astakos-app/astakos/im/static/im/images/twitter.png

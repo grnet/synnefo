@@ -45,7 +45,7 @@ urlpatterns = patterns(
     url(r'^login/?$', 'index', {}, name='login'),
     url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
     url(r'^feedback/?$', 'feedback', {}, name='feedback'),
-    url(r'^signup/?$', 'signup', {'on_success': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
+    url(r'^signup/?$', 'signup', {'on_success': 'index', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
     url(r'^logout/?$', 'logout', {'template': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='logout'),
     url(r'^activate/?$', 'activate', {}, name='activate'),
     url(r'^approval_terms/?$', 'approval_terms', {}, name='latest_terms'),
@@ -66,7 +66,7 @@ urlpatterns = patterns(
     url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
     url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
     url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
-    
+
     url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {}, name='remove_auth_provider'),
 )

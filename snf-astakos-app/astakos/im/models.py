@@ -219,6 +219,7 @@ def get_default_quota():
         )
     return _default_quota
 
+
 class AstakosUserManager(UserManager):
 
     def get_auth_provider_user(self, provider, **kwargs):
@@ -242,7 +243,14 @@ class AstakosUserManager(UserManager):
     def user_exists(self, email_or_username, **kwargs):
         qemail = Q(email__iexact=email_or_username)
         qusername = Q(username__iexact=email_or_username)
-        return self.filter(qemail | qusername).exists()
+        qextra = Q(**kwargs)
+        return self.filter((qemail | qusername) & qextra).exists()
+
+    def verified_user_exists(self, email_or_username):
+        return self.user_exists(email_or_username, email_verified=True)
+
+    def verified(self):
+        return self.filter(email_verified=True)
 
 
 class AstakosUser(User):

@@ -252,6 +252,9 @@ class AstakosUserManager(UserManager):
     def verified(self):
         return self.filter(email_verified=True)
 
+    def verified(self):
+        return self.filter(email_verified=True)
+
 
 class AstakosUser(User):
     """

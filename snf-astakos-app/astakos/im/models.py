@@ -1352,12 +1352,6 @@ class ProjectApplication(models.Model):
         if new_project:
             project.add_member(self.owner)
 
-        precursor = self.precursor_application
-        while precursor:
-            precursor.state = self.REPLACED
-            precursor.save()
-            precursor = precursor.precursor_application
-
         self.state = self.APPROVED
         self.save()
 

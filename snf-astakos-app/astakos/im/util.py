@@ -212,6 +212,10 @@ def reserved_email(email):
     return AstakosUser.objects.user_exists(email)
 
 
+def reserved_verified_email(email):
+    return AstakosUser.objects.verified_user_exists(email)
+
+
 def get_query(request):
     try:
         return request.__getattribute__(request.method)

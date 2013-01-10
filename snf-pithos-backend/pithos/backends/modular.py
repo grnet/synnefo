@@ -211,6 +211,12 @@ class ModularBackend(BaseBackend):
         self.wrapper.close()
         self.queue.close()
 
+    @property
+    def using_external_quotaholder(self):
+        if self.quotaholder_url:
+            return True
+        return False
+
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
@@ -221,9 +227,12 @@ class ModularBackend(BaseBackend):
         return allowed[start:start + limit]
 
     @backend_method
-    def get_account_meta(self, user, account, domain, until=None, include_user_defined=True):
+    def get_account_meta(
+            self, user, account, domain, until=None, include_user_defined=True,
+            external_quota=None):
         """Return a dictionary with the account metadata for the domain."""
 
+        external_quota = external_quota or {}
         logger.debug(
             "get_account_meta: %s %s %s %s", user, account, domain, until)
         path, node = self._lookup_account(account, user == account)
@@ -255,6 +264,8 @@ class ModularBackend(BaseBackend):
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
+        if self.using_external_quotaholder:
+            meta['bytes'] = external_quota.get('currValue', 0)
         meta.update({'modified': modified})
         return meta
 
@@ -300,7 +311,7 @@ class ModularBackend(BaseBackend):
                 self.permissions.group_addmany(account, k, v)
 
     @backend_method
-    def get_account_policy(self, user, account):
+    def get_account_policy(self, user, account, external_quota=None):
         """Return a dictionary with the account policy."""
 
         logger.debug("get_account_policy: %s %s", user, account)
@@ -309,7 +320,8 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_account(account, True)
-        return self._get_policy(node)
+        policy = self._get_policy(node)
+        return policy
 
     @backend_method
     def update_account_policy(self, user, account, policy, replace=False):
@@ -827,7 +839,7 @@ class ModularBackend(BaseBackend):
 
         del_size = self._apply_versioning(account, container, pre_version_id)
         size_delta = size - del_size
-        if not self.quotaholder_url: # Check quota.
+        if not self.using_external_quotaholder: # Check quota.
             if size_delta > 0:
                 account_quota = long(self._get_policy(account_node)['quota'])
                 account_usage = self._get_statistics(account_node)[1] + size_delta
@@ -1265,7 +1277,7 @@ class ModularBackend(BaseBackend):
                               account, QUEUE_INSTANCE_ID, 'diskspace',
                               float(size), details))
 
-        if not self.quotaholder_url:
+        if not self.using_external_quotaholder:
             return
         
         serial = self.quotaholder.issue_commission(

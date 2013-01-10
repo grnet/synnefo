@@ -33,6 +33,9 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 DEFAULT_CONTACT_EMAIL = getattr(
     settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
 
+SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
+ADMINS = getattr(settings, 'ADMINS', None)
+
 # Identity Management enabled modules
 # Supported modules are: 'local', 'twitter' and 'shibboleth'
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local'])

@@ -702,7 +702,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 th = db_get_holding(entity=target, resource=resource,
                                     for_update=True)
             except Holding.DoesNotExist:
-                m = ("There is not enough capacity "
+                m = ("There is no capacity "
                      "to allocate into in %s.%s" % (target, resource))
                 raise NoCapacityError(m,
                                       source=entity, target=target,
@@ -724,7 +724,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             current = (+ th.importing + th.returning
                        - th.exported - th.released)
 
-            if current + quantity > limit:
+            if not release and (current + quantity > limit):
                     m = ("There is not enough capacity "
                          "to allocate into in %s.%s" % (target, resource))
                     raise NoCapacityError(m,

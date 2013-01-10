@@ -66,7 +66,13 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    trigger_sync)
+    trigger_sync, PendingMembershipError)
+from astakos.im.models import submit_application as models_submit_application
+from astakos.im.project_notif import (
+    membership_change_notify,
+    application_submit_notify, application_approve_notify,
+    project_termination_notify, project_suspension_notify)
+from astakos.im.endpoints.qh import qh_register_user
 
 import astakos.im.messages as astakos_messages
 
@@ -292,8 +298,13 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
+    qh_register_user(user)
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
+
+def deactivate(user):
+    user.is_active = False
+    user.save()
 
 def invite(inviter, email, realname):
     inv = Invitation(inviter=inviter, username=email, realname=realname)
@@ -429,11 +440,24 @@ def get_membership_for_update(project, user):
     if isinstance(user, int):
         user = get_user_by_id(user)
     try:
-        return ProjectMembership.objects.select_for_update().get(
-            project=project,
-            person=user)
+        sfu = ProjectMembership.objects.select_for_update()
+        m = sfu.get(project=project, person=user)
+        if m.is_pending:
+            raise PendingMembershipError()
+        return m
     except ProjectMembership.DoesNotExist:
         raise IOError(_(astakos_messages.NOT_MEMBERSHIP_REQUEST))
+
+def checkAllowed(project, request_user):
+    if request_user and \
+        (not project.application.owner == request_user and \
+            not request_user.is_superuser):
+        raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
+
+def checkAlive(project):
+    if not project.is_alive:
+        raise PermissionDenied(
+            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
 
 def accept_membership(project_application_id, user, request_user=None):
     """
@@ -445,13 +469,8 @@ def accept_membership(project_application_id, user, request_user=None):
     return do_accept_membership(project_id, user, request_user)
 
 def do_accept_membership_checks(project, request_user):
-    if request_user and \
-        (not project.application.owner == request_user and \
-            not request_user.is_superuser):
-        raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-    if not project.is_alive:
-        raise PermissionDenied(
-            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+    checkAllowed(project, request_user)
+    checkAlive(project)
 
     join_policy = project.application.member_join_policy
     if join_policy == CLOSED_POLICY:
@@ -460,27 +479,16 @@ def do_accept_membership_checks(project, request_user):
     if project.violates_members_limit(adding=1):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
 
-def do_accept_membership(
-        project_id, user, request_user=None, bypass_checks=False):
+def do_accept_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
-
-    if not bypass_checks:
-        do_accept_membership_checks(project, request_user)
+    do_accept_membership_checks(project, request_user)
 
     membership = get_membership_for_update(project, user)
     membership.accept()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':project.application, 'action':'accepted'})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    membership_change_notify(project, membership.person, 'accepted')
+
     return membership
 
 def reject_membership(project_application_id, user, request_user=None):
@@ -493,34 +501,18 @@ def reject_membership(project_application_id, user, request_user=None):
     return do_reject_membership(project_id, user, request_user)
 
 def do_reject_membership_checks(project, request_user):
-    if request_user and \
-        (not project.application.owner == request_user and \
-            not request_user.is_superuser):
-        raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-    if not project.is_alive:
-        raise PermissionDenied(
-            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
+    checkAllowed(project, request_user)
+    checkAlive(project)
 
-def do_reject_membership(
-        project_id, user, request_user=None, bypass_checks=False):
+def do_reject_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
+    do_reject_membership_checks(project, request_user)
 
-    if not bypass_checks:
-        do_reject_membership_checks(project, request_user)
-    
     membership = get_membership_for_update(project, user)
     membership.reject()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':project.application, 'action':'rejected'})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    membership_change_notify(project, membership.person, 'rejected')
+
     return membership
 
 def remove_membership(project_application_id, user, request_user=None):
@@ -532,40 +524,24 @@ def remove_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_remove_membership(project_id, user, request_user)
 
-def do_remove_membership_checks(project, membership, request_user):
-    if request_user and \
-        (not project.application.owner == request_user and \
-            not request_user.is_superuser):
-        raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
-    if not project.is_alive:
-        raise PermissionDenied(
-            _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
-
-def do_remove_membership(
-        project_id, user, request_user=None, bypass_checks=False):
-    project = get_project_for_update(project_id)
-
-    if not bypass_checks:
-        do_remove_membership_checks(project, request_user)
+def do_remove_membership_checks(project, membership, request_user=None):
+    checkAllowed(project, request_user)
+    checkAlive(project)
 
     leave_policy = project.application.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
+def do_remove_membership(project_id, user, request_user=None):
+    project = get_project_for_update(project_id)
+    do_remove_membership_checks(project, request_user)
+
     membership = get_membership_for_update(project, user)
     membership.remove()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [membership.person.email],
-            _(PROJECT_MEMBERSHIP_CHANGE_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_change_notification.txt',
-            dictionary={'object':project.application, 'action':'removed'})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    membership_change_notify(project, membership.person, 'removed')
+
     return membership
 
 def enroll_member(project_application_id, user, request_user=None):
@@ -573,9 +549,15 @@ def enroll_member(project_application_id, user, request_user=None):
     return do_enroll_member(project_id, user, request_user)
 
 def do_enroll_member(project_id, user, request_user=None):
+    project = get_project_for_update(project_id)
+    do_accept_membership_checks(project, request_user)
+
     membership = create_membership(project_id, user)
-    return do_accept_membership(
-        project_id, user, request_user, bypass_checks=True)
+    membership.accept()
+    trigger_sync()
+
+    # TODO send proper notification
+    return membership
 
 def leave_project(project_application_id, user_id):
     """
@@ -587,19 +569,15 @@ def leave_project(project_application_id, user_id):
     return do_leave_project(project_id, user_id)
 
 def do_leave_project_checks(project):
-    if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
-        raise PermissionDenied(m)
+    checkAlive(project)
 
     leave_policy = project.application.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
-def do_leave_project(project_id, user_id, bypass_checks=False):
+def do_leave_project(project_id, user_id):
     project = get_project_for_update(project_id)
-
-    if not bypass_checks:
-        do_leave_project_checks(projetc)
+    do_leave_project_checks(project)
 
     membership = get_membership_for_update(project, user_id)
 
@@ -622,19 +600,15 @@ def join_project(project_application_id, user_id):
     return do_join_project(project_id, user_id)
 
 def do_join_project_checks(project):
-    if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
-        raise PermissionDenied(m)
+    checkAlive(project)
 
     join_policy = project.application.member_join_policy
     if join_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
 
-def do_join_project(project_id, user_id, bypass_checks=False):
+def do_join_project(project_id, user_id):
     project = get_project_for_update(project_id)
-
-    if not bypass_checks:
-        do_join_project_checks(project)
+    do_join_project_checks(project)
 
     membership = create_membership(project, user_id)
 
@@ -645,23 +619,24 @@ def do_join_project(project_id, user_id, bypass_checks=False):
         trigger_sync()
     return membership
 
-def submit_application(
-        application, resource_policies, applicant, comments,
-        precursor_application=None):
+def submit_application(kw, request_user=None):
 
-    application.submit(
-        resource_policies, applicant, comments, precursor_application)
-    
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [i[1] for i in settings.ADMINS],
-            _(PROJECT_CREATION_SUBJECT) % application.__dict__,
-            template='im/projects/project_creation_notification.txt',
-            dictionary={'object':application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e)
+    kw['applicant'] = request_user
+
+    precursor_id = kw.get('precursor_application', None)
+    if precursor_id is not None:
+        sfu = ProjectApplication.objects.select_for_update()
+        precursor = sfu.get(id=precursor_id)
+        kw['precursor_application'] = precursor
+
+        if request_user and \
+            (not precursor.owner == request_user and \
+                not request_user.is_superuser):
+            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
+
+    application = models_submit_application(**kw)
+
+    application_submit_notify(application)
     return application
 
 def update_application(app_id, **kw):
@@ -691,51 +666,21 @@ def approve_application(app):
     application.approve()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [application.owner.email],
-            _(PROJECT_APPROVED_SUBJECT) % application.__dict__,
-            template='im/projects/project_approval_notification.txt',
-            dictionary={'object':application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+    application_approve_notify(application)
 
 def terminate(project_id):
     project = get_project_for_update(project_id)
-
-    if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
-        raise PermissionDenied(m)
+    checkAlive(project)
 
     project.terminate()
     trigger_sync()
 
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [project.application.owner.email],
-            _(PROJECT_TERMINATION_SUBJECT) % project.__dict__,
-            template='im/projects/project_termination_notification.txt',
-            dictionary={'object':project.application}
-        ).send()
-    except NotificationError, e:
-        logger.error(e.message)
+    project_termination_notify(project)
 
 def suspend(project_id):
     project = get_project_by_id(project_id)
     project.last_approval_date = None
     project.save()
     trigger_sync()
-    
-    try:
-        notification = build_notification(
-            settings.SERVER_EMAIL,
-            [project.application.owner.email],
-            _(PROJECT_SUSPENSION_SUBJECT) % project.__dict__,
-            template='im/projects/project_suspension_notification.txt',
-            dictionary={'object':project.application}
-        ).send()
-    except NotificationError, e:
-        logger.error(e.message)
+
+    project_suspension_notify(project)

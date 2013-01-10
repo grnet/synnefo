@@ -410,7 +410,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 @transaction.commit_manually
 @require_http_methods(["GET", "POST"])
-def signup(request, template_name='im/signup.html', on_success='im/signup_complete.html', extra_context=None, backend=None):
+def signup(request, template_name='im/signup.html', on_success='index', extra_context=None, backend=None):
     """
     Allows a user to create a local account.
 
@@ -433,17 +433,15 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
         A custom template to render. This is optional;
         if not specified, this will default to ``im/signup.html``.
 
-    ``on_success``
-        A custom template to render in case of success. This is optional;
-        if not specified, this will default to ``im/signup_complete.html``.
-
     ``extra_context``
         An dictionary of variables to add to the template context.
+
+    ``on_success``
+        Resolvable view name to redirect on registration success.
 
     **Template:**
 
     im/signup.html or ``template_name`` keyword argument.
-    im/signup_complete.html or ``on_success`` keyword argument.
     """
     extra_context = extra_context or {}
     if request.user.is_authenticated():
@@ -476,6 +474,11 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
     if request.method == 'POST':
         if form.is_valid():
             user = form.save(commit=False)
+
+            # delete previously unverified accounts
+            if AstakosUser.objects.user_exists(user.email):
+                AstakosUser.objects.get_by_identifier(user.email).delete()
+
             try:
                 result = backend.handle_activation(user)
                 status = messages.SUCCESS
@@ -492,20 +495,17 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                             user.email
                         )
                         logger._log(LOGGING_LEVEL, msg, [])
+
                 if user and user.is_active:
                     next = request.POST.get('next', '')
                     response = prepare_response(request, user, next=next)
                     transaction.commit()
                     return response
-                messages.add_message(request, status, message)
+
                 transaction.commit()
-                return render_response(
-                    on_success,
-                    context_instance=get_context(
-                        request,
-                        extra_context
-                    )
-                )
+                messages.add_message(request, status, message)
+                return HttpResponseRedirect(reverse(on_success))
+
             except SendMailError, e:
                 logger.exception(e)
                 status = messages.ERROR
@@ -518,6 +518,7 @@ def signup(request, template_name='im/signup.html', on_success='im/signup_comple
                 messages.error(request, message)
                 logger.exception(e)
                 transaction.rollback()
+
     return render_response(template_name,
                            signup_form=form,
                            third_party_token=third_party_token,
@@ -1079,6 +1080,7 @@ def project_update(request, application_id):
         'resource_groups':resource_groups,
         'show_form':True,
         'details_fields':details_fields,
+        'update_form': True,
         'membership_fields':membership_fields}
     return _update_object(
         request,
@@ -1136,6 +1138,15 @@ def project_detail(request, application_id):
                                                           prefix="members_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
 
+    modifications_table = None
+    if application.follower:
+        following_applications = list(application.followers())
+        following_applications.reverse()
+        modifications_table = \
+            tables.ProjectModificationApplicationsTable(following_applications,
+                                                       user=request.user,
+                                                       prefix="modifications_")
+
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),
@@ -1144,7 +1155,9 @@ def project_detail(request, application_id):
         extra_context={
             'addmembers_form':addmembers_form,
             'members_table': members_table,
-            'user_owns_project': request.user.owns_project(application)
+            'user_owns_project': request.user.owns_project(application),
+            'modifications_table': modifications_table,
+            'member_status': application.user_status(request.user)
             })
 
 @require_http_methods(["GET", "POST"])
@@ -1186,7 +1199,7 @@ def project_search(request):
           'table': table
         })
 
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually

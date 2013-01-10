@@ -45,8 +45,16 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         try:
-            register_resources(Resource.objects.all())
-            register_users(AstakosUser.objects.all())
+            resources = list(Resource.objects.all())
+	    print("Registering resources")
+            register_resources(resources)
+	    print("Registering users")
+            users = list(AstakosUser.objects.verified().all())
+            if users:
+                register_users(users)
+            else:
+                print(" -> No verified users found.")
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Syncing failed.")
+

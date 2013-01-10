@@ -37,36 +37,39 @@ from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.template import Context, Template
 from django.template.loader import render_to_string
+from django.core.exceptions import PermissionDenied
 
 from django_tables2 import A
 import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
+from astakos.im.functions import do_join_project_checks
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
 
-MEMBER_STATUS_DISPLAY = {
-    100: _('Owner'),
-      0: _('Requested'),
-      1: _('Pending'),
-      2: _('Accepted'),
-      3: _('Removing'),
-      4: _('Removed'),
-     -1: _('Unregistered'),
-}
-
-class TruncatedLinkColumn(tables.LinkColumn):
+class LinkColumn(tables.LinkColumn):
 
     def __init__(self, *args, **kwargs):
-        self.truncate_chars = kwargs.pop('truncate_chars', 10)
-        super(TruncatedLinkColumn, self).__init__(*args, **kwargs)
+        self.coerce = kwargs.pop('coerce', None)
+        self.append = kwargs.pop('append', None)
+        super(LinkColumn, self).__init__(*args, **kwargs)
 
+    def render(self, value, record, bound_column):
+        link = super(LinkColumn, self).render(value, record, bound_column)
+        extra = ''
+        if self.append:
+            if callable(self.append):
+                extra = self.append(record, bound_column)
+            else:
+                extra = self.append
+        return mark_safe(link + extra)
 
     def render_link(self, uri, text, attrs=None):
-        text = truncatename(text, self.truncate_chars)
-        return super(TruncatedLinkColumn, self).render_link(uri, text, attrs)
+        if self.coerce:
+            text = self.coerce(text)
+        return super(LinkColumn, self).render_link(uri, text, attrs)
 
 
 # Helper columns
@@ -176,32 +179,36 @@ class RichLinkColumn(tables.TemplateColumn):
         return contexts
 
 
-def action_extra_context(project, table, self):
+def action_extra_context(application, table, self):
     user = table.user
     url, action, confirm, prompt = '', '', True, ''
     append_url = ''
 
-    if user.owns_project(project):
-        url = 'astakos.im.views.project_update'
-        action = _('Update')
-        confirm = False
-        prompt = ''
-    elif user.is_project_accepted_member(project):
-        url = 'astakos.im.views.project_leave'
-        action = _('- Leave')
-        confirm = True
-        prompt = _('Are you sure you want to leave from the project ?')
-    elif not user.is_project_member(project):
-        url = 'astakos.im.views.project_join'
-        action = _('+ Join')
-        confirm = True
-        prompt = _('Are you sure you want to join this project ?')
-    else:
-        action = ''
-        confirm = False
-        url = None
+    can_join = True
 
-    url = reverse(url, args=(project.pk, )) + append_url if url else ''
+    try:
+        project = Project.objects.get(application=application)
+        do_join_project_checks(project)
+    except (PermissionDenied, Project.DoesNotExist), e:
+        can_join = False
+
+    if can_join:
+        if user.is_project_accepted_member(application):
+            url = 'astakos.im.views.project_leave'
+            action = _('Leave')
+            confirm = True
+            prompt = _('Are you sure you want to leave from the project ?')
+        elif not user.is_project_member(application):
+            url = 'astakos.im.views.project_join'
+            action = _('Join')
+            confirm = True
+            prompt = _('Are you sure you want to join this project ?')
+        else:
+            action = ''
+            confirm = False
+            url = None
+
+    url = reverse(url, args=(application.pk, )) + append_url if url else ''
     return {'action': action,
             'confirm': confirm,
             'url': url,
@@ -222,17 +229,30 @@ class UserTable(tables.Table):
         super(UserTable, self).__init__(*args, **kwargs)
 
 
+def project_name_append(record, column):
+    try:
+        if record.projectapplication and column.table.user.owns_project(record):
+            if record.state == ProjectApplication.APPROVED:
+                return mark_safe("<br /><i class='tiny'>%s</i>" % _('modifications pending'))
+            else:
+                return u''
+        else:
+            return u''
+    except:
+        return u''
+
 # Table classes
 class UserProjectApplicationsTable(UserTable):
     caption = _('My projects')
 
-    name = TruncatedLinkColumn('astakos.im.views.project_detail',
-                                                truncate_chars=25,
-                                                args=(A('pk'),))
-    issue_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
+    name = LinkColumn('astakos.im.views.project_detail',
+                      coerce=lambda x: truncatename(x, 25),
+                      append=project_name_append,
+                      args=(A('pk'),))
+    issue_date = tables.DateColumn(verbose_name=_('Applied at'), format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
-    end_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
-    members_count = tables.Column(verbose_name=_("Enrolled"), default=0,
+    end_date = tables.DateColumn(verbose_name=_('Expires at'), format=DEFAULT_DATE_FORMAT)
+    members_count = tables.Column(verbose_name=_("Members"), default=0,
                                   sortable=False)
     membership_status = tables.Column(verbose_name=_("Status"), empty_values=(),
                                       sortable=False)
@@ -242,19 +262,29 @@ class UserProjectApplicationsTable(UserTable):
 
 
     def render_membership_status(self, record, *args, **kwargs):
-        status = record.user_status(self.user)
-        if status == 100:
-            return record.state
+        if self.user.owns_project(record):
+            return record.state_display()
         else:
-            return MEMBER_STATUS_DISPLAY.get(status, 'Unknown')
+            status = record.user_status(self.user)
+            return record.user_status_display(self.user)
 
     class Meta:
         model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'start_date','end_date', 'members_count')
+        fields = ('name', 'membership_status', 'issue_date', 'end_date', 'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
+        exclude = ('start_date', )
 
+class ProjectModificationApplicationsTable(UserProjectApplicationsTable):
+    name = LinkColumn('astakos.im.views.project_detail',
+                      verbose_name=_('Action'),
+                      coerce= lambda x: 'review',
+                      args=(A('pk'),))
+    class Meta:
+        attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
+        fields = ('issue_date', 'membership_status')
+        exclude = ('start_date', 'end_date', 'members_count', 'project_action')
 
 def member_action_extra_context(membership, table, col):
 
@@ -272,6 +302,8 @@ def member_action_extra_context(membership, table, col):
     if membership.state == ProjectMembership.ACCEPTED:
         urls = ['astakos.im.views.project_remove_member']
         actions = [_('Remove')]
+        if table.user == membership.person:
+            actions = [_('Leave')]
         prompts = [_('Are you sure you want to remove this member ?')]
         confirms = [True, True]
 
@@ -302,7 +334,7 @@ class ProjectApplicationMembersTable(UserTable):
         return record.person.realname
 
     def render_status(self, value, *args, **kwargs):
-        return MEMBER_STATUS_DISPLAY.get(value, 'Unknown')
+        return USER_STATUS_DISPLAY.get(value, 'Unknown')
 
     class Meta:
         template = "im/table_render.html"

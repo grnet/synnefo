@@ -117,6 +117,9 @@ QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'import_limit',
                                          'export_limit'))
 
+def qh_register_user(user):
+    return register_users([user])
+
 def register_users(users):
     payload = list(CreateEntityPayload(
                     entity=u.uuid,

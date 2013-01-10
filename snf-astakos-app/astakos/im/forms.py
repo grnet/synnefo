@@ -69,7 +69,8 @@ from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
     send_change_email, submit_application, do_accept_membership_checks)
 
-from astakos.im.util import reserved_email, get_query, model_to_dict
+from astakos.im.util import reserved_email, reserved_verified_email, \
+                            get_query, model_to_dict
 from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
@@ -87,8 +88,10 @@ DOMAIN_VALUE_REGEX = re.compile(
 
 class StoreUserMixin(object):
 
-    @transaction.commit_on_success
     def store_user(self, user, request):
+        """
+        WARNING: this should be wrapped inside a transactional view/method.
+        """
         user.save()
         self.post_store_user(user, request)
         return user
@@ -150,7 +153,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
-        if reserved_email(email):
+        if reserved_verified_email(email):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return email
 
@@ -236,6 +239,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         widget=forms.HiddenInput(),
         label=''
     )
+
     class Meta:
         model = AstakosUser
         fields = ['id', 'email', 'third_party_identifier', 'first_name', 'last_name']
@@ -269,7 +273,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
-        if reserved_email(email):
+        if reserved_verified_email(email):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return email
 
@@ -283,9 +287,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         pending = PendingThirdPartyUser.objects.get(
                                 token=request.POST.get('third_party_token'),
                                 third_party_identifier= \
-            self.cleaned_data.get('third_party_identifier'))
+                            self.cleaned_data.get('third_party_identifier'))
         return user.add_pending_auth_provider(pending)
-
 
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
@@ -525,7 +528,7 @@ class EmailChangeForm(forms.ModelForm):
 
     def clean_new_email_address(self):
         addr = self.cleaned_data['new_email_address']
-        if AstakosUser.objects.filter(email__iexact=addr):
+        if reserved_verified_email(addr):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
@@ -830,18 +833,12 @@ class ProjectApplicationForm(forms.ModelForm):
 
         return policies
 
-
     def save(self, commit=True):
-        application = super(ProjectApplicationForm, self).save(commit=False)
-        applicant = self.user
-        comments = self.cleaned_data.pop('comments', None)
-        return submit_application(
-            application,
-            self.resource_policies,
-            applicant,
-            comments,
-            self.precursor_application
-        )
+        data = dict(self.cleaned_data)
+        data['precursor_application'] = self.instance.id
+        data['owner'] = self.user
+        data['resource_policies'] = self.resource_policies
+        submit_application(data, request_user=self.user)
 
 class ProjectSortForm(forms.Form):
     sorting = forms.ChoiceField(
@@ -877,7 +874,7 @@ class AddProjectMembersForm(forms.Form):
             self.project = Project.objects.get(application__id=application_id)
         self.request_user = kwargs.pop('request_user', None)
         super(AddProjectMembersForm, self).__init__(*args, **kwargs)
-        
+
     def clean(self):
         try:
             do_accept_membership_checks(self.project, self.request_user)

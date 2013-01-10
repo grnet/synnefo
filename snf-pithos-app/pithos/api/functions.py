@@ -157,7 +157,7 @@ def authenticate(request):
     return response
 
 
-@api_method('GET', format_allowed=True)
+@api_method('GET', format_allowed=True, request_usage=True)
 def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -188,7 +188,8 @@ def account_list(request):
             continue
         try:
             meta = request.backend.get_account_meta(
-                request.user_uniq, x, 'pithos', include_user_defined=False)
+                request.user_uniq, x, 'pithos', include_user_defined=False,
+                external_quota=request.user_usage)
             groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
             raise Forbidden('Not allowed')
@@ -211,7 +212,7 @@ def account_list(request):
     return response
 
 
-@api_method('HEAD')
+@api_method('HEAD', request_usage=True)
 def account_meta(request, v_account):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -221,13 +222,14 @@ def account_meta(request, v_account):
     until = get_int_parameter(request.GET.get('until'))
     try:
         meta = request.backend.get_account_meta(
-            request.user_uniq, v_account, 'pithos', until)
+            request.user_uniq, v_account, 'pithos', until,
+            external_quota=request.user_usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
         for k in groups:
             groups[k] = [retrieve_username(x) for x in groups[k]]
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account)
+            request.user_uniq, v_account, external_quota=request.user_usage)
     except NotAllowedError:
         raise Forbidden('Not allowed')
 
@@ -272,7 +274,7 @@ def account_update(request, v_account):
     return HttpResponse(status=202)
 
 
-@api_method('GET', format_allowed=True)
+@api_method('GET', format_allowed=True, request_usage=True)
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -283,11 +285,12 @@ def container_list(request, v_account):
     until = get_int_parameter(request.GET.get('until'))
     try:
         meta = request.backend.get_account_meta(
-            request.user_uniq, v_account, 'pithos', until)
+            request.user_uniq, v_account, 'pithos', until,
+            external_quota=request.user_usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account)
+            request.user_uniq, v_account, external_quota = request.user_usage)
     except NotAllowedError:
         raise Forbidden('Not allowed')
 

@@ -1021,7 +1021,13 @@ def request_serialization(request, format_allowed=False):
 class User(unicode):
     pass
 
-def api_method(http_method=None, format_allowed=False, user_required=True):
+def get_pithos_usage(usage):
+    for u in usage:
+        if u.get('name') == 'pithos+.diskspace':
+            return u
+
+def api_method(http_method=None, format_allowed=False, user_required=True,
+        request_usage=False):
     """Decorator function for views that implement an API method."""
 
     def decorator(func):
@@ -1038,12 +1044,17 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                             request.COOKIES.get(COOKIE_NAME, ''))
                         account, sep, token = cookie_value.partition('|')
                     get_user(request,
-                             AUTHENTICATION_URL, AUTHENTICATION_USERS, token)
+                             AUTHENTICATION_URL,
+                             AUTHENTICATION_USERS,
+                             token,
+                             user_required)
                     if  getattr(request, 'user', None) is None:
                         raise Unauthorized('Access denied')
                     assert getattr(request, 'user_uniq', None) != None
                     request.user_uniq = User(request.user_uniq)
                     request.user_uniq.uuid = request.user.get('uuid')
+                    request.user_usage = get_pithos_usage(
+                        request.user.get('usage'))
                 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:

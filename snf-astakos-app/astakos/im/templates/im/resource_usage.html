@@ -21,10 +21,10 @@
 						<p>							
 						{% if rdata.unit == 'bytes' %}
                         <span class="currValue">
-                            {{ rdata.currValue|sizeof_fmt }}
+                            {{ rdata.currValue }}
                         </span> out of  
                         <span class="maxValue">
-                            {{ rdata.maxValue|sizeof_fmt }}
+                            {{ rdata.maxValue }}
                         </span>
                         {% else %}
                         <span class="currValue">
@@ -35,13 +35,8 @@
                             <span class="value">{{ rdata.maxValue }}</span>
                             <span class="unit">{{ rdata.unit }}</span>
                         </span>
-						{% endif %}		
-                        {% if rdata.is_abbreviation %}
-                            {{ rdata.verbose_name|upper }}
-                        {% else %}
-                            {{ rdata.verbose_name }}
-                        {% endif %}
-                        {% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
+						{% endif %}
+                        {% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
 						</p>
 					</div>
 					<div class="bar" data-steps="">

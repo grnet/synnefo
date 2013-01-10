@@ -532,7 +532,7 @@ def remove_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_remove_membership(project_id, user, request_user)
 
-def do_remove_membership_checks(project, membership):
+def do_remove_membership_checks(project, membership, request_user):
     if request_user and \
         (not project.application.owner == request_user and \
             not request_user.is_superuser):

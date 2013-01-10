@@ -137,7 +137,7 @@
 			    	<div class="form-row">
 			    		<p class="clearfix">
 			    			<label for="{{'id_'|add:rname|add:'_uplimit'}}_proxy" >
-								Total {% if rdata.unit %}amount{% else %}units{% endif %}   per user
+								Total {% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if not rdata.unit %}s {% endif  %}  per user
 							</label>
 			    			<input 	type="text" 
 			       						id="{{'id_'|add:rname|add:'_uplimit'}}_proxy" 

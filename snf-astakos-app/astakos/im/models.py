@@ -1171,6 +1171,16 @@ USER_STATUS_DISPLAY = {
      -1: _('Not a member'),
 }
 
+class Chain(models.Model):
+    chain  =   models.AutoField(primary_key=True)
+
+def new_chain():
+    c = Chain.objects.create()
+    chain = c.chain
+    c.delete()
+    return chain
+
+
 class ProjectApplication(models.Model):
     PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
@@ -1186,6 +1196,7 @@ class ProjectApplication(models.Model):
                                     related_name='projects_owned',
                                     db_index=True)
 
+    chain                   =   models.IntegerField(db_index=True)
     precursor_application   =   models.OneToOneField('ProjectApplication',
                                                      null=True,
                                                      blank=True,
@@ -1287,17 +1298,12 @@ class ProjectApplication(models.Model):
             return None
 
     def _get_project_for_update(self):
-        precursor = self
-        while precursor:
-            try:
-                objects = Project.objects.select_for_update()
-                project = objects.get(application=precursor)
-                return project
-            except Project.DoesNotExist:
-                pass
-            precursor = precursor.precursor_application
-
-        return None
+        try:
+            objects = Project.objects.select_for_update()
+            project = objects.get(id=self.chain)
+            return project
+        except Project.DoesNotExist:
+            return None
 
     def approve(self, approval_user=None):
         """
@@ -1335,7 +1341,7 @@ class ProjectApplication(models.Model):
         new_project = False
         if project is None:
             new_project = True
-            project = Project(creation_date=now)
+            project = Project(id=self.chain, creation_date=now)
 
         project.name = new_project_name
         project.application = self
@@ -1365,6 +1371,9 @@ def submit_application(**kw):
     if precursor is not None:
         precursor.state = ProjectApplication.REPLACED
         precursor.save()
+        application.chain = precursor.chain
+    else:
+        application.chain = new_chain()
 
     application.save()
     application.resource_policies = resource_policies

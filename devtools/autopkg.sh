@@ -105,7 +105,6 @@ dialog --yesno "Create Snapshot?" 5 20 && snap=true && dchextra=-S && mrgextra= 
 GIT_MERGE_AUTOEDIT=no
 git merge $mrgextra ${mrgextra:+"$mrgmsg"} $LOCALBRANCH
 
-lo
 # auto edit Debian changelog depending on Snapshot or Release mode
 export EDITOR=/usr/bin/vim
 git-dch --debian-branch=$TMPDEBIAN --git-author --ignore-regex=".*" --multimaint-merge --since=HEAD $dchextra

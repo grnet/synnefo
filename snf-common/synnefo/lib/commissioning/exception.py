@@ -32,6 +32,12 @@
 # or implied, of GRNET S.A.
 
 
+def str_or_utf8(s):
+    if isinstance(s, unicode):
+        return s.encode('utf8')
+    return str(s)
+
+
 class CallError(Exception):
     exceptions = {}
 
@@ -51,11 +57,11 @@ class CallError(Exception):
         self.kwargs = kw
 
     def __str__(self):
-        return '\n--------\n'.join(str(x) for x in self.args)
+        return '\n--------\n'.join(str_or_utf8(x) for x in self.args)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__,
-                           ','.join(str(x) for x in self.args))
+                           ','.join(str_or_utf8(x) for x in self.args))
 
     @classmethod
     def from_exception(cls, exc):

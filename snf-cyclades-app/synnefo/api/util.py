@@ -547,3 +547,23 @@ def get_pool_table(res_type):
         return MacPrefixPoolTable
     else:
         raise Exception("Unknown resource type")
+
+
+def get_existing_users():
+    """
+    Retrieve user ids stored in cyclades user agnostic models.
+    """
+    # also check PublicKeys a user with no servers/networks exist
+    from synnefo.ui.userdata.models import PublicKeyPair
+    from synnefo.db.models import VirtualMachine, Network
+
+    keypairusernames = PublicKeyPair.objects.filter().values_list('user',
+                                                               flat=True)
+    serverusernames = VirtualMachine.objects.filter().values_list('userid',
+                                                                   flat=True)
+    networkusernames = Network.objects.filter().values_list('userid',
+                                                            flat=True)
+
+    return set(list(keypairusernames) + list(serverusernames) + \
+           list(networkusernames))
+

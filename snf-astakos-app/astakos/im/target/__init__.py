@@ -108,9 +108,9 @@ def handle_third_party_signup(request, userid, provider_module, third_party_key,
     extra_context['can_create'] = provider.is_available_for_create()
     extra_context['can_add'] = provider.is_available_for_add()
 
-
-    return render_response(
-        template,
-        context_instance=get_context(request, extra_context)
-    )
+    return HttpResponseRedirect(extra_context['signup_url'])
+    #return render_response(
+        #template,
+        #context_instance=get_context(request, extra_context)
+    #)
 

@@ -66,6 +66,30 @@ BRANCH_TYPES = {
 BASE_VERSION_FILE = "version"
 
 
+def get_commit_id(commit, current_branch):
+    """Return the commit ID
+
+    If the commit is a 'merge' commit, and one of the parents is a
+    debian branch we return a compination of the parents commits.
+
+    """
+    def short_id(commit):
+        return commit.hexsha[0:7]
+
+    parents = commit.parents
+    cur_br_name = current_branch.name
+    if len(parents) == 1:
+        return short_id(commit)
+    elif len(parents) == 2:
+        if cur_br_name.startswith("debian-") or cur_br_name == "debian":
+            pr1, pr2 = parents
+            return short_id(pr1) + "~" + short_id(pr2)
+        else:
+            return short_id(commit)
+    else:
+        raise RuntimeError("Commit %s has more than 2 parents!" % commit)
+
+
 def vcs_info():
     """
     Return current git HEAD commit information.
@@ -81,7 +105,7 @@ def vcs_info():
     try:
         repo = git.Repo(".")
         branch = repo.head.reference
-        revid = branch.commit.hexsha[0:7]
+        revid = get_commit_id(branch.commit, branch)
         revno = len(list(repo.iter_commits()))
         desc = repo.git.describe("--tags")
         toplevel = repo.working_dir

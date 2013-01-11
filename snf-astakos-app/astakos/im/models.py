@@ -1343,11 +1343,10 @@ class ProjectApplication(models.Model):
         project.name = new_project_name
         project.application = self
         project.last_approval_date = now
-        project.is_modified = True
-        project.save()
+        if not new_project:
+            project.is_modified = True
 
-        if new_project:
-            project.add_member(self.owner)
+        project.save()
 
         self.state = self.APPROVED
         self.save()

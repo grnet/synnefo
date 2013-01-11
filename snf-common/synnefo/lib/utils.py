@@ -68,3 +68,21 @@ def merge_time(timetuple):
 
   t1 = float(seconds) + (float(microseconds) * 0.000001)
   return datetime.datetime.fromtimestamp(t1)
+
+
+def case_unique(iterable):
+    """
+    Compare case uniquness across iterable contents. Return diff.
+
+    >>> case_compare(['a','b','c'])
+    []
+    >>> case_compaer(['a','A','b','c'])
+    ['A']
+    """
+    icase = set(map(unicode.lower, iterable))
+    same = len(icase) == len(iterable)
+    if not same:
+        return list(set(iterable) - set(icase))
+
+    return []
+

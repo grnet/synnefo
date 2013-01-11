@@ -338,7 +338,10 @@ class QHAPITest(QHTestCase):
         q0, c0, il0, el0 = self.new_quota(e0, k0, resource)
         q1, c1, il1, el1 = self.new_quota(e1, k1, resource)
 
-        most = max(0, min(c0, il0, q1, el1))
+        most = min(c0, il0, q1, el1)
+        if most < 0:
+            raise AssertionError("%s <= 0" % most)
+
         r = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
                                      name='something',
                                      provisions=[(e1, resource, most)])
@@ -530,6 +533,67 @@ class QHAPITest(QHTestCase):
 
         r = self.qh.get_holding(get_holding=[(e1, resource, k1)])
         self.assertEqual(r, [(e1, resource, p) + counters + (f,)])
+
+    def test_015_release_nocapacity(self):
+        qh = self.qh
+        key = "key"
+        owner = "system"
+        owner_key = ""
+        source = "test_015_release_nocapacity_source"
+        resource = "resource"
+        target = "test_015_release_nocapacity_target"
+        flags = 0
+        source_create  = [source, owner, key, owner_key]
+        source_limits  = [source, 6, 0, 1000, 1000]
+        source_holding = [source, resource, key, source, flags]
+        target_create  = [target, owner, key, owner_key]
+        target_limits  = [target, 0, 5, 1000, 1000]
+        target_holding = [target, resource, key, target, flags]
+
+        failed = AssertionError("Quotaholder call failed")
+        if qh.create_entity(create_entity=[source_create, target_create]):
+            raise failed
+        if qh.set_limits(set_limits=[source_limits, target_limits]):
+            raise failed
+        if qh.set_holding(set_holding=[source_holding, target_holding]):
+            raise failed
+
+        serial = qh.issue_commission(clientkey=self.client, target=target, key=key,
+                                     name="something", provisions=[(source, resource, 5)])
+        qh.accept_commission(clientkey=self.client, serials=[serial])
+
+        holding = qh.get_holding(get_holding=[[source, resource, key]])
+        self.assertEqual(tuple(holding[0]), (source, resource, source, 0, 5, 0, 0, flags)) 
+        holding = qh.get_holding(get_holding=[[target, resource, key]])
+        self.assertEqual(tuple(holding[0]), (target, resource, target, 5, 0, 0, 0, flags)) 
+
+        if qh.reset_holding(reset_holding=[[target, resource, key, 10, 0, 0, 0]]):
+            raise failed
+
+        with self.assertRaises(NoCapacityError):
+            qh.issue_commission(clientkey=self.client, target=target, key=key,
+                                name="something", provisions=[(source, resource, 1)])
+
+        with self.assertRaises(NoQuantityError):
+            qh.issue_commission(clientkey=self.client, target=target, key=key,
+                                name="something", provisions=[(source, resource, -7)])
+
+        source_limits  = [source, 6, 10, 1000, 1000]
+        if qh.set_limits(set_limits=[source_limits]):
+            raise failed
+
+        serial = qh.issue_commission(clientkey=self.client, target=target, key=key,
+                                     name="something", provisions=[(source, resource, -1)])
+        qh.accept_commission(clientkey=self.client, serials=[serial])
+
+        holding = qh.get_holding(get_holding=[[source, resource, key]])
+        self.assertEqual(tuple(holding[0]), (source, resource, source, 0, 5, 1, 0, flags)) 
+        holding = qh.get_holding(get_holding=[[target, resource, key]])
+        self.assertEqual(tuple(holding[0]), (target, resource, target, 10, 0, 0, 1, flags)) 
+
+        with self.assertRaises(NoCapacityError):
+            qh.issue_commission(clientkey=self.client, target=target, key=key,
+                                name="something", provisions=[(source, resource, -10)])
 
 
 if __name__ == "__main__":

@@ -668,7 +668,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h = db_get_holding(entity=entity, resource=resource,
                                    for_update=True)
             except Holding.DoesNotExist:
-                m = ("There is not enough quantity "
+                m = ("There is no quantity "
                      "to allocate from in %s.%s" % (entity, resource))
                 raise NoQuantityError(m,
                                       source=entity, target=target,
@@ -677,25 +677,38 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             hp = h.policy
 
-            current = h.exporting
-            limit = hp.export_limit
-            if current + quantity > limit:
-                m = ("Export limit reached for %s.%s" % (entity, resource))
-                raise ExportLimitError(m,
-                                       source=entity, target=target,
-                                       resource=resource, requested=quantity,
-                                       current=current, limit=limit)
+            if not release:
+                current = h.exporting
+                limit = hp.export_limit
+                if current + quantity > limit:
+                    m = ("Export limit reached for %s.%s" % (entity, resource))
+                    raise ExportLimitError(m,
+                                           source=entity, target=target,
+                                           resource=resource, requested=quantity,
+                                           current=current, limit=limit)
 
-            limit = hp.quantity
-            current = (+ h.exporting + h.releasing
-                       - h.imported - h.returned)
-            if current + quantity > limit:
-                m = ("There is not enough quantity "
-                     "to allocate from in %s.%s" % (entity, resource))
-                raise NoQuantityError(m,
-                                      source=entity, target=target,
-                                      resource=resource, requested=quantity,
-                                      current=current, limit=limit)
+                limit = hp.quantity + h.imported - h.releasing
+                unavailable = h.exporting - h.returned
+                available = limit - unavailable
+
+                if quantity > available:
+                    m = ("There is not enough quantity "
+                         "to allocate from in %s.%s" % (entity, resource))
+                    raise NoQuantityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=unavailable, limit=limit)
+            else:
+                current = (+ h.importing + h.returning
+                           - h.exported  - h.returned)
+                limit = hp.capacity
+                if current - quantity > limit:
+                    m = ("There is not enough capacity "
+                         "to release to in %s.%s" % (entity, resource))
+                    raise NoQuantityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=current, limit=limit)
 
             # Target limits checks
             try:
@@ -711,26 +724,38 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
             tp = th.policy
 
-            limit = tp.import_limit
-            current = th.importing
-            if current + quantity > limit:
-                m = ("Import limit reached for %s.%s" % (target, resource))
-                raise ImportLimitError(m,
-                                       source=entity, target=target,
-                                       resource=resource, requested=quantity,
-                                       current=current, limit=limit)
+            if not release:
+                limit = tp.import_limit
+                current = th.importing
+                if current + quantity > limit:
+                    m = ("Import limit reached for %s.%s" % (target, resource))
+                    raise ImportLimitError(m,
+                                           source=entity, target=target,
+                                           resource=resource, requested=quantity,
+                                           current=current, limit=limit)
 
-            limit = tp.capacity
-            current = (+ th.importing + th.returning
-                       - th.exported - th.released)
+                current = (+ th.importing + th.returning
+                           - th.exported - th.released)
 
-            if not release and (current + quantity > limit):
+                if current + quantity > tp.quantity + tp.capacity:
                     m = ("There is not enough capacity "
                          "to allocate into in %s.%s" % (target, resource))
                     raise NoCapacityError(m,
                                           source=entity, target=target,
                                           resource=resource, requested=quantity,
                                           current=current, limit=limit)
+            else:
+                limit = tp.quantity + th.imported - th.releasing
+                unavailable = th.exporting - th.returned
+                available = limit - unavailable
+
+                if available + quantity < 0:
+                    m = ("There is not enough quantity "
+                         "to release from in %s.%s" % (target, resource))
+                    raise NoCapacityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=unavailable, limit=limit)
 
             Provision.objects.create(   serial      =   commission,
                                         entity      =   e,

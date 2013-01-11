@@ -67,8 +67,8 @@ USER_LEFT_GROUP                         =   'User %(realname)s left the project.
 USER_MEMBERSHIP_REJECTED                =   'User\'s %(realname)s request to join the project has been rejected.'
 MEMBER_REMOVED                          =   'User %(realname)s has been successfully removed from the project.'
 BILLING_ERROR                           =   'Service response status: %(status)d'
-LOGOUT_SUCCESS                          =   'You are now logged out.'
-LOGIN_SUCCESS                           =   'You are now logged in.'
+LOGOUT_SUCCESS                          =   'You are now logged out from your ~okeanos account.'
+LOGIN_SUCCESS                           =   'You have logged in to your ~okeanos account using "%s".'
 
 GENERIC_ERROR                           =   'Hmm... It seems something bad has happened, and we don\'t know the details right now. \
                                                Please contact the administrators by email for more details.'
@@ -196,6 +196,9 @@ AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be a
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
 AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is required. Add one from your profile page."
 AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD         =   "Changing password is not supported."
+
+EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add '%s' login method to your existing account from your " \
+                                                 " <a href='%s'>profile page</a>"
 
 messages = locals().keys()
 for msg in messages:

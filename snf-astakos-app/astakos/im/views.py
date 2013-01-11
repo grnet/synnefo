@@ -56,6 +56,7 @@ from django.http import (
 from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
     apply_extra_context, lookup_object, delete_object, get_model_and_form_class)
@@ -607,7 +608,14 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
     else:
-        messages.add_message(request, messages.SUCCESS, _(astakos_messages.LOGOUT_SUCCESS))
+        message = _(astakos_messages.LOGOUT_SUCCESS)
+        last_provider = request.COOKIES.get('astakos_last_login_method', None)
+        if last_provider:
+            provider = auth_providers.get_provider(last_provider)
+            extra_message = provider.get_logout_message_display
+            if extra_message:
+                message += '<br />' + extra_message
+        messages.add_message(request, messages.SUCCESS, mark_safe(message))
         response['Location'] = reverse('index')
         response.status_code = 301
     return response

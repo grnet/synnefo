@@ -79,6 +79,10 @@ class AuthProvider(object):
     one_per_user = False
     login_prompt = _('Login using ')
     primary_login_prompt = _('Login using ')
+    login_message = None
+    logout_message = 'You may still be logged in at "%(provider)s". Consider logging out.'
+    remote_authenticate = True
+    remote_logout_url = None
 
     def get_message(self, msg, **kwargs):
         params = kwargs
@@ -105,6 +109,13 @@ class AuthProvider(object):
             if override != None:
                 setattr(self, key, override)
 
+        self.login_message = self.login_message or self.get_title_display
+        if self.logout_message and "%" in self.logout_message:
+            self.logout_message = self.logout_message % {'provider':
+                                                         self.get_login_message_display}
+        else:
+            self.logout_message = self.logout_message or ''
+
     def __getattr__(self, key):
         if not key.startswith('get_'):
             return super(AuthProvider, self).__getattribute__(key)
@@ -117,6 +128,12 @@ class AuthProvider(object):
             return _(settings_attr)
         else:
             return super(AuthProvider, self).__getattr__(key)
+
+    def get_logout_message(self):
+        content = ''
+        if self.remote_logout_url:
+            content = '<a href="%s" title="Logout from %%s"></a>' % self.remote_logou_url
+        return content % (self.get_logout_message_display % self.get_title_display)
 
     def get_setting(self, name, default=None):
         attr = 'ASTAKOS_AUTH_PROVIDER_%s_%s' % (self.module.upper(), name.upper())
@@ -158,6 +175,8 @@ class LocalAuthProvider(AuthProvider):
     signup_prompt = _('New to ~okeanos ?')
     signup_link_prompt = _('create an account now')
     login_view = 'password_change'
+    remote_authenticate = False
+    logout_message = ''
 
     one_per_user = True
 

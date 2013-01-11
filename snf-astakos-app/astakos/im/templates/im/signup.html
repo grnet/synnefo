@@ -14,7 +14,7 @@
       <div class="form-stacked">
         <form action="{% url signup %}" method="post"
             class="innerlabels signup">{% csrf_token %}
-          <h2><span>SIGN UP</span></h2>
+            <h2><span>SIGN UP</span></h2>
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value={{ provider|default:"local" }}>

@@ -274,7 +274,12 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_verified_email(email):
-            raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
+            provider = auth_providers.get_provider(self.request.REQUEST.get('provider', 'local'))
+            extra_message = _(astakos_messages.EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION) % \
+                    (provider.get_title_display, reverse('edit_profile'))
+
+            raise forms.ValidationError(_(astakos_messages.EMAIL_USED) + ' ' + \
+                                        extra_message)
         return email
 
     def clean_has_signed_terms(self):

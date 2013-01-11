@@ -175,7 +175,9 @@ def authenticated(
                                     user,
                                     request.GET.get('next'),
                                     'renew' in request.GET)
-            messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
+            provider = auth_providers.get_provider('linkedin')
+            messages.success(request, _(astakos_messages.LOGIN_SUCCESS) %
+                             _(provider.get_login_message_display))
             add_pending_auth_provider(request, third_party_key)
             response.set_cookie('astakos_last_login_method', 'linkedin')
             return response

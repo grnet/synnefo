@@ -516,8 +516,16 @@ class LocalUserTests(TestCase):
         data = {'email':'KPAP@grnet.gr', 'password1':'password',
                 'password2':'password', 'first_name': 'Kostas',
                 'last_name': 'Mitroglou', 'provider': 'local'}
-        r = self.client.post("/im/signup", data)
-        self.assertContains(r, messages.EMAIL_USED)
+        r = self.client.post("/im/signup", data, follow=True)
+        self.assertRedirects(r, reverse('index'))
+        self.assertContains(r, messages.NOTIFICATION_SENT)
+
+        # previous user replaced
+        user = AstakosUser.objects.get(pk=user.pk)
+        self.assertTrue(user.activation_sent)
+        self.assertFalse(user.email_verified)
+        self.assertFalse(user.is_active)
+        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 2)
 
         # hmmm, email exists; lets request a password change
         r = self.client.get('/im/local/password_reset')

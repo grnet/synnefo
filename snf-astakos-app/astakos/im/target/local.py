@@ -51,6 +51,7 @@ from astakos.im.settings import (RATELIMIT_RETRIES_ALLOWED,
 import astakos.im.messages as astakos_messages
 from astakos.im.views import requires_auth_provider
 from astakos.im import settings
+from astakos.im import auth_providers
 
 from ratelimit.decorators import ratelimit
 
@@ -118,7 +119,9 @@ def login(request, on_failure='im/login.html'):
         except PendingThirdPartyUser.DoesNotExist:
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 
-    messages.success(request, _(astakos_messages.LOGIN_SUCCESS))
+    provider = auth_providers.get_provider('local')
+    messages.success(request, _(astakos_messages.LOGIN_SUCCESS) %
+                     _(provider.get_login_message_display))
     response.set_cookie('astakos_last_login_method', 'local')
     return response
 

@@ -533,6 +533,7 @@ class AstakosUser(User):
         if 'identifier' in kwargs:
             try:
                 # provider with specified params already exist
+                kwargs['user__email_verified'] = True
                 existing_user = AstakosUser.objects.get_auth_provider_user(provider,
                                                                    **kwargs)
             except AstakosUser.DoesNotExist:
@@ -577,6 +578,8 @@ class AstakosUser(User):
                 info_data = json.dumps(info_data)
 
         if self.can_add_auth_provider(provider, **kwargs):
+            AstakosUserAuthProvider.objects.remove_unverified_providers(provider,
+                                                                **kwargs)
             self.auth_providers.create(module=provider, active=True,
                                        info_data=info_data,
                                        **kwargs)
@@ -691,6 +694,15 @@ class AstakosUserAuthProviderManager(models.Manager):
 
     def active(self, **filters):
         return self.filter(active=True, **filters)
+
+    def remove_unverified_providers(self, provider, **filters):
+        try:
+            existing = self.filter(module=provider, user__email_verified=False, **filters)
+            for p in existing:
+                p.user.delete()
+        except:
+            pass
+
 
 
 class AstakosUserAuthProvider(models.Model):
@@ -960,9 +972,12 @@ class PendingThirdPartyUser(models.Model):
     third_party_identifier = models.CharField(_('Third-party identifier'), max_length=255, null=True, blank=True)
     provider = models.CharField(_('Provider'), max_length=255, blank=True)
     email = models.EmailField(_('e-mail address'), blank=True, null=True)
-    first_name = models.CharField(_('first name'), max_length=30, blank=True)
-    last_name = models.CharField(_('last name'), max_length=30, blank=True)
-    affiliation = models.CharField('Affiliation', max_length=255, blank=True)
+    first_name = models.CharField(_('first name'), max_length=30, blank=True,
+                                  null=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True,
+                                 null=True)
+    affiliation = models.CharField('Affiliation', max_length=255, blank=True,
+                                   null=True)
     username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
     token = models.CharField(_('Token'), max_length=255, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)

@@ -1505,8 +1505,10 @@ class Project(models.Model):
 
     def violates_members_limit(self, adding=0):
         application = self.application
-        return (len(self.approved_members) + adding >
-                application.limit_on_members_number)
+        limit = application.limit_on_members_numbers
+        if limit is None:
+            return False
+        return (len(self.approved_members) + adding > limit)
 
 
     ### Other

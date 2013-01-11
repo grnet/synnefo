@@ -127,10 +127,12 @@ class Migration(SchemaMigration):
         },
         'im.astakosuserquota': {
             'Meta': {'unique_together': "(('resource', 'user'),)", 'object_name': 'AstakosUserQuota'},
+            'capacity': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'export_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'limit': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
+            'import_limit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
+            'quantity': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
-            'uplimit': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
         },
         'im.emailchange': {

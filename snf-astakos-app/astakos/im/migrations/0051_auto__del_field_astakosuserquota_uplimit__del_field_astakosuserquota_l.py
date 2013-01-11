@@ -267,6 +267,7 @@ class Migration(SchemaMigration):
             'icon': ('django.db.models.fields.FilePathField', [], {'max_length': '100', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'}),
+            'order': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
             'url': ('django.db.models.fields.FilePathField', [], {'max_length': '100'})
         },
         'im.sessioncatalog': {

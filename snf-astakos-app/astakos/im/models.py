@@ -683,11 +683,19 @@ class AstakosUser(User):
     def owns_project(self, project):
         return project.owner == self
 
-    def is_project_member(self, project):
-        return project.user_status(self) in [0,1,2,3]
+    def is_project_member(self, project_or_application):
+        return self.get_status_in_project(project_or_application) in \
+                                        ProjectMembership.ASSOCIATED_STATES
 
-    def is_project_accepted_member(self, project):
-        return project.user_status(self) == 2
+    def is_project_accepted_member(self, project_or_application):
+        return self.get_status_in_project(project_or_application) in \
+                                            ProjectMembership.ACCEPTED_STATES
+
+    def get_status_in_project(self, project_or_application):
+        application = project_or_application
+        if isinstance(project_or_application, Project):
+            application = project_or_application.project
+        return application.user_status(self)
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -1148,16 +1156,23 @@ SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 class ProjectApplicationManager(ForUpdateManager):
 
-    def user_projects(self, user):
+    def user_visible_projects(self, *filters, **kw_filters):
+        return self.filter(Q(state=ProjectApplication.PENDING)|\
+                           Q(state=ProjectApplication.APPROVED))
+
+    def user_visible_by_last_of_chain(self, *filters, **kw_filters):
+        by_chain = self.user_visible_projects(*filters, **kw_filters).values('chain')
+        by_chain = by_chain.annotate(last_id=models.Min('id')).values_list('last_id', flat=True)
+        return self.filter(id__in=by_chain)
+
+    def user_accessible_projects(self, user):
         """
         Return projects accessed by specified user.
         """
-        participates_fitlers = Q(owner=user) | Q(applicant=user) | \
+        participates_filters = Q(owner=user) | Q(applicant=user) | \
                                Q(project__projectmembership__person=user)
-        state_filters = (Q(state=ProjectApplication.PENDING) & \
-                        Q(precursor_application__isnull=True)) | \
-                        Q(state=ProjectApplication.APPROVED)
-        return self.filter(participates_fitlers & state_filters).order_by('issue_date').distinct()
+
+        return self.user_visible_by_last_of_chain(participates_filters).order_by('issue_date').distinct()
 
     def search_by_name(self, *search_strings):
         q = Q()
@@ -1253,20 +1268,13 @@ class ProjectApplication(models.Model):
         q.create(resource=resource, member_capacity=uplimit)
 
     def user_status(self, user):
-        """
-        100 OWNER
-        0   REQUESTED
-        1   PENDING
-        2   ACCEPTED
-        3   REMOVING
-        4   REMOVED
-       -1   User has no association with the project
-        """
         try:
-            membership = self.project.projectmembership_set.get(person=user)
+            project = self.get_project()
+            if not project:
+                return -1
+            membership = project.projectmembership_set.get(person=user)
+            membership = membership.exclude(state=ProjectMembership.REMOVED)
             status = membership.state
-        except Project.DoesNotExist:
-            status = -1
         except ProjectMembership.DoesNotExist:
             status = -1
 
@@ -1303,18 +1311,24 @@ class ProjectApplication(models.Model):
             return
 
     def followers(self):
-        current = self
-        try:
-            while current.projectapplication:
-                yield current.follower
-                current = current.follower
-        except:
-            pass
+        followers = ProjectApplication.objects.filter(chain=self.chain)
+        return followers.exclude(pk=self.pk).order_by('id')
 
     def last_follower(self):
         try:
-            return list(self.followers())[-1]
+            return self.followers().filter(
+                          state__in=[self.PENDING, self.APPROVED]).order_by('-id')[0]
         except IndexError:
+            import traceback; print traceback.print_exc()
+            return None
+
+    def has_pending_modifications(self):
+        return bool(self.last_follower())
+
+    def get_project(self):
+        try:
+            return Project.objects.get(id=self.chain)
+        except Project.DoesNotExist:
             return None
 
     def _get_project_for_update(self):
@@ -1598,6 +1612,9 @@ class ProjectMembership(models.Model):
     SUSPENDED   =   10
     TERMINATED  =   100
     REMOVED     =   200
+
+    ASSOCIATED_STATES   =   set([REQUESTED, ACCEPTED, SUSPENDED, TERMINATED])
+    ACCEPTED_STATES     =   set([ACCEPTED, SUSPENDED, TERMINATED])
 
     state               =   models.IntegerField(default=REQUESTED,
                                                 db_index=True)

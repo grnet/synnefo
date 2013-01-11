@@ -780,7 +780,7 @@ class ProjectApplicationForm(forms.ModelForm):
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
         if not self.precursor_application:
-            if start_date and (start_date - datetime.now()).days < 0:
+            if start_date and (start_date - datetime.now()).days < -1:
                 raise forms.ValidationError(
                 _(astakos_messages.INVALID_PROJECT_START_DATE))
         return start_date

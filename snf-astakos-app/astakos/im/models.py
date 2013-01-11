@@ -1381,12 +1381,13 @@ def submit_application(**kw):
 
     precursor = kw['precursor_application']
 
-    if precursor is not None:
-        precursor.state = ProjectApplication.REPLACED
-        precursor.save()
-        application.chain = precursor.chain
-    else:
+    if precursor is None:
         application.chain = new_chain()
+    else:
+        application.chain = precursor.chain
+        if precursor.state == ProjectApplication.PENDING:
+            precursor.state = ProjectApplication.REPLACED
+            precursor.save()
 
     application.save()
     application.resource_policies = resource_policies

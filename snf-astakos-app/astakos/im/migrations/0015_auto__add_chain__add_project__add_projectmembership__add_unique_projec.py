@@ -7,9 +7,12 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Removing unique constraint on 'AstakosUser', fields ['third_party_identifier', 'provider']
-        db.delete_unique('im_astakosuser', ['third_party_identifier', 'provider'])
+        try:
+            db.delete_unique('im_astakosuser', ['third_party_identifier', 'provider'])
+        except:
+            pass
 
         # Adding model 'Chain'
         db.create_table('im_chain', (
@@ -219,7 +222,7 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
-        
+
         # Removing index on 'Service', fields ['name']
         db.delete_index('im_service', ['name'])
 

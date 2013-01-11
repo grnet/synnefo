@@ -1258,7 +1258,8 @@ class ProjectApplication(models.Model):
 
     @property
     def grants(self):
-        return self.projectresourcegrant_set.values('member_capacity', 'resource__name', 'resource__service__name')
+        return self.projectresourcegrant_set.values(
+            'member_capacity', 'resource__name', 'resource__service__name')
 
     @property
     def resource_policies(self):

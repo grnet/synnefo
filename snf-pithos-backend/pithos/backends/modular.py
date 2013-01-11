@@ -264,8 +264,8 @@ class ModularBackend(BaseBackend):
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
-        if self.using_external_quotaholder:
-            meta['bytes'] = external_quota.get('currValue', 0)
+            if self.using_external_quotaholder:
+                meta['bytes'] = external_quota.get('currValue', 0)
         meta.update({'modified': modified})
         return meta
 

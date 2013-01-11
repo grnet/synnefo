@@ -1166,13 +1166,6 @@ class ProjectApplicationManager(ForUpdateManager):
         return self.filter(q)
 
 
-PROJECT_STATE_DISPLAY = {
-    'Pending': _('Pending review'),
-    'Approved': _('Active'),
-    'Replaced': _('Replaced'),
-    'Unknown': _('Unknown')
-}
-
 USER_STATUS_DISPLAY = {
     100: _('Owner'),
       0: _('Join requested'),
@@ -1194,14 +1187,17 @@ def new_chain():
 
 
 class ProjectApplication(models.Model):
-    PENDING, APPROVED, REPLACED, UNKNOWN = 'Pending', 'Approved', 'Replaced', 'Unknown'
     applicant               =   models.ForeignKey(
                                     AstakosUser,
                                     related_name='projects_applied',
                                     db_index=True)
 
-    state                   =   models.CharField(max_length=80,
-                                                default=PENDING)
+    PENDING     =    0
+    APPROVED    =    1
+    REPLACED    =    2
+    DENIED      =    3
+
+    state                   =   models.IntegerField(default=PENDING)
 
     owner                   =   models.ForeignKey(
                                     AstakosUser,
@@ -1239,8 +1235,16 @@ class ProjectApplication(models.Model):
     def __unicode__(self):
         return "%s applied by %s" % (self.name, self.applicant)
 
+    # TODO: Move to a more suitable place
+    PROJECT_STATE_DISPLAY = {
+        PENDING : _('Pending review'),
+        APPROVED: _('Active'),
+        REPLACED: _('Replaced'),
+        DENIED  : _('Denied')
+        }
+
     def state_display(self):
-        return PROJECT_STATE_DISPLAY.get(self.state, _('Unknown'))
+        return self.PROJECT_STATE_DISPLAY.get(self.state, _('Unknown'))
 
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
@@ -1633,7 +1637,7 @@ class ProjectMembership(models.Model):
 
         history_item = ProjectMembershipHistory(
                             serial=self.id,
-                            person=self.person.uuid,
+                            person=self.person_id,
                             project=self.project_id,
                             date=date or datetime.now(),
                             reason=reason)
@@ -1945,7 +1949,7 @@ class ProjectMembershipHistory(models.Model):
     reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']
     reasons         =   dict((k, v) for v, k in enumerate(reasons_list))
 
-    person  =   models.CharField(max_length=255)
+    person  =   models.BigIntegerField()
     project =   models.BigIntegerField()
     date    =   models.DateField(default=datetime.now)
     reason  =   models.IntegerField()

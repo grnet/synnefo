@@ -55,7 +55,7 @@ class Command(NoArgsCommand):
         labels = (
             'Application', 'Precursor', 'Status', 'Name', 'Project', 'Status'
         )
-        columns = (11, 10, 10, 30, 10, 10)
+        columns = (11, 10, 14, 30, 10, 10)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -85,7 +85,7 @@ class Command(NoArgsCommand):
             fields = (
                 str(app.id),
                 str(prec_id),
-                app.state,
+                app.state_display(),
                 app.name,
                 str(project_id),
                 status

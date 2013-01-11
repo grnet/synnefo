@@ -43,7 +43,7 @@ class Migration(DataMigration):
         # migrate duplicate emails
         to_remove = getattr(settings,
                             'ASTAKOS_MIGRATION_0045_DELETE_DUPLICATE_USER_IDS',
-                            None)
+                            [])
         for pk in to_remove:
             orm.AstakosUser.objects.filter(pk=int(pk)).delete()
 

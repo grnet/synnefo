@@ -149,6 +149,9 @@ PROJECT_CREATION_SUBJECT = getattr(
 PROJECT_APPROVED_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_APPROVED_SUBJECT',
     '%s alpha2 testing project application approved (%%(name)s)' % SITENAME)
+PROJECT_DENIED_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_DENIED_SUBJECT',
+    '%s alpha2 testing project application denied (%%(name)s)' % SITENAME)
 PROJECT_TERMINATION_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_TERMINATION_SUBJECT',
     '%s alpha2 testing project terminated (%%(name)s)' % SITENAME)

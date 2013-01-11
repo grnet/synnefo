@@ -1325,6 +1325,15 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
+    def deny(self):
+        if self.state != self.PENDING:
+            m = _("cannot deny: application '%s' in state '%s'") % (
+                    self.id, self.state)
+            raise AssertionError(m)
+
+        self.state = self.DENIED
+        self.save()
+
     def approve(self, approval_user=None):
         """
         If approval_user then during owner membership acceptance

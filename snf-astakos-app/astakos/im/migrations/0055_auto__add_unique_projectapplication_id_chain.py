@@ -8,24 +8,6 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Deleting field 'AstakosUserQuota.uplimit'
-        db.delete_column('im_astakosuserquota', 'uplimit')
-
-        # Deleting field 'AstakosUserQuota.limit'
-        db.delete_column('im_astakosuserquota', 'limit')
-
-        # Adding field 'AstakosUserQuota.capacity'
-        db.add_column('im_astakosuserquota', 'capacity', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
-
-        # Adding field 'AstakosUserQuota.quantity'
-        db.add_column('im_astakosuserquota', 'quantity', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
-
-        # Adding field 'AstakosUserQuota.export_limit'
-        db.add_column('im_astakosuserquota', 'export_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
-
-        # Adding field 'AstakosUserQuota.import_limit'
-        db.add_column('im_astakosuserquota', 'import_limit', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
-
         # Removing index on 'ProjectApplication', fields ['chain']
         db.delete_index('im_projectapplication', ['chain'])
 
@@ -40,24 +22,6 @@ class Migration(SchemaMigration):
 
         # Adding index on 'ProjectApplication', fields ['chain']
         db.create_index('im_projectapplication', ['chain'])
-
-        # Adding field 'AstakosUserQuota.uplimit'
-        db.add_column('im_astakosuserquota', 'uplimit', self.gf('django.db.models.fields.BigIntegerField')(null=True), keep_default=False)
-
-        # Adding field 'AstakosUserQuota.limit'
-        db.add_column('im_astakosuserquota', 'limit', self.gf('django.db.models.fields.PositiveIntegerField')(null=True), keep_default=False)
-
-        # Deleting field 'AstakosUserQuota.capacity'
-        db.delete_column('im_astakosuserquota', 'capacity')
-
-        # Deleting field 'AstakosUserQuota.quantity'
-        db.delete_column('im_astakosuserquota', 'quantity')
-
-        # Deleting field 'AstakosUserQuota.export_limit'
-        db.delete_column('im_astakosuserquota', 'export_limit')
-
-        # Deleting field 'AstakosUserQuota.import_limit'
-        db.delete_column('im_astakosuserquota', 'import_limit')
 
 
     models = {
@@ -105,7 +69,7 @@ class Migration(SchemaMigration):
         },
         'im.approvalterms': {
             'Meta': {'object_name': 'ApprovalTerms'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 11, 9, 52, 58, 482680)', 'db_index': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 11, 10, 33, 11, 335345)', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
@@ -162,7 +126,7 @@ class Migration(SchemaMigration):
             'activation_key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '40', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'new_email_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
-            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 11, 9, 52, 58, 484508)'}),
+            'requested_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 1, 11, 10, 33, 11, 336982)'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'emailchanges'", 'unique': 'True', 'to': "orm['im.AstakosUser']"})
         },
         'im.invitation': {
@@ -236,7 +200,7 @@ class Migration(SchemaMigration):
             'pending_serial': ('django.db.models.fields.BigIntegerField', [], {'null': 'True', 'db_index': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
-            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2013, 1, 11, 9, 52, 58, 492457)'}),
+            'request_date': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2013, 1, 11, 10, 33, 11, 344883)'}),
             'state': ('django.db.models.fields.IntegerField', [], {'default': '0', 'db_index': 'True'})
         },
         'im.projectmembershiphistory': {

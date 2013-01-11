@@ -1193,7 +1193,7 @@ class ProjectApplication(models.Model):
                                     related_name='projects_owned',
                                     db_index=True)
 
-    chain                   =   models.IntegerField(db_index=True)
+    chain                   =   models.IntegerField()
     precursor_application   =   models.OneToOneField('ProjectApplication',
                                                      null=True,
                                                      blank=True,
@@ -1217,6 +1217,9 @@ class ProjectApplication(models.Model):
 
 
     objects                 =   ProjectApplicationManager()
+
+    class Meta:
+        unique_together = ("chain", "id")
 
     def __unicode__(self):
         return "%s applied by %s" % (self.name, self.applicant)

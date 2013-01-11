@@ -37,6 +37,18 @@ def application_submit_notify(application):
     except NotificationError, e:
         logger.error(e.message)
 
+def application_deny_notify(application):
+    try:
+        notification = build_notification(
+            SENDER,
+            [application.owner.email],
+            _(settings.PROJECT_DENIED_SUBJECT) % application.__dict__,
+            template='im/projects/project_denial_notification.txt',
+            dictionary={'object':application})
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
 def application_approve_notify(application):
     try:
         notification = build_notification(

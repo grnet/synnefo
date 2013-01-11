@@ -71,6 +71,7 @@ from astakos.im.models import submit_application as models_submit_application
 from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
+    application_deny_notify,
     project_termination_notify, project_suspension_notify)
 from astakos.im.endpoints.qh import qh_register_user
 
@@ -412,6 +413,14 @@ def get_project_for_update(project_id):
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
 
+def get_application_for_update(application_id):
+    try:
+        objects = ProjectApplication.objects.select_for_update()
+        return objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        m = _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % application_id
+        raise IOError(m)
+
 def get_user_by_id(user_id):
     try:
         return AstakosUser.objects.get(id=user_id)
@@ -652,6 +661,14 @@ def update_application(app_id, **kw):
     app.save()
     app.resource_policies = resource_policies
     return app.id
+
+def deny_application(application_id):
+    application = get_application_for_update(application_id)
+    if application.state != ProjectApplication.PENDING:
+        raise PermissionDenied()
+
+    application.deny()
+    application_deny_notify(application)
 
 def approve_application(app):
 

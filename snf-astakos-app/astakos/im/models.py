@@ -1325,6 +1325,15 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
+    def deny(self):
+        if self.state != self.PENDING:
+            m = _("cannot deny: application '%s' in state '%s'") % (
+                    self.id, self.state)
+            raise AssertionError(m)
+
+        self.state = self.DENIED
+        self.save()
+
     def approve(self, approval_user=None):
         """
         If approval_user then during owner membership acceptance
@@ -1381,12 +1390,13 @@ def submit_application(**kw):
 
     precursor = kw['precursor_application']
 
-    if precursor is not None:
-        precursor.state = ProjectApplication.REPLACED
-        precursor.save()
-        application.chain = precursor.chain
-    else:
+    if precursor is None:
         application.chain = new_chain()
+    else:
+        application.chain = precursor.chain
+        if precursor.state == ProjectApplication.PENDING:
+            precursor.state = ProjectApplication.REPLACED
+            precursor.save()
 
     application.save()
     application.resource_policies = resource_policies

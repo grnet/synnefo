@@ -321,6 +321,8 @@ class ModularBackend(BaseBackend):
             return {}
         path, node = self._lookup_account(account, True)
         policy = self._get_policy(node)
+        if self.using_external_quotaholder:
+            policy['quota'] = external_quota.get('maxValue', 0)
         return policy
 
     @backend_method

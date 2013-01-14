@@ -36,7 +36,7 @@
         {% if object.last_follower %}
         <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.last_follower.pk %}">REQUEST MODIFICATION</a>
         {% else %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">REQUEST MODIFICATION</a>
+        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">MODIFY</a>
         {% endif %}
         {% else %}
         {% if member_status == -1 %}

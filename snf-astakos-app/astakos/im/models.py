@@ -1167,14 +1167,14 @@ class ProjectApplicationManager(ForUpdateManager):
 
 
 USER_STATUS_DISPLAY = {
-    100: _('Owner'),
       0: _('Join requested'),
-      1: _('Pending'),
-      2: _('Accepted member'),
-      3: _('Removing'),
-      4: _('Removed'),
+      1: _('Accepted member'),
+     10: _('Suspended'),
+    100: _('Terminated'),
+    200: _('Removed'),
      -1: _('Not a member'),
 }
+
 
 class Chain(models.Model):
     chain  =   models.AutoField(primary_key=True)
@@ -1241,7 +1241,7 @@ class ProjectApplication(models.Model):
         APPROVED: _('Active'),
         REPLACED: _('Replaced'),
         DENIED  : _('Denied')
-        }
+    }
 
     def state_display(self):
         return self.PROJECT_STATE_DISPLAY.get(self.state, _('Unknown'))
@@ -1257,8 +1257,9 @@ class ProjectApplication(models.Model):
             project = self.get_project()
             if not project:
                 return -1
-            membership = project.projectmembership_set.get(person=user)
+            membership = project.projectmembership_set
             membership = membership.exclude(state=ProjectMembership.REMOVED)
+            membership = membership.get(person=user)
             status = membership.state
         except ProjectMembership.DoesNotExist:
             status = -1
@@ -1304,7 +1305,6 @@ class ProjectApplication(models.Model):
             return self.followers().filter(
                           state__in=[self.PENDING, self.APPROVED]).order_by('-id')[0]
         except IndexError:
-            import traceback; print traceback.print_exc()
             return None
 
     def has_pending_modifications(self):

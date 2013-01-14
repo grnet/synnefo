@@ -186,14 +186,13 @@ def action_extra_context(application, table, self):
     append_url = ''
 
     can_join = can_leave = False
-    member_status = application.user_status(user)
     project = application.get_project()
 
     if project:
         try:
             do_join_project_checks(project)
             can_join = True
-        except PermissionDenied:
+        except PermissionDenied, e:
             pass
 
         try:
@@ -207,7 +206,7 @@ def action_extra_context(application, table, self):
         action = _('Leave')
         confirm = True
         prompt = _('Are you sure you want to leave from the project ?')
-    elif can_join and user.is_project_member(application):
+    elif can_join and not user.is_project_member(application):
         url = 'astakos.im.views.project_join'
         action = _('Join')
         confirm = True
@@ -218,6 +217,7 @@ def action_extra_context(application, table, self):
         url = None
 
     url = reverse(url, args=(application.pk, )) + append_url if url else ''
+
     return {'action': action,
             'confirm': confirm,
             'url': url,

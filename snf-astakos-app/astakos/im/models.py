@@ -1297,15 +1297,24 @@ class ProjectApplication(models.Model):
             return
 
     def followers(self):
-        followers = ProjectApplication.objects.filter(chain=self.chain)
-        return followers.exclude(pk=self.pk).order_by('id')
+        followers = self.chained_applications()
+        followers = followers.exclude(id=self.pk).filter(state=self.PENDING)
+        followers = followers.order_by('id')
+        return followers
 
     def last_follower(self):
         try:
-            return self.followers().filter(
-                          state__in=[self.PENDING, self.APPROVED]).order_by('-id')[0]
+            return self.followers().order_by('-id')[0]
         except IndexError:
             return None
+
+    def is_modification(self):
+        parents = self.chained_applications().filter(id__lt=self.id)
+        parents = parents.filter(state__in=[self.APPROVED])
+        return parents.count() > 0
+
+    def chained_applications(self):
+        return ProjectApplication.objects.filter(chain=self.chain)
 
     def has_pending_modifications(self):
         return bool(self.last_follower())

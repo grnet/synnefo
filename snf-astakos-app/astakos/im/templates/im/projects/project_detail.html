@@ -10,7 +10,11 @@
 	<h2>
         <em>
             {% if user_owns_project %}
-                [ PROJECT {{ object.state_display|upper }} ]
+            [ PROJECT {% if object.is_modification %} MODIFICATION {% endif %}{{ object.state_display|upper }} 
+            {% if object.last_follower %} - 
+            <a
+                href="{% url astakos.im.views.project_detail object.last_follower.pk %}">MODIFICATION PENDING</a>
+            {% endif %}]
             {%  else %}
                 {% if user in approved_members %}
                     [ ACCEPTED MEMBER ]
@@ -23,19 +27,16 @@
                 {% endif %}
                 {% endif %}
                 {% if user_owns_project %}
-            {% if object.last_follower %}<br />
-            <a style="font-size:0.7em" 
-                href="{% url astakos.im.views.project_detail object.last_follower.pk %}">MODIFICATION PENDING</a>
-            {% endif %}
             {% else %}
             {% endif %}
         </em>
-        <span>{{ object.name|upper }}</span>
+        <span>{% if object.is_modification %}
+            <span class="extratitle">MODIFICATION OF </span>{% endif %}{{ object.name|upper }}</span>
         {% if user_owns_project %}
         {% if object.last_follower %}
         <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.last_follower.pk %}">REQUEST MODIFICATION</a>
         {% else %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">REQUEST MODIFICATION</a>
+        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">MODIFY REQUEST</a>
         {% endif %}
         {% else %}
         {% if member_status == -1 %}

@@ -36,7 +36,7 @@
         {% if object.last_follower %}
         <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.last_follower.pk %}">REQUEST MODIFICATION</a>
         {% else %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">MODIFY REQUEST</a>
+        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">REQUEST MODIFICATION</a>
         {% endif %}
         {% else %}
         {% if member_status == -1 %}
@@ -79,7 +79,7 @@ href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
 		 	<dt>Comments</dt>
 		 	<dd>{{ object.comments }}&nbsp;</dd>
 		 	<dt>Status</dt>
-		 	<dd>{{ object.state }}</dd>
+		 	<dd>{{ object.state_display }}</dd>
 		 	<dt>Owner</dt>
 		 	<dd>{% if user == object.owner %}
                         Me

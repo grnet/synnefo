@@ -252,9 +252,9 @@ class UserProjectApplicationsTable(UserTable):
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
                       args=(A('pk'),))
-    issue_date = tables.DateColumn(verbose_name=_('Applied at'), format=DEFAULT_DATE_FORMAT)
+    issue_date = tables.DateColumn(verbose_name=_('Application'), format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
-    end_date = tables.DateColumn(verbose_name=_('Expires at'), format=DEFAULT_DATE_FORMAT)
+    end_date = tables.DateColumn(verbose_name=_('Expiration'), format=DEFAULT_DATE_FORMAT)
     members_count = tables.Column(verbose_name=_("Members"), default=0,
                                   sortable=False)
     membership_status = tables.Column(verbose_name=_("Status"), empty_values=(),

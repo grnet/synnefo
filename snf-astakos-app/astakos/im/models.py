@@ -885,7 +885,7 @@ class ApprovalTerms(models.Model):
     """
 
     date = models.DateTimeField(
-        _('Issue date'), db_index=True, default=datetime.now())
+        _('Issue date'), db_index=True, auto_now_add=True)
     location = models.CharField(_('Terms location'), max_length=255)
 
 
@@ -969,7 +969,7 @@ class EmailChange(models.Model):
         help_text=_('Your old email address will be used until you verify your new one.'))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchanges')
-    requested_at = models.DateTimeField(default=datetime.now())
+    requested_at = models.DateTimeField(auto_now_add=True)
     activation_key = models.CharField(
         max_length=40, unique=True, db_index=True)
 
@@ -1252,6 +1252,8 @@ class ProjectApplication(models.Model):
     APPROVED    =    1
     REPLACED    =    2
     DENIED      =    3
+    DISMISSED   =    4
+    CANCELLED   =    5
 
     state                   =   models.IntegerField(default=PENDING)
 
@@ -1261,10 +1263,9 @@ class ProjectApplication(models.Model):
                                     db_index=True)
 
     chain                   =   models.IntegerField()
-    precursor_application   =   models.OneToOneField('ProjectApplication',
-                                                     null=True,
-                                                     blank=True,
-                                                     db_index=True)
+    precursor_application   =   models.ForeignKey('ProjectApplication',
+                                                  null=True,
+                                                  blank=True)
 
     name                    =   models.CharField(max_length=80)
     homepage                =   models.URLField(max_length=255, null=True)
@@ -1280,8 +1281,8 @@ class ProjectApplication(models.Model):
                                     blank=True,
                                     through='ProjectResourceGrant')
     comments                =   models.TextField(null=True, blank=True)
-    issue_date              =   models.DateTimeField(default=datetime.now)
-
+    issue_date              =   models.DateTimeField(auto_now_add=True)
+    response_date           =   models.DateTimeField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
 
@@ -1293,10 +1294,12 @@ class ProjectApplication(models.Model):
 
     # TODO: Move to a more suitable place
     PROJECT_STATE_DISPLAY = {
-        PENDING : _('Pending review'),
-        APPROVED: _('Active'),
-        REPLACED: _('Replaced'),
-        DENIED  : _('Denied')
+        PENDING  : _('Pending review'),
+        APPROVED : _('Active'),
+        REPLACED : _('Replaced'),
+        DENIED   : _('Denied'),
+        DISMISSED: _('Dismissed'),
+        CANCELLED: _('Cancelled')
     }
 
     def get_project(self):
@@ -1396,6 +1399,24 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
+    def cancel(self):
+        if self.state != self.PENDING:
+            m = _("cannot cancel: application '%s' in state '%s'") % (
+                    self.id, self.state)
+            raise AssertionError(m)
+
+        self.state = self.CANCELLED
+        self.save()
+
+    def dismiss(self):
+        if self.state != self.DENIED:
+            m = _("cannot dismiss: application '%s' in state '%s'") % (
+                    self.id, self.state)
+            raise AssertionError(m)
+
+        self.state = self.DISMISSED
+        self.save()
+
     def deny(self):
         if self.state != self.PENDING:
             m = _("cannot deny: application '%s' in state '%s'") % (
@@ -1403,6 +1424,7 @@ class ProjectApplication(models.Model):
             raise AssertionError(m)
 
         self.state = self.DENIED
+        self.response_date = datetime.now()
         self.save()
 
     def approve(self, approval_user=None):
@@ -1440,7 +1462,7 @@ class ProjectApplication(models.Model):
         new_project = False
         if project is None:
             new_project = True
-            project = Project(id=self.chain, creation_date=now)
+            project = Project(id=self.chain)
 
         project.name = new_project_name
         project.application = self
@@ -1451,6 +1473,7 @@ class ProjectApplication(models.Model):
         project.save()
 
         self.state = self.APPROVED
+        self.response_date = now
         self.save()
 
 def submit_application(**kw):
@@ -1532,7 +1555,7 @@ class Project(models.Model):
     deactivation_reason         =   models.CharField(max_length=255, null=True)
     deactivation_date           =   models.DateTimeField(null=True)
 
-    creation_date               =   models.DateTimeField()
+    creation_date               =   models.DateTimeField(auto_now_add=True)
     name                        =   models.CharField(
                                             max_length=80,
                                             db_index=True,
@@ -1667,7 +1690,7 @@ class PendingMembershipError(Exception):
 class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
-    request_date        =   models.DateField(default=datetime.now())
+    request_date        =   models.DateField(auto_now_add=True)
     project             =   models.ForeignKey(Project)
 
     REQUESTED   =   0
@@ -2041,7 +2064,7 @@ class ProjectMembershipHistory(models.Model):
 
     person  =   models.BigIntegerField()
     project =   models.BigIntegerField()
-    date    =   models.DateField(default=datetime.now)
+    date    =   models.DateField(auto_now_add=True)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
 

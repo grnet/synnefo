@@ -462,9 +462,17 @@ def get_membership_for_update(project, user):
     except ProjectMembership.DoesNotExist:
         raise IOError(_(astakos_messages.NOT_MEMBERSHIP_REQUEST))
 
-def checkAllowed(project, request_user):
+def checkAllowed(entity, request_user):
+    if isinstance(entity, Project):
+        application = entity.application
+    elif isinstance(entity, ProjectApplication):
+        application = entity
+    else:
+        m = "%s not a Project nor a ProjectApplication" % (entity,)
+        raise ValueError(m)
+
     if request_user and \
-        (not project.application.owner == request_user and \
+        (not application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
 
@@ -652,6 +660,24 @@ def submit_application(kw, request_user=None):
 
     application_submit_notify(application)
     return application
+
+def cancel_application(application_id, request_user=None):
+    application = get_application_for_update(application_id)
+    checkAllowed(application, request_user)
+
+    if application.state != ProjectApplication.PENDING:
+        raise PermissionDenied()
+
+    application.cancel()
+
+def dismiss_application(application_id, request_user=None):
+    application = get_application_for_update(application_id)
+    checkAllowed(application, request_user)
+
+    if application.state != ProjectApplication.DENIED:
+        raise PermissionDenied()
+
+    application.dismiss()
 
 def deny_application(application_id):
     application = get_application_for_update(application_id)

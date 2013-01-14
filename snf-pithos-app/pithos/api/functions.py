@@ -624,6 +624,9 @@ def object_list(request, v_account, v_container):
 
     object_meta = []
     for meta in objects:
+        modified_by = meta.get('modified_by')
+        if modified_by:
+            meta['modified_by'] = retrieve_username(modified_by)
         if len(meta) == 1:
             # Virtual objects/directories.
             object_meta.append(meta)

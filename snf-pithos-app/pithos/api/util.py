@@ -231,8 +231,9 @@ def put_object_headers(response, meta, restricted=False):
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
+        modified_by = retrieve_username(meta['modified_by'])
         response['X-Object-Modified-By'] = smart_str(
-            meta['modified_by'], strings_only=True)
+            modified_by, strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))
@@ -294,7 +295,8 @@ def retrieve_username(uuid):
 
 def retrieve_uuid(username):
     if is_uuid(username):
-	return username
+	    return username
+
     try:
         return get_user_uuid(
             SERVICE_TOKEN, username, USER_INFO_URL, AUTHENTICATION_USERS)

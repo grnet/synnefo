@@ -245,7 +245,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
 
     class Meta:
         model = AstakosUser
-        fields = ['id', 'email', 'third_party_identifier', 'first_name', 'last_name']
+        fields = ['id', 'email', 'third_party_identifier',
+                  'first_name', 'last_name', 'has_signed_terms']
 
     def __init__(self, *args, **kwargs):
         """
@@ -255,14 +256,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         if self.request:
             kwargs.pop('request')
 
-        latest_terms = get_latest_terms()
-        if latest_terms:
-            self._meta.fields.append('has_signed_terms')
-
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-
-        if latest_terms:
-            self.fields.keyOrder.append('has_signed_terms')
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link

@@ -1607,6 +1607,8 @@ def _spawn_network_test_case(**kwargs):
     return cls
 
 
+# --------------------------------------------------------------------
+# Clean up servers/networks functions
 def cleanup_servers(timeout, query_interval, delete_stale=False):
 
     c = ComputeClient(API, TOKEN)
@@ -1617,34 +1619,33 @@ def cleanup_servers(timeout, query_interval, delete_stale=False):
     if len(stale) == 0:
         return
 
-    print >> sys.stderr, yellow + "Found these stale servers from previous runs:" + normal
-    print "    " + \
+    # Show staled servers
+    print >>sys.stderr, yellow + \
+            "Found these stale servers from previous runs:" + \
+            normal
+    print >>sys.stderr, "    " + \
           "\n    ".join(["%d: %s" % (s["id"], s["name"]) for s in stale])
 
+    # Delete staled servers
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale servers:" % len(stale)
-
         fail_tmout = time.time() + timeout
-
-
         for s in stale:
             c.delete_server(s["id"])
-
-        
+        # Wait for all servers to be deleted
         while True:
             servers = c.list_servers()
             stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
-
             if len(stale)==0:
                 print >> sys.stderr, green + "    ...done" + normal
                 break
-
             elif time.time() > fail_tmout:
-                print >> sys.stderr, red + "Not all stale servers deleted. Action timed out." + normal
-                return 
+                print >> sys.stderr, red + \
+                        "Not all stale servers deleted. Action timed out." + \
+                        normal
+                return
             else:
                 time.sleep(query_interval)
-                
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
@@ -1659,51 +1660,39 @@ def cleanup_networks(action_timeout, query_interval, delete_stale=False):
     if len(stale) == 0:
         return
 
-    fail_tmout = time.time() + action_timeout
-    # Wait for deleting servers only if `delete_stale' is True
-    if delete_stale:
-        while True:
-            servers = c.list_servers()
-            staleServers = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
-            if len(staleServers) == 0:
-                break
-            elif time.time() > fail_tmout:
-                log.error("Stale servers not deleted from previous run")
-                sys.exit()
-            else:
-                time.sleep(query_interval)
-
-    print >> sys.stderr, yellow + "Found these stale networks from previous runs:" + normal
+    # Show staled networks
+    print >> sys.stderr, yellow + \
+            "Found these stale networks from previous runs:" + \
+            normal
     print "    " + \
           "\n    ".join(["%s: %s" % (str(n["id"]), n["name"]) for n in stale])
 
+    # Delete staled networks
     if delete_stale:
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
-
         fail_tmout = time.time() + action_timeout
-        
         for n in stale:
             c.delete_network(n["id"])
-
-
+        # Wait for all networks to be deleted
         while True:
             networks = c.list_networks()
             stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
-
             if len(stale)==0:
                 print >> sys.stderr, green + "    ...done" + normal
                 break
-
             elif time.time() > fail_tmout:
-                print >> sys.stderr, red + "Not all stale networks deleted. Action timed out." + normal
+                print >> sys.stderr, red + \
+                        "Not all stale networks deleted. Action timed out." + \
+                        normal
                 return 
             else:
                 time.sleep(query_interval)
-
     else:
         print >> sys.stderr, "Use --delete-stale to delete them."
 
 
+# --------------------------------------------------------------------
+# Parse arguments functions
 def parse_comma(option, opt, value, parser):
     tests = set(['all', 'auth', 'images', 'flavors',
                'servers', 'server_spawn', 'network_spawn'])
@@ -1816,7 +1805,8 @@ def parse_arguments(args):
                       default="/var/log/burnin/")
     parser.add_option("--verbose", "-V",
                       action="store_true", dest="verbose",
-                      help="Print detailed output about multiple processes spawning",
+                      help="Print detailed output about multiple "\
+                           "processes spawning",
                       default=False)
     parser.add_option("--set-tests",
                       action="callback",
@@ -1832,34 +1822,44 @@ def parse_arguments(args):
 
     (opts, args) = parser.parse_args(args)
 
+    # -----------------------
     # Verify arguments
+
+    # `delete_stale' implies `show_stale'
     if opts.delete_stale:
         opts.show_stale = True
 
+    # `image-id' is mandatory
     if not opts.show_stale:
         if not opts.force_imageid:
-            print >>sys.stderr, red + "The --image-id argument " \
-                                       "is mandatory.\n" + normal
+            print >>sys.stderr, red + \
+                    "The --image-id argument is mandatory.\n" + \
+                    normal
             parser.print_help()
             sys.exit(1)
-
-        if not opts.token:
-            print >>sys.stderr, red + "The --token argument is " \
-                                      "mandatory.\n" + normal
-            parser.print_help()
-            sys.exit(1)
-
         if opts.force_imageid != 'all':
             try:
                 opts.force_imageid = str(opts.force_imageid)
             except ValueError:
-                print >>sys.stderr, red + "Invalid value specified for" \
-                    "--image-id. Use a valid id, or `all'." + normal
+                print >>sys.stderr, red + \
+                        "Invalid value specified for" + \
+                        "--image-id. Use a valid id, or `all'." + \
+                        normal
                 sys.exit(1)
+
+    # `token' is mandatory
+    if not opts.token:
+        print >>sys.stderr, red + \
+                "The --token argument is mandatory.\n" + \
+                normal
+        parser.print_help()
+        sys.exit(1)
 
     return (opts, args)
 
 
+# --------------------------------------------------------------------
+# Burnin main function
 def main():
     """Assemble test cases into a test suite, and run it
 
@@ -1871,8 +1871,10 @@ def main():
 
     """
 
+    # Parse arguments using `optparse'
     (opts, args) = parse_arguments(sys.argv[1:])
 
+    # Some global variables
     global API, TOKEN, PLANKTON, PLANKTON_USER, NO_IPV6, VERBOSE, NOFAILFAST
     API = opts.api
     TOKEN = opts.token
@@ -1882,11 +1884,14 @@ def main():
     VERBOSE = opts.verbose
     NOFAILFAST = opts.nofailfast
 
-    # Cleanup stale servers from previous runs
+    # If `show_stale', cleanup stale servers
+    # from previous runs and exit
     if opts.show_stale:
-        cleanup_servers(opts.action_timeout, opts.query_interval, delete_stale=opts.delete_stale)
-        cleanup_networks(opts.action_timeout, opts.query_interval, delete_stale=opts.delete_stale)
-
+        # We must clean the servers first
+        cleanup_servers(opts.action_timeout, opts.query_interval,
+                        delete_stale=opts.delete_stale)
+        cleanup_networks(opts.action_timeout, opts.query_interval,
+                         delete_stale=opts.delete_stale)
         return 0
 
     # Initialize a kamaki instance, get flavors, images

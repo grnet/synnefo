@@ -223,8 +223,14 @@ def get_query(request):
         return {}
 
 def get_properties(obj):
+    def get_class_attr(_class, attr):
+        try:
+            return getattr(_class, attr)
+        except AttributeError:
+            return
+ 
     return (i for i in vars(obj.__class__) \
-        if isinstance(getattr(obj.__class__, i), property))
+        if isinstance(get_class_attr(obj.__class__, i), property))
 
 def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
                   include_empty=True):

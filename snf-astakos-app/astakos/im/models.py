@@ -1145,10 +1145,14 @@ class ProjectApplicationManager(ForUpdateManager):
         return self.filter(Q(state=ProjectApplication.PENDING)|\
                            Q(state=ProjectApplication.APPROVED))
 
-    def user_visible_by_last_of_chain(self, *filters, **kw_filters):
-        by_chain = self.user_visible_projects(*filters, **kw_filters).values('chain')
-        by_chain_min = [x['last_id'] for x in by_chain.annotate(last_id=models.Min('id'))]
-        return self.filter(id__in=by_chain_min)
+    def user_visible_by_chain(self, *filters, **kw_filters):
+        Q_PENDING = Q(state=ProjectApplication.PENDING)
+        Q_APPROVED = Q(state=ProjectApplication.APPROVED)
+        pending = self.filter(Q_PENDING).values_list('chain')
+        approved = self.filter(Q_APPROVED).values_list('chain')
+        by_chain = dict(pending.annotate(models.Max('id')))
+        by_chain.update(approved.annotate(models.Max('id')))
+        return self.filter(id__in=by_chain.values())
 
     def user_accessible_projects(self, user):
         """
@@ -1157,7 +1161,7 @@ class ProjectApplicationManager(ForUpdateManager):
         participates_filters = Q(owner=user) | Q(applicant=user) | \
                                Q(project__projectmembership__person=user)
 
-        return self.user_visible_by_last_of_chain(participates_filters).order_by('issue_date').distinct()
+        return self.user_visible_by_chain(participates_filters).order_by('issue_date').distinct()
 
     def search_by_name(self, *search_strings):
         q = Q()
@@ -1242,6 +1246,13 @@ class ProjectApplication(models.Model):
         REPLACED: _('Replaced'),
         DENIED  : _('Denied')
     }
+
+    def get_project(self):
+        try:
+            project = Project.objects.get(id=self.chain, state=Project.APPROVED)
+            return Project
+        except Project.DoesNotExist, e:
+            return None
 
     def state_display(self):
         return self.PROJECT_STATE_DISPLAY.get(self.state, _('Unknown'))
@@ -1363,17 +1374,17 @@ class ProjectApplication(models.Model):
         now = datetime.now()
         project = self._get_project_for_update()
 
-        try:
-            # needs SERIALIZABLE
-            conflicting_project = Project.objects.get(name=new_project_name)
-            if (conflicting_project.is_alive and
-                conflicting_project != project):
+        if new_project_name != project.name:
+            try:
+                conflicting_project = Project.objects.get(
+                                                name=new_project_name,
+                                                is_active=True)
                 m = (_("cannot approve: project with name '%s' "
                        "already exists (serial: %s)") % (
                         new_project_name, conflicting_project.id))
                 raise PermissionDenied(m) # invalid argument
-        except Project.DoesNotExist:
-            pass
+            except Project.DoesNotExist:
+                pass
 
         new_project = False
         if project is None:

@@ -653,20 +653,6 @@ def submit_application(kw, request_user=None):
     application_submit_notify(application)
     return application
 
-def update_application(app_id, **kw):
-    app = ProjectApplication.objects.get(id=app_id)
-    app.id = None
-    app.state = app.PENDING
-    app.precursor_application_id = app_id
-    app.issue_date = datetime.now()
-
-    resource_policies = kw.pop('resource_policies', None)
-    for k, v in kw.iteritems():
-        setattr(app, k, v)
-    app.save()
-    app.resource_policies = resource_policies
-    return app.id
-
 def deny_application(application_id):
     application = get_application_for_update(application_id)
     if application.state != ProjectApplication.PENDING:

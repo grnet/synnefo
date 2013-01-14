@@ -201,7 +201,7 @@ def action_extra_context(application, table, self):
         except PermissionDenied:
             pass
 
-    if can_leave and user.is_project_accepted_member(application):
+    if can_leave and user.is_project_member(application):
         url = 'astakos.im.views.project_leave'
         action = _('Leave')
         confirm = True

@@ -1262,7 +1262,7 @@ class ProjectApplication(models.Model):
             membership = membership.get(person=user)
             status = membership.state
         except ProjectMembership.DoesNotExist:
-            status = -1
+            return -1
 
         return status
 

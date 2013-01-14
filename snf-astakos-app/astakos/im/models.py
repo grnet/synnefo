@@ -1374,17 +1374,16 @@ class ProjectApplication(models.Model):
         now = datetime.now()
         project = self._get_project_for_update()
 
-        if new_project_name != project.name:
-            try:
-                conflicting_project = Project.objects.get(
-                                                name=new_project_name,
-                                                is_active=True)
+        try:
+            q = Q(name=new_project_name) & ~Q(state=Project.TERMINATED)
+            conflicting_project = Project.objects.get(q)
+            if (conflicting_project != project):
                 m = (_("cannot approve: project with name '%s' "
                        "already exists (serial: %s)") % (
                         new_project_name, conflicting_project.id))
                 raise PermissionDenied(m) # invalid argument
-            except Project.DoesNotExist:
-                pass
+        except Project.DoesNotExist:
+            pass
 
         new_project = False
         if project is None:

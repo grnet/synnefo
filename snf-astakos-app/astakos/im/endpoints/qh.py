@@ -73,13 +73,13 @@ def set_quota(payload):
     logger.info('set_quota: %s rejected: %s' % (payload, result))
     return result
 
-def get_quota(user):
+def qh_get_quota(user, resources):
     c = get_client()
     if not c:
         return
     payload = []
     append = payload.append
-    for r in user.quota.keys():
+    for r in resources:
         append((user.uuid, r, ENTITY_KEY),)
     result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
     logger.info('get_quota: %s rejected: %s' % (payload, result))
@@ -117,53 +117,69 @@ QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'import_limit',
                                          'export_limit'))
 
+QuotaValues = namedtuple('QuotaValues', ('quantity',
+                                         'capacity',
+                                         'import_limit',
+                                         'export_limit'))
+
+def add_quota_values(q1, q2):
+    return QuotaValues(
+        quantity = q1.quantity + q2.quantity,
+        capacity = q1.capacity + q2.capacity,
+        import_limit = q1.import_limit + q2.import_limit,
+        export_limit = q1.export_limit + q2.export_limit)
+
 def qh_register_user(user):
     return register_users([user])
 
 def register_users(users):
+    rejected = create_users(users)
+    if not rejected:
+        register_quotas(users)
+
+def create_users(users):
     payload = list(CreateEntityPayload(
                     entity=u.uuid,
                     owner='system',
                     key=ENTITY_KEY,
                     ownerkey='') for u in users)
-    rejected = create_entity(payload)
-    if not rejected:
-        payload = []
-        append = payload.append
-        for u in users:
-            for resource, capacity in u.quota.iteritems():
-                append( SetQuotaPayload(
-                                holder=u.uuid,
-                                resource=resource,
-                                key=ENTITY_KEY,
-                                quantity=0,
-                                capacity=capacity if capacity != inf else None,
-                                import_limit=QH_PRACTICALLY_INFINITE,
-                                export_limit=QH_PRACTICALLY_INFINITE,
-                                flags=0))
-        return set_quota(payload)
+    return create_entity(payload)
 
+def register_quotas(users):
+    payload = []
+    append = payload.append
+    for u in users:
+        for resource, q in u.all_quotas().iteritems():
+            append( SetQuotaPayload(
+                    holder=u.uuid,
+                    resource=resource,
+                    key=ENTITY_KEY,
+                    quantity=q.quantity,
+                    capacity=q.capacity,
+                    import_limit=q.import_limit,
+                    export_limit=q.export_limit,
+                    flags=0))
+    return set_quota(payload)
 
-def register_resources(resources):
-    rdata = ((r.service, r) for r in resources)
-    services = set(r.service for r in resources)
+def register_services(services):
     payload = list(CreateEntityPayload(
                     entity=service,
                     owner='system',
                     key=ENTITY_KEY,
                     ownerkey='') for service in set(services))
-    rejected = create_entity(payload)
-    if not rejected:
-        payload = list(SetQuotaPayload(
-                        holder=resource.service,
-                        resource=resource,
-                        key=ENTITY_KEY,
-                        quantity=QH_PRACTICALLY_INFINITE,
-                        capacity=0,
-                        import_limit=QH_PRACTICALLY_INFINITE,
-                        export_limit=QH_PRACTICALLY_INFINITE,
-                        flags=0) for resource in resources)
-        return set_quota(payload)
+    return create_entity(payload)
+
+def register_resources(resources):
+    payload = list(SetQuotaPayload(
+            holder=resource.service,
+            resource=resource,
+            key=ENTITY_KEY,
+            quantity=QH_PRACTICALLY_INFINITE,
+            capacity=0,
+            import_limit=QH_PRACTICALLY_INFINITE,
+            export_limit=QH_PRACTICALLY_INFINITE,
+            flags=0) for resource in resources)
+    return set_quota(payload)
 
 def qh_add_quota(serial, sub_list, add_list):
     if not QUOTAHOLDER_URL:

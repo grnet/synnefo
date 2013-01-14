@@ -66,14 +66,14 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    trigger_sync, PendingMembershipError)
+    trigger_sync, PendingMembershipError, get_resource_names)
 from astakos.im.models import submit_application as models_submit_application
 from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
-from astakos.im.endpoints.qh import qh_register_user
+from astakos.im.endpoints.qh import qh_register_user, qh_get_quota
 
 import astakos.im.messages as astakos_messages
 
@@ -375,6 +375,11 @@ class SendNotificationError(SendMailError):
     def __init__(self):
         self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
         super(SendNotificationError, self).__init__()
+
+
+def get_quota(user):
+    resources = get_resource_names()
+    return qh_get_quota(user, resources)
 
 
 ### PROJECT VIEWS ###

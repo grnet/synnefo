@@ -70,8 +70,9 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_resources, qh_add_quota, QuotaLimits,
-    qh_query_serials, qh_ack_serials)
+    register_services, register_resources, qh_add_quota, QuotaLimits,
+    qh_query_serials, qh_ack_serials,
+    QuotaValues, add_quota_values)
 from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
@@ -162,12 +163,16 @@ class Resource(models.Model):
     desc = models.TextField(_('Description'), null=True)
     unit = models.CharField(_('Name'), null=True, max_length=255)
     group = models.CharField(_('Group'), null=True, max_length=255)
+    uplimit = intDecimalField(default=0)
 
     class Meta:
-        unique_together = ("name", "service")
+        unique_together = ("service", "name")
 
     def __str__(self):
         return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
+
+    def full_name(self):
+        return str(self)
 
     @property
     def help_text(self):
@@ -194,19 +199,55 @@ class Resource(models.Model):
         return get_presentation(str(self)).get('verbose_name', '')
 
 
-_default_quota = {}
-def get_default_quota():
-    global _default_quota
-    if _default_quota:
-        return _default_quota
-    for s, data in SERVICES.iteritems():
-        map(
-            lambda d:_default_quota.update(
-                {'%s%s%s' % (s, RESOURCE_SEPARATOR, d.get('name')):d.get('uplimit', 0)}
-            ),
-            data.get('resources', {})
+def load_service_resources():
+    ss = []
+    rs = []
+    for service_name, data in SERVICES.iteritems():
+        url = data.get('url')
+        resources = data.get('resources') or ()
+        service, created = Service.objects.get_or_create(
+            name=service_name,
+            defaults={'url': url}
         )
-    return _default_quota
+        ss.append(service)
+
+        for resource in resources:
+            try:
+                resource_name = resource.pop('name', '')
+                r, created = Resource.objects.get_or_create(
+                    service=service,
+                    name=resource_name,
+                    defaults=resource)
+                rs.append(r)
+
+            except Exception, e:
+                print "Cannot create resource ", resource_name
+                continue
+    register_services(ss)
+    register_resources(rs)
+
+def _quota_values(capacity):
+    return QuotaValues(
+        quantity = 0,
+        capacity = capacity,
+        import_limit = QH_PRACTICALLY_INFINITE,
+        export_limit = QH_PRACTICALLY_INFINITE)
+
+def get_default_quota():
+    _DEFAULT_QUOTA = {}
+    resources = Resource.objects.all()
+    for resource in resources:
+        capacity = resource.uplimit
+        limits = _quota_values(capacity)
+        _DEFAULT_QUOTA[resource.full_name()] = limits
+
+    return _DEFAULT_QUOTA
+
+def get_resource_names():
+    _RESOURCE_NAMES = []
+    resources = Resource.objects.all()
+    _RESOURCE_NAMES = [resource.full_name() for resource in resources]
+    return _RESOURCE_NAMES
 
 
 class AstakosUserManager(UserManager):
@@ -341,24 +382,28 @@ class AstakosUser(User):
         except Invitation.DoesNotExist:
             return None
 
-    @property
-    def quota(self):
-        """Returns a dict with the sum of quota limits per resource"""
-        d = defaultdict(int)
-        default_quota = get_default_quota()
-        d.update(default_quota)
-        for q in self.policies:
-            d[q.resource] = q.capacity or inf
-        for m in self.projectmembership_set.select_related().all():
-            if not m.acceptance_date:
-                continue
-            p = m.project
-            if not p.is_active_strict():
-                continue
-            grants = p.application.projectresourcegrant_set.all()
-            for g in grants:
-                d[str(g.resource)] += g.member_capacity or inf
-        return d
+    def initial_quotas(self):
+        quotas = dict(get_default_quota())
+        for user_quota in self.policies:
+            resource = user_quota.resource.full_name()
+            quotas[resource] = user_quota.quota_values()
+        return quotas
+
+    def all_quotas(self):
+        quotas = self.initial_quotas()
+
+        objects = self.projectmembership_set.select_related()
+        memberships = objects.filter(is_active=True)
+        for membership in memberships:
+            application = membership.application
+
+            grants = application.projectresourcegrant_set.all()
+            for grant in grants:
+                resource = grant.resource.full_name()
+                prev = quotas.get(resource, 0)
+                new = add_quota_values(prev, grant.member_quota_values())
+                quotas[resource] = new
+        return quotas
 
     @property
     def policies(self):
@@ -816,15 +861,22 @@ class ExtendedManager(models.Manager):
 
 class AstakosUserQuota(models.Model):
     objects = ExtendedManager()
-    capacity = models.BigIntegerField(_('Capacity'), null=True)
-    quantity = models.BigIntegerField(_('Quantity'), null=True)
-    export_limit = models.BigIntegerField(_('Export limit'), null=True)
-    import_limit = models.BigIntegerField(_('Import limit'), null=True)
+    capacity = intDecimalField(_('Capacity'))
+    quantity = intDecimalField(_('Quantity'), default=0)
+    export_limit = intDecimalField(_('Export limit'), default=QH_PRACTICALLY_INFINITE)
+    import_limit = intDecimalField(_('Import limit'), default=QH_PRACTICALLY_INFINITE)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 
     class Meta:
         unique_together = ("resource", "user")
+
+    def quota_values():
+        return QuotaValues(
+            quantity = self.quantity,
+            capacity = self.capacity,
+            import_limit = self.import_limit,
+            export_limit = self.export_limit)
 
 
 class ApprovalTerms(models.Model):
@@ -1437,6 +1489,13 @@ class ProjectResourceGrant(models.Model):
     class Meta:
         unique_together = ("resource", "project_application")
 
+    def member_quota_values(self):
+        return QuotaValues(
+            quantity = 0,
+            capacity = self.member_capacity,
+            import_limit = self.member_import_limit,
+            export_limit = self.member_export_limit)
+
 
 class ProjectManager(ForUpdateManager):
 
@@ -2022,9 +2081,8 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
 def resource_post_save(sender, instance, created, **kwargs):
-    if not created:
-        return
-    register_resources((instance,))
+    pass
+
 post_save.connect(resource_post_save, sender=Resource)
 
 def renew_token(sender, instance, **kwargs):

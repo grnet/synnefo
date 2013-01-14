@@ -220,6 +220,9 @@ class Migration(SchemaMigration):
         # Changing field 'AstakosUser.provider'
         db.alter_column('im_astakosuser', 'provider', self.gf('django.db.models.fields.CharField')(max_length=255, null=True))
 
+        # Changin field 'auth_user.username'
+        db.alter_column('auth_user', 'username', models.CharField(max_length=75))
+
 
     def backwards(self, orm):
 
@@ -298,6 +301,10 @@ class Migration(SchemaMigration):
         # Deleting field 'AstakosUser.disturbed_quota'
         db.delete_column('im_astakosuser', 'disturbed_quota')
 
+        for u in orm.AstakosUser.objects.all():
+            u.affiliation = u.affiliation or ''
+            u.save()
+
         # Changing field 'AstakosUser.affiliation'
         db.alter_column('im_astakosuser', 'affiliation', self.gf('django.db.models.fields.CharField')(default='', max_length=255))
 
@@ -306,6 +313,9 @@ class Migration(SchemaMigration):
 
         # Adding unique constraint on 'AstakosUser', fields ['third_party_identifier', 'provider']
         db.create_unique('im_astakosuser', ['third_party_identifier', 'provider'])
+
+        # Changin field 'auth_user.username'
+        db.alter_column('auth_user', 'username', models.CharField(max_length=30))
 
 
     models = {

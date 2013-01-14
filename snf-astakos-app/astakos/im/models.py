@@ -424,8 +424,6 @@ class AstakosUser(User):
             # set username
             self.username = self.email.lower()
 
-        self.validate_unique_email_isactive()
-
         super(AstakosUser, self).save(**kwargs)
 
     def renew_token(self, flush_sessions=False, current_key=None):
@@ -467,19 +465,6 @@ class AstakosUser(User):
         if q.count() != 0:
             return True
         return False
-
-    def validate_unique_email_isactive(self):
-        """
-        Implements a unique_together constraint for email and is_active fields.
-        """
-        q = AstakosUser.objects.all()
-        q = q.filter(email = self.email)
-        if self.id:
-            q = q.filter(~Q(id = self.id))
-        if q.count() != 0:
-            m = 'Another account with the same email = %(email)s & \
-                is_active = %(is_active)s found.' % self.__dict__
-            raise ValidationError(m)
 
     def email_change_is_pending(self):
         return self.emailchanges.count() > 0

@@ -44,7 +44,8 @@ import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
-from astakos.im.functions import do_join_project_checks
+from astakos.im.functions import do_join_project_checks, \
+                                 do_leave_project_checks
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -184,31 +185,39 @@ def action_extra_context(application, table, self):
     url, action, confirm, prompt = '', '', True, ''
     append_url = ''
 
-    can_join = True
+    can_join = can_leave = False
+    project = application.get_project()
 
-    try:
-        project = Project.objects.get(application=application)
-        do_join_project_checks(project)
-    except (PermissionDenied, Project.DoesNotExist), e:
-        can_join = False
+    if project:
+        try:
+            do_join_project_checks(project)
+            can_join = True
+        except PermissionDenied, e:
+            pass
 
-    if can_join:
-        if user.is_project_accepted_member(application):
-            url = 'astakos.im.views.project_leave'
-            action = _('Leave')
-            confirm = True
-            prompt = _('Are you sure you want to leave from the project ?')
-        elif not user.is_project_member(application):
-            url = 'astakos.im.views.project_join'
-            action = _('Join')
-            confirm = True
-            prompt = _('Are you sure you want to join this project ?')
-        else:
-            action = ''
-            confirm = False
-            url = None
+        try:
+            do_leave_project_checks(project)
+            can_leave = True
+        except PermissionDenied:
+            pass
+
+    if can_leave and user.is_project_accepted_member(application):
+        url = 'astakos.im.views.project_leave'
+        action = _('Leave')
+        confirm = True
+        prompt = _('Are you sure you want to leave from the project ?')
+    elif can_join and not user.is_project_member(application):
+        url = 'astakos.im.views.project_join'
+        action = _('Join')
+        confirm = True
+        prompt = _('Are you sure you want to join this project ?')
+    else:
+        action = ''
+        confirm = False
+        url = None
 
     url = reverse(url, args=(application.pk, )) + append_url if url else ''
+
     return {'action': action,
             'confirm': confirm,
             'url': url,
@@ -229,17 +238,11 @@ class UserTable(tables.Table):
         super(UserTable, self).__init__(*args, **kwargs)
 
 
-def project_name_append(record, column):
-    try:
-        if record.projectapplication and column.table.user.owns_project(record):
-            if record.state == ProjectApplication.APPROVED:
-                return mark_safe("<br /><i class='tiny'>%s</i>" % _('modifications pending'))
-            else:
-                return u''
-        else:
-            return u''
-    except:
-        return u''
+def project_name_append(application, column):
+    if application.has_pending_modifications():
+        return mark_safe("<br /><i class='tiny'>%s</i>" % \
+                                                _('modifications pending'))
+    return u''
 
 # Table classes
 class UserProjectApplicationsTable(UserTable):

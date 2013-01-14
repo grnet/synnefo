@@ -1048,7 +1048,7 @@ def project_add(request):
 @signed_terms_required
 @login_required
 def project_list(request):
-    projects = ProjectApplication.objects.user_projects(request.user).select_related()
+    projects = ProjectApplication.objects.user_accessible_projects(request.user).select_related()
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)

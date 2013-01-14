@@ -1660,16 +1660,18 @@ def cleanup_networks(action_timeout, query_interval, delete_stale=False):
         return
 
     fail_tmout = time.time() + action_timeout
-    while True:
-        servers = c.list_servers()
-        staleServers = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
-        if len(staleServers) == 0:
-            break
-        elif time.time() > fail_tmout:
-            log.error("Stale servers not deleted from previous run")
-            sys.exit()
-        else:
-            time.sleep(query_interval)
+    # Wait for deleting servers only if `delete_stale' is True
+    if delete_stale:
+        while True:
+            servers = c.list_servers()
+            staleServers = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
+            if len(staleServers) == 0:
+                break
+            elif time.time() > fail_tmout:
+                log.error("Stale servers not deleted from previous run")
+                sys.exit()
+            else:
+                time.sleep(query_interval)
 
     print >> sys.stderr, yellow + "Found these stale networks from previous runs:" + normal
     print "    " + \

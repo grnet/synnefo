@@ -42,7 +42,7 @@ add_introspection_rules([], ["^synnefo\.lib\.db\.intdecimalfield\.IntDecimalFiel
 
 DECIMAL_DIGITS  =   38
 
-def intDecimalField(**kwargs):
+def intDecimalField(verbose_name=None, name=None, **kwargs):
     # decimal_places is set here instead of the object constructor
     # in order to convince south
-    return IntDecimalField(max_digits=DECIMAL_DIGITS, decimal_places=0, **kwargs)
+    return IntDecimalField(verbose_name, name, max_digits=DECIMAL_DIGITS, decimal_places=0, **kwargs)

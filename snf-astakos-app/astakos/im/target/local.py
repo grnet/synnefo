@@ -120,8 +120,7 @@ def login(request, on_failure='im/login.html'):
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 
     provider = auth_providers.get_provider('local')
-    messages.success(request, _(astakos_messages.LOGIN_SUCCESS) %
-                     _(provider.get_login_message_display))
+    messages.success(request, _(astakos_messages.LOCAL_LOGIN_SUCCESS))
     response.set_cookie('astakos_last_login_method', 'local')
     return response
 

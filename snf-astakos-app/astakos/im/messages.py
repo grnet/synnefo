@@ -67,8 +67,9 @@ USER_LEFT_GROUP                         =   'User %(realname)s left the project.
 USER_MEMBERSHIP_REJECTED                =   'User\'s %(realname)s request to join the project has been rejected.'
 MEMBER_REMOVED                          =   'User %(realname)s has been successfully removed from the project.'
 BILLING_ERROR                           =   'Service response status: %(status)d'
-LOGOUT_SUCCESS                          =   'You are now logged out from your ~okeanos account.'
-LOGIN_SUCCESS                           =   'You have logged in to your ~okeanos account using "%s".'
+LOGOUT_SUCCESS                          =   'Logged out from ~okeanos.'
+LOGIN_SUCCESS                           =   'You are logged in to ~okeanos with your %s account.'
+LOCAL_LOGIN_SUCCESS                     =   'You are logged in to your ~okeanos account.'
 
 GENERIC_ERROR                           =   'Hmm... It seems something bad has happened, and we don\'t know the details right now. \
                                                Please contact the administrators by email for more details.'

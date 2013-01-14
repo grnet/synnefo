@@ -80,9 +80,10 @@ class AuthProvider(object):
     login_prompt = _('Login using ')
     primary_login_prompt = _('Login using ')
     login_message = None
-    logout_message = 'You may still be logged in at "%(provider)s". Consider logging out.'
+    logout_message = 'You may still be logged in %(provider)s though. Consider logging out from there too.'
     remote_authenticate = True
     remote_logout_url = None
+    logout_from_provider_text = None
 
     def get_message(self, msg, **kwargs):
         params = kwargs
@@ -111,8 +112,9 @@ class AuthProvider(object):
 
         self.login_message = self.login_message or self.get_title_display
         if self.logout_message and "%" in self.logout_message:
+            logout_text_display = self.logout_from_provider_text or 'at %s' % self.get_title_display
             self.logout_message = self.logout_message % {'provider':
-                                                         self.get_login_message_display}
+                                                         logout_text_display}
         else:
             self.logout_message = self.logout_message or ''
 
@@ -193,7 +195,7 @@ class LocalAuthProvider(AuthProvider):
 
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
-    title = _('Academic credentials (Shibboleth)')
+    title = _('Academic account (Shibboleth)')
     add_prompt = _('Allows you to login to your account using your academic '
                     'account')
     details_tpl = _('Shibboleth account \'%(identifier)s\' is connected to your '
@@ -206,6 +208,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
     login_template = 'im/auth/shibboleth_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+    logout_from_provider_text = ' at your Academic account (shibboleth)'
 
 
 class TwitterAuthProvider(AuthProvider):

@@ -37,12 +37,16 @@ from urlparse import urlparse
 import urllib
 import urllib2
 
-from django.http import HttpResponseNotFound, HttpResponseRedirect, HttpResponseBadRequest, HttpResponse
+from django.http import (
+    HttpResponseNotFound, HttpResponseRedirect, HttpResponseBadRequest,
+    HttpResponse)
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS, SERVICE_TOKEN
+from pithos.api.settings import (
+    AUTHENTICATION_URL, AUTHENTICATION_USERS, SERVICE_TOKEN, USER_INFO_URL)
 
+from synnefo.lib.astakos import get_username
 
 logger = logging.getLogger(__name__)
 
@@ -90,3 +94,18 @@ def delegate_to_feedback_service(request):
         logger.exception(e)
         return HttpResponse(status=e.reason)
     return HttpResponse()
+
+def account_username(request):
+    uuid = request.META.get('HTTP_X_USER_UUID')
+    try:
+        username =  get_username(
+            SERVICE_TOKEN, uuid, USER_INFO_URL,
+            AUTHENTICATION_USERS)
+        return HttpResponse(content=username)
+    except Exception, e:
+        try:
+            content, status = e.args
+        except:
+            content, status = e, 500
+
+        return HttpResponse(status=status, content=content)

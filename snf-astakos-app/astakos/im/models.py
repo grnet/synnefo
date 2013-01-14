@@ -1147,8 +1147,8 @@ class ProjectApplicationManager(ForUpdateManager):
 
     def user_visible_by_last_of_chain(self, *filters, **kw_filters):
         by_chain = self.user_visible_projects(*filters, **kw_filters).values('chain')
-        by_chain = by_chain.annotate(last_id=models.Min('id')).values_list('last_id', flat=True)
-        return self.filter(id__in=by_chain)
+        by_chain_min = [x['last_id'] for x in by_chain.annotate(last_id=models.Min('id'))]
+        return self.filter(id__in=by_chain_min)
 
     def user_accessible_projects(self, user):
         """

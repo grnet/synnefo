@@ -21,6 +21,7 @@
       <div class="extralogin" 
           style="{% if not last_login_method or last_login_method == master_auth_provider.module %}display:none{% endif %}">
       {% for provider in auth_providers %}
+      
         {% if not provider == master_auth_provider %}
             {% include provider.login_prompt_template %}
         {% endif %}

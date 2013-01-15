@@ -1,3 +1,4 @@
 {% load astakos_tags %}
-<br />{{ provider.get_login_prompt_display|safe }}
-<a href="{% provider_login_url provider %}" alt="{{ provider.get_title_display }}">{{ provider.get_title_display }}</a>
+
+<a href="{% provider_login_url provider %}" alt="{{ provider.get_title_display }}" class="icons"><img src="{{ provider.get_icon_url_display }}" alt="{{ provider.get_title_display }}" /></a>
+

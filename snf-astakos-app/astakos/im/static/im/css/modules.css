@@ -567,3 +567,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 i.tiny { font-size: 0.8em; color: #999;}
 
 h2 span.subtitle { font-size: 0.9em; color: #55B577;}
+
+
+.extralogin a.icons								{ display:inline-block; margin-right:5px; height:28px; overflow:hidden; vertical-align:middle; }
+.extralogin a.icons:hover img					{ margin-top:-38px; }

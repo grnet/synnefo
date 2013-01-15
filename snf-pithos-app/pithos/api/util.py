@@ -161,6 +161,13 @@ def get_account_headers(request):
     return meta, groups
 
 
+def put_account_translation_headers(response, accounts):
+    for x in accounts:
+        k = smart_str('X-Account-Presentation-%s' % x, strings_only=True)
+        v = smart_str(retrieve_username(x), strings_only=True)
+        response[k] = v
+
+
 def put_account_headers(response, meta, groups, policy):
     if 'count' in meta:
         response['X-Account-Container-Count'] = meta['count']

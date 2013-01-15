@@ -176,9 +176,8 @@ def account_list(request):
             # The cloudfiles python bindings expect 200 if json/xml.
             response.status_code = 204
             return response
-        if 'translate' in request.GET:
-            accounts = [retrieve_username(x) for x in accounts]
         response.status_code = 200
+        put_account_translation_headers(response, accounts)
         response.content = '\n'.join(accounts) + '\n'
         return response
 
@@ -194,8 +193,7 @@ def account_list(request):
         except NotAllowedError:
             raise Forbidden('Not allowed')
         else:
-            if 'translate' in request.GET:
-                meta['name'] = retrieve_username(x)
+            meta['account_presentation'] = retrieve_username(x)
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(
                 meta, 'until_timestamp', 'x_account_until_timestamp')

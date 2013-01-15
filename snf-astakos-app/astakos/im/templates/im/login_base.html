@@ -1,7 +1,6 @@
 {% extends 'im/base_two_cols.html'%}
 
 {% block signup_class %}hidden{% endblock %}
-{% block page.title %}{% endblock %}
 
 {% block body.left %}
 	<img class="pic" src="{{ IM_STATIC_URL }}images/porta.png" />
@@ -9,42 +8,52 @@
 {% endblock body.left %}
     
 {% block body.right %} 
-	{% if "local" in im_modules %}
-    	<form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
-		    <h2>LOGIN</h2>
-		    {% with login_form as form %}
-		    	{% include "im/form_render.html" %}
-		    {% endwith %}
-		    <input type="hidden" name="next" value="{{ next }}">
-		    <div class="form-row submit clearfix">
-		    	
-		        <input type="submit" class="submit altcol" value="SUBMIT" />
-		        <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
-		    </div>
-    	</form>
-    {% endif %}
-    <div class="extralogin">
-         {% for o in im_modules %}
-    	<div>
-        {% if o != 'local' %}
-        LOGIN using
-            <a href="/im/login/{{ o }}?{% ifnotequal next "" %}&next={{ next|urlencode }}{% endifnotequal %}{% ifnotequal code ""%}{% if next != "" %}&{% else %}?{% endif %}code={{ code }}{% endifnotequal %}"
-            alt="{{ o|title }}">{{ o }}</a>
+    
+    <div class="login-section">
+
+      <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
+              <a class="other-logins" href="#other-login-methods">other login methods</a></span>
+      </h2>
+      <div class="main-login-method">
+        {% include master_auth_provider.login_template %}
+      </div>
+
+      <div class="extralogin" 
+          style="{% if not last_login_method or last_login_method == master_auth_provider.module %}display:none{% endif %}">
+      {% for provider in auth_providers %}
+      
+        {% if not provider == master_auth_provider %}
+            {% include provider.login_prompt_template %}
         {% endif %}
+      {% endfor %}
+        <div class="bottom">
+        {% block body.signup %}
+        {% for provider in auth_providers %}
+              {% if provider.is_available_for_create %}
+                  {% include provider.signup_prompt_template %}
+              {% endif %}
+          {% endfor %}
+        {% endblock body.signup %}
         </div>
-        {% endfor %}
-    </div><br />
-    {% block body.signup %}
-	    {% for o in im_modules %}
-	        {% if o != 'local' %}
-	       
-	        {% endif %}
-	    {% endfor %}
-	    <div class="bottom">
-	        {% block body.login.signup %}
-	            new to okeanos ? <a href="{% url astakos.im.views.signup %}{% ifnotequal code "" %}?code={{ code|urlencode }}{% endifnotequal %}">CREATE ACCOUNT</a>
-	        {% endblock %}
-	    </div>
-	{% endblock body.signup %}
+    </div>
+    </div>
+    <script>
+      $(document).ready(function(){
+        if (window.location.toString().match(/#other-login-methods/)) {
+            $(".extralogin").show();
+        }
+
+        $(".other-logins").click(function(e){
+            e.preventDefault();
+            $(".extralogin").slideToggle();
+            if (window.location.toString().match(/#other-login-methods/)) {
+              window.location = window.location.hash = "#"
+            } else {
+              window.location = window.location.hash = "#other-login-methods"
+            }
+        })
+
+        });    
+    </script>
  
 {% endblock body.right%}

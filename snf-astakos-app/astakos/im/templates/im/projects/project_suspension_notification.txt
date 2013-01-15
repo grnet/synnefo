@@ -1,0 +1,7 @@
+--- A translation in English follows ---
+
+Tο project {{object.name}} έχει ανασταλεί.
+
+--
+
+Your project application request ({{object.name}}) has been suspended.

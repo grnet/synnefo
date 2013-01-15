@@ -32,9 +32,14 @@
 # or implied, of GRNET S.A.
 
 from django.contrib.auth.backends import ModelBackend
-from django.core.validators import email_re
 
 from astakos.im.models import AstakosUser
+from astakos.im.settings import LOGGING_LEVEL
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class TokenBackend(ModelBackend):
     """
@@ -42,11 +47,14 @@ class TokenBackend(ModelBackend):
     """
     def authenticate(self, email=None, auth_token=None):
         try:
-            user = AstakosUser.objects.get(email=email, is_active=True)
-            if user.auth_token == auth_token:
-                return user
+            user = AstakosUser.objects.get_by_identifier(email, is_active=True,
+                                                        auth_token=auth_token)
+            return user
         except AstakosUser.DoesNotExist:
             return None
+        else:
+            msg = 'Invalid token during authentication for %s' % email
+            logger._log(LOGGING_LEVEL, msg, [])
 
     def get_user(self, user_id):
         try:
@@ -54,30 +62,28 @@ class TokenBackend(ModelBackend):
         except AstakosUser.DoesNotExist:
             return None
 
+
 class EmailBackend(ModelBackend):
     """
     If the ``username`` parameter is actually an email uses email to authenticate
     the user else tries the username.
-    
+
     Used from ``astakos.im.forms.LoginForm`` to authenticate.
     """
     def authenticate(self, username=None, password=None):
-        #If username is an email address, then try to pull it up
-        if email_re.search(username):
-            try:
-                user = AstakosUser.objects.get(email=username, is_active=True)
-            except AstakosUser.DoesNotExist:
-                return None
-        else:
-            #We have a non-email address username we
-            #should try username
-            try:
-                user = AstakosUser.objects.get(username=username)
-            except AstakosUser.DoesNotExist:
-                return None
+        # First check whether a user having this email exists
+        try:
+            user = AstakosUser.objects.get_by_identifier(username)
+        except AstakosUser.DoesNotExist:
+            return None
+
         if user.check_password(password):
             return user
-    
+        else:
+            msg = 'Invalid password during authentication for %s' % username
+            logger._log(LOGGING_LEVEL, msg, [])
+
+
     def get_user(self, user_id):
         try:
             return AstakosUser.objects.get(pk=user_id)

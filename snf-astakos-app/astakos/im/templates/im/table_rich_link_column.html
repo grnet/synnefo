@@ -1,0 +1,24 @@
+<div class="msg-wrap">
+{% if url %}
+{% if confirm %}
+<form method="{{ col.method }}" 
+  action="{{ url }}#{{ table.attr.id }}"
+  class="link-like">
+  {% csrf_token %}
+<input type="submit" value="{{ action }}" class="join_group join" />
+</form>
+<div class="dialog" style="display: none">
+  {{ prompt }}
+  <br />
+  <br />
+<a href="#" class="yes submit">{{ col.confirm_prompt }}</a>
+&nbsp; 
+<a href="#" class="no submit">{{ col.cancel_prompt }}</a>
+</div>
+{% else %}
+<a href="{{ url }}">{{ action }}</a>
+{% endif %}
+{% else %}
+{{ action }}
+{% endif %}
+</div>

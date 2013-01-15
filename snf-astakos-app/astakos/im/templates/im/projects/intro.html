@@ -1,0 +1,57 @@
+{% load i18n %}
+<div class="two-cols clearfix">
+  <div class="rt">
+    &nbsp;
+  </div>
+  <div class="lt">
+    <p>
+    {% blocktrans %}
+    ~okeanos gives the opportunity to
+    Greek Academic or Research Organizations/Institutions/Faculty
+    to run their own projects remotely on virtual infrastructure.
+    Simple, fast, and with minimal to no cost at all.
+    {% endblocktrans %}
+    </p>
+    <p><a href="{% url how_it_works %}" style="font-size:1.154em;">How it works ></a></p>
+  </div>
+</div>
+
+
+<div class="widjets"> 
+  <!--<a href="#" class="widjet-x" title="remove boxes">X</a>-->
+  <ul class="clearfix">	
+    <li class="create">
+    <div>
+      <div class="wrap">
+        <p class="centered"><a href="{% url project_add %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
+        <p class="txt">
+        {% blocktrans %}
+	Create a new Project. Name it, describe its purpose,
+	choose virtual resources to be granted to members, and submit.
+	Your application will be reviewed, and if accepted,
+	you and your colleagues are ready to deploy!<br/><br/>
+        {% endblocktrans %}
+	</p>
+        <p><a href="{% url project_add %}">create a project ></a></p>
+      </div>
+    </div>
+    </li>
+    <li class="join">
+    <div>
+      <div class="wrap">
+        <p class="centered"><a href="{% url project_search %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+        <p class="txt">
+        {% blocktrans %}
+	Request to be a member of an existing Project
+	and instantly gain access to the resources it has to offer you.
+	Search for public Projects, or submit a join request to a private Project,
+	if you think its administrators will accept you.
+	In short: try to Join now.
+        {% endblocktrans %}
+	</p>
+        <p><a href="{% url project_search %}">join a project ></a></p>
+      </div>
+    </div>
+    </li>
+  </ul>
+</div>

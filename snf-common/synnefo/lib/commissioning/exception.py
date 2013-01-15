@@ -32,6 +32,12 @@
 # or implied, of GRNET S.A.
 
 
+def str_or_utf8(s):
+    if isinstance(s, unicode):
+        return s.encode('utf8')
+    return str(s)
+
+
 class CallError(Exception):
     exceptions = {}
 
@@ -46,15 +52,16 @@ class CallError(Exception):
         return self
 
     def __init__(self, *args, **kw):
-        self.call_error = kw.get('call_error', self.__class__.__name__)
+        self.call_error = kw.pop('call_error', self.__class__.__name__)
         self.args = args
+        self.kwargs = kw
 
     def __str__(self):
-        return '\n--------\n'.join(str(x) for x in self.args)
+        return '\n--------\n'.join(str_or_utf8(x) for x in self.args)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__,
-                           ','.join(str(x) for x in self.args))
+                           ','.join(str_or_utf8(x) for x in self.args))
 
     @classmethod
     def from_exception(cls, exc):
@@ -71,7 +78,7 @@ class CallError(Exception):
 
     def to_dict(self):
         return {'call_error': self.call_error,
-                'error_args': self.args}
+                'error_args': (self.args, self.kwargs)}
 
     @classmethod
     def from_dict(cls, dictobj):
@@ -86,8 +93,11 @@ class CallError(Exception):
         if args is None:
             args = (str(dictobj),)
             call_error = 'UnknownError'
+            kw = {}
+        else:
+            args, kw = args
 
-        self = cls(*args, call_error=call_error)
+        self = cls(*args, call_error=call_error, **kw)
         return self
 
 def register_exceptions(*exceptions):

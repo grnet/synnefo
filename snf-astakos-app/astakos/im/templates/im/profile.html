@@ -2,10 +2,11 @@
 
 {% block body %}
 
-<form action={%url astakos.im.views.edit_profile %} method="post" class="withlabels">{% csrf_token %}
+<h2>GENERAL INFO</h2>
+<form action={%url edit_profile %} method="post" class="withlabels hidden-submit">{% csrf_token %}
     
     {% with profile_form as form %}
-    {% include "im/form_render.html" %}
+	{% include "im/form_render.html" %}
     {% endwith %}
 
     <div class="form-row submit">
@@ -13,6 +14,20 @@
         <input type="hidden" name="auth" value="{{ user.auth_token }}">
         <input type="submit" class="submit altcol" value="UPDATE" />
     </div>
-
 </form>
+
+
+
+<div class="full-dotted">
+    {% include "im/profile_auth_methods.html" %}
+</div>
+
+<div class="full-dotted right-align">
+	<ul class="options">
+        {% for s in services %}
+		    <li><a href="{{s.url}}" class="blue">Take me to {{s.name}}></a></li>
+        {% endfor %}
+	</ul>
+		 
+</div>
 {% endblock body %}

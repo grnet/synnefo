@@ -59,6 +59,8 @@ class Positive(Integer):
     def init(self):
         self.opts.update({'minimum': 1})
 
+QH_PRACTICALLY_INFINITE =   10**32
+
 Serial              =   Positive(classname='Serial')
 
 ClientKey           =   Name(classname='ClientKey')
@@ -72,14 +74,14 @@ OwnerKey            =   Text(classname='OwnerKey')
 Resource            =   Name(classname='Resource')
 Policy              =   Name(classname='Policy')
 
-Quantity            =   Integer(classname='Quantity', null=True)
-Capacity            =   Nonnegative(classname='Capacity', null=True)
-ImportLimit         =   Nonnegative(classname='ImportLimit', null=True)
-ExportLimit         =   Nonnegative(classname='ExportLimit', null=True)
-QuantityDelta       =   Integer(classname='QuantityDelta', null=True)
-CapacityDelta       =   Integer(classname='CapacityDelta', null=True)
-ImportLimitDelta    =   Integer(classname='ImportLimitDelta', null=True)
-ExportLimitDelta    =   Integer(classname='ExportLimitDelta', null=True)
+Quantity            =   Integer(classname='Quantity')
+Capacity            =   Nonnegative(classname='Capacity')
+ImportLimit         =   Nonnegative(classname='ImportLimit')
+ExportLimit         =   Nonnegative(classname='ExportLimit')
+QuantityDelta       =   Integer(classname='QuantityDelta')
+CapacityDelta       =   Integer(classname='CapacityDelta')
+ImportLimitDelta    =   Integer(classname='ImportLimitDelta')
+ExportLimitDelta    =   Integer(classname='ExportLimitDelta')
 Imported            =   Nonnegative(classname='Imported')
 Exported            =   Nonnegative(classname='Exported')
 Returned            =   Nonnegative(classname='Returned')
@@ -237,12 +239,33 @@ class QuotaholderAPI(Specificator):
     def add_quota   (
                 self,
                 context     =   Context,
+                clientkey   =   ClientKey,
+                serial      =   Serial,
+                sub_quota   =   ListOf( Entity, Resource, Key,
+                                        QuantityDelta, CapacityDelta,
+                                        ImportLimitDelta, ExportLimitDelta ),
                 add_quota   =   ListOf( Entity, Resource, Key,
                                         QuantityDelta, CapacityDelta,
                                         ImportLimitDelta, ExportLimitDelta )
         ):
         rejected = ListOf(Entity, Resource)
         return rejected
+
+    def query_serials   (
+                self,
+                context     =   Context,
+                clientkey   =   ClientKey,
+                serials     =   ListOf(Serial)
+        ):
+        return ListOf(Serial)
+
+    def ack_serials (
+                self,
+                context     =   Context,
+                clientkey   =   ClientKey,
+                serials     =   ListOf(Serial)
+        ):
+        return Nothing
 
     def issue_commission    (
                 self,

@@ -91,13 +91,15 @@ standard_exclude_directories = [
 # Note: you may want to copy this into your setup.py file verbatim, as
 # you can't import this from another package, when you don't know if
 # that package is installed yet.
+
+
 def find_package_data(
     where=".",
     package="",
     exclude=standard_exclude,
     exclude_directories=standard_exclude_directories,
     only_in_packages=True,
-    show_ignored=False):
+        show_ignored=False):
     """
     Return a dictionary suitable for use in ``package_data``
     in a distutils ``setup.py`` file.
@@ -134,7 +136,7 @@ def find_package_data(
                 bad_name = False
                 for pattern in exclude_directories:
                     if (fnmatchcase(name, pattern)
-                        or fn.lower() == pattern.lower()):
+                            or fn.lower() == pattern.lower()):
                         bad_name = True
                         if show_ignored:
                             print >> sys.stderr, (
@@ -144,20 +146,21 @@ def find_package_data(
                 if bad_name:
                     continue
                 if (os.path.isfile(os.path.join(fn, "__init__.py"))
-                    and not prefix):
+                        and not prefix):
                     if not package:
                         new_package = name
                     else:
                         new_package = package + "." + name
                     stack.append((fn, "", new_package, False))
                 else:
-                    stack.append((fn, prefix + name + "/", package, only_in_packages))
+                    stack.append(
+                        (fn, prefix + name + "/", package, only_in_packages))
             elif package or not only_in_packages:
                 # is a file
                 bad_name = False
                 for pattern in exclude:
                     if (fnmatchcase(name, pattern)
-                        or fn.lower() == pattern.lower()):
+                            or fn.lower() == pattern.lower()):
                         bad_name = True
                         if show_ignored:
                             print >> sys.stderr, (
@@ -166,44 +169,44 @@ def find_package_data(
                         break
                 if bad_name:
                     continue
-                out.setdefault(package, []).append(prefix+name)
+                out.setdefault(package, []).append(prefix + name)
     return out
 
 setup(
-    name = 'snf-pithos-tools',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://code.grnet.gr/',
-    description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
-    classifiers = CLASSIFIERS,
+    name='snf-pithos-tools',
+    version=VERSION,
+    license='BSD',
+    url='http://code.grnet.gr/',
+    description=SHORT_DESCRIPTION,
+    long_description=README + '\n\n' + CHANGES,
+    classifiers=CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Package author',
+    author_email='author@grnet.gr',
+    maintainer='Package maintainer',
+    maintainer_email='maintainer@grnet.gr',
 
-    namespace_packages = ['pithos'],
-    packages = PACKAGES,
-    package_dir= {'': PACKAGES_ROOT},
-    include_package_data = True,
-    package_data = find_package_data('.'),
-    zip_safe = False,
+    namespace_packages=['pithos'],
+    packages=PACKAGES,
+    package_dir={'': PACKAGES_ROOT},
+    include_package_data=True,
+    package_data=find_package_data('.'),
+    zip_safe=False,
 
-    dependency_links = [
+    dependency_links=[
         'http://docs.dev.grnet.gr/pypi/'],
 
-    install_requires = INSTALL_REQUIRES,
-    extras_require = EXTRAS_REQUIRES,
-    tests_require = TESTS_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRES,
+    tests_require=TESTS_REQUIRES,
 
-    entry_points = {
-     'console_scripts': [
-         'pithos-sh = pithos.tools.sh:main',
-         'pithos-sync = pithos.tools.sync:main',
-         'pithos-test = pithos.tools.test:main',
-         'pithos-fs = pithos.tools.fs:main',
-         'pithos-dispatcher = pithos.tools.dispatcher:main',
-         ],
-      },
+    entry_points={
+        'console_scripts': [
+            'pithos-sh = pithos.tools.sh:main',
+            'pithos-sync = pithos.tools.sync:main',
+            'pithos-test = pithos.tools.test:main',
+            'pithos-fs = pithos.tools.fs:main',
+            'pithos-dispatcher = pithos.tools.dispatcher:main',
+        ],
+    },
 )

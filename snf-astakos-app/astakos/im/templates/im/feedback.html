@@ -1,7 +1,7 @@
 {% extends "im/account_base.html" %}
 
 {% block body %}
-<form action="{% url astakos.im.views.feedback %}" method="post"
+<form action="{% url feedback %}" method="post"
     class="withlabels">{% csrf_token %}
     
     {% with feedback_form as form %}

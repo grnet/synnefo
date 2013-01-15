@@ -16,24 +16,29 @@ from alembic import op
 
 import sqlalchemy as sa
 
+
 def upgrade():
     op.add_column('nodes', sa.Column('latest_version', sa.INTEGER))
-    
-    n = table('nodes', 
+
+    n = table(
+        'nodes',
         column('node', sa.Integer),
         column('latest_version', sa.Integer)
     )
-    v = table('versions', 
+    v = table(
+        'versions',
         column('node', sa.Integer),
         column('mtime', sa.Integer),
         column('serial', sa.Integer),
     )
-    
-    s = sa.select([v.c.serial]).where(n.c.node == v.c.node).order_by(v.c.mtime).limit(1)
+
+    s = sa.select(
+        [v.c.serial]).where(n.c.node == v.c.node).order_by(v.c.mtime).limit(1)
     op.execute(
-        n.update().\
-            values({'latest_version':s})
-            )
+        n.update().
+        values({'latest_version': s})
+    )
+
 
 def downgrade():
     op.drop_column('nodes', 'latest_version')

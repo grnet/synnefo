@@ -1,7 +1,7 @@
 {% extends "im/account_base.html" %}
 
 {% block page.body %}
-<div class="full bottom-bordered clearfix">
+<div class="full  clearfix">
 	<div class="lt-div">
 		<p>Invite someone else</p>
 	</div>
@@ -15,18 +15,18 @@
 	    {% endwith %}
 	
 	    <div class="form-row submit">
-	        <input type="submit" class="submit altcol" value="SEND" />
+	        <input type="submit" class="submit altcol" value="INVITE" />
 	    </div>
 	  </form>
 	  {% endif %}
 	 
 </div>
  
-	<div class="full {% block innerpage.class %}{% endblock %}">
+	<div class="full full-dotted">
 	    
 	    <h2>You have <em>{{ inviter.invitations }}</em> invitation{{ inviter.invitations|pluralize }} left.</h2>
 	    {% if sent|length %}
-	      <table class="zebra-striped id-sorted">
+	      <table class="alt-style">
 	        <thead>
 	          <tr>
 	            <th>Email</th>
@@ -52,4 +52,3 @@
 
 
 {% endblock %}
-

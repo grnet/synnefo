@@ -68,6 +68,8 @@ def dev():
 
 # wrap local to respect global capturing setting from env.capture
 oldlocal = local
+
+
 def local(cmd, capture="default"):
     if capture != "default":
         capture = capture
@@ -88,7 +90,7 @@ def remove_pkg(p):
 
 
 def build_pkg(p):
-    info ("building package: %s" % p)
+    info("building package: %s" % p)
     with lcd(package_root(p)):
         local("if [ -d dist ]; then rm -r dist; fi;")
         local("if [ -d build ]; then rm -r build; fi;")
@@ -123,11 +125,11 @@ def installall():
 def collectdists():
     if os.path.exists("./packages"):
         notice("removing 'packages' directory")
-        local("rm -r packages");
+        local("rm -r packages")
 
-    local("mkdir packages");
+    local("mkdir packages")
     for p in env.packages:
-        local("cp %s/dist/*.tar.gz ./packages/" % package_root(p));
+        local("cp %s/dist/*.tar.gz ./packages/" % package_root(p))
 
 
 def removeall():
@@ -156,7 +158,7 @@ def branch():
 
 @contextmanager
 def co(c):
-    current_branch = branch();
+    current_branch = branch()
     git("checkout %s" % c)
     # Use a try block to make sure we checkout the original branch.
     try:
@@ -180,7 +182,7 @@ env.debrelease = False  # Increase release number in Debian changelogs
 
 def _last_commit(f):
     return local("git rev-list --all --date-order --max-count=1 %s" % f,
-            capture=True).strip()
+                 capture=True).strip()
 
 
 def _diff_from_master(c,f):
@@ -256,7 +258,7 @@ def builddeb(p, master="master", branch="debian-0.8"):
             local(add_versions_cmd)
             local(("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s"
                    " --git-export=INDEX --git-ignore-new %s") %
-                   (master, branch, "" if env.signdebs else "-us -uc"))
+                  (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
             local(reset_versions_cmd)
         info("Done building debian package for %s" % p)

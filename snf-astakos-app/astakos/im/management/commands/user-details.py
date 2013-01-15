@@ -80,7 +80,8 @@ class Command(BaseCommand):
                 'email_verified': format_bool(user.email_verified),
                 'username': user.username,
                 'activation_sent_date': format_date(user.activation_sent),
-                'resources': dict(user.all_quotas())
+                'resources': dict(user.all_quotas()),
+                'uuid': user.uuid
             }
             if get_latest_terms():
                 has_signed_terms = user.signed_terms

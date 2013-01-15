@@ -1,43 +1,14 @@
 <div class="auth_methods">
     <h2>LOGIN METHODS</h2>
-    <ul>
-        {% for provider in user_providers %}
-        <li>
-            <a href="#">{{ provider.title_display }}</a>
-            <div class="wrap">
-                <p>{{ provider.details_display }}</p>
-                <div class="actions">
-
-                      {% for name, url in provider.settings.extra_actions %}
-                      <a href="{{ url }}" title="{{ name }}">{{ name }}</a>
-                      {% endfor %}
-                      {% if provider.can_remove %}
-                          <div class="dialog-wrap">
-                            <a href="#" title="disable" class="red">Disable x</a>
-                            <div class="dialog">
-                              Are you sure you want to disable this method?<br />
-                              <a href="{% url remove_auth_provider provider.pk %}" 
-                                class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
-                            </div>	
-                          </div>
-                            
-                      {% endif %}
-                </div>
-            </div>
-        </li>
-        {% empty %}
-        <li>No available authentication methods</li>
-        {% endfor %}
-        
-    </ul>
     <div class="assigned">
         <h3>ENABLED</h3>
         <ul>
-        	{% for provider in user_providers %}
+        	{% for userauthprovider in user_providers %}
         	<li>
-        		{% if provider.can_remove %}
+        		{% if userauthprovider.can_remove %}
         				<a href="#" class="canremove">
-		                  <img src="{{ provider.get_icon_medium_url_display }}" alt="{{ provider.get_title_display }}" />
+		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
+                          alt="{{ userauthprovider.settings.get_title_display }}" />
 		                </a>
                       	<div class="dialog-wrap">
                         	 
@@ -50,7 +21,8 @@
                       
                   {% else %}
                   	<a href="javascript:void(0);" class="noaction">
-		                  <img src="{{ provider.get_icon_medium_url_display }}" alt="{{ provider.get_title_display }}" />
+		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
+                          alt="{{ userauthprovider.settings.get_title_display }}" />
 		                </a>
                       	 
                       

@@ -676,7 +676,7 @@ class AstakosUser(User):
         providers = []
         for provider in self.auth_providers.active(**filters):
             if auth_providers.get_provider(provider.module).is_available_for_login():
-                providers.append(auth_providers.get_provider(provider.module))
+                providers.append(provider)
         return providers
 
     @property

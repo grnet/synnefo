@@ -45,19 +45,26 @@ from django.views.decorators.csrf import csrf_exempt
 from synnefo.lib.astakos import get_user
 
 from pithos.api.faults import (
-    Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
-    LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
+    Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
+    Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
+    RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (
-    json_encode_decimal, rename_meta_key, format_header_key, printable_header_dict,
-    get_account_headers, put_account_headers, get_container_headers, put_container_headers, get_object_headers,
-    put_object_headers, update_manifest_meta, update_sharing_meta, update_public_meta,
-    validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
-    copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
-    SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method,
-    retrieve_username, retrieve_uuid)
+    json_encode_decimal, rename_meta_key, format_header_key,
+    printable_header_dict, get_account_headers, put_account_headers,
+    get_container_headers, put_container_headers, get_object_headers,
+    put_object_headers, update_manifest_meta, update_sharing_meta,
+    update_public_meta, validate_modification_preconditions,
+    validate_matching_preconditions, split_container_object_string,
+    copy_or_move_object, get_int_parameter, get_content_length,
+    get_content_range, socket_read_iterator, SaveToBackendHandler,
+    object_data_response, put_object_block, hashmap_md5, simple_list_response,
+    api_method, retrieve_username, retrieve_uuid,
+    put_account_translation_headers)
 from pithos.api.settings import UPDATE_MD5
 
-from pithos.backends.base import NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists, VersionNotExists, ContainerExists
+from pithos.backends.base import (
+    NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
+    VersionNotExists, ContainerExists)
 
 from pithos.backends.filter import parse_filters
 

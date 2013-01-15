@@ -71,7 +71,7 @@ class Command(BaseCommand):
                 try:
                     user = AstakosUser.objects.get(uuid=user)
                 except AstakosUser.DoesNotExist:
-                    self.stdout.write('Not found user having uuid: %s\n' % uuid)
+                    self.stdout.write('Not found user having uuid: %s\n' % user)
                     continue
                 else:
                     try:

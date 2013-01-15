@@ -1524,6 +1524,10 @@ class ProjectManager(ForUpdateManager):
 
     def _q_terminated(self):
         return Q(state=Project.TERMINATED)
+    def _q_suspended(self):
+        return Q(state=Project.SUSPENDED)
+    def _q_deactivated(self):
+        return self._q_terminated() | self._q_suspended()
 
     def terminated_projects(self):
         q = self._q_terminated()
@@ -1537,9 +1541,19 @@ class ProjectManager(ForUpdateManager):
         q = self._q_terminated() & Q(is_active=True)
         return self.filter(q)
 
+    def deactivated_projects(self):
+        q = self._q_deactivated()
+        return self.filter(q)
+
+    def deactivating_projects(self):
+        q = self._q_deactivated() & Q(is_active=True)
+        return self.filter(q)
+
     def modified_projects(self):
         return self.filter(is_modified=True)
 
+    def reactivating_projects(self):
+        return self.filter(state=Project.APPROVED, is_active=False)
 
 class Project(models.Model):
 
@@ -1603,11 +1617,24 @@ class Project(models.Model):
         self.deactivation_date = datetime.now()
         self.is_active = False
 
+    def reactivate(self):
+        self.deactivation_date = None
+        self.is_active = True
+
     def terminate(self):
         self.deactivation_reason = 'TERMINATED'
         self.state = self.TERMINATED
         self.save()
 
+    def suspend(self):
+        self.deactivation_reason = 'SUSPENDED'
+        self.state = self.SUSPENDED
+        self.save()
+
+    def resume(self):
+        self.deactivation_reason = None
+        self.state = self.APPROVED
+        self.save()
 
     ### Logical checks
 
@@ -1621,6 +1648,9 @@ class Project(models.Model):
     def is_active_strict(self):
         return self.is_active and self.state == self.APPROVED
 
+    def is_approved(self):
+        return self.state == self.APPROVED
+
     @property
     def is_alive(self):
         return self.is_active_strict()
@@ -1631,7 +1661,7 @@ class Project(models.Model):
 
     @property
     def is_suspended(self):
-        return False
+        return self.is_deactivated(self.SUSPENDED)
 
     def violates_resource_grants(self):
         return False
@@ -1687,20 +1717,32 @@ class PendingMembershipError(Exception):
     pass
 
 
+class ProjectMembershipManager(ForUpdateManager):
+    pass
+
 class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
     request_date        =   models.DateField(auto_now_add=True)
     project             =   models.ForeignKey(Project)
 
-    REQUESTED   =   0
-    ACCEPTED    =   1
-    SUSPENDED   =   10
-    TERMINATED  =   100
-    REMOVED     =   200
+    REQUESTED           =   0
+    ACCEPTED            =   1
+    # User deactivation
+    USER_SUSPENDED      =   10
+    # Project deactivation
+    PROJECT_DEACTIVATED =   100
 
-    ASSOCIATED_STATES   =   set([REQUESTED, ACCEPTED, SUSPENDED, TERMINATED])
-    ACCEPTED_STATES     =   set([ACCEPTED, SUSPENDED, TERMINATED])
+    REMOVED             =   200
+
+    ASSOCIATED_STATES   =   set([REQUESTED,
+                                 ACCEPTED,
+                                 USER_SUSPENDED,
+                                 PROJECT_DEACTIVATED])
+
+    ACCEPTED_STATES     =   set([ACCEPTED,
+                                 USER_SUSPENDED,
+                                 PROJECT_DEACTIVATED])
 
     state               =   models.IntegerField(default=REQUESTED,
                                                 db_index=True)
@@ -1719,7 +1761,7 @@ class ProjectMembership(models.Model):
     acceptance_date     =   models.DateField(null=True, db_index=True)
     leave_request_date  =   models.DateField(null=True)
 
-    objects     =   ForUpdateManager()
+    objects     =   ProjectMembershipManager()
 
 
     def get_combined_state(self):
@@ -1770,11 +1812,11 @@ class ProjectMembership(models.Model):
         now = datetime.now()
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
-        if self.project.is_active_strict():
+        if self.project.is_approved():
             self.state = self.ACCEPTED
             self.is_pending = True
         else:
-            self.state = self.TERMINATED
+            self.state = self.PROJECT_DEACTIVATED
 
         self.save()
 
@@ -1784,7 +1826,7 @@ class ProjectMembership(models.Model):
             raise AssertionError(m)
 
         state = self.state
-        if state not in [self.ACCEPTED, self.TERMINATED]:
+        if state not in self.ACCEPTED_STATES:
             m = _("%s: attempt to remove in state '%s'") % (self, state)
             raise AssertionError(m)
 
@@ -1869,7 +1911,7 @@ class ProjectMembership(models.Model):
                 self.is_pending = False
             self.save()
 
-        elif state == self.TERMINATED:
+        elif state == self.PROJECT_DEACTIVATED:
             if self.pending_application:
                 m = _("%s: attempt to sync in state '%s' "
                       "with a pending application") % (self, state)
@@ -1893,7 +1935,7 @@ class ProjectMembership(models.Model):
             raise AssertionError(m)
 
         state = self.state
-        if state in [self.ACCEPTED, self.TERMINATED, self.REMOVED]:
+        if state in [self.ACCEPTED, self.PROJECT_DEACTIVATED, self.REMOVED]:
             self.pending_application = None
             self.pending_serial = None
             self.save()
@@ -1933,7 +1975,7 @@ def sync_finish_serials(serials_to_ack=None):
 
 def pre_sync():
     ACCEPTED = ProjectMembership.ACCEPTED
-    TERMINATED = ProjectMembership.TERMINATED
+    PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     psfu = Project.objects.select_for_update()
 
     modified = psfu.modified_projects()
@@ -1945,14 +1987,24 @@ def pre_sync():
             membership.is_pending = True
             membership.save()
 
-    terminating = psfu.terminating_projects()
-    for project in terminating:
+    reactivating = psfu.reactivating_projects()
+    for project in reactivating:
+        objects = project.projectmembership_set.select_for_update()
+        memberships = objects.filter(state=PROJECT_DEACTIVATED)
+        for membership in memberships:
+            membership.is_pending = True
+            membership.state = ACCEPTED
+            membership.save()
+
+    deactivating = psfu.deactivating_projects()
+    for project in deactivating:
         objects = project.projectmembership_set.select_for_update()
 
+        # Note: we keep a user-level deactivation (e.g. USER_SUSPENDED) intact
         memberships = objects.filter(state=ACCEPTED)
         for membership in memberships:
             membership.is_pending = True
-            membership.state = TERMINATED
+            membership.state = PROJECT_DEACTIVATED
             membership.save()
 
 def do_sync():
@@ -1998,6 +2050,7 @@ def do_sync():
 
 def post_sync():
     ACCEPTED = ProjectMembership.ACCEPTED
+    PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     psfu = Project.objects.select_for_update()
 
     modified = psfu.modified_projects()
@@ -2009,8 +2062,17 @@ def post_sync():
             project.is_modified = False
             project.save()
 
-    terminating = psfu.terminating_projects()
-    for project in terminating:
+    reactivating = psfu.reactivating_projects()
+    for project in reactivating:
+        objects = project.projectmembership_set.select_for_update()
+        memberships = list(objects.filter(Q(state=PROJECT_DEACTIVATED) |
+                                          Q(is_pending=True)))
+        if not memberships:
+            project.reactivate()
+            project.save()
+
+    deactivating = psfu.deactivating_projects()
+    for project in deactivating:
         objects = project.projectmembership_set.select_for_update()
 
         memberships = list(objects.filter(Q(state=ACCEPTED) |

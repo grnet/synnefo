@@ -163,6 +163,7 @@ QH_SYNC_ERROR                           =   'Failed to get synchronized with quo
 UNIQUE_PROJECT_NAME_CONSTRAIN_ERR       =   'The project name (as specified in its application\'s definition) must be unique among all active projects.'
 INVALID_PROJECT                         =   'Project %(id)s is invalid.'
 NOT_ALIVE_PROJECT                       =   'Project %(id)s is not alive.'
+NOT_SUSPENDED_PROJECT                   =   'Project %(id)s is not suspended.'
 NOT_ALLOWED                             =   'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED             =   'You have reached the maximum number of members for this Project.'
 MEMBER_JOIN_POLICY_CLOSED               =   'The Project\'s member join policy is closed.'

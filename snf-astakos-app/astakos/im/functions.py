@@ -713,8 +713,19 @@ def terminate(project_id):
 
 def suspend(project_id):
     project = get_project_by_id(project_id)
-    project.last_approval_date = None
-    project.save()
+    checkAlive(project)
+
+    project.suspend()
     trigger_sync()
 
     project_suspension_notify(project)
+
+def resume(project_id):
+    project = get_project_for_update(project_id)
+
+    if not project.is_suspended:
+        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.__dict__
+        raise PermissionDenied(m)
+
+    project.resume()
+    trigger_sync()

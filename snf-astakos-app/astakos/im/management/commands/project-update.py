@@ -41,7 +41,7 @@ from django.http import Http404
 from astakos.im.models import (
     ProjectApplication, Project)
 
-from astakos.im.functions import terminate, suspend
+from astakos.im.functions import terminate, suspend, resume
 
 @transaction.commit_manually
 class Command(BaseCommand):
@@ -54,6 +54,11 @@ class Command(BaseCommand):
                     dest='terminate',
                     default=False,
                     help="Terminate group"),
+        make_option('--resume',
+                    action='store_true',
+                    dest='resume',
+                    default=False,
+                    help="Resume group"),
         make_option('--suspend',
                     action='store_true',
                     dest='suspend',
@@ -73,6 +78,8 @@ class Command(BaseCommand):
             try:
                 if options['terminate']:
                     terminate(id)
+                elif options['resume']:
+                    resume(id)
                 elif options['suspend']:
                     suspend(id)
             except BaseException, e:

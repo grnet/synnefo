@@ -44,11 +44,11 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
-    # try to update the version file
-    from synnefo.util.version import update_version
+    # use devtools to update the version file
+    from devtools.version import update_version
     update_version('synnefo.versions', 'app', HERE)
 except ImportError:
-    pass
+    raise RuntimeError("devtools is a build dependency")
 
 from synnefo.versions.app import __version__
 

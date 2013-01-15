@@ -44,12 +44,13 @@ from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+
 try:
-    # try to update the version file
-    from synnefo.util import version
-    version.update_version('pithos.tools', 'version', HERE)
+    # use devtools to update the version file
+    from devtools.version import update_version
+    update_version('pithos.tools', 'version', HERE)
 except ImportError:
-    pass
+    raise RuntimeError("devtools is a build dependency")
 
 from pithos.tools.version import __version__
 

@@ -10,11 +10,14 @@
 {% block page.body %}
 <h2>
     {% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
-    {% if show_form %}{% else %}
     / <span class="subtitle">
-    {% if update_form %}CONFIRM{% else %}CONFIRM{% endif %}
+    	{% if show_form %}
+    		FORM
+    	{% else %}
+    		{% if update_form %}CONFIRM{% else %}CONFIRM{% endif %}
+    	{% endif %}
     </span>
-    {% endif %}
+     
 </h2>
 
 {% if not show_form %}

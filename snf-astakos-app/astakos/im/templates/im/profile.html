@@ -6,7 +6,7 @@
 <form action={%url edit_profile %} method="post" class="withlabels hidden-submit">{% csrf_token %}
     
     {% with profile_form as form %}
-    {% include "im/form_render.html" %}
+	{% include "im/form_render.html" %}
     {% endwith %}
 
     <div class="form-row submit">
@@ -15,6 +15,12 @@
         <input type="submit" class="submit altcol" value="UPDATE" />
     </div>
 </form>
+
+<form action="" method="post" class="">
+	<input type="hidden" value="">
+	<input type="submit" value="">
+</form>
+
 
 <div class="full-dotted">
     {% include "im/profile_auth_methods.html" %}

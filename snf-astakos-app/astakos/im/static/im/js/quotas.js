@@ -7,7 +7,10 @@ function group_form_show_resources(el){
 			 
 			$(this).appendTo('.visible');
 			$(this).show('slow');
-			$(this).find('input')[0].focus()
+			console.info('lala');
+			$(this).find('input').first().focus();
+			console.info($(this).find('input').first());
+			console.info('boo');
 		}
 	});
 	if ($('.quotas-form .with-info .with-errors input[type="text"]')){
@@ -23,10 +26,15 @@ function bytesToSize2(bytes) {
     return  (bytes / Math.pow(1024, i)).toFixed( 0 ) + sizes[ isNaN( bytes ) ? 0 : i+1 ];
 }
 
+
+function goToByScroll(id){
+	$('html,body').animate({scrollTop: $("#"+id).offset().top},'slow');
+}
+	
 $(document).ready(function() {
 
 	
-	
+	 
 	// ugly fix to transfer data easily 
 	$('.with-info input[name^="is_selected_"]').each(function() {
 		$(this).parents('.form-row').hide();
@@ -296,9 +304,7 @@ $(document).ready(function() {
 		}
 	});  
 	
-	function goToByScroll(id){
-	     $('html,body').animate({scrollTop: $("#"+id).offset().top},'slow');
-	}
+	
 	
 	
 	$('#group_create_form').submit(function(){
@@ -327,8 +333,9 @@ $(document).ready(function() {
 		 
 	});
 
-
+	goToByScroll("top");
 	$('.quotas-form .form-row.with-errors input[type="text"]').first().focus();
+	
 	
 	
 	

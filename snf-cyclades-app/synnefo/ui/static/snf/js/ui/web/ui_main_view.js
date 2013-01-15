@@ -924,7 +924,7 @@
                 if (this.skip_errors) {
                     this.views[view_id] = new cls();
                     $(this.views[view_id]).bind("resize", _.bind(function() {
-                        window.positionFooter();
+                        window.forcePositionFooter();
                         this.multiple_actions_view.fix_position();
                     }, this));
                 } else {

@@ -44,9 +44,9 @@ class PithosBackendPool(ObjectPool):
     def __init__(self, size=None, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None,
-                 queue_exchange=None,
+                 queue_exchange=None, free_versioning=True,
                  quotaholder_url=None, quotaholder_token=None,
-                 free_versioning=True, block_params=None):
+                 block_params=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection

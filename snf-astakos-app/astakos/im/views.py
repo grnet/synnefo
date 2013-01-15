@@ -81,12 +81,13 @@ from astakos.im.models import (
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
 from astakos.im.forms import (
-    LoginForm, InvitationForm, ProfileForm,
+    LoginForm, InvitationForm,
     FeedbackForm, SignApprovalTermsForm,
     EmailChangeForm,
     ProjectApplicationForm, ProjectSortForm,
     AddProjectMembersForm, ProjectSearchForm,
     ProjectMembersSortForm)
+from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from astakos.im.functions import (
     send_feedback, SendMailError,
     logout as auth_logout,
@@ -249,6 +250,19 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     )
 
 
+@require_http_methods(["POST"])
+@valid_astakos_user_required
+def update_token(request):
+    """
+    Update api token view.
+    """
+    user = request.user
+    user.renew_token()
+    user.save()
+    messages.success(request, astakos_messages.TOKEN_UPDATED)
+    return HttpResponseRedirect(reverse('edit_profile'))
+
+
 @require_http_methods(["GET", "POST"])
 @valid_astakos_user_required
 @transaction.commit_manually
@@ -375,19 +389,17 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
         if form.is_valid():
             try:
                 prev_token = request.user.auth_token
-                user = form.save()
-                form = ProfileForm(
-                    instance=user,
-                    session_key=request.session.session_key
-                )
+                user = form.save(request=request)
                 next = restrict_next(
                     request.POST.get('next'),
                     domain=COOKIE_DOMAIN
                 )
-                if next:
-                    return redirect(next)
                 msg = _(astakos_messages.PROFILE_UPDATED)
                 messages.success(request, msg)
+                if next:
+                    return redirect(next)
+                else:
+                    return redirect(reverse('edit_profile'))
             except ValueError, ve:
                 messages.success(request, ve)
     elif request.method == "GET":
@@ -711,7 +723,6 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 
 @require_http_methods(["GET", "POST"])
-@valid_astakos_user_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -721,14 +732,16 @@ def change_email(request, activation_key=None,
     extra_context = extra_context or {}
 
 
+    if not astakos_settings.EMAILCHANGE_ENABLED:
+        raise PermissionDenied
+
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
-            if request.user.is_authenticated() and request.user == user:
+            if request.user.is_authenticated() and request.user == user or not \
+                    request.user.is_authenticated():
                 msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
-                auth_logout(request)
-                response = prepare_response(request, user)
                 transaction.commit()
                 return HttpResponseRedirect(reverse('edit_profile'))
         except ValueError, e:
@@ -757,8 +770,6 @@ def change_email(request, activation_key=None,
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            # delete pending email changes
-            request.user.emailchanges.all().delete()
             ec = form.save(email_template_name, request)
         except SendMailError, e:
             msg = e

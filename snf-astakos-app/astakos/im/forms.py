@@ -64,7 +64,7 @@ from astakos.im.settings import (
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
-    PROJECT_MEMBER_LEAVE_POLICIES)
+    PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
     send_change_email, submit_application, do_accept_membership_checks)
@@ -453,6 +453,7 @@ class ProfileForm(forms.ModelForm):
         return user
 
 
+
 class FeedbackForm(forms.Form):
     """
     Form for writing feedback.
@@ -531,9 +532,12 @@ class EmailChangeForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
-    def save(self, email_template_name, request, commit=True):
+    def save(self, request, email_template_name='registration/email_change_email.txt', commit=True):
         ec = super(EmailChangeForm, self).save(commit=False)
         ec.user = request.user
+        # delete pending email changes
+        request.user.emailchanges.all().delete()
+
         activation_key = hashlib.sha1(
             str(random()) + smart_str(ec.new_email_address))
         ec.activation_key = activation_key.hexdigest()
@@ -910,6 +914,91 @@ class ProjectMembersSortForm(forms.Form):
         required=True
     )
 
+
 class ProjectSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search project', required=False)
+
+
+class ExtendedProfileForm(ProfileForm):
+    """
+    Profile form that combines `email change` and `password change` user
+    actions by propagating submited data to internal EmailChangeForm
+    and ExtendedPasswordChangeForm objects.
+    """
+
+    password_change_form = None
+    email_change_form = None
+
+    password_change = False
+    email_change = False
+
+    extra_forms_fields = {
+        'email': ['new_email_address'],
+        'password': ['old_password', 'new_password1', 'new_password2']
+    }
+
+    change_password = forms.BooleanField(initial=False, required=False)
+    change_email = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ExtendedProfileForm, self).__init__(*args, **kwargs)
+        if self.instance.can_change_password():
+            self.password_change = True
+        else:
+            del self.fields['change_password']
+
+        if EMAILCHANGE_ENABLED:
+            self.email_change = True
+        else:
+            del self.fields['change_email']
+
+
+        self._init_extra_forms()
+        self.save_extra_forms = []
+        self.success_messages = []
+
+    def _init_extra_form_fields(self):
+        if self.email_change:
+            self.fields.update(self.email_change_form.fields)
+            self.fields['new_email_address'].required = False
+
+        if self.password_change:
+            self.fields.update(self.password_change_form.fields)
+            self.fields['old_password'].required = False
+            self.fields['new_password1'].required = False
+            self.fields['new_password2'].required = False
+
+    def _update_extra_form_errors(self):
+        if self.cleaned_data.get('change_password'):
+            self.errors.update(self.password_change_form.errors)
+        if self.cleaned_data.get('change_email'):
+            self.errors.update(self.email_change_form.errors)
+
+    def _init_extra_forms(self):
+        self.email_change_form = EmailChangeForm(self.data)
+        self.password_change_form = ExtendedPasswordChangeForm(user=self.instance,
+                                   data=self.data)
+        self._init_extra_form_fields()
+
+    def is_valid(self):
+        password, email = True, True
+        profile = super(ExtendedProfileForm, self).is_valid()
+        if profile and self.cleaned_data.get('change_password', None):
+            password = self.password_change_form.is_valid()
+            self.save_extra_forms.append('password')
+        if profile and self.cleaned_data.get('change_email'):
+            email = self.email_change_form.is_valid()
+            self.save_extra_forms.append('email')
+
+        if not password or not email:
+            self._update_extra_form_errors()
+
+        return all([profile, password, email])
+
+    def save(self, request, *args, **kwargs):
+        if 'email' in self.save_extra_forms:
+            self.email_change_form.save(request, *args, **kwargs)
+        if 'password' in self.save_extra_forms:
+            self.password_change_form.save(*args, **kwargs)
+        return super(ExtendedProfileForm, self).save(*args, **kwargs)
 

@@ -528,6 +528,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .content .how-it-works .link-33					{ bottom:275px; right:14px; }
 .content .how-it-works .link-42					{ bottom:12px; left:251px; }
 
+/*
 .auth_methods									{ margin-top:2em; padding-bottom:1em; }
 .auth_methods ul								{ margin:1em 0; padding:0; list-style:none outside none; }
 .auth_methods ul li 							{ margin:0 0 1em 0; padding:0; list-style:none outside none; font-size:1.154em; }
@@ -541,8 +542,22 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods .dialog-wrap						{ display:inline; position:relative; }
 .auth_methods .dialog							{ background:#fff; border:1px dashed #ccc; position:absolute; bottom:30px; left:0; padding:15px; width:220px; display:none;}
 .auth_methods .dialog .submit					{ min-width:30px; padding:5px 22px; } 
+*/
 .right-align									{ text-align:right; }			
 
+.auth_methods h3								{ float:left; width:224px; font-size:1.308em;}
+.auth_methods ul								{ overflow:hidden; }
+.auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; }
+.auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
+.auth_methods ul li a:hover img					{ margin-top:-55px; }
+.auth_methods ul li span						{ display:none;  color:#55B577; padding-left:70px; background:url(../images/line-green.jpg) repeat-x left center; margin-left:-4px;}
+.auth_methods ul li span em						{ font-style:normal; background:#fff; padding-left:5px;}
+.auth_methods ul li a:hover + span				{ display:inline; }
+.auth_methods .dialog-wrap						{ color:red; display:none; }
+.auth_methods .dialog-wrap .submit				{ min-width:10px; text-transform:uppercase; margin-right:10px; }
+.auth_methods ul li a.noaction:hover img		{ margin-top:auto; }
+.auth_methods ul li a.noaction:hover			{ cursor:default; }
+.auth_methods ul li a.canremove:hover img		{ margin-top:-57px; }
 
 /* login section */
 .login-section {}

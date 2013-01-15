@@ -271,6 +271,20 @@ class UserProjectApplicationsTable(UserTable):
             status = record.user_status(self.user)
             return record.user_status_display(self.user)
 
+    def render_members_count(self, record, *args, **kwargs):
+        append = ""
+	application = record
+        project = application.get_project()
+        if project is None:
+            append = mark_safe("<i class='tiny'>%s</i>" % (_('pending'),))
+
+        c = project.count_pending_memberships()
+        if c > 0:
+            append = mark_safe("<i class='tiny'> - %d %s</i>"
+                                % (c, _('pending')))
+
+        return mark_safe(str(record.members_count()) + append)
+        
     class Meta:
         model = ProjectApplication
         fields = ('name', 'membership_status', 'issue_date', 'end_date', 'members_count')
@@ -297,9 +311,9 @@ def member_action_extra_context(membership, table, col):
     if membership.state == ProjectMembership.REQUESTED:
         urls = ['astakos.im.views.project_reject_member',
                 'astakos.im.views.project_accept_member']
-        actions = [_('Reject'), _('Approve')]
+        actions = [_('Reject'), _('Accept')]
         prompts = [_('Are you sure you want to reject this member ?'),
-                   _('Are you sure you want to approve this member ?')]
+                   _('Are you sure you want to accept this member ?')]
         confirms = [True, True]
 
     if membership.state == ProjectMembership.ACCEPTED:

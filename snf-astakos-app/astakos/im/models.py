@@ -1676,6 +1676,11 @@ class Project(models.Model):
 
     ### Other
 
+    def count_pending_memberships(self):
+        memb_set = self.projectmembership_set
+        memb_count = memb_set.filter(state=ProjectMembership.REQUESTED).count()
+        return memb_count
+
     @property
     def approved_memberships(self):
         query = ProjectMembership.query_approved()

@@ -453,6 +453,7 @@ class ProfileForm(forms.ModelForm):
         return user
 
 
+
 class FeedbackForm(forms.Form):
     """
     Form for writing feedback.
@@ -910,6 +911,72 @@ class ProjectMembersSortForm(forms.Form):
         required=True
     )
 
+
 class ProjectSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search project', required=False)
+
+
+class ExtendedProfileForm(ProfileForm):
+    """
+    Profile form that combines `email change` and `password change` user
+    actions by propagating submited data to internal EmailChangeForm
+    and ExtendedPasswordChangeForm objects.
+    """
+
+    password_change_form = None
+    email_change_form = None
+    extra_forms_fields = {
+        'email': ['new_email_address'],
+        'password': ['old_password', 'new_password1', 'new_password2']
+    }
+
+    change_password = forms.BooleanField(initial=False, required=False)
+    change_email = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ExtendedProfileForm, self).__init__(*args, **kwargs)
+        self._init_extra_forms()
+        self.save_extra_forms = []
+        self.success_messages = []
+
+    def _init_extra_form_fields(self):
+        self.fields.update(self.email_change_form.fields)
+        self.fields.update(self.password_change_form.fields)
+
+        self.fields['new_email_address'].required = False
+        self.fields['old_password'].required = False
+        self.fields['new_password1'].required = False
+        self.fields['new_password2'].required = False
+
+    def _update_extra_form_errors(self):
+        if self.cleaned_data.get('change_password'):
+            self.errors.update(self.password_change_form.errors)
+        if self.cleaned_data.get('change_email'):
+            self.errors.update(self.email_change_form.errors)
+
+    def _init_extra_forms(self):
+        self.email_change_form = EmailChangeForm(self.data)
+        self.password_change_form = ExtendedPasswordChangeForm(user=self.instance,
+                                   data=self.data)
+        self._init_extra_form_fields()
+
+    def is_valid(self):
+        password, email = True, True
+        profile = super(ExtendedProfileForm, self).is_valid()
+        if profile and self.cleaned_data.get('change_password'):
+            password = self.password_change_form.is_valid()
+        if profile and self.cleaned_data.get('change_email'):
+            email = self.email_change_form.is_valid()
+
+        if not password or not email:
+            self._update_extra_form_errors()
+
+        return all([profile, password, email])
+
+    def save(self, *args, **kwargs):
+        if 'email' in self.save_extra_forms:
+            self.email_change_email.save(*args, **kwargs)
+        if 'password' in self.save_extra_forms:
+            self.password_change_form.save(*args, **kwargs)
+        return super(ExtendedProfileForm, self).save(*args, **kwargs)
 

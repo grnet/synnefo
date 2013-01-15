@@ -81,12 +81,13 @@ from astakos.im.models import (
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
 from astakos.im.forms import (
-    LoginForm, InvitationForm, ProfileForm,
+    LoginForm, InvitationForm,
     FeedbackForm, SignApprovalTermsForm,
     EmailChangeForm,
     ProjectApplicationForm, ProjectSortForm,
     AddProjectMembersForm, ProjectSearchForm,
     ProjectMembersSortForm)
+from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from astakos.im.functions import (
     send_feedback, SendMailError,
     logout as auth_logout,
@@ -384,10 +385,12 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                     request.POST.get('next'),
                     domain=COOKIE_DOMAIN
                 )
-                if next:
-                    return redirect(next)
                 msg = _(astakos_messages.PROFILE_UPDATED)
                 messages.success(request, msg)
+                if next:
+                    return redirect(next)
+                else:
+                    return redirect(reverse('edit_profile'))
             except ValueError, ve:
                 messages.success(request, ve)
     elif request.method == "GET":

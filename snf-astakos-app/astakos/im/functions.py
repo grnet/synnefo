@@ -66,14 +66,14 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    trigger_sync, PendingMembershipError)
+    trigger_sync, PendingMembershipError, get_resource_names)
 from astakos.im.models import submit_application as models_submit_application
 from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
-from astakos.im.endpoints.qh import qh_register_user
+from astakos.im.endpoints.qh import qh_register_user, qh_get_quota
 
 import astakos.im.messages as astakos_messages
 
@@ -377,6 +377,11 @@ class SendNotificationError(SendMailError):
         super(SendNotificationError, self).__init__()
 
 
+def get_quota(user):
+    resources = get_resource_names()
+    return qh_get_quota(user, resources)
+
+
 ### PROJECT VIEWS ###
 
 AUTO_ACCEPT_POLICY = 1
@@ -457,9 +462,17 @@ def get_membership_for_update(project, user):
     except ProjectMembership.DoesNotExist:
         raise IOError(_(astakos_messages.NOT_MEMBERSHIP_REQUEST))
 
-def checkAllowed(project, request_user):
+def checkAllowed(entity, request_user):
+    if isinstance(entity, Project):
+        application = entity.application
+    elif isinstance(entity, ProjectApplication):
+        application = entity
+    else:
+        m = "%s not a Project nor a ProjectApplication" % (entity,)
+        raise ValueError(m)
+
     if request_user and \
-        (not project.application.owner == request_user and \
+        (not application.owner == request_user and \
             not request_user.is_superuser):
         raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
 
@@ -648,19 +661,23 @@ def submit_application(kw, request_user=None):
     application_submit_notify(application)
     return application
 
-def update_application(app_id, **kw):
-    app = ProjectApplication.objects.get(id=app_id)
-    app.id = None
-    app.state = app.PENDING
-    app.precursor_application_id = app_id
-    app.issue_date = datetime.now()
+def cancel_application(application_id, request_user=None):
+    application = get_application_for_update(application_id)
+    checkAllowed(application, request_user)
 
-    resource_policies = kw.pop('resource_policies', None)
-    for k, v in kw.iteritems():
-        setattr(app, k, v)
-    app.save()
-    app.resource_policies = resource_policies
-    return app.id
+    if application.state != ProjectApplication.PENDING:
+        raise PermissionDenied()
+
+    application.cancel()
+
+def dismiss_application(application_id, request_user=None):
+    application = get_application_for_update(application_id)
+    checkAllowed(application, request_user)
+
+    if application.state != ProjectApplication.DENIED:
+        raise PermissionDenied()
+
+    application.dismiss()
 
 def deny_application(application_id):
     application = get_application_for_update(application_id)

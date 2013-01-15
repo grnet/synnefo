@@ -34,23 +34,21 @@
 from django.conf.urls.defaults import include, patterns
 
 # TODO: This only works when in this order.
-api_urlpatterns = patterns('pithos.api.functions',
-                           (r'^$', 'top_demux'),
-                           (
-                               r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
-                           'object_demux'),
-                           (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/?$',
-                            'container_demux'),
-                           (r'^(?P<v_account>.+?)/?$', 'account_demux')
-                           )
+api_urlpatterns = patterns(
+    'pithos.api.functions',
+    (r'^$', 'top_demux'),
+    (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
+    'object_demux'),
+    (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/?$',
+    'container_demux'),
+    (r'^(?P<v_account>.+?)/?$', 'account_demux'))
 
-urlpatterns = patterns('',
-                       (r'^v1(?:$|/)', include(api_urlpatterns)),
-                       (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
-                       (r'^public/(?P<v_public>.+?)/?$',
-                        'pithos.api.public.public_demux'),
-                       (r'^login/?$',
-                        'pithos.api.delegate.delegate_to_login_service'),
-                       (r'^feedback/?$',
-                        'pithos.api.delegate.delegate_to_feedback_service'),
-                       )
+urlpatterns = patterns(
+    '',
+    (r'^v1(?:$|/)', include(api_urlpatterns)),
+    (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
+    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
+    (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'),
+    (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'),
+#    (r'^account/?$', 'pithos.api.delegate.account_username')
+)

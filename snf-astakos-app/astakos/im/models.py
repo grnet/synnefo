@@ -70,8 +70,9 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_resources, qh_add_quota, QuotaLimits,
-    qh_query_serials, qh_ack_serials)
+    register_services, register_resources, qh_add_quota, QuotaLimits,
+    qh_query_serials, qh_ack_serials,
+    QuotaValues, add_quota_values)
 from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
@@ -162,12 +163,16 @@ class Resource(models.Model):
     desc = models.TextField(_('Description'), null=True)
     unit = models.CharField(_('Name'), null=True, max_length=255)
     group = models.CharField(_('Group'), null=True, max_length=255)
+    uplimit = intDecimalField(default=0)
 
     class Meta:
-        unique_together = ("name", "service")
+        unique_together = ("service", "name")
 
     def __str__(self):
         return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
+
+    def full_name(self):
+        return str(self)
 
     @property
     def help_text(self):
@@ -194,19 +199,55 @@ class Resource(models.Model):
         return get_presentation(str(self)).get('verbose_name', '')
 
 
-_default_quota = {}
-def get_default_quota():
-    global _default_quota
-    if _default_quota:
-        return _default_quota
-    for s, data in SERVICES.iteritems():
-        map(
-            lambda d:_default_quota.update(
-                {'%s%s%s' % (s, RESOURCE_SEPARATOR, d.get('name')):d.get('uplimit', 0)}
-            ),
-            data.get('resources', {})
+def load_service_resources():
+    ss = []
+    rs = []
+    for service_name, data in SERVICES.iteritems():
+        url = data.get('url')
+        resources = data.get('resources') or ()
+        service, created = Service.objects.get_or_create(
+            name=service_name,
+            defaults={'url': url}
         )
-    return _default_quota
+        ss.append(service)
+
+        for resource in resources:
+            try:
+                resource_name = resource.pop('name', '')
+                r, created = Resource.objects.get_or_create(
+                    service=service,
+                    name=resource_name,
+                    defaults=resource)
+                rs.append(r)
+
+            except Exception, e:
+                print "Cannot create resource ", resource_name
+                continue
+    register_services(ss)
+    register_resources(rs)
+
+def _quota_values(capacity):
+    return QuotaValues(
+        quantity = 0,
+        capacity = capacity,
+        import_limit = QH_PRACTICALLY_INFINITE,
+        export_limit = QH_PRACTICALLY_INFINITE)
+
+def get_default_quota():
+    _DEFAULT_QUOTA = {}
+    resources = Resource.objects.all()
+    for resource in resources:
+        capacity = resource.uplimit
+        limits = _quota_values(capacity)
+        _DEFAULT_QUOTA[resource.full_name()] = limits
+
+    return _DEFAULT_QUOTA
+
+def get_resource_names():
+    _RESOURCE_NAMES = []
+    resources = Resource.objects.all()
+    _RESOURCE_NAMES = [resource.full_name() for resource in resources]
+    return _RESOURCE_NAMES
 
 
 class AstakosUserManager(UserManager):
@@ -341,24 +382,28 @@ class AstakosUser(User):
         except Invitation.DoesNotExist:
             return None
 
-    @property
-    def quota(self):
-        """Returns a dict with the sum of quota limits per resource"""
-        d = defaultdict(int)
-        default_quota = get_default_quota()
-        d.update(default_quota)
-        for q in self.policies:
-            d[q.resource] = q.capacity or inf
-        for m in self.projectmembership_set.select_related().all():
-            if not m.acceptance_date:
-                continue
-            p = m.project
-            if not p.is_active_strict():
-                continue
-            grants = p.application.projectresourcegrant_set.all()
-            for g in grants:
-                d[str(g.resource)] += g.member_capacity or inf
-        return d
+    def initial_quotas(self):
+        quotas = dict(get_default_quota())
+        for user_quota in self.policies:
+            resource = user_quota.resource.full_name()
+            quotas[resource] = user_quota.quota_values()
+        return quotas
+
+    def all_quotas(self):
+        quotas = self.initial_quotas()
+
+        objects = self.projectmembership_set.select_related()
+        memberships = objects.filter(is_active=True)
+        for membership in memberships:
+            application = membership.application
+
+            grants = application.projectresourcegrant_set.all()
+            for grant in grants:
+                resource = grant.resource.full_name()
+                prev = quotas.get(resource, 0)
+                new = add_quota_values(prev, grant.member_quota_values())
+                quotas[resource] = new
+        return quotas
 
     @property
     def policies(self):
@@ -816,15 +861,22 @@ class ExtendedManager(models.Manager):
 
 class AstakosUserQuota(models.Model):
     objects = ExtendedManager()
-    capacity = models.BigIntegerField(_('Capacity'), null=True)
-    quantity = models.BigIntegerField(_('Quantity'), null=True)
-    export_limit = models.BigIntegerField(_('Export limit'), null=True)
-    import_limit = models.BigIntegerField(_('Import limit'), null=True)
+    capacity = intDecimalField(_('Capacity'))
+    quantity = intDecimalField(_('Quantity'), default=0)
+    export_limit = intDecimalField(_('Export limit'), default=QH_PRACTICALLY_INFINITE)
+    import_limit = intDecimalField(_('Import limit'), default=QH_PRACTICALLY_INFINITE)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 
     class Meta:
         unique_together = ("resource", "user")
+
+    def quota_values():
+        return QuotaValues(
+            quantity = self.quantity,
+            capacity = self.capacity,
+            import_limit = self.import_limit,
+            export_limit = self.export_limit)
 
 
 class ApprovalTerms(models.Model):
@@ -833,7 +885,7 @@ class ApprovalTerms(models.Model):
     """
 
     date = models.DateTimeField(
-        _('Issue date'), db_index=True, default=datetime.now())
+        _('Issue date'), db_index=True, auto_now_add=True)
     location = models.CharField(_('Terms location'), max_length=255)
 
 
@@ -917,7 +969,7 @@ class EmailChange(models.Model):
         help_text=_('Your old email address will be used until you verify your new one.'))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchanges')
-    requested_at = models.DateTimeField(default=datetime.now())
+    requested_at = models.DateTimeField(auto_now_add=True)
     activation_key = models.CharField(
         max_length=40, unique=True, db_index=True)
 
@@ -1200,6 +1252,8 @@ class ProjectApplication(models.Model):
     APPROVED    =    1
     REPLACED    =    2
     DENIED      =    3
+    DISMISSED   =    4
+    CANCELLED   =    5
 
     state                   =   models.IntegerField(default=PENDING)
 
@@ -1209,10 +1263,9 @@ class ProjectApplication(models.Model):
                                     db_index=True)
 
     chain                   =   models.IntegerField()
-    precursor_application   =   models.OneToOneField('ProjectApplication',
-                                                     null=True,
-                                                     blank=True,
-                                                     db_index=True)
+    precursor_application   =   models.ForeignKey('ProjectApplication',
+                                                  null=True,
+                                                  blank=True)
 
     name                    =   models.CharField(max_length=80)
     homepage                =   models.URLField(max_length=255, null=True)
@@ -1228,8 +1281,8 @@ class ProjectApplication(models.Model):
                                     blank=True,
                                     through='ProjectResourceGrant')
     comments                =   models.TextField(null=True, blank=True)
-    issue_date              =   models.DateTimeField(default=datetime.now)
-
+    issue_date              =   models.DateTimeField(auto_now_add=True)
+    response_date           =   models.DateTimeField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
 
@@ -1241,10 +1294,12 @@ class ProjectApplication(models.Model):
 
     # TODO: Move to a more suitable place
     PROJECT_STATE_DISPLAY = {
-        PENDING : _('Pending review'),
-        APPROVED: _('Active'),
-        REPLACED: _('Replaced'),
-        DENIED  : _('Denied')
+        PENDING  : _('Pending review'),
+        APPROVED : _('Active'),
+        REPLACED : _('Replaced'),
+        DENIED   : _('Denied'),
+        DISMISSED: _('Dismissed'),
+        CANCELLED: _('Cancelled')
     }
 
     def get_project(self):
@@ -1344,6 +1399,24 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
+    def cancel(self):
+        if self.state != self.PENDING:
+            m = _("cannot cancel: application '%s' in state '%s'") % (
+                    self.id, self.state)
+            raise AssertionError(m)
+
+        self.state = self.CANCELLED
+        self.save()
+
+    def dismiss(self):
+        if self.state != self.DENIED:
+            m = _("cannot dismiss: application '%s' in state '%s'") % (
+                    self.id, self.state)
+            raise AssertionError(m)
+
+        self.state = self.DISMISSED
+        self.save()
+
     def deny(self):
         if self.state != self.PENDING:
             m = _("cannot deny: application '%s' in state '%s'") % (
@@ -1351,6 +1424,7 @@ class ProjectApplication(models.Model):
             raise AssertionError(m)
 
         self.state = self.DENIED
+        self.response_date = datetime.now()
         self.save()
 
     def approve(self, approval_user=None):
@@ -1374,22 +1448,21 @@ class ProjectApplication(models.Model):
         now = datetime.now()
         project = self._get_project_for_update()
 
-        if new_project_name != project.name:
-            try:
-                conflicting_project = Project.objects.get(
-                                                name=new_project_name,
-                                                is_active=True)
+        try:
+            q = Q(name=new_project_name) & ~Q(state=Project.TERMINATED)
+            conflicting_project = Project.objects.get(q)
+            if (conflicting_project != project):
                 m = (_("cannot approve: project with name '%s' "
                        "already exists (serial: %s)") % (
                         new_project_name, conflicting_project.id))
                 raise PermissionDenied(m) # invalid argument
-            except Project.DoesNotExist:
-                pass
+        except Project.DoesNotExist:
+            pass
 
         new_project = False
         if project is None:
             new_project = True
-            project = Project(id=self.chain, creation_date=now)
+            project = Project(id=self.chain)
 
         project.name = new_project_name
         project.application = self
@@ -1400,6 +1473,7 @@ class ProjectApplication(models.Model):
         project.save()
 
         self.state = self.APPROVED
+        self.response_date = now
         self.save()
 
 def submit_application(**kw):
@@ -1438,6 +1512,13 @@ class ProjectResourceGrant(models.Model):
     class Meta:
         unique_together = ("resource", "project_application")
 
+    def member_quota_values(self):
+        return QuotaValues(
+            quantity = 0,
+            capacity = self.member_capacity,
+            import_limit = self.member_import_limit,
+            export_limit = self.member_export_limit)
+
 
 class ProjectManager(ForUpdateManager):
 
@@ -1474,7 +1555,7 @@ class Project(models.Model):
     deactivation_reason         =   models.CharField(max_length=255, null=True)
     deactivation_date           =   models.DateTimeField(null=True)
 
-    creation_date               =   models.DateTimeField()
+    creation_date               =   models.DateTimeField(auto_now_add=True)
     name                        =   models.CharField(
                                             max_length=80,
                                             db_index=True,
@@ -1609,7 +1690,7 @@ class PendingMembershipError(Exception):
 class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
-    request_date        =   models.DateField(default=datetime.now())
+    request_date        =   models.DateField(auto_now_add=True)
     project             =   models.ForeignKey(Project)
 
     REQUESTED   =   0
@@ -1983,7 +2064,7 @@ class ProjectMembershipHistory(models.Model):
 
     person  =   models.BigIntegerField()
     project =   models.BigIntegerField()
-    date    =   models.DateField(default=datetime.now)
+    date    =   models.DateField(auto_now_add=True)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
 
@@ -2023,9 +2104,8 @@ def astakosuser_post_save(sender, instance, created, **kwargs):
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
 def resource_post_save(sender, instance, created, **kwargs):
-    if not created:
-        return
-    register_resources((instance,))
+    pass
+
 post_save.connect(resource_post_save, sender=Resource)
 
 def renew_token(sender, instance, **kwargs):

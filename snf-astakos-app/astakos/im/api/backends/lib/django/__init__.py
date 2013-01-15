@@ -48,7 +48,7 @@ from astakos.im.api.backends.errors import (
     ItemNotExists, ItemExists, MissingIdentifier, MultipleItemsExist)
 
 from astakos.im.util import reserved_email, model_to_dict
-from astakos.im.endpoints.qh import get_quota
+from astakos.im.functions import get_quota
 try:
     from astakos.im.messages import astakos_messages
 except:

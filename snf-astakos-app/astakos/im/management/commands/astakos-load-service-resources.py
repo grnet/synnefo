@@ -33,38 +33,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.models import Service, Resource
+from astakos.im.models import load_service_resources
 from django.core.management.base import BaseCommand, CommandError
 import logging
 
 logger = logging.getLogger(__name__)
-
-def create_service_resources(service_name, service_dict):
-    url = service_dict.get('url')
-    resources = service_dict.get('resources') or ()
-    service, created = Service.objects.get_or_create(
-        name=service_name,
-        defaults={'url': url}
-    )
-
-    for r in resources:
-        try:
-            resource_name = r.pop('name', '')
-            uplimit = r.pop('uplimit', None)
-            r, created = Resource.objects.get_or_create(
-                service=service,
-                name=resource_name,
-                defaults=r)
-        except Exception, e:
-            print "Cannot create resource ", resource_name
-            continue
 
 class Command(BaseCommand):
     args = ""
     help = "Register service resources"
 
     def handle(self, *args, **options):
-        from astakos.im.settings import SERVICES
-        for k, v in SERVICES.iteritems():
-            create_service_resources(k, v)
-
+        load_service_resources()

@@ -110,8 +110,13 @@ def get_username(
         override_users={}):
     if override_users:
         return uuid
+
+    headers = {}
+    if uuid:
+        headers['X-User-Uuid'] = uuid
+
     try:
-        data = call(token, url, {'X-User-Uuid': uuid})
+        data = call(token, url, headers)
     except Exception, e:
         raise e
     else:
@@ -126,8 +131,12 @@ def get_user_uuid(
         override_users={}):
     if override_users:
         return username
+
+    headers = {}
+    if username:
+        headers['X-User-Username'] = username
     try:
-        data = call(token, url, {'X-User-Username': username})
+        data = call(token, url, headers)
     except Exception, e:
         raise e
     else:

@@ -241,23 +241,18 @@ $(document).ready(function() {
     
     
     
-     $('.auth_methods').find('li>a').click(function(e){
-     	e.preventDefault();
-     	$(this).siblings('.wrap').toggle('slow');
-     	$(this).toggleClass('up');
-     });
-     
-     $('.auth_methods a.red').click(function(e){
-     	e.preventDefault();
-     	$(this).siblings('.dialog').show();
-     })
-     
+    $('.auth_methods .canremove').click( function(e) {
+    	e.preventDefault(e);
+    	$(this).addClass('remove');
+    	$(this).siblings('.dialog-wrap').slideDown('slow');
+    })  
+    
+    $('.auth_methods .no').click( function(e) {
+    	e.preventDefault(e);
+    	$(this).parents('.dialog-wrap').siblings('.canremove').removeClass('remove');
+    	$(this).parents('.dialog-wrap').slideUp('slow');
+    })  
       
-     $('.auth_methods .dialog .no').click( function(e){	 
-     	e.preventDefault();
-     	console.log($(this));
-     	$(this).parents('.dialog').hide();
-     })
     
     setTimeout(function() {
       if ($('input#id_username').val()){ 

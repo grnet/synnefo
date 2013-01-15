@@ -85,6 +85,7 @@ class AuthProvider(object):
     remote_logout_url = None
     logout_from_provider_text = None
     icon_url = None
+    icon_medium_url = None
 
     def get_message(self, msg, **kwargs):
         params = kwargs
@@ -122,6 +123,10 @@ class AuthProvider(object):
         if not self.icon_url:
             self.icon_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons/%s.png' %
                                        self.get_title_display.lower())
+            
+        if not self.icon_medium_url:
+            self.icon_medium_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons-medium/%s.png' %
+                                       self.module.lower())    
 
     def __getattr__(self, key):
         if not key.startswith('get_'):

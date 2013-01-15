@@ -49,6 +49,4 @@ urlpatterns = patterns(
     (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
     (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
     (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'),
-    (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'),
-#    (r'^account/?$', 'pithos.api.delegate.account_username')
-)
+    (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'))

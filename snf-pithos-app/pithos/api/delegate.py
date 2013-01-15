@@ -95,17 +95,3 @@ def delegate_to_feedback_service(request):
         return HttpResponse(status=e.reason)
     return HttpResponse()
 
-def account_username(request):
-    uuid = request.META.get('HTTP_X_USER_UUID')
-    try:
-        username =  get_username(
-            SERVICE_TOKEN, uuid, USER_INFO_URL,
-            AUTHENTICATION_USERS)
-        return HttpResponse(content=username)
-    except Exception, e:
-        try:
-            content, status = e.args
-        except:
-            content, status = e, 500
-
-        return HttpResponse(status=status, content=content)

@@ -523,7 +523,7 @@
         disconnect_nic: function() {
             this.$("a.selected").removeClass("selected");
             this.nic.get_network().remove_nic(this.nic);
-        },
+        }
     })
 
     views.NetworkModelRenameView = views.View.extend({

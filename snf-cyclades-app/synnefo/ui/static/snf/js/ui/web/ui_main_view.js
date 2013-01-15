@@ -568,6 +568,7 @@
             var msg = data.msg, code = data.code, err_obj = data.error;
             error = msg + "<br /><br />" + snf.util.stacktrace().replace("at", "<br /><br />at");
             params = { title: "UI error", extra_details: data.extra };
+            delete data.extra.allow_close;
             params.allow_close = data.extra.allow_close === undefined ? true : data.extra.allow_close;
             this.error_view.show_error("UI", -1, msg, "JS Exception", error, params);
         },
@@ -1094,7 +1095,7 @@
     snf.ui.init = function() {
         if (snf.config.handle_window_exceptions) {
             window.onerror = function(msg, file, line) {
-                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
+                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: true });
             };
         }
         snf.ui.main.load();

@@ -951,7 +951,7 @@ _pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
                                          queue_exchange=BACKEND_QUEUE_EXCHANGE,
                                          quotaholder_url=QUOTAHOLDER_URL,
                                          quotaholder_token=QUOTAHOLDER_TOKEN,
-                                         free_versioning=BACKEND_FREE_VERSIONING)
+                                         free_versioning=BACKEND_FREE_VERSIONING,
                                          block_params=BLOCK_PARAMS)
 
 def get_backend():

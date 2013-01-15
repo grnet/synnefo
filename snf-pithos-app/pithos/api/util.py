@@ -65,7 +65,9 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
-                                 SERVICE_TOKEN, COOKIE_NAME, USER_INFO_URL)
+                                 SERVICE_TOKEN, COOKIE_NAME, USER_INFO_URL,
+                                 RADOS_STORAGE, RADOS_POOL_BLOCKS,
+                                 RADOS_POOL_MAPS)
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
@@ -928,6 +930,14 @@ def simple_list_response(request, l):
 
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 5
+if RADOS_STORAGE:
+    BLOCK_PARAMS = { 'mappool': RADOS_POOL_MAPS,
+                     'blockpool': RADOS_POOL_BLOCKS,
+                   }
+else:
+    BLOCK_PARAMS = { 'mappool': None,
+                     'blockpool': None,
+                   }
 
 
 _pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
@@ -941,7 +951,8 @@ _pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
                                          queue_exchange=BACKEND_QUEUE_EXCHANGE,
                                          quotaholder_url=QUOTAHOLDER_URL,
                                          quotaholder_token=QUOTAHOLDER_TOKEN,
-                                         free_versioning=BACKEND_FREE_VERSIONING)
+                                         free_versioning=BACKEND_FREE_VERSIONING,
+                                         block_params=BLOCK_PARAMS)
 
 
 def get_backend():

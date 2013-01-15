@@ -33,34 +33,65 @@
 
 from binascii import hexlify
 
-from radosmapper import RadosMapper
-from filemapper import FileMapper
+from context_object import RadosObject, file_sync_read_chunks
+from rados import *
 
-class Mapper(object):
+CEPH_CONF_FILE="/etc/ceph/ceph.conf"
+
+class RadosMapper(object):
     """Mapper.
        Required constructor parameters: mappath, namelen.
-       Optional mappool.
     """
 
-    def __init__(self, **params):
-        self.rmap = None
-        try:
-            if params['mappool']:
-                self.rmap = RadosMapper(**params)
-        except:
-            pass
+    mappool = None
+    namelen = None
 
-        self.fmap = FileMapper(**params)
+    def __init__(self, **params):
+        self.params = params
+        self.namelen = params['namelen']
+        mappool = params['mappool']
+
+        rados = Rados(conffile=CEPH_CONF_FILE)
+        rados.connect()
+        if not rados.pool_exists(mappool):
+            rados.create_pool(mappool)
+
+        ioctx = rados.open_ioctx(mappool)
+
+        self.mappool = mappool
+        self.rados = rados
+        self.ioctx = ioctx
+
+    def _get_rear_map(self, maphash, create=0):
+        name = hexlify(maphash)
+        return RadosObject(name, self.ioctx, create)
+
+    def _check_rear_map(self, maphash):
+        name = hexlify(maphash)
+        try:
+            self.ioctx.stat(name)
+            return True
+        except ObjectNotFound:
+            return False
 
     def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        return self.fmap.map_retr(maphash, blkoff, nr)
+        namelen = self.namelen
+        hashes = ()
+
+        with self._get_rear_map(maphash, 0) as rmap:
+            if rmap:
+                hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
+        return hashes
 
     def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""
-        if self.rmap:
-            self.rmap.map_stor(maphash, hashes, blkoff, create)
-        self.fmap.map_stor(maphash, hashes, blkoff, create)
+        namelen = self.namelen
+        if self._check_rear_map(maphash):
+            return
+        with self._get_rear_map(maphash, 1) as rmap:
+            rmap.sync_write_chunks(namelen, blkoff, hashes, None)
+

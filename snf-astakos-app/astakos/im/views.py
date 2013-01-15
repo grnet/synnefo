@@ -710,7 +710,6 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 
 @require_http_methods(["GET", "POST"])
-@valid_astakos_user_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -723,11 +722,10 @@ def change_email(request, activation_key=None,
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
-            if request.user.is_authenticated() and request.user == user:
+            if request.user.is_authenticated() and request.user == user or not \
+                    request.user.is_authenticated():
                 msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
-                auth_logout(request)
-                response = prepare_response(request, user)
                 transaction.commit()
                 return HttpResponseRedirect(reverse('edit_profile'))
         except ValueError, e:
@@ -756,8 +754,6 @@ def change_email(request, activation_key=None,
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            # delete pending email changes
-            request.user.emailchanges.all().delete()
             ec = form.save(email_template_name, request)
         except SendMailError, e:
             msg = e

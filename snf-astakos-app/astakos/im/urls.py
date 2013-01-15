@@ -43,6 +43,7 @@ urlpatterns = patterns(
     'astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
     url(r'^login/?$', 'index', {}, name='login'),
+    url(r'^profile/update_token?$', 'update_token', {}, name='update_token'),
     url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
     url(r'^feedback/?$', 'feedback', {}, name='feedback'),
     url(r'^signup/?$', 'signup', {'on_success': 'index', 'extra_context': {'login_form': LoginForm()}}, name='signup'),

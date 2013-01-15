@@ -250,6 +250,19 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     )
 
 
+@require_http_methods(["POST"])
+@valid_astakos_user_required
+def update_token(request):
+    """
+    Update api token view.
+    """
+    user = request.user
+    user.renew_token()
+    user.save()
+    messages.success(request, astakos_messages.TOKEN_UPDATED)
+    return HttpResponseRedirect(reverse('edit_profile'))
+
+
 @require_http_methods(["GET", "POST"])
 @valid_astakos_user_required
 @transaction.commit_manually

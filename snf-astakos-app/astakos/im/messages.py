@@ -54,6 +54,7 @@ ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activatio
 
 ACCOUNT_UNKNOWN                         =   'It seems there is no account with those .'
 TOKEN_UNKNOWN                           =   'There is no user matching this token.'
+TOKEN_UPDATED                           =   'Your ~okeanos account token was updated.'
 
 PROFILE_UPDATED                         =   'Your profile has been updated successfully.'
 FEEDBACK_SENT                           =   'Thank you for your feedback. We will process it carefully.'

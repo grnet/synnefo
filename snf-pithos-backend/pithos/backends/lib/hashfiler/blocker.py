@@ -34,7 +34,6 @@
 from hashlib import new as newhasher
 from binascii import hexlify
 
-from radosblocker import RadosBlocker
 from fileblocker import FileBlocker
 
 def intersect(a, b):
@@ -56,6 +55,7 @@ class Blocker(object):
         self.rblocker = None
         try:
             if params['blockpool']:
+                from radosblocker import RadosBlocker
                 self.rblocker = RadosBlocker(**params)
         except:
             pass

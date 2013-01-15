@@ -33,7 +33,6 @@
 
 from binascii import hexlify
 
-from radosmapper import RadosMapper
 from filemapper import FileMapper
 
 class Mapper(object):
@@ -46,6 +45,7 @@ class Mapper(object):
         self.rmap = None
         try:
             if params['mappool']:
+                from radosmapper import RadosMapper
                 self.rmap = RadosMapper(**params)
         except:
             pass

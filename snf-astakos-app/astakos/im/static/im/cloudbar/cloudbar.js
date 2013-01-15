@@ -105,6 +105,7 @@ $(document).ready(function(){
     bar.append(profile).append(services);
     
 
+    root.css('border-top', 'none');
     root.prepend(bar);
     var firstlink = profile.find("ul li:first-child a").attr("href");
     profile.find(".user > a").attr("href", firstlink);

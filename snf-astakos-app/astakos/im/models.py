@@ -871,7 +871,7 @@ class AstakosUserQuota(models.Model):
     class Meta:
         unique_together = ("resource", "user")
 
-    def quota_values():
+    def quota_values(self):
         return QuotaValues(
             quantity = self.quantity,
             capacity = self.capacity,

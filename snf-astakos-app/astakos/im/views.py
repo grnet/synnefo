@@ -719,6 +719,9 @@ def change_email(request, activation_key=None,
     extra_context = extra_context or {}
 
 
+    if not astakos_settings.EMAILCHANGE_ENABLED:
+        raise PermissionDenied
+
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)

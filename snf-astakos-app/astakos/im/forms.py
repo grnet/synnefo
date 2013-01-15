@@ -64,7 +64,7 @@ from astakos.im.settings import (
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
-    PROJECT_MEMBER_LEAVE_POLICIES)
+    PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
     send_change_email, submit_application, do_accept_membership_checks)
@@ -928,7 +928,10 @@ class ExtendedProfileForm(ProfileForm):
 
     password_change_form = None
     email_change_form = None
+
     password_change = False
+    email_change = False
+
     extra_forms_fields = {
         'email': ['new_email_address'],
         'password': ['old_password', 'new_password1', 'new_password2']
@@ -944,13 +947,20 @@ class ExtendedProfileForm(ProfileForm):
         else:
             del self.fields['change_password']
 
+        if EMAILCHANGE_ENABLED:
+            self.email_change = True
+        else:
+            del self.fields['change_email']
+
+
         self._init_extra_forms()
         self.save_extra_forms = []
         self.success_messages = []
 
     def _init_extra_form_fields(self):
-        self.fields.update(self.email_change_form.fields)
-        self.fields['new_email_address'].required = False
+        if self.email_change:
+            self.fields.update(self.email_change_form.fields)
+            self.fields['new_email_address'].required = False
 
         if self.password_change:
             self.fields.update(self.password_change_form.fields)

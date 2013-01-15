@@ -232,7 +232,6 @@ class ModularBackend(BaseBackend):
             external_quota=None):
         """Return a dictionary with the account metadata for the domain."""
 
-        external_quota = external_quota or {}
         logger.debug(
             "get_account_meta: %s %s %s %s", user, account, domain, until)
         path, node = self._lookup_account(account, user == account)
@@ -265,6 +264,7 @@ class ModularBackend(BaseBackend):
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
             if self.using_external_quotaholder:
+                external_quota = external_quota or {}
                 meta['bytes'] = external_quota.get('currValue', 0)
         meta.update({'modified': modified})
         return meta
@@ -322,6 +322,7 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_account(account, True)
         policy = self._get_policy(node)
         if self.using_external_quotaholder:
+            external_quota = external_quota or {}
             policy['quota'] = external_quota.get('maxValue', 0)
         return policy
 

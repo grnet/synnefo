@@ -532,9 +532,12 @@ class EmailChangeForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
-    def save(self, email_template_name, request, commit=True):
+    def save(self, request, email_template_name='registration/email_change_email.txt', commit=True):
         ec = super(EmailChangeForm, self).save(commit=False)
         ec.user = request.user
+        # delete pending email changes
+        request.user.emailchanges.all().delete()
+
         activation_key = hashlib.sha1(
             str(random()) + smart_str(ec.new_email_address))
         ec.activation_key = activation_key.hexdigest()
@@ -925,6 +928,7 @@ class ExtendedProfileForm(ProfileForm):
 
     password_change_form = None
     email_change_form = None
+    password_change = False
     extra_forms_fields = {
         'email': ['new_email_address'],
         'password': ['old_password', 'new_password1', 'new_password2']
@@ -935,18 +939,24 @@ class ExtendedProfileForm(ProfileForm):
 
     def __init__(self, *args, **kwargs):
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)
+        if self.instance.can_change_password():
+            self.password_change = True
+        else:
+            del self.fields['change_password']
+
         self._init_extra_forms()
         self.save_extra_forms = []
         self.success_messages = []
 
     def _init_extra_form_fields(self):
         self.fields.update(self.email_change_form.fields)
-        self.fields.update(self.password_change_form.fields)
-
         self.fields['new_email_address'].required = False
-        self.fields['old_password'].required = False
-        self.fields['new_password1'].required = False
-        self.fields['new_password2'].required = False
+
+        if self.password_change:
+            self.fields.update(self.password_change_form.fields)
+            self.fields['old_password'].required = False
+            self.fields['new_password1'].required = False
+            self.fields['new_password2'].required = False
 
     def _update_extra_form_errors(self):
         if self.cleaned_data.get('change_password'):
@@ -963,19 +973,21 @@ class ExtendedProfileForm(ProfileForm):
     def is_valid(self):
         password, email = True, True
         profile = super(ExtendedProfileForm, self).is_valid()
-        if profile and self.cleaned_data.get('change_password'):
+        if profile and self.cleaned_data.get('change_password', None):
             password = self.password_change_form.is_valid()
+            self.save_extra_forms.append('password')
         if profile and self.cleaned_data.get('change_email'):
             email = self.email_change_form.is_valid()
+            self.save_extra_forms.append('email')
 
         if not password or not email:
             self._update_extra_form_errors()
 
         return all([profile, password, email])
 
-    def save(self, *args, **kwargs):
+    def save(self, request, *args, **kwargs):
         if 'email' in self.save_extra_forms:
-            self.email_change_email.save(*args, **kwargs)
+            self.email_change_form.save(request, *args, **kwargs)
         if 'password' in self.save_extra_forms:
             self.password_change_form.save(*args, **kwargs)
         return super(ExtendedProfileForm, self).save(*args, **kwargs)

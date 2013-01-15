@@ -376,11 +376,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
         if form.is_valid():
             try:
                 prev_token = request.user.auth_token
-                user = form.save()
-                form = ProfileForm(
-                    instance=user,
-                    session_key=request.session.session_key
-                )
+                user = form.save(request=request)
                 next = restrict_next(
                     request.POST.get('next'),
                     domain=COOKIE_DOMAIN

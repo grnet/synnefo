@@ -1,5 +1,38 @@
 #!/bin/bash
 
+# Copyright 2012 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 parse_git_branch()
 {
     git branch 2> /dev/null | grep '^*' | sed 's/^*\ //g'
@@ -51,6 +84,11 @@ LOCALBRANCH="$CURRENT_BRANCH"
 LOCALDEBIAN=$1
 DEBIANBRANCH=${LOCALDEBIAN:- origin/$REMOTEDEBIAN}
 
+MODIFIED=$(git status --short | grep -v "??")
+if [[ -n $MODIFIED ]]; then
+        echo "error: Repository is dirty. Commit your local changes."
+        exit 1
+fi
 
 
 set -e
@@ -93,15 +131,20 @@ snap=false
 mrgextra=-m
 dchextra=-R
 mrgmsg="Merge branch '$REMOTEUPSTREAM' into $REMOTEDEBIAN"
-dialog --yesno "Create Snapshot?" 5 20 && snap=true && dchextra=-S && mrgextra= && mrgmsg=
+dialog --yesno "Create Snapshot?" 5 20 && snap=true && GITFLOW_BUILD_MODE=snapshot && dchextra=-S && mrgextra= && mrgmsg=
 
 # merge local branch into tmp branch with a nice commit message,
 # so it can be pushed as is to upstream debian
-git merge --no-edit $mrgextra ${mrgextra:+"$mrgmsg"} $LOCALBRANCH
+GIT_MERGE_AUTOEDIT=no
+git merge $mrgextra ${mrgextra:+"$mrgmsg"} $LOCALBRANCH
 
 # auto edit Debian changelog depending on Snapshot or Release mode
 export EDITOR=/usr/bin/vim
-git-dch --debian-branch=$TMPDEBIAN --git-author --ignore-regex=".*" --multimaint-merge --since=HEAD $dchextra
+
+# use the devtools to determine Debian version
+export GITFLOW_BUILD_MODE
+version=$(devtools/version.py debian)
+git-dch --debian-branch=$TMPDEBIAN --git-author --ignore-regex=".*" --multimaint-merge --since=HEAD -N $version
 git add debian/changelog
 
 # get version from the changelog

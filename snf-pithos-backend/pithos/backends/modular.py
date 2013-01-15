@@ -81,6 +81,7 @@ DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_PATH = 'data/'
 DEFAULT_BLOCK_UMASK = 0o022
 #DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
+DEFAULT_BLOCK_PARAMS = { 'mappool': None, 'blockpool': None }
 #DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
 #DEFAULT_QUEUE_EXCHANGE = 'pithos'
 
@@ -145,16 +146,19 @@ class ModularBackend(BaseBackend):
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
                  quotaholder_url=None, quotaholder_token=None,
-                 free_versioning=True):
+                 free_versioning=True, block_params=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
         block_path = block_path or DEFAULT_BLOCK_PATH
         block_umask = block_umask or DEFAULT_BLOCK_UMASK
+        block_params = block_params or DEFAULT_BLOCK_PARAMS
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
+
+        self.default_policy = {'quota': DEFAULT_QUOTA, 'versioning': DEFAULT_VERSIONING}
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
-        
+
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024  # 4MB
         self.free_versioning = free_versioning
@@ -179,16 +183,18 @@ class ModularBackend(BaseBackend):
             setattr(self, x, getattr(self.db_module, x))
 
         self.block_module = load_module(block_module)
+        self.block_params = block_params
         params = {'path': block_path,
                   'block_size': self.block_size,
                   'hash_algorithm': self.hash_algorithm,
                   'umask': block_umask}
+        params.update(self.block_params)
         self.store = self.block_module.Store(**params)
 
         if queue_module and queue_hosts:
             self.queue_module = load_module(queue_module)
             params = {'hosts': queue_hosts,
-            		  'exchange': queue_exchange,
+                      'exchange': queue_exchange,
                       'client_id': QUEUE_CLIENT_ID}
             self.queue = self.queue_module.Queue(**params)
         else:
@@ -555,10 +561,10 @@ class ModularBackend(BaseBackend):
                 del_size = self._apply_versioning(
                     account, container, src_version_id)
                 self._report_size_change(
-                	user, account, -del_size, {
-                		'action': 'object delete',
-                		'path': path,
-                     	'versions': ','.join([str(dest_version_id)])
+                        user, account, -del_size, {
+                                'action': 'object delete',
+                                'path': path,
+                        'versions': ','.join([str(dest_version_id)])
                      }
                 )
                 self._report_object_change(
@@ -1282,14 +1288,14 @@ class ModularBackend(BaseBackend):
 
         if not self.using_external_quotaholder:
             return
-        
+
         serial = self.quotaholder.issue_commission(
                 context     =   {},
                 target      =   user.uuid,
                 key         =   '1',
                 clientkey   =   'pithos',
                 ownerkey    =   '',
-		        name        =   details['path'] if 'path' in details else '',
+                        name        =   details['path'] if 'path' in details else '',
                 provisions  =   (('pithos+', 'pithos+.diskspace', size),)
         )
         self.serials.append(serial)

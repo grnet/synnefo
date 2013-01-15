@@ -43,7 +43,7 @@ class PoolManager(object):
 
     def add_padding(self, pool_size):
         bits = find_padding(pool_size)
-        self.available.extend([AVAILABLE] * bits)
+        self.available.extend([UNAVAILABLE] * bits)
         self.reserved.extend([UNAVAILABLE] * bits)
 
     def cut_padding(self, pool_size):
@@ -109,7 +109,7 @@ class PoolManager(object):
         return self.pool.count(AVAILABLE)
 
     def count_unavailable(self):
-        return self.pool.count(UNAVAILABLE)
+        return self.pool_size - self.count_available()
 
     def count_reserved(self):
         return self.reserved[:self.pool_size].count(UNAVAILABLE)

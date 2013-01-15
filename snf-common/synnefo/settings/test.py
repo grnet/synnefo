@@ -10,5 +10,5 @@ DATABASES = {
     }
 }
 
-LOGGING['handlers']['console']['level'] = 'WARNING'
+LOGGING_SETUP['handlers']['console']['level'] = 'WARNING'
 LOGIN_URL = 'http://host:port/'

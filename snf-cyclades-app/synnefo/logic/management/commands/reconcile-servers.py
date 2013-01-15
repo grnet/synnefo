@@ -177,7 +177,7 @@ class Command(BaseCommand):
 
             unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
             if len(unsynced_nics) > 0:
-                print >> sys.stderr, "The NICs of servers with the folloing IDs "\
+                print >> sys.stderr, "The NICs of servers with the following IDs "\
                                      "are unsynced:"
                 for id, nics in unsynced_nics.items():
                     print ''.ljust(2) + '%6d:' % id

@@ -76,7 +76,7 @@ class AuthProvider(object):
     module = None
     module_active = False
     module_enabled = False
-    one_per_user = False
+    one_per_user = True
     login_prompt = _('Login using ')
     primary_login_prompt = _('Login using ')
     login_message = None

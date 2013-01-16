@@ -1761,7 +1761,7 @@ class ProjectMembership(models.Model):
     pending_application =   models.ForeignKey(
                                 ProjectApplication,
                                 null=True,
-                                related_name='pending_memebrships')
+                                related_name='pending_memberships')
     pending_serial      =   models.BigIntegerField(null=True, db_index=True)
 
     acceptance_date     =   models.DateField(null=True, db_index=True)

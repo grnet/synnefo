@@ -123,10 +123,10 @@ class AuthProvider(object):
         if not self.icon_url:
             self.icon_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons/%s.png' %
                                        self.get_title_display.lower())
-            
+
         if not self.icon_medium_url:
             self.icon_medium_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons-medium/%s.png' %
-                                       self.module.lower())    
+                                       self.module.lower())
 
 
     def __getattr__(self, key):

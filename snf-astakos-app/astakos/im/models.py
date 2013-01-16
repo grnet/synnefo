@@ -1754,8 +1754,14 @@ class ProjectMembership(models.Model):
                                                 db_index=True)
     is_pending          =   models.BooleanField(default=False, db_index=True)
     is_active           =   models.BooleanField(default=False, db_index=True)
-    application         =   models.ForeignKey(ProjectApplication, null=True)
-    pending_application =   models.ForeignKey(ProjectApplication, null=True)
+    application         =   models.ForeignKey(
+                                ProjectApplication,
+                                null=True,
+                                related_name='memberships')
+    pending_application =   models.ForeignKey(
+                                ProjectApplication,
+                                null=True,
+                                related_name='pending_memebrships')
     pending_serial      =   models.BigIntegerField(null=True, db_index=True)
 
     acceptance_date     =   models.DateField(null=True, db_index=True)

@@ -82,7 +82,8 @@ def get_version_from_describe(describe):
     version = version.lstrip('v')
     return version
 
-def update_version(module, name='version', root="."):
+
+def update_version_old(module, name='version', root="."):
     """
     Helper util to generate/replace a version.py file containing version
     information retrieved from get_version_from_describe as a submodule of passed `module`
@@ -106,3 +107,15 @@ __version_vcs_info__ = %(vcs_info)s
     module_file.write(content)
     module_file.close()
 
+
+def update_version(module, name='version', root='.'):
+    try:
+        from devflow import versioning
+        return versioning.update_version(module, name, root)
+    except ImportError:
+        import sys
+        paths = [root] + module.split(".") + ["%s.py" % name]
+        module_filename = os.path.join(*paths)
+        sys.stdout.write("WARNING: Can not update version because `devflow` is"
+                         " not installed. Please make sure to manually"
+                         " update version file: '%s'\n" % module_filename)

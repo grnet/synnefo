@@ -44,11 +44,11 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
-    # use devflow to update the version file
-    from devflow.versioning import update_version
+    # try to update the version file
+    from synnefo.util.version import update_version
     update_version('synnefo.versions', 'webproject', HERE)
 except ImportError:
-    raise RuntimeError("devflow is a build dependency")
+    pass
 
 from synnefo.versions.webproject import __version__
 

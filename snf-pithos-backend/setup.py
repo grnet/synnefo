@@ -42,13 +42,12 @@ from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
 try:
-    # use devflow to update the version file
-    from devflow.versioning import update_version
-    update_version('pithos.backends', 'version', HERE)
+    # try to update the version file
+    from synnefo.util import version
+    version.update_version('pithos.backends', 'version', HERE)
 except ImportError:
-    raise RuntimeError("devflow is a build dependency")
+    pass
 
 from pithos.backends.version import __version__
 

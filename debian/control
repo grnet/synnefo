@@ -112,3 +112,10 @@ XB-Python-Version: ${python:Versions}
 Description: Synnefo generic additional tools (burnin)
  This package contains additional tools that supplement a Synnefo
  installation. Currently, this package contains only the burnin tool.
+
+Package: snf-quotaholder-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: TODO

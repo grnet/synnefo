@@ -1291,11 +1291,11 @@ class ModularBackend(BaseBackend):
 
         serial = self.quotaholder.issue_commission(
                 context     =   {},
-                target      =   user.uuid,
+                target      =   account,
                 key         =   '1',
                 clientkey   =   'pithos',
                 ownerkey    =   '',
-                        name        =   details['path'] if 'path' in details else '',
+                name        =   details['path'] if 'path' in details else '',
                 provisions  =   (('pithos+', 'pithos+.diskspace', size),)
         )
         self.serials.append(serial)

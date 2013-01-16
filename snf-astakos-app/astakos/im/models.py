@@ -1255,7 +1255,8 @@ class ProjectApplication(models.Model):
     DISMISSED   =    4
     CANCELLED   =    5
 
-    state                   =   models.IntegerField(default=PENDING)
+    state                   =   models.IntegerField(default=PENDING,
+                                                    db_index=True)
 
     owner                   =   models.ForeignKey(
                                     AstakosUser,

@@ -1073,7 +1073,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                     request.user_uniq = User(request.user_uniq)
                     request.user_uniq.uuid = request.user.get('uuid')
                     request.user_usage = get_pithos_usage(
-                        request.user.get('usage'))
+                        request.user.get('usage', []))
                 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:

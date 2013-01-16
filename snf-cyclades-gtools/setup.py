@@ -40,11 +40,11 @@ from setuptools import setup
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
+    # use devflow to update the version file
+    from devflow.versioning import update_version
     update_version('synnefo.versions', 'ganeti', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    raise RuntimeError("devflow is a build dependency")
 
 from synnefo.versions.ganeti import __version__
 

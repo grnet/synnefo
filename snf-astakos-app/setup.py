@@ -46,11 +46,11 @@ from astakos import get_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
+    # use devflow to update the version file
+    from devflow.versioning import update_version
     update_version('astakos', 'version', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    raise RuntimeError("devflow is a build dependency")
 
 from astakos.version import __version__
 

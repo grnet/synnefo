@@ -940,22 +940,23 @@ class ExtendedProfileForm(ProfileForm):
     fields = ('email')
     change_password = forms.BooleanField(initial=False, required=False)
     change_email = forms.BooleanField(initial=False, required=False)
-    
-    fields_list = [
-            'email',
-            'new_email_address',
-            'first_name',
-            'last_name', 
-            'auth_token',
-            'auth_token_expires',
-            'old_password',
-            'new_password1',
-            'new_password2',
-            'change_email',
-            'change_password',
-            ]
+
 
     def __init__(self, *args, **kwargs):
+        self.fields_list = [
+                'email',
+                'new_email_address',
+                'first_name',
+                'last_name',
+                'auth_token',
+                'auth_token_expires',
+                'old_password',
+                'new_password1',
+                'new_password2',
+                'change_email',
+                'change_password',
+        ]
+
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)
         if self.instance.can_change_password():
             self.password_change = True
@@ -966,7 +967,7 @@ class ExtendedProfileForm(ProfileForm):
             self.fields_list.remove('change_password')
             del self.fields['change_password']
 
-         
+
         if EMAILCHANGE_ENABLED:
             self.email_change = True
         else:
@@ -979,8 +980,8 @@ class ExtendedProfileForm(ProfileForm):
         self.save_extra_forms = []
         self.success_messages = []
         self.fields.keyOrder = self.fields_list
-        
-         
+
+
     def _init_extra_form_fields(self):
         if self.email_change:
             self.fields.update(self.email_change_form.fields)

@@ -1924,6 +1924,7 @@ class ProjectMembership(models.Model):
                 raise AssertionError(m)
 
             self.application = None
+            self.is_active = False
             self.pending_serial = None
             self.is_pending = False
             self.save()

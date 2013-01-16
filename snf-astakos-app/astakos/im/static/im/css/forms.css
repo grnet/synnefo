@@ -200,3 +200,12 @@ form.submit-inline 								{ position:relative }
 form.submit-inline .form-row.submit				{ position:absolute; left:578px; top:0; margin:0; }
 form.submit-inline .form-row input				{ margin:0 20px 0 0 ; }
 form.signup .back								{ float:right; margin:15px 70px 0 0 ; height:43px; line-height:43px }
+
+
+/* styles for complex profile form */
+form .form-following p span.extra-img				{ background:url(../images/symbols3.png) 0 -161px; z-index:8; }
+form .form-following p:hover span.extra-img			{ background-position:0 0px; }
+form .form-following p:hover span.extra-img:hover	{ background-position:0 -54px; cursor:pointer; }
+form .form-following.open p span.extra-img				{ background-position: -33px -161px; }
+form .form-following.open p:hover span.extra-img			{ background-position: -33px 0px; }
+form .form-following.open p:hover span.extra-img:hover	{ background-position: -33px -54px; cursor:pointer; }

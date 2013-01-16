@@ -558,7 +558,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul li a.noaction:hover img		{ margin-top:auto; }
 .auth_methods ul li a.noaction:hover			{ cursor:default; }
 .auth_methods ul li a.canremove:hover img		{ margin-top:-57px; }
-
+ 
 /* login section */
 .login-section {}
 .main-login-method 								{ margin-bottom: 20px;}

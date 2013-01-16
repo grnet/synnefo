@@ -128,6 +128,7 @@ class AuthProvider(object):
             self.icon_medium_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons-medium/%s.png' %
                                        self.module.lower())    
 
+
     def __getattr__(self, key):
         if not key.startswith('get_'):
             return super(AuthProvider, self).__getattribute__(key)

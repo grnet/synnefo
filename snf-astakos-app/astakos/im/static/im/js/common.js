@@ -263,6 +263,80 @@ $(document).ready(function() {
       }
 	}, 100);
 	
+	
+	/* complex form js */
+	
+	// Intresting divs
+	
+	emailDiv = $('#id_email').parents('.form-row');
+	newEmailDiv = $('#id_new_email_address').parents('.form-row');
+	oldPasswordDiv = $('#id_old_password').parents('.form-row');
+	newPassword1Div = $('#id_new_password1').parents('.form-row');
+	newPassword2Div = $('#id_new_password2').parents('.form-row');
+	emailCheck = $('#id_change_email').parents('.form-row');
+	passwordCheck = $('#id_change_password').parents('.form-row');
+	
+	if ( newEmailDiv.length>0  ){ 
+		emailDiv.addClass('form-following');
+	}
+	
+	oldPasswordDiv.addClass('form-following');
+	
+	
+	// Intresting img spans
+	
+	emailDiv.find('span.extra-img').attr('id','email-span');
+	oldPasswordDiv.find('span.extra-img').attr('id','password-span');
+	
+	// Default hidden fields
+	
+	newEmailDiv.hide();
+	newPassword1Div.hide();
+	newPassword2Div.hide();
+	emailCheck.hide();
+	passwordCheck.hide();
+	
+	
+	
+	newEmailDiv.addClass('email-span');
+	newPassword1Div.addClass('password-span');
+	newPassword2Div.addClass('password-span');
+	
+	// Email, Password forms
+	
+	$('.form-following .extra-img').click(function(e){
+		$(this).parents('.form-row').toggleClass('open');
+		id = $(this).attr('id');
+		$('.form-row').each(function() {
+			if( $(this).hasClass(id) ) {
+				$(this).toggle();
+			}
+		}); 
+	 
+	 	if ( !($(this).parents('.form-row').hasClass('open')) ){
+	 		$('.form-row').each(function() {
+				if( $(this).hasClass(id) ) {
+					console.info($(this).find('input[type="text"]'));
+					$(this).find('input').val('');
+				}
+			}); 
+	 	}
+	});
+	
+	
+	$('#email-span').click(function(){ 
+       var $checkbox = $('input#id_change_email:checkbox');
+       $checkbox.attr('checked', !$checkbox.attr('checked'));
+ 	});
+	
+	
+	$('#password-span').click(function(){ 
+       var $checkbox = $('input#id_change_password:checkbox');
+       $checkbox.attr('checked', !$checkbox.attr('checked'));
+ 	});
+	
+	/* end of complex form js */
+	
 	 
 	    
 });

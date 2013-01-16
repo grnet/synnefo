@@ -1,5 +1,6 @@
 <div class="auth_methods">
     <h2>LOGIN METHODS</h2>
+ 
     <div class="assigned">
         <h3>ENABLED</h3>
         <ul>
@@ -13,11 +14,13 @@
                       	<div class="dialog-wrap">
                         	 
                           	<p>Are you sure you want to remove  {{ provider.get_title_display }} from your Authentication methods? </p>
+ 
 							<p>
 								<a href="{% url remove_auth_provider provider.pk %}" class="submit">Yes</a>
 								<a href="#" class="no submit">No</a>
 							</p>
                         </div>	
+ 
                       
                   {% else %}
                   	<a href="javascript:void(0);" class="noaction">
@@ -27,6 +30,7 @@
                       	 
                       
                          
+ 
                   {% endif %}
         	</li>
         	{% empty %}

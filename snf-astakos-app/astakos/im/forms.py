@@ -937,8 +937,23 @@ class ExtendedProfileForm(ProfileForm):
         'password': ['old_password', 'new_password1', 'new_password2']
     }
 
+    fields = ('email')
     change_password = forms.BooleanField(initial=False, required=False)
     change_email = forms.BooleanField(initial=False, required=False)
+    
+    fields_list = [
+            'email',
+            'new_email_address',
+            'first_name',
+            'last_name', 
+            'auth_token',
+            'auth_token_expires',
+            'old_password',
+            'new_password1',
+            'new_password2',
+            'change_email',
+            'change_password',
+            ]
 
     def __init__(self, *args, **kwargs):
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)
@@ -950,13 +965,16 @@ class ExtendedProfileForm(ProfileForm):
         if EMAILCHANGE_ENABLED:
             self.email_change = True
         else:
+            self.fields_list.remove('new_email_address')
             del self.fields['change_email']
 
 
         self._init_extra_forms()
         self.save_extra_forms = []
         self.success_messages = []
-
+        self.fields.keyOrder = self.fields_list
+        
+         
     def _init_extra_form_fields(self):
         if self.email_change:
             self.fields.update(self.email_change_form.fields)

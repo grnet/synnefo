@@ -1301,7 +1301,7 @@ class ProjectApplication(models.Model):
         return "%s applied by %s" % (self.name, self.applicant)
 
     # TODO: Move to a more suitable place
-    PROJECT_STATE_DISPLAY = {
+    APPLICATION_STATE_DISPLAY = {
         PENDING  : _('Pending review'),
         APPROVED : _('Active'),
         REPLACED : _('Replaced'),
@@ -1318,7 +1318,7 @@ class ProjectApplication(models.Model):
             return None
 
     def state_display(self):
-        return self.PROJECT_STATE_DISPLAY.get(self.state, _('Unknown'))
+        return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""

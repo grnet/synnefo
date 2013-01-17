@@ -396,6 +396,10 @@ class AstakosUser(User):
         memberships = objects.filter(is_active=True)
         for membership in memberships:
             application = membership.application
+            if application is None:
+                m = _("missing application for active membership %s"
+                      % (membership,))
+                raise AssertionError(m)
 
             grants = application.projectresourcegrant_set.all()
             for grant in grants:

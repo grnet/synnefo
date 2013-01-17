@@ -547,7 +547,7 @@ class AstakosUser(User):
         else:
             return auth_providers.get_provider(provider).is_available_for_login()
 
-    def can_add_auth_provider(self, provider, **kwargs):
+    def can_add_auth_provider(self, provider, include_unverified=False, **kwargs):
         provider_settings = auth_providers.get_provider(provider)
 
         if not provider_settings.is_available_for_add():
@@ -563,7 +563,8 @@ class AstakosUser(User):
         if 'identifier' in kwargs:
             try:
                 # provider with specified params already exist
-                kwargs['user__email_verified'] = True
+                if not include_unverified:
+                    kwargs['user__email_verified'] = True
                 existing_user = AstakosUser.objects.get_auth_provider_user(provider,
                                                                    **kwargs)
             except AstakosUser.DoesNotExist:
@@ -613,7 +614,10 @@ class AstakosUser(User):
                 info_data = json.dumps(info_data)
 
         if self.can_add_auth_provider(provider, **kwargs):
-            AstakosUserAuthProvider.objects.remove_unverified_providers(provider,
+            if 'identifier' in kwargs:
+                # clean up third party pending for activation users of the same
+                # identifier
+                AstakosUserAuthProvider.objects.remove_unverified_providers(provider,
                                                                 **kwargs)
             self.auth_providers.create(module=provider, active=True,
                                        info_data=info_data,

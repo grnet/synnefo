@@ -39,8 +39,7 @@ from astakos.im.functions import check_expiration
 
 @transaction.commit_manually
 class Command(BaseCommand):
-    args = "<project id>"
-    help = "Update project state"
+    help = "Perform administration checks on projects"
 
     option_list = BaseCommand.option_list + (
         make_option('--expire',

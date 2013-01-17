@@ -589,6 +589,11 @@ class AstakosUser(User):
     def can_change_password(self):
         return self.has_auth_provider('local', auth_backend='astakos')
 
+    def can_change_email(self):
+        non_astakos_local = self.get_auth_providers().filter(module='local')
+        non_astakos_local = non_astakos_local.exclude(auth_backend='astakos')
+        return non_astakos_local.count() == 0
+
     def has_required_auth_providers(self):
         required = auth_providers.REQUIRED_PROVIDERS
         for provider in required:

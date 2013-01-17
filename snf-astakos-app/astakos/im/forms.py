@@ -971,7 +971,7 @@ class ExtendedProfileForm(ProfileForm):
             del self.fields['change_password']
 
 
-        if EMAILCHANGE_ENABLED:
+        if EMAILCHANGE_ENABLED and self.instance.can_change_email():
             self.email_change = True
         else:
             self.fields_list.remove('new_email_address')

@@ -101,6 +101,7 @@ from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
     RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
+    ACTIVATION_REDIRECT_URL,
     MODERATION_ENABLED)
 from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
@@ -657,7 +658,9 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return index(request)
 
     try:
-        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+        activate_func(user, greeting_email_template_name,
+                      helpdesk_email_template_name, verify_email=True)
+        next = ACTIVATION_REDIRECT_URL or next
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
         return response

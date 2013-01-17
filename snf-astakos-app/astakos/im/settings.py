@@ -322,3 +322,7 @@ PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
                                 {'1':'automatically accepted',
                                  '2':'owner accepts',
                                  '3':'closed'})
+
+ACTIVATION_REDIRECT_URL = getattr(settings,
+                                  'ASTAKOS_ACTIVATION_REDIRECT_URL',
+                                  "/im/profile")

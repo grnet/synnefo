@@ -1198,14 +1198,13 @@ SyncedState = make_synced(prefix='sync', name='SyncedState')
 class ProjectApplicationManager(ForUpdateManager):
 
     def user_visible_projects(self, *filters, **kw_filters):
-        return self.filter(Q(state=ProjectApplication.PENDING)|\
-                           Q(state=ProjectApplication.APPROVED))
+        model = self.model
+        return self.filter(model.Q_PENDING | model.Q_APPROVED)
 
     def user_visible_by_chain(self, *filters, **kw_filters):
-        Q_PENDING = Q(state=ProjectApplication.PENDING)
-        Q_APPROVED = Q(state=ProjectApplication.APPROVED)
-        pending = self.filter(Q_PENDING).values_list('chain')
-        approved = self.filter(Q_APPROVED).values_list('chain')
+        model = self.model
+        pending = self.filter(model.Q_PENDING).values_list('chain')
+        approved = self.filter(model.Q_APPROVED).values_list('chain')
         by_chain = dict(pending.annotate(models.Max('id')))
         by_chain.update(approved.annotate(models.Max('id')))
         return self.filter(id__in=by_chain.values())
@@ -1290,6 +1289,10 @@ class ProjectApplication(models.Model):
     response_date           =   models.DateTimeField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
+
+    # Compiled queries
+    Q_PENDING  = Q(state=PENDING)
+    Q_APPROVED = Q(state=APPROVED)
 
     class Meta:
         unique_together = ("chain", "id")
@@ -1527,31 +1530,24 @@ class ProjectResourceGrant(models.Model):
 
 class ProjectManager(ForUpdateManager):
 
-    def _q_terminated(self):
-        return Q(state=Project.TERMINATED)
-    def _q_suspended(self):
-        return Q(state=Project.SUSPENDED)
-    def _q_deactivated(self):
-        return self._q_terminated() | self._q_suspended()
-
     def terminated_projects(self):
-        q = self._q_terminated()
+        q = self.model.Q_TERMINATED
         return self.filter(q)
 
     def not_terminated_projects(self):
-        q = ~self._q_terminated()
+        q = ~self.model.Q_TERMINATED
         return self.filter(q)
 
     def terminating_projects(self):
-        q = self._q_terminated() & Q(is_active=True)
+        q = self.model.Q_TERMINATED & Q(is_active=True)
         return self.filter(q)
 
     def deactivated_projects(self):
-        q = self._q_deactivated()
+        q = self.model.Q_DEACTIVATED
         return self.filter(q)
 
     def deactivating_projects(self):
-        q = self._q_deactivated() & Q(is_active=True)
+        q = self.model.Q_DEACTIVATED & Q(is_active=True)
         return self.filter(q)
 
     def modified_projects(self):
@@ -1592,6 +1588,11 @@ class Project(models.Model):
                                                         db_index=True)
 
     objects     =   ProjectManager()
+
+    # Compiled queries
+    Q_TERMINATED  = Q(state=TERMINATED)
+    Q_SUSPENDED   = Q(state=SUSPENDED)
+    Q_DEACTIVATED = Q_TERMINATED | Q_SUSPENDED
 
     def __str__(self):
         return _("<project %s '%s'>") % (self.id, self.application.name)
@@ -1688,7 +1689,7 @@ class Project(models.Model):
 
     @property
     def approved_memberships(self):
-        query = ProjectMembership.query_approved()
+        query = ProjectMembership.Q_ACCEPTED_STATES
         return self.projectmembership_set.filter(query)
 
     @property
@@ -1773,14 +1774,11 @@ class ProjectMembership(models.Model):
 
     objects     =   ProjectMembershipManager()
 
+    # Compiled queries
+    Q_ACCEPTED_STATES = ~Q(state=REQUESTED) & ~Q(state=REMOVED)
 
     def get_combined_state(self):
         return self.state, self.is_active, self.is_pending
-
-    @classmethod
-    def query_approved(cls):
-        return (~Q(state=cls.REQUESTED) &
-                ~Q(state=cls.REMOVED))
 
     class Meta:
         unique_together = ("person", "project")

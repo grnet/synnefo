@@ -602,7 +602,7 @@ class AstakosUser(User):
         return True
 
     def has_auth_provider(self, provider, **kwargs):
-        return bool(self.auth_providers.filter(module=provider,
+        return bool(self.get_auth_providers().filter(module=provider,
                                                **kwargs).count())
 
     def add_auth_provider(self, provider, **kwargs):
@@ -641,7 +641,7 @@ class AstakosUser(User):
         return provider
 
     def remove_auth_provider(self, provider, **kwargs):
-        self.auth_providers.get(module=provider, **kwargs).delete()
+        self.get_auth_providers().get(module=provider, **kwargs).delete()
 
     # user urls
     def get_resend_activation_url(self):
@@ -649,7 +649,7 @@ class AstakosUser(User):
 
     def get_provider_remove_url(self, module, **kwargs):
         return reverse('remove_auth_provider', kwargs={
-            'pk': self.auth_providers.get(module=module, **kwargs).pk})
+            'pk': self.get_auth_providers().get(module=module, **kwargs).pk})
 
     def get_activation_url(self, nxt=False):
         url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
@@ -664,7 +664,7 @@ class AstakosUser(User):
                                   'token':token_generator.make_token(self)})
 
     def get_auth_providers(self):
-        return self.auth_providers.all()
+        return self.auth_providers
 
     def get_available_auth_providers(self):
         """
@@ -679,14 +679,14 @@ class AstakosUser(User):
 
     def get_active_auth_providers(self, **filters):
         providers = []
-        for provider in self.auth_providers.active(**filters):
+        for provider in self.get_auth_providers().active(**filters):
             if auth_providers.get_provider(provider.module).is_available_for_login():
                 providers.append(provider)
         return providers
 
     @property
     def auth_providers_display(self):
-        return ",".join(map(lambda x:unicode(x), self.auth_providers.active()))
+        return ",".join(map(lambda x:unicode(x), self.get_auth_providers().active()))
 
     def get_inactive_message(self):
         msg_extra = ''

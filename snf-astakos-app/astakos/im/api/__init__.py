@@ -39,6 +39,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Service, Resource
 from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
@@ -108,8 +109,12 @@ def get_services(request):
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
+    from_location = request.GET.get('location')
     index_url = reverse('index')
-    l = [{'url': absolute(request, index_url), 'name': "Sign in"}]
+    if from_location:
+        index_url = "%s?next=%s" % (index_url, from_location)
+
+    l = [{'url': absolute(request, index_url), 'name': _("Sign in")}]
     if user.is_authenticated():
         l = []
         append = l.append

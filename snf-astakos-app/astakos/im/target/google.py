@@ -102,6 +102,9 @@ def login(request):
     if request.GET.get('key', None):
         request.session['pending_key'] = request.GET.get('key')
 
+    if request.GET.get('next', None):
+        request.session['next_url'] = request.GET.get('next')
+
     url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
     return HttpResponseRedirect(url)
 
@@ -113,6 +116,11 @@ def authenticated(
     template='im/third_party_check_local.html',
     extra_context={}
 ):
+
+    next_url = None
+    if 'next_url' in request.session:
+        next_url = request.session['next_url']
+        del request.session['next_url']
 
     if request.GET.get('error', None):
         return HttpResponseRedirect(reverse('edit_profile'))
@@ -180,7 +188,7 @@ def authenticated(
             # authenticate user
             response = prepare_response(request,
                                     user,
-                                    request.GET.get('next'),
+                                    next_url,
                                     'renew' in request.GET)
 
             provider = auth_providers.get_provider('google')

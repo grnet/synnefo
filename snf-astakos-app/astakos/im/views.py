@@ -682,7 +682,13 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
     if not term:
         messages.error(request, _(astakos_messages.NO_APPROVAL_TERMS))
         return HttpResponseRedirect(reverse('index'))
-    f = open(term.location, 'r')
+    try:
+        f = open(term.location, 'r')
+    except IOError:
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        return render_response(
+            template_name, context_instance=get_context(request, extra_context))
+
     terms = f.read()
 
     if request.method == 'POST':

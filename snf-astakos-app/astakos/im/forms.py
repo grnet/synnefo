@@ -945,7 +945,7 @@ class ExtendedProfileForm(ProfileForm):
     password_changed = False
 
     def __init__(self, *args, **kwargs):
-
+        session_key = kwargs.get('session_key', None)
         self.fields_list = [
                 'email',
                 'new_email_address',
@@ -961,6 +961,7 @@ class ExtendedProfileForm(ProfileForm):
         ]
 
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)
+        self.session_key = session_key
         if self.instance.can_change_password():
             self.password_change = True
         else:
@@ -977,7 +978,6 @@ class ExtendedProfileForm(ProfileForm):
             self.fields_list.remove('new_email_address')
             self.fields_list.remove('change_email')
             del self.fields['change_email']
-
 
         self._init_extra_forms()
         self.save_extra_forms = []
@@ -1005,7 +1005,7 @@ class ExtendedProfileForm(ProfileForm):
     def _init_extra_forms(self):
         self.email_change_form = EmailChangeForm(self.data)
         self.password_change_form = ExtendedPasswordChangeForm(user=self.instance,
-                                   data=self.data)
+                                   data=self.data, session_key=self.session_key)
         self._init_extra_form_fields()
 
     def is_valid(self):

@@ -1,3 +1,5 @@
+{% load filters %}
+
 --- A translation in English follows ---
 
 Έχει δημιουργηθεί το παρακάτω project:
@@ -14,8 +16,8 @@ Applicant:                      {{object.applicant}}
 Maximum participant number:     {{object.limit_on_members_number}}
 Precursor:                      {{object.precursor_application.id}}
 Policies:
-{% for p in object.projectresourcegrant_set.all %}
-    {{p.resource}}: member capacity: {% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
+{% for rp in object.projectresourcegrant_set.all %}
+    Max {% if rp.resource.is_abbreviation %}{{ rp.resource.verbose_name|upper }}{% else %}{{ rp.resource.verbose_name }}{% endif %}{% if not rp.resource.unit %}s {% endif  %}  per user {% if rp.member_capacity %} {% if rp.resource.unit %} {{ rp.member_capacity|sizeof_fmt }} {% else %} {{ rp.member_capacity|isinf }} {% endif %} {% else %} Unlimited {% endif %}
 {% endfor %}
 
 Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
@@ -37,8 +39,8 @@ Applicant:                      {{object.applicant}}
 Maximum participant number:     {{object.limit_on_members_number}}
 Precursor:                      {{object.precursor_application.id}}
 Policies:
-{% for p in object.projectresourcegrant_set.all %}
-    {{p.resource}}: member capacity: {% if p.member_capacity %}{{p.member_capacity}}{% else %}inf{% endif %}
+{% for rp in object.projectresourcegrant_set.all %}
+    Max {% if rp.resource.is_abbreviation %}{{ rp.resource.verbose_name|upper }}{% else %}{{ rp.resource.verbose_name }}{% endif %}{% if not rp.resource.unit %}s {% endif  %}  per user {% if rp.member_capacity %} {% if rp.resource.unit %} {{ rp.member_capacity|sizeof_fmt }} {% else %} {{ rp.member_capacity|isinf }} {% endif %} {% else %} Unlimited {% endif %}
 {% endfor %}
 
 For approving it you can use the command line tool:

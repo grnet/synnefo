@@ -40,7 +40,10 @@ In ``ganeti`` nodes install GRNet specific Ganeti package and enable drbd:
 
 
 The following apply to ``master`` node. Here we will create a Ganeti cluster with
-all available ``ganeti`` nodes:
+all available ``ganeti`` nodes. Please note that Ganeti needs a pair of rsa/dsa keys
+for the root user. If already exist in `/root/.ssh/` in all nodes then --no-ssh-init
+can be used. In omitted then the existing files will be overriden. Upon node add
+Ganeti will replace `/etc/ssh/ssh_host*` files with the master's ones:
 
 .. code-block:: console
 
@@ -57,7 +60,7 @@ all available ``ganeti`` nodes:
     # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
 
     # for n in node2 node3 node4 node5 node6; do
-        gnt-node add --no-node-setup --master-capable=yes --vm-capable=yes $n.example.com
+        gnt-node add --no-ssh-key-check --master-capable=yes --vm-capable=yes $n.example.com
       done
 
 We need to add a rapi user to Ganeti so that Synnefo can talk with the backend:

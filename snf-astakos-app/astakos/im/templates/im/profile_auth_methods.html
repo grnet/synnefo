@@ -11,25 +11,26 @@
 		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
                           alt="{{ userauthprovider.settings.get_title_display }}" />
 		                </a>
+		                
+		                <span  class="extra-message"><em><span>Remove authentication method</span></em></span>
+		                <span class="details">{{ userauthprovider.details_display }}</span>
                       	<div class="dialog-wrap">
                         	 
-                          	<p>Are you sure you want to remove  {{ provider.get_title_display }} from your Authentication methods? </p>
+                          	<p>Are you sure you want to remove  {{ userauthprovider.settings.get_title_display }} from your Authentication methods? </p>
  
 							<p>
 								<a href="{% url remove_auth_provider provider.pk %}" class="submit">Yes</a>
 								<a href="#" class="no submit">No</a>
 							</p>
                         </div>	
- 
-                      
+
                   {% else %}
                   	<a href="javascript:void(0);" class="noaction">
 		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
                           alt="{{ userauthprovider.settings.get_title_display }}" />
 		                </a>
                       	 
-                      
-                         
+                                              
  
                   {% endif %}
         	</li>
@@ -45,7 +46,7 @@
         	<li>
         		<a href="{{ provider.add_url }}?force_login=1">
                   <img src="{{ provider.get_icon_medium_url_display }}" alt="{{ provider.get_title_display }}" /></a>
-                <span><em>{{ provider.get_add_prompt_display }}</em></span>
+                <span  class="extra-message"><em><span>{{ provider.get_add_prompt_display }}</span></em></span>
         	</li>
         	{% empty %}
         		No available providers 

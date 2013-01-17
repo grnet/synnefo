@@ -1,5 +1,9 @@
 {% extends "im/account_base.html" %}
 
+{% block headjs %}
+	{{ block.super }}	 
+	<script src="{{ IM_STATIC_URL }}js/auth_methods.js"></script>	
+{% endblock %}	
 {% block body %}
 
 <h2>GENERAL INFO</h2>

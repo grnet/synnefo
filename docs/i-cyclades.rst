@@ -58,7 +58,7 @@ In `/etc/synnefo/cyclades.conf` add:
 
     GANETI_CREATEINSTANCE_KWARGS = {
         'os': 'snf-image+default',
-        'hvparams': {'serial_console': False, 'security_model': 'pool'},
+        'hvparams': {'serial_console': False},
         'wait_for_sync': False}
 
     GANETI_USE_HOTPLUG = True

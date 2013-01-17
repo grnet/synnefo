@@ -1556,6 +1556,12 @@ class ProjectManager(ForUpdateManager):
     def reactivating_projects(self):
         return self.filter(state=Project.APPROVED, is_active=False)
 
+    def expired_projects(self):
+        q = (~Q(state=Project.TERMINATED) &
+              Q(application__end_date__lt=datetime.now()))
+        return self.filter(q)
+
+
 class Project(models.Model):
 
     application                 =   models.OneToOneField(
@@ -1607,6 +1613,10 @@ class Project(models.Model):
 
     def state_display(self):
         return self.STATE_DISPLAY.get(self.state, _('Unknown'))
+
+    def expiration_info(self):
+        return (str(self.id), self.name, self.state_display(),
+                str(self.application.end_date))
 
     def is_deactivated(self, reason=None):
         if reason is not None:

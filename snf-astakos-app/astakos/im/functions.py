@@ -702,6 +702,15 @@ def approve_application(app):
 
     application_approve_notify(application)
 
+def check_expiration(execute=False):
+    objects = Project.objects
+    expired = objects.expired_projects()
+    if execute:
+        for project in expired:
+            terminate(project.id)
+
+    return [project.expiration_info() for project in expired]
+
 def terminate(project_id):
     project = get_project_for_update(project_id)
     checkAlive(project)

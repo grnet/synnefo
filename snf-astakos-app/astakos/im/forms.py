@@ -941,8 +941,11 @@ class ExtendedProfileForm(ProfileForm):
     change_password = forms.BooleanField(initial=False, required=False)
     change_email = forms.BooleanField(initial=False, required=False)
 
+    email_changed = False
+    password_changed = False
 
     def __init__(self, *args, **kwargs):
+
         self.fields_list = [
                 'email',
                 'new_email_address',
@@ -1023,7 +1026,9 @@ class ExtendedProfileForm(ProfileForm):
     def save(self, request, *args, **kwargs):
         if 'email' in self.save_extra_forms:
             self.email_change_form.save(request, *args, **kwargs)
+            self.email_changed = True
         if 'password' in self.save_extra_forms:
             self.password_change_form.save(*args, **kwargs)
+            self.password_changed = True
         return super(ExtendedProfileForm, self).save(*args, **kwargs)
 

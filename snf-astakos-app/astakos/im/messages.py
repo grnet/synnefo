@@ -48,6 +48,7 @@ ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' 
                                             ' automatically signed in.'
 PASSWORD_RESET_DONE                     =   'An email with details on how to change your password has been sent. Please check your Inbox.'
 PASSWORD_RESET_CONFIRM_DONE             =   'Your password has changed successfully. You can now login using your new password.'
+PASSWORD_CHANGED                        =   'Your new password is set.'
 
 ACCOUNT_RESEND_ACTIVATION_PROMPT        =   'Resend activation email'
 ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'

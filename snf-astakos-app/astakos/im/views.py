@@ -397,6 +397,14 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                 )
                 msg = _(astakos_messages.PROFILE_UPDATED)
                 messages.success(request, msg)
+
+                if form.email_changed:
+                    msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
+                    messages.success(request, msg)
+                if form.password_changed:
+                    msg = _(astakos_messages.PASSWORD_CHANGED)
+                    messages.success(request, msg)
+
                 if next:
                     return redirect(next)
                 else:

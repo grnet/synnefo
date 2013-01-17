@@ -165,6 +165,8 @@ def password_change(request, template_name='registration/password_change_form.ht
         form = password_change_form(**form_kwargs)
         if form.is_valid():
             form.save()
+            messages.success(request,
+                             astakos_messages.PASSWORD_RESET_CONFIRM_DONE)
             return HttpResponseRedirect(post_change_redirect)
     else:
         form = password_change_form(user=request.user)

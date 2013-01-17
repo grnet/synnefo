@@ -1599,6 +1599,15 @@ class Project(models.Model):
 
     __repr__ = __str__
 
+    STATE_DISPLAY = {
+        APPROVED   : 'APPROVED',
+        SUSPENDED  : 'SUSPENDED',
+        TERMINATED : 'TERMINATED'
+        }
+
+    def state_display(self):
+        return self.STATE_DISPLAY.get(self.state, _('Unknown'))
+
     def is_deactivated(self, reason=None):
         if reason is not None:
             return self.state == reason

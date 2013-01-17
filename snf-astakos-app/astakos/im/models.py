@@ -1659,7 +1659,7 @@ class Project(models.Model):
 
     @property
     def is_alive(self):
-        return self.is_active_strict()
+        return not self.is_terminated
 
     @property
     def is_terminated(self):

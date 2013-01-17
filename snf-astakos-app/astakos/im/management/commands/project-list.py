@@ -50,7 +50,7 @@ class Command(NoArgsCommand):
     )
 
     def handle_noargs(self, **options):
-        apps = ProjectApplication.objects.select_related().all().order_by('id')
+        apps = ProjectApplication.objects.select_related('project').all().order_by('id')
 
         labels = (
             'Application', 'Precursor', 'Status', 'Name', 'Project', 'Status'

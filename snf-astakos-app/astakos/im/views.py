@@ -1368,4 +1368,7 @@ def project_reject_member(request, application_id, user_id):
             transaction.commit()
     return redirect(reverse('project_detail', args=(application_id,)))
 
-
+def landing(request):
+    return render_response(
+        'im/landing.html',
+        context_instance=get_context(request))

@@ -23,7 +23,17 @@ function tableFixedCols(table, firstColWidth ){
 	
 }
 
-
+function addClassHover(hoverEl, applicableEl){ 
+	$(hoverEl).hover(
+      function () {
+      	 
+         $(applicableEl).addClass('red-border')
+      }, 
+      function () {
+      	$(applicableEl).removeClass('red-border');
+    
+    });
+}
 //equal heights
  
 (function($) {
@@ -253,8 +263,11 @@ $(document).ready(function() {
       }
 	}, 100);
 	
- 
-	
+	 // clouds homepage animation
+	addClassHover('.landing-page .pithos','.cloudbar ul.services li:first');
+	addClassHover('.landing-page .cyclades','.cloudbar ul.services li:nth-child(2)');
+	addClassHover('.landing-page .dashboard','.cloudbar .profile')
+    
 	 
 	    
 });

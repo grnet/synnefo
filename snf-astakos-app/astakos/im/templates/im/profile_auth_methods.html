@@ -19,7 +19,7 @@
                           	<p>Are you sure you want to remove  {{ userauthprovider.settings.get_title_display }} from your Authentication methods? </p>
  
 							<p>
-								<a href="{% url remove_auth_provider provider.pk %}" class="submit">Yes</a>
+								<a href="{% url remove_auth_provider userauthprovider.pk %}" class="submit">Yes</a>
 								<a href="#" class="no submit">No</a>
 							</p>
                         </div>	

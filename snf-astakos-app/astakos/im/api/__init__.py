@@ -123,8 +123,10 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         append(item(
                url=absolute(request, reverse('index')),
                name=user.email))
+        append(item(url=absolute(request, reverse('landing')),
+               name="Welcome"))
         append(item(url=absolute(request, reverse('edit_profile')),
-               name="My account"))
+               name="Profile"))
         if with_extra_links:
             if EMAILCHANGE_ENABLED:
                 append(item(

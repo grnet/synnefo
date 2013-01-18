@@ -986,6 +986,8 @@ class ExtendedProfileForm(ProfileForm):
 
 
     def _init_extra_form_fields(self):
+        
+
         if self.email_change:
             self.fields.update(self.email_change_form.fields)
             self.fields['new_email_address'].required = False
@@ -993,6 +995,8 @@ class ExtendedProfileForm(ProfileForm):
         if self.password_change:
             self.fields.update(self.password_change_form.fields)
             self.fields['old_password'].required = False
+            self.fields['old_password'].label = _('Password')
+            self.fields['old_password'].initial = 'skata'
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False
 

@@ -546,7 +546,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .right-align									{ text-align:right; }			
 
 .auth_methods h3								{ float:left; width:224px; font-size:1.308em;}
-.auth_methods ul								{ overflow:hidden; }
+.auth_methods ul								{ overflow:hidden; padding:0; }
 .auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; }
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
 .auth_methods ul li a:hover img					{ margin-top:-174px; }
@@ -556,7 +556,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul li a:hover + span 				{ display:inline; } 
 .auth_methods .dialog-wrap						{ color:#F24E53; display:none; margin-top:1em; }
 .auth_methods .dialog-wrap .submit				{ min-width:10px; text-transform:uppercase; margin-right:10px; }
-.auth_methods ul li a.noaction:hover img		{ margin-top:40px }
+.auth_methods ul li a.noaction:hover img		{ margin-top:-55px }
 .auth_methods ul li a.noaction:hover			{ cursor:default; }
 .auth_methods ul li a.canremove:hover img,
 .auth_methods .assigned ul li.remove a img		{ margin-top:-112px; }
@@ -565,7 +565,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods .assigned, 
 .auth_methods .notassigned						{ margin-bottom:40px; }
 .auth_methods .assigned span.details			{ margin-left:10px; color:grey; display:inline-block; max-width:300px;  vertical-align:middle;}
-						
+#token-confirm									{ display:none; position:absolute; left:550px; }
 /* login section */
 .login-section {}
 .main-login-method 								{ margin-bottom: 20px;}
@@ -596,5 +596,4 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .landing-page .dotted							{ padding-bottom:40px; margin-bottom:40px; }
 .landing-page .cyclades a						{ color:#04a0af; }
 .landing-page .dashboard a						{ color:#3780b0; }
-.landing-page .rt 								{ text-align:center;vertical-align:middle; }
- 
+.landing-page .rt 								{ text-align:center;vertical-align:middle; } 

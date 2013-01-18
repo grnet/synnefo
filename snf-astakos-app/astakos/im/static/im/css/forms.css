@@ -213,3 +213,6 @@ form .form-following.open p:hover span.extra-img:hover	{ background-position: -3
 form .refresh p span.extra-img						{ background:url(../images/symbols3.png) 54px -161px; z-index:8; }
 form .refresh p:hover span.extra-img				{ background-position:54px 0px; }
 form .refresh p:hover span.extra-img:hover			{ background-position:54px -54px; cursor:pointer; }
+form .refresh.open p span.extra-img					{ background-position: -33px -161px; }
+form .refresh.open p:hover span.extra-img			{ background-position: -33px 0px; }
+form .refresh.open p:hover span.extra-img:hover		{ background-position: -33px -54px; cursor:pointer; }

@@ -5,13 +5,14 @@ $(document).ready(function() {
     	e.preventDefault(e);
     	$(this).parent('li').addClass('remove');
     	$(this).siblings('.dialog-wrap').slideDown('slow');
-    })  
+    });  
     
     $('.auth_methods .no').click( function(e) {
     	e.preventDefault(e);
     	$(this).parents('li').removeClass('remove');
     	$(this).parents('.dialog-wrap').slideUp('slow');
-    })  
+    });  
+    
     $('.auth_methods .canremove').hover(
       function () {
       	$(this).siblings('span.details').hide();
@@ -71,9 +72,8 @@ $(document).ready(function() {
 	
 	
 	
-	if ($('input#id_change_password:checkbox').attr('checked')) {
+	if ($('input#id_change_email:checkbox').attr('checked')) {
 		newEmailDiv.show();
-		
 		$('.form-following #email-span').parents('.form-row').addClass('open');
 	}; 
 	
@@ -121,7 +121,18 @@ $(document).ready(function() {
 	// refresh token
 	authTokenDiv.addClass('refresh');
 	$('#token-span').click(function(e){
+		$(this).parents('.form-row').toggleClass('open');
+		
+		var position = $(this).parents('.form-row').position();
+		$('#token-confirm').css('top', position.top - 10);
+		$('#token-confirm').toggle();
+		return false;
+	});
+	
+	$('#token-confirm').click(function(e){
+		e.preventDefault();
 		renewToken();
+		$(this).hide();
 	})
 	
 	

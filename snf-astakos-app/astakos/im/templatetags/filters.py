@@ -181,13 +181,6 @@ def sizeof_fmt(num):
     return ProjectResourceGrant.display_filesize(num)
 
 @register.filter
-def isinf(v):
-    if math.isinf(v):
-        return 'Unlimited'
-    else:
-        return v
-
-@register.filter
 def truncatename(v, max=18, append="..."):
     length = len(v)
     if length>max:

@@ -70,6 +70,7 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
+    register_users, register_quotas, qh_check_users, qh_get_quota_limits,
     register_services, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials,
     QuotaValues, add_quota_values)
@@ -2010,7 +2011,7 @@ def sync_finish_serials(serials_to_ack=None):
     qh_ack_serials(list(serials_to_ack))
     return len(memberships)
 
-def pre_sync():
+def pre_sync_projects():
     ACCEPTED = ProjectMembership.ACCEPTED
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     psfu = Project.objects.select_for_update()
@@ -2044,7 +2045,7 @@ def pre_sync():
             membership.state = PROJECT_DEACTIVATED
             membership.save()
 
-def do_sync():
+def do_sync_projects():
 
     ACCEPTED = ProjectMembership.ACCEPTED
     objects = ProjectMembership.objects.select_for_update()
@@ -2085,7 +2086,7 @@ def do_sync():
 
     return serial
 
-def post_sync():
+def post_sync_projects():
     ACCEPTED = ProjectMembership.ACCEPTED
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     psfu = Project.objects.select_for_update()
@@ -2120,14 +2121,48 @@ def post_sync():
 
     transaction.commit()
 
-def sync_projects():
+def _sync_projects(execute):
     sync_finish_serials()
-    pre_sync()
-    serial = do_sync()
-    sync_finish_serials([serial])
-    post_sync()
+    if not execute:
+        # Do some reporting and
+        return
 
-def trigger_sync(retries=3, retry_wait=1.0):
+    pre_sync_projects()
+    serial = do_sync_projects()
+    sync_finish_serials([serial])
+    post_sync_projects()
+
+def sync_projects(execute=True, retries=3, retry_wait=1.0):
+    return lock_sync(_sync_projects,
+                     args=[execute],
+                     retries=retries,
+                     retry_wait=retry_wait)
+
+def _sync_users(users, execute):
+    sync_finish_serials()
+
+    existing, nonexisting = qh_check_users(users)
+    resources = get_resource_names()
+    quotas = qh_get_quota_limits(existing, resources)
+
+    if execute:
+        r = register_users(nonexisting)
+        r = register_quotas(users)
+
+    # TODO: some proper reporting
+    return (existing, nonexisting, quotas)
+
+def sync_users(users, execute=True, retries=3, retry_wait=1.0):
+    return lock_sync(_sync_users,
+                     args=[users, execute],
+                     retries=retries,
+                     retry_wait=retry_wait)
+
+def sync_all_users(execute=True, retries=3, retry_wait=1.0):
+    users = AstakosUser.objects.all()
+    return sync_users(users, execute, retries=retries, retry_wait=retry_wait)
+
+def lock_sync(func, args=[], kwargs={}, retries=3, retry_wait=1.0):
     transaction.commit()
 
     cursor = connection.cursor()
@@ -2148,8 +2183,7 @@ def trigger_sync(retries=3, retry_wait=1.0):
                 return False
             sleep(retry_wait)
 
-        sync_projects()
-        return True
+        return func(*args, **kwargs)
 
     finally:
         if locked:

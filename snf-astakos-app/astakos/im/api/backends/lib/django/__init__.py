@@ -231,7 +231,7 @@ class DjangoBackend(BaseBackend):
     @safe
     def get_resource_usage(self, user_id):
         user = self._lookup_user(user_id)
-        data = get_quota(user)
+        data = get_quota([user])
         if not data:
             return ()
         resources = []

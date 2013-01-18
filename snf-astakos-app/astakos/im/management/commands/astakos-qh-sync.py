@@ -31,30 +31,45 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand, CommandError
+from optparse import make_option
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
-from astakos.im.models import AstakosUser, Resource
-from astakos.im.endpoints.qh import register_users, register_resources
+from astakos.im.models import sync_all_users, sync_projects
 
 import logging
 logger = logging.getLogger(__name__)
 
+class Command(BaseCommand):
+    help = "Inspect quotaholder status and sync"
 
-class Command(NoArgsCommand):
-    help = "Send user information and resource quota in the Quotaholder"
+    option_list = BaseCommand.option_list + (
+        make_option('--users',
+                    action='store_true',
+                    dest='users',
+                    default=False,
+                    help="Check if users and their quotas are in sync with quotaholder"),
+        make_option('--projects',
+                    action='store_true',
+                    dest='projects',
+                    default=False,
+                    help="Check if projects are in sync with quotaholder"),
+        make_option('--execute',
+                    action='store_true',
+                    dest='execute',
+                    default=False,
+                    help="Perform the actual operation"),
+    )
 
-    def handle_noargs(self, **options):
+    @transaction.commit_on_success
+    def handle(self, *args, **options):
+        execute = options['execute']
+
         try:
-            resources = list(Resource.objects.all())
-	    print("Registering resources")
-            register_resources(resources)
-	    print("Registering users")
-            users = list(AstakosUser.objects.verified().all())
-            if users:
-                register_users(users)
-            else:
-                print(" -> No verified users found.")
+            if options['users']:
+                log = sync_all_users(execute=execute)
+            elif options['projects']:
+                log = sync_projects(execute=execute)
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Syncing failed.")
-

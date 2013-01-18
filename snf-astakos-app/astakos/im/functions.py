@@ -66,14 +66,14 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    trigger_sync, PendingMembershipError, get_resource_names)
+    sync_projects, PendingMembershipError, get_resource_names)
 from astakos.im.models import submit_application as models_submit_application
 from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
-from astakos.im.endpoints.qh import qh_register_user, qh_get_quota
+from astakos.im.endpoints.qh import qh_register_user_with_quotas, qh_get_quota
 
 import astakos.im.messages as astakos_messages
 
@@ -299,7 +299,7 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
-    qh_register_user(user)
+    qh_register_user_with_quotas(user)
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
@@ -377,9 +377,9 @@ class SendNotificationError(SendMailError):
         super(SendNotificationError, self).__init__()
 
 
-def get_quota(user):
+def get_quota(users):
     resources = get_resource_names()
-    return qh_get_quota(user, resources)
+    return qh_get_quota(users, resources)
 
 
 ### PROJECT VIEWS ###
@@ -507,7 +507,7 @@ def do_accept_membership(project_id, user, request_user=None):
 
     membership = get_membership_for_update(project, user)
     membership.accept()
-    trigger_sync()
+    sync_projects()
 
     membership_change_notify(project, membership.person, 'accepted')
 
@@ -560,7 +560,7 @@ def do_remove_membership(project_id, user, request_user=None):
 
     membership = get_membership_for_update(project, user)
     membership.remove()
-    trigger_sync()
+    sync_projects()
 
     membership_change_notify(project, membership.person, 'removed')
 
@@ -576,7 +576,7 @@ def do_enroll_member(project_id, user, request_user=None):
 
     membership = create_membership(project_id, user)
     membership.accept()
-    trigger_sync()
+    sync_projects()
 
     # TODO send proper notification
     return membership
@@ -606,7 +606,7 @@ def do_leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
-        trigger_sync()
+        sync_projects()
     else:
         membership.leave_request_date = datetime.now()
         membership.save()
@@ -638,7 +638,7 @@ def do_join_project(project_id, user_id):
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
-        trigger_sync()
+        sync_projects()
     return membership
 
 def submit_application(kw, request_user=None):
@@ -698,7 +698,7 @@ def approve_application(app):
         raise PermissionDenied()
 
     application.approve()
-    trigger_sync()
+    sync_projects()
 
     application_approve_notify(application)
 
@@ -716,7 +716,7 @@ def terminate(project_id):
     checkAlive(project)
 
     project.terminate()
-    trigger_sync()
+    sync_projects()
 
     project_termination_notify(project)
 
@@ -725,7 +725,7 @@ def suspend(project_id):
     checkAlive(project)
 
     project.suspend()
-    trigger_sync()
+    sync_projects()
 
     project_suspension_notify(project)
 
@@ -737,4 +737,4 @@ def resume(project_id):
         raise PermissionDenied(m)
 
     project.resume()
-    trigger_sync()
+    sync_projects()

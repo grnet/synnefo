@@ -5,7 +5,13 @@
 {% endblock %}
 
 {% block body.left %}
-    <img class="pic" src="{{ IM_STATIC_URL }}images/mailobox.png" />
+ 
+{% if third_party_token %} 
+	<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
+{% else %} 
+	<img class="pic" src="{{ IM_STATIC_URL }}images/pictures/accounts_3.png" />
+{% endif %}
+ 
 {% comment %}{% include "im/services_description.html" %}{% endcomment %}
 {% endblock body.left %}
 

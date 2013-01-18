@@ -2011,39 +2011,46 @@ def sync_finish_serials(serials_to_ack=None):
     qh_ack_serials(list(serials_to_ack))
     return len(memberships)
 
-def pre_sync_projects():
+def pre_sync_projects(sync=True):
     ACCEPTED = ProjectMembership.ACCEPTED
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     psfu = Project.objects.select_for_update()
 
-    modified = psfu.modified_projects()
-    for project in modified:
-        objects = project.projectmembership_set.select_for_update()
+    modified = list(psfu.modified_projects())
+    if sync:
+        for project in modified:
+            objects = project.projectmembership_set.select_for_update()
 
-        memberships = objects.filter(state=ACCEPTED)
-        for membership in memberships:
-            membership.is_pending = True
-            membership.save()
+            memberships = objects.filter(state=ACCEPTED)
+            for membership in memberships:
+                membership.is_pending = True
+                membership.save()
 
-    reactivating = psfu.reactivating_projects()
-    for project in reactivating:
-        objects = project.projectmembership_set.select_for_update()
-        memberships = objects.filter(state=PROJECT_DEACTIVATED)
-        for membership in memberships:
-            membership.is_pending = True
-            membership.state = ACCEPTED
-            membership.save()
+    reactivating = list(psfu.reactivating_projects())
+    if sync:
+        for project in reactivating:
+            objects = project.projectmembership_set.select_for_update()
 
-    deactivating = psfu.deactivating_projects()
-    for project in deactivating:
-        objects = project.projectmembership_set.select_for_update()
+            memberships = objects.filter(state=PROJECT_DEACTIVATED)
+            for membership in memberships:
+                membership.is_pending = True
+                membership.state = ACCEPTED
+                membership.save()
 
-        # Note: we keep a user-level deactivation (e.g. USER_SUSPENDED) intact
-        memberships = objects.filter(state=ACCEPTED)
-        for membership in memberships:
-            membership.is_pending = True
-            membership.state = PROJECT_DEACTIVATED
-            membership.save()
+    deactivating = list(psfu.deactivating_projects())
+    if sync:
+        for project in deactivating:
+            objects = project.projectmembership_set.select_for_update()
+
+            # Note: we keep a user-level deactivation
+            # (e.g. USER_SUSPENDED) intact
+            memberships = objects.filter(state=ACCEPTED)
+            for membership in memberships:
+                membership.is_pending = True
+                membership.state = PROJECT_DEACTIVATED
+                membership.save()
+
+    return (modified, reactivating, deactivating)
 
 def do_sync_projects():
 
@@ -2123,14 +2130,16 @@ def post_sync_projects():
 
 def _sync_projects(sync):
     sync_finish_serials()
-    if not sync:
-        # Do some reporting and
-        return
+    # Informative only -- no select_for_update()
+    pending = ProjectMembership.objects.filter(is_pending=True)
 
-    pre_sync_projects()
-    serial = do_sync_projects()
-    sync_finish_serials([serial])
-    post_sync_projects()
+    projects_log = pre_sync_projects(sync)
+    if sync:
+        serial = do_sync_projects()
+        sync_finish_serials([serial])
+        post_sync_projects()
+
+    return (pending, projects_log)
 
 def sync_projects(sync=True, retries=3, retry_wait=1.0):
     return lock_sync(_sync_projects,

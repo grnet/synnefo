@@ -236,7 +236,7 @@ def reconcile_ip_pools(network, available_maps, reserved_maps):
     if pool.available != available_map:
         write("D: Unsynced available map of network %s:\n"
               "\tDB: %r\n\tGB: %r\n" %
-              (network, pool.available.to01(), available_map.to01(), network))
+              (network, pool.available.to01(), available_map.to01()))
         if fix:
             pool.available = available_map
     if pool.reserved != reserved_map:

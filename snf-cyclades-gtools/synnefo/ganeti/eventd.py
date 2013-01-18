@@ -56,9 +56,9 @@ from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
-from ganeti import utils, jqueue, constants, serializer, cli
+from ganeti import utils, jqueue, constants, serializer, pathutils, cli
 from ganeti import errors as ganeti_errors
-from ganeti.ssconf import SimpleConfigReader
+from ganeti.ssconf import SimpleStore
 
 
 from synnefo import settings
@@ -207,10 +207,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        try:  # Compatibility with Ganeti version
-            job = jqueue._QueuedJob.Restore(None, data, False)
-        except TypeError:
-            job = jqueue._QueuedJob.Restore(None, data)
+        job = jqueue._QueuedJob.Restore(None, data, False, False)
 
         job_id = int(job.id)
 
@@ -351,8 +348,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 def find_cluster_name():
     global handler_logger
     try:
-        scr = SimpleConfigReader()
-        name = scr.GetClusterName()
+        ss = SimpleStore()
+        name = ss.GetClusterName()
     except Exception as e:
         handler_logger.error('Can not get the name of the Cluster: %s' % e)
         raise e
@@ -457,12 +454,12 @@ def main():
 
     try:
         # Fail if adding the inotify() watch fails for any reason
-        res = wm.add_watch(constants.QUEUE_DIR, mask)
-        if res[constants.QUEUE_DIR] < 0:
+        res = wm.add_watch(pathutils.QUEUE_DIR, mask)
+        if res[pathutils.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s of %s" %
-                    (constants.QUEUE_DIR, cluster_name))
+        logger.info("Now watching %s of %s" % (pathutils.QUEUE_DIR,
+                    cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

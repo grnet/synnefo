@@ -357,9 +357,8 @@ def hanging_networks(backend, GNets):
     """
     def get_network_groups(group_list):
         groups = set()
-        for g in group_list:
-            g_name = g.split('(')[0]
-            groups.add(g_name)
+        for (name, mode, link) in group_list:
+            groups.add(name)
         return groups
 
     with pooled_rapi_client(backend) as c:

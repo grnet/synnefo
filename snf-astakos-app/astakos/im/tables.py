@@ -256,12 +256,12 @@ class UserProjectApplicationsTable(UserTable):
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     end_date = tables.DateColumn(verbose_name=_('Expiration'), format=DEFAULT_DATE_FORMAT)
     members_count = tables.Column(verbose_name=_("Members"), default=0,
-                                  sortable=False)
+                                  orderable=False)
     membership_status = tables.Column(verbose_name=_("Status"), empty_values=(),
-                                      sortable=False)
+                                      orderable=False)
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=action_extra_context,
-                                    sortable=False)
+                                    orderable=False)
 
 
     def render_membership_status(self, record, *args, **kwargs):
@@ -337,7 +337,7 @@ class ProjectApplicationMembersTable(UserTable):
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=member_action_extra_context,
-                                    sortable=False)
+                                    orderable=False)
 
 
     def __init__(self, project, *args, **kwargs):

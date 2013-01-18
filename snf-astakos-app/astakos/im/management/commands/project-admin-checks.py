@@ -32,68 +32,65 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
-from django.core.management.base import NoArgsCommand
+from astakos.im.functions import check_expiration
 
-from astakos.im.models import ProjectApplication
-from ._common import format_bool
+@transaction.commit_manually
+class Command(BaseCommand):
+    help = "Perform administration checks on projects"
 
-class Command(NoArgsCommand):
-    help = "List resources"
-
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
+    option_list = BaseCommand.option_list + (
+        make_option('--expire',
                     action='store_true',
-                    dest='csv',
+                    dest='expire',
                     default=False,
-                    help="Use pipes to separate values"),
+                    help="Check projects for expiration"),
+        make_option('--execute',
+                    action='store_true',
+                    dest='execute',
+                    default=False,
+                    help="Perform the actual operation"),
     )
 
-    def handle_noargs(self, **options):
-        apps = ProjectApplication.objects.select_related('project').all().order_by('id')
 
-        labels = (
-            'Application', 'Precursor', 'Status', 'Name', 'Project', 'Status'
-        )
-        columns = (11, 10, 14, 30, 10, 10)
+    def print_expired(self, projects, execute):
+        length = len(projects)
+        if length == 0:
+            s = 'No expired projects.\n'
+        elif length == 1:
+            s = '1 expired project:\n'
+        else:
+            s = '%d expired projects:\n' %(length,)
+        self.stdout.write(s)
 
-        if not options['csv']:
+        if length > 0:
+            labels = ('Project', 'Name', 'Status', 'Expiration date')
+            columns = (10, 30, 14, 30)
+
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
-        for app in apps:
-            precursor = app.precursor_application
-            prec_id = precursor.id if precursor else ''
+            for project in projects:
+                line = ' '.join(f.rjust(w) for f, w in zip(project, columns))
+                self.stdout.write(line.encode('utf8') + '\n')
 
-            try:
-                project = app.project
-                project_id = project.id
-                if project.is_alive:
-                    status = 'ALIVE'
-                elif project.is_terminated:
-                    status = 'TERMINATED'
-                elif project.is_suspended:
-                    status = 'SUSPENDED'
-                else:
-                    status = 'UNKNOWN'
-            except:
-                project_id = ''
-                status     = ''
+            if execute:
+                self.stdout.write('%d projects have been terminated.\n' %(length,))
 
-            fields = (
-                str(app.id),
-                str(prec_id),
-                app.state_display(),
-                app.name,
-                str(project_id),
-                status
-            )
+    def handle(self, *args, **options):
 
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+        execute = options['execute']
 
-            self.stdout.write(line.encode('utf8') + '\n')
+        try:
+            if options['expire']:
+                projects = check_expiration(execute=execute)
+                self.print_expired(projects, execute)
+        except BaseException as e:
+            transaction.rollback()
+            raise CommandError(e)
+        else:
+            transaction.commit()

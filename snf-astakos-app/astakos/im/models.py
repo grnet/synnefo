@@ -2121,9 +2121,9 @@ def post_sync_projects():
 
     transaction.commit()
 
-def _sync_projects(execute):
+def _sync_projects(sync):
     sync_finish_serials()
-    if not execute:
+    if not sync:
         # Do some reporting and
         return
 
@@ -2132,35 +2132,35 @@ def _sync_projects(execute):
     sync_finish_serials([serial])
     post_sync_projects()
 
-def sync_projects(execute=True, retries=3, retry_wait=1.0):
+def sync_projects(sync=True, retries=3, retry_wait=1.0):
     return lock_sync(_sync_projects,
-                     args=[execute],
+                     args=[sync],
                      retries=retries,
                      retry_wait=retry_wait)
 
-def _sync_users(users, execute):
+def _sync_users(users, sync):
     sync_finish_serials()
 
     existing, nonexisting = qh_check_users(users)
     resources = get_resource_names()
     quotas = qh_get_quota_limits(existing, resources)
 
-    if execute:
+    if sync:
         r = register_users(nonexisting)
         r = register_quotas(users)
 
     # TODO: some proper reporting
     return (existing, nonexisting, quotas)
 
-def sync_users(users, execute=True, retries=3, retry_wait=1.0):
+def sync_users(users, sync=True, retries=3, retry_wait=1.0):
     return lock_sync(_sync_users,
-                     args=[users, execute],
+                     args=[users, sync],
                      retries=retries,
                      retry_wait=retry_wait)
 
-def sync_all_users(execute=True, retries=3, retry_wait=1.0):
+def sync_all_users(sync=True, retries=3, retry_wait=1.0):
     users = AstakosUser.objects.all()
-    return sync_users(users, execute, retries=retries, retry_wait=retry_wait)
+    return sync_users(users, sync, retries=retries, retry_wait=retry_wait)
 
 def lock_sync(func, args=[], kwargs={}, retries=3, retry_wait=1.0):
     transaction.commit()

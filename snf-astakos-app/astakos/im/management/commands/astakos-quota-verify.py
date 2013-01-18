@@ -41,35 +41,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = "Inspect quotaholder status and sync"
+    help = "Inspect quotaholder status"
 
     option_list = BaseCommand.option_list + (
-        make_option('--users',
+        make_option('--check',
                     action='store_true',
-                    dest='users',
-                    default=False,
-                    help="Check if users and their quotas are in sync with quotaholder"),
-        make_option('--projects',
+                    dest='check',
+                    default=True,
+                    help="Check if quotaholder is in sync with astakos (default)"),
+        make_option('--sync',
                     action='store_true',
-                    dest='projects',
+                    dest='sync',
                     default=False,
-                    help="Check if projects are in sync with quotaholder"),
-        make_option('--execute',
-                    action='store_true',
-                    dest='execute',
-                    default=False,
-                    help="Perform the actual operation"),
+                    help="Sync quotaholder"),
     )
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        execute = options['execute']
+        sync = options['sync']
 
         try:
-            if options['users']:
-                log = sync_all_users(execute=execute)
-            elif options['projects']:
-                log = sync_projects(execute=execute)
+            log = sync_all_users(sync=sync)
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Syncing failed.")

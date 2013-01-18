@@ -53,12 +53,12 @@ class Command(BaseCommand):
 
         sep = '-' * 80 + '\n'
         labels = ('name', 'backend-name', 'state', 'owner', 'subnet', 'gateway',
-                  'mac_prefix', 'link', 'public', 'dhcp', 'type', 'deleted',
+                  'mac_prefix', 'link', 'public', 'dhcp', 'flavor', 'deleted',
                   'action', 'pool')
         fields = (net.name, net.backend_id, net.state, str(net.userid),
                   str(net.subnet), str(net.gateway), str(net.mac_prefix),
                   str(net.link), str(net.public),  str(net.dhcp),
-                  str(net.type), str(net.deleted), str(net.action),
+                  str(net.flavor), str(net.deleted), str(net.action),
                   str(splitPoolMap(net.get_pool().to_map(), 64)))
 
         self.stdout.write(sep)

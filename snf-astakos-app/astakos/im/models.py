@@ -35,6 +35,7 @@ import hashlib
 import uuid
 import logging
 import json
+import math
 
 from time import asctime, sleep
 from datetime import datetime, timedelta
@@ -67,7 +68,8 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA)
+    SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA,
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     register_users, register_quotas, qh_check_users, qh_get_quota_limits,
@@ -198,6 +200,19 @@ class Resource(models.Model):
     @property
     def verbose_name(self):
         return get_presentation(str(self)).get('verbose_name', '')
+
+    @property
+    def display_name(self):
+        name = self.verbose_name
+        if self.is_abbreviation:
+            name = name.upper()
+        return name
+
+    @property
+    def pluralized_display_name(self):
+        if not self.unit:
+            return '%ss' % self.display_name
+        return self.display_name
 
 
 def load_service_resources():
@@ -1363,7 +1378,7 @@ class ProjectApplication(models.Model):
 
     @property
     def resource_policies(self):
-        return self.projectresourcegrant_set.all()
+        return [str(rp) for rp in self.projectresourcegrant_set.all()]
 
     @resource_policies.setter
     def resource_policies(self, policies):
@@ -1494,6 +1509,14 @@ class ProjectApplication(models.Model):
         self.response_date = now
         self.save()
 
+    @property
+    def member_join_policy_display(self):
+        return PROJECT_MEMBER_JOIN_POLICIES.get(str(self.member_join_policy))
+
+    @property
+    def member_leave_policy_display(self):
+        return PROJECT_MEMBER_LEAVE_POLICIES.get(str(self.member_leave_policy))
+
 def submit_application(**kw):
 
     resource_policies = kw.pop('resource_policies', None)
@@ -1536,6 +1559,47 @@ class ProjectResourceGrant(models.Model):
             capacity = self.member_capacity,
             import_limit = self.member_import_limit,
             export_limit = self.member_export_limit)
+
+    def display_member_capacity(self):
+        if self.member_capacity:
+            if self.resource.unit:
+                return ProjectResourceGrant.display_filesize(
+                    self.member_capacity)
+            else:
+                if math.isinf(self.member_capacity):
+                    return 'Unlimited'
+                else:
+                    return self.member_capacity
+        else:
+            return 'Unlimited'
+
+    def __str__(self):
+        return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
+                                        self.display_member_capacity())
+
+    @classmethod
+    def display_filesize(cls, value):
+        try:
+            value = float(value)
+        except:
+            return
+        else:
+            if math.isinf(value):
+                return 'Unlimited'
+            if value > 1:
+                unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'],
+                                [0, 0, 0, 0, 0, 0])
+                exponent = min(int(math.log(value, 1024)), len(unit_list) - 1)
+                quotient = float(value) / 1024**exponent
+                unit, value_decimals = unit_list[exponent]
+                format_string = '{0:.%sf} {1}' % (value_decimals)
+                return format_string.format(quotient, unit)
+            if value == 0:
+                return '0 bytes'
+            if value == 1:
+                return '1 byte'
+            else:
+               return '0'
 
 
 class ProjectManager(ForUpdateManager):

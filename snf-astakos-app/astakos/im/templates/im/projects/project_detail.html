@@ -114,11 +114,11 @@ href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
 		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
 		 	<dt>Member join policy</dt>
             <dd>
-                {{ join_policies|lookup:object.member_join_policy|title }}
+                {{ object.member_join_policy_display|title }}
             </dd>
 		 	<dt>Member leave policy</dt>
             <dd>
-                {{ leave_policies|lookup:object.member_leave_policy|title }}
+                {{ object.member_leave_policy_display|title }}
             </dd>
 		 </dl>
 	 </div>

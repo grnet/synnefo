@@ -32,7 +32,7 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar ul.services li.active                 { background:#333;}
 .cloudbar ul.services li:hover                  { background:#444; } 
 .cloudbar .red-border							{ border:2px solid red; }
-.cloudbar ul.services li.red-border				{ height:31px; line-height:31px; margin-left:-2px; margin-right:-2px; }
+.cloudbar ul.services li.red-border				{ height:31px; line-height:31px; margin-left:0px; margin-right:0px; }
 @media screen and (max-width : 480px) 		{ 
 	.cloudbar .profile 							{ float:none; }	 
 	.cloudbar .services li:first-child			{ position:absolute; left:0; top:0; background:#000}

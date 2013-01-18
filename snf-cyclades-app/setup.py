@@ -44,11 +44,11 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
+    # try to update the version file
+    from synnefo.util.version import update_version
     update_version('synnefo.versions', 'app', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    pass
 
 from synnefo.versions.app import __version__
 
@@ -75,10 +75,10 @@ INSTALL_REQUIRES = [
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',
-    'snf-common>0.11',
+    'snf-common',
     'vncauthproxy>=1.2',
     'south>=0.7, <=0.7.3',
-    'snf-pithos-backend>=0.11',
+    'snf-pithos-backend',
     'lockfile>=0.8, <0.9',
     'ipaddr',
     'setproctitle>=1.0.1',

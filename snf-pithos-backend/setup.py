@@ -42,13 +42,12 @@ from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
-    update_version('pithos.backends', 'version', HERE)
+    # try to update the version file
+    from synnefo.util import version
+    version.update_version('pithos.backends', 'version', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    pass
 
 from pithos.backends.version import __version__
 
@@ -66,7 +65,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-common>0.9.13',
+    'snf-common',
     'SQLAlchemy==0.6.3',
     'alembic>=0.3.4, <0.4',
 ]

@@ -40,11 +40,11 @@ from setuptools import setup
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
+    # try to update the version file
+    from synnefo.util.version import update_version
     update_version('synnefo.versions', 'ganeti', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    pass
 
 from synnefo.versions.ganeti import __version__
 
@@ -60,7 +60,7 @@ setup(
     packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
     dependency_links = ['http://docs.dev.grnet.gr/pypi'],
     install_requires=[
-        'snf-common>0.9.14',
+        'snf-common',
         'python-daemon>=1.5.5',
         'pyinotify>=0.8.9',
         'puka',

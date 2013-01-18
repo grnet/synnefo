@@ -42,13 +42,12 @@ from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
-    update_version('pithos.api', 'version', HERE)
+    # try to update the version file
+    from synnefo.util import version
+    version.update_version('pithos.api', 'version', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    pass
 
 from pithos.api.version import __version__
 
@@ -66,8 +65,8 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'snf-common>0.10.0',
-    'snf-pithos-backend>0.9.7',
+    'snf-common',
+    'snf-pithos-backend',
     'Django>=1.2, <1.3'
 ]
 

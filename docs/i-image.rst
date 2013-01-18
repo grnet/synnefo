@@ -31,6 +31,22 @@ snf-image Setup
 
 The following apply to ``ganeti`` nodes.
 
+Firstly mount the ``pithos`` nfs mount point. Assuming that ``pithos`` node
+(the one who does the NFS export) is node1.example.com, append the following
+line in `/etc/fstab`:
+
+.. code-block:: console
+
+   node1:/pithos /srv/pithos nfs4 defaults,rw,noatime,nodiratime,intr,rsize=1048576,wsize=1048576,noacl
+
+and then:
+
+.. code-block:: console
+
+   apt-get install -t squeeze-backports nfs-common
+   mkdir /srv/pithos
+   mount /srv/pithos
+
 .. code-block:: console
 
    # apt-get install snf-image-host

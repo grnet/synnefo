@@ -44,11 +44,11 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
-    # use devtools to update the version file
-    from devtools.version import update_version
+    # try to update the version file
+    from synnefo.util.version import update_version
     update_version('synnefo.versions', 'webproject', HERE)
 except ImportError:
-    raise RuntimeError("devtools is a build dependency")
+    pass
 
 from synnefo.versions.webproject import __version__
 
@@ -67,7 +67,7 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
         'Django >=1.2, <1.3',
-        'snf-common>=0.9.0rc'
+        'snf-common'
 ]
 
 EXTRAS_REQUIRES = {

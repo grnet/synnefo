@@ -73,6 +73,7 @@ $(document).ready(function() {
 	
 	
 	if ($('input#id_change_email:checkbox').attr('checked')) {
+		 
 		newEmailDiv.show();
 		$('.form-following #email-span').parents('.form-row').addClass('open');
 	}; 
@@ -122,7 +123,7 @@ $(document).ready(function() {
 	authTokenDiv.addClass('refresh');
 	$('#token-span').click(function(e){
 		$(this).parents('.form-row').toggleClass('open');
-		
+		$(this).siblings('span.info').find('span').hide();	
 		var position = $(this).parents('.form-row').position();
 		$('#token-confirm').css('top', position.top - 10);
 		$('#token-confirm').toggle();
@@ -135,7 +136,16 @@ $(document).ready(function() {
 		$(this).hide();
 	})
 	
-	
+	$('#token-span').hover(
+      function () {
+      	if (!$(this).parents('.form-row').hasClass('open')){
+      		$(this).siblings('span.info').find('span').show();	
+      	}
+      	
+      },
+      function () {
+      	$(this).siblings('span.info').find('span').hide();
+      });
 	
 	/* end of complex form js */
 	

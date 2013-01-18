@@ -36,7 +36,7 @@
                             <span class="unit">{{ rdata.unit }}</span>
                         </span>
 						{% endif %}
-                        {% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
+                        {{rdata.pluralized_display_name}}
 						</p>
 					</div>
 					<div class="bar" data-steps="">

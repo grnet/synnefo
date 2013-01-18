@@ -50,7 +50,7 @@
 		 	<dl class="alt-style">
 		 	    {% for rp in form.resource_policies %}
 		 		    <dt>
-           				Max {% if rp.is_abbreviation %}{{ rp.verbose_name|upper }}{% else %}{{ rp.verbose_name }}{% endif %}{% if not rp.unit %}s {% endif  %}  per user
+                        Max {{rp.pluralized_display_name}} per user
            			</dt>
 			 		<dd>
 			 			

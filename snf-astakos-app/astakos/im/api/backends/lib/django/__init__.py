@@ -253,6 +253,8 @@ class DjangoBackend(BaseBackend):
                      report_desc=resource.report_desc,
                      placeholder=resource.placeholder,
                      verbose_name=resource.verbose_name,
+                     display_name=resource.display_name,
+                     pluralized_display_name=resource.pluralized_display_name,
                      maxValue=quantity + capacity,
                      currValue=currValue)
             append(d)

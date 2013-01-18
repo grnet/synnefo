@@ -43,7 +43,7 @@ from django.db.models.query import QuerySet
 
 
 from astakos.im.settings import PAGINATE_BY, RESOURCES_PRESENTATION_DATA
-from astakos.im.models import RESOURCE_SEPARATOR
+from astakos.im.models import RESOURCE_SEPARATOR, ProjectResourceGrant
 
 register = template.Library()
 
@@ -178,25 +178,7 @@ unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 0, 0, 0])
 @register.filter
 def sizeof_fmt(num):
     """Human friendly file size"""
-    try:
-        num = float(num)
-    except:
-        return
-    else:
-        if math.isinf(num):
-            return 'Unlimited'
-        if num > 1:
-            exponent = min(int(log(num, 1024)), len(unit_list) - 1)
-            quotient = float(num) / 1024**exponent
-            unit, num_decimals = unit_list[exponent]
-            format_string = '{0:.%sf} {1}' % (num_decimals)
-            return format_string.format(quotient, unit)
-        if num == 0:
-            return '0 bytes'
-        if num == 1:
-            return '1 byte'
-        else:
-           return '0'
+    return ProjectResourceGrant.display_filesize(num)
 
 @register.filter
 def isinf(v):

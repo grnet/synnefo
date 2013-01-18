@@ -170,6 +170,11 @@ def register_services(services):
     return create_entity(payload)
 
 def register_resources(resources):
+    try:
+        QH_PRACTICALLY_INFINITE
+    except NameError:
+        return
+
     payload = list(SetQuotaPayload(
             holder=resource.service,
             resource=resource,

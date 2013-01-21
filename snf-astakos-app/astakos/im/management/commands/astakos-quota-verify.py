@@ -62,6 +62,16 @@ class Command(BaseCommand):
 
         try:
             log = sync_all_users(sync=sync)
+            existing, nonexisting, registered_quotas, astakos_quotas = log
+
+            self.stdout.write("User registered in quotaholder:\n")
+            self.stdout.write("%s\n\n" % (existing))
+            self.stdout.write("User not registered in quotaholder:\n")
+            self.stdout.write("%s\n\n" % (nonexisting))
+            self.stdout.write("Quotas according to quotaholder:\n")
+            self.stdout.write("%s\n\n" % (registered_quotas))
+            self.stdout.write("Quotas according to astakos:\n")
+            self.stdout.write("%s\n" % (astakos_quotas))
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Syncing failed.")

@@ -58,8 +58,6 @@ from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients import ClientError
 
-import fabric.api as fabric
-
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
 # Use backported unittest functionality if Python < 2.7
@@ -92,6 +90,26 @@ red = '\x1b[31m'
 yellow = '\x1b[33m'
 green = '\x1b[32m'
 normal = '\x1b[0m'
+
+
+# --------------------------------------------------------------------
+# Global functions
+def _ssh_execute(hostip, username, password, command):
+    """Execute a command via ssh"""
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(hostip, username=username, password=password)
+    except socket.error:
+        raise AssertionError
+    try:
+        stdin, stdout, stderr = ssh.exec_command(command)
+    except paramiko.SSHException:
+        raise AssertionError
+    status = stdout.channel.recv_exit_status()
+    output = stdout.readlines()
+    ssh.close()
+    return output, status
 
 
 # --------------------------------------------------------------------
@@ -396,14 +414,8 @@ class SpawnServerTestCase(unittest.TestCase):
         self.assertEquals(ret, 0)
 
     def _get_hostname_over_ssh(self, hostip, username, password):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            ssh.connect(hostip, username=username, password=password)
-        except socket.error:
-            raise AssertionError
-        stdin, stdout, stderr = ssh.exec_command("hostname")
-        lines = stdout.readlines()
+        lines, status = _ssh_execute(
+            hostip, username, password, "hostname")
         self.assertEqual(len(lines), 1)
         return lines[0]
 
@@ -469,6 +481,7 @@ class SpawnServerTestCase(unittest.TestCase):
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(hostip, username=username, password=password)
+            ssh.close()
         except socket.error:
             raise AssertionError
 
@@ -1176,30 +1189,11 @@ class NetworkTestCase(unittest.TestCase):
         myPass = self.password['A']
 
         log.info("SSH in server A as %s/%s" % (loginname, myPass))
+        command = "ifconfig eth1 %s" % self.priv_ip["A"]
+        output, status = _ssh_execute(
+            hostip, loginname, myPass, command)
 
-        res = False
-
-        if loginname != "root":
-            with fabric.settings(
-                    fabric.hide('warnings', 'running'),
-                    warn_only=True,
-                    host_string=hostip,
-                    user=loginname, password=myPass):
-                conf_res = fabric.sudo('ifconfig eth1 %s' % self.priv_ip["A"])
-                if len(conf_res) == 0:
-                    res = True
-
-        else:
-            with fabric.settings(
-                    fabric.hide('warnings', 'running'),
-                    warn_only=True,
-                    host_string=hostip,
-                    user=loginname, password=myPass):
-                conf_res = fabric.run('ifconfig eth1 %s' % self.priv_ip["A"])
-                if len(conf_res) == 0:
-                    res = True
-
-        self.assertTrue(res)
+        self.assertEquals(status, 0)
 
     def test_003b_setup_interface_B(self):
         """Setup eth1 for server B"""
@@ -1226,30 +1220,11 @@ class NetworkTestCase(unittest.TestCase):
         myPass = self.password['B']
 
         log.info("SSH in server B as %s/%s" % (loginname, myPass))
+        command = "ifconfig eth1 %s" % self.priv_ip["B"]
+        output, status = _ssh_execute(
+            hostip, loginname, myPass, command)
 
-        res = False
-
-        if loginname != "root":
-            with fabric.settings(
-                    fabric.hide('warnings', 'running'),
-                    warn_only=True,
-                    host_string=hostip,
-                    user=loginname, password=myPass):
-                conf_res = fabric.sudo('ifconfig eth1 %s' % self.priv_ip["B"])
-                if len(conf_res) == 0:
-                    res = True
-
-        else:
-            with fabric.settings(
-                    fabric.hide('warnings', 'running'),
-                    warn_only=True,
-                    host_string=hostip,
-                    user=loginname, password=myPass):
-                conf_res = fabric.run('ifconfig eth1 %s' % self.priv_ip["B"])
-                if len(conf_res) == 0:
-                    res = True
-
-        self.assertTrue(res)
+        self.assertEquals(status, 0)
 
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""
@@ -1275,17 +1250,10 @@ class NetworkTestCase(unittest.TestCase):
 
         myPass = self.password['A']
 
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(hostip, username=loginname, password=myPass)
-        except socket.error:
-            raise AssertionError
-
         cmd = "if ping -c 2 -w 3 %s >/dev/null; \
                then echo \'True\'; fi;" % self.priv_ip["B"]
-        stdin, stdout, stderr = ssh.exec_command(cmd)
-        lines = stdout.readlines()
+        lines, status = _ssh_execute(
+            hostip, loginname, myPass, cmd)
 
         exists = False
 

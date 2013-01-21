@@ -134,7 +134,7 @@ $(document).ready(function() {
 		$(this).parents('.form-row').toggleClass('open');
 		$(this).siblings('span.info').find('span').hide();	
 		placeTokenConfirm();
-		$('#token-confirm').toggle('slow');
+		$('#token-confirm').toggle();
 		return false;
 	});
 	

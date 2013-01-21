@@ -7,20 +7,20 @@
 	<h2>WELCOME TO OKEANOS</h2>
 	<div class="two-cols clearfix dotted pithos">
 		<div class="rt">
-    		<a href=""><img class="pic" src="{{ IM_STATIC_URL }}images/landing-pithos.png" /></a>
+    		<a href="/pithos/ui/"><img class="pic" src="{{ IM_STATIC_URL }}images/landing-pithos.png" /></a>
 		</div>
 		<div class="lt">
- 			<a href="">Pithos</a> takes you to the storage service where up to 50 gigs
+ 			<a href="/pithos/ui/">Pithos</a> takes you to the storage service where up to 50 gigs
 of space is yours.
 
 		</div>
 	</div>
 	<div class="two-cols clearfix dotted cyclades">
 		<div class="rt">
-  			<a href=""><img class="pic" src="{{ IM_STATIC_URL }}images/landing-cyclades.png" /></a>
+  			<a href="/ui/"><img class="pic" src="{{ IM_STATIC_URL }}images/landing-cyclades.png" /></a>
 		</div>
 		<div class="lt">
- 			<a href="">Cyclades</a> to the compute and network cervice where you can
+ 			<a href="/ui/">Cyclades</a> to the compute and network cervice where you can
 create your own machines and networks.
 
 
@@ -28,10 +28,10 @@ create your own machines and networks.
 	</div>
 	<div class="two-cols clearfix dotted dashboard">
 		<div class="rt">
-    		<a href=""><img class="pic" src="{{ IM_STATIC_URL }}images/landing-dashboard.png" /></a>
+    		<a href="{% url astakos.im.views.edit_profile %}"><img class="pic" src="{{ IM_STATIC_URL }}images/landing-dashboard.png" /></a>
 		</div>
 		<div class="lt">
- 			On the right you can accesss your <a href="">dashboard</a> to create
+ 			On the right you can accesss your <a href="{% url astakos.im.views.edit_profile %}">dashboard</a> to create
 projects or change account settings
 
 

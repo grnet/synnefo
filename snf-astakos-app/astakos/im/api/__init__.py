@@ -126,7 +126,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         if with_extra_links:
             append(item(
                 url=absolute(request, reverse('landing')),
-                name="Welcome")) 
+                name="Overview")) 
         append(item(url=absolute(request, reverse('edit_profile')),
                name="Profile"))
         if with_extra_links:

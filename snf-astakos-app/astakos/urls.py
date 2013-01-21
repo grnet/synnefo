@@ -35,6 +35,5 @@ from django.conf.urls.defaults import include, patterns
 
 
 urlpatterns = patterns('',
-    (r'^im/', include('astakos.im.urls'))
-)
-
+                       (r'^im/', include('astakos.im.urls'))
+                       )

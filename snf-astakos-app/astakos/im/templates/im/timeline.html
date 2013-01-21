@@ -1,0 +1,31 @@
+{% extends "im/account_base.html" %}
+
+{% block page.body %}
+<div class="projects">
+	<div class="maincol {% block innerpage.class %}{% endblock %}">
+	    <form action="" method="post"
+	            class="withlabels">{% csrf_token %}
+	            {% include "im/form_render.html" %}
+	            <div class="form-row submit">
+	                <input type="submit" class="submit altcol" value="SUBMIT" />
+	            </div>
+	    </form>
+	</div>
+</div>
+<div class="timeline">
+<table>
+    <tr style="color:black; font-weight:bold;">
+    {% for i in timeline_header %}
+        <td>{{i}}</td>
+    {% endfor %}
+    </tr>
+{% for o in timeline_body %}
+    <tr style="color:black">
+    {% for i in o %}
+        <td>{{i}}</td>
+    {% endfor %}
+    </tr>
+{% endfor %}
+</table>
+</div>
+{% endblock %}

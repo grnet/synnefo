@@ -1,22 +1,21 @@
 # encoding: utf-8
-import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
+
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+        return
         # Adding unique constraint on 'AstakosUser', fields ['third_party_identifier', 'provider']
-        db.create_unique('im_astakosuser', ['third_party_identifier', 'provider'])
-
+        db.create_unique(
+            'im_astakosuser', ['third_party_identifier', 'provider'])
 
     def backwards(self, orm):
-        
+        return
         # Removing unique constraint on 'AstakosUser', fields ['third_party_identifier', 'provider']
-        db.delete_unique('im_astakosuser', ['third_party_identifier', 'provider'])
-
+        db.delete_unique(
+            'im_astakosuser', ['third_party_identifier', 'provider'])
 
     models = {
         'auth.group': {

@@ -118,3 +118,9 @@ ASTAKOS_URL = 'https://astakos.okeanos.grnet.gr/im/authenticate'
 # SECRET_ENCRYPTION_KEY may up to 32 bytes. Keys bigger than 32 bytes are not
 # supported.
 SECRET_ENCRYPTION_KEY= "Password Encryption Key"
+
+# Astakos service token
+# The token used for astakos service api calls (e.g. api to retrieve user email
+# using a user uuid)
+CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
+

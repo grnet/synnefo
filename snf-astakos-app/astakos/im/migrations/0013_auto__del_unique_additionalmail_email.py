@@ -1,22 +1,19 @@
 # encoding: utf-8
-import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
+
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Removing unique constraint on 'AdditionalMail', fields ['email']
         db.delete_unique('im_additionalmail', ['email'])
 
-
     def backwards(self, orm):
-        
+
         # Adding unique constraint on 'AdditionalMail', fields ['email']
         db.create_unique('im_additionalmail', ['email'])
-
 
     models = {
         'auth.group': {

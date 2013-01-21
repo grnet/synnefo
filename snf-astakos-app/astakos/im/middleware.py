@@ -31,29 +31,32 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from urllib import unquote
-from django.contrib.auth import authenticate
+from urlparse import urlunsplit, urlsplit
 
-from astakos.im.settings import COOKIE_NAME
-from astakos.im.models import AstakosUser
-from astakos.im.functions import login
+from django.http import HttpResponse
+from django.utils.http import urlencode
+
+from astakos.im.cookie import Cookie
+from astakos.im.util import get_query
+
 
 class CookieAuthenticationMiddleware(object):
     def process_request(self, request):
-        assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
-        if request.user.is_authenticated():
-            return None
+        cookie = Cookie(request)
+        if cookie.is_valid:
+            return
         
-        cookie = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        email, sep, auth_token = cookie.partition('|')
-        if not sep:
-            return None
+        response = HttpResponse(status=302)
         
-        try:
-            user = authenticate(email=email, auth_token=auth_token)
-            if user:
-                request.user = user
-            login(request, user)
-        except:
-            pass
-        return None
+        parts = list(urlsplit(request.path))
+        params = get_query(request)
+        parts[3] = urlencode(params)
+        url = urlunsplit(parts)
+        
+        response['Location'] = url
+        cookie.fix(response)
+        return response
+    
+    def process_response(self, request, response):
+        Cookie(request, response).fix()
+        return response

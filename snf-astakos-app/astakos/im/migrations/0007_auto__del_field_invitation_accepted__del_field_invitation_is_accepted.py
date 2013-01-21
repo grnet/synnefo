@@ -4,25 +4,24 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Deleting field 'Invitation.accepted'
         db.delete_column('im_invitation', 'accepted')
 
         # Deleting field 'Invitation.is_accepted'
         db.delete_column('im_invitation', 'is_accepted')
 
-
     def backwards(self, orm):
-        
+
         # Adding field 'Invitation.accepted'
         db.add_column('im_invitation', 'accepted', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True), keep_default=False)
 
         # Adding field 'Invitation.is_accepted'
         db.add_column('im_invitation', 'is_accepted', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
-
 
     models = {
         'auth.group': {

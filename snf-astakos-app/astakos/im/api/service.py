@@ -32,40 +32,23 @@
 # or implied, of GRNET S.A.
 
 import logging
-import urllib
 
 from functools import wraps
-from traceback import format_exc
 from time import time, mktime
-from urllib import quote
-from urlparse import urlparse
-from collections import defaultdict
 
-from django.conf import settings
 from django.http import HttpResponse
-from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import simplejson as json
 
-from astakos.im.api.faults import *
+from . import render_fault
+from .faults import (
+    Fault, Unauthorized, InternalServerError, BadRequest, ItemNotFound)
 from astakos.im.models import AstakosUser, Service
-from astakos.im.settings import INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED
-from astakos.im.util import epoch
 from astakos.im.forms import FeedbackForm
-from astakos.im.functions import send_feedback as send_feedback_func, SendMailError
+from astakos.im.functions import send_feedback as send_feedback_func
 
 logger = logging.getLogger(__name__)
 
-def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and settings.DEBUG:
-        fault.details = format_exc(fault)
-
-    request.serialization = 'text'
-    data = fault.message + '\n'
-    if fault.details:
-        data += '\n' + fault.details
-    response = HttpResponse(data, status=fault.code)
-    response['Content-Length'] = len(response.content)
-    return response
 
 def api_method(http_method=None, token_required=False):
     """Decorator function for views that implement an API method."""
@@ -81,10 +64,11 @@ def api_method(http_method=None, token_required=False):
                         raise Unauthorized('Access denied')
                     try:
                         service = Service.objects.get(auth_token=x_auth_token)
-                        
+
                         # Check if the token has expired.
-                        if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
-                            raise Unauthorized('Authentication expired')
+                        if service.auth_token_expires:
+                            if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
+                                raise Unauthorized('Authentication expired')
                     except Service.DoesNotExist, e:
                         raise Unauthorized('Invalid X-Auth-Token')
                 response = func(request, *args, **kwargs)
@@ -98,26 +82,43 @@ def api_method(http_method=None, token_required=False):
         return wrapper
     return decorator
 
-@api_method(http_method='GET', token_required=True)
-def get_user_by_email(request, user=None):
-    # Normal Response Codes: 200
-    # Error Response Codes: internalServerError (500)
-    #                       badRequest (400)
-    #                       unauthorised (401)
-    #                       forbidden (403)
-    #                       itemNotFound (404)
-    email = request.GET.get('name')
-    return _get_user_by_email(email)
 
 @api_method(http_method='GET', token_required=True)
-def get_user_by_username(request, user_id, user=None):
+def get_user_info(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    #                       forbidden (403)
     #                       itemNotFound (404)
-    return _get_user_by_username(user_id)
+    username = request.META.get('HTTP_X_USER_USERNAME')
+    uuid = request.META.get('HTTP_X_USER_UUID')
+    if not username and not uuid:
+        raise BadRequest('Either username or uuid is required.')
+
+    query = AstakosUser.objects.all()
+    user_info = None
+    if username:
+        try:
+            user = query.get(username__iexact=username)
+        except AstakosUser.DoesNotExist:
+            raise ItemNotFound('Invalid username: %s' % username)
+        else:
+            user_info = {'uuid': user.uuid}
+    else:
+        try:
+            user = query.get(uuid=uuid)
+        except AstakosUser.DoesNotExist:
+            raise ItemNotFound('Invalid uuid: %s' % uuid)
+        else:
+            user_info = {'username': user.username}
+
+    response = HttpResponse()
+    response.status = 200
+    response.content = json.dumps(user_info)
+    response['Content-Type'] = 'application/json; charset=UTF-8'
+    response['Content-Length'] = len(response.content)
+    return response
+
 
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)
@@ -129,20 +130,20 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     auth_token = request.POST.get('auth', '')
     if not auth_token:
         raise BadRequest('Missing user authentication')
-    
-    user  = None
+
+    user = None
     try:
         user = AstakosUser.objects.get(auth_token=auth_token)
     except:
         pass
-    
+
     if not user:
         raise BadRequest('Invalid user authentication')
-    
+
     form = FeedbackForm(request.POST)
     if not form.is_valid():
         raise BadRequest('Invalid data')
-    
+
     msg = form.cleaned_data['feedback_msg']
     data = form.cleaned_data['feedback_data']
     send_feedback_func(msg, data, user, email_template_name)

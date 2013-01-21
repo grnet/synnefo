@@ -39,6 +39,9 @@ UI_UPDATE_INTERVAL_FAST = UI_UPDATE_INTERVAL / 2
 # consecutive API calls (aligning changes-since attribute).
 UI_CHANGES_SINCE_ALIGNMENT = 0
 
+# How often to check for user usage changes
+UI_QUOTAS_UPDATE_INTERVAL = 10000
+
 # List of emails used for sending the feedback messages to (following the ADMINS format)
 FEEDBACK_CONTACTS = (
     # ('Contact Name', 'contact_email@domain.com'),

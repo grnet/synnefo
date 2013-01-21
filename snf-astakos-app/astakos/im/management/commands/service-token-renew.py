@@ -31,21 +31,38 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
+from datetime import datetime, timedelta
+
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Service
 
+
 class Command(BaseCommand):
     args = "<name>"
     help = "Renew service token"
-    
+
+    option_list = BaseCommand.option_list + (
+        make_option('--duration',
+                    dest='duration',
+                    metavar='NUM',
+                    help="In how many days token is going to expire."),)
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
-        
+
         try:
             service = Service.objects.get(name=args[0])
-            service.renew_token()
+            expires = None
+            if options['duration']:
+                try:
+                    duration = int(options['duration'])
+                except ValueError, e:
+                    raise CommandError('Invalid duration')
+                expires = datetime.now() + timedelta(days=duration)
+            service.renew_token(expires)
             service.save()
             self.stdout.write('New service token: %s\n' % service.auth_token)
         except Service.DoesNotExist:

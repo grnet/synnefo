@@ -42,10 +42,13 @@ In `/etc/gunicorn.d/synnefo` add:
     'args': (
       '--bind=127.0.0.1:8080',
       '--workers=4',
+      '--worker-class=gevent',
       '--log-level=debug',
     ),
    }
 
+Setting ``gevent`` for worker-class, requires webproject to support
+pooling and greenlets.
 
 Test your Setup:
 ++++++++++++++++

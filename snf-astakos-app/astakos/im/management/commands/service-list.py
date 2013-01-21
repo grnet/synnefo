@@ -33,29 +33,27 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import Service
 
-class Command(BaseCommand):
-    help = "List g"
 
-    option_list = BaseCommand.option_list + (
+class Command(NoArgsCommand):
+    help = "List services"
+
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
     )
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+    def handle_noargs(self, **options):
+        services = Service.objects.all().order_by('id')
 
-        services = Service.objects.all()
-
-        labels = ('id', 'name', 'url', 'auth_token', 'icon')
-        columns = (3, 12, 40, 20, 20)
+        labels = ('id', 'order', 'name', 'url', 'auth_token', 'icon')
+        columns = (3, 3, 12, 40, 20, 20)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -64,9 +62,10 @@ class Command(BaseCommand):
             self.stdout.write(sep + '\n')
 
         for service in services:
-            fields = (str(service.id), service.name, service.url,
-                    service.auth_token,
-                    service.icon)
+            fields = (str(service.id), str(service.order), service.name,
+                      service.url,
+                      service.auth_token or '',
+                      service.icon)
 
             if options['csv']:
                 line = '|'.join(fields)

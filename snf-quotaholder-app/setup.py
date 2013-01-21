@@ -45,10 +45,10 @@ HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 try:
     # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('quotaholder_django', 'version', HERE)
+    from devflow import versioning
+    versioning.update_version('quotaholder_django', 'version', HERE)
 except ImportError:
-    pass
+    raise RuntimeError("devflow is a build depedency")
 
 from quotaholder_django.version import __version__
 

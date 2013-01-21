@@ -34,6 +34,7 @@ the state of the Ganeti backend. See docstring on top of
 logic/reconciliation.py for a description of reconciliation rules.
 
 """
+import sys
 import datetime
 import bitarray
 
@@ -45,11 +46,26 @@ from django.db import transaction
 
 from synnefo.db.models import Backend, Network, BackendNetwork
 from synnefo.db.pools import IPPool
-from synnefo.logic import reconciliation, backend, utils
+from synnefo.logic import reconciliation, utils
+from synnefo.logic import backend as backend_mod
+
+fix = False
+write = sys.stdout.write
 
 
 class Command(BaseCommand):
-    help = 'Reconcile contents of Synnefo DB with state of Ganeti backend'
+    help = """Reconcile contents of Synnefo DB with state of Ganeti backend
+
+Network reconciliation can detect and fix the following cases:
+    - Missing database entries for a network in a Ganeti backend
+    - Stale database networks, which do no exist in the Ganeti backend
+    - Missing Ganeti networks
+    - Ganeti networks that are not connected to all Ganeti nodegroups
+    - Networks that have unsynced state
+    - Networks that have unsynced IP pools
+    - Orphan networks in the Ganeti backend
+"""
+
     can_import_settings = True
     output_transaction = True  # The management command runs inside
                                # an SQL transaction
@@ -63,13 +79,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, **options):
-        self.verbosity = int(options['verbosity'])
+        global fix, write
         fix = options['fix']
+        write = self.stdout.write
+        self.verbosity = int(options['verbosity'])
         conflicting_ips = options['conflicting_ips']
-        reconcile_networks(self.stdout, fix, conflicting_ips)
+        reconcile_networks(conflicting_ips)
 
 
-def reconcile_networks(out, fix, conflicting_ips):
+def reconcile_networks(conflicting_ips=False):
     # Get models from DB
     backends = Backend.objects.exclude(offline=True)
     networks = Network.objects.filter(deleted=False)
@@ -85,168 +103,205 @@ def reconcile_networks(out, fix, conflicting_ips):
 
     # Perform reconciliation for each network
     for network in networks:
-        net_id = network.id
-        destroying = network.action == 'DESTROY'
-        uses_pool = not network.public or PUBLIC_USE_POOL
         ip_available_maps = []
         ip_reserved_maps = []
-
-        # Perform reconcilliation for each backend
-        for b in backends:
-            if network.public and not \
-                BackendNetwork.objects.filter(network=network,
-                                              backend=b).exists():
-                    continue
-
-            info = (net_id, b.clustername)
-            back_network = None
-
-            try:
-                # Get the model describing the network to this backend
-                back_network = BackendNetwork.objects.get(network=network,
-                                                          backend=b)
-            except BackendNetwork.DoesNotExist:
-                out.write('D: No DB entry for network %d in backend %s\n' % info)
-                if fix:
-                    out.write('F: Created entry in DB\n')
-                    back_network = \
-                        BackendNetwork.objects.create(network=network,
-                                                      backend=b)
+        uses_pool = not network.public or PUBLIC_USE_POOL
+        for bend in backends:
+            bnet = get_backend_network(network, bend)
+            if not bnet:
+                # CASE-1: Paritioned network
+                if not network.public:
+                    bnet = reconcile_parted_network(network, bend)
+                    if not fix:
+                        continue
                 else:
                     continue
 
             try:
-                # Get the info from backend
-                ganeti_networks[b][net_id]
+                gnet = ganeti_networks[b][network.id]
             except KeyError:
-                # Stale network does not exist in backend
-                if destroying:
-                    if back_network.operstate != "DELETED":
-                        out.write('D: Stale network %d in backend %s\n' % info)
-                        if fix:
-                            out.write("F: Issued OP_NETWORK_REMOVE'\n")
-                            etime = datetime.datetime.now()
-                            backend.process_network_status(back_network, etime,
-                                                0, 'OP_NETWORK_REMOVE', 'success',
-                                                'Reconciliation simulated event.')
+                # Network does not exist in backend. If the network action is
+                # DESTROY, then we must destroy the network in the backend.
+                # Else we have to create it!
+                if network.action == "DESTROY" and bnet.operstate != "DELETED":
+                    # CASE-2: Stale DB network
+                    reconcile_stale_network(bnet)
+                    # Skip rest reconciliation as the backend is just being
+                    # deleted
                     continue
                 else:
-                    # Pending network
-                    out.write('D: Pending network %d in backend %s\n' % info)
-                    if fix:
-                        out.write('F: Creating network in backend.\n')
-                        backend.create_network(network, [b])
-                        # Skip rest reconciliation as the network is just
-                        # being created
+                    # CASE-3: Missing Ganeti network
+                    reconcile_missing_network(network, bend)
+                    # Skip rest reconciliation as the network is just
+                    # being created
                     continue
 
             try:
-                hanging_groups = ganeti_hanging_networks[b][net_id]
+                hanging_groups = ganeti_hanging_networks[bend][network.id]
             except KeyError:
                 # Network is connected to all nodegroups
                 hanging_groups = []
 
-            if hanging_groups and not destroying:
-                # Hanging network = not connected to all nodegroups of backend
-                out.write('D: Network %d in backend %s is not connected to '
-                          'the following groups:\n' % info)
-                out.write('-  ' + '\n-  '.join(hanging_groups) + '\n')
-                if fix:
-                    for group in hanging_groups:
-                        out.write('F: Connecting network %d to nodegroup %s\n'
-                                  % (net_id, group))
-                        backend.connect_network(network, b, group=group)
-            elif back_network and back_network.operstate != 'ACTIVE':
-                # Network is active
-                out.write('D: Unsynced network %d in backend %s\n' % info)
-                if fix:
-                    out.write("F: Issued OP_NETWORK_CONNECT\n")
-                    etime = datetime.datetime.now()
-                    backend.process_network_status(back_network, etime,
-                                        0, 'OP_NETWORK_CONNECT', 'success',
-                                        'Reconciliation simulated event.')
-                    network = Network.objects.get(id=network.id)
+            if hanging_groups:
+                # CASE-3: Ganeti networks not connected to all nodegroups
+                reconcile_hanging_groups(network, bend, hanging_groups)
+                continue
+
+            if bnet.operstate != 'ACTIVE':
+                # CASE-4: Unsynced network state. At this point the network
+                # exists and is connected to all nodes so is must be active!
+                reconcile_unsynced_network(network, bend, bnet)
 
             if uses_pool:
-                # Reconcile IP Pools
-                gnet = ganeti_networks[b][net_id]
-                converter = IPPool(Foo(gnet['network']))
-                a_map = bitarray_from_map(gnet['map'])
-                a_map.invert()
-                reserved = gnet['external_reservations']
-                r_map = a_map.copy()
-                r_map.setall(True)
-                for address in reserved.split(','):
-                    index = converter.value_to_index(address)
-                    a_map[index] = True
-                    r_map[index] = False
-                ip_available_maps.append(a_map)
-                ip_reserved_maps.append(r_map)
+                # Get ganeti IP Pools
+                available_map, reserved_map = get_network_pool(gnet)
+                ip_available_maps.append(available_map)
+                ip_reserved_maps.append(reserved_map)
 
         if uses_pool and (ip_available_maps or ip_reserved_maps):
-            available_map = reduce(lambda x, y: x & y, ip_available_maps)
-            reserved_map = reduce(lambda x, y: x & y, ip_reserved_maps)
+            # CASE-5: Unsynced IP Pools
+            reconcile_ip_pools(network, ip_available_maps, ip_reserved_maps)
 
-            pool = network.get_pool()
-            un_available = pool.available != available_map
-            un_reserved = pool.reserved != reserved_map
-            if un_available or un_reserved:
-                out.write("Detected unsynchronized pool for network %r:\n" %
-                          network.id)
-                if un_available:
-                    out.write("Available:\n\tDB: %r\n\tGB: %r\n" %
-                             (pool.available.to01(), available_map.to01()))
-                    if fix:
-                        pool.available = available_map
-                if un_reserved:
-                    out.write("Reserved:\n\tDB: %r\n\tGB: %r\n" %
-                             (pool.reserved.to01(), reserved_map.to01()))
-                    if fix:
-                        pool.reserved = reserved_map
-                if fix:
-                    out.write("Synchronized pools for network %r.\n" % network.id)
-            pool.save()
-
-
-        # Detect conflicting IPs: Detect NIC's that have the same IP
-        # in the same network.
         if conflicting_ips:
-            machine_ips = network.nics.all().values_list('ipv4', 'machine')
-            ips = map(lambda x: x[0], machine_ips)
-            distinct_ips = set(ips)
-            if len(distinct_ips) < len(ips):
-                out.write('D: Conflicting IP in network %s.\n' % net_id)
-                conflicts = ips
-                for i in distinct_ips:
-                    conflicts.remove(i)
-                for i in conflicts:
-                    machines = [utils.id_to_instance_name(x[1]) \
-                                for x in machine_ips if x[0] == i]
-                    out.write('\tIP:%s Machines: %s\n' %
-                              (i, ', '.join(machines)))
-                if fix:
-                    out.write('F: Can not fix it. Manually resolve the'
-                              ' conflict.\n')
+            detect_conflicting_ips()
 
+    # CASE-6: Orphan networks
+    reconcile_orphan_networks(networks, ganeti_networks)
+
+
+def get_backend_network(network, backend):
+    try:
+        return BackendNetwork.objects.get(network=network, backend=backend)
+    except BackendNetwork.DoesNotExist:
+        return None
+
+
+def reconcile_parted_network(network, backend):
+    write("D: Missing DB entry for network %s in backend %s\n" %
+          (network, backend))
+    if fix:
+        network.create_backend_network(backend)
+        write("F: Created DB entry\n")
+        bnet = get_backend_network(network, backend)
+        return bnet
+
+
+def reconcile_stale_network(backend_network):
+    write("D: Stale DB entry for network %s in backend %s\n" %
+          (backend_network.network, backend_network.backend))
+    if fix:
+        etime = datetime.datetime.now()
+        backend_mod.process_network_status(backend_network, etime, 0,
+                                          "OP_NETWORK_REMOVE",
+                                          "success",
+                                          "Reconciliation simulated event")
+        write("F: Reconciled event: OP_NETWORK_REMOVE\n")
+
+
+def reconcile_missing_network(network, backend):
+    write("D: Missing Ganeti network %s in backend %s\n" %
+          (network, backend))
+    if fix:
+        backend_mod.create_network(network, [backend])
+        write("F: Issued OP_NETWORK_CONNECT\n")
+
+
+def reconcile_hanging_groups(network, backend, hanging_groups):
+    write('D: Network %s in backend %s is not connected to '
+          'the following groups:\n' % (network, backend))
+    write('-  ' + '\n-  '.join(hanging_groups) + '\n')
+    if fix:
+        for group in hanging_groups:
+            write('F: Connecting network %s to nodegroup %s\n'
+                  % (network, group))
+            backend_mod.connect_network(network, backend, group=group)
+
+
+def reconcile_unsynced_network(network, backend, backend_network):
+    write("D: Unsynced network %s in backend %s\n" % (network, backend))
+    if fix:
+        write("F: Issuing OP_NETWORK_CONNECT\n")
+        etime = datetime.datetime.now()
+        backend_mod.process_network_status(backend_network, etime, 0,
+                                          "OP_NETWORK_CONNECT",
+                                          "success",
+                                          "Reconciliation simulated eventd")
+
+
+def reconcile_ip_pools(network, available_maps, reserved_maps):
+    available_map = reduce(lambda x, y: x & y, available_maps)
+    reserved_map = reduce(lambda x, y: x & y, reserved_maps)
+
+    pool = network.get_pool()
+    if pool.available != available_map:
+        write("D: Unsynced available map of network %s:\n"
+              "\tDB: %r\n\tGB: %r\n" %
+              (network, pool.available.to01(), available_map.to01()))
+        if fix:
+            pool.available = available_map
+    if pool.reserved != reserved_map:
+        write("D: Unsynced reserved map of network %s:\n"
+              "\tDB: %r\n\tGB: %r\n" %
+              (network, pool.reserved.to01(), reserved_map.to01()))
+        if fix:
+            pool.reserved = reserved_map
+    pool.save()
+
+
+def detect_conflicting_ips(network):
+    """Detect NIC's that have the same IP in the same network."""
+    machine_ips = network.nics.all().values_list('ipv4', 'machine')
+    ips = map(lambda x: x[0], machine_ips)
+    distinct_ips = set(ips)
+    if len(distinct_ips) < len(ips):
+        for i in distinct_ips:
+            ips.remove(i)
+        for i in ips:
+            machines = [utils.id_to_instance_name(x[1]) \
+                        for x in machine_ips if x[0] == i]
+            write('D: Conflicting IP:%s Machines: %s\n' %
+                  (i, ', '.join(machines)))
+
+
+def reconcile_orphan_networks(db_networks, ganeti_networks):
     # Detect Orphan Networks in Ganeti
-    db_network_ids = set([net.id for net in networks])
+    db_network_ids = set([net.id for net in db_networks])
     for back_end, ganeti_networks in ganeti_networks.items():
         ganeti_network_ids = set(ganeti_networks.keys())
         orphans = ganeti_network_ids - db_network_ids
 
         if len(orphans) > 0:
-            out.write('D: Orphan Networks in backend %s:\n' % back_end.clustername)
-            out.write('-  ' + '\n-  '.join([str(o) for o in orphans]) + '\n')
+            write('D: Orphan Networks in backend %s:\n' % back_end.clustername)
+            write('-  ' + '\n-  '.join([str(o) for o in orphans]) + '\n')
             if fix:
                 for net_id in orphans:
-                    out.write('Disconnecting and deleting network %d\n' % net_id)
+                    write('Disconnecting and deleting network %d\n' % net_id)
                     network = Network.objects.get(id=net_id)
-                    backend.delete_network(network, backends=[back_end])
+                    backend_mod.delete_network(network, backends=[back_end])
+
+
+def get_network_pool(gnet):
+    """Return available and reserved IP maps.
+
+    Extract the available and reserved IP map from the info return from Ganeti
+    for a network.
+
+    """
+    converter = IPPool(Foo(gnet['network']))
+    a_map = bitarray_from_map(gnet['map'])
+    a_map.invert()
+    reserved = gnet['external_reservations']
+    r_map = a_map.copy()
+    r_map.setall(True)
+    for address in reserved.split(','):
+        index = converter.value_to_index(address)
+        a_map[index] = True
+        r_map[index] = False
+    return a_map, r_map
 
 
 def bitarray_from_map(bitmap):
     return bitarray.bitarray(bitmap.replace("X", "1").replace(".", "0"))
-
 
 
 class Foo():

@@ -33,6 +33,7 @@
 
 
 from synnefo.lib.commissioning import CorruptedError
+from synnefo.lib.db.intdecimalfield import intDecimalField
 
 from django.db.models import (Model, BigIntegerField, CharField,
                               ForeignKey, AutoField)
@@ -59,10 +60,10 @@ class Entity(Model):
 class Policy(Model):
 
     policy          =   CharField(max_length=4096, primary_key=True)
-    quantity        =   BigIntegerField(null=True, default=None)
-    capacity        =   BigIntegerField(null=True,  default=None)
-    import_limit    =   BigIntegerField(null=True,  default=None)
-    export_limit    =   BigIntegerField(null=True,  default=None)
+    quantity        =   intDecimalField()
+    capacity        =   intDecimalField()
+    import_limit    =   intDecimalField()
+    export_limit    =   intDecimalField()
 
     objects     =   ForUpdateManager()
 
@@ -74,14 +75,14 @@ class Holding(Model):
     policy      =   ForeignKey(Policy, to_field='policy')
     flags       =   BigIntegerField(null=False, default=0)
 
-    imported    =   BigIntegerField(null=False, default=0)
-    importing   =   BigIntegerField(null=False, default=0)
-    exported    =   BigIntegerField(null=False, default=0)
-    exporting   =   BigIntegerField(null=False, default=0)
-    returned    =   BigIntegerField(null=False, default=0)
-    returning   =   BigIntegerField(null=False, default=0)
-    released    =   BigIntegerField(null=False, default=0)
-    releasing   =   BigIntegerField(null=False, default=0)
+    imported    =   intDecimalField(default=0)
+    importing   =   intDecimalField(default=0)
+    exported    =   intDecimalField(default=0)
+    exporting   =   intDecimalField(default=0)
+    returned    =   intDecimalField(default=0)
+    returning   =   intDecimalField(default=0)
+    released    =   intDecimalField(default=0)
+    releasing   =   intDecimalField(default=0)
 
     objects     =   ForUpdateManager()
 
@@ -113,7 +114,7 @@ class Provision(Model):
 
     entity      =   ForeignKey(Entity, to_field='entity')
     resource    =   CharField(max_length=4096, null=False)
-    quantity    =   BigIntegerField(null=False)
+    quantity    =   intDecimalField()
 
     objects     =   ForUpdateManager()
 
@@ -126,23 +127,23 @@ class ProvisionLog(Model):
     issue_time          =   CharField(max_length=4096)
     log_time            =   CharField(max_length=4096)
     resource            =   CharField(max_length=4096)
-    source_quantity     =   BigIntegerField(null=True)
-    source_capacity     =   BigIntegerField(null=True)
-    source_import_limit =   BigIntegerField(null=True)
-    source_export_limit =   BigIntegerField(null=True)
-    source_imported     =   BigIntegerField(null=False)
-    source_exported     =   BigIntegerField(null=False)
-    source_returned     =   BigIntegerField(null=False)
-    source_released     =   BigIntegerField(null=False)
-    target_quantity     =   BigIntegerField(null=True)
-    target_capacity     =   BigIntegerField(null=True)
-    target_import_limit =   BigIntegerField(null=True)
-    target_export_limit =   BigIntegerField(null=True)
-    target_imported     =   BigIntegerField(null=False)
-    target_exported     =   BigIntegerField(null=False)
-    target_returned     =   BigIntegerField(null=False)
-    target_released     =   BigIntegerField(null=False)
-    delta_quantity      =   BigIntegerField(null=False)
+    source_quantity     =   intDecimalField()
+    source_capacity     =   intDecimalField()
+    source_import_limit =   intDecimalField()
+    source_export_limit =   intDecimalField()
+    source_imported     =   intDecimalField()
+    source_exported     =   intDecimalField()
+    source_returned     =   intDecimalField()
+    source_released     =   intDecimalField()
+    target_quantity     =   intDecimalField()
+    target_capacity     =   intDecimalField()
+    target_import_limit =   intDecimalField()
+    target_export_limit =   intDecimalField()
+    target_imported     =   intDecimalField()
+    target_exported     =   intDecimalField()
+    target_returned     =   intDecimalField()
+    target_released     =   intDecimalField()
+    delta_quantity      =   intDecimalField()
     reason              =   CharField(max_length=4096)
 
     objects     =   ForUpdateManager()
@@ -187,6 +188,17 @@ class ProvisionLog(Model):
     def target_outbound(self):
         return self.target_outbound_through() + self.target_exported
 
+class CallSerial(Model):
+
+    serial      =   BigIntegerField(null=False)
+    clientkey   =   CharField(max_length=4096, null=False)
+
+    objects     =   ForUpdateManager()
+
+    class Meta:
+        unique_together = (('serial', 'clientkey'),)
+
+
 def _access(*args, **kwargs):
     method = args[0]
     model = args[1]
@@ -218,6 +230,9 @@ def db_get_policy(*args, **kwargs):
 
 def db_get_commission(*args, **kwargs):
     return _get(Commission, *args, **kwargs)
+
+def db_get_callserial(*args, **kwargs):
+    return _get(CallSerial, *args, **kwargs)
 
 def db_filter_provision(*args, **kwargs):
     return _filter(Provision, *args, **kwargs)

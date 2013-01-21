@@ -432,6 +432,12 @@ def get_user_by_id(user_id):
     except AstakosUser.DoesNotExist:
         raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
 
+def get_user_by_uuid(uuid):
+    try:
+        return AstakosUser.objects.get(uuid=uuid)
+    except AstakosUser.DoesNotExist:
+        raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
+
 def create_membership(project, user):
     if isinstance(project, int):
         project = get_project_by_id(project)

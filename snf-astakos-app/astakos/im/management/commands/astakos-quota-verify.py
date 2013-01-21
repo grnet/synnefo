@@ -36,6 +36,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from astakos.im.models import sync_all_users, sync_projects
+from astakos.im.functions import get_user_by_uuid
 
 import logging
 logger = logging.getLogger(__name__)
@@ -64,14 +65,29 @@ class Command(BaseCommand):
             log = sync_all_users(sync=sync)
             existing, nonexisting, registered_quotas, astakos_quotas = log
 
-            self.stdout.write("User registered in quotaholder:\n")
-            self.stdout.write("%s\n\n" % (existing))
-            self.stdout.write("User not registered in quotaholder:\n")
-            self.stdout.write("%s\n\n" % (nonexisting))
-            self.stdout.write("Quotas according to quotaholder:\n")
-            self.stdout.write("%s\n\n" % (registered_quotas))
-            self.stdout.write("Quotas according to astakos:\n")
-            self.stdout.write("%s\n" % (astakos_quotas))
+            if nonexisting:
+                self.stdout.write("User not registered in quotaholder:\n")
+                for user in nonexisting:
+                    self.stdout.write("%s\n" % (user))
+                self.stdout.write("\n")
+
+            diffs = 0
+            for holder, local in astakos_quotas.iteritems():
+                registered = registered_quotas.pop(holder, None)
+                if registered is None:
+                    diffs += 1
+                    self.stdout.write("No quotas for %s in quotaholder.\n\n" %
+                                      (get_user_by_uuid(holder)))
+                elif local != registered:
+                    diffs += 1
+                    self.stdout.write("Quotas differ for %s:\n" % (get_user_by_uuid(holder)))
+                    self.stdout.write("Quotas according to quotaholder:\n")
+                    self.stdout.write("%s\n" % (registered))
+                    self.stdout.write("Quotas according to astakos:\n")
+                    self.stdout.write("%s\n\n" % (local))
+
+            if diffs:
+                self.stdout.write("Quotas differ for %d users.\n" % (diffs))
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Syncing failed.")

@@ -131,7 +131,7 @@
     var csrf_value = $("input[name="+MIDDLEWARE_TOKEN_INPUT_NAME+"]").val();
     var url = CHANGE_TOKEN_URL;
     var form = $("<form>");
-    var csrf = $('<input>');
+    var csrf = $('<input type="hidden">');
 
     form.attr('action', url);
     form.attr('method', 'POST');

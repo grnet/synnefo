@@ -599,5 +599,5 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .landing-page .cms a							{ color:#3780b0; }
 .landing-page .rt 								{ text-align:center;vertical-align:middle; } 
 #signup-classic									{ clear:both; }
-#signup-classic + .form-stacked					{ display:none; }
-.extralogin a.standalone						{ display:block; width:130px; margin-bottom:20px }
+#signup-classic + .form-stacked					{ display:none; background:url(../images/dots.jpg) repeat-x left bottom; width:330px;}
+.extralogin a.standalone						{ display:block; width:150px; margin-bottom:20px }

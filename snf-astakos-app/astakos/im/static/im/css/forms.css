@@ -66,7 +66,7 @@ form .with-errors select 					{ color: #9d261d;}
 form .with-errors label 					{ color: #e4776f; }
 .form-error 								{ color:red;   font-size: 0.8em; padding: 5px 5px; }
 .form-errors.all .form-error 				{ position: relative; border-radius: 0; margin-bottom: 1.3em; padding: 0.5em; }
-div.form-stacked 							{ margin-bottom: 4em; }
+div.form-stacked 							{ margin-bottom: 2em; padding-bottom:1em; }
 .checkbox-widget.checked 					{ background-color: #FF0000; background-image: url("../images/checkbox.png"); background-position: 50% 50%; }
 .content a.checkbox-widget 					{ border: 1px solid #808080; cursor: pointer; display: block; float: left; height: 25px; margin:5px 20px 0 0 ; width: 25px; }
 form.withlabels .checkbox-widget			{ margin-top:12px; }

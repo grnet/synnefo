@@ -98,6 +98,15 @@ def qh_get_holdings(users, resources):
     result = get_holding(payload)
     return result
 
+def quota_limits_per_user_from_get(lst):
+    quotas = {}
+    for holder, resource, q, c, il, el, imp, exp, ret, rel, flags in lst:
+        userquotas = quotas.get(holder, {})
+        userquotas[resource] = QuotaValues(quantity=q, capacity=c,
+                                           import_limit=il, export_limit=el)
+        quotas[holder] = userquotas
+    return quotas
+
 def qh_get_quota(users, resources):
     c = get_client()
     if not c:
@@ -114,7 +123,7 @@ def qh_get_quota(users, resources):
 
 def qh_get_quota_limits(users, resources):
     result = qh_get_quota(users, resources)
-    return result
+    return quota_limits_per_user_from_get(result)
 
 def create_entity(payload):
     c = get_client()
@@ -189,6 +198,25 @@ def register_quotas(users):
         for resource, q in u.all_quotas().iteritems():
             append( SetQuotaPayload(
                     holder=u.uuid,
+                    resource=resource,
+                    key=ENTITY_KEY,
+                    quantity=q.quantity,
+                    capacity=q.capacity,
+                    import_limit=q.import_limit,
+                    export_limit=q.export_limit,
+                    flags=0))
+    return set_quota(payload)
+
+def send_quotas(userquotas):
+    if not userquotas:
+        return
+
+    payload = []
+    append = payload.append
+    for holder, quotas in userquotas.iteritems():
+        for resource, q in quotas.iteritems():
+            append( SetQuotaPayload(
+                    holder=holder,
                     resource=resource,
                     key=ENTITY_KEY,
                     quantity=q.quantity,

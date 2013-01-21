@@ -72,7 +72,7 @@ from astakos.im.settings import (
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, register_quotas, qh_check_users, qh_get_quota_limits,
+    register_users, send_quotas, qh_check_users, qh_get_quota_limits,
     register_services, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials,
     QuotaValues, add_quota_values)
@@ -2211,19 +2211,26 @@ def sync_projects(sync=True, retries=3, retry_wait=1.0):
                      retries=retries,
                      retry_wait=retry_wait)
 
+
+def all_users_quotas(users):
+    quotas = {}
+    for user in users:
+        quotas[user.uuid] = user.all_quotas()
+    return quotas
+
 def _sync_users(users, sync):
     sync_finish_serials()
 
     existing, nonexisting = qh_check_users(users)
     resources = get_resource_names()
-    quotas = qh_get_quota_limits(existing, resources)
+    registered_quotas = qh_get_quota_limits(existing, resources)
+    astakos_quotas = all_users_quotas(users)
 
     if sync:
         r = register_users(nonexisting)
-        r = register_quotas(users)
+        r = send_quotas(astakos_quotas)
 
-    # TODO: some proper reporting
-    return (existing, nonexisting, quotas)
+    return (existing, nonexisting, registered_quotas, astakos_quotas)
 
 def sync_users(users, sync=True, retries=3, retry_wait=1.0):
     return lock_sync(_sync_users,

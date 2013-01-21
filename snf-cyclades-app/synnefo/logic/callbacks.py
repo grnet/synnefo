@@ -237,7 +237,7 @@ def update_build_progress(vm, msg, event_time):
     # default diagnostic fields
     source = msg['type']
     level = 'DEBUG'
-    message = msg.get('messages', None)
+    message = msg.get('messages', '')
     if isinstance(message, list):
         message = " ".join(message)
 

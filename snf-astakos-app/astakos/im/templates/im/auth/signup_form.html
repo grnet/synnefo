@@ -4,7 +4,7 @@
        
       <input type="hidden" name="next" value="{{ next }}">
       <input type="hidden" name="code" value="{{ code }}">
-      <input type="hidden" name="provider" value={{ provider|default:"local" }}>
+      <input type="hidden" name="provider" value={{ provider.module|default:"local" }}>
       {% if third_party_token %}
       <input type="hidden" name="third_party_token" value={{ third_party_token }}>
       {% endif %}

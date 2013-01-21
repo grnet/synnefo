@@ -17,7 +17,7 @@
 
 {% block body.right %}
 <h2>{% trans "SIGN UP" %}</h2>
-{% if not third_party_token %}
+{% if not third_party_token and not signup_form.errors %}
 <p>{% trans "Sign up using one of the following methods" %}</p>
 <div class="extralogin">
 {% for provider in auth_providers %}

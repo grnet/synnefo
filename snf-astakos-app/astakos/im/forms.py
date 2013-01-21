@@ -40,7 +40,7 @@ from django.contrib.auth.forms import (
     UserCreationForm, AuthenticationForm,
     PasswordResetForm, PasswordChangeForm,
     SetPasswordForm)
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
 from django.utils.http import int_to_base36
@@ -517,7 +517,10 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             }
             from_email = settings.SERVER_EMAIL
             send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
-                      t.render(Context(c)), from_email, [user.email])
+                      t.render(Context(c)),
+                      from_email,
+                      [user.email],
+                      connection=get_connection)
 
 
 class EmailChangeForm(forms.ModelForm):

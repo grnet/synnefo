@@ -36,7 +36,7 @@ import socket
 
 from django.utils.translation import ugettext as _
 from django.template.loader import render_to_string
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
 from django.template import Context, loader
 from django.contrib.auth import (
@@ -126,7 +126,9 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'support': DEFAULT_CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email])
+        send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
+                  connection=get_connection())
+
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendVerificationError()
@@ -155,8 +157,8 @@ def _send_admin_notification(template_name,
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(subject,
-                  message, sender, [i[1] for i in settings.ADMINS])
+        send_mail(subject, message, sender, [i[1] for i in settings.ADMINS],
+                  connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -186,9 +188,9 @@ def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt
     )
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(
-            _(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
-            message, sender, [DEFAULT_CONTACT_EMAIL])
+        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+                  message, sender, [DEFAULT_CONTACT_EMAIL],
+                  connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -213,14 +215,16 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                                'support': DEFAULT_CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(subject, message, sender, [invitation.username])
+        send_mail(subject, message, sender, [invitation.username],
+                  connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendInvitationError()
     else:
         msg = 'Sent invitation %s' % invitation
         logger.log(LOGGING_LEVEL, msg)
-        invitation.inviter.invitations = max(0, invitation.inviter.invitations - 1)
+        inviter_invitations = invitation.inviter.invitations
+        invitation.inviter.invitations = max(0, inviter_invitations - 1)
         invitation.inviter.save()
 
 
@@ -239,7 +243,8 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                                'support': DEFAULT_CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
-        send_mail(subject, message, sender, [user.email])
+        send_mail(subject, message, sender, [user.email],
+                  connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendGreetingError()
@@ -257,7 +262,8 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
         'data': data,
         'user': user})
     try:
-        send_mail(subject, content, from_email, recipient_list)
+        send_mail(subject, content, from_email, recipient_list,
+                  connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendFeedbackError()
@@ -274,8 +280,9 @@ def send_change_email(
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME}
         from_email = settings.SERVER_EMAIL
-        send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT),
-                  t.render(Context(c)), from_email, [ec.new_email_address])
+        send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
+                  from_email, [ec.new_email_address],
+                  connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise ChangeEmailError()

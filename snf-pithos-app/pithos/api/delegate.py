@@ -82,7 +82,7 @@ def delegate_to_feedback_service(request):
 
     uri = proto + p.netloc + '/im/service/api/v2.0/feedback'
     headers = {'X-Auth-Token': SERVICE_TOKEN}
-    values = dict([(k, v) for k, v in request.POST.items()])
+    values = dict([(k, unicode(v).encode('utf-8')) for k, v in request.POST.items()])
     data = urllib.urlencode(values)
     req = urllib2.Request(uri, data, headers)
     try:

@@ -550,7 +550,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; }
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
 .auth_methods ul li a:hover img					{ margin-top:-174px; }
-.auth_methods ul li span.extra-message			{ display:none;  color:#55B577; padding-left:70px; background:url(../images/line-green.jpg) repeat-x left center; margin-left:-4px;}
+.auth_methods ul li span.extra-message			{ display:none;  color:#55B577; padding-left:70px; background:url(../images/line-green.jpg) repeat-x left center; margin-left:-5px;}
 .auth_methods ul li span.extra-message em		{ font-style:normal; background:#fff; padding-left:5px;}
 .auth_methods ul li span.extra-message em span	{ display:inline-block; max-width:275px; vertical-align: middle;  }
 .auth_methods ul li a:hover + span 				{ display:inline; } 
@@ -595,6 +595,9 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .extralogin a.icons:hover img					{ margin-top:-38px; }
 .landing-page .dotted							{ padding-bottom:40px; margin-bottom:40px; }
 .landing-page .cyclades a						{ color:#04a0af; }
-.landing-page .dashboard a						{ color:#3780b0; }
+.landing-page .dashboard a						{ color:#3780b0; }get_title_display
 .landing-page .cms a							{ color:#3780b0; }
 .landing-page .rt 								{ text-align:center;vertical-align:middle; } 
+#signup-classic									{ clear:both; }
+#signup-classic + .form-stacked					{ display:none; }
+.extralogin a.standalone						{ display:block; width:130px; margin-bottom:20px }

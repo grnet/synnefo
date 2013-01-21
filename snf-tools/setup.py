@@ -68,13 +68,12 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    "fabric",
     "IPy",
     "unittest2",
     "python-prctl",
     "paramiko",
     "vncauthproxy",
-    "kamaki >= 0.6.1"]
+    "kamaki >= 0.6.2"]
 
 setup(
     name='snf-tools',

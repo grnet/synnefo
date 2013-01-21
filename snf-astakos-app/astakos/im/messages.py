@@ -171,6 +171,7 @@ MEMBER_NUMBER_LIMIT_REACHED             =   'You have reached the maximum number
 MEMBER_JOIN_POLICY_CLOSED               =   'The Project\'s member join policy is closed.'
 MEMBER_LEAVE_POLICY_CLOSED              =   'The project\'s member leave policy is closed.'
 NOT_MEMBERSHIP_REQUEST                  =   'This is not a valid membership request.'
+NOT_ACCEPTED_MEMBERSHIP                 =   'This is not an accepted membership.'
 MEMBERSHIP_REQUEST_EXISTS               =   'The membership request already exists.'
 NO_APPLICANT                            =   'Project application requires an applicant. None found.'
 INVALID_PROJECT_START_DATE              =   'Project start date should be equal or greater than the current date'

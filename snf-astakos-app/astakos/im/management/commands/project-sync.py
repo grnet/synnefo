@@ -62,6 +62,32 @@ class Command(BaseCommand):
 
         try:
             log = sync_projects(sync=trigger)
+            pending, (modified, reactivating, deactivating) = log
+
+            if pending:
+                self.stdout.write("Memberships pending sync:\n")
+                for m in pending:
+                    self.stdout.write("%s\n" % (m))
+                self.stdout.write("\n")
+
+            if modified:
+                self.stdout.write("Modified projects:\n")
+                for p in modified:
+                    self.stdout.write("%s\n" % (p))
+                self.stdout.write("\n")
+
+            if reactivating:
+                self.stdout.write("Reactivating projects:\n")
+                for p in reactivating:
+                    self.stdout.write("%s\n" % (p))
+                self.stdout.write("\n")
+
+            if deactivating:
+                self.stdout.write("Deactivating projects:\n")
+                for p in deactivating:
+                    self.stdout.write("%s\n" % (p))
+                self.stdout.write("\n")
+
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Syncing failed.")

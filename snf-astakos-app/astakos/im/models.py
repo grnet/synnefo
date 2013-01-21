@@ -2195,7 +2195,7 @@ def post_sync_projects():
 def _sync_projects(sync):
     sync_finish_serials()
     # Informative only -- no select_for_update()
-    pending = ProjectMembership.objects.filter(is_pending=True)
+    pending = list(ProjectMembership.objects.filter(is_pending=True))
 
     projects_log = pre_sync_projects(sync)
     if sync:

@@ -2239,7 +2239,7 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
                      retry_wait=retry_wait)
 
 def sync_all_users(sync=True, retries=3, retry_wait=1.0):
-    users = AstakosUser.objects.all()
+    users = AstakosUser.objects.filter(is_active=True)
     return sync_users(users, sync, retries=retries, retry_wait=retry_wait)
 
 def lock_sync(func, args=[], kwargs={}, retries=3, retry_wait=1.0):

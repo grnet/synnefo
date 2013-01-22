@@ -80,6 +80,7 @@ class PithosBackendPool(ObjectPool):
                                        type(backend))
         backend._pool = self
         backend._use_count = USAGE_LIMIT
+        backend.messages = []
         return backend
 
     def _pool_verify(self, backend):
@@ -118,8 +119,7 @@ class PithosBackendPool(ObjectPool):
                 wrapper.trans = None
             else:
                 wrapper.rollback()
-        if backend.messages:
-            backend.messages = []
+        backend.messages = []
         return False
 
 

@@ -8,7 +8,7 @@ HEIGHT = getattr(settings, 'HEIGHT', 10)
 
 # Path settings
 RRD_PREFIX = getattr(settings, 'RRD_PREFIX', "/var/lib/collectd/rrd/")
-GRAPH_PREFIX = getattr(settings, 'GRAPH_PREFIX', "/var/cache/snf-stats/")
+GRAPH_PREFIX = getattr(settings, 'GRAPH_PREFIX', "/var/cache/snf-stats-app/")
 
 # Font settings
 FONT = getattr(settings, 'FONT', "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf")

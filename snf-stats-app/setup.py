@@ -73,7 +73,7 @@ INSTALL_REQUIRES = [
 ]
 
 setup(
-    name = 'snf-stats',
+    name = 'snf-stats-app',
     version = VERSION,
     license = 'BSD',
     url = 'http://code.grnet.gr/',

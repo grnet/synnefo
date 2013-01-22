@@ -1900,14 +1900,16 @@ class ProjectMembership(models.Model):
         history_item.save()
         serial = history_item.id
 
+    def can_accept(self):
+        return self.state == self.REQUESTED
+
     def accept(self):
         if self.is_pending:
             m = _("%s: attempt to accept while is pending") % (self,)
             raise AssertionError(m)
 
-        state = self.state
-        if state != self.REQUESTED:
-            m = _("%s: attempt to accept in state '%s'") % (self, state)
+        if not self.can_accept():
+            m = _("%s: attempt to accept in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
         now = datetime.now()
@@ -1921,14 +1923,19 @@ class ProjectMembership(models.Model):
 
         self.save()
 
+    def can_leave(self):
+        return self.can_remove()
+
+    def can_remove(self):
+        return self.state in self.ACCEPTED_STATES
+
     def remove(self):
         if self.is_pending:
             m = _("%s: attempt to remove while is pending") % (self,)
             raise AssertionError(m)
 
-        state = self.state
-        if state not in self.ACCEPTED_STATES:
-            m = _("%s: attempt to remove in state '%s'") % (self, state)
+        if not self.can_remove():
+            m = _("%s: attempt to remove in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
         self._set_history_item(reason='REMOVE')
@@ -1936,14 +1943,16 @@ class ProjectMembership(models.Model):
         self.is_pending = True
         self.save()
 
+    def can_reject(self):
+        return self.state == self.REQUESTED
+
     def reject(self):
         if self.is_pending:
             m = _("%s: attempt to reject while is pending") % (self,)
             raise AssertionError(m)
 
-        state = self.state
-        if state != self.REQUESTED:
-            m = _("%s: attempt to reject in state '%s'") % (self, state)
+        if not self.can_reject():
+            m = _("%s: attempt to reject in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
         # rejected requests don't need sync,

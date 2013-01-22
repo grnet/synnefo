@@ -503,7 +503,7 @@ def accept_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_accept_membership(project_id, user, request_user)
 
-def do_accept_membership_checks(project, membership, request_user):
+def do_accept_membership_checks(project, request_user):
     checkAllowed(project, request_user)
     checkAlive(project)
 
@@ -514,14 +514,14 @@ def do_accept_membership_checks(project, membership, request_user):
     if project.violates_members_limit(adding=1):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
 
-    if membership != ProjectMembership.REQUESTED:
-        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
-        raise PermissionDenied(m)
-
 def do_accept_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
+    do_accept_membership_checks(project, request_user)
+
     membership = get_membership_for_update(project, user)
-    do_accept_membership_checks(project, membership, request_user)
+    if not membership.can_accept():
+        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
+        raise PermissionDenied(m)
 
     membership.accept()
     sync_projects()
@@ -539,18 +539,17 @@ def reject_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_reject_membership(project_id, user, request_user)
 
-def do_reject_membership_checks(project, membership, request_user):
+def do_reject_membership_checks(project, request_user):
     checkAllowed(project, request_user)
     checkAlive(project)
 
-    if membership != ProjectMembership.REQUESTED:
-        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
-        raise PermissionDenied(m)
-
 def do_reject_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
+    do_reject_membership_checks(project, request_user)
     membership = get_membership_for_update(project, user)
-    do_reject_membership_checks(project, membership, request_user)
+    if not membership.can_reject():
+        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
+        raise PermissionDenied(m)
 
     membership.reject()
 
@@ -567,7 +566,7 @@ def remove_membership(project_application_id, user, request_user=None):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_remove_membership(project_id, user, request_user)
 
-def do_remove_membership_checks(project, membership, request_user=None):
+def do_remove_membership_checks(project, request_user=None):
     checkAllowed(project, request_user)
     checkAlive(project)
 
@@ -575,14 +574,13 @@ def do_remove_membership_checks(project, membership, request_user=None):
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
-    if membership.state not in ProjectMembership.ACCEPTED_STATES:
-        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
-        raise PermissionDenied(m)
-
 def do_remove_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
+    do_remove_membership_checks(project, request_user)
     membership = get_membership_for_update(project, user)
-    do_remove_membership_checks(project, membership, request_user)
+    if not membership.can_remove():
+        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
+        raise PermissionDenied(m)
 
     membership.remove()
     sync_projects()
@@ -597,8 +595,12 @@ def enroll_member(project_application_id, user, request_user=None):
 
 def do_enroll_member(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
+    do_accept_membership_checks(project, request_user)
     membership = create_membership(project_id, user)
-    do_accept_membership_checks(project, membership, request_user)
+
+    if not membership.can_accept():
+        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
+        raise PermissionDenied(m)
 
     membership.accept()
     sync_projects()
@@ -615,21 +617,20 @@ def leave_project(project_application_id, user_id):
     project_id = get_project_id_of_application_id(project_application_id)
     return do_leave_project(project_id, user_id)
 
-def do_leave_project_checks(project, membership):
+def do_leave_project_checks(project):
     checkAlive(project)
 
     leave_policy = project.application.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
-    if membership.state not in ProjectMembership.ACCEPTED_STATES:
-        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
-        raise PermissionDenied(m)
-
 def do_leave_project(project_id, user_id):
     project = get_project_for_update(project_id)
+    do_leave_project_checks(project)
     membership = get_membership_for_update(project, user_id)
-    do_leave_project_checks(project, membership)
+    if not membership.can_leave():
+        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
+        raise PermissionDenied(m)
 
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
@@ -658,8 +659,8 @@ def do_join_project_checks(project):
 
 def do_join_project(project_id, user_id):
     project = get_project_for_update(project_id)
-    membership = create_membership(project, user_id)
     do_join_project_checks(project)
+    membership = create_membership(project, user_id)
 
     join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and

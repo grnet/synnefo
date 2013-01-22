@@ -96,7 +96,8 @@ from astakos.im.functions import (
     send_activation as send_activation_func,
     SendNotificationError,
     accept_membership, reject_membership, remove_membership,
-    leave_project, join_project, enroll_member)
+    leave_project, join_project, enroll_member,
+    get_by_chain_or_404)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
@@ -1132,19 +1133,19 @@ def project_update(request, application_id):
 @signed_terms_required
 @login_required
 @transaction.commit_on_success
-def project_detail(request, application_id):
+def project_detail(request, chain_id):
     addmembers_form = AddProjectMembersForm()
     if request.method == 'POST':
         addmembers_form = AddProjectMembersForm(
             request.POST,
-            application_id=int(application_id),
+            chain_id=int(chain_id),
             request_user=request.user)
         if addmembers_form.is_valid():
             try:
                 rollback = False
-                application_id = int(application_id)
+                chain_id = int(chain_id)
                 map(lambda u: enroll_member(
-                        application_id,
+                        chain_id,
                         u,
                         request_user=request.user),
                     addmembers_form.valid_users)
@@ -1162,10 +1163,10 @@ def project_detail(request, application_id):
 
     rollback = False
 
-    application = get_object_or_404(ProjectApplication, pk=application_id)
-    try:
-        members = application.project.projectmembership_set.select_related()
-    except Project.DoesNotExist:
+    project, application = get_by_chain_or_404(chain_id)
+    if project:
+        members = project.projectmembership_set.select_related()
+    else:
         members = ProjectMembership.objects.none()
 
     members_table = tables.ProjectApplicationMembersTable(application,
@@ -1186,7 +1187,7 @@ def project_detail(request, application_id):
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),
-        object_id=application_id,
+        object_id=application.id,
         template_name='im/projects/project_detail.html',
         extra_context={
             'addmembers_form':addmembers_form,
@@ -1239,16 +1240,16 @@ def project_search(request):
 @signed_terms_required
 @login_required
 @transaction.commit_manually
-def project_join(request, application_id):
+def project_join(request, chain_id):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_detail',
-                       args=(application_id,))
+                       args=(chain_id,))
 
     rollback = False
     try:
-        application_id = int(application_id)
-        join_project(application_id, request.user)
+        chain_id = int(chain_id)
+        join_project(chain_id, request.user)
         # TODO: distinct messages for request/auto accept ???
         messages.success(request, _(astakos_messages.USER_JOIN_REQUEST_SUBMITED))
     except (IOError, PermissionDenied), e:
@@ -1269,15 +1270,15 @@ def project_join(request, application_id):
 @signed_terms_required
 @login_required
 @transaction.commit_manually
-def project_leave(request, application_id):
+def project_leave(request, chain_id):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
     rollback = False
     try:
-        application_id = int(application_id)
-        leave_project(application_id, request.user)
+        chain_id = int(chain_id)
+        leave_project(chain_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1297,12 +1298,12 @@ def project_leave(request, application_id):
 @signed_terms_required
 @login_required
 @transaction.commit_manually
-def project_accept_member(request, application_id, user_id):
+def project_accept_member(request, chain_id, user_id):
     rollback = False
     try:
-        application_id = int(application_id)
+        chain_id = int(chain_id)
         user_id = int(user_id)
-        m = accept_membership(application_id, user_id, request.user)
+        m = accept_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1318,18 +1319,18 @@ def project_accept_member(request, application_id, user_id):
             transaction.rollback()
         else:
             transaction.commit()
-    return redirect(reverse('project_detail', args=(application_id,)))
+    return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually
-def project_remove_member(request, application_id, user_id):
+def project_remove_member(request, chain_id, user_id):
     rollback = False
     try:
-        application_id = int(application_id)
+        chain_id = int(chain_id)
         user_id = int(user_id)
-        m = remove_membership(application_id, user_id, request.user)
+        m = remove_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1345,18 +1346,18 @@ def project_remove_member(request, application_id, user_id):
             transaction.rollback()
         else:
             transaction.commit()
-    return redirect(reverse('project_detail', args=(application_id,)))
+    return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @transaction.commit_manually
-def project_reject_member(request, application_id, user_id):
+def project_reject_member(request, chain_id, user_id):
     rollback = False
     try:
-        application_id = int(application_id)
+        chain_id = int(chain_id)
         user_id = int(user_id)
-        m = reject_membership(application_id, user_id, request.user)
+        m = reject_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1372,7 +1373,7 @@ def project_reject_member(request, application_id, user_id):
             transaction.rollback()
         else:
             transaction.commit()
-    return redirect(reverse('project_detail', args=(application_id,)))
+    return redirect(reverse('project_detail', args=(chain_id,)))
 
 def landing(request):
     return render_response(

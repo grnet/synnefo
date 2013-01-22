@@ -67,7 +67,7 @@ from astakos.im.settings import (
     PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
-    send_change_email, submit_application, do_accept_membership_checks)
+    send_change_email, submit_application, accept_membership_checks)
 
 from astakos.im.util import reserved_email, reserved_verified_email, \
                             get_query, model_to_dict
@@ -877,15 +877,15 @@ class AddProjectMembersForm(forms.Form):
         help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP), required=True)
 
     def __init__(self, *args, **kwargs):
-        application_id = kwargs.pop('application_id', None)
-        if application_id:
-            self.project = Project.objects.get(application__id=application_id)
+        chain_id = kwargs.pop('chain_id', None)
+        if chain_id:
+            self.project = Project.objects.get(id=chain_id)
         self.request_user = kwargs.pop('request_user', None)
         super(AddProjectMembersForm, self).__init__(*args, **kwargs)
 
     def clean(self):
         try:
-            do_accept_membership_checks(self.project, self.request_user)
+            accept_membership_checks(self.project, self.request_user)
         except PermissionDenied, e:
             raise forms.ValidationError(e)
 

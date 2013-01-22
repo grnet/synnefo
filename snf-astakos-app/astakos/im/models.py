@@ -1249,6 +1249,11 @@ class ProjectApplicationManager(ForUpdateManager):
             q = q | Q(name__icontains=s)
         return self.filter(q)
 
+    def latest_of_chain(self, chain_id):
+        try:
+            return self.filter(chain=chain_id).order_by('-id')[0]
+        except IndexError:
+            return None
 
 USER_STATUS_DISPLAY = {
       0: _('Join requested'),

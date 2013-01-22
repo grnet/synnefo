@@ -44,8 +44,8 @@ import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
-from astakos.im.functions import do_join_project_checks, \
-                                 do_leave_project_checks
+from astakos.im.functions import join_project_checks, \
+                                 leave_project_checks
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -190,13 +190,13 @@ def action_extra_context(application, table, self):
 
     if project:
         try:
-            do_join_project_checks(project)
+            join_project_checks(project)
             can_join = True
         except PermissionDenied, e:
             pass
 
         try:
-            do_leave_project_checks(project)
+            leave_project_checks(project)
             can_leave = True
         except PermissionDenied:
             pass

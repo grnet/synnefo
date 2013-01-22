@@ -46,6 +46,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
+from django.http import Http404
 
 from urllib import quote
 from urlparse import urljoin
@@ -494,16 +495,7 @@ def checkAlive(project):
         raise PermissionDenied(
             _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__)
 
-def accept_membership(project_application_id, user, request_user=None):
-    """
-        Raises:
-            django.core.exceptions.PermissionDenied
-            IOError
-    """
-    project_id = get_project_id_of_application_id(project_application_id)
-    return do_accept_membership(project_id, user, request_user)
-
-def do_accept_membership_checks(project, request_user):
+def accept_membership_checks(project, request_user):
     checkAllowed(project, request_user)
     checkAlive(project)
 
@@ -514,9 +506,9 @@ def do_accept_membership_checks(project, request_user):
     if project.violates_members_limit(adding=1):
         raise PermissionDenied(_(astakos_messages.MEMBER_NUMBER_LIMIT_REACHED))
 
-def do_accept_membership(project_id, user, request_user=None):
+def accept_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
-    do_accept_membership_checks(project, request_user)
+    accept_membership_checks(project, request_user)
 
     membership = get_membership_for_update(project, user)
     if not membership.can_accept():
@@ -530,22 +522,13 @@ def do_accept_membership(project_id, user, request_user=None):
 
     return membership
 
-def reject_membership(project_application_id, user, request_user=None):
-    """
-        Raises:
-            django.core.exceptions.PermissionDenied
-            IOError
-    """
-    project_id = get_project_id_of_application_id(project_application_id)
-    return do_reject_membership(project_id, user, request_user)
-
-def do_reject_membership_checks(project, request_user):
+def reject_membership_checks(project, request_user):
     checkAllowed(project, request_user)
     checkAlive(project)
 
-def do_reject_membership(project_id, user, request_user=None):
+def reject_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
-    do_reject_membership_checks(project, request_user)
+    reject_membership_checks(project, request_user)
     membership = get_membership_for_update(project, user)
     if not membership.can_reject():
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
@@ -557,16 +540,7 @@ def do_reject_membership(project_id, user, request_user=None):
 
     return membership
 
-def remove_membership(project_application_id, user, request_user=None):
-    """
-        Raises:
-            django.core.exceptions.PermissionDenied
-            IOError
-    """
-    project_id = get_project_id_of_application_id(project_application_id)
-    return do_remove_membership(project_id, user, request_user)
-
-def do_remove_membership_checks(project, request_user=None):
+def remove_membership_checks(project, request_user=None):
     checkAllowed(project, request_user)
     checkAlive(project)
 
@@ -574,9 +548,9 @@ def do_remove_membership_checks(project, request_user=None):
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
-def do_remove_membership(project_id, user, request_user=None):
+def remove_membership(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
-    do_remove_membership_checks(project, request_user)
+    remove_membership_checks(project, request_user)
     membership = get_membership_for_update(project, user)
     if not membership.can_remove():
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
@@ -589,13 +563,9 @@ def do_remove_membership(project_id, user, request_user=None):
 
     return membership
 
-def enroll_member(project_application_id, user, request_user=None):
-    project_id = get_project_id_of_application_id(project_application_id)
-    return do_enroll_member(project_id, user, request_user)
-
-def do_enroll_member(project_id, user, request_user=None):
+def enroll_member(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
-    do_accept_membership_checks(project, request_user)
+    accept_membership_checks(project, request_user)
     membership = create_membership(project_id, user)
 
     if not membership.can_accept():
@@ -608,25 +578,16 @@ def do_enroll_member(project_id, user, request_user=None):
     # TODO send proper notification
     return membership
 
-def leave_project(project_application_id, user_id):
-    """
-        Raises:
-            django.core.exceptions.PermissionDenied
-            IOError
-    """
-    project_id = get_project_id_of_application_id(project_application_id)
-    return do_leave_project(project_id, user_id)
-
-def do_leave_project_checks(project):
+def leave_project_checks(project):
     checkAlive(project)
 
     leave_policy = project.application.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
-def do_leave_project(project_id, user_id):
+def leave_project(project_id, user_id):
     project = get_project_for_update(project_id)
-    do_leave_project_checks(project)
+    leave_project_checks(project)
     membership = get_membership_for_update(project, user_id)
     if not membership.can_leave():
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
@@ -641,25 +602,16 @@ def do_leave_project(project_id, user_id):
         membership.save()
     return membership
 
-def join_project(project_application_id, user_id):
-    """
-        Raises:
-            django.core.exceptions.PermissionDenied
-            IOError
-    """
-    project_id = get_project_id_of_application_id(project_application_id)
-    return do_join_project(project_id, user_id)
-
-def do_join_project_checks(project):
+def join_project_checks(project):
     checkAlive(project)
 
     join_policy = project.application.member_join_policy
     if join_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
 
-def do_join_project(project_id, user_id):
+def join_project(project_id, user_id):
     project = get_project_for_update(project_id)
-    do_join_project_checks(project)
+    join_project_checks(project)
     membership = create_membership(project, user_id)
 
     join_policy = project.application.member_join_policy
@@ -778,3 +730,15 @@ def resume(project_id):
 
     project.resume()
     sync_projects()
+
+def get_by_chain_or_404(chain_id):
+    try:
+        project = Project.objects.get(id=chain_id)
+        application = project.application
+        return project, application
+    except:
+        application = ProjectApplication.objects.latest_of_chain(chain_id)
+        if application is None:
+            raise Http404
+        else:
+            return None, application

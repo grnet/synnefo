@@ -1168,14 +1168,15 @@ def addmembers(request, chain_id):
             else:
                 transaction.commit()
 
-def common_detail(request, common_id, is_chain=True):
+def common_detail(request, chain_or_app_id, is_chain=True):
     if is_chain:
+        chain_id = chain_or_app_id
         if request.method == 'POST':
-            addmembers(request, common_id)
+            addmembers(request, chain_id)
 
         addmembers_form = AddProjectMembersForm()
 
-        project, application = get_by_chain_or_404(common_id)
+        project, application = get_by_chain_or_404(chain_id)
         if project:
             members = project.projectmembership_set.select_related()
             members_table = tables.ProjectMembersTable(project,
@@ -1189,7 +1190,8 @@ def common_detail(request, common_id, is_chain=True):
             members_table = None
 
     else: # is application
-        application = get_object_or_404(ProjectApplication, pk=common_id)
+        application_id = chain_or_app_id
+        application = get_object_or_404(ProjectApplication, pk=application_id)
         members_table = None
         addmembers_form = None
 
@@ -1208,6 +1210,7 @@ def common_detail(request, common_id, is_chain=True):
         object_id=application.id,
         template_name='im/projects/project_detail.html',
         extra_context={
+            'project_view': is_chain,
             'addmembers_form':addmembers_form,
             'members_table': members_table,
             'user_owns_project': request.user.owns_application(application),

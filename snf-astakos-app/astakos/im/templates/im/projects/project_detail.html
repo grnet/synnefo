@@ -136,7 +136,7 @@ href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
         {% endif %} 
     </div>
 
-     {% if user_owns_project %}
+     {% if user_owns_project and project_view %}
          {% if object.project.is_alive %}
          <div class="full-dotted">
              <h3>MEMBERS</h3>

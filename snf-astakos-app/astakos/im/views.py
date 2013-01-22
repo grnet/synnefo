@@ -1169,20 +1169,20 @@ def project_detail(request, chain_id):
     else:
         members = ProjectMembership.objects.none()
 
-    members_table = tables.ProjectApplicationMembersTable(application,
+    members_table = tables.ProjectApplicationMembersTable(project,
                                                           members,
                                                           user=request.user,
                                                           prefix="members_")
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
 
     modifications_table = None
-    if application.follower:
-        following_applications = list(application.followers())
-        following_applications.reverse()
-        modifications_table = \
-            tables.ProjectModificationApplicationsTable(following_applications,
-                                                       user=request.user,
-                                                       prefix="modifications_")
+
+    following_applications = list(application.followers())
+    following_applications.reverse()
+    modifications_table = \
+        tables.ProjectModificationApplicationsTable(following_applications,
+                                                    user=request.user,
+                                                    prefix="modifications_")
 
     return object_detail(
         request,
@@ -1192,7 +1192,7 @@ def project_detail(request, chain_id):
         extra_context={
             'addmembers_form':addmembers_form,
             'members_table': members_table,
-            'user_owns_project': request.user.owns_project(application),
+            'user_owns_project': request.user.owns_project(project),
             'modifications_table': modifications_table,
             'member_status': application.user_status(request.user)
             })

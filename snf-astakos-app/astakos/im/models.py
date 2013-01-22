@@ -739,8 +739,11 @@ class AstakosUser(User):
 
         return mark_safe(message + u' '+ msg_extra)
 
+    def owns_application(self, application):
+        return application.owner == self
+
     def owns_project(self, project):
-        return project.owner == self
+        return project.application.owner == self
 
     def is_project_member(self, project_or_application):
         return self.get_status_in_project(project_or_application) in \
@@ -1226,13 +1229,13 @@ class ProjectApplicationManager(ForUpdateManager):
         model = self.model
         return self.filter(model.Q_PENDING | model.Q_APPROVED)
 
-    def user_visible_by_chain(self, *filters, **kw_filters):
+    def user_visible_by_chain(self, flt):
         model = self.model
         pending = self.filter(model.Q_PENDING).values_list('chain')
         approved = self.filter(model.Q_APPROVED).values_list('chain')
         by_chain = dict(pending.annotate(models.Max('id')))
         by_chain.update(approved.annotate(models.Max('id')))
-        return self.filter(id__in=by_chain.values())
+        return self.filter(flt, id__in=by_chain.values())
 
     def user_accessible_projects(self, user):
         """
@@ -1392,13 +1395,6 @@ class ProjectApplication(models.Model):
             resource = p.get('resource', None)
             uplimit = p.get('uplimit', 0)
             self.add_resource_policy(service, resource, uplimit)
-
-    @property
-    def follower(self):
-        try:
-            return ProjectApplication.objects.get(precursor_application=self)
-        except ProjectApplication.DoesNotExist:
-            return
 
     def followers(self):
         followers = self.chained_applications()

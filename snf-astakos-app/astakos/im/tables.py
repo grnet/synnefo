@@ -216,7 +216,7 @@ def action_extra_context(application, table, self):
         confirm = False
         url = None
 
-    url = reverse(url, args=(application.pk, )) + append_url if url else ''
+    url = reverse(url, args=(application.chain, )) + append_url if url else ''
 
     return {'action': action,
             'confirm': confirm,
@@ -251,7 +251,7 @@ class UserProjectApplicationsTable(UserTable):
     name = LinkColumn('astakos.im.views.project_detail',
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
-                      args=(A('pk'),))
+                      args=(A('chain'),))
     issue_date = tables.DateColumn(verbose_name=_('Application'), format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
     end_date = tables.DateColumn(verbose_name=_('Expiration'), format=DEFAULT_DATE_FORMAT)
@@ -265,7 +265,7 @@ class UserProjectApplicationsTable(UserTable):
 
 
     def render_membership_status(self, record, *args, **kwargs):
-        if self.user.owns_project(record):
+        if self.user.owns_application(record):
             return record.state_display()
         else:
             status = record.user_status(self.user)

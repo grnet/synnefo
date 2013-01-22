@@ -539,6 +539,19 @@ def reject_membership(project_id, user, request_user=None):
 
     return membership
 
+def cancel_membership_checks(project):
+    checkAlive(project)
+
+def cancel_membership(project_id, user_id):
+    project = get_project_for_update(project_id)
+    cancel_membership_checks(project)
+    membership = get_membership_for_update(project, user_id)
+    if not membership.can_cancel():
+        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
+        raise PermissionDenied(m)
+
+    membership.cancel()
+
 def remove_membership_checks(project, request_user=None):
     checkAllowed(project, request_user)
     checkAlive(project)

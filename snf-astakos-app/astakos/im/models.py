@@ -759,6 +759,13 @@ class AstakosUser(User):
             application = project_or_application.project
         return application.user_status(self)
 
+    def get_membership(self, project):
+        try:
+            return ProjectMembership.objects.get(
+                project=project,
+                person=self)
+        except ProjectMembership.DoesNotExist:
+            return None
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -1955,6 +1962,23 @@ class ProjectMembership(models.Model):
         # rejected requests don't need sync,
         # because they were never effected
         self._set_history_item(reason='REJECT')
+        self.delete()
+
+    def can_cancel(self):
+        return self.state == self.REQUESTED
+
+    def cancel(self):
+        if self.is_pending:
+            m = _("%s: attempt to cancel while is pending") % (self,)
+            raise AssertionError(m)
+
+        if not self.can_cancel():
+            m = _("%s: attempt to cancel in state '%s'") % (self, self.state)
+            raise AssertionError(m)
+
+        # rejected requests don't need sync,
+        # because they were never effected
+        self._set_history_item(reason='CANCEL')
         self.delete()
 
     def get_diff_quotas(self, sub_list=None, add_list=None):

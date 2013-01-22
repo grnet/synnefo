@@ -95,7 +95,7 @@ from astakos.im.functions import (
     invite,
     send_activation as send_activation_func,
     SendNotificationError,
-    accept_membership, reject_membership, remove_membership,
+    accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member,
     get_by_chain_or_404)
 from astakos.im.settings import (
@@ -1300,6 +1300,34 @@ def project_leave(request, chain_id):
     try:
         chain_id = int(chain_id)
         leave_project(chain_id, request.user)
+    except (IOError, PermissionDenied), e:
+        messages.error(request, e)
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        rollback = True
+    finally:
+        if rollback:
+            transaction.rollback()
+        else:
+            transaction.commit()
+
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    return redirect(next)
+
+@require_http_methods(["POST"])
+@signed_terms_required
+@login_required
+@transaction.commit_manually
+def project_cancel(request, chain_id):
+    next = request.GET.get('next')
+    if not next:
+        next = reverse('astakos.im.views.project_list')
+
+    rollback = False
+    try:
+        chain_id = int(chain_id)
+        cancel_membership(chain_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:

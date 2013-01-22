@@ -64,6 +64,7 @@ urlpatterns = patterns(
     url(r'^projects/(?P<chain_id>\d+)/?$', 'project_detail', {}, name='project_detail'),
     url(r'^projects/(?P<chain_id>\d+)/join/?$', 'project_join', {}, name='project_join'),
     url(r'^projects/(?P<chain_id>\d+)/leave/?$', 'project_leave', {}, name='project_leave'),
+    url(r'^projects/(?P<chain_id>\d+)/cancel/?$', 'project_cancel', {}, name='project_cancel'),
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),

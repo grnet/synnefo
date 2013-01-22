@@ -44,8 +44,9 @@ import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
-from astakos.im.functions import join_project_checks, \
-                                 leave_project_checks
+from astakos.im.functions import (join_project_checks,
+                                  leave_project_checks,
+                                  cancel_membership_checks)
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -185,7 +186,7 @@ def action_extra_context(application, table, self):
     url, action, confirm, prompt = '', '', True, ''
     append_url = ''
 
-    can_join = can_leave = False
+    can_join = can_leave = can_cancel = False
     project = application.get_project()
 
     if project:
@@ -201,16 +202,30 @@ def action_extra_context(application, table, self):
         except PermissionDenied:
             pass
 
-    if can_leave and user.is_project_member(application):
-        url = 'astakos.im.views.project_leave'
-        action = _('Leave')
-        confirm = True
-        prompt = _('Are you sure you want to leave from the project ?')
-    elif can_join and not user.is_project_member(application):
+        try:
+            cancel_membership_checks(project)
+            can_cancel = True
+        except PermissionDenied:
+            pass
+
+    membership = user.get_membership(project)
+    if membership is not None:
+        if can_leave and membership.can_leave():
+            url = 'astakos.im.views.project_leave'
+            action = _('Leave')
+            confirm = True
+            prompt = _('Are you sure you want to leave from the project?')
+        elif can_cancel and membership.can_cancel():
+            url = 'astakos.im.views.project_cancel'
+            action = _('Cancel')
+            confirm = True
+            prompt = _('Are you sure you want to cancel the join request?')
+
+    elif can_join:
         url = 'astakos.im.views.project_join'
         action = _('Join')
         confirm = True
-        prompt = _('Are you sure you want to join this project ?')
+        prompt = _('Are you sure you want to join this project?')
     else:
         action = ''
         confirm = False

@@ -693,8 +693,10 @@ def cancel_application(application_id, request_user=None):
     application = get_application_for_update(application_id)
     checkAllowed(application, request_user)
 
-    if application.state != ProjectApplication.PENDING:
-        raise PermissionDenied()
+    if not application.can_cancel():
+        m = _(astakos_messages.APPLICATION_CANNOT_CANCEL % (
+                application.id, application.state_display()))
+        raise PermissionDenied(m)
 
     application.cancel()
 
@@ -702,15 +704,20 @@ def dismiss_application(application_id, request_user=None):
     application = get_application_for_update(application_id)
     checkAllowed(application, request_user)
 
-    if application.state != ProjectApplication.DENIED:
-        raise PermissionDenied()
+    if not application.can_dismiss():
+        m = _(astakos_messages.APPLICATION_CANNOT_DISMISS % (
+                application.id, application.state_display()))
+        raise PermissionDenied(m)
 
     application.dismiss()
 
 def deny_application(application_id):
     application = get_application_for_update(application_id)
-    if application.state != ProjectApplication.PENDING:
-        raise PermissionDenied()
+
+    if not application.can_deny():
+        m = _(astakos_messages.APPLICATION_CANNOT_DENY % (
+                application.id, application.state_display()))
+        raise PermissionDenied(m)
 
     application.deny()
     application_deny_notify(application)
@@ -724,6 +731,11 @@ def approve_application(app):
         application = objects.get(id=app_id)
     except ProjectApplication.DoesNotExist:
         raise PermissionDenied()
+
+    if not application.can_approve():
+        m = _(astakos_messages.APPLICATION_CANNOT_APPROVE % (
+                application.id, application.state_display()))
+        raise PermissionDenied(m)
 
     application.approve()
     sync_projects()

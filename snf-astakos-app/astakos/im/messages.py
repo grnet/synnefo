@@ -188,6 +188,11 @@ USER_JOINED_PROJECT                     =   '%(realname)s has joined the Project
 USER_LEFT_PROJECT                       =   '%(realname)s has left the Project.'
 USER_JOIN_REQUEST_SUBMITED              =   'Join request submitted.'
 
+APPLICATION_CANNOT_APPROVE              =   "Cannot approve application %s in state '%s'"
+APPLICATION_CANNOT_DENY                 =   "Cannot deny application %s in state '%s'"
+APPLICATION_CANNOT_DISMISS              =   "Cannot dismiss application %s in state '%s'"
+APPLICATION_CANNOT_CANCEL               =   "Cannot cancel application %s in state '%s'"
+
 # Auth providers messages
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled."
 AUTH_PROVIDER_NOT_ACTIVE_FOR_LOGIN           =   "Login using '%(provider)s' is disabled."

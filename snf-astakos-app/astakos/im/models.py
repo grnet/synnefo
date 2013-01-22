@@ -1432,8 +1432,11 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
+    def can_cancel(self):
+        return self.state == self.PENDING
+
     def cancel(self):
-        if self.state != self.PENDING:
+        if not self.can_cancel():
             m = _("cannot cancel: application '%s' in state '%s'") % (
                     self.id, self.state)
             raise AssertionError(m)
@@ -1441,8 +1444,11 @@ class ProjectApplication(models.Model):
         self.state = self.CANCELLED
         self.save()
 
+    def can_dismiss(self):
+        return self.state == self.DENIED
+
     def dismiss(self):
-        if self.state != self.DENIED:
+        if not self.can_dismiss():
             m = _("cannot dismiss: application '%s' in state '%s'") % (
                     self.id, self.state)
             raise AssertionError(m)
@@ -1450,8 +1456,11 @@ class ProjectApplication(models.Model):
         self.state = self.DISMISSED
         self.save()
 
+    def can_deny(self):
+        return self.state == self.PENDING
+
     def deny(self):
-        if self.state != self.PENDING:
+        if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
                     self.id, self.state)
             raise AssertionError(m)
@@ -1459,6 +1468,9 @@ class ProjectApplication(models.Model):
         self.state = self.DENIED
         self.response_date = datetime.now()
         self.save()
+
+    def can_approve(self):
+        return self.state == self.PENDING
 
     def approve(self, approval_user=None):
         """
@@ -1473,10 +1485,10 @@ class ProjectApplication(models.Model):
             raise AssertionError("NOPE")
 
         new_project_name = self.name
-        if self.state != self.PENDING:
+        if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
                     new_project_name, self.state)
-            raise PermissionDenied(m) # invalid argument
+            raise AssertionError(m) # invalid argument
 
         now = datetime.now()
         project = self._get_project_for_update()

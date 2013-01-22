@@ -67,8 +67,7 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    sync_projects, PendingMembershipError, get_resource_names)
-from astakos.im.models import submit_application as models_submit_application
+    sync_projects, PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
@@ -624,20 +623,36 @@ def join_project(project_id, user_id):
 def submit_application(kw, request_user=None):
 
     kw['applicant'] = request_user
+    resource_policies = kw.pop('resource_policies', None)
 
+    precursor = None
     precursor_id = kw.get('precursor_application', None)
     if precursor_id is not None:
         sfu = ProjectApplication.objects.select_for_update()
         precursor = sfu.get(id=precursor_id)
         kw['precursor_application'] = precursor
 
-        if request_user and \
-            (not precursor.owner == request_user and \
-                not request_user.is_superuser):
-            raise PermissionDenied(_(astakos_messages.NOT_ALLOWED))
+        if (request_user and
+            (not precursor.owner == request_user and
+             not request_user.is_superuser)):
+            m = _(astakos_messages.NOT_ALLOWED)
+            raise PermissionDenied(m)
 
-    application = models_submit_application(**kw)
+    application = ProjectApplication(**kw)
 
+    if precursor is None:
+        application.chain = new_chain()
+    else:
+        chain = precursor.chain
+        application.chain = chain
+        sfu = ProjectApplication.objects.select_for_update()
+        pending = sfu.filter(chain=chain, state=ProjectApplication.PENDING)
+        for app in pending:
+            app.state = ProjectApplication.REPLACED
+            app.save()
+
+    application.save()
+    application.resource_policies = resource_policies
     application_submit_notify(application)
     return application
 

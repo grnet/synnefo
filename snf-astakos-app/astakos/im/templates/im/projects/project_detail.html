@@ -11,9 +11,9 @@
         <em>
             {% if user_owns_project %}
             [ PROJECT {% if object.is_modification %} MODIFICATION {% endif %}{{ object.state_display|upper }} 
-            {% if object.last_follower %} - 
+            {% if object.has_pending_modifications %} -
             <a
-                href="{% url astakos.im.views.project_detail object.last_follower.pk %}">MODIFICATION PENDING</a>
+                href="{% url astakos.im.views.project_app object.last_pending.pk %}">MODIFICATION PENDING</a>
             {% endif %}]
             {%  else %}
                 {% if user in approved_members %}
@@ -33,11 +33,7 @@
         <span>{% if object.is_modification %}
             <span class="extratitle">MODIFICATION OF </span>{% endif %}{{ object.name|upper }}</span>
         {% if user_owns_project %}
-        {% if object.last_follower %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">REQUEST MODIFICATION</a>
-        {% else %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">MODIFY</a>
-        {% endif %}
+        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
         {% else %}
         {% if member_status == -1 %}
          - 
@@ -93,14 +89,14 @@ href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
 		 	<dt>Precursor Application</dt>
 		 	<dd>
 		 	    {% if object.precursor_application %}
-                    <a href="{% url project_detail object.precursor_application.id %}">{{object.precursor_application.id}}</a>
+                    <a href="{% url project_app object.precursor_application.id %}">{{object.precursor_application.id}}</a>
                 {% endif %}
                 &nbsp;
 		 	</dd>
 		 	<dt>Follower Application</dt>
 		 	<dd>
 		 	    {% if object.follower %}
-                    <a href="{% url project_detail object.follower.id %}">{{object.follower.id}}</a>
+                    <a href="{% url project_app object.follower.id %}">{{object.follower.id}}</a>
                 {% endif %}
                 &nbsp;
             </dd>

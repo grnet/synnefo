@@ -237,11 +237,10 @@ class UserTable(tables.Table):
 
         super(UserTable, self).__init__(*args, **kwargs)
 
-
 def project_name_append(application, column):
     if application.has_pending_modifications():
         return mark_safe("<br /><i class='tiny'>%s</i>" % \
-                                                _('modifications pending'))
+                             _('modifications pending'))
     return u''
 
 # Table classes
@@ -332,7 +331,7 @@ def member_action_extra_context(membership, table, col):
                             confirm=confirms[i]))
     return context
 
-class ProjectApplicationMembersTable(UserTable):
+class ProjectMembersTable(UserTable):
     name = tables.Column(accessor="person.last_name", verbose_name=_('Name'))
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
@@ -342,7 +341,7 @@ class ProjectApplicationMembersTable(UserTable):
 
     def __init__(self, project, *args, **kwargs):
         self.project = project
-        super(ProjectApplicationMembersTable, self).__init__(*args, **kwargs)
+        super(ProjectMembersTable, self).__init__(*args, **kwargs)
         if not self.user.owns_project(self.project):
             self.exclude = ('project_action', )
 

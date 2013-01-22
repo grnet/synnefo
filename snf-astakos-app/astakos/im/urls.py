@@ -59,7 +59,6 @@ urlpatterns = patterns(
 #    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
 
     url(r'^projects/add/?$', 'project_add', {}, name='project_add'),
-    url(r'^projects/update/(?P<application_id>\d+)/?$', 'project_update', {}, name='project_update'),
     url(r'^projects/?$', 'project_list', {}, name='project_list'),
     url(r'^projects/search/?$', 'project_search', {}, name='project_search'),
     url(r'^projects/(?P<chain_id>\d+)/?$', 'project_detail', {}, name='project_detail'),
@@ -68,6 +67,8 @@ urlpatterns = patterns(
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    url(r'^projects/app/(?P<application_id>\d+)/?$', 'project_app', {}, name='project_app'),
+    url(r'^projects/app/(?P<application_id>\d+)/modify$', 'project_modify', {}, name='project_modify'),
 
     url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {}, name='remove_auth_provider'),

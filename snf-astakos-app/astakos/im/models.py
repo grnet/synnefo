@@ -1231,7 +1231,7 @@ class ProjectApplicationManager(ForUpdateManager):
 
     def user_visible_by_chain(self, flt):
         model = self.model
-        pending = self.filter(model.Q_PENDING).values_list('chain')
+        pending = self.filter(model.Q_PENDING | model.Q_DENIED).values_list('chain')
         approved = self.filter(model.Q_APPROVED).values_list('chain')
         by_chain = dict(pending.annotate(models.Max('id')))
         by_chain.update(approved.annotate(models.Max('id')))
@@ -1326,6 +1326,7 @@ class ProjectApplication(models.Model):
     # Compiled queries
     Q_PENDING  = Q(state=PENDING)
     Q_APPROVED = Q(state=APPROVED)
+    Q_DENIED   = Q(state=DENIED)
 
     class Meta:
         unique_together = ("chain", "id")
@@ -1396,19 +1397,21 @@ class ProjectApplication(models.Model):
             uplimit = p.get('uplimit', 0)
             self.add_resource_policy(service, resource, uplimit)
 
-    def followers(self):
-        followers = self.chained_applications()
-        followers = followers.exclude(id=self.pk).filter(state=self.PENDING)
-        followers = followers.order_by('id')
-        return followers
+    def pending_modifications(self):
+        q = self.chained_applications()
+        q = q.filter(~Q(id=self.id) & Q(state=self.PENDING))
+        q = q.order_by('id')
+        return q
 
-    def last_follower(self):
+    def last_pending(self):
         try:
-            return self.followers().order_by('-id')[0]
+            return self.pending_modifications().order_by('-id')[0]
         except IndexError:
             return None
 
     def is_modification(self):
+        if self.state != self.PENDING:
+            return False
         parents = self.chained_applications().filter(id__lt=self.id)
         parents = parents.filter(state__in=[self.APPROVED])
         return parents.count() > 0
@@ -1417,7 +1420,7 @@ class ProjectApplication(models.Model):
         return ProjectApplication.objects.filter(chain=self.chain)
 
     def has_pending_modifications(self):
-        return bool(self.last_follower())
+        return bool(self.last_pending())
 
     def get_project(self):
         try:
@@ -1529,25 +1532,6 @@ class ProjectApplication(models.Model):
     @property
     def member_leave_policy_display(self):
         return PROJECT_MEMBER_LEAVE_POLICIES.get(str(self.member_leave_policy))
-
-def submit_application(**kw):
-
-    resource_policies = kw.pop('resource_policies', None)
-    application = ProjectApplication(**kw)
-
-    precursor = kw['precursor_application']
-
-    if precursor is None:
-        application.chain = new_chain()
-    else:
-        application.chain = precursor.chain
-        if precursor.state == ProjectApplication.PENDING:
-            precursor.state = ProjectApplication.REPLACED
-            precursor.save()
-
-    application.save()
-    application.resource_policies = resource_policies
-    return application
 
 class ProjectResourceGrant(models.Model):
 

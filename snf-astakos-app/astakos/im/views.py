@@ -1095,7 +1095,7 @@ def project_list(request):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_update(request, application_id):
+def project_modify(request, application_id):
     resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
     resource_catalog = ()
     result = callpoint.list_resources()
@@ -1133,56 +1133,74 @@ def project_update(request, application_id):
 @signed_terms_required
 @login_required
 @transaction.commit_on_success
+def project_app(request, application_id):
+    return common_detail(request, application_id, is_chain=False)
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+@transaction.commit_on_success
 def project_detail(request, chain_id):
-    addmembers_form = AddProjectMembersForm()
-    if request.method == 'POST':
-        addmembers_form = AddProjectMembersForm(
-            request.POST,
-            chain_id=int(chain_id),
-            request_user=request.user)
-        if addmembers_form.is_valid():
-            try:
-                rollback = False
-                chain_id = int(chain_id)
-                map(lambda u: enroll_member(
-                        chain_id,
-                        u,
-                        request_user=request.user),
-                    addmembers_form.valid_users)
-            except (IOError, PermissionDenied), e:
-                messages.error(request, e)
-            except BaseException, e:
-                rollback = True
-                messages.error(request, e)
-            finally:
-                if rollback == True:
-                    transaction.rollback()
-                else:
-                    transaction.commit()
-            addmembers_form = AddProjectMembersForm()
+    return common_detail(request, chain_id)
 
-    rollback = False
+def addmembers(request, chain_id):
+    addmembers_form = AddProjectMembersForm(
+        request.POST,
+        chain_id=int(chain_id),
+        request_user=request.user)
+    if addmembers_form.is_valid():
+        try:
+            rollback = False
+            chain_id = int(chain_id)
+            map(lambda u: enroll_member(
+                    chain_id,
+                    u,
+                    request_user=request.user),
+                addmembers_form.valid_users)
+        except (IOError, PermissionDenied), e:
+            messages.error(request, e)
+        except BaseException, e:
+            rollback = True
+            messages.error(request, e)
+        finally:
+            if rollback == True:
+                transaction.rollback()
+            else:
+                transaction.commit()
 
-    project, application = get_by_chain_or_404(chain_id)
-    if project:
-        members = project.projectmembership_set.select_related()
-    else:
-        members = ProjectMembership.objects.none()
+def common_detail(request, common_id, is_chain=True):
+    if is_chain:
+        if request.method == 'POST':
+            addmembers(request, common_id)
 
-    members_table = tables.ProjectApplicationMembersTable(project,
-                                                          members,
-                                                          user=request.user,
-                                                          prefix="members_")
-    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
+        addmembers_form = AddProjectMembersForm()
+
+        project, application = get_by_chain_or_404(common_id)
+        if project:
+            members = project.projectmembership_set.select_related()
+            members_table = tables.ProjectMembersTable(project,
+                                                       members,
+                                                       user=request.user,
+                                                       prefix="members_")
+            RequestConfig(request, paginate={"per_page": PAGINATE_BY}
+                          ).configure(members_table)
+
+        else:
+            members_table = None
+
+    else: # is application
+        application = get_object_or_404(ProjectApplication, pk=common_id)
+        members_table = None
+        addmembers_form = None
 
     modifications_table = None
 
-    following_applications = list(application.followers())
+    following_applications = list(application.pending_modifications())
     following_applications.reverse()
-    modifications_table = \
+    modifications_table = (
         tables.ProjectModificationApplicationsTable(following_applications,
                                                     user=request.user,
-                                                    prefix="modifications_")
+                                                    prefix="modifications_"))
 
     return object_detail(
         request,
@@ -1192,7 +1210,7 @@ def project_detail(request, chain_id):
         extra_context={
             'addmembers_form':addmembers_form,
             'members_table': members_table,
-            'user_owns_project': request.user.owns_project(project),
+            'user_owns_project': request.user.owns_application(application),
             'modifications_table': modifications_table,
             'member_status': application.user_status(request.user)
             })

@@ -348,6 +348,7 @@ def member_action_extra_context(membership, table, col):
 
 class ProjectMembersTable(UserTable):
     name = tables.Column(accessor="person.last_name", verbose_name=_('Name'))
+    email = tables.Column(accessor="person.email", verbose_name=_('Email'))    
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=member_action_extra_context,
@@ -371,6 +372,7 @@ class ProjectMembersTable(UserTable):
         template = "im/table_render.html"
         model = ProjectMembership
         fields = ('name', 'status')
+        sequence = ('name', 'email', 'status', 'project_action')
         attrs = {'id': 'members-table', 'class': 'members-table alt-style'}
         empty_text = _('No members')
 

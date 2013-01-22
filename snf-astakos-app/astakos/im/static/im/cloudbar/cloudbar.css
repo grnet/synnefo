@@ -27,12 +27,14 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
 .cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:block; width:100%;}
 .cloudbar ul.services                           { margin:0; padding:0; }
-.cloudbar ul.services li                        { float:left; height:35px; line-height:35px; text-align:center; padding: 0 30px; list-style:none outside;}
-.cloudbar ul.services li:first-child            { padding:0 5px;}
+.cloudbar ul.services li                        { float:left; height:35px; line-height:35px; text-align:center; padding: 0; list-style:none outside;}
+.cloudbar ul.services li:first-child a          { padding:0 5px;}
 .cloudbar ul.services li.active                 { background:#333;}
-.cloudbar ul.services li:hover                  { background:#444; } 
+.cloudbar ul.services li:hover                  { background:#444; }
+.cloudbar ul.services li a						{ padding:0 30px; display:block; } 
 .cloudbar .red-border							{ border:2px solid red; }
 .cloudbar ul.services li.red-border				{ height:31px; line-height:31px; margin-left:0px; margin-right:0px; }
+
 @media screen and (max-width : 480px) 		{ 
 	.cloudbar .profile 							{ float:none; }	 
 	.cloudbar .services li:first-child			{ position:absolute; left:0; top:0; background:#000}

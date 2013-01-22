@@ -696,7 +696,11 @@ app_end_date_help    =  _("""
         You can always re-apply for an extension, if you need.""")
 
 join_policy_label    =  _("Joining policy")
+app_member_join_policy_help    =  _("""
+        Text fo member_join_policy.""")
 leave_policy_label   =  _("Leaving policy")
+app_member_leave_policy_help    =  _("""
+        Text fo member_leave_policy.""")
 
 max_members_label    =  _("Maximum member count")
 max_members_help     =  _("""
@@ -747,12 +751,14 @@ class ProjectApplicationForm(forms.ModelForm):
 
     member_join_policy  = forms.TypedChoiceField(
         label     = join_policy_label,
+        help_text = app_member_join_policy_help,
         initial   = 2,
         coerce    = int,
         choices   = join_policies)
 
     member_leave_policy = forms.TypedChoiceField(
         label     = leave_policy_label,
+        help_text = app_member_leave_policy_help,
         coerce    = int,
         choices   = leave_policies)
 

@@ -558,6 +558,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods .dialog-wrap .submit				{ min-width:10px; text-transform:uppercase; margin-right:10px; }
 .auth_methods ul li a.noaction:hover img		{ margin-top:-55px }
 .auth_methods ul li a.noaction:hover			{ cursor:default; }
+.auth_methods ul li a.noaction:focus			{ outline:0 none; }
 .auth_methods ul li a.canremove:hover img,
 .auth_methods .assigned ul li.remove a img		{ margin-top:-112px; }
 .auth_methods .assigned ul li span.extra-message{ color:#F24E53; padding-left:70px; background-image:url(../images/line-red.jpg)}
@@ -600,4 +601,5 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .landing-page .rt 								{ text-align:center;vertical-align:middle; } 
 #signup-classic									{ clear:both; }
 #signup-classic + .form-stacked					{ display:none; }
-.extralogin a.standalone						{ display:block; width:130px; margin-bottom:20px }
+.extralogin a.standalone						{ display:block; width:140px; margin-bottom:20px; white-space:nowrap;}
+.hidden-form-rows								{ display:none; }

@@ -54,9 +54,7 @@ $(document).ready(function() {
 	authTokenDiv.find('span.extra-img').attr('id','token-span');
 	// Default hidden fields
 	
-	newEmailDiv.hide();
-	newPassword1Div.hide();
-	newPassword2Div.hide();
+	 
 	emailCheck.hide();
 	passwordCheck.hide();
 	
@@ -66,13 +64,16 @@ $(document).ready(function() {
 	newPassword1Div.addClass('password-span');
 	newPassword2Div.addClass('password-span');
 	
+	$('.password-span').wrapAll('<div class="hidden-form-rows">');
+	$('.email-span').wrapAll('<div class="hidden-form-rows">');
+	
 	// If errors show fields
 	
 	
 	if ($('input#id_change_password:checkbox').attr('checked')) {
 		oldPasswordDiv.find('input').focus();
-		newPassword1Div.show();
-		newPassword2Div.show();
+		$('.form-following #password-span').parents('.form-row').next('.hidden-form-rows').show();
+		 
 		$('.form-following #password-span').parents('.form-row').addClass('open');
 	}; 
 	
@@ -80,7 +81,7 @@ $(document).ready(function() {
 	
 	if ($('input#id_change_email:checkbox').attr('checked')) {
 		 
-		newEmailDiv.show();
+		$('.form-following #email-span').parents('.form-row').next('.hidden-form-rows').show();
 		$('.form-following #email-span').parents('.form-row').addClass('open');
 	}; 
 	
@@ -89,13 +90,10 @@ $(document).ready(function() {
 	$('.form-following .extra-img').click(function(e){
 		
 		$(this).parents('.form-row').toggleClass('open');
+		$(this).parents('.form-row').next('.hidden-form-rows').slideToggle('slow');
 		
 		id = $(this).attr('id');
-		$('.form-row').each(function() {
-			if( $(this).hasClass(id) ) {
-				$(this).toggle();
-			}
-		}); 
+		 
 	 
 	 	
 	 	if ( !($(this).parents('.form-row').hasClass('open')) ){

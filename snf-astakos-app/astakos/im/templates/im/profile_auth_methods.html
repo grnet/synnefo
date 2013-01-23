@@ -16,7 +16,7 @@
 		                <span class="details">{{ userauthprovider.details_display }}</span>
                       	<div class="dialog-wrap">
                         	 
-                          	<p>Are you sure you want to remove  {{ userauthprovider.settings.get_title_display }} from your Authentication methods? </p>
+				<p>Are you sure you want to remove {{ userauthprovider.settings.get_title_display }} from your authentication methods? </p>
  
 							<p>
 								<a href="{% url remove_auth_provider userauthprovider.pk %}" class="submit">Yes</a>

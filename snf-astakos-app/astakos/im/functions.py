@@ -67,7 +67,7 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
-    sync_projects, PendingMembershipError, get_resource_names, new_chain)
+    PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
     membership_change_notify,
     application_submit_notify, application_approve_notify,
@@ -515,7 +515,6 @@ def accept_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
-    sync_projects()
 
     membership_change_notify(project, membership.person, 'accepted')
 
@@ -569,7 +568,6 @@ def remove_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.remove()
-    sync_projects()
 
     membership_change_notify(project, membership.person, 'removed')
 
@@ -585,7 +583,6 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
-    sync_projects()
 
     # TODO send proper notification
     return membership
@@ -608,7 +605,6 @@ def leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
-        sync_projects()
     else:
         membership.leave_request_date = datetime.now()
         membership.save()
@@ -630,7 +626,6 @@ def join_project(project_id, user_id):
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
-        sync_projects()
     return membership
 
 def submit_application(kw, request_user=None):
@@ -718,8 +713,6 @@ def approve_application(app):
         raise PermissionDenied(m)
 
     application.approve()
-    sync_projects()
-
     application_approve_notify(application)
 
 def check_expiration(execute=False):
@@ -736,7 +729,6 @@ def terminate(project_id):
     checkAlive(project)
 
     project.terminate()
-    sync_projects()
 
     project_termination_notify(project)
 
@@ -745,7 +737,6 @@ def suspend(project_id):
     checkAlive(project)
 
     project.suspend()
-    sync_projects()
 
     project_suspension_notify(project)
 
@@ -757,7 +748,6 @@ def resume(project_id):
         raise PermissionDenied(m)
 
     project.resume()
-    sync_projects()
 
 def get_by_chain_or_404(chain_id):
     try:

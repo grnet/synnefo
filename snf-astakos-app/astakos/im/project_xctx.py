@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,40 +31,38 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+from synnefo.lib.db.xctx import TransactionHandler
+from astakos.im.notification_xctx import NotificationTransactionContext
+from astakos.im.models import sync_projects
 
-from django.core.management.base import BaseCommand, CommandError
+# USAGE
+# =====
+# @project_transaction_context(sync=True)
+# def a_view(args, ctx=None):
+#     ...
+#     if ctx:
+#         ctx.mark_rollback()
+#     ...
+#     return http response
+#
+# OR
+#
+# def a_view(args):
+#     with project_transaction_context(sync=True) as ctx:
+#         ...
+#         ctx.mark_rollback()
+#         ...
+#         return http response
 
-from astakos.im.models import ProjectApplication
-from astakos.im.functions import approve_application
-from astakos.im.project_xctx import project_transaction_context
+def project_transaction_context(**kwargs):
+    return TransactionHandler(ctx=ProjectTransactionContext, **kwargs)
 
-class Command(BaseCommand):
-    args = "<project application id>"
-    help = "Approve project application"
+class ProjectTransactionContext(NotificationTransactionContext):
+    def __init__(self, sync=False, **kwargs):
+        self._sync = sync
+        NotificationTransactionContext.__init__(self, **kwargs)
 
-    def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide an application id")
-
-        try:
-            id = int(args[0])
-        except ValueError:
-            raise CommandError('Invalid id')
-        else:
-            try:
-                # Is it a project application id?
-                app = ProjectApplication.objects.get(id=id)
-            except ProjectApplication.DoesNotExist:
-                raise CommandError('Invalid id')
-
-            approve(app)
-
-@project_transaction_context(sync=True)
-def approve(app, ctx=None):
-    try:
-        approve_application(app)
-    except BaseException as e:
-        if ctx:
-            ctx.mark_rollback()
-            raise CommandError(e)
+    def postprocess(self):
+        if self._sync:
+            sync_projects()
+        NotificationTransactionContext.postprocess(self)

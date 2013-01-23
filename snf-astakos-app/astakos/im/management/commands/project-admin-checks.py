@@ -33,11 +33,10 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
 from astakos.im.functions import check_expiration
+from astakos.im.project_xctx import project_transaction_context
 
-@transaction.commit_manually
 class Command(BaseCommand):
     help = "Perform administration checks on projects"
 
@@ -84,13 +83,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         execute = options['execute']
+        if options['expire']:
+            self.expire(execute=execute)
 
+    @project_transaction_context(sync=True)
+    def expire(self, execute=False, ctx=None):
         try:
-            if options['expire']:
-                projects = check_expiration(execute=execute)
-                self.print_expired(projects, execute)
+            projects = check_expiration(execute=execute)
+            self.print_expired(projects, execute)
         except BaseException as e:
-            transaction.rollback()
+            if ctx:
+                ctx.mark_rollback()
             raise CommandError(e)
-        else:
-            transaction.commit()

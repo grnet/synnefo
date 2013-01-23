@@ -108,6 +108,7 @@ from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
+from astakos.im.project_xctx import project_transaction_context
 
 logger = logging.getLogger(__name__)
 
@@ -913,16 +914,15 @@ def how_it_works(request):
         'im/how_it_works.html',
         context_instance=get_context(request))
 
-@transaction.commit_manually
+@project_transaction_context()
 def _create_object(request, model=None, template_name=None,
         template_loader=template_loader, extra_context=None, post_save_redirect=None,
         login_required=False, context_processors=None, form_class=None,
-        msg=None):
+        msg=None, ctx=None):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
     """
-    rollback = False
     response = None
 
     if extra_context is None: extra_context = {}
@@ -954,13 +954,9 @@ def _create_object(request, model=None, template_name=None,
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
-
         if response == None:
             # Create the template, context, response
             if not template_name:
@@ -974,17 +970,16 @@ def _create_object(request, model=None, template_name=None,
             response = HttpResponse(t.render(c))
         return response
 
-@transaction.commit_manually
+@project_transaction_context()
 def _update_object(request, model=None, object_id=None, slug=None,
         slug_field='slug', template_name=None, template_loader=template_loader,
         extra_context=None, post_save_redirect=None, login_required=False,
         context_processors=None, template_object_name='object',
-        form_class=None, msg=None):
+        form_class=None, msg=None, ctx=None):
     """
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
     """
-    rollback = False
     response = None
 
     if extra_context is None: extra_context = {}
@@ -1017,12 +1012,8 @@ def _update_object(request, model=None, object_id=None, slug=None,
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        ctx.mark_rollback()
     finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
         if response == None:
             if not template_name:
                 template_name = "%s/%s_form.html" %\
@@ -1132,25 +1123,23 @@ def project_modify(request, application_id):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_on_success
 def project_app(request, application_id):
     return common_detail(request, application_id, is_chain=False)
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_on_success
 def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
-def addmembers(request, chain_id):
+@project_transaction_context(sync=True)
+def addmembers(request, chain_id, ctx=None):
     addmembers_form = AddProjectMembersForm(
         request.POST,
         chain_id=int(chain_id),
         request_user=request.user)
     if addmembers_form.is_valid():
         try:
-            rollback = False
             chain_id = int(chain_id)
             map(lambda u: enroll_member(
                     chain_id,
@@ -1160,13 +1149,9 @@ def addmembers(request, chain_id):
         except (IOError, PermissionDenied), e:
             messages.error(request, e)
         except BaseException, e:
-            rollback = True
+            if ctx:
+                ctx.mark_rollback()
             messages.error(request, e)
-        finally:
-            if rollback == True:
-                transaction.rollback()
-            else:
-                transaction.commit()
 
 def common_detail(request, chain_or_app_id, is_chain=True):
     if is_chain:
@@ -1265,14 +1250,13 @@ def project_search(request):
 @require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_join(request, chain_id):
+@project_transaction_context(sync=True)
+def project_join(request, chain_id, ctx=None):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_detail',
                        args=(chain_id,))
 
-    rollback = False
     try:
         chain_id = int(chain_id)
         join_project(chain_id, request.user)
@@ -1283,25 +1267,20 @@ def project_join(request, chain_id):
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
+        if ctx:
+            ctx.mark_rollback()
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_leave(request, chain_id):
+@project_transaction_context(sync=True)
+def project_leave(request, chain_id, ctx=None):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
-    rollback = False
     try:
         chain_id = int(chain_id)
         leave_project(chain_id, request.user)
@@ -1310,26 +1289,20 @@ def project_leave(request, chain_id):
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
-
+        if ctx:
+            ctx.mark_rollback()
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_cancel(request, chain_id):
+@project_transaction_context()
+def project_cancel(request, chain_id, ctx=None):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
-    rollback = False
     try:
         chain_id = int(chain_id)
         cancel_membership(chain_id, request.user)
@@ -1338,12 +1311,8 @@ def project_cancel(request, chain_id):
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
+        if ctx:
+            ctx.mark_rollback()
 
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
@@ -1351,9 +1320,8 @@ def project_cancel(request, chain_id):
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_accept_member(request, chain_id, user_id):
-    rollback = False
+@project_transaction_context(sync=True)
+def project_accept_member(request, chain_id, user_id, ctx=None):
     try:
         chain_id = int(chain_id)
         user_id = int(user_id)
@@ -1363,24 +1331,19 @@ def project_accept_member(request, chain_id, user_id):
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     else:
         realname = m.person.realname
         msg = _(astakos_messages.USER_JOINED_PROJECT) % locals()
         messages.success(request, msg)
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_remove_member(request, chain_id, user_id):
-    rollback = False
+@project_transaction_context(sync=True)
+def project_remove_member(request, chain_id, user_id, ctx=None):
     try:
         chain_id = int(chain_id)
         user_id = int(user_id)
@@ -1390,24 +1353,19 @@ def project_remove_member(request, chain_id, user_id):
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     else:
         realname = m.person.realname
         msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
         messages.success(request, msg)
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_reject_member(request, chain_id, user_id):
-    rollback = False
+@project_transaction_context()
+def project_reject_member(request, chain_id, user_id, ctx=None):
     try:
         chain_id = int(chain_id)
         user_id = int(user_id)
@@ -1417,16 +1375,12 @@ def project_reject_member(request, chain_id, user_id):
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     else:
         realname = m.person.realname
         msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
         messages.success(request, msg)
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 def landing(request):

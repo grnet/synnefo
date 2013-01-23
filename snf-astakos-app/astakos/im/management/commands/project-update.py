@@ -34,16 +34,9 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-from django.views.generic.create_update import lookup_object
-from django.http import Http404
-
-from astakos.im.models import (
-    ProjectApplication, Project)
-
 from astakos.im.functions import terminate, suspend, resume
+from astakos.im.project_xctx import project_transaction_context
 
-@transaction.commit_manually
 class Command(BaseCommand):
     args = "<project id>"
     help = "Update project state"
@@ -53,37 +46,39 @@ class Command(BaseCommand):
                     action='store_true',
                     dest='terminate',
                     default=False,
-                    help="Terminate group"),
+                    help="Terminate project"),
         make_option('--resume',
                     action='store_true',
                     dest='resume',
                     default=False,
-                    help="Resume group"),
+                    help="Resume project"),
         make_option('--suspend',
                     action='store_true',
                     dest='suspend',
                     default=False,
-                    help="Suspend group")
+                    help="Suspend project")
     )
 
     def handle(self, *args, **options):
         if len(args) < 1:
-            raise CommandError("Please provide a group identifier")
-        
+            raise CommandError("Please provide a project id")
         try:
             id = int(args[0])
         except ValueError:
             raise CommandError('Invalid id')
         else:
-            try:
-                if options['terminate']:
-                    terminate(id)
-                elif options['resume']:
-                    resume(id)
-                elif options['suspend']:
-                    suspend(id)
-            except BaseException, e:
-                transaction.rollback()
-                raise CommandError(e)
-            else:
-                transaction.commit()
+            if options['terminate']:
+                run_command(terminate, id)
+            elif options['resume']:
+                run_command(resume, id)
+            elif options['suspend']:
+                run_command(suspend, id)
+
+@project_transaction_context(sync=True)
+def run_command(func, id, ctx=None):
+    try:
+        func(id)
+    except BaseException as e:
+        if ctx:
+            ctx.mark_rollback()
+        raise CommandError(e)

@@ -239,6 +239,10 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         widget=forms.HiddenInput(),
         label=''
     )
+    email = forms.EmailField(
+        label='Contact email',
+        help_text = 'We will use this email to contact you'
+    )
 
     class Meta:
         model = AstakosUser

@@ -5,20 +5,23 @@
 {% endblock %}
 
 {% block body.left %}
+<div class="centered">
  
 {% if third_party_token %} 
 	<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
 {% else %} 
-	<img class="pic" src="{{ IM_STATIC_URL }}images/pictures/accounts_3.png" />
+	<img class="pic" src="{{ IM_STATIC_URL }}images/ringer1.png" />
 {% endif %}
- 
+</div> 
 {% comment %}{% include "im/services_description.html" %}{% endcomment %}
 {% endblock body.left %}
 
 {% block body.right %}
 <h2>{% trans "SIGN UP" %}</h2>
 {% if not third_party_token and not signup_form.errors %}
+ 
 <p>{% trans "Choose one of the following sign up methods." %}</p>
+ 
 <div class="extralogin">
 {% for provider in auth_providers %}
 	{% if provider.is_available_for_create %}
@@ -47,6 +50,11 @@ $(document).ready(function(){
     $("#signup-classic").click(function(e){
         e.preventDefault();
         $(this).siblings('.form-stacked').slideToggle();
+    	pic = $(this).parents('.rt').siblings('.lt').find('img.pic');
+    	var src = (pic.attr('src') === '{{ IM_STATIC_URL }}images/ringer1.png')
+            ? '{{ IM_STATIC_URL }}images/ringer2.png'
+            : '{{ IM_STATIC_URL }}images/ringer1.png';
+        pic.attr('src', src);
     })
 });    
 </script>    

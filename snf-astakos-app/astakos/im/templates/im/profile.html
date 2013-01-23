@@ -26,12 +26,5 @@
     {% include "im/profile_auth_methods.html" %}
 </div>
 
-<div class="full-dotted right-align">
-	<ul class="options">
-        {% for s in services %}
-		    <li><a href="{{s.url}}" class="blue">Take me to {{s.name}}></a></li>
-        {% endfor %}
-	</ul>
-		 
-</div>
+ 
 {% endblock body %}

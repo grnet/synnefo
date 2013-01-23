@@ -817,6 +817,7 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
         messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
+    # TODO: check if moderation is only enabled for local login
     if astakos_settings.MODERATION_ENABLED:
         raise PermissionDenied
 
@@ -832,14 +833,8 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             messages.success(request, msg)
         except SendMailError, e:
             messages.error(request, e)
-    return render_response(
-        template_name,
-        login_form = LoginForm(request=request),
-        context_instance = get_context(
-            request,
-            extra_context
-        )
-    )
+
+    return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET"])

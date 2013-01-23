@@ -1012,7 +1012,7 @@ class ExtendedProfileForm(ProfileForm):
             self.fields.update(self.password_change_form.fields)
             self.fields['old_password'].required = False
             self.fields['old_password'].label = _('Password')
-            self.fields['old_password'].initial = 'skata'
+            self.fields['old_password'].initial = 'password'
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False
 

@@ -50,10 +50,10 @@ urlpatterns = patterns(
     (r'^v1(?:$|/)', include(api_urlpatterns)),
     (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
     (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
-    (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'))
 
 if settings.PROXY_USER_SERVICES:
     urlpatterns += patterns(
         '',
+        (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'),
         (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'),
         (r'^user_catalog/?$', 'pithos.api.delegate.delegate_to_user_catalogs_service'))

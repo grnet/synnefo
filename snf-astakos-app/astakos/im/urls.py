@@ -84,10 +84,6 @@ if EMAILCHANGE_ENABLED:
         url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
             name='email_change_confirm'))
 
-urlpatterns += patterns(
-    'astakos.im.target',
-    url(r'^login/redirect/?$', 'redirect.login'))
-
 if 'local' in IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',

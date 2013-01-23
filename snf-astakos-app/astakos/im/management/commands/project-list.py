@@ -70,14 +70,7 @@ class Command(NoArgsCommand):
             try:
                 project = app.project
                 project_id = project.id
-                if project.is_alive:
-                    status = 'ALIVE'
-                elif project.is_terminated:
-                    status = 'TERMINATED'
-                elif project.is_suspended:
-                    status = 'SUSPENDED'
-                else:
-                    status = 'UNKNOWN'
+                status = project.state_display()
             except:
                 project_id = ''
                 status     = ''

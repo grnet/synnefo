@@ -20,9 +20,55 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.13 (January 21, 2013)    Extend api to export user presentation & quota information.
 0.6 (June 06, 2012)        Split service and admin API.
 0.1 (Feb 10, 2012)         Initial release.
 =========================  ================================
+
+Get Services
+^^^^^^^^^^^^
+
+Returns a json formatted list containing information about the supported cloud services.
+
+==================== =========  ==================
+Uri                  Method     Description
+==================== =========  ==================
+``/im/get_services`` GET        Get cloud services
+==================== =========  ==================
+
+Example reply:
+
+::
+
+    [{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "1"},
+    {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
+    {"url": "/ui/", "name": "pithos+", "id": "3"}]
+
+
+Get Menu
+^^^^^^^^
+
+Returns a json formatted list containing the cloud bar links.
+
+==================== =========  ==================
+Uri                  Method     Description
+==================== =========  ==================
+``/im/get_menu``     GET        Get cloud bar menu
+==================== =========  ==================
+
+Example reply if request user is not authenticated:
+
+::
+
+    [{"url": "/im/", "name": "Sign in"}]
+
+Example reply if request user is authenticated:
+
+::
+
+    [{"url": "/im/login", "name": "user@example.com"},
+    {"url": "/im/profile", "name": "My account"},
+    {"url": "/im/logout", "name": "Sign out"}]
 
 Admin API Operations
 --------------------
@@ -49,35 +95,124 @@ Uri                  Method     Description
 ====================  ===========================
 Request Header Name   Value
 ====================  ===========================
-X-Auth-Token          Authentication token
+X-Auth-Token          User authentication token
 ====================  ===========================
+
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+usage                    (optional)
+======================  =========================
 
 Extended information on the user serialized in the json format will be returned:
 
 ===========================  ============================
 Name                         Description
 ===========================  ============================
-username                     User uniq identifier
-uniq                         User email (uniq identifier used by Astakos)
-auth_token                   Authentication token
-auth_token_expires           Token expiration date
+displayname                     User displayname
+uuid                         User unique identifier
+email                        List with user emails
+name                         User full name
 auth_token_created           Token creation date
-has_credits                  Whether user has credits
-has_signed_terms             Whether user has aggred on terms
-groups                       User groups
+auth_token_expires           Token expiration date
+usage                        List of user resource usage (if usage request parameter is present)
 ===========================  ============================
 
-Example reply:
+Example reply without `usage` request parameter:
 
 ::
 
-  {"username": "4ad9f34d6e7a4992b34502d40f40cb",
-  "uniq": "user@example.com"
-  "auth_token": "0000",
-  "auth_token_expires": "Fri, 29 Jun 2012 10:03:37 GMT",
+  {"id": "12",
+  "displayname": "user@example.com",
+  "uuid": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
+  "email": "[user@example.com]",
+  "name": "Firstname Lastname",
   "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
-  "has_credits": false,
-  "has_signed_terms": true}
+  "auth_token_expires": "Fri, 29 Jun 2012 10:03:37 GMT"}
+
+Example reply with `usage` request parameter:
+
+::
+
+  {"id": "12",
+  "displayname": "user@example.com",
+  "uuid": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
+  "email": "[user@example.com]",
+  "name": "Firstname Lastname",
+  "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
+  "auth_token_expires": "Fri, 29 Jun 2012 10:03:37 GMT",
+  "usage": [{"currValue": 4536392,
+             "display_name": "Storage Space",
+             "description": "Pithos account diskspace",
+             "verbose_name": "Storage Space",
+             "help_text_input_each": "This is the total amount of space on Pithos that will be granted to each user of this Project ", "maxValue": 5368710653,
+             "pluralized_display_name": "Storage Space",
+             "report_desc": "Storage Space",
+             "help_text": "This is the space on Pithos for storing files and VM Images. ",
+             "is_abbreviation": false,
+             "placeholder": "eg. 10GB",
+             "unit": "bytes",
+             "name": "pithos+.diskspace"},
+            {"currValue": 0,
+             "display_name": "System Disk",
+             "description": "Virtual machine disk size",
+             "verbose_name": "System Disk",
+             "help_text_input_each": "This is the total amount of System Disk that will be granted to each user of this Project (this refers to the total System Disk of all VMs, not each VM's System Disk)  ",
+             "maxValue": 53687091200,
+             "pluralized_display_name": "System Disk",
+             "report_desc": "System Disk",
+             "help_text": "This is the System Disk that the VMs have that run the OS ",
+             "is_abbreviation": false,
+             "placeholder": "eg. 5GB, 2GB etc",
+             "unit": "bytes",
+             "name": "cyclades.disk"},
+            {"currValue": 0,
+             "display_name": "CPU",
+             "description": "Number of virtual machine processors",
+             "verbose_name": "cpu",
+             "help_text_input_each": "This is the total number of CPUs that will be granted to each user of this Project (on all VMs)  ", "maxValue": 6, "pluralized_display_name": "CPUs",
+             "report_desc": "CPUs",
+             "help_text": "CPUs used by VMs ",
+             "is_abbreviation": true,
+             "placeholder": "eg. 1",
+             "unit": "",
+             "name": "cyclades.cpu"},
+            {"currValue": 0,
+             "display_name": "RAM",
+             "description": "Virtual machines",
+             "verbose_name": "ram",
+             "help_text_input_each": "This is the total amount of RAM that will be granted to each user of this Project (on all VMs)  ", "maxValue": 6442450944,
+             "pluralized_display_name": "RAM",
+             "report_desc": "RAM",
+             "help_text": "RAM used by VMs ",
+             "is_abbreviation": true,
+             "placeholder": "eg. 4GB",
+             "unit": "bytes", "name": "cyclades.ram"},
+            {"currValue": 0, "display_name": "VM",
+             "description": "Number of virtual machines",
+             "verbose_name": "vm", "help_text_input_each": "This is the total number of VMs that will be granted to each user of this Project ", "maxValue": 2,
+             "pluralized_display_name": "VMs",
+             "report_desc": "Virtual Machines",
+             "help_text": "These are the VMs one can create on the Cyclades UI ",
+             "is_abbreviation": true, "placeholder": "eg. 2",
+             "unit": "",
+             "name": "cyclades.vm"},
+            {"currValue": 0,
+             "display_name": "private network",
+             "description": "Private networks",
+             "verbose_name": "private network",
+             "help_text_input_each": "This is the total number of Private Networks that will be granted to each user of this Project ",
+             "maxValue": 1,
+             "pluralized_display_name": "private networks",
+             "report_desc": "Private Networks",
+             "help_text": "These are the Private Networks one can create on the Cyclades UI. ",
+             "is_abbreviation": false,
+             "placeholder": "eg. 1",
+             "unit": "",
+             "name": "cyclades.network.private"}]}
+
 
 |
 
@@ -90,161 +225,6 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-Get User by email
-^^^^^^^^^^^^^^^^^
-
-Returns a json formatted dictionary containing information about a specific user
-
-============================== =========  ==================
-Uri                            Method     Description
-============================== =========  ==================
-``/im/admin/api/v2.0/users/``  GET        Get user information by email
-============================== =========  ==================
-
-|
-
-====================  ===========================
-Request Header Name   Value
-====================  ===========================
-X-Auth-Token          Authentication token owned by
-                      a user having or inheriting ``im.can_access_userinfo`` permission
-====================  ===========================
-
-|
-
-======================  =========================
-Request Parameter Name  Value
-======================  =========================
-name                    Email
-======================  =========================
-
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed
-401 (Unauthorized)          Missing or invalid token or unauthorized user
-404 (Not Found)             Missing email or inactive user
-500 (Internal Server Error) The request cannot be completed because of an internal error
-=========================== =====================
-
-Example reply:
-
-::
-
-    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
-    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
-    "name": "Firstname Surname",
-    "groups": ["default"],
-    "user_permissions": [],
-    "has_credits": false,
-    "auth_token_expires":"Fri, 29 Jun 2012 10:03:37 GMT",
-    "enabled": true,
-    "email": ["user@example.com"],
-    "id": 4}
-
-Get User by username
-^^^^^^^^^^^^^^^^^^^^
-
-Returns a json formatted dictionary containing information about a specific user
-
-======================================== =========  ==================
-Uri                                      Method     Description
-======================================== =========  ==================
-``/im/admin/api/v2.0/users/{username}``  GET        Get user information by username
-======================================== =========  ==================
-
-|
-
-====================  ===========================
-Request Header Name   Value
-====================  ===========================
-X-Auth-Token          Authentication token owned
-                      by a user having or inheriting ``im.can_access_userinfo`` permission
-====================  ===========================
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed
-401 (Unauthorized)          Missing or invalid token or unauthorized user
-404 (Not Found)             Invalid username
-500 (Internal Server Error) The request cannot be completed because of an internal error
-=========================== =====================
-
-Example reply:
-
-::
-
-    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
-    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
-    "name": "Firstname Surname",
-    "groups": ["default"],
-    "user_permissions": [],
-    "has_credits": false,
-    "auth_token_expires":
-    "Fri, 29 Jun 2012 10:03:37 GMT",
-    "enabled": true,
-    "email": ["user@example.com"],
-    "id": 4}
-
-Get Services
-^^^^^^^^^^^^
-
-Returns a json formatted list containing information about the supported cloud services.
-
-==================== =========  ==================
-Uri                  Method     Description
-==================== =========  ==================
-``/im/get_services`` GET        Get cloud services
-==================== =========  ==================
-
-Example reply:
-
-::
-
-    [{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "1"},
-    {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
-    {"url": "/ui/", "name": "pithos+", "id": "3"}]
-
-
-Get Menu
-^^^^^^^^
-
-Returns a json formatted list containing the cloud bar links. 
-
-==================== =========  ==================
-Uri                  Method     Description
-==================== =========  ==================
-``/im/get_menu``     GET        Get cloud bar menu
-==================== =========  ==================
-
-Example reply if request user is not authenticated:
-
-::
-
-    [{"url": "/im/", "name": "Sign in"}]
-
-Example reply if request user is authenticated:
-
-::
-
-    [{"url": "/im/login", "name": "user@example.com"},
-    {"url": "/im/profile", "name": "My account"},
-    {"url": "/im/logout", "name": "Sign out"}]
-
-Service API Operations
-----------------------
-
-The operations described in this chapter allow services to access user information and perform specific tasks.
-
-The operations require a valid service token.
 
 Send feedback
 ^^^^^^^^^^^^^
@@ -254,7 +234,7 @@ Via this operaton services can post user feedback requests.
 ========================= =========  ==================
 Uri                       Method     Description
 ========================= =========  ==================
-``/im/service/feedback``  POST       Send feedback
+``/feedback``             POST       Send feedback
 ========================= =========  ==================
 
 |
@@ -262,7 +242,7 @@ Uri                       Method     Description
 ====================  ============================
 Request Header Name   Value
 ====================  ============================
-X-Auth-Token          Service Authentication token
+X-Auth-Token          User authentication token
 ====================  ============================
 
 |
@@ -270,7 +250,6 @@ X-Auth-Token          Service Authentication token
 ======================  =========================
 Request Parameter Name  Value
 ======================  =========================
-auth_token              User token
 feedback_msg            Feedback message
 feedback_data           Additional information about service client status
 ======================  =========================
@@ -281,20 +260,21 @@ feedback_data           Additional information about service client status
 Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
+502 (Bad Gateway)           Send feedback failure
 400 (Bad Request)           Method not allowed or missing or invalid user token parameter or invalid message data
 401 (Unauthorized)          Missing or expired service token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-Get User by email
-^^^^^^^^^^^^^^^^^
+Get User catalog
+^^^^^^^^^^^^^^^^
 
 Returns a json formatted dictionary containing information about a specific user
 
 ================================ =========  ==================
 Uri                              Method     Description
 ================================ =========  ==================
-``/im/service/api/v2.0/users/``  GET        Get user information by email
+``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
 ================================ =========  ==================
 
 |
@@ -302,16 +282,29 @@ Uri                              Method     Description
 ====================  ============================
 Request Header Name   Value
 ====================  ============================
-X-Auth-Token          Service Authentication token
+X-Auth-Token          User authentication token
 ====================  ============================
 
 |
 
-======================  =========================
-Request Parameter Name  Value
-======================  =========================
-name                    Email
-======================  =========================
+The request body is a json formatted dictionary containing a list with uuids and another list of displaynames to translate.
+
+Example request content:
+
+::
+
+  {"displaynames": ["user1@example.com", "user2@example.com"],
+   "uuids":["ff53baa9-c025-4d56-a6e3-963db0438830", "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8"]}
+
+Example reply:
+
+::
+
+  {"displayname_catalog": {"user1@example.com": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
+                           "user2@example.com": "816351c7-7405-4f26-a968-6380cf47ba1f"},
+  'uuid_catalog': {"a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8": "user1@example.com",
+                   "ff53baa9-c025-4d56-a6e3-963db0438830": "user2@example.com"}}
+
 
 |
 
@@ -319,70 +312,7 @@ name                    Email
 Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed
+400 (Bad Request)           Method not allowed or request body is not json formatted
 401 (Unauthorized)          Missing or expired or invalid service token
-404 (Not Found)             Missing email or inactive user
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
-
-Example reply:
-
-::
-
-    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
-    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
-    "name": "Firstname Surname",
-    "groups": ["default"],
-    "user_permissions": [],
-    "has_credits": false,
-    "auth_token_expires":"Fri, 29 Jun 2012 10:03:37 GMT",
-    "enabled": true,
-    "email": ["user@example.com"],
-    "id": 4}
-
-Get User by username
-^^^^^^^^^^^^^^^^^^^^
-
-Returns a json formatted dictionary containing information about a specific user
-
-========================================== =========  ==================
-Uri                                        Method     Description
-========================================== =========  ==================
-``/im/service/api/v2.0/users/{username}``  GET        Get user information by username
-========================================== =========  ==================
-
-|
-
-====================  ============================
-Request Header Name   Value
-====================  ============================
-X-Auth-Token          Service Authentication token
-====================  ============================
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed
-401 (Unauthorized)          Missing or expired or invalid service token
-404 (Not Found)             Invalid username
-500 (Internal Server Error) The request cannot be completed because of an internal error
-=========================== =====================
-
-Example reply:
-
-::
-
-    {"username": "7e530044f90a4e7ba2cb94f3a26c40",
-    "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
-    "name": "Firstname Surname",
-    "groups": ["default"],
-    "user_permissions": [],
-    "has_credits": false,
-    "auth_token_expires":
-    "Fri, 29 Jun 2012 10:03:37 GMT",
-    "enabled": true,
-    "email": ["user@example.com"],
-    "id": 4}

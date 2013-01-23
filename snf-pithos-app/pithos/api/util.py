@@ -65,13 +65,14 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
-                                 SERVICE_TOKEN, COOKIE_NAME, USER_INFO_URL,
+                                 SERVICE_TOKEN, COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS)
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
-from synnefo.lib.astakos import get_user_uuid, get_username
+from synnefo.lib.astakos import (get_user_uuid, get_displayname,
+                                 get_uuids, get_displaynames)
 
 import logging
 import re
@@ -240,7 +241,7 @@ def put_object_headers(response, meta, restricted=False):
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
-        modified_by = retrieve_username(meta['modified_by'])
+        modified_by = retrieve_displayname(meta['modified_by'])
         response['X-Object-Modified-By'] = smart_str(
             modified_by, strings_only=True)
         response['X-Object-Version'] = meta['version']
@@ -294,29 +295,33 @@ def is_uuid(str):
     else:
        return True
 
-def retrieve_username(uuid):
+def retrieve_displayname(uuid):
     try:
-        return get_username(
-            SERVICE_TOKEN, uuid, USER_INFO_URL, AUTHENTICATION_USERS)
+        return get_displayname(
+            SERVICE_TOKEN, uuid, USER_CATALOG_URL, AUTHENTICATION_USERS)
     except:
-        # if it fails just leave the metadata intact
+        # if it fails just leave the input intact
         return uuid
 
-def retrieve_uuid(username):
-    if is_uuid(username):
-        return username
+def retrieve_displaynames(uuids):
+    return get_displaynames(
+        SERVICE_TOKEN, uuids, USER_CATALOG_URL, AUTHENTICATION_USERS)
 
-    try:
-        return get_user_uuid(
-            SERVICE_TOKEN, username, USER_INFO_URL, AUTHENTICATION_USERS)
-    except Exception, e:
-        if e.args:
-            status = e.args[-1]
-            if status == 404:
-                raise ItemNotExists(username)
-        raise
+def retrieve_uuid(displayname):
+    if is_uuid(displayname):
+        return displayname
 
-def replace_permissions_username(holder):
+    uuid = get_user_uuid(
+        SERVICE_TOKEN, displayname, USER_CATALOG_URL, AUTHENTICATION_USERS)
+    if not uuid:
+        raise ItemNotExists(displayname)
+    return uuid
+
+def retrieve_uuids(displaynames):
+    return get_uuids(
+        SERVICE_TOKEN, displaynames, USER_CATALOG_URL, AUTHENTICATION_USERS)
+
+def replace_permissions_displayname(holder):
     try:
         # check first for a group permission
         account, group = holder.split(':')
@@ -330,9 +335,9 @@ def replace_permissions_uuid(holder):
         # check first for a group permission
         account, group = holder.split(':')
     except ValueError:
-        return retrieve_username(holder)
+        return retrieve_displayname(holder)
     else:
-        return ':'.join([retrieve_username(account), group])
+        return ':'.join([retrieve_displayname(account), group])
 
 def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
     if permissions is None:
@@ -595,12 +600,12 @@ def get_sharing(request):
             raise BadRequest(
                 'Bad X-Object-Sharing header value: missing prefix')
 
-    # replace username with uuid
+    # replace displayname with uuid
     try:
         ret['read'] = \
-            [replace_permissions_username(x) for x in ret.get('read', [])]
+            [replace_permissions_displayname(x) for x in ret.get('read', [])]
         ret['write'] = \
-            [replace_permissions_username(x) for x in ret.get('write', [])]
+            [replace_permissions_displayname(x) for x in ret.get('write', [])]
     except ItemNotExists, e:
         raise BadRequest(
             'Bad X-Object-Sharing header value: unknown account: %s' % e)

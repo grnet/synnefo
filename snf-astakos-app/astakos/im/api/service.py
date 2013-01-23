@@ -40,12 +40,10 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import simplejson as json
 
-from . import render_fault
+from . import render_fault, __get_uuid_displayname_catalog, __send_feedback
 from .faults import (
     Fault, Unauthorized, InternalServerError, BadRequest, ItemNotFound)
-from astakos.im.models import AstakosUser, Service
-from astakos.im.forms import FeedbackForm
-from astakos.im.functions import send_feedback as send_feedback_func
+from astakos.im.models import Service
 
 logger = logging.getLogger(__name__)
 
@@ -82,43 +80,15 @@ def api_method(http_method=None, token_required=False):
         return wrapper
     return decorator
 
-
-@api_method(http_method='GET', token_required=True)
-def get_user_info(request):
+@csrf_exempt
+@api_method(http_method='POST', token_required=True)
+def get_uuid_displayname_catalogs(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    #                       itemNotFound (404)
-    username = request.META.get('HTTP_X_USER_USERNAME')
-    uuid = request.META.get('HTTP_X_USER_UUID')
-    if not username and not uuid:
-        raise BadRequest('Either username or uuid is required.')
 
-    query = AstakosUser.objects.all()
-    user_info = None
-    if username:
-        try:
-            user = query.get(username__iexact=username)
-        except AstakosUser.DoesNotExist:
-            raise ItemNotFound('Invalid username: %s' % username)
-        else:
-            user_info = {'uuid': user.uuid}
-    else:
-        try:
-            user = query.get(uuid=uuid)
-        except AstakosUser.DoesNotExist:
-            raise ItemNotFound('Invalid uuid: %s' % uuid)
-        else:
-            user_info = {'username': user.username}
-
-    response = HttpResponse()
-    response.status = 200
-    response.content = json.dumps(user_info)
-    response['Content-Type'] = 'application/json; charset=UTF-8'
-    response['Content-Length'] = len(response.content)
-    return response
-
+    return __get_uuid_displayname_catalog(request)
 
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)
@@ -127,26 +97,5 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    auth_token = request.POST.get('auth', '')
-    if not auth_token:
-        raise BadRequest('Missing user authentication')
 
-    user = None
-    try:
-        user = AstakosUser.objects.get(auth_token=auth_token)
-    except:
-        pass
-
-    if not user:
-        raise BadRequest('Invalid user authentication')
-
-    form = FeedbackForm(request.POST)
-    if not form.is_valid():
-        raise BadRequest('Invalid data')
-
-    msg = form.cleaned_data['feedback_msg']
-    data = form.cleaned_data['feedback_data']
-    send_feedback_func(msg, data, user, email_template_name)
-    response = HttpResponse(status=200)
-    response['Content-Length'] = len(response.content)
-    return response
+    return __send_feedback(request, email_template_name)

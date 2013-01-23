@@ -58,8 +58,9 @@ from pithos.api.util import (
     copy_or_move_object, get_int_parameter, get_content_length,
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
-    api_method, retrieve_username, retrieve_uuid,
-    put_account_translation_headers)
+    api_method, retrieve_displayname, retrieve_uuid, retrieve_displaynames,
+    retrieve_uuids)
+
 from pithos.api.settings import UPDATE_MD5
 
 from pithos.backends.base import (

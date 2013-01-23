@@ -301,6 +301,24 @@ class AstakosUserManager(UserManager):
     def verified(self):
         return self.filter(email_verified=True)
 
+    def uuid_catalog(self, l=None):
+        """
+        Returns a uuid to username mapping for the uuids appearing in l.
+        If l is None returns the mapping for all existing users.
+        """
+        q = self.filter(uuid__in=l) if l != None else self
+        return dict(q.values_list('uuid', 'username'))
+
+    def displayname_catalog(self, l=None):
+        """
+        Returns a username to uuid mapping for the usernames appearing in l.
+        If l is None returns the mapping for all existing users.
+        """
+        q = self.filter(uuid__in=l) if l != None else self
+        q = self.filter(username__in=l) if l != None else self
+        return dict(q.values_list('username', 'uuid'))
+
+
 
 class AstakosUser(User):
     """

@@ -52,7 +52,7 @@ from synnefo.lib import astakos
 def warn(*msgs):
     print "WARNING: %s" % ' '.join(msgs)
 
-get_username = functools.partial(astakos.get_username,
+get_displayname = functools.partial(astakos.get_displayname,
                                  settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
                                  url=settings.ASTAKOS_URL.replace('authenticate',
                                                                  'service/api/v2.0/users'))

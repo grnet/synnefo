@@ -158,8 +158,3 @@ urlpatterns += patterns(
 urlpatterns += patterns(
     'astakos.im.api.user',
     url(r'^authenticate/?$', 'authenticate'))
-
-urlpatterns += patterns(
-    'astakos.im.api.service',
-    url(r'^service/api/v2.0/feedback/?$', 'send_feedback'),
-    url(r'^service/api/v2.0/users/?$', 'get_user_info'))

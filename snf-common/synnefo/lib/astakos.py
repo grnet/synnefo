@@ -66,17 +66,21 @@ def retry(howmany):
         return f
     return execute
 
-def call(token, url, headers={}):
+def call(token, url, headers={}, body=None, method='GET'):
     p = urlparse(url)
 
     kwargs = {}
     kwargs['headers'] = headers
     kwargs['headers']['X-Auth-Token'] = token
-    kwargs['headers']['Content-Length'] = 0
+    if body:
+        kwargs['body'] = body
+        kwargs['headers'].setdefault('content-type', 'application/octet-stream')
+    kwargs['headers'].setdefault('content-length', len(body) if body else 0)
+
 
     conn = get_http_connection(p.netloc, p.scheme)
     try:
-        conn.request('GET', p.path + '?' + p.query, **kwargs)
+        conn.request(method, p.path + '?' + p.query, **kwargs)
         response = conn.getresponse()
         headers = response.getheaders()
         headers = dict((unquote(h), unquote(v)) for h,v in headers)
@@ -103,45 +107,70 @@ def authenticate(
 
 
 @retry(3)
-def get_username(
+def get_displaynames(
         token,
-        uuid,
-        url='http://127.0.0.1:8000/im/service/api/v2.0/users',
+        uuids,
+        url='http://127.0.0.1:8000/user_catalogs',
         override_users={}):
-    if override_users:
-        return uuid
 
-    headers = {}
-    if uuid:
-        headers['X-User-Uuid'] = uuid
+    if override_users:
+        return dict((u,u) for u in uuids)
 
     try:
-        data = call(token, url, headers)
+        data = call(
+            token, url,  headers={'content-type':'application/json'},
+            body=json.dumps({'uuids':uuids}), method='POST')
     except Exception, e:
         raise e
     else:
-        return data.get('username')
+        return data.get('uuid_catalog')
 
 
 @retry(3)
-def get_user_uuid(
+def get_uuids(
         token,
-        username,
-        url='http://127.0.0.1:8000/im/service/api/v2.0/users',
+        displaynames,
+        url='http://127.0.0.1:8000/user_catalogs',
         override_users={}):
-    if override_users:
-        return username
 
-    headers = {}
-    if username:
-        headers['X-User-Username'] = username
+    if override_users:
+        return dict((u,u) for u in displaynames)
+
     try:
-        data = call(token, url, headers)
+        data = call(
+            token, url, headers={'content-type':'application/json'},
+            body=json.dumps({'displaynames':displaynames}), method='POST')
     except Exception, e:
+        import traceback
+        traceback.print_exc()
         raise e
     else:
-        return data.get('uuid')
+        return data.get('displayname_catalog')
 
+def get_user_uuid(
+        token,
+        displayname,
+        url='http://127.0.0.1:8000/user_catalogs',
+        override_users={}):
+
+    if not displayname:
+        return
+
+    displayname_dict = get_uuids(token, [displayname], url, override_users)
+    return displayname_dict.get(displayname)
+
+
+def get_displayname(
+        token,
+        uuid,
+        url='http://127.0.0.1:8000/user_catalogs',
+        override_users={}):
+
+    if not uuid:
+        return
+
+    uuid_dict = get_displaynames(token, [uuid], url, override_users)
+    return uuid_dict.get(uuid)
 
 def user_for_token(token, authentication_url, override_users, usage=False):
     if not token:
@@ -189,10 +218,10 @@ def get_user(
                        authentication_url)
         return None
 
-    # use user uuid, instead of email, keep email/username reference to user_id
+    # use user uuid, instead of email, keep email/displayname reference to user_id
     request.user_uniq = user['uuid']
     request.user = user
-    request.user_id = user.get('username')
+    request.user_id = user.get('displayname')
     return user
 
 

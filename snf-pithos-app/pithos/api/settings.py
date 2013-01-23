@@ -15,13 +15,17 @@ sample_users = {
     '0009': 'διογένης'
 }
 
-ASTAKOS_URL = getattr(settings, 'PITHOS_ASTAKOS_URL',
-                             'http://127.0.0.1:8000/im/')
-from urlparse import urljoin
+# Set to False if pithos running in the same machine with the identity management
+PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
+
+USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
+                           'http://127.0.0.1:8000/im/service/api/v2.0/users/')
+USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
+                            'http://127.0.0.1:8000/im/service/api/v2.0/feedback/')
+USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
+                         'http:127.0.0.1:8000/login/')
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
-                             urljoin(ASTAKOS_URL, 'authenticate/'))
-USER_INFO_URL = getattr(settings, 'PITHOS_USER_INFO_URL',
-                             urljoin(ASTAKOS_URL, 'service/api/v2.0/users/'))
+                             'http://localhost:8000/im/authenticate/')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')

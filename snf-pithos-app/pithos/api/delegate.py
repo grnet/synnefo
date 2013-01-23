@@ -44,15 +44,16 @@ from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from pithos.api.settings import (
-    AUTHENTICATION_URL, AUTHENTICATION_USERS, SERVICE_TOKEN, USER_INFO_URL)
+    AUTHENTICATION_USERS, USER_LOGIN_URL, USER_FEEDBACK_URL, USER_CATALOG_URL,
+    SERVICE_TOKEN)
 
-from synnefo.lib.astakos import get_username
+from synnefo.lib.pool.http import get_http_connection
 
 logger = logging.getLogger(__name__)
 
 
 def delegate_to_login_service(request):
-    url = AUTHENTICATION_URL
+    url = USER_LOGIN_URL
     users = AUTHENTICATION_USERS
     if users or not url:
         return HttpResponseNotFound()
@@ -63,35 +64,41 @@ def delegate_to_login_service(request):
     else:
         proto = 'http://'
     params = dict([(k, v) for k, v in request.GET.items()])
-    uri = proto + p.netloc + '/login?' + urlencode(params)
+    uri = proto + p.netloc + p.path + '?' + urlencode(params)
     return HttpResponseRedirect(uri)
 
 
+def proxy(request, url, headers={}, body=None):
+    p = urlparse(url)
+
+    kwargs = {}
+    kwargs['headers'] = headers
+    kwargs['headers'].update(request.META)
+    kwargs['body'] = body
+    kwargs['headers'].setdefault('content-type', 'application/json')
+    kwargs['headers'].setdefault('content-length', len(body) if body else 0)
+
+    conn = get_http_connection(p.netloc, p.scheme)
+    try:
+        conn.request(request.method, p.path + '?' + p.query, **kwargs)
+        response = conn.getresponse()
+        length = response.getheader('content-length', None)
+        data = response.read(length)
+        status = int(response.status)
+        return HttpResponse(data, status=status)
+    finally:
+        conn.close()
+
 @csrf_exempt
 def delegate_to_feedback_service(request):
-    url = AUTHENTICATION_URL
-    users = AUTHENTICATION_USERS
-    if users or not url:
-        return HttpResponseNotFound()
+    token = request.META.get('HTTP_X_AUTH_TOKEN')
+    headers = {'X-Auth-Token': token}
+    return proxy(
+        request, USER_FEEDBACK_URL, headers=headers, body=request.raw_post_data)
 
-    p = urlparse(url)
-    if request.is_secure():
-        proto = 'https://'
-    else:
-        proto = 'http://'
-
-    uri = proto + p.netloc + '/im/service/api/v2.0/feedback'
-    headers = {'X-Auth-Token': SERVICE_TOKEN}
-    values = dict([(k, unicode(v).encode('utf-8')) for k, v in request.POST.items()])
-    data = urllib.urlencode(values)
-    req = urllib2.Request(uri, data, headers)
-    try:
-        urllib2.urlopen(req)
-    except urllib2.HTTPError, e:
-        logger.exception(e)
-        return HttpResponse(status=e.code)
-    except urllib2.URLError, e:
-        logger.exception(e)
-        return HttpResponse(status=e.reason)
-    return HttpResponse()
-
+@csrf_exempt
+def delegate_to_user_catalogs_service(request):
+    token = request.META.get('HTTP_X_AUTH_TOKEN')
+    headers = {'X-Auth-Token': token, 'content-type': 'application/json'}
+    return proxy(
+        request, USER_CATALOG_URL, headers=headers, body=request.raw_post_data)

@@ -23,19 +23,19 @@
 <p>{% trans "Choose one of the following sign up methods." %}</p>
  
 <div class="extralogin">
-{% for provider in auth_providers %}
-	{% if provider.is_available_for_create %}
-		{% if provider.module == 'local' %}
-			<a href="#" class="submit standalone" id="signup-classic">CLASSIC</a>
+{% for provider_obj in auth_providers %}
+	{% if provider_obj.is_available_for_create %}
+		{% if provider_obj.module == 'local' %}
+			<a href="#" class="submit standalone" id="signup-classic">CLASSIC SIGN UP</a>
             {% if "local" in im_modules %}
             {% include "im/auth/signup_form.html" %}
 		    {% endif %}
 		{% else %}
-			{% if provider.module == 'shibboleth' %}
-				<a href="{% provider_login_url provider %}" class="submit standalone">ACADEMIC</a>
+			{% if provider_obj.module == 'shibboleth' %}
+				<a href="{% provider_login_url provider_obj %}" class="submit standalone">ACADEMIC SIGN UP</a>
 			{% else %}
-			<a href="{% provider_login_url provider %}" title="{{ provider.get_title_display }}" class="icons">
-				<img src=" {{ provider.get_icon_url_display }}" alt="{{ provider.get_title_display }}">
+			<a href="{% provider_login_url provider_obj %}" title="{{ provider_obj.get_title_display }}" class="icons">
+				<img src=" {{ provider_obj.get_icon_url_display }}" alt="{{ provider_obj.get_title_display }}">
 			</a>
 			{% endif %}
 		{% endif %}

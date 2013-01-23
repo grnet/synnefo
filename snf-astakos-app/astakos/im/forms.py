@@ -259,6 +259,9 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
 
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
 
+        if not get_latest_terms():
+            del self.fields['has_signed_terms']
+
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
             # to the terms within the label
@@ -999,7 +1002,7 @@ class ExtendedProfileForm(ProfileForm):
 
 
     def _init_extra_form_fields(self):
-        
+
 
         if self.email_change:
             self.fields.update(self.email_change_form.fields)

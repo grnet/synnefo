@@ -258,5 +258,8 @@ def get_provider(id, user_obj=None, default=None):
     """
     Return a provider instance from the auth providers registry.
     """
+    if not id in PROVIDERS:
+        raise Exception('Invalid auth provider requested "%s"' % id)
+
     return PROVIDERS.get(id, default)(user_obj)
 

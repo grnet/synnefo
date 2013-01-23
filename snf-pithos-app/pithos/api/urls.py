@@ -49,7 +49,7 @@ urlpatterns = patterns(
     '',
     (r'^v1(?:$|/)', include(api_urlpatterns)),
     (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
-    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
+    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'))
 
 if settings.PROXY_USER_SERVICES:
     urlpatterns += patterns(

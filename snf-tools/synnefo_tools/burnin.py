@@ -311,9 +311,9 @@ class ServersTestCase(unittest.TestCase):
         cls.dservers = cls.client.list_servers(detail=True)
         cls.result_dict = dict()
 
-    def test_001_list_servers(self):
-        """Test server list actually returns servers"""
-        self.assertGreater(len(self.servers), 0)
+    # def test_001_list_servers(self):
+    #     """Test server list actually returns servers"""
+    #     self.assertGreater(len(self.servers), 0)
 
     def test_002_list_servers_detailed(self):
         """Test detailed server list is the same length as list"""
@@ -326,7 +326,6 @@ class ServersTestCase(unittest.TestCase):
         self.assertEqual(names, dnames)
 
 
-# --------------------------------------------------------------------
 # This class gets replicated into actual TestCases dynamically
 class SpawnServerTestCase(unittest.TestCase):
     """Test scenario for server of the specified image"""

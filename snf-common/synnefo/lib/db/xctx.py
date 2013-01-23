@@ -112,7 +112,6 @@ class TransactionHandler(object):
             else:
                 if transaction.is_dirty(using=db):
                     if self.ctx.is_marked_rollback():
-                        print 'is marked!'
                         transaction.rollback(using=db)
                     else:
                         try:

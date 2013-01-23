@@ -55,7 +55,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
 from astakos.im import auth_providers
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
-    handle_third_party_signup, handle_third_party_login
+    handle_third_party_signup, handle_third_party_login, init_third_party_session
 
 import astakos.im.messages as astakos_messages
 
@@ -77,6 +77,7 @@ authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
 @requires_auth_provider('linkedin', login=True)
 @require_http_methods(["GET", "POST"])
 def login(request):
+    init_third_party_session(request)
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         messages.error(request, 'Invalid linkedin response')

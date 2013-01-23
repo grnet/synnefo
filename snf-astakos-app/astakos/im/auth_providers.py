@@ -99,8 +99,25 @@ class AuthProvider(object):
     def add_url(self):
         return reverse(self.login_view)
 
-    def __init__(self, user=None):
+    @property
+    def provider_details(self):
+        if self.user:
+            if self.identifier:
+                self._provider_details = \
+                    self.user.get_auth_providers().get(module=self.module,
+                                                       identifier=self.identifier).__dict__
+            else:
+                self._provider_details = self.user.get(module=self.module).__dict__
+        return self._provider_details
+
+    def __init__(self, user=None, identifier=None, provider_details=None):
         self.user = user
+        self.identifier = identifier
+
+        self._provider_details = None
+        if provider_details:
+            self._provider_details = provider_details
+
         for tpl in ['login_prompt', 'login', 'signup_prompt']:
             tpl_name = '%s_%s' % (tpl, 'template')
             override = self.get_setting(tpl_name)
@@ -254,12 +271,12 @@ class LinkedInAuthProvider(AuthProvider):
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
 
 
-def get_provider(id, user_obj=None, default=None):
+def get_provider(id, user_obj=None, default=None, identifier=None, provider_details={}):
     """
     Return a provider instance from the auth providers registry.
     """
     if not id in PROVIDERS:
         raise Exception('Invalid auth provider requested "%s"' % id)
 
-    return PROVIDERS.get(id, default)(user_obj)
+    return PROVIDERS.get(id, default)(user_obj, identifier, provider_details)
 

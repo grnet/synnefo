@@ -46,6 +46,19 @@ from astakos.im.util import prepare_response, get_context
 from astakos.im.views import requires_anonymous, render_response
 
 
+def init_third_party_session(request):
+    params = dict(request.GET.items())
+    request.session['third_party_request_params'] = params
+
+
+def get_third_party_session_params(request):
+    if 'third_party_request_params' in request.session:
+        params = request.session['third_party_request_params']
+        del request.session['third_party_request_params']
+        return params
+    return {}
+
+
 def add_pending_auth_provider(request, third_party_token):
     if third_party_token:
         # use requests to assign the account he just authenticated with with
@@ -58,11 +71,9 @@ def add_pending_auth_provider(request, third_party_token):
 
 
 def get_pending_key(request):
-    third_party_token = get_query(request).get('key', False)
-    if not third_party_token:
-        third_party_token = request.session.get('pending_key', None)
-        if third_party_token:
-          del request.session['pending_key']
+    third_party_token = get_query(request).get('key', request.session.get('pending_key', False))
+    if 'pending_key' in request.session:
+        del request.session['pending_key']
     return third_party_token
 
 
@@ -115,8 +126,8 @@ def handle_third_party_signup(request, userid, provider_module, third_party_key,
 
 
 def handle_third_party_login(request, provider_module, identifier,
-                             third_party_key=None, provider_info=None,
-                             affiliation=None):
+                             provider_info=None, affiliation=None,
+                             third_party_key=None):
 
     if not provider_info:
         provider_info = {}
@@ -124,12 +135,12 @@ def handle_third_party_login(request, provider_module, identifier,
     if not affiliation:
         affiliation = provider_module.title()
 
-    if not third_party_key:
-        third_party_key = get_pending_key(request)
-
     next_redirect = request.GET.get('next', request.session.get('next_url', None))
     if 'next_url' in request.session:
         del request.session['next_url']
+
+    third_party_request_params = get_third_party_session_params(request)
+    from_login = third_party_request_params.get('from_login', False)
 
     # an existing user accessed the view
     if request.user.is_authenticated():
@@ -153,10 +164,22 @@ def handle_third_party_login(request, provider_module, identifier,
         return HttpResponseRedirect(reverse('edit_profile'))
 
     # astakos user exists ?
-    user = AstakosUser.objects.get_auth_provider_user(
-        provider_module,
-        identifier=identifier
-    )
+    try:
+        user = AstakosUser.objects.get_auth_provider_user(
+            provider_module,
+            identifier=identifier,
+            user__email_verified=True,
+        )
+    except AstakosUser.DoesNotExist:
+        # TODO: add a message ? redirec to login ?
+        if astakos_messages.AUTH_PROVIDER_SIGNUP_FROM_LOGIN:
+            messages.warning(request,
+                             astakos_messages.AUTH_PROVIDER_SIGNUP_FROM_LOGIN)
+        raise
+
+    if not third_party_key:
+        third_party_key = get_pending_key(request)
+
     if user.is_active:
         # authenticate user
         response = prepare_response(request,

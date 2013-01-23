@@ -56,7 +56,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
 from astakos.im import auth_providers
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
-    handle_third_party_signup, handle_third_party_login
+    handle_third_party_signup, handle_third_party_login, init_third_party_session
 
 import astakos.im.messages as astakos_messages
 
@@ -77,6 +77,7 @@ authenticate_url = 'http://twitter.com/oauth/authenticate'
 @requires_auth_provider('twitter', login=True)
 @require_http_methods(["GET", "POST"])
 def login(request):
+    init_third_party_session(request)
     force_login = request.GET.get('force_login',
                                   settings.TWITTER_AUTH_FORCE_LOGIN)
     resp, content = client.request(request_token_url, "GET")
@@ -142,7 +143,7 @@ def authenticated(
 
 
     try:
-        return handle_third_party_login(request, 'google', userid,
+        return handle_third_party_login(request, 'twitter', userid,
                                         provider_info, affiliation)
     except AstakosUser.DoesNotExist, e:
         third_party_key = get_pending_key(request)

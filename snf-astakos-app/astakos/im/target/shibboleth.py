@@ -55,7 +55,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import auth_providers
 from astakos.im import settings
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
-    handle_third_party_signup, handle_third_party_login
+    handle_third_party_signup, handle_third_party_login, init_third_party_session
 
 import astakos.im.messages as astakos_messages
 import logging
@@ -82,6 +82,7 @@ def login(
     template='im/third_party_check_local.html',
     extra_context=None):
 
+    init_third_party_session(request)
     extra_context = extra_context or {}
 
     tokens = request.META

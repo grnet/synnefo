@@ -207,6 +207,7 @@ AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be a
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
 AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is required. Add one from your profile page."
 AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD         =   "Changing password is not supported."
+AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   None
 
 EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add '%s' login method to your existing account from your " \
                                                  " <a href='%s'>profile page</a>"

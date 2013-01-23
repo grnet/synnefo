@@ -55,7 +55,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import auth_providers
 from astakos.im import settings
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
-    handle_third_party_signup
+    handle_third_party_signup, handle_third_party_login
 
 import astakos.im.messages as astakos_messages
 import logging
@@ -118,52 +118,12 @@ def login(
     provider_info = {'eppn': eppn, 'email': email, 'name': realname}
     userid = eppn
 
-    # an existing user accessed the view
-    if request.user.is_authenticated():
-
-        if request.user.has_auth_provider('shibboleth', identifier=eppn):
-            return HttpResponseRedirect(reverse('edit_profile'))
-
-        # automatically add eppn provider to user
-        user = request.user
-        if not request.user.can_add_auth_provider('shibboleth',
-                                                  identifier=eppn):
-            # TODO: handle existing uuid message separately
-            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
-                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
-            return HttpResponseRedirect(reverse('edit_profile'))
-
-        user.add_auth_provider('shibboleth', identifier=eppn,
-                               affiliation=affiliation,
-                               provider_info=provider_info)
-        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
-        return HttpResponseRedirect(reverse('edit_profile'))
-
     try:
-        # astakos user exists ?
-        user = AstakosUser.objects.get_auth_provider_user(
-            'shibboleth',
-            identifier=eppn
-        )
-        if user.is_active:
-
-            # authenticate user
-            response = prepare_response(request,
-                                    user,
-                                    request.GET.get('next'),
-                                    'renew' in request.GET)
-            provider = auth_providers.get_provider('shibboleth')
-            messages.success(request, _(astakos_messages.LOGIN_SUCCESS) %
-                             _(provider.get_login_message_display))
-            add_pending_auth_provider(request, third_party_key)
-            response.set_cookie('astakos_last_login_method', 'local')
-            return response
-        else:
-            message = user.get_inactive_message()
-            messages.error(request, message)
-            return HttpResponseRedirect(login_url(request))
-
+        return handle_third_party_login(request, 'shibboleth',
+                                        eppn, provider_info,
+                                        affiliation, third_party_key)
     except AstakosUser.DoesNotExist, e:
+        third_party_key = get_pending_key(request)
         user_info = {'affiliation': affiliation, 'realname': realname}
         return handle_third_party_signup(request, userid, 'shibboleth',
                                          third_party_key,

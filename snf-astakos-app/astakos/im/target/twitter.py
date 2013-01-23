@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import json
+import logging
 
 from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
@@ -55,11 +56,10 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
 from astakos.im import auth_providers
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
-    handle_third_party_signup
+    handle_third_party_signup, handle_third_party_login
 
 import astakos.im.messages as astakos_messages
 
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -140,52 +140,12 @@ def authenticated(
     provider_info = {'screen_name': username}
     affiliation = 'Twitter.com'
 
-    third_party_key = get_pending_key(request)
-
-    # an existing user accessed the view
-    if request.user.is_authenticated():
-        if request.user.has_auth_provider('twitter', identifier=userid):
-            return HttpResponseRedirect(reverse('edit_profile'))
-
-        # automatically add eppn provider to user
-        user = request.user
-        if not request.user.can_add_auth_provider('twitter',
-                                                  identifier=userid):
-            # TODO: handle existing uuid message separately
-            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
-                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
-            return HttpResponseRedirect(reverse('edit_profile'))
-
-        user.add_auth_provider('twitter', identifier=userid,
-                               affiliation=affiliation,
-                               provider_info=provider_info)
-        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
-        return HttpResponseRedirect(reverse('edit_profile'))
 
     try:
-        # astakos user exists ?
-        user = AstakosUser.objects.get_auth_provider_user(
-            'twitter',
-            identifier=userid
-        )
-        if user.is_active:
-            # authenticate user
-            response = prepare_response(request,
-                                    user,
-                                    next_url,
-                                    'renew' in request.GET)
-            provider = auth_providers.get_provider('twitter')
-            messages.success(request, _(astakos_messages.LOGIN_SUCCESS) %
-                             _(provider.get_login_message_display))
-            add_pending_auth_provider(request, third_party_key)
-            response.set_cookie('astakos_last_login_method', 'twitter')
-            return response
-        else:
-            message = user.get_inactive_message()
-            messages.error(request, message)
-            return HttpResponseRedirect(login_url(request))
-
+        return handle_third_party_login(request, 'google', userid,
+                                        provider_info, affiliation)
     except AstakosUser.DoesNotExist, e:
+        third_party_key = get_pending_key(request)
         user_info = {'affiliation': affiliation}
         return handle_third_party_signup(request, userid, 'twitter',
                                          third_party_key,

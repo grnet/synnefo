@@ -38,8 +38,8 @@ from django.utils.translation import ugettext as _
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
-from astakos.im.models import PendingThirdPartyUser
-from astakos.im.util import get_query
+from astakos.im.models import PendingThirdPartyUser, AstakosUser
+from astakos.im.util import get_query, login_url
 from astakos.im import messages as astakos_messages
 from astakos.im import auth_providers
 from astakos.im.util import prepare_response, get_context
@@ -47,7 +47,6 @@ from astakos.im.views import requires_anonymous, render_response
 
 
 def add_pending_auth_provider(request, third_party_token):
-
     if third_party_token:
         # use requests to assign the account he just authenticated with with
         # a third party provider account
@@ -59,7 +58,6 @@ def add_pending_auth_provider(request, third_party_token):
 
 
 def get_pending_key(request):
-
     third_party_token = get_query(request).get('key', False)
     if not third_party_token:
         third_party_token = request.session.get('pending_key', None)
@@ -85,7 +83,7 @@ def handle_third_party_signup(request, userid, provider_module, third_party_key,
                        _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
         return HttpResponseRedirect(reverse('login'))
 
-    # eppn not stored in astakos models, create pending profile
+    # identifier not stored in astakos models, create pending profile
     user, created = PendingThirdPartyUser.objects.get_or_create(
         third_party_identifier=userid,
         provider=provider_module,
@@ -113,4 +111,66 @@ def handle_third_party_signup(request, userid, provider_module, third_party_key,
         #template,
         #context_instance=get_context(request, extra_context)
     #)
+
+
+
+def handle_third_party_login(request, provider_module, identifier,
+                             third_party_key=None, provider_info=None,
+                             affiliation=None):
+
+    if not provider_info:
+        provider_info = {}
+
+    if not affiliation:
+        affiliation = provider_module.title()
+
+    if not third_party_key:
+        third_party_key = get_pending_key(request)
+
+    next_redirect = request.GET.get('next', request.session.get('next_url', None))
+    if 'next_url' in request.session:
+        del request.session['next_url']
+
+    # an existing user accessed the view
+    if request.user.is_authenticated():
+
+        if request.user.has_auth_provider(provider_module, identifier=identifier):
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+        # automatically add identifier provider to user
+        user = request.user
+        if not request.user.can_add_auth_provider(provider_module,
+                                                  identifier=identifier):
+            # TODO: handle existing uuid message separately
+            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
+                          u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
+            return HttpResponseRedirect(reverse('edit_profile'))
+
+        user.add_auth_provider(provider_module, identifier=identifier,
+                               affiliation=affiliation,
+                               provider_info=provider_info)
+        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    # astakos user exists ?
+    user = AstakosUser.objects.get_auth_provider_user(
+        provider_module,
+        identifier=identifier
+    )
+    if user.is_active:
+        # authenticate user
+        response = prepare_response(request,
+                                user,
+                                next_redirect,
+                                'renew' in request.GET)
+        provider = auth_providers.get_provider(provider_module)
+        messages.success(request, _(astakos_messages.LOGIN_SUCCESS) %
+                         _(provider.get_login_message_display))
+        add_pending_auth_provider(request, third_party_key)
+        response.set_cookie('astakos_last_login_method', provider_module)
+        return response
+    else:
+        message = user.get_inactive_message()
+        messages.error(request, message)
+        return HttpResponseRedirect(login_url(request))
 

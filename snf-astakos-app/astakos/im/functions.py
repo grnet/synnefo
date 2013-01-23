@@ -255,7 +255,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     subject = _(FEEDBACK_EMAIL_SUBJECT)
-    from_email = user.email
+    from_email = settings.SERVER_EMAIL
     recipient_list = [DEFAULT_CONTACT_EMAIL]
     content = render_to_string(email_template_name, {
         'message': msg,

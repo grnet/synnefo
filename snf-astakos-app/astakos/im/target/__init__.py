@@ -160,7 +160,9 @@ def handle_third_party_login(request, provider_module, identifier,
         user.add_auth_provider(provider_module, identifier=identifier,
                                affiliation=affiliation,
                                provider_info=provider_info)
-        messages.success(request, astakos_messages.AUTH_PROVIDER_ADDED)
+        provider = auth_providers.get_provider(provider_module)
+        message = _(astakos_messages.AUTH_PROVIDER_ADDED) % provider.get_method_prompt_display
+        messages.success(request, message)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     # astakos user exists ?

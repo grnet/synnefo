@@ -904,6 +904,9 @@ def remove_auth_provider(request, pk):
 
     if provider.can_remove():
         provider.delete()
+        message = astakos_messages.AUTH_PROVIDER_REMOVED % \
+                            provider.settings.get_method_prompt_display
+        messages.success(request, message)
         return HttpResponseRedirect(reverse('edit_profile'))
     else:
         raise PermissionDenied
@@ -1226,14 +1229,14 @@ def project_search(request):
         projects = ProjectApplication.objects.search_by_name(q)
         projects = projects.filter(~Q(project__last_approval_date__isnull=True))
         projects = projects.exclude(project__in=accepted_projects)
-         
+
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
     if request.method == "POST":
         table.caption = _('SEARCH RESULTS')
     else:
         table.caption = _('ALL PROJECTS')
-    
+
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
 
     return object_list(
@@ -1388,8 +1391,8 @@ def landing(request):
         'im/landing.html',
         context_instance=get_context(request))
 
-    
+
 def api_access(request):
     return render_response(
         'im/api_access.html',
-        context_instance=get_context(request))    
+        context_instance=get_context(request))

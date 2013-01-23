@@ -86,6 +86,7 @@ class AuthProvider(object):
     logout_from_provider_text = None
     icon_url = None
     icon_medium_url = None
+    method_prompt = None
 
     def get_message(self, msg, **kwargs):
         params = kwargs
@@ -145,6 +146,8 @@ class AuthProvider(object):
             self.icon_medium_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons-medium/%s.png' %
                                        self.module.lower())
 
+        if not self.method_prompt:
+            self.method_prompt = _('%s login method') % self.get_title_display
 
     def __getattr__(self, key):
         if not key.startswith('get_'):
@@ -233,6 +236,8 @@ class ShibbolethAuthProvider(AuthProvider):
     login_template = 'im/auth/shibboleth_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
     logout_from_provider_text = ' at your Academic account (shibboleth)'
+
+    method_prompt = _('Academic credentials')
 
 
 class TwitterAuthProvider(AuthProvider):

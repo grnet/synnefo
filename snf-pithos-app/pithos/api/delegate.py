@@ -44,8 +44,7 @@ from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from pithos.api.settings import (
-    AUTHENTICATION_USERS, USER_LOGIN_URL, USER_FEEDBACK_URL, USER_CATALOG_URL,
-    SERVICE_TOKEN)
+    AUTHENTICATION_USERS, USER_LOGIN_URL, USER_FEEDBACK_URL, USER_CATALOG_URL)
 
 from synnefo.lib.pool.http import get_http_connection
 

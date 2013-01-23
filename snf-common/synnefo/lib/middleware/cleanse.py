@@ -60,7 +60,8 @@ class CleanseSettingsMiddleware(object):
         '''
         debug.HIDDEN_SETTINGS = re.compile(settings.HIDDEN_SETTINGS)
 
-        mail.mail_admins_plain = mail.mail_admins
-        mail.mail_admins = mail_admins_safe
+        if not hasattr(mail, 'mail_admins_plain'):
+            mail.mail_admins_plain = mail.mail_admins
+            mail.mail_admins = mail_admins_safe
 
         raise MiddlewareNotUsed('cleanse settings')

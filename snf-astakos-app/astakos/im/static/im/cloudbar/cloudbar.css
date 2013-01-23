@@ -34,6 +34,8 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar ul.services li a						{ padding:0 30px; display:block; } 
 .cloudbar .red-border							{ border:2px solid red; }
 .cloudbar ul.services li.red-border				{ height:31px; line-height:31px; margin-left:0px; margin-right:0px; }
+.cloudbar .profile:hover ul						{ display:block; }
+.cloudbar .profile:hover .full span				{ background-image:url(../images/arrow-up.png); }
 
 @media screen and (max-width : 480px) 		{ 
 	.cloudbar .profile 							{ float:none; }	 

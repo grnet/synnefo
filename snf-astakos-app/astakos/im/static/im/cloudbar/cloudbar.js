@@ -117,7 +117,7 @@ $(document).ready(function(){
 	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
 	});
  
-   
+   /*
    	$('.cloudbar .profile .full>a').live('click', function(e){
    		
    		e.stopPropagation();
@@ -127,7 +127,8 @@ $(document).ready(function(){
    		$(this).toggleClass('open');
    		
    	});
-
+*/
+	 
     
 });
 

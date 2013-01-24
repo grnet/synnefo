@@ -1,4 +1,4 @@
-Astakos API 
+Astakos API
 ===========
 
 This is Astakos API guide.
@@ -73,9 +73,9 @@ Example reply if request user is authenticated:
 Admin API Operations
 --------------------
 
-The operations described in this chapter allow users to authenticate themselves and priviledged users (ex. helpdesk) to access other user information.
+The operations described in this chapter allow users to authenticate themselves, send feedback and get user uuid/displayname mappings.
 
-Most of the operations require a valid token assigned to users having the necessary permissions.
+All the operations require a valid user token.
 
 .. _authenticate-api-label:
 
@@ -229,7 +229,7 @@ Return Code                 Description
 Send feedback
 ^^^^^^^^^^^^^
 
-Via this operaton services can post user feedback requests.
+Post user feedback.
 
 ========================= =========  ==================
 Uri                       Method     Description
@@ -261,15 +261,15 @@ Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
 502 (Bad Gateway)           Send feedback failure
-400 (Bad Request)           Method not allowed or missing or invalid user token parameter or invalid message data
-401 (Unauthorized)          Missing or expired service token
+400 (Bad Request)           Method not allowed or invalid message data
+401 (Unauthorized)          Missing or expired user token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-Get User catalog
-^^^^^^^^^^^^^^^^
+Get User catalogs
+^^^^^^^^^^^^^^^^^
 
-Returns a json formatted dictionary containing information about a specific user
+Return a json formatted dictionary containing information about a specific user
 
 ================================ =========  ==================
 Uri                              Method     Description
@@ -283,6 +283,64 @@ Uri                              Method     Description
 Request Header Name   Value
 ====================  ============================
 X-Auth-Token          User authentication token
+====================  ============================
+
+|
+
+The request body is a json formatted dictionary containing a list with uuids and another list of displaynames to translate.
+
+Example request content:
+
+::
+
+  {"displaynames": ["user1@example.com", "user2@example.com"],
+   "uuids":["ff53baa9-c025-4d56-a6e3-963db0438830", "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8"]}
+
+Example reply:
+
+::
+
+  {"displayname_catalog": {"user1@example.com": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
+                           "user2@example.com": "816351c7-7405-4f26-a968-6380cf47ba1f"},
+  'uuid_catalog': {"a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8": "user1@example.com",
+                   "ff53baa9-c025-4d56-a6e3-963db0438830": "user2@example.com"}}
+
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed or request body is not json formatted
+401 (Unauthorized)          Missing or expired or invalid user token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Service API Operations
+----------------------
+
+The operations described in this chapter allow services to get user uuid/displayname mappings.
+
+All the operations require a valid service token.
+
+Get User catalogs
+^^^^^^^^^^^^^^^^^
+
+Return a json formatted dictionary containing information about a specific user
+
+================================ =========  ==================
+Uri                              Method     Description
+================================ =========  ==================
+``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+================================ =========  ==================
+
+|
+
+====================  ============================
+Request Header Name   Value
+====================  ============================
+X-Auth-Token          Service authentication token
 ====================  ============================
 
 |

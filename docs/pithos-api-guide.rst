@@ -117,10 +117,17 @@ Client software using Pithos, should forward to the ``/feedback`` URI. The Pitho
 ======================  =========================
 Request Parameter Name  Value
 ======================  =========================
-auth_token              User token
 feedback_msg            Feedback message
 feedback_data           Additional information about service client status
 ======================  =========================
+
+|
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          User authentication token
+====================  ===========================
 
 |
 
@@ -129,15 +136,21 @@ Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
 502 (Bad Gateway)           Send feedback failure
-400 (Bad Request)           Method not allowed or missing or invalid user token parameter or invalid message data
-401 (Unauthorized)          Missing or expired service token
+400 (Bad Request)           Method not allowed or invalid message data
+401 (Unauthorized)          Missing or expired user token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
 User translation catalogs
 -------------------------
 
-Client software using Pithos, should forward to the ``/user_catalog`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+Client software using Pithos, should forward to the ``/user_catalogs`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          User authentication token
+====================  ===========================
 
 The request body is a json formatted dictionary containing a list with uuids and another list of displaynames to translate.
 
@@ -165,7 +178,7 @@ Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
 400 (Bad Request)           Method not allowed or request body is not json formatted
-401 (Unauthorized)          Missing or expired or invalid service token
+401 (Unauthorized)          Missing or expired or invalid user token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 

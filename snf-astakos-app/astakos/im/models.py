@@ -1028,7 +1028,9 @@ class EmailChangeManager(models.Manager):
 class EmailChange(models.Model):
     new_email_address = models.EmailField(
         _(u'new e-mail address'),
-        help_text=_('Your old email address will be used until you verify your new one.'))
+        help_text=_('Provide a new email address. Until you verify the new '
+                    'address by following the activation link that will be '
+                    'sent to it, your old email address will remain active.'))
     user = models.ForeignKey(
         AstakosUser, unique=True, related_name='emailchanges')
     requested_at = models.DateTimeField(auto_now_add=True)

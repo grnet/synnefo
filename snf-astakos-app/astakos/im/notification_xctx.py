@@ -44,7 +44,7 @@ from astakos.im.notifications import Notification
 #     ...
 #     return http response
 #
-# OR
+# OR (more cleanly)
 #
 # def a_view(args):
 #     with notification_transaction_context(notify=False) as ctx:
@@ -56,6 +56,7 @@ from astakos.im.notifications import Notification
 def notification_transaction_context(**kwargs):
     return TransactionHandler(ctx=NotificationTransactionContext, **kwargs)
 
+
 class NotificationTransactionContext(TransactionContext):
     def __init__(self, notify=True, **kwargs):
         self._notifications = []
@@ -66,18 +67,20 @@ class NotificationTransactionContext(TransactionContext):
     def register(self, o):
         if isinstance(o, dict):
             msg = o.get('msg', None)
-            if msg is not None and request is not None:
+            if msg is not None:
                 if isinstance(msg, basestring):
                     self.queue_message(msg)
 
             notif = o.get('notif', None)
-            fst, snd = o
-            if isinstance(snd, Notification):
-                self.queue_notification(snd)
-                return fst
+            if notif is not None:
+                if isinstance(notif, Notification):
+                    self.queue_notification(notif)
+
+            if o.has_key('value'):
+                return o['value']
         return o
 
-    def queue_message(m):
+    def queue_message(self, m):
         self._messages.append(m)
 
     def queue_notification(self, n):

@@ -496,7 +496,13 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 raise forms.ValidationError(_(astakos_messages.ACCOUNT_INACTIVE))
 
             if not user.has_usable_password():
-                raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
+                provider = auth_providers.get_provider('local')
+                available_providers = user.auth_providers.all()
+                available_providers = ",".join(p.settings.get_title_display for p in \
+                                                   available_providers)
+                message = astakos_messages.UNUSABLE_PASSWORD % \
+                    (provider.get_method_prompt_display, available_providers)
+                raise forms.ValidationError(message)
 
             if not user.can_change_password():
                 raise forms.ValidationError(_(astakos_messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD))

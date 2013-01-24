@@ -108,7 +108,7 @@ SIGN_TERMS                              =   'Please, you need to \'Agree with th
 CAPTCHA_VALIDATION_ERR                  =   'You have not entered the correct words. Please try again.'
 SUSPENDED_LOCAL_ACC                     =   'This account does not have a local password. \
                                                Please try logging in using an external login provider (e.g.: twitter)'
-UNUSABLE_PASSWORD                       =   'You can not use a local password for this account. Only external login providers are enabled.'
+UNUSABLE_PASSWORD                       =   '%s is not enabled for your account. You can may access your account by logging in with %s.'
 EMAIL_UNKNOWN                           =   'This email address doesn\'t have an associated user account. \
                                                Please make sure you have registered, before proceeding.'
 INVITATION_EMAIL_EXISTS                 =   'An invitation has already been sent to this email.'

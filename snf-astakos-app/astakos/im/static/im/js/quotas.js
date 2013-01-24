@@ -5,17 +5,25 @@ function group_form_show_resources(el){
 	$('.quotas-form .group').each(function() {
 		if( $(this).hasClass(id) ) {
 			 
-			$(this).appendTo('.visible');
+			//$(this).appendTo('.visible');
 			$(this).show('slow');
-			console.info('lala');
+			 
 			$(this).find('input').first().focus();
 			console.info($(this).find('input').first());
-			console.info('boo');
+			 
+		 
 		}
 	});
+	//egg = $('.visible').find('.'+id).find('input').first();
+	 
 	if ($('.quotas-form .with-info .with-errors input[type="text"]')){
 		$(this)[0].focus();	
 	}
+	
+	
+	 
+	
+	//setTimeout(function() { document.getElementById("city").focus(); }, 100);
 
 }
 
@@ -77,7 +85,8 @@ $(document).ready(function() {
 		 
 		// hide relevant fieldset 
 		$(this).parents('.group').hide('slow', function() {
-		    $(this).appendTo('.not-visible');	
+		    //$(this).appendTo('.not-visible');
+		    $(this).hide();	
 		});
 		
 		group_class = $(this).parents('.group').attr('class').replace('group ', '');
@@ -333,7 +342,7 @@ $(document).ready(function() {
 		 
 	});
 
-	goToByScroll("top");
+	//goToByScroll("top");
 	$('.quotas-form .form-row.with-errors input[type="text"]').first().focus();
 	
 	

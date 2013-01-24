@@ -176,6 +176,9 @@ class AuthProvider(object):
 
         return getattr(settings, attr, default)
 
+    def is_available_for_remove(self):
+        return self.is_active() and self.get_setting('CAN_REMOVE', True)
+
     def is_available_for_login(self):
         """ A user can login using authentication provider"""
         return self.is_active() and self.get_setting('CAN_LOGIN',

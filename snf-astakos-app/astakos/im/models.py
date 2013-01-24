@@ -601,7 +601,6 @@ class AstakosUser(User):
         if 'identifier' in kwargs:
             try:
                 # provider with specified params already exist
-                print "LALALALA", include_unverified
                 if not include_unverified:
                     kwargs['user__email_verified'] = True
                 existing_user = AstakosUser.objects.get_auth_provider_user(provider,
@@ -622,6 +621,9 @@ class AstakosUser(User):
             return False
 
         if len(existing_for_provider) == 1 and provider.is_required():
+            return False
+
+        if not provider.is_available_for_remove():
             return False
 
         return True

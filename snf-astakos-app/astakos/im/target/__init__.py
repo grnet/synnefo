@@ -65,7 +65,6 @@ def add_pending_auth_provider(request, third_party_token):
         # a third party provider account
         try:
             request.user.add_pending_auth_provider(third_party_token)
-            messages.success(request, _(astakos_messages.AUTH_PROVIDER_ADDED))
         except PendingThirdPartyUser.DoesNotExist:
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 

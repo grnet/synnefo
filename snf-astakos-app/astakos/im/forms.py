@@ -533,7 +533,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                       t.render(Context(c)),
                       from_email,
                       [user.email],
-                      connection=get_connection)
+                      connection=get_connection())
 
 
 class EmailChangeForm(forms.ModelForm):

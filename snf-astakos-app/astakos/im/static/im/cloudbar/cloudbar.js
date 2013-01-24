@@ -82,6 +82,7 @@ $(document).ready(function(){
         $.each(data, function(i,el) {
             if (i == 0){
                 username.html('<span>'+el.name+'</span>');
+                equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
                 username.attr('href', el.url);
                 user.removeClass('full');
             }else{
@@ -94,6 +95,7 @@ $(document).ready(function(){
                 user.addClass('full');
             }
         });
+    
     });
     
     //profile.filter(".user a").attr("href", 
@@ -116,6 +118,9 @@ $(document).ready(function(){
 	 	$('.cloudbar .profile .full>a').removeClass('open');
 	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
 	});
+
+	
+	 
  
    /*
    	$('.cloudbar .profile .full>a').live('click', function(e){

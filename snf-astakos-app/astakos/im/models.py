@@ -623,10 +623,7 @@ class AstakosUser(User):
         if len(existing_for_provider) == 1 and provider.is_required():
             return False
 
-        if not provider.is_available_for_remove():
-            return False
-
-        return True
+        return provider.is_available_for_remove()
 
     def can_change_password(self):
         return self.has_auth_provider('local', auth_backend='astakos')
@@ -720,6 +717,12 @@ class AstakosUser(User):
             if self.can_add_auth_provider(module):
                 providers.append(provider_settings(self))
 
+        modules = astakos_settings.IM_MODULES
+        def key(p):
+            if not p.module in modules:
+                return 100
+            return modules.index(p.module)
+        providers = sorted(providers, key=key)
         return providers
 
     def get_active_auth_providers(self, **filters):
@@ -727,6 +730,13 @@ class AstakosUser(User):
         for provider in self.get_auth_providers().active(**filters):
             if auth_providers.get_provider(provider.module).is_available_for_login():
                 providers.append(provider)
+
+        modules = astakos_settings.IM_MODULES
+        def key(p):
+            if not p.module in modules:
+                return 100
+            return modules.index(p.module)
+        providers = sorted(providers, key=key)
         return providers
 
     @property

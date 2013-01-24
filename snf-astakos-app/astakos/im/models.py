@@ -1363,7 +1363,7 @@ class ProjectApplication(models.Model):
     # TODO: Move to a more suitable place
     APPLICATION_STATE_DISPLAY = {
         PENDING  : _('Pending review'),
-        APPROVED : _('Active'),
+        APPROVED : _('Approved'),
         REPLACED : _('Replaced'),
         DENIED   : _('Denied'),
         DISMISSED: _('Dismissed'),
@@ -1658,6 +1658,12 @@ class ProjectManager(ForUpdateManager):
               Q(application__end_date__lt=datetime.now()))
         return self.filter(q)
 
+    def search_by_name(self, *search_strings):
+        q = Q()
+        for s in search_strings:
+            q = q | Q(name__icontains=s)
+        return self.filter(q)
+
 
 class Project(models.Model):
 
@@ -1703,9 +1709,9 @@ class Project(models.Model):
     __repr__ = __str__
 
     STATE_DISPLAY = {
-        APPROVED   : 'APPROVED',
-        SUSPENDED  : 'SUSPENDED',
-        TERMINATED : 'TERMINATED'
+        APPROVED   : 'Active',
+        SUSPENDED  : 'Suspended',
+        TERMINATED : 'Terminated'
         }
 
     def state_display(self):
@@ -1803,6 +1809,9 @@ class Project(models.Model):
         memb_count = memb_set.filter(state=ProjectMembership.REQUESTED).count()
         return memb_count
 
+    def members_count(self):
+        return self.approved_memberships.count()
+
     @property
     def approved_memberships(self):
         query = ProjectMembership.Q_ACCEPTED_STATES
@@ -1845,7 +1854,17 @@ class PendingMembershipError(Exception):
 
 
 class ProjectMembershipManager(ForUpdateManager):
-    pass
+
+    def any_accepted(self):
+        q = (Q(state=ProjectMembership.ACCEPTED) |
+             Q(state=ProjectMembership.PROJECT_DEACTIVATED))
+        return self.filter(q)
+
+    def requested(self):
+        return self.filter(state=ProjectMembership.REQUESTED)
+
+    def suspended(self):
+        return self.filter(state=ProjectMembership.USER_SUSPENDED)
 
 class ProjectMembership(models.Model):
 
@@ -1892,6 +1911,17 @@ class ProjectMembership(models.Model):
 
     # Compiled queries
     Q_ACCEPTED_STATES = ~Q(state=REQUESTED) & ~Q(state=REMOVED)
+
+    MEMBERSHIP_STATE_DISPLAY = {
+        REQUESTED           : 'Requested',
+        ACCEPTED            : 'Accepted',
+        USER_SUSPENDED      : 'Suspended',
+        PROJECT_DEACTIVATED : 'Accepted', # sic
+        REMOVED             : 'Pending removal'
+        }
+
+    def state_display(self):
+        return self.MEMBERSHIP_STATE_DISPLAY.get(self.state, _('Unknown'))
 
     def get_combined_state(self):
         return self.state, self.is_active, self.is_pending

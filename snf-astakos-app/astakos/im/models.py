@@ -37,7 +37,7 @@ import logging
 import json
 import math
 
-from time import asctime, sleep
+from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
 from urlparse import urlparse
@@ -45,10 +45,9 @@ from urllib import quote
 from random import randint
 from collections import defaultdict, namedtuple
 
-from django.db import models, IntegrityError, transaction, connection
+from django.db import models, IntegrityError, transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
-from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.db.models.signals import (
     pre_save, post_save, post_syncdb, post_delete)
@@ -79,6 +78,7 @@ from astakos.im.endpoints.qh import (
 from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
+from astakos.im.lock import with_lock
 from .managers import ForUpdateManager
 
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
@@ -2241,25 +2241,21 @@ def post_sync_projects():
 
     transaction.commit()
 
-def _sync_projects(sync):
-    sync_finish_serials()
-    # Informative only -- no select_for_update()
-    pending = list(ProjectMembership.objects.filter(is_pending=True))
-
-    projects_log = pre_sync_projects(sync)
-    if sync:
-        serial = do_sync_projects()
-        sync_finish_serials([serial])
-        post_sync_projects()
-
-    return (pending, projects_log)
-
 def sync_projects(sync=True, retries=3, retry_wait=1.0):
-    return lock_sync(_sync_projects,
-                     args=[sync],
-                     retries=retries,
-                     retry_wait=retry_wait)
+    @with_lock(retries, retry_wait)
+    def _sync_projects(sync):
+        sync_finish_serials()
+        # Informative only -- no select_for_update()
+        pending = list(ProjectMembership.objects.filter(is_pending=True))
 
+        projects_log = pre_sync_projects(sync)
+        if sync:
+            serial = do_sync_projects()
+            sync_finish_serials([serial])
+            post_sync_projects()
+
+        return (pending, projects_log)
+    return _sync_projects(sync)
 
 def all_users_quotas(users):
     quotas = {}
@@ -2267,58 +2263,26 @@ def all_users_quotas(users):
         quotas[user.uuid] = user.all_quotas()
     return quotas
 
-def _sync_users(users, sync):
-    sync_finish_serials()
-
-    existing, nonexisting = qh_check_users(users)
-    resources = get_resource_names()
-    registered_quotas = qh_get_quota_limits(existing, resources)
-    astakos_quotas = all_users_quotas(users)
-
-    if sync:
-        r = register_users(nonexisting)
-        r = send_quotas(astakos_quotas)
-
-    return (existing, nonexisting, registered_quotas, astakos_quotas)
-
 def sync_users(users, sync=True, retries=3, retry_wait=1.0):
-    return lock_sync(_sync_users,
-                     args=[users, sync],
-                     retries=retries,
-                     retry_wait=retry_wait)
+    @with_lock(retries, retry_wait)
+    def _sync_users(users, sync):
+        sync_finish_serials()
+
+        existing, nonexisting = qh_check_users(users)
+        resources = get_resource_names()
+        registered_quotas = qh_get_quota_limits(existing, resources)
+        astakos_quotas = all_users_quotas(users)
+
+        if sync:
+            r = register_users(nonexisting)
+            r = send_quotas(astakos_quotas)
+
+        return (existing, nonexisting, registered_quotas, astakos_quotas)
+    return _sync_users(users, sync)
 
 def sync_all_users(sync=True, retries=3, retry_wait=1.0):
     users = AstakosUser.objects.filter(is_active=True)
-    return sync_users(users, sync, retries=retries, retry_wait=retry_wait)
-
-def lock_sync(func, args=[], kwargs={}, retries=3, retry_wait=1.0):
-    transaction.commit()
-
-    cursor = connection.cursor()
-    locked = True
-    try:
-        while 1:
-            cursor.execute("SELECT pg_try_advisory_lock(1)")
-            r = cursor.fetchone()
-            if r is None:
-                m = "Impossible"
-                raise AssertionError(m)
-            locked = r[0]
-            if locked:
-                break
-
-            retries -= 1
-            if retries <= 0:
-                return False
-            sleep(retry_wait)
-
-        return func(*args, **kwargs)
-
-    finally:
-        if locked:
-            cursor.execute("SELECT pg_advisory_unlock(1)")
-            cursor.fetchall()
-
+    return sync_users(users, sync, retries, retry_wait)
 
 class ProjectMembershipHistory(models.Model):
     reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']

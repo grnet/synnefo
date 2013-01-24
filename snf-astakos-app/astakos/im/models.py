@@ -1532,7 +1532,7 @@ class ProjectApplication(models.Model):
             conflicting_project = Project.objects.get(q)
             if (conflicting_project != project):
                 m = (_("cannot approve: project with name '%s' "
-                       "already exists (serial: %s)") % (
+                       "already exists (id: %s)") % (
                         new_project_name, conflicting_project.id))
                 raise PermissionDenied(m) # invalid argument
         except Project.DoesNotExist:
@@ -1686,6 +1686,7 @@ class Project(models.Model):
     creation_date               =   models.DateTimeField(auto_now_add=True)
     name                        =   models.CharField(
                                             max_length=80,
+                                            null=True,
                                             db_index=True,
                                             unique=True)
 
@@ -1767,6 +1768,7 @@ class Project(models.Model):
     def terminate(self):
         self.deactivation_reason = 'TERMINATED'
         self.state = self.TERMINATED
+        self.name = None
         self.save()
 
     def suspend(self):

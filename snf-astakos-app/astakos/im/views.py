@@ -40,6 +40,7 @@ engine = inflect.engine()
 from urllib import quote
 from functools import wraps
 from datetime import datetime
+from synnefo.lib.ordereddict import OrderedDict
 
 from django_tables2 import RequestConfig
 
@@ -1051,7 +1052,11 @@ def project_add(request):
     # order resources
     groups_order = RESOURCES_PRESENTATION_DATA.get('groups_order')
     resources_order = RESOURCES_PRESENTATION_DATA.get('resources_order')
-    resource_catalog = sorted(resource_catalog, lambda g,rs:groups_order.index(g[0]))
+    resource_catalog = sorted(resource_catalog, key=lambda g:groups_order.index(g[0]))
+
+    resource_groups_list = sorted([(k,v) for k,v in resource_groups.items()],
+                                  key=lambda f:groups_order.index(f[0]))
+    resource_groups = OrderedDict(resource_groups_list)
     for index, group in enumerate(resource_catalog):
         resource_catalog[index][1] = sorted(resource_catalog[index][1],
                                             key=lambda r: resources_order.index(r['str_repr']))

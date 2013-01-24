@@ -45,7 +45,7 @@ from astakos.im.models import sync_projects
 #     ...
 #     return http response
 #
-# OR
+# OR (more cleanly)
 #
 # def a_view(args):
 #     with project_transaction_context(sync=True) as ctx:

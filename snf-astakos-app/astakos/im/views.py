@@ -670,6 +670,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     try:
         activate_func(user, greeting_email_template_name,
                       helpdesk_email_template_name, verify_email=True)
+        messages.success(request, _(astakos_messages.ACCOUNT_ACTIVATED))
         next = ACTIVATION_REDIRECT_URL or next
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()

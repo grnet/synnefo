@@ -84,6 +84,7 @@ if (navigator.userAgent.match(/iPhone/i)) {
 }
 //end of fix
 
+ 
 $(document).ready(function() {
 	
 	 
@@ -263,12 +264,66 @@ $(document).ready(function() {
       }
 	}, 100);
 	
-	 // clouds homepage animation
-	/*
-	addClassHover('.landing-page .pithos','.cloudbar ul.services li:first');
-	addClassHover('.landing-page .cyclades','.cloudbar ul.services li:nth-child(2)');
-	addClassHover('.landing-page .dashboard','.cloudbar .profile')
-    */
+	
+	
+	
+	$('.landing-page .cms').hover(
+      function () {
+      	 el = $('.cloudbar ul.services li').first();
+      	 var offset = el.offset();
+      	 positionX = offset.left;
+      	 $('#hand').css('left',positionX);  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    $('.landing-page .pithos').hover(
+      function () {
+      	 el = $('.cloudbar ul.services li:nth-child(2)');
+      	 var offset = el.offset();
+      	 positionX = offset.left;
+      	 left = parseInt(positionX) +20;
+      	 $('#hand').css('left',left+'px');  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    $('.landing-page .cyclades').hover(
+      function () {
+      	 el = $('.cloudbar ul.services li:nth-child(3)').first();
+      	 var offset = el.offset();
+      	 positionX = offset.left;
+      	 left = parseInt(positionX) +20;
+      	 $('#hand').css('left',left+'px');  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    
+    $('.landing-page .dashboard').hover(
+      function () {
+      	 el = $('.cloudbar .profile');
+      	 var offset = el.offset();
+      	 positionX = offset.left +50;
+      	 $('#hand').css('left',positionX);  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+	  
+	  
+     
 	 
 	    
 });

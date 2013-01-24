@@ -14,7 +14,9 @@
       <div class="form-row submit">
           
           <input type="submit" class="submit altcol" value="SUBMIT" />
-           
+          	{% if third_party_token %}
+				<a href={%url index %} class="rt-link">CANCEL</a>
+			{% endif %}
       </div>
   </form>
 </div>

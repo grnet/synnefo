@@ -410,7 +410,9 @@ form.quotas-form  span.info span				{ width:285px;  }
 */
 
 .quotas-form input[type="submit"].lt			{ position:absolute; left:0; top:0; }
-.quotas-form .form-row.submit .rt				{ position:absolute; right:0; top:25px; }
+
+.form-row.submit .rt							{ position:absolute; right:70px;bottom:15px; }
+.quotas-form .form-row.submit .rt				{ right:0; bottom:30px }
 .quotas-form fieldset ul						{ padding:0; margin:0 0 1em; position:relative; }
 .quotas-form fieldset ul li						{ list-style:none outside none; float:left; margin:0 0 0 60px; padding:0; }
 .quotas-form fieldset ul li:first-child			{ margin-left:0; }
@@ -612,3 +614,5 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .content a:active,
 .content a:visited       { outline: 0 none; }
 .content a:visited 		{ border:0 none; }
+
+#hand											{ position:absolute; height:79px; width:61px; background:url(../images/xeraki_hover.png) no-repeat; overflow:hidden; display:none;  top:40px;}

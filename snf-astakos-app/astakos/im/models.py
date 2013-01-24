@@ -847,9 +847,11 @@ class AstakosUserAuthProvider(models.Model):
     @property
     def details_display(self):
         try:
-          return self.settings.get_details_tpl_display % self.__dict__
+            params = self.user.__dict__
+            params.update(self.__dict__)
+            return self.settings.get_details_tpl_display % params
         except:
-          return ''
+            return ''
 
     @property
     def title_display(self):

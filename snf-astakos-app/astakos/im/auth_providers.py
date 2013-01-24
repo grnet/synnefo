@@ -207,7 +207,7 @@ class LocalAuthProvider(AuthProvider):
     title = _('Local password')
     description = _('Create a local password for your account')
     add_prompt =  _('Allows you to login using a local password')
-    details_tpl = _('Local account')
+    details_tpl = _('Local account: %(username)s')
     login_prompt = _('Classic login (username/password)')
     signup_prompt = _('New to ~okeanos ?')
     signup_link_prompt = _('create an account now')

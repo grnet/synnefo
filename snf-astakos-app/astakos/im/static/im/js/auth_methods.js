@@ -85,7 +85,7 @@ $(document).ready(function() {
 	
 	$('.form-following .extra-img').click(function(e){
 		var h = $('.form-row').first().outerHeight();
-		$('.form-row').css('height', h);
+		$(this).parents('.form-row').next('.hidden-form-rows').find('form-row').css('height', h);
 		$(this).parents('.form-row').toggleClass('open');
 		$(this).parents('.form-row').next('.hidden-form-rows').slideToggle('slow');
 		

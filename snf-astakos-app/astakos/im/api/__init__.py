@@ -138,13 +138,14 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                        url=absolute(request, reverse('invite')),
                        name="Invitations"))
 
+            
+            append(item(
+                   url=absolute(request, reverse('resource_usage')),
+                   name="Usage"))
             if QUOTAHOLDER_URL:
                 append(item(
                        url=absolute(request, reverse('project_list')),
                        name="Projects"))
-            append(item(
-                   url=absolute(request, reverse('resource_usage')),
-                   name="Usage"))
             #append(item(
                 #url=absolute(request, reverse('api_access')),
                 #name="API Access"))

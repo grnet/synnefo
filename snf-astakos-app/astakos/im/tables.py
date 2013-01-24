@@ -189,7 +189,7 @@ def action_extra_context(application, table, self):
     can_join = can_leave = can_cancel = False
     project = application.get_project()
 
-    if project:
+    if project and project.is_approved():
         try:
             join_project_checks(project)
             can_join = True
@@ -280,10 +280,13 @@ class UserProjectApplicationsTable(UserTable):
 
     def render_membership_status(self, record, *args, **kwargs):
         if self.user.owns_application(record):
-            return record.state_display()
+            return record.project_state_display()
         else:
-            status = record.user_status(self.user)
-            return record.user_status_display(self.user)
+            try:
+                project = record.project
+                return self.user.membership_display(project)
+            except Project.DoesNotExist:
+                return _(Unknown)
 
     def render_members_count(self, record, *args, **kwargs):
         append = ""

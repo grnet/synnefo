@@ -40,7 +40,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import simplejson as json
 
-from . import render_fault, __get_uuid_displayname_catalog, __send_feedback
+from . import render_fault, __get_uuid_displayname_catalogs, __send_feedback
 from .faults import (
     Fault, Unauthorized, InternalServerError, BadRequest, ItemNotFound)
 from astakos.im.models import Service

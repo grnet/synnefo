@@ -17,6 +17,8 @@ from synnefo.lib.astakos import get_user_uuid, get_displayname as get_user_displ
 from pithos.api.settings import (
     SERVICE_TOKEN, USER_CATALOG_URL, AUTHENTICATION_USERS)
 
+USER_CATALOG_URL = USER_CATALOG_URL.replace('user_catalogs', 'service/api/user_catalogs')
+
 import sqlalchemy as sa
 
 catalog = {}

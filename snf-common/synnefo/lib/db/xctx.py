@@ -43,7 +43,7 @@ from django.db import transaction
 #     ...
 #     return http response
 #
-# OR
+# OR (more cleanly)
 #
 # def a_view(args):
 #     with transaction_context() as ctx:
@@ -57,7 +57,7 @@ def transaction_context(**kwargs):
 
 
 class TransactionContext(object):
-    def __init__(self, notify=True):
+    def __init__(self):
         self._rollback = False
 
     def mark_rollback(self):
@@ -69,11 +69,11 @@ class TransactionContext(object):
     def postprocess(self):
         pass
 
-class TransactionHandler(object):
 
+class TransactionHandler(object):
     def __init__(self, ctx=None, using=None, **kwargs):
-        self.db        = (using if using is not None
-                          else transaction.DEFAULT_DB_ALIAS)
+        self.db         = (using if using is not None
+                           else transaction.DEFAULT_DB_ALIAS)
         self.ctx_class  = ctx
         self.ctx_kwargs = kwargs
 

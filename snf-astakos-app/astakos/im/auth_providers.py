@@ -231,7 +231,7 @@ class ShibbolethAuthProvider(AuthProvider):
     title = _('Academic account')
     add_prompt = _('Allows you to login using an academic account')
     details_tpl = _('Academic account: %(identifier)s')
-    user_title = _('Academic credentials (%(identifier)s)')
+    user_title = _('Academic account (%(identifier)s)')
     primary_login_prompt = _('If you are a student, professor or researcher you '
                              'can login using your academic account.')
     login_view = 'astakos.im.target.shibboleth.login'
@@ -240,7 +240,7 @@ class ShibbolethAuthProvider(AuthProvider):
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
     logout_from_provider_text = ' at your Academic account (shibboleth)'
 
-    method_prompt = _('Academic credentials')
+    method_prompt = _('Academic account')
 
 
 class TwitterAuthProvider(AuthProvider):

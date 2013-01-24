@@ -100,7 +100,7 @@ SHIBBOLETH_MISSING_EPPN                 =   'Your request is missing a unique ' 
                                             'token. This means your academic ' + \
                                             'institution does not yet allow its users to log ' + \
                                             'into %(domain)s with their academic ' + \
-                                            'credentials. Please contact %(contact_email)s' + \
+                                            'account. Please contact %(contact_email)s' + \
                                             ' for more information.'
 SHIBBOLETH_MISSING_NAME                 =   'This request is missing the user name.'
 

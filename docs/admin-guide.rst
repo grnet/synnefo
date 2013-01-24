@@ -548,7 +548,7 @@ Block Storage Service (Archipelago)
 
 Overview
 --------
-Archipelago offers Copy-On-Write volumes based on pithos images
+Archipelago offers Copy-On-Write snapshotable volumes based on pithos images
 
 Architecture
 ------------
@@ -672,8 +672,10 @@ Archipelago advanced operations
 The ``vlmc`` tool provides a way to interact with archipelago volumes
 
 * ``vlmc map <volumename>``: maps the volume to a xsegbd device.
+
 * ``vlmc unmap </dev/xsegbd[1-..]``: unmaps the specified device from the
   system.
+
 * ``vlmc create <volumename> --snap <snapname> --size <size>``: creates a new
   volume named <volumename> from snapshot name <snapname> with size <size>.
     The ``--snap`` and ``--size`` are optional, but at least one of them is
@@ -685,10 +687,35 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
 
     ``vlmc create <volumename> --size <size>`` creates an empty volume of size
     <size> named <volumename>.
+
 * ``vlmc remove <volumename>``: removes the volume and all the related
   archipelago blocks from storage.
+
 * ``vlmc list``: provides a list of archipelago volumes. Currently only works
   with RADOS storage backend.
+
+* ``vlmc open <volumename>``: opens an archipelago volume. That is, taking all
+  the necessary locks and also make the rest of the infrastructure aware of the
+  operation.
+
+  This operation succeeds if the volume is alread opened.
+
+* ``vlmc close <volumename>``: closes an archipelago volume. That is, performing
+  all the necessary functions in the insfrastrure to successfully release the
+  volume. Also releases all the acquired locks.
+
+  ``vlmc close`` should be performed after a ``vlmc open`` operation.
+
+* ``vlmc lock <volumename>``: locks a volume. This step allow the administrator
+  to lock an archipelago volume, independently from the rest of the
+  insfrastrure.
+
+* ``vlmc unlock [-f] <volumename>``: unlocks a volume. This allow the
+  administrator to unlock a volume, independently from the rest of the
+  infrastructure.
+  The unlock option can be performed only by the blocker that acquired the lock
+  in the first place. To unlock a volume from another blocker, ``-f`` option
+  must be used to break the lock.
 
 
 The "kamaki" API client

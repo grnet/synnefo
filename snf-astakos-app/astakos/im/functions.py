@@ -594,6 +594,17 @@ def leave_project_checks(project):
     if leave_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED))
 
+def can_leave_request(project, user):
+    leave_policy = project.application.member_leave_policy
+    if leave_policy == CLOSED_POLICY:
+        return False
+    m = user.get_membership(project)
+    if m is None:
+        return False
+    if m.state != ProjectMembership.ACCEPTED:
+        return False
+    return True
+
 def leave_project(project_id, user_id):
     project = get_project_for_update(project_id)
     leave_project_checks(project)
@@ -616,6 +627,15 @@ def join_project_checks(project):
     join_policy = project.application.member_join_policy
     if join_policy == CLOSED_POLICY:
         raise PermissionDenied(_(astakos_messages.MEMBER_JOIN_POLICY_CLOSED))
+
+def can_join_request(project, user):
+    join_policy = project.application.member_join_policy
+    if join_policy == CLOSED_POLICY:
+        return False
+    m = user.get_membership(project)
+    if m:
+        return False
+    return True
 
 def join_project(project_id, user_id):
     project = get_project_for_update(project_id)

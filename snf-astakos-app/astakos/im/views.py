@@ -97,7 +97,7 @@ from astakos.im.functions import (
     send_activation as send_activation_func,
     SendNotificationError,
     accept_membership, reject_membership, remove_membership, cancel_membership,
-    leave_project, join_project, enroll_member,
+    leave_project, join_project, enroll_member, can_join_request, can_leave_request,
     get_by_chain_or_404)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
@@ -1101,6 +1101,16 @@ def project_list(request):
 @signed_terms_required
 @login_required
 def project_modify(request, application_id):
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    if not request.user.owns_application(app):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
     resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
     resource_catalog = ()
     result = callpoint.list_resources()
@@ -1138,7 +1148,7 @@ def project_modify(request, application_id):
 @signed_terms_required
 @login_required
 def project_app(request, application_id):
-    return common_detail(request, application_id, is_chain=False)
+    return common_detail(request, application_id, project_view=False)
 
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
@@ -1167,8 +1177,9 @@ def addmembers(request, chain_id, ctx=None):
                 ctx.mark_rollback()
             messages.error(request, e)
 
-def common_detail(request, chain_or_app_id, is_chain=True):
-    if is_chain:
+def common_detail(request, chain_or_app_id, project_view=True):
+    project = None
+    if project_view:
         chain_id = chain_or_app_id
         if request.method == 'POST':
             addmembers(request, chain_id)
@@ -1196,6 +1207,18 @@ def common_detail(request, chain_or_app_id, is_chain=True):
 
     modifications_table = None
 
+    user = request.user
+    is_owner = user.owns_application(application)
+    if not is_owner and not project_view:
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    if (not is_owner and project_view and
+        (not project or
+         not project.is_approved() and not user.is_associated(project))):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
     following_applications = list(application.pending_modifications())
     following_applications.reverse()
     modifications_table = (
@@ -1203,18 +1226,24 @@ def common_detail(request, chain_or_app_id, is_chain=True):
                                                     user=request.user,
                                                     prefix="modifications_"))
 
+    mem_display = user.membership_display(project) if project else None
+    can_join_req = can_join_request(project, user) if project else False
+    can_leave_req = can_leave_request(project, user) if project else False
+
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),
         object_id=application.id,
         template_name='im/projects/project_detail.html',
         extra_context={
-            'project_view': is_chain,
+            'project_view': project_view,
             'addmembers_form':addmembers_form,
             'members_table': members_table,
-            'user_owns_project': request.user.owns_application(application),
+            'owner_mode': is_owner,
             'modifications_table': modifications_table,
-            'member_status': application.user_status(request.user)
+            'mem_display': mem_display,
+            'can_join_request': can_join_req,
+            'can_leave_request': can_leave_req,
             })
 
 @require_http_methods(["GET", "POST"])

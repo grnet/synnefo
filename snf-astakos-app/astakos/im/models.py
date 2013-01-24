@@ -766,6 +766,13 @@ class AstakosUser(User):
     def owns_project(self, project):
         return project.application.owner == self
 
+    def is_associated(self, project):
+        try:
+            m = ProjectMembership.objects.get(person=self, project=project)
+            return m.state in ProjectMembership.ASSOCIATED_STATES
+        except ProjectMembership.DoesNotExist:
+            return False
+
     def is_project_member(self, project_or_application):
         return self.get_status_in_project(project_or_application) in \
                                         ProjectMembership.ASSOCIATED_STATES
@@ -787,6 +794,14 @@ class AstakosUser(User):
                 person=self)
         except ProjectMembership.DoesNotExist:
             return None
+
+    def membership_display(self, project):
+        m = self.get_membership(project)
+        if m is None:
+            return _('Not a member')
+        else:
+            return m.user_friendly_state_display()
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -1290,16 +1305,6 @@ class ProjectApplicationManager(ForUpdateManager):
         except IndexError:
             return None
 
-USER_STATUS_DISPLAY = {
-      0: _('Join requested'),
-      1: _('Accepted member'),
-     10: _('Suspended'),
-    100: _('Terminated'),
-    200: _('Removed'),
-     -1: _('Not a member'),
-}
-
-
 class Chain(models.Model):
     chain  =   models.AutoField(primary_key=True)
 
@@ -1308,6 +1313,10 @@ def new_chain():
     chain = c.chain
     c.delete()
     return chain
+
+
+
+USER_STATUS_DISPLAY = {}
 
 
 class ProjectApplication(models.Model):
@@ -1387,6 +1396,13 @@ class ProjectApplication(models.Model):
     def state_display(self):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
+    def project_state_display(self):
+        try:
+            project = self.project
+            return project.state_display()
+        except Project.DoesNotExist:
+            return self.state_display()
+
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
@@ -1443,8 +1459,8 @@ class ProjectApplication(models.Model):
             return None
 
     def is_modification(self):
-        if self.state != self.PENDING:
-            return False
+        # if self.state != self.PENDING:
+        #     return False
         parents = self.chained_applications().filter(id__lt=self.id)
         parents = parents.filter(state__in=[self.APPROVED])
         return parents.count() > 0
@@ -1933,15 +1949,26 @@ class ProjectMembership(models.Model):
     Q_ACCEPTED_STATES = ~Q(state=REQUESTED) & ~Q(state=REMOVED)
 
     MEMBERSHIP_STATE_DISPLAY = {
-        REQUESTED           : 'Requested',
-        ACCEPTED            : 'Accepted',
-        USER_SUSPENDED      : 'Suspended',
-        PROJECT_DEACTIVATED : 'Accepted', # sic
-        REMOVED             : 'Pending removal'
+        REQUESTED           : _('Requested'),
+        ACCEPTED            : _('Accepted'),
+        USER_SUSPENDED      : _('Suspended'),
+        PROJECT_DEACTIVATED : _('Accepted'), # sic
+        REMOVED             : _('Pending removal'),
+        }
+
+    USER_FRIENDLY_STATE_DISPLAY = {
+        REQUESTED           : _('Join requested'),
+        ACCEPTED            : _('Accepted member'),
+        USER_SUSPENDED      : _('Suspended member'),
+        PROJECT_DEACTIVATED : _('Accepted member'), # sic
+        REMOVED             : _('Pending removal'),
         }
 
     def state_display(self):
         return self.MEMBERSHIP_STATE_DISPLAY.get(self.state, _('Unknown'))
+
+    def user_friendly_state_display(self):
+        return self.USER_FRIENDLY_STATE_DISPLAY.get(self.state, _('Unknown'))
 
     def get_combined_state(self):
         return self.state, self.is_active, self.is_pending

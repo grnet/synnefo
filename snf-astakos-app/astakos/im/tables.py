@@ -322,6 +322,9 @@ def member_action_extra_context(membership, table, col):
     context = []
     urls, actions, prompts, confirms = [], [], [], []
 
+    if membership.project.is_deactivated():
+        return context
+
     if membership.state == ProjectMembership.REQUESTED:
         urls = ['astakos.im.views.project_reject_member',
                 'astakos.im.views.project_accept_member']
@@ -365,8 +368,8 @@ class ProjectMembersTable(UserTable):
     def render_name(self, value, record, *args, **kwargs):
         return record.person.realname
 
-    def render_status(self, value, *args, **kwargs):
-        return USER_STATUS_DISPLAY.get(value, 'Unknown')
+    def render_status(self, value, record, *args, **kwargs):
+        return record.state_display()
 
     class Meta:
         template = "im/table_render.html"

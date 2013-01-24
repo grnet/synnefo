@@ -3,7 +3,6 @@ Changelog
 
 v0.13.0
 ------
-* setting *PITHOS_SERVICE_TOKEN* is no longer required for feedback to work
 * settings *PITHOS_PROXY_USER_SERVICES*, *PITHOS_USER_CATALOG_URL*, *PITHOS_USER_FEEDBACK_URL*,
 *PITHOS_USER_LOGIN_URL* should be set
 

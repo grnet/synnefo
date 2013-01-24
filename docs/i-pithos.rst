@@ -58,6 +58,10 @@ In `/etc/synnefo/pithos.conf` add:
 
     PITHOS_AUTHENTICATION_URL = 'https:/accounts.example.com/im/authenticate'
     PITHOS_AUTHENTICATION_USERS = None
+    PITHOS_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
+    PITHOS_USER_FEEDBACK_URL = 'https://accounts.example.com/feedback'
+    PITHOS_USER_LOGIN_URL = 'https://accounts.example.com/login'
+
     PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
     PITHOS_BACKEND_QUOTA = 20 * 1024 * 1024 * 1024

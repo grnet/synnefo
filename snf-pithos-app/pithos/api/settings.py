@@ -62,6 +62,9 @@ QUOTAHOLDER_TOKEN = getattr(settings, 'PITHOS_QUOTAHOLDER_TOKEN', '')
 # Update object checksums when using hashmaps.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
 
+# Service Token acquired by identity provider.
+SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')
+
 RADOS_STORAGE = getattr(settings, 'PITHOS_RADOS_STORAGE', False)
 RADOS_POOL_BLOCKS= getattr(settings, 'PITHOS_RADOS_POOL_BLOCKS', 'blocks')
 RADOS_POOL_MAPS = getattr(settings, 'PITHOS_RADOS_POOL_MAPS', 'maps')

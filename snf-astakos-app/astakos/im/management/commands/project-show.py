@@ -61,8 +61,16 @@ class Command(BaseCommand):
         if is_id:
             name_or_id = int(name_or_id)
 
-        infolist = (app_info(name_or_id, is_id) if options['app']
+        search_application = True if options['app'] else False
+
+        infolist = (app_info(name_or_id, is_id) if search_application
                     else project_info(name_or_id, is_id))
+
+        if not infolist:
+            kind = 'project application' if search_application else 'project'
+            field = 'id' if is_id or 'name'
+            msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
+            raise CommandError(msg)
 
         for info in infolist:
             self.show_info(info)

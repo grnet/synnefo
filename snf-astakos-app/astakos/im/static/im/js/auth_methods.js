@@ -1,9 +1,3 @@
-function placeTokenConfirm(){
-	 
-	var position = $('#token-span').parents('.form-row').position();
-	$('#token-confirm').css('top', position.top - 10);
-}
-
 $(document).ready(function() {
 	 	
 	 	
@@ -117,7 +111,7 @@ $(document).ready(function() {
 	 		if ( id == 'password-span') { oldPasswordDiv.find('input').focus(); }
 	 	}
 	 	
-	 	placeTokenConfirm();
+	 	 
 	});
 	
 	//  check uncheck checkbox
@@ -134,10 +128,12 @@ $(document).ready(function() {
 	
 	// refresh token
 	authTokenDiv.addClass('refresh');
+	authTokenDiv.append('<a id="token-confirm" class="submit" href="#">Confirm token change</a>');
+	
 	$('#token-span').click(function(e){
 		$(this).parents('.form-row').toggleClass('open');
 		$(this).siblings('span.info').find('span').hide();	
-		placeTokenConfirm();
+		//placeTokenConfirm();
 		$('#token-confirm').toggle();
 		return false;
 	});

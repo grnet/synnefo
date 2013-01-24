@@ -571,7 +571,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods .assigned, 
 .auth_methods .notassigned						{ margin-bottom:40px; }
 .auth_methods .assigned span.details			{ margin-left:10px; color:grey; display:inline-block; max-width:400px;  vertical-align:middle;}
-#token-confirm									{ display:none; position:absolute; left:550px; }
+#token-confirm									{ display:none; position:absolute; left:550px; top:-10px; }
 /* login section */
 .login-section {}
 .main-login-method 								{ margin-bottom: 20px;}

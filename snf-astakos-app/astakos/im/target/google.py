@@ -118,11 +118,6 @@ def authenticated(
     extra_context={}
 ):
 
-    next_url = None
-    if 'next_url' in request.session:
-        next_url = request.session['next_url']
-        del request.session['next_url']
-
     if request.GET.get('error', None):
         return HttpResponseRedirect(reverse('edit_profile'))
 

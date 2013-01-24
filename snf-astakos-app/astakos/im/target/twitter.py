@@ -109,11 +109,6 @@ def authenticated(
     template='im/third_party_check_local.html',
     extra_context={}):
 
-    next_url = None
-    if 'next_url' in request.session:
-        next_url = request.session['next_url']
-        del request.session['next_url']
-
     if request.GET.get('denied'):
         return HttpResponseRedirect(reverse('edit_profile'))
 

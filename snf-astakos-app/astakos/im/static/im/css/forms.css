@@ -124,7 +124,7 @@ form .with-hidden							{ display:none; }
 
 input.submit:focus,
 input[type="submit"]:focus,
-.content a.submit:focus							{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none; }						
+.content a.submit:focus							{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none;  line-height:20px;}						
 .content a.submit:hover							{ border-color:#3582AC; }
 
 p+ form											{ margin:2em 0; }

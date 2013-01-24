@@ -88,7 +88,8 @@ $(document).ready(function() {
 	// Email, Password forms
 	
 	$('.form-following .extra-img').click(function(e){
-		
+		var h = $('.form-row').first().outerHeight();
+		$('.form-row').css('height', h);
 		$(this).parents('.form-row').toggleClass('open');
 		$(this).parents('.form-row').next('.hidden-form-rows').slideToggle('slow');
 		
@@ -105,6 +106,9 @@ $(document).ready(function() {
 					$(this).find('.form-error').hide();
 				}
 			}); 
+			$(this).parents('.form-row').removeClass('with-errors');
+			$(this).parents('.form-row').find('.form-error').hide();
+			
 	 	} 	else {
 	 		// focus on first input
 	 		if ( id == 'email-span') { newEmailDiv.find('input').focus(); } 

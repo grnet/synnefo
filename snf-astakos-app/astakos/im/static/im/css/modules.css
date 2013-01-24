@@ -8,6 +8,7 @@ body											{ overflow-y: scroll;}
 img.left						                { margin:0 1em 1em 0; float:left;}
 img.right						                { margin:0 0 1em 1em; float:right;}
 
+
  
 /* footer */
 .footer                                         { font-size:0.923em;color:#B3B3B3; }
@@ -592,7 +593,7 @@ i.tiny { font-size: 0.8em; color: #999;}
 
 h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 
-
+.main-login-method + .extralogin										{ margin-top:3em; }
 .extralogin a.icons								{ display:inline-block; margin-right:5px; height:28px; overflow:hidden; vertical-align:middle; }
 .extralogin a.icons:hover img					{ margin-top:-38px; }
 .landing-page .dotted							{ padding-bottom:40px; margin-bottom:40px; }
@@ -604,3 +605,10 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 #signup-classic + .form-stacked					{ display:none; }
 .extralogin a.standalone						{ display:block; width:150px; margin-bottom:20px; white-space:nowrap;}
 .hidden-form-rows								{ display:none; }
+
+
+.content a:hover:focus   { outline: 0 none }
+.content a:hover, 
+.content a:active,
+.content a:visited       { outline: 0 none; }
+.content a:visited 		{ border:0 none; }

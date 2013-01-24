@@ -82,7 +82,6 @@ $(document).ready(function(){
         $.each(data, function(i,el) {
             if (i == 0){
                 username.html('<span>'+el.name+'</span>');
-                equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
                 username.attr('href', el.url);
                 user.removeClass('full');
             }else{
@@ -113,7 +112,9 @@ $(document).ready(function(){
     profile.find(".user > a").attr("href", firstlink);
 
     // ie fix
-    user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
+    user.hover(function(){
+      equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
+      $(this).addClass("hover")}, function(){$(this).removeClass("hover")});
     $('html').live('click', function(e){
 	 	$('.cloudbar .profile .full>a').removeClass('open');
 	 	$('.cloudbar .profile .full>a').siblings('ul').hide();

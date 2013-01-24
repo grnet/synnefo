@@ -103,7 +103,7 @@ def project_fields(project):
             ('application id', app.id),
             ('name', project.name),
             ('owner', app.owner),
-            ('status', project.state_display()),
+            ('status', project.admin_state_display()),
             ('creation date', format_date(project.creation_date)),
             ])
     deact_date = project.deactivation_date

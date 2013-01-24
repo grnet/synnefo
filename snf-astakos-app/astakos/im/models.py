@@ -1717,6 +1717,17 @@ class Project(models.Model):
     def state_display(self):
         return self.STATE_DISPLAY.get(self.state, _('Unknown'))
 
+    def admin_state_display(self):
+        s = self.state_display()
+        if self.sync_pending():
+            s += ' (sync pending)'
+        return s
+
+    def sync_pending(self):
+        if self.state != self.APPROVED:
+            return self.is_active
+        return not self.is_active or self.is_modified
+
     def expiration_info(self):
         return (str(self.id), self.name, self.state_display(),
                 str(self.application.end_date))

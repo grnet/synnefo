@@ -68,7 +68,7 @@ class Command(BaseCommand):
 
         if not infolist:
             kind = 'project application' if search_application else 'project'
-            field = 'id' if is_id or 'name'
+            field = 'id' if is_id else 'name'
             msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
             raise CommandError(msg)
 

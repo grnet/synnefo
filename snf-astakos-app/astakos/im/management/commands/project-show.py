@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,66 +31,127 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
+from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import ProjectApplication, Project
 
 from ._common import format_bool, format_date
 
 
 class Command(BaseCommand):
-    args = "<user ID or email>"
-    help = "Show user info"
+    args = "<id or name>"
+    help = "Show project details"
+
+    option_list = BaseCommand.option_list + (
+        make_option('--app',
+                    action='store_true',
+                    dest='app',
+                    default=False,
+                    help="Show application details instead"),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a user ID or email")
+            raise CommandError("Please provide ID or name")
 
         name_or_id = args[0]
-        if name_or_id.isdigit():
-            try:
-                # check whether it is a project application id
-                project_app = ProjectApplication.objects.get(id=int(name_or_id))
-            except ProjectApplication.DoesNotExist:
-                try:
-                    # check whether it is a project id
-                    project = Project.objects.get(id=int(name_or_id))
-                    project_app = project.application
-                except Project.DoesNotExist:
-                    raise CommandError("Invalid id.")
-            projects = (project_app,)
-        else:
-            projects = ProjectApplication.objects.search_by_name(name_or_id)
-            if projects.count() == 0:
-                msg = "No projects or project applications found"
-                raise CommandError(msg)
+        is_id = name_or_id.isdigit()
+        if is_id:
+            name_or_id = int(name_or_id)
 
-        for app in projects:
-            kv = {
-                'id': app.id,
-                'name': app.name,
-                'homepage': app.homepage,
-                'description': app.description,
-                'issue date': format_date(app.issue_date),
-                'start date': format_date(app.start_date),
-                'end date': format_date(app.end_date),
-                'comments': app.comments,
-                'status': app.state_display(),
-                'owner': app.owner,
-                'max participants': app.limit_on_members_number,
-                'join policy': app.member_join_policy_display,
-                'leave policy': app.member_leave_policy_display,
-                'resources': app.resource_policies
-            }
-            try:
-                if app.project:
-                    members = app.project.project_membership_set.all()
-                    members = members.values_list('person__last_name', 'state')
-                    kv['members'] = members 
-            except:
-                pass
+        infolist = (app_info(name_or_id, is_id) if options['app']
+                    else project_info(name_or_id, is_id))
 
-            for key, val in sorted(kv.items()):
-                line = '%s: %s\n' % (key.rjust(22), val)
-                self.stdout.write(line.encode('utf8'))
-            self.stdout.write('\n')
+        for info in infolist:
+            self.show_info(info)
+
+    def show_info(self, info):
+        for key, val in info.items():
+            line = '%s: %s\n' % (key.rjust(22), val)
+            self.stdout.write(line.encode('utf8'))
+        self.stdout.write('\n')
+
+
+def app_fields(app):
+    d = OrderedDict([
+            ('application id', app.id),
+            ('project id', app.chain),
+            ('name', app.name),
+            ('owner', app.owner),
+            ('status', app.state_display()),
+            ('homepage', app.homepage),
+            ('description', app.description),
+            ('issue date', format_date(app.issue_date)),
+            ('start date', format_date(app.start_date)),
+            ('end date', format_date(app.end_date)),
+            ('comments', app.comments),
+            ('resources', app.resource_policies),
+            ('join policy', app.member_join_policy_display),
+            ('leave policy', app.member_leave_policy_display),
+            ('max members', app.limit_on_members_number),
+            ])
+
+    return d
+
+
+def project_fields(project):
+    app = project.application
+    d = OrderedDict([
+            ('project id', project.id),
+            ('application id', app.id),
+            ('name', project.name),
+            ('owner', app.owner),
+            ('status', project.state_display()),
+            ('creation date', format_date(project.creation_date)),
+            ])
+    deact_date = project.deactivation_date
+    if deact_date is not None:
+        d['deactivation date'] = format_date(deact_date)
+
+    d.update([
+            ('homepage', app.homepage),
+            ('description', app.description),
+            ('resources', app.resource_policies),
+            ('join policy', app.member_join_policy_display),
+            ('leave policy', app.member_leave_policy_display),
+            ('max members', app.limit_on_members_number),
+            ('total members', project.members_count()),
+            ])
+
+    memberships = project.projectmembership_set
+    accepted  = [str(m.person) for m in memberships.any_accepted()]
+    requested = [str(m.person) for m in memberships.requested()]
+    suspended = [str(m.person) for m in memberships.suspended()]
+
+    if accepted:
+        d['accepted members'] = ', '.join(accepted)
+
+    if suspended:
+        d['suspended members'] = ', '.join(suspended)
+
+    if requested:
+        d['membership requests'] = ', '.join(requested)
+
+    return d
+
+
+def app_info(name_or_id, is_id):
+    try:
+        apps = ([ProjectApplication.objects.get(id=name_or_id)]
+                if is_id
+                else ProjectApplication.objects.search_by_name(name_or_id))
+        return [app_fields(app) for app in apps]
+    except ProjectApplication.DoesNotExist:
+            return []
+
+
+def project_info(name_or_id, is_id):
+    try:
+        projects = ([Project.objects.get(id=name_or_id)]
+                    if is_id
+                    else Project.objects.search_by_name(name_or_id))
+        return [project_fields(project) for project in projects]
+    except Project.DoesNotExist:
+        return []

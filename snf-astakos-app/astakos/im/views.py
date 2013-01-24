@@ -1045,8 +1045,18 @@ def project_add(request):
     )
     else:
         resource_catalog = [
-            (g, filter(lambda r: r.get('group', '') == g, result.data)) \
+            [g, filter(lambda r: r.get('group', '') == g, result.data)] \
                 for g in resource_groups]
+
+    # order resources
+    groups_order = RESOURCES_PRESENTATION_DATA.get('groups_order')
+    resources_order = RESOURCES_PRESENTATION_DATA.get('resources_order')
+    resource_catalog = sorted(resource_catalog, lambda g,rs:groups_order.index(g[0]))
+    for index, group in enumerate(resource_catalog):
+        resource_catalog[index][1] = sorted(resource_catalog[index][1],
+                                            key=lambda r: resources_order.index(r['str_repr']))
+
+
     extra_context = {
         'resource_catalog':resource_catalog,
         'resource_groups':resource_groups,

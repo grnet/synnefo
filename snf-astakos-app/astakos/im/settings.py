@@ -299,7 +299,12 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'verbose_name':'private network'
             }
 
-        }
+        },
+
+        'groups_order': ['storage', 'compute', 'network'],
+        'resources_order': ['pithos+.diskspace', 'cyclades.disk',
+                            'cyclades.cpu', 'cyclades.ram', 'cyclades.vm',
+                            'cyclades.network.private']
 
     })
 

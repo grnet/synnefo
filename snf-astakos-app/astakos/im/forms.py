@@ -241,7 +241,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     )
     email = forms.EmailField(
         label='Contact email',
-        help_text = 'We will use this email to contact you'
+        help_text = 'This is needed for contact purposes. It doesn&#39;t need to be the same with the one you provided to login previously. '
     )
 
     class Meta:

@@ -554,8 +554,8 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul								{ overflow:hidden; padding:0; }
 .auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; position:relative;}
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
-.auth_methods ul li a:hover img					{ margin-top:-174px; }
-.auth_methods ul li span.extra-message			{ display:none;  color:#55B577; position:absolute; left:180px; top:13px; }
+.auth_methods ul li a:hover img					{ margin-top:-233px; }
+.auth_methods ul li span.extra-message			{ display:none;  color:#F6921E; position:absolute; left:180px; top:13px; }
 .auth_methods ul li span.extra-message em		{ font-style:normal; background:#fff; }
 .auth_methods ul li span.extra-message em span	{ display:inline-block; max-width:420px; vertical-align: middle;  }
 .auth_methods ul li a:hover + span 				{ display:inline; } 

@@ -411,8 +411,9 @@ form.quotas-form  span.info span				{ width:285px;  }
 
 .quotas-form input[type="submit"].lt			{ position:absolute; left:0; top:0; }
 
-.form-row.submit .rt							{ position:absolute; right:70px;bottom:15px; }
-.quotas-form .form-row.submit .rt				{ right:0; bottom:30px }
+.form-row.submit .rt-link						{ position:absolute; right:70px;bottom:15px; }
+.quotas-form .form-row.submit .rt-link			{ right:0; bottom:30px }
+.form-row.submit .rt-link.reset					{ right:15px; }
 .quotas-form fieldset ul						{ padding:0; margin:0 0 1em; position:relative; }
 .quotas-form fieldset ul li						{ list-style:none outside none; float:left; margin:0 0 0 60px; padding:0; }
 .quotas-form fieldset ul li:first-child			{ margin-left:0; }
@@ -551,12 +552,12 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 
 .auth_methods h3								{ float:left; width:224px; font-size:1.077em;}
 .auth_methods ul								{ overflow:hidden; padding:0; }
-.auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; }
+.auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; position:relative;}
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
 .auth_methods ul li a:hover img					{ margin-top:-174px; }
-.auth_methods ul li span.extra-message			{ display:none;  color:#55B577; padding-left:70px; background:url(../images/line-green.jpg) repeat-x left center; margin-left:-5px;}
-.auth_methods ul li span.extra-message em		{ font-style:normal; background:#fff; padding-left:5px;}
-.auth_methods ul li span.extra-message em span	{ display:inline-block; max-width:275px; vertical-align: middle;  }
+.auth_methods ul li span.extra-message			{ display:none;  color:#55B577; position:absolute; left:180px; top:13px; }
+.auth_methods ul li span.extra-message em		{ font-style:normal; background:#fff; }
+.auth_methods ul li span.extra-message em span	{ display:inline-block; max-width:420px; vertical-align: middle;  }
 .auth_methods ul li a:hover + span 				{ display:inline; } 
 .auth_methods .dialog-wrap						{ color:#F24E53; display:none; margin-top:1em; }
 .auth_methods .dialog-wrap .submit				{ min-width:10px; text-transform:uppercase; margin-right:10px; }
@@ -565,7 +566,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul li a.noaction:focus			{ outline:0 none; }
 .auth_methods ul li a.canremove:hover img,
 .auth_methods .assigned ul li.remove a img		{ margin-top:-112px; }
-.auth_methods .assigned ul li span.extra-message{ color:#F24E53; padding-left:70px; background-image:url(../images/line-red.jpg)}
+.auth_methods .assigned ul li span.extra-message{ color:#F24E53;}
 .auth_methods .assigned ul li a img				{ margin-top:-55px }
 .auth_methods .assigned, 
 .auth_methods .notassigned						{ margin-bottom:40px; }

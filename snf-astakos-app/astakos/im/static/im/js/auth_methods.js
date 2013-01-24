@@ -10,7 +10,9 @@ $(document).ready(function() {
 	 $('.auth_methods .canremove').click( function(e) {
     	e.preventDefault(e);
     	$(this).parent('li').addClass('remove');
+    	$(this).siblings('.details').hide();
     	$(this).siblings('.dialog-wrap').slideDown('slow');
+    	
     });  
     
     $('.auth_methods .no').click( function(e) {

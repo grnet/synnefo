@@ -1247,8 +1247,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
         raise PermissionDenied(m)
 
     if (not is_owner and project_view and
-        (not project or
-         not project.is_approved() and not user.is_associated(project))):
+        not user.non_owner_can_view(project)):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 

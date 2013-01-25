@@ -795,6 +795,16 @@ class AstakosUser(User):
         else:
             return m.user_friendly_state_display()
 
+    def non_owner_can_view(self, maybe_project):
+        if maybe_project is None:
+            return False
+        project = maybe_project
+        if self.is_associated(project):
+            return True
+        if project.is_deactivated():
+            return False
+        return True
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 

@@ -20,7 +20,7 @@
           {{ object.state_display|upper }} ]
         {% endif %}
 
-      {%  else %}
+      {% else %}
         <!-- third user -->
         <!-- assert in project view -->
         <!-- there is always a project, may be deactivated -->
@@ -42,20 +42,27 @@
       {{ object.name|upper }}
     </span>
 
-    {% if owner_mode %}
+    <!-- make room for buttons -->
+    {% if owner_mode or can_join_request or can_leave_request %}
       <br />
+    {% endif %}
+
+    {% if owner_mode %}
       <a style="font-size:0.7em"
          href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
+
+      <!-- only one is possible, perhaps add cancel button too -->
+      {% if can_join_request or can_leav_request %}
+      -
+      {% endif %}
     {% endif %}
 
     {% if can_join_request %}
-      -
       <a style="font-size:0.7em"
          href="{% url astakos.im.views.project_join project.pk %}">JOIN</a>
     {% endif %}
 
     {% if can_leave_request %}
-      -
       <a style="font-size:0.7em"
          href="{% url astakos.im.views.project_leave project.pk %}">LEAVE</a>
     {% endif %}

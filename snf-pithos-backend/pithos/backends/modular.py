@@ -1285,7 +1285,7 @@ class ModularBackend(BaseBackend):
         details.update({'user': user, 'total': total})
         logger.debug(
             "_report_size_change: %s %s %s %s", user, account, size, details)
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',), 
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',),
                               account, QUEUE_INSTANCE_ID, 'diskspace',
                               float(size), details))
 

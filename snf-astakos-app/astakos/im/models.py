@@ -1456,11 +1456,19 @@ class ProjectApplication(models.Model):
             uplimit = p.get('uplimit', 0)
             self.add_resource_policy(service, resource, uplimit)
 
-    def pending_modifications(self):
+    def pending_modifications_incl_me(self):
         q = self.chained_applications()
-        q = q.filter(~Q(id=self.id) & Q(state=self.PENDING))
-        q = q.order_by('id')
+        q = q.filter(Q(state=self.PENDING))
         return q
+
+    def last_pending_incl_me(self):
+        try:
+            return self.pending_modifications_incl_me().order_by('-id')[0]
+        except IndexError:
+            return None
+
+    def pending_modifications(self):
+        return self.pending_modifications_incl_me().filter(~Q(id=self.id))
 
     def last_pending(self):
         try:

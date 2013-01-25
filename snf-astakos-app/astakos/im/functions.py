@@ -411,6 +411,15 @@ def get_project_id_of_application_id(project_application_id):
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % project_application_id)
 
+def get_related_project_id(application_id):
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+        chain = app.chain
+        project = Project.objects.get(id=chain)
+        return chain
+    except:
+        return None
+
 def get_project_by_id(project_id):
     try:
         return Project.objects.get(id=project_id)

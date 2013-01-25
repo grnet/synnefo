@@ -51,9 +51,20 @@
       <a style="font-size:0.7em"
          href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
 
+      {% with object.last_pending_incl_me as last_pending %}
+      {% if last_pending %}
+        -
+        <a style="font-size:0.7em"
+           href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
+          CANCEL {% if object.is_modification %} MODIFICATION {% else %}
+          PROJECT {% endif %} REQUEST
+        </a>
+      {% endif %}
+      {% endwith %}
+
       <!-- only one is possible, perhaps add cancel button too -->
       {% if can_join_request or can_leav_request %}
-      -
+        <br />
       {% endif %}
     {% endif %}
 

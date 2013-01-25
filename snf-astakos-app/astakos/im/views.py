@@ -98,6 +98,7 @@ from astakos.im.functions import (
     SendNotificationError,
     accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member, can_join_request, can_leave_request,
+    cancel_application, get_related_project_id,
     get_by_chain_or_404)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
@@ -1095,6 +1096,38 @@ def project_list(request):
             'is_search':False,
             'table': table,
         })
+
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_cancel(request, application_id, ctx=None):
+    chain_id = None
+    try:
+        application_id = int(application_id)
+        chain_id = get_related_project_id(application_id)
+        cancel_application(application_id, request.user)
+    except (IOError, PermissionDenied), e:
+        messages.error(request, e)
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        if ctx:
+            ctx.mark_rollback()
+    else:
+        msg = _(astakos_messages.APPLICATION_CANCELLED)
+        messages.success(request, msg)
+
+    next = request.GET.get('next')
+    if not next:
+        if chain_id:
+            next = reverse('astakos.im.views.project_detail', args=(chain_id,))
+        else:
+            next = reverse('astakos.im.views.project_list')
+
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    return redirect(next)
 
 
 @require_http_methods(["GET", "POST"])

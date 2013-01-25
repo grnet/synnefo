@@ -783,20 +783,6 @@ class AstakosUser(User):
         except ProjectMembership.DoesNotExist:
             return False
 
-    def is_project_member(self, project_or_application):
-        return self.get_status_in_project(project_or_application) in \
-                                        ProjectMembership.ASSOCIATED_STATES
-
-    def is_project_accepted_member(self, project_or_application):
-        return self.get_status_in_project(project_or_application) in \
-                                            ProjectMembership.ACCEPTED_STATES
-
-    def get_status_in_project(self, project_or_application):
-        application = project_or_application
-        if isinstance(project_or_application, Project):
-            application = project_or_application.project
-        return application.user_status(self)
-
     def get_membership(self, project):
         try:
             return ProjectMembership.objects.get(
@@ -1325,10 +1311,6 @@ def new_chain():
     return chain
 
 
-
-USER_STATUS_DISPLAY = {}
-
-
 class ProjectApplication(models.Model):
     applicant               =   models.ForeignKey(
                                     AstakosUser,
@@ -1418,23 +1400,6 @@ class ProjectApplication(models.Model):
         q = self.projectresourcegrant_set
         resource = Resource.objects.get(service__name=service, name=resource)
         q.create(resource=resource, member_capacity=uplimit)
-
-    def user_status(self, user):
-        try:
-            project = self.get_project()
-            if not project:
-                return -1
-            membership = project.projectmembership_set
-            membership = membership.exclude(state=ProjectMembership.REMOVED)
-            membership = membership.get(person=user)
-            status = membership.state
-        except ProjectMembership.DoesNotExist:
-            return -1
-
-        return status
-
-    def user_status_display(self, user):
-        return USER_STATUS_DISPLAY.get(self.user_status(user), _('Unknown'))
 
     def members_count(self):
         return self.project.approved_memberships.count()

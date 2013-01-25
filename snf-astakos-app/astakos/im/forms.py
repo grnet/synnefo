@@ -433,17 +433,18 @@ class ProfileForm(forms.ModelForm):
     user during the next login will not to be redirected to profile page.
     """
     renew = forms.BooleanField(label='Renew token', required=False)
+    uuid = forms.CharField(label='User id', required=False)
 
     class Meta:
         model = AstakosUser
         fields = ('email', 'first_name', 'last_name', 'auth_token',
-                  'auth_token_expires')
+                  'auth_token_expires', 'uuid')
 
     def __init__(self, *args, **kwargs):
         self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('email', 'auth_token', 'auth_token_expires')
+        ro_fields = ('email', 'auth_token', 'auth_token_expires', 'uuid')
         if instance and instance.id:
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
@@ -983,6 +984,7 @@ class ExtendedProfileForm(ProfileForm):
                 'new_password2',
                 'change_email',
                 'change_password',
+                'uuid'
         ]
 
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)

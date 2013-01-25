@@ -7,7 +7,7 @@
 VERBOSE=yes
 
 # Run as a daemon? true/false
-SNF_DSPTCH_ENABLE=true
+SNF_DSPTCH_ENABLE=false
 
 # User to run the dispatcher as
 SNF_USER="www-data"

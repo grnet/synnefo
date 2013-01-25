@@ -552,9 +552,6 @@ class AstakosUser(User):
     def email_change_is_pending(self):
         return self.emailchanges.count() > 0
 
-    def email_change_is_pending(self):
-        return self.emailchanges.count() > 0
-
     @property
     def signed_terms(self):
         term = get_latest_terms()

@@ -206,8 +206,8 @@ class LocalAuthProvider(AuthProvider):
     module = 'local'
     title = _('Local password')
     description = _('Create a local password for your account')
-    add_prompt =  _('Allows you to login using a local password')
-    details_tpl = _('Local account: %(username)s')
+    add_prompt =  _('Enable Classic login for your account')
+    details_tpl = _('Username: %(username)s')
     login_prompt = _('Classic login (username/password)')
     signup_prompt = _('New to ~okeanos ?')
     signup_link_prompt = _('create an account now')
@@ -229,8 +229,8 @@ class LocalAuthProvider(AuthProvider):
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
     title = _('Academic account')
-    add_prompt = _('Allows you to login using an academic account')
-    details_tpl = _('Academic account: %(identifier)s')
+    add_prompt = _('Enable Academic login for your account')
+    details_tpl = _('Identifier: %(identifier)s')
     user_title = _('Academic account (%(identifier)s)')
     primary_login_prompt = _('If you are a student, professor or researcher you '
                              'can login using your academic account.')
@@ -238,7 +238,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
     login_template = 'im/auth/shibboleth_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
-    logout_from_provider_text = ' at your Academic account (shibboleth)'
+    logout_from_provider_text = 'Please close all browser windows to complete logout from your Academic account, too.'
 
     method_prompt = _('Academic account')
 
@@ -246,8 +246,8 @@ class ShibbolethAuthProvider(AuthProvider):
 class TwitterAuthProvider(AuthProvider):
     module = 'twitter'
     title = _('Twitter')
-    add_prompt = _('Allows you to login using a Twitter account')
-    details_tpl = _('Twitter account: %(info_screen_name)s')
+    add_prompt = _('Enable Twitter login for your account')
+    details_tpl = _('Username: %(info_screen_name)s')
     user_title = _('Twitter (%(info_screen_name)s)')
     login_view = 'astakos.im.target.twitter.login'
 
@@ -258,8 +258,8 @@ class TwitterAuthProvider(AuthProvider):
 class GoogleAuthProvider(AuthProvider):
     module = 'google'
     title = _('Google')
-    add_prompt = _('Allows you to login using a Google account')
-    details_tpl = _('Google account: %(info_email)s')
+    add_prompt = _('Enable Google login for your account')
+    details_tpl = _('Email: %(info_email)s')
     user_title = _('Google (%(info_email)s)')
     login_view = 'astakos.im.target.google.login'
 
@@ -270,8 +270,8 @@ class GoogleAuthProvider(AuthProvider):
 class LinkedInAuthProvider(AuthProvider):
     module = 'linkedin'
     title = _('LinkedIn')
-    add_prompt = _('Allows you to login using a LinkedIn account')
-    details_tpl = _('LinkedIn account: %(info_emailAddress)s')
+    add_prompt = _('Enable LinkedIn login for your account')
+    details_tpl = _('Email: %(info_emailAddress)s')
     user_title = _('LinkedIn (%(info_emailAddress)s)')
     login_view = 'astakos.im.target.linkedin.login'
 

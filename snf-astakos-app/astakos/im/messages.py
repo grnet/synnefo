@@ -91,7 +91,7 @@ OWNER_CANNOT_LEAVE_GROUP                =   'You are the owner of this Project. 
 
 # Field validation fields
 REQUIRED_FIELD                          =   'This field is required.'
-EMAIL_USED                              =   'The email address you provided is already in use. Please provide a different email address.'
+EMAIL_USED                              =   'There is already an account with this email address.'
 SHIBBOLETH_EMAIL_USED                   =   'This email is already associated with another shibboleth account.'
 SHIBBOLETH_INACTIVE_ACC                 =   'This email is already associated with an account that is not yet activated. \
                                                If that is your account, you need to activate it before being able to \
@@ -212,7 +212,7 @@ AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is r
 AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD         =   "Changing password is not supported."
 AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   None
 
-EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add '%s' login method to your existing account from your " \
+EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add the '%s' login method to your existing account from your " \
                                                  " <a href='%s'>profile page</a>"
 
 messages = locals().keys()

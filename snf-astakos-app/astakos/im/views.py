@@ -1347,7 +1347,7 @@ def project_join(request, chain_id, ctx=None):
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
 @project_transaction_context(sync=True)

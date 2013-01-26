@@ -1467,6 +1467,9 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
+    def project_exists(self):
+        return self.get_project() is not None
+
     def _get_project_for_update(self):
         try:
             objects = Project.objects.select_for_update()

@@ -1311,11 +1311,12 @@ class ProjectApplicationManager(ForUpdateManager):
 class Chain(models.Model):
     chain  =   models.AutoField(primary_key=True)
 
+    def __str__(self):
+        return "%s" % (self.chain,)
+
 def new_chain():
     c = Chain.objects.create()
-    chain = c.chain
-    c.delete()
-    return chain
+    return c
 
 
 class ProjectApplication(models.Model):
@@ -1339,7 +1340,9 @@ class ProjectApplication(models.Model):
                                     related_name='projects_owned',
                                     db_index=True)
 
-    chain                   =   models.IntegerField()
+    chain                   =   models.ForeignKey(Chain,
+                                                  related_name='chained_apps',
+                                                  db_column='chain')
     precursor_application   =   models.ForeignKey('ProjectApplication',
                                                   null=True,
                                                   blank=True)
@@ -1682,6 +1685,11 @@ class ProjectManager(ForUpdateManager):
 
 
 class Project(models.Model):
+
+    id                          =   models.OneToOneField(Chain,
+                                                      related_name='chained_project',
+                                                      db_column='id',
+                                                      primary_key=True)
 
     application                 =   models.OneToOneField(
                                             ProjectApplication,

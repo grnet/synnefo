@@ -53,7 +53,7 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         invitations = Invitation.objects.all().order_by('id')
-        
+
         labels = ('id', 'inviter', 'email', 'real name', 'code', 'consumed')
         columns = (3, 24, 24, 24, 20, 4, 8)
 

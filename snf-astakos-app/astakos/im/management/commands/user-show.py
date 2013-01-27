@@ -34,8 +34,9 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import AstakosUser, get_latest_terms
+from astakos.im.util import model_to_dict
 
-from ._common import format_bool, format_date
+from ._common import format
 
 
 class Command(BaseCommand):
@@ -62,35 +63,32 @@ class Command(BaseCommand):
                 'email': user.email,
                 'first name': user.first_name,
                 'last name': user.last_name,
-                'active': format_bool(user.is_active),
-                'admin': format_bool(user.is_superuser),
-                'last login': format_date(user.last_login),
-                'date joined': format_date(user.date_joined),
-                'last update': format_date(user.updated),
+                'active': user.is_active,
+                'admin': user.is_superuser,
+                'last login': user.last_login,
+                'date joined': user.date_joined,
+                'last update': user.updated,
                 #'token': user.auth_token,
-                'token expiration': format_date(user.auth_token_expires),
+                'token expiration': user.auth_token_expires,
                 'invitations': user.invitations,
                 'invitation level': user.level,
                 'providers': user.auth_providers_display,
-                'verified': format_bool(user.is_verified),
-                'has_credits': format_bool(user.has_credits),
+                'verified': user.is_verified,
+                'has_credits': format(user.has_credits),
                 'groups': [elem.name for elem in user.groups.all()],
                 'permissions': [elem.codename for elem in user.user_permissions.all()],
                 'group_permissions': user.get_group_permissions(),
-                'email_verified': format_bool(user.email_verified),
+                'email_verified': user.email_verified,
                 'username': user.username,
-                'activation_sent_date': format_date(user.activation_sent),
-                'resources': dict(user.all_quotas()),
+                'activation_sent_date': user.activation_sent,
+                'resources': user.all_quotas(),
                 'uuid': user.uuid
             }
             if get_latest_terms():
                 has_signed_terms = user.signed_terms
-                kv['has_signed_terms'] = format_bool(has_signed_terms)
+                kv['has_signed_terms'] = has_signed_terms
                 if has_signed_terms:
-                    kv['date_signed_terms'] = format_date(
-                        user.date_signed_terms)
+                    kv['date_signed_terms'] = user.date_signed_terms
 
-            for key, val in sorted(kv.items()):
-                line = '%s: %s\n' % (key.rjust(22), val)
-                self.stdout.write(line.encode('utf8'))
+            self.stdout.write(format(kv))
             self.stdout.write('\n')

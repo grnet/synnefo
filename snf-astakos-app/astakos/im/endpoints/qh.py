@@ -46,6 +46,8 @@ if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
     from kamaki.clients.quotaholder import QH_PRACTICALLY_INFINITE
 
+from synnefo.util.number import strbigdec
+
 ENTITY_KEY = '1'
 
 
@@ -154,13 +156,19 @@ CreateEntityPayload = namedtuple('CreateEntityPayload', ('entity',
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',
-                                         'import_limit',
+                                        'import_limit',
                                          'export_limit'))
 
-QuotaValues = namedtuple('QuotaValues', ('quantity',
-                                         'capacity',
-                                         'import_limit',
-                                         'export_limit'))
+class QuotaValues(namedtuple('QuotaValues', ('quantity',
+                                             'capacity',
+                                             'import_limit',
+                                             'export_limit'))):
+    __slots__ = ()
+    def __dir__(self):
+            return ['quantity', 'capacity', 'import_limit', 'export_limit']
+
+    def __str__(self):
+        return '\t'.join(['%s=%s' % (f, strbigdec(getattr(self, f))) for f in dir(self)])
 
 def add_quota_values(q1, q2):
     return QuotaValues(

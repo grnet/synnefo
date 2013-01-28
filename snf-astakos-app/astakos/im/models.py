@@ -1330,7 +1330,7 @@ class Chain(models.Model):
                    TERMINATED]
 
     STATE_DISPLAY = {
-        PENDING            : _("Request Pending"),
+        PENDING            : _("Pending"),
         DENIED             : _("Denied"),
         DISMISSED          : _("Dismissed"),
         CANCELLED          : _("Cancelled"),

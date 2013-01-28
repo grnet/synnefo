@@ -36,7 +36,7 @@ First you must setup an NFS server and export `/srv/pithos` directory.
    # mkdir data
    # chown www-data:www-data data
    # chmod g+ws data
-   # apt-get install nfs-kernel-server
+   # apt-get install -t squeeze-backports nfs-kernel-server
 
 Here add these lines in `/etc/exports`:
 

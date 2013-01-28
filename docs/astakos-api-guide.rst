@@ -107,7 +107,7 @@ Uri                            Method     Description
 Request Header Name   Value
 ====================  ===========================
 X-Auth-Token          Authentication token owned by
-                      a user has or inherits ``im.can_access_userinfo`` permission
+                      a user having or inheriting ``im.can_access_userinfo`` permission
 ====================  ===========================
 
 |
@@ -163,7 +163,7 @@ Uri                                      Method     Description
 Request Header Name   Value
 ====================  ===========================
 X-Auth-Token          Authentication token owned
-                      by a user has or inherits ``im.can_access_userinfo`` permission
+                      by a user having or inheriting ``im.can_access_userinfo`` permission
 ====================  ===========================
 
 |

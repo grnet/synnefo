@@ -119,6 +119,7 @@ def has_free_ip(backend):
     for network in backend_public_networks(backend):
         if not network.get_pool().empty():
             return True
+    log.warning("No available network in backend %r", backend)
     return False
 
 

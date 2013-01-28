@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from .quotaholder import QuotaholderAPI
+from .quotaholder import QuotaholderAPI, QH_PRACTICALLY_INFINITE
 from .exception import ( InvalidKeyError, NoEntityError,
                          NoQuantityError, NoCapacityError,
                          ExportLimitError, ImportLimitError,

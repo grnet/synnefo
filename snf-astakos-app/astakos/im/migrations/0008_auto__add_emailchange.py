@@ -2,28 +2,30 @@
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
+
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'EmailChange'
         db.create_table('im_emailchange', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('new_email_address', self.gf('django.db.models.fields.EmailField')(max_length=75)),
+            ('id', self.gf(
+                'django.db.models.fields.AutoField')(primary_key=True)),
+            ('new_email_address', self.gf(
+                'django.db.models.fields.EmailField')(max_length=75)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='emailchange_user', unique=True, to=orm['im.AstakosUser'])),
-            ('requested_at', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 5, 3, 12, 23, 46, 711119))),
-            ('activation_key', self.gf('django.db.models.fields.CharField')(unique=True, max_length=40, db_index=True)),
+            ('requested_at', self.gf('django.db.models.fields.DateTimeField')
+             (default=datetime.datetime(2012, 5, 3, 12, 23, 46, 711119))),
+            ('activation_key', self.gf('django.db.models.fields.CharField')
+             (unique=True, max_length=40, db_index=True)),
         ))
         db.send_create_signal('im', ['EmailChange'])
 
-
     def backwards(self, orm):
-        
+
         # Deleting model 'EmailChange'
         db.delete_table('im_emailchange')
-
 
     models = {
         'auth.group': {

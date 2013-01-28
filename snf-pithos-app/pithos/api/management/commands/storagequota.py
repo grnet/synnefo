@@ -35,29 +35,25 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
-                                    BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
-                                    BACKEND_BLOCK_UMASK,
-                                    BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
-                                    BACKEND_QUOTA, BACKEND_VERSIONING)
-from pithos.backends import connect_backend
+from pithos.api.settings import (BACKEND_QUOTA, BACKEND_VERSIONING)
 
+from pithos.api.util import get_backend
 
 class Command(BaseCommand):
     args = "<user>"
     help = "Get/set a user's quota"
-    
+
     option_list = BaseCommand.option_list + (
         make_option('--set-quota',
-            dest='quota',
-            metavar='BYTES',
-            help="Set user's quota"),
-        )
-    
+                    dest='quota',
+                    metavar='BYTES',
+                    help="Set user's quota"),
+    )
+
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user")
-        
+
         user = args[0]
         quota = options.get('quota')
         if quota is not None:
@@ -65,18 +61,17 @@ class Command(BaseCommand):
                 quota = int(quota)
             except ValueError:
                 raise CommandError("Invalid quota")
-        
-        backend = connect_backend(db_module=BACKEND_DB_MODULE,
-                                  db_connection=BACKEND_DB_CONNECTION,
-                                  block_module=BACKEND_BLOCK_MODULE,
-                                  block_path=BACKEND_BLOCK_PATH,
-                                  block_umask=BACKEND_BLOCK_UMASK,
-                                  queue_module=BACKEND_QUEUE_MODULE,
-                                  queue_connection=BACKEND_QUEUE_CONNECTION)
+
+        backend = get_backend()
         backend.default_policy['quota'] = BACKEND_QUOTA
         backend.default_policy['versioning'] = BACKEND_VERSIONING
+
+        if backend.using_external_quotaholder:
+            raise CommandError("The system uses an extrenal quota holder.")
+
         if quota is not None:
             backend.update_account_policy(user, user, {'quota': quota})
         else:
-            self.stdout.write("Quota for %s: %s\n" % (user, backend.get_account_policy(user, user)['quota']))
+            self.stdout.write("Quota for %s: %s\n" % (
+                user, backend.get_account_policy(user, user)['quota']))
         backend.close()

@@ -31,46 +31,44 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import socket
-
 from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 from django.db import transaction
 
-from astakos.im.functions import invite, SendMailError
-from astakos.im.models import Invitation
+from astakos.im.functions import SendMailError
 
 from ._common import get_user
+
 
 @transaction.commit_manually
 class Command(BaseCommand):
     args = "<inviter id or email> <email> <real name>"
     help = "Invite a user"
-    
+
     def handle(self, *args, **options):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")
-        
+
         inviter = get_user(args[0], is_active=True)
         if not inviter:
             raise CommandError("Unknown inviter")
-        if  not inviter.is_active:
+        if not inviter.is_active:
             raise CommandError("Inactive inviter")
-        
+
         if inviter.invitations > 0:
             email = args[1]
             realname = args[2]
-            
+
             try:
-                invitation = Invitation(username = email, realname=realname, inviter=inviter)
-                invite(invitation, inviter)
+                inviter.invite(email, realname)
                 self.stdout.write("Invitation sent to '%s'\n" % (email,))
             except SendMailError, e:
                 transaction.rollback()
                 raise CommandError(e.message)
             except IntegrityError, e:
                 transaction.rollback()
-                raise CommandError("There is already an invitation for %s" % (email,))
+                raise CommandError(
+                    "There is already an invitation for %s" % (email,))
             else:
                 transaction.commit()
         else:

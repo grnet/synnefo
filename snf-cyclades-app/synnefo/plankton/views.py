@@ -38,8 +38,8 @@ from string import punctuation
 from urllib import unquote
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseNotFound
-
+from django.http import (HttpResponse, HttpResponseNotFound,
+                         HttpResponseBadRequest)
 from synnefo.plankton.util import plankton_method
 
 
@@ -252,6 +252,18 @@ def list_images(request, detail=False):
 
     assert params['sort_key'] in SORT_KEY_OPTIONS
     assert params['sort_dir'] in SORT_DIR_OPTIONS
+
+    if 'size_max' in filters:
+        try:
+            filters['size_max'] = int(filters['size_max'])
+        except ValueError:
+            return HttpResponseBadRequest('400 Bad Request')
+
+    if 'size_min' in filters:
+        try:
+            filters['size_min'] = int(filters['size_min'])
+        except ValueError:
+            return HttpResponseBadRequest('400 Bad Request')
 
     images = request.backend.list(filters, params)
 

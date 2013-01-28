@@ -290,9 +290,9 @@ class ImageBackend(object):
         size_range = (None, None)
         for key, val in filters.items():
             if key == 'size_min':
-                size_range = (int(val), size_range[1])
+                size_range = (val, size_range[1])
             elif key == 'size_max':
-                size_range = (size_range[0], int(val))
+                size_range = (size_range[0], val)
             else:
                 keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
 

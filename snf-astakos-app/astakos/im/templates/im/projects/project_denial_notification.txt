@@ -1,0 +1,7 @@
+--- A translation in English follows ---
+
+Η αίτησή σας για το project {{object.name}} έχει απορριφθεί.
+
+--
+
+Your project application request ({{object.name}}) has been denied.

@@ -5,12 +5,13 @@ input, textarea, .form-widget 				{ background-color: #ffffff; color: #000;borde
 #forms input:focus 							{ position: relative; border: 1px solid #000; z-index: 100; }
 #forms .input:focus label,
 #forms input:focus label 					{ z-index: 300; }
-form.withlabels label 						{ width: 224px; display: block; float: left; padding-top: 1em; }
+form.withlabels label 						{ width: 224px; display: block; float: left; padding-top: 0.8em; }
 form.withlabels input[type=text], 
-form.withlabels input[type=password] 		{ width: 240px; }
+form.withlabels input[type=password] 		{ width: 270px; }
 form.withlabels input[type=text].long, 
 form.withlabels input[type=password].long, 
 form.withlabels textarea.long 				{ width: 224px; }
+form.withlabels textarea					{ width:270px; }
 .login-section a.button 					{ margin-bottom: 12px; }
 .login-section a.button:last-child 			{ margin-bottom: none;}
 .login-section a.button.withicon 			{ background-repeat: no-repeat; background-position: 15px 50%; padding-left: 40px; }
@@ -33,23 +34,23 @@ form textarea,
 form input.text,
 form input[type="text"],
 form input[type="password"]  				{ color:#808080; font-family: 'Didact Gothic', Verdana, sans-serif; font-weight: normal; line-height: 22px; letter-spacing: 1px;border: 1px solid #808080; height: 21px; display: inline-block; margin-bottom: -1px; padding: 0.8em; padding-left: 1.5em; z-index: 2; width:300px; }
-form select									{ font-family: 'Didact Gothic', Verdana, sans-serif; font-weight: normal; line-height: 22px; letter-spacing: 1px;  border: 1px solid #808080; display:block;  margin-bottom: -1px; padding: 0.8em;  padding-left: 1.5em;  z-index: 2;  width:331px; }
+form select									{ font-family: 'Didact Gothic', Verdana, sans-serif; font-weight: normal; line-height: 22px; letter-spacing: 1px;  border: 1px solid #808080; display:block;  margin-bottom: -1px; padding: 0.8em;  padding-left: 1.5em;  z-index: 2;  width:301px; }
 form textarea:focus,
 form input.text:focus,
 form input[type="text"]:focus,
-form input[type="password"]:focus 			{position: relative; border: 1px solid #000; z-index: 100;}
+form input[type="password"]:focus 			{position: relative; border: 1px solid #000; z-index: 3;}
 form textarea:focus label,
 form input.text:focus label,
 form input[type="text"]:focus label,
-form input[type="password"]:focus label 	{ z-index: 300;}
+form input[type="password"]:focus label 	{ z-index: 5;}
 form input.submit, 
 form input[type="submit"],
-a.submit									{ font-family: 'Didact Gothic', Verdana, sans-serif; font-size: 14px; font-weight: normal; line-height: 22px; letter-spacing:1px;  background-color: #f89a1c;color: #ffffff; border: none; padding: 10px 22px;font-size: 1em; margin:15px 0 0 223px; height:43px; }
+a.submit									{ font-family: 'Open Sans', sans-serif; font-size: 14px; font-weight: normal; line-height: 22px; letter-spacing:1px;  background-color: #f89a1c;color: #ffffff; border: none; padding: 10px 22px;font-size: 1em; margin:15px 0 0 223px; height:43px; }
 form.innerlabels input.submit, 
 form.innerlabels input[type="submit"]		{margin-left:0;}
 form input.submit:hover, 
 form input[type="submit"]:hover,
-a.submit:hover					 			{ background-color:#3582AC;border-color:#3582ac; text-decoration:none;}
+.content a.submit:hover					 	{ background-color:#3582AC;border-color:#3582ac; text-decoration:none;}
 form input.submit.back, 
 form input[type="submit"].back 				{ text-decoration: none; bottom: 0; float: right; z-index: 500; }
 form input.submit.back.right, 
@@ -68,15 +69,15 @@ form .with-errors label 					{ color: #e4776f; }
 div.form-stacked 							{ margin-bottom: 4em; }
 .checkbox-widget.checked 					{ background-color: #FF0000; background-image: url("../images/checkbox.png"); background-position: 50% 50%; }
 .content a.checkbox-widget 					{ border: 1px solid #808080; cursor: pointer; display: block; float: left; height: 25px; margin:5px 20px 0 0 ; width: 25px; }
-form.withlabels .checkbox-widget			{ margin-top:20px; }
+form.withlabels .checkbox-widget			{ margin-top:12px; }
 form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; }
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
-form span.info								{ position:absolute;z-index:10; bottom:32px;  }
+form span.info								{ position:absolute;z-index:7; top:10px;  }
 form.innerlabels span.info					{ left: 290px; }
-form.withlabels span.info					{ left: 440px; }
+form.withlabels span.info					{ left:485px;  }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
 form span.info:hover em 					{ background-position:-4px -3px; }
-form span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 12px; min-height:50px; display:none; font-size:0.846em;}
+form span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 8px; min-height:50px; display:none; font-size:0.846em;}
 form span.info:hover span 					{ display:block; }
 form .with-errors span.info					{ display:none;}
 form p										{ margin-bottom:0;position:relative;}
@@ -87,16 +88,19 @@ form.innerlabels .with-checkbox .checkbox-label		{ left:2.5em; top:17px; }
 form.withlabels .with-checkbox .checkbox-widget		{ position:absolute; left:224px; top:0; }
 
 form .extra-img								{ display:block; width:21px; height:21px; overflow:hidden;  position:absolute; }
-form.withlabels .extra-img					{ left:460px; bottom:12px; }
+form.withlabels .extra-img					{ left:485px; bottom:12px; }
 form.innerlabels .extra-img					{ bottom:10px; left:290px }
-form .with-checkbox .extra-img				{ top:20px; } 
+form .with-checkbox .extra-img				{   } 
 form .with-errors .extra-img 				{ background:url(../images/symbols.png) no-repeat -58px -3px;  z-index:101;}
+form .with-errors .extra-img:hover + span.info,
+form .with-errors .extra-img:hover + span.info span				{ display:block; }
 form .with-errors textarea+.extra-img,
 form .with-errors noscript+.extra-img		{ background:transparent;}
 form .with-errors input[type="text"],
 form .with-errors input[type="password"]	{ border:1px solid red;}
 form.innerlabels .with-errors .extra-img	{ left:290px;}
 form input[readonly="True"]+ span.extra-img { background:url(../images/symbols.png) no-repeat -111px -3px; z-index:101;}
+form.withlabels .with-checkbox .extra-img	{ display:none; } 
 .errorlist									{ margin:0; padding:0;}
 .errorlist li								{ list-style:none outside;}
 
@@ -119,24 +123,57 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha .actions-wrap				{ border-top:1px solid #808080 }
 
 input.submit:focus,
-input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none; }						
+input[type="submit"]:focus,
+.content a.submit:focus							{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1px solid #F89A1C; outline:0 none; }						
+.content a.submit:hover							{ border-color:#3582AC; }
 
-@media screen and (max-width : 591px) 		{ 
-	form.withlabels .extra-img	   				{ left:222px; }
-    form.withlabels span.info 	   				{ left:222px; }
-    form .extra-img	               				{ left:222px; }
+p+ form											{ margin:2em 0; }
+.full-dotted legend								{ padding-top:40px; }
+form .form-row .radios label					{ width:auto; float:none; display:inline-block; }
+form .form-row .radios input[type="radio"]		{ margin-right:165px; vertical-align:middle; }
+form.withfieldset textarea						{ width: 224px; }
+form.withfieldset select						{ width: 256px; background:#fff;}
+form+p:first-child, form legend + p				{ margin-bottom:2em; }
+
+
+form.link-like									{ display:inline-block; margin:0 5px; float:right;}
+form.link-like input[type="submit"]				{ margin:0; padding:0; background:transparent; color:#F89A1C; cursor:pointer; height:auto; line-height:120%;  }
+form.link-like input[type="submit"]:hover		{ text-decoration:underline;  }
+form.link-like.alone							{ float:none; margin:0; position:absolute; right:0; top:96px;}
+form.link-like.alone .form-row					{ margin:0; }
+form.link-like.alone input[type="submit"]		{ padding:0; }	
+.projects form.withlabels .checkbox-widget		{ margin-top:5px; }
+.projects form .with-checkbox					{ margin:20px 0; }
+.projects form .with-checkbox label				{ padding-top:7px; }
+.projects form .with-checkbox span.info			{ bottom:24px; }
+.projects .minimal								{ float:right; position:relative; margin-bottom:-28px;}
+.projects .minimal select						{ padding:3px; width:250px; }
+.projects .minimal label						{ position:absolute; right:290px; top:5px; white-space:nowrap}
+
+@media screen and (max-width : 630px) 		{ 
+	form.withlabels .extra-img	   				{ left:260px; }
+    form.withlabels span.info 	   				{ left:260px; }
+    form .extra-img	               				{ left:260px; }
     .form-error		              	 			{ margin-left:0!important; } 
     
 }
 
 
 @media screen and (max-width : 410px) 		{ 
+	form.withlabels .extra-img	   				{ left:90% }	
 	form.login									{ width:auto; }
 	form textarea, 
 	form input.text, 
 	form input[type="text"], 
 	form input[type="password"] 				{ width:90%; }
-	form.withlabels select									{ width:90%; }
+	form.withlabels input[type="text"], 
+    form.withlabels input[type="password"],
+    form.withlabels textarea,
+    form textarea, 
+	form input.text, 
+	form input[type="text"], 
+	form input[type="password"]					{ width:90%; }
+	form.withlabels select						{ width:90%; }
 	form.innerlabels .extra-img,
 	form.innerlabels .with-errors .extra-img 	{ left:90%; }
 	form.innerlabels							{ width:auto; }
@@ -148,31 +185,18 @@ input[type="submit"]:focus						{ box-shadow: 0 0 0 1px #FFFFFF inset; border:1p
 }
 
 
-@media screen and ( width : 320px) 		{ 
+@media screen and ( max-width : 320px) 		{ 
 	#okeanos_recaptcha							{ width:259px }
-    
+    form.withlabels input[type="text"], 
+    form.withlabels input[type="password"],
+    form.withlabels textarea,
+    form textarea, 
+	form input.text, 
+	form input[type="text"], 
+	form input[type="password"]					{ width:90%; }
+	.form-row .dk_container 					{ width:100%; }
 }
-
-p+ form											{ margin:2em 0; }
-.full-dotted legend								{ padding-top:40px; }
-form .form-row .radios label					{ width:auto; float:none; display:inline-block; }
-form .form-row .radios input[type="radio"]		{ margin-right:165px; vertical-align:middle; }
-form.withfieldset textarea						{ width: 224px; }
-form.withfieldset select						{ width: 256px; background:#fff;}
-form+p:first-child, form legend + p				{ margin-bottom:2em; }
-
-/* dropkick select extra styles */
-
-.form-row .dk_container							{ border-radius:0; margin-bottom:0; border: 1px solid #808080; height: 21px; letter-spacing: 1px; line-height: 22px; margin-bottom: -1px; width:254px; padding:0.8em 0; font-weight:normal; font-family: 'Didact Gothic', Verdana, sans-serif; font-size:1em; background:transparent; color:#808080;}
-.form-row .dk_toggle  							{ border-radius:0;  padding:7px 0;  border:0 none; text-indent:1.5em; text-decoration:none;background-image:url(../images/arrow_02.jpg); background-position:90% 5px;}
-.form-row .dk_toggle:hover						{ text-decoration:none; }
-.form-row .dk_open								{ background:transparent; box-shadow: none; }
-.form-row .dk_open .dk_toggle					{ background-color:transparent; border:0 none; color:#000; box-shadow: none;}
-.form-row .dk_focus .dk_toggle					{ background-color:transparent;  border:0 none; color:#000; box-shadow: none;}
-.1form-row .dk_options							{ display:block; }
-.form-row .dk_options							{ box-shadow:none; border-radius:0; z-index:3; margin:6px -1px 0; width:auto; left:0;}
-.form-row .dk_options a							{ font-weight:normal;color:#808080 }
-.form-row .dk_options_inner						{ padding:0; margin:0; box-shadow:none; text-shadow:none;  border-radius:0; border:1px solid #8C8C8E ;}
-.form-row .dk-options_inner li					{ list-style:none outside; }
-.form-row .dk_options a:hover, 
-.form-row .dk_option_current a					{ text-shadow:none; background-color: #E7E7E3;}
+form.submit-inline 								{ position:relative }
+form.submit-inline .form-row.submit				{ position:absolute; left:578px; top:0; margin:0; }
+form.submit-inline .form-row input				{ margin:0 20px 0 0 ; }
+form.signup .back								{ float:right; margin:15px 70px 0 0 ; height:43px; line-height:43px }

@@ -33,6 +33,7 @@
 
 from synnefo.lib.quotaholder.api import (
                             QuotaholderAPI,
+                            QH_PRACTICALLY_INFINITE,
                             InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
                             ExportLimitError, ImportLimitError,
@@ -45,10 +46,10 @@ from synnefo.lib.commissioning.utils.newname import newname
 from django.db.models import Q
 from django.db import transaction, IntegrityError
 from .models import (Holder, Entity, Policy, Holding,
-                     Commission, Provision, ProvisionLog, now,
+                     Commission, Provision, ProvisionLog, CallSerial,
+                     now,
                      db_get_entity, db_get_holding, db_get_policy,
-                     db_get_commission, db_filter_provision)
-
+                     db_get_commission, db_filter_provision, db_get_callserial)
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
 
@@ -363,7 +364,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         except Holding.DoesNotExist:
             h = Holding(entity=entity, resource=resource)
             p = Policy.objects.create(policy=self._new_policy_name(),
-                                      quantity=0)
+                                      quantity=0,
+                                      capacity=QH_PRACTICALLY_INFINITE,
+                                      import_limit=QH_PRACTICALLY_INFINITE,
+                                      export_limit=QH_PRACTICALLY_INFINITE)
             h.policy = p
         h.imported += amount
         h.save()
@@ -506,58 +510,113 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def add_quota(self, context={}, add_quota=()):
+    def add_quota(self, context={}, clientkey=None, serial=None,
+                  sub_quota=(), add_quota=()):
         rejected = []
         append = rejected.append
 
-        for (   entity, resource, key,
-                quantity, capacity,
-                import_limit, export_limit ) in add_quota:
+        if serial is not None:
+            if clientkey is None:
+                all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
+                raise ReturnButFail(all_pairs)
+            try:
+                cs = CallSerial.objects.get(serial=serial, clientkey=clientkey)
+                all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
+                raise ReturnButFail(all_pairs)
+            except CallSerial.DoesNotExist:
+                pass
 
-                try:
-                    e = Entity.objects.get(entity=entity, key=key)
-                except Entity.DoesNotExist:
-                    append((entity, resource))
-                    continue
+        for removing, source in [(True, sub_quota), (False, add_quota)]:
+            for (   entity, resource, key,
+                    quantity, capacity,
+                    import_limit, export_limit ) in source:
 
-                try:
-                    h = db_get_holding(entity=entity, resource=resource,
-                                       for_update=True)
-                    p = h.policy
-                except Holding.DoesNotExist:
-                    h = Holding(entity=e, resource=resource, flags=0)
-                    p = None
+                    try:
+                        e = Entity.objects.get(entity=entity, key=key)
+                    except Entity.DoesNotExist:
+                        append((entity, resource))
+                        continue
 
-                policy = newname('policy_')
-                newp = Policy(policy=policy)
+                    try:
+                        h = db_get_holding(entity=entity, resource=resource,
+                                           for_update=True)
+                        p = h.policy
+                    except Holding.DoesNotExist:
+                        if removing:
+                            append((entity, resource))
+                            continue
+                        h = Holding(entity=e, resource=resource, flags=0)
+                        p = None
 
-                newp.quantity = _add(p.quantity if p else 0, quantity)
-                newp.capacity = _add(p.capacity if p else 0, capacity)
-                newp.import_limit = _add(p.import_limit if p else 0,
-                                              import_limit)
-                newp.export_limit = _add(p.export_limit if p else 0,
-                                              export_limit)
+                    policy = newname('policy_')
+                    newp = Policy(policy=policy)
 
-                new_values = [newp.capacity,
-                              newp.import_limit, newp.export_limit]
-                if any(map(_isneg, new_values)):
-                    append((entity, resource))
-                    continue
+                    newp.quantity = _add(p.quantity if p else 0, quantity,
+                                         invert=removing)
+                    newp.capacity = _add(p.capacity if p else 0, capacity,
+                                         invert=removing)
+                    newp.import_limit = _add(p.import_limit if p else 0,
+                                                  import_limit, invert=removing)
+                    newp.export_limit = _add(p.export_limit if p else 0,
+                                                  export_limit, invert=removing)
 
-                h.policy = newp
+                    new_values = [newp.capacity,
+                                  newp.import_limit, newp.export_limit]
+                    if any(map(_isneg, new_values)):
+                        append((entity, resource))
+                        continue
 
-                # the order is intentionally reversed so that it
-                # would break if we are not within a transaction.
-                # Has helped before.
-                h.save()
-                newp.save()
+                    h.policy = newp
 
-                if p is not None and p.holding_set.count() == 0:
-                    p.delete()
+                    # the order is intentionally reversed so that it
+                    # would break if we are not within a transaction.
+                    # Has helped before.
+                    h.save()
+                    newp.save()
+
+                    if p is not None and p.holding_set.count() == 0:
+                        p.delete()
 
         if rejected:
             raise ReturnButFail(rejected)
+
+        if serial is not None and clientkey is not None:
+            CallSerial.objects.create(serial=serial, clientkey=clientkey)
         return rejected
+
+    def ack_serials(self, context={}, clientkey=None, serials=()):
+        if clientkey is None:
+            return
+
+        for serial in serials:
+            try:
+                c = db_get_callserial(clientkey=clientkey,
+                                      serial=serial,
+                                      for_update=True)
+                c.delete()
+            except CallSerial.DoesNotExist:
+                pass
+        return
+
+    def query_serials(self, context={}, clientkey=None, serials=()):
+        result = []
+        append = result.append
+
+        if clientkey is None:
+            return result
+
+        if not serials:
+            cs = CallSerial.objects.filter(clientkey=clientkey)
+            return [c.serial for c in cs]
+
+        for serial in serials:
+            try:
+                db_get_callserial(clientkey=clientkey, serial=serial)
+                append(serial)
+            except CallSerial.DoesNotExist:
+                pass
+
+        return result
 
     def issue_commission(self,  context     =   {},
                                 clientkey   =   None,
@@ -604,53 +663,99 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             if quantity < 0:
                 release = 1
 
+            # Source limits checks
             try:
                 h = db_get_holding(entity=entity, resource=resource,
                                    for_update=True)
             except Holding.DoesNotExist:
-                m = ("There is not enough quantity "
+                m = ("There is no quantity "
                      "to allocate from in %s.%s" % (entity, resource))
-                raise NoQuantityError(m)
+                raise NoQuantityError(m,
+                                      source=entity, target=target,
+                                      resource=resource, requested=quantity,
+                                      current=0, limit=0)
 
             hp = h.policy
 
-            if (hp.export_limit is not None and
-                h.exporting + quantity > hp.export_limit):
+            if not release:
+                current = h.exporting
+                limit = hp.export_limit
+                if current + quantity > limit:
                     m = ("Export limit reached for %s.%s" % (entity, resource))
-                    raise ExportLimitError(m)
+                    raise ExportLimitError(m,
+                                           source=entity, target=target,
+                                           resource=resource, requested=quantity,
+                                           current=current, limit=limit)
 
-            if hp.quantity is not None:
-                available = (+ hp.quantity + h.imported + h.returned
-                             - h.exporting - h.releasing)
+                limit = hp.quantity + h.imported - h.releasing
+                unavailable = h.exporting - h.returned
+                available = limit - unavailable
 
-                if available - quantity < 0:
+                if quantity > available:
                     m = ("There is not enough quantity "
                          "to allocate from in %s.%s" % (entity, resource))
-                    raise NoQuantityError(m)
+                    raise NoQuantityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=unavailable, limit=limit)
+            else:
+                current = (+ h.importing + h.returning
+                           - h.exported  - h.returned)
+                limit = hp.capacity
+                if current - quantity > limit:
+                    m = ("There is not enough capacity "
+                         "to release to in %s.%s" % (entity, resource))
+                    raise NoQuantityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=current, limit=limit)
 
+            # Target limits checks
             try:
                 th = db_get_holding(entity=target, resource=resource,
                                     for_update=True)
             except Holding.DoesNotExist:
-                m = ("There is not enough capacity "
+                m = ("There is no capacity "
                      "to allocate into in %s.%s" % (target, resource))
-                raise NoCapacityError(m)
+                raise NoCapacityError(m,
+                                      source=entity, target=target,
+                                      resource=resource, requested=quantity,
+                                      current=0, limit=0)
 
             tp = th.policy
 
-            if (tp.import_limit is not None and
-                th.importing + quantity > tp.import_limit):
+            if not release:
+                limit = tp.import_limit
+                current = th.importing
+                if current + quantity > limit:
                     m = ("Import limit reached for %s.%s" % (target, resource))
-                    raise ImportLimitError(m)
+                    raise ImportLimitError(m,
+                                           source=entity, target=target,
+                                           resource=resource, requested=quantity,
+                                           current=current, limit=limit)
 
-            if tp.capacity is not None:
-                capacity = (+ tp.capacity + th.exported + th.released
-                            - th.importing - th.returning)
+                current = (+ th.importing + th.returning
+                           - th.exported - th.released)
 
-                if capacity - quantity < 0:
-                        m = ("There is not enough capacity "
-                             "to allocate into in %s.%s" % (target, resource))
-                        raise NoCapacityError(m)
+                if current + quantity > tp.quantity + tp.capacity:
+                    m = ("There is not enough capacity "
+                         "to allocate into in %s.%s" % (target, resource))
+                    raise NoCapacityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=current, limit=limit)
+            else:
+                limit = tp.quantity + th.imported - th.releasing
+                unavailable = th.exporting - th.returned
+                available = limit - unavailable
+
+                if available + quantity < 0:
+                    m = ("There is not enough quantity "
+                         "to release from in %s.%s" % (target, resource))
+                    raise NoCapacityError(m,
+                                          source=entity, target=target,
+                                          resource=resource, requested=quantity,
+                                          current=unavailable, limit=limit)
 
             Provision.objects.create(   serial      =   commission,
                                         entity      =   e,
@@ -917,18 +1022,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return timeline
 
-def _add(x, y):
-    if x is None or y is None:
-        return None
-    return x + y
+def _add(x, y, invert=False):
+    return x + y if not invert else x - y
 
 def _update(dest, source, attr, delta):
     dest_attr = getattr(dest, attr)
     dest_attr = _add(getattr(source, attr, 0), delta)
 
 def _isneg(x):
-    if x is None:
-        return False
     return x < 0
 
 API_Callpoint = QuotaholderDjangoDBCallpoint

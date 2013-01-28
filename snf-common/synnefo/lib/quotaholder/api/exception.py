@@ -47,19 +47,32 @@ class NoEntityError(CommissionException):
     pass
 
 @register_exception
-class NoQuantityError(CommissionException):
+class CommissionValueException(CommissionException):
+    def __init__(self, *args, **kw):
+        super(CommissionValueException, self).__init__(*args, **kw)
+        kwargs = self.kwargs
+
+        self.source    = kwargs['source']
+        self.target    = kwargs['target']
+        self.resource  = kwargs['resource']
+        self.requested = kwargs['requested']
+        self.current   = kwargs['current']
+        self.limit     = kwargs['limit']
+
+@register_exception
+class NoQuantityError(CommissionValueException):
     pass
 
 @register_exception
-class NoCapacityError(CommissionException):
+class NoCapacityError(CommissionValueException):
     pass
 
 @register_exception
-class ExportLimitError(CommissionException):
+class ExportLimitError(CommissionValueException):
     pass
 
 @register_exception
-class ImportLimitError(CommissionException):
+class ImportLimitError(CommissionValueException):
     pass
 
 @register_exception

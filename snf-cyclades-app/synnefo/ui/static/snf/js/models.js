@@ -315,7 +315,7 @@
         },
 
         is_public: function() {
-            return this.get('is_public') || true;
+            return this.get('is_public') == undefined ? true : this.get('is_public');
         },
 
         is_deleted: function() {

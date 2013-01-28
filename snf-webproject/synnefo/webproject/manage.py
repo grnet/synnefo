@@ -250,6 +250,11 @@ class SynnefoManagementUtility(ManagementUtility):
         except IndexError:
             subcommand = 'help' # Display help if no arguments were given.
 
+        # Encode stdout. This check is required because of the way python
+        # checks if something is tty: https://bugzilla.redhat.com/show_bug.cgi?id=841152
+        if not 'shell' in subcommand:
+            sys.stdout = EncodedStdOut(sys.stdout)
+
         if subcommand == 'help':
             if len(args) > 2:
                 self.fetch_command(args[2]).print_help(self.prog_name, args[2])
@@ -335,7 +340,6 @@ def main():
     os.environ['DJANGO_SETTINGS_MODULE'] = os.environ.get('DJANGO_SETTINGS_MODULE',
                                                           'synnefo.settings')
     configure_logging()
-    sys.stdout = EncodedStdOut(sys.stdout)
     mu = SynnefoManagementUtility(sys.argv)
     mu.execute()
 

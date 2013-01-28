@@ -60,7 +60,7 @@ setup(
     packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
     dependency_links = ['http://docs.dev.grnet.gr/pypi'],
     install_requires=[
-        'snf-common>0.9.14',
+        'snf-common',
         'python-daemon>=1.5.5',
         'pyinotify>=0.8.9',
         'puka',

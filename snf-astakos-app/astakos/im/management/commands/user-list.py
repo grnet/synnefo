@@ -33,63 +33,62 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import AstakosUser
 
 from ._common import format_bool
 
 
-class Command(BaseCommand):
+class Command(NoArgsCommand):
     help = "List users"
-    
-    option_list = BaseCommand.option_list + (
+
+    option_list = NoArgsCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
         make_option('-p',
-            action='store_true',
-            dest='pending',
-            default=False,
-            help="List only users pending activation"),
+                    action='store_true',
+                    dest='pending',
+                    default=False,
+                    help="List only users pending activation"),
         make_option('-n',
-            action='store_true',
-            dest='pending_send_mail',
-            default=False,
-            help="List only users who have not received activation"),
-        )
-    
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
-        
-        users = AstakosUser.objects.all()
+                    action='store_true',
+                    dest='pending_send_mail',
+                    default=False,
+                    help="List only users who have not received activation"),
+    )
+
+    def handle_noargs(self, **options):
+        users = AstakosUser.objects.all().order_by('id')
         if options['pending']:
             users = users.filter(is_active=False)
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
-        
-        labels = ('id', 'email', 'real name', 'active', 'admin', 'provider', 'groups')
+
+        labels = ('id', 'email', 'real name', 'active', 'admin', 'providers')
         columns = (3, 24, 24, 6, 5, 12, 24)
-        
+
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-        
+
         for user in users:
             id = str(user.id)
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
-            fields = (id, user.email, user.realname, active, admin, user.provider,
-                      ','.join([g.name for g in user.groups.all()]))
-            
+            fields = (
+                id, user.email, user.realname, active, admin, \
+                        user.auth_providers_display
+            )
+
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-            
+
             self.stdout.write(line.encode('utf8') + '\n')

@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="{{ resource.meta.compatibility }}">
   
   <title>
-     {% block page.title %}{% endblock %} / GRNET Cloud Accounts 
+     {% block page.title %}Accounts{% endblock %} / GRNET Cloud Accounts 
   </title>
   
   <meta name="description" content="">
@@ -27,7 +27,7 @@
 
   {% block page.css %}
        
-      <link href='https://fonts.googleapis.com/css?family=Didact+Gothic&subset=latin' rel='stylesheet' type='text/css'>
+      <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&subset=latin,greek-ext,greek' rel='stylesheet' type='text/css'>
       <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/global.css">
       <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/print.css" media="print">
       <!--[if lte IE 7]>
@@ -35,7 +35,7 @@
       <![endif]-->
       <link rel="stylesheet" media="screen and (max-width: 960px)" href="{{ IM_STATIC_URL }}css/max960.css"/>
       <link rel="stylesheet" media="screen and (max-width: 768px)" href="{{ IM_STATIC_URL }}css/max768.css"/>  
-      <link rel="stylesheet" media="screen and (max-width: 480px)" href="{{ IM_STATIC_URL }}css/max480.css"/>  
+      <link rel="stylesheet" media="screen and (max-width: 480px)" href="{{ IM_STATIC_URL }}css/max480.css"/> 
       <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/jquery-ui-1.8.21.custom.css"/>
       
   {% endblock page.css %}
@@ -43,11 +43,15 @@
   {% block headjs %}
   	  <script src="{{ IM_STATIC_URL }}js/jquery-1.7.1.min.js"></script>	
   	  
+  	  <script src="{{ IM_STATIC_URL }}js/underscore.js"></script>	
   	  <script src="{{ IM_STATIC_URL }}js/os.js"></script>	
       <script src="{{ IM_STATIC_URL }}js/modernizr-2.0.6.js"></script>	
       <script src="{{ IM_STATIC_URL }}js/jquery.js"></script>	
       <script src="{{ IM_STATIC_URL }}js/jquery.infieldlabel.js"></script>	
-      <script src="{{ IM_STATIC_URL }}js/forms.js"></script>	 
+      <script src="{{ IM_STATIC_URL }}js/forms.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/jquery.dropkick-1.0.0.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/jquery-ui-1.8.21.custom.min.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/jquery.tablesorter.js"></script>	 	 
       <script src="{{ IM_STATIC_URL }}js/common.js"></script> 
   {% endblock headjs %}
   {% block endhead %}{% endblock endhead %}
@@ -57,7 +61,7 @@
           $("form.innerlabels label").inFieldLabels();
           $("form").each(function(){
             if ($(this).hasClass("login")) { return }
-            $(this).find("input").attr("autocomplete","off");
+            
           })
           $("form .form-row").formErrors();
           $("form .form-row input[type=checkbox]").formCheckBoxes();

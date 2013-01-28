@@ -1273,6 +1273,17 @@ def make_synced(prefix='sync', name='SyncedState'):
 SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
+class Chain(models.Model):
+    chain  =   models.AutoField(primary_key=True)
+
+    def __str__(self):
+        return "%s" % (self.chain,)
+
+def new_chain():
+    c = Chain.objects.create()
+    return c
+
+
 class ProjectApplicationManager(ForUpdateManager):
 
     def user_visible_projects(self, *filters, **kw_filters):
@@ -1307,16 +1318,6 @@ class ProjectApplicationManager(ForUpdateManager):
             return self.filter(chain=chain_id).order_by('-id')[0]
         except IndexError:
             return None
-
-class Chain(models.Model):
-    chain  =   models.AutoField(primary_key=True)
-
-    def __str__(self):
-        return "%s" % (self.chain,)
-
-def new_chain():
-    c = Chain.objects.create()
-    return c
 
 
 class ProjectApplication(models.Model):

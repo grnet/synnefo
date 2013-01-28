@@ -39,13 +39,6 @@ from setuptools import setup
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo.versions', 'ganeti', HERE)
-except ImportError:
-    pass
-
 from synnefo.versions.ganeti import __version__
 
 setup(

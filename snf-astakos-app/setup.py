@@ -42,15 +42,8 @@ from fnmatch import fnmatchcase
 from distutils.util import convert_path
 
 from setuptools import setup, find_packages
-from astakos import get_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-try:
-    # try to update the version file
-    from synnefo.util import version
-    version.update_version('astakos', 'version', HERE)
-except ImportError:
-    pass
 
 from astakos.version import __version__
 

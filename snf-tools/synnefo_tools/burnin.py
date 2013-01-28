@@ -49,6 +49,7 @@ import socket
 import sys
 import time
 import tempfile
+import guestfs
 from base64 import b64encode
 from IPy import IP
 from multiprocessing import Process, Queue
@@ -216,7 +217,7 @@ class UnauthorizedTestCase(unittest.TestCase):
 
 
 # --------------------------------------------------------------------
-# ImagesTestCase class
+# This class gest replicated into Images TestCases dynamically
 class ImagesTestCase(unittest.TestCase):
     """Test image lists for consistency"""
     @classmethod
@@ -228,6 +229,12 @@ class ImagesTestCase(unittest.TestCase):
         cls.images = cls.plankton.list_public()
         cls.dimages = cls.plankton.list_public(detail=True)
         cls.result_dict = dict()
+        # Create temp directory and store it inside our class
+        # XXX: In my machine /tmp has not enough space
+        #      so use current directory to be sure.
+        cls.temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+        cls.temp_image_name = \
+            SNF_TEST_PREFIX + cls.imageid + ".diskdump"
 
     def test_001_list_images(self):
         """Test image list actually returns images"""
@@ -256,6 +263,53 @@ class ImagesTestCase(unittest.TestCase):
         details = self.client.list_images(detail=True)
         for i in details:
             self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
+
+    def test_006_download_image(self):
+        """Download image from pithos+"""
+        # Get image location
+        image = filter(
+            lambda x: x['id'] == self.imageid, self.dimages)[0]
+        image_location = \
+            image['location'].replace("://", " ").replace("/", " ").split()
+        log.info("Download image, with owner %s\n\tcontainer %s, and name %s"
+                 % (image_location[1], image_location[2], image_location[3]))
+        pithos_client = PithosClient(PITHOS, TOKEN, image_location[1])
+        pithos_client.container = image_location[2]
+        temp_file = os.path.join(self.temp_dir, self.temp_image_name)
+        with open(temp_file, "wb+") as f:
+            pithos_client.download_object(image_location[3], f)
+
+        log.info("Mount downloaded image and inject personality file")
+        # XXX: The image is shrinked to the size of the
+        #      underlying device. To avoid increasing it's size
+        #      delete the `.aptitude' directory.
+        g = guestfs.GuestFS()
+        g.add_drive_opts(temp_file, format="raw", readonly=0)
+        g.launch()
+        partitions = g.list_partitions()
+        g.mount(partitions[0], "/")
+        g.rm_rf("/root/.aptitude")
+        g.write("/root/temp.txt", "This is a personality file.")
+        g.umount_all()
+        g.close()
+
+    def test_007_upload_image(self):
+        """Upload and register image"""
+        temp_file = os.path.join(self.temp_dir, self.temp_image_name)
+        log.info("Upload image to pithos+")
+        # Create container `images'
+        pithos_client = PithosClient(PITHOS, TOKEN, PITHOS_USER)
+        pithos_client.container = "images"
+        pithos_client.container_put()
+        with open(temp_file, "rb+") as f:
+            pithos_client.upload_object(self.temp_image_name, f)
+        log.info("Register image to plankton")
+        location = "pithos://" + PITHOS_USER + \
+            "/images/" + self.temp_image_name
+        params = {'is_public': True}
+        properties = {'OSFAMILY': "linux", 'ROOT_PARTITION': 1}
+        self.plankton.register(self.temp_image_name, location,
+                               params, properties)
 
 
 # --------------------------------------------------------------------
@@ -408,7 +462,6 @@ class PithosTestCase(unittest.TestCase):
 # This class gets replicated into actual TestCases dynamically
 class SpawnServerTestCase(unittest.TestCase):
     """Test scenario for server of the specified image"""
-
     @classmethod
     def setUpClass(cls):
         """Initialize a kamaki instance"""
@@ -1628,6 +1681,24 @@ def _run_cases_in_parallel(cases, fanout, image_folder):
     multi.debug("Done joining %d processes" % len(runners))
 
 
+def _images_test_case(**kwargs):
+    """Construct a new unit test case class from ImagesTestCase"""
+    name = "ImagesTestCase_%s" % kwargs["imageid"]
+    cls = type(name, (ImagesTestCase,), kwargs)
+
+    #Patch extra parameters into test names by manipulating method docstrings
+    for (mname, m) in \
+            inspect.getmembers(cls, lambda x: inspect.ismethod(x)):
+        if hasattr(m, __doc__):
+            m.__func__.__doc__ = "[%s] %s" % (cls.imagename, m.__doc__)
+
+    # Make sure the class can be pickled, by listing it among
+    # the attributes of __main__. A PicklingError is raised otherwise.
+    thismodule = sys.modules[__name__]
+    setattr(thismodule, name, cls)
+    return cls
+
+
 def _spawn_server_test_case(**kwargs):
     """Construct a new unit test case class from SpawnServerTestCase"""
 
@@ -2035,10 +2106,17 @@ def main():
             flavorid=flavorid,
             imagename=imagename,
             query_interval=opts.query_interval)
+        # Create Images TestCase
+        CImagesTestCase = _images_test_case(
+            action_timeout=opts.action_timeout,
+            imageid=imageid,
+            flavorid=flavorid,
+            imagename=imagename,
+            query_interval=opts.query_interval)
 
         # Choose the tests we are going to run
         test_dict = {'auth': UnauthorizedTestCase,
-                     'images': ImagesTestCase,
+                     'images': CImagesTestCase,
                      'flavors': FlavorsTestCase,
                      'servers': ServersTestCase,
                      'pithos': PithosTestCase,

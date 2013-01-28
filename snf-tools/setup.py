@@ -73,6 +73,7 @@ INSTALL_REQUIRES = [
     "python-prctl",
     "paramiko",
     "vncauthproxy",
+    "guestfs",
     "kamaki >= 0.6.2"]
 
 setup(

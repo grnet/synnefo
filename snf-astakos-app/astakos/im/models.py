@@ -1273,11 +1273,112 @@ def make_synced(prefix='sync', name='SyncedState'):
 SyncedState = make_synced(prefix='sync', name='SyncedState')
 
 
+class ChainManager(ForUpdateManager):
+
+    def search_by_name(self, *search_strings):
+        projects = Project.objects.search_by_name(*search_strings)
+        chains = [p.id for p in projects]
+        apps  = ProjectApplication.objects.search_by_name(*search_strings)
+        apps = (app for app in apps if app.is_latest())
+        app_chains = [app.chain for app in apps if app.chain not in chains]
+        return chains + app_chains
+
+    def all_full_state(self):
+        d = {}
+        chains = self.all()
+        for chain in chains:
+            d[chain.pk] = chain.full_state()
+        return d
+
+    def of_project(self, project):
+        if project is None:
+            return None
+        try:
+            return self.get(chain=project.id)
+        except Chain.DoesNotExist:
+            raise AssertionError('project with no chain')
+
+
 class Chain(models.Model):
     chain  =   models.AutoField(primary_key=True)
 
     def __str__(self):
         return "%s" % (self.chain,)
+
+    objects = ChainManager()
+
+    PENDING            = 0
+    DENIED             = 3
+    DISMISSED          = 4
+    CANCELLED          = 5
+
+    APPROVED           = 10
+    APPROVED_PENDING   = 11
+    SUSPENDED          = 12
+    SUSPENDED_PENDING  = 13
+    TERMINATED         = 14
+    TERMINATED_PENDING = 15
+
+    PENDING_STATES = [PENDING,
+                      APPROVED_PENDING,
+                      SUSPENDED_PENDING,
+                      TERMINATED_PENDING,
+                      ]
+
+    SKIP_STATES = [DISMISSED,
+                   CANCELLED,
+                   TERMINATED]
+
+    STATE_DISPLAY = {
+        PENDING            : _("Request Pending"),
+        DENIED             : _("Denied"),
+        DISMISSED          : _("Dismissed"),
+        CANCELLED          : _("Cancelled"),
+        APPROVED           : _("Active"),
+        APPROVED_PENDING   : _("Active - Pending"),
+        SUSPENDED          : _("Suspended"),
+        SUSPENDED_PENDING  : _("Suspended - Pending"),
+        TERMINATED         : _("Terminated"),
+        TERMINATED_PENDING : _("Terminated - Pending"),
+        }
+
+
+    @classmethod
+    def _chain_state(cls, project_state, app_state):
+        s = CHAIN_STATE.get((project_state, app_state), None)
+        if s is None:
+            raise AssertionError('inconsistent chain state')
+        return s
+
+    @classmethod
+    def chain_state(cls, project, app):
+        p_state = project.state if project else None
+        return cls._chain_state(p_state, app.state)
+
+    @classmethod
+    def state_display(cls, s):
+        if s is None:
+            return _("Unknown")
+        return cls.STATE_DISPLAY.get(s, _("Inconsistent"))
+
+    def last_application(self):
+        return self.chained_apps.order_by('-id')[0]
+
+    def get_project(self):
+        try:
+            return self.chained_project
+        except Project.DoesNotExist:
+            return None
+
+    def get_elements(self):
+        project = self.get_project()
+        app = self.last_application()
+        return project, app
+
+    def full_state(self):
+        project, app = self.get_elements()
+        s = self.chain_state(project, app)
+        return s, project, app
 
 def new_chain():
     c = Chain.objects.create()
@@ -1462,8 +1563,18 @@ class ProjectApplication(models.Model):
     def chained_applications(self):
         return ProjectApplication.objects.filter(chain=self.chain)
 
+    def is_latest(self):
+        return self.chained_applications().order_by('-id')[0] == self
+
     def has_pending_modifications(self):
         return bool(self.last_pending())
+
+    def is_applied(self):
+        try:
+            self.project
+            return True
+        except Project.DoesNotExist:
+            return False
 
     def get_project(self):
         try:
@@ -1885,6 +1996,32 @@ class Project(models.Model):
 
         m = ProjectMembership.objects.get(person=user, project=self)
         m.remove()
+
+
+CHAIN_STATE = {
+    (Project.APPROVED,   ProjectApplication.PENDING)  : Chain.APPROVED_PENDING,
+    (Project.APPROVED,   ProjectApplication.APPROVED) : Chain.APPROVED,
+    (Project.APPROVED,   ProjectApplication.DENIED)   : Chain.APPROVED,
+    (Project.APPROVED,   ProjectApplication.DISMISSED): Chain.APPROVED,
+    (Project.APPROVED,   ProjectApplication.CANCELLED): Chain.APPROVED,
+
+    (Project.SUSPENDED,  ProjectApplication.PENDING)  : Chain.SUSPENDED_PENDING,
+    (Project.SUSPENDED,  ProjectApplication.APPROVED) : Chain.SUSPENDED,
+    (Project.SUSPENDED,  ProjectApplication.DENIED)   : Chain.SUSPENDED,
+    (Project.SUSPENDED,  ProjectApplication.DISMISSED): Chain.SUSPENDED,
+    (Project.SUSPENDED,  ProjectApplication.CANCELLED): Chain.SUSPENDED,
+
+    (Project.TERMINATED, ProjectApplication.PENDING)  : Chain.TERMINATED_PENDING,
+    (Project.TERMINATED, ProjectApplication.APPROVED) : Chain.TERMINATED,
+    (Project.TERMINATED, ProjectApplication.DENIED)   : Chain.TERMINATED,
+    (Project.TERMINATED, ProjectApplication.DISMISSED): Chain.TERMINATED,
+    (Project.TERMINATED, ProjectApplication.CANCELLED): Chain.TERMINATED,
+
+    (None,               ProjectApplication.PENDING)  : Chain.PENDING,
+    (None,               ProjectApplication.DENIED)   : Chain.DENIED,
+    (None,               ProjectApplication.DISMISSED): Chain.DISMISSED,
+    (None,               ProjectApplication.CANCELLED): Chain.CANCELLED,
+    }
 
 
 class PendingMembershipError(Exception):

@@ -346,6 +346,8 @@ X-Auth-Token          Service authentication token
 |
 
 The request body is a json formatted dictionary containing a list with uuids and another list of displaynames to translate.
+If instead of list null is passed then the response contains the information for all the system users (For discretion purposes
+this behavior is **not** exposed in the respective call of the User API).
 
 Example request content:
 

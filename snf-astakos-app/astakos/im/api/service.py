@@ -88,7 +88,7 @@ def get_uuid_displayname_catalogs(request):
     #                       badRequest (400)
     #                       unauthorised (401)
 
-    return __get_uuid_displayname_catalog(request)
+    return __get_uuid_displayname_catalogs(request, user_call=False)
 
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)

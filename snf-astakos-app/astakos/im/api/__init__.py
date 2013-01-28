@@ -42,7 +42,8 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Service, Resource
-from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
+from astakos.im.api.faults import (
+    Fault, ItemNotFound, InternalServerError, BadRequest)
 from astakos.im.settings import (
     INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL)
 from astakos.im.forms import FeedbackForm
@@ -138,7 +139,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                        url=absolute(request, reverse('invite')),
                        name="Invitations"))
 
-            
+
             append(item(
                    url=absolute(request, reverse('resource_usage')),
                    name="Usage"))
@@ -203,7 +204,7 @@ class MenuItem(dict):
         if name == 'current_path':
             self.__set_is_active__()
 
-def __get_uuid_displayname_catalogs(request):
+def __get_uuid_displayname_catalogs(request, user_call=True):
     # Normal Response Codes: 200
     # Error Response Codes: badRequest (400)
 
@@ -213,7 +214,11 @@ def __get_uuid_displayname_catalogs(request):
         raise BadRequest('Request body should be json formatted.')
     else:
         uuids = input_data.get('uuids', [])
+        if uuids == None and user_call:
+            uuids = []
         displaynames = input_data.get('displaynames', [])
+        if displaynames == None and user_call:
+            displaynames = []
         d  = {'uuid_catalog':AstakosUser.objects.uuid_catalog(uuids),
               'displayname_catalog':AstakosUser.objects.displayname_catalog(displaynames)}
 

@@ -35,7 +35,7 @@ import sys
 try:
     from devflow import versioning
 except ImportError:
-    raise RuntimeError("devflow is build dependency")
+    raise RuntimeError("devflow is a build dependency")
 
 
 def main():

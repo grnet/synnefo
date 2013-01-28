@@ -116,6 +116,6 @@ def update_version(module, name='version', root='.'):
         import sys
         paths = [root] + module.split(".") + ["%s.py" % name]
         module_filename = os.path.join(*paths)
-        sys.stdout.write("WARNING: Can not update version because `devflow` is"
+        sys.stdout.write("WARNING: Cannot update version because `devflow` is"
                          " not installed. Please make sure to manually"
                          " update version file: '%s'\n" % module_filename)

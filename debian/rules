@@ -18,7 +18,8 @@ PACKAGES = \
 	snf-webproject \
 	snf-pithos-app \
 	snf-pithos-backend \
-	snf-tools
+	snf-tools \
+	snf-stats-app
 
 %:
 	dh $@ --with python2

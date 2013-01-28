@@ -19,9 +19,9 @@ sample_users = {
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
 USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
-                           'http://127.0.0.1:8000/im/service/api/v2.0/users/')
+                           'http://127.0.0.1:8000/user_catalogs/')
 USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'http://127.0.0.1:8000/im/service/api/v2.0/feedback/')
+                            'http://127.0.0.1:8000/feedback/')
 USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
                          'http:127.0.0.1:8000/login/')
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',

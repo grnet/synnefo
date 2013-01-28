@@ -66,7 +66,7 @@ class Command(BaseCommand):
             existing, nonexisting, registered_quotas, astakos_quotas = log
 
             if nonexisting:
-                self.stdout.write("User not registered in quotaholder:\n")
+                self.stdout.write("Users not registered in quotaholder:\n")
                 for user in nonexisting:
                     self.stdout.write("%s\n" % (user))
                 self.stdout.write("\n")

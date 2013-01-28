@@ -37,7 +37,6 @@ from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import Chain
 from ._common import format_bool
-from synnefo.util.text import uenc
 
 class Command(NoArgsCommand):
     help = "List projects"
@@ -102,7 +101,7 @@ def chain_info(chain_dict):
         d = {
             'projectid' : str(chain),
             'name'  : str(project.name if project else app.name),
-            'owner' : uenc(app.owner.realname),
+            'owner' : app.owner.realname,
             'status': status,
             }
         l.append(d)

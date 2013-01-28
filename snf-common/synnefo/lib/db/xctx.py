@@ -124,9 +124,11 @@ class TransactionHandler(object):
                             raise
                         else:
                             trigger_postprocess = True
-                else:
-                    # postprocess,
-                    # even if there was nothing to commit
+
+                # postprocess,
+                # even if there was nothing to commit
+                # as long as it's not marked for rollback
+                elif not self.ctx.is_marked_rollback():
                     trigger_postprocess = True
         finally:
             transaction.leave_transaction_management(using=db)

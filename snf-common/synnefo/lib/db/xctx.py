@@ -57,7 +57,7 @@ def transaction_context(**kwargs):
 
 
 class TransactionContext(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self._rollback = False
 
     def mark_rollback(self):
@@ -71,11 +71,13 @@ class TransactionContext(object):
 
 
 class TransactionHandler(object):
-    def __init__(self, ctx=None, using=None, **kwargs):
-        self.db         = (using if using is not None
-                           else transaction.DEFAULT_DB_ALIAS)
-        self.ctx_class  = ctx
-        self.ctx_kwargs = kwargs
+    def __init__(self, ctx=None, allow_postprocess=True, using=None, **kwargs):
+        self.using             = using
+        self.db                = (using if using is not None
+                                  else transaction.DEFAULT_DB_ALIAS)
+        self.ctx_class         = ctx
+        self.ctx_kwargs        = kwargs
+        self.allow_postprocess = allow_postprocess
 
     def __call__(self, func):
         def wrap(*args, **kwargs):
@@ -105,6 +107,7 @@ class TransactionHandler(object):
 
     def __exit__(self, type, value, traceback):
         db = self.db
+        trigger_postprocess = False
         try:
             if value is not None: # exception
                 if transaction.is_dirty(using=db):
@@ -120,6 +123,19 @@ class TransactionHandler(object):
                             transaction.rollback(using=db)
                             raise
                         else:
-                            self.ctx.postprocess()
+                            trigger_postprocess = True
+                else:
+                    # postprocess,
+                    # even if there was nothing to commit
+                    trigger_postprocess = True
         finally:
             transaction.leave_transaction_management(using=db)
+
+            # checking allow_postprocess is needed
+            # in order to avoid endless recursion
+            if trigger_postprocess and self.allow_postprocess:
+                with TransactionHandler(ctx=self.ctx_class,
+                                        allow_postprocess=False,
+                                        using=self.using,
+                                        **self.ctx_kwargs):
+                    self.ctx.postprocess()

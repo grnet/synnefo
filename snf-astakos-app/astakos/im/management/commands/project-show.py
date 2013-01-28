@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
-from astakos.im.models import Chain
+from astakos.im.models import Chain, ProjectApplication
 
 from ._common import format_bool, format_date
 
@@ -45,6 +45,11 @@ class Command(BaseCommand):
     help = "Show project details"
 
     option_list = BaseCommand.option_list + (
+        make_option('--app',
+                    action='store_true',
+                    dest='app',
+                    default=False,
+                    help="Show application details instead"),
         make_option('--pending',
                     action='store_true',
                     dest='pending',
@@ -57,20 +62,24 @@ class Command(BaseCommand):
             raise CommandError("Please provide project ID or name")
 
         show_pending = bool(options['pending'])
+        search_apps  = options['app']
 
         name_or_id = args[0]
         is_id = name_or_id.isdigit()
         if is_id:
             name_or_id = int(name_or_id)
 
-        chains = get_chains(name_or_id, is_id)
-        infolist = collect_info(chains, show_pending)
+        if search_apps:
+            infolist = app_info(name_or_id, is_id)
+        else:
+            chains = get_chains(name_or_id, is_id)
+            infolist = collect_info(chains, show_pending)
 
-        # if not infolist:
-        #     kind = 'project application' if search_application else 'project'
-        #     field = 'id' if is_id else 'name'
-        #     msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
-        #     raise CommandError(msg)
+        if not infolist:
+            kind = 'project application' if search_apps else 'project'
+            field = 'id' if is_id else 'name'
+            msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
+            raise CommandError(msg)
 
         for info in infolist:
             self.show_info(info)
@@ -81,6 +90,15 @@ class Command(BaseCommand):
             self.stdout.write(line)
         self.stdout.write('\n')
 
+
+def app_info(name_or_id, is_id):
+    try:
+        apps = ([ProjectApplication.objects.get(id=name_or_id)]
+                if is_id
+                else ProjectApplication.objects.search_by_name(name_or_id))
+        return [app_fields(app) for app in apps]
+    except ProjectApplication.DoesNotExist:
+            return []
 
 def get_chains(name_or_id, is_id):
     if is_id:

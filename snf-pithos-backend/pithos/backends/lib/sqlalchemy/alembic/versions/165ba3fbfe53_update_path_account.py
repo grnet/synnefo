@@ -30,9 +30,8 @@ def get_uuid(account):
     try:
         uuid = get_user_uuid(
             SERVICE_TOKEN, account, USER_CATALOG_URL, AUTHENTICATION_USERS)
-    except Exception, e:
-        print 'Unable to retrieve uuid for %s: %s' % (account, e)
-        return
+    except:
+        raise
     else:
         if uuid:
             catalog[account] = uuid
@@ -47,9 +46,8 @@ def get_displayname(account):
     try:
         displayname = get_user_displayname(
             SERVICE_TOKEN, account, USER_CATALOG_URL, AUTHENTICATION_USERS)
-    except Exception, e:
-        print 'Unable to retrieve displayname for %s: %s' % (account, e)
-        return
+    except:
+        raise
     else:
         if displayname:
             catalog[account] = displayname
@@ -89,7 +87,7 @@ g =  table(
 
 def upgrade():
     connection = op.get_bind()
-  
+
     s = sa.select([n.c.node, n.c.path])
     nodes = connection.execute(s).fetchall()
     for node, path in nodes:
@@ -100,7 +98,7 @@ def upgrade():
         path = sep.join([uuid, rest])
         u = n.update().where(n.c.node == node).values({'path':path})
         connection.execute(u)
-    
+
     s = sa.select([p.c.public_id, p.c.path])
     public = connection.execute(s).fetchall()
     for id, path in public:
@@ -111,7 +109,7 @@ def upgrade():
         path = sep.join([uuid, rest])
         u = p.update().where(p.c.public_id == id).values({'path':path})
         connection.execute(u)
-    
+
     s = sa.select([x.c.feature_id, x.c.path])
     xfeatures = connection.execute(s).fetchall()
     for id, path in xfeatures:

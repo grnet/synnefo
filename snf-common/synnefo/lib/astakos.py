@@ -120,8 +120,8 @@ def get_displaynames(
         data = call(
             token, url,  headers={'content-type':'application/json'},
             body=json.dumps({'uuids':uuids}), method='POST')
-    except Exception, e:
-        raise e
+    except:
+        raise
     else:
         return data.get('uuid_catalog')
 
@@ -140,10 +140,8 @@ def get_uuids(
         data = call(
             token, url, headers={'content-type':'application/json'},
             body=json.dumps({'displaynames':displaynames}), method='POST')
-    except Exception, e:
-        import traceback
-        traceback.print_exc()
-        raise e
+    except:
+        raise
     else:
         return data.get('displayname_catalog')
 

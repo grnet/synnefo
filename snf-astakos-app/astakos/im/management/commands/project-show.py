@@ -110,6 +110,9 @@ def chain_fields((s, project, app), request=False):
     return l
 
 def app_fields(app):
+    mem_limit = app.limit_on_members_number
+    mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
+
     d = OrderedDict([
             ('project id', app.chain),
             ('application id', app.id),
@@ -125,7 +128,7 @@ def app_fields(app):
             ('resources', app.resource_policies),
             ('join policy', app.member_join_policy_display),
             ('leave policy', app.member_leave_policy_display),
-            ('max members', app.limit_on_members_number),
+            ('max members', mem_limit_show),
             ])
 
     return d
@@ -157,11 +160,14 @@ def project_fields(s, project, last_app):
     if deact_date is not None:
         d['deactivation date'] = format_date(deact_date)
 
+    mem_limit = app.limit_on_members_number
+    mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
+
     d.update([
             ('resources', app.resource_policies),
             ('join policy', app.member_join_policy_display),
             ('leave policy', app.member_leave_policy_display),
-            ('max members', app.limit_on_members_number),
+            ('max members', mem_limit_show),
             ('total members', project.members_count()),
             ])
 

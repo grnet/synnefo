@@ -22,7 +22,7 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar .profile ul li a:hover				{ color:#3582AC;}
 .cloudbar .profile  a							{ padding-right:20px; width:auto; }
 .cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
-.cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }
+.cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png);}
 .cloudbar .profile .full a.open span			{ background-image:url(../images/arrow-up.png); }
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
 .cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:block; width:100%;}
@@ -35,7 +35,9 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar .red-border							{ border:2px solid red; }
 .cloudbar ul.services li.red-border				{ height:31px; line-height:31px; margin-left:0px; margin-right:0px; }
 .cloudbar .profile:hover ul						{ display:block; }
-.cloudbar .profile:hover .full span				{ background-image:url(../images/arrow-up.png); }
+.cloudbar .profile:hover .full span				{ background-image:none; } 
+.cloudbar .profile .user.full > a:hover,
+.cloudbar .profile .user.full > a:hover span 		{ cursor:default; }
 
 @media screen and (max-width : 480px) 		{ 
 	.cloudbar .profile 							{ float:none; }	 

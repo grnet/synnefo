@@ -115,12 +115,12 @@ $(document).ready(function(){
     user.hover(function(){
       equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
       $(this).addClass("hover")}, function(){$(this).removeClass("hover")});
-    $('html').live('click', function(e){
-	 	$('.cloudbar .profile .full>a').removeClass('open');
-	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
-	});
-
-	
+     
+		$('.cloudbar .profile .full>a').live('click', function(e){
+	   		
+	   		e.stopPropagation();
+	        e.preventDefault();
+		});
 	 
  
    /*

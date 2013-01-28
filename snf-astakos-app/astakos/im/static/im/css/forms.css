@@ -72,7 +72,7 @@ div.form-stacked 							{ margin-bottom: 2em; padding-bottom:1em; }
 form.withlabels .checkbox-widget			{ margin-top:12px; }
 form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; }
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
-form span.info								{ position:absolute;z-index:7; top:10px;  }
+form span.info								{ position:absolute;z-index:7; bottom:32px;  }
 form.innerlabels span.info					{ left: 290px; }
 form.withlabels span.info					{ left:485px;  }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
@@ -193,7 +193,7 @@ form.link-like.alone input[type="submit"]		{ padding:0; }
     form textarea, 
 	form input.text, 
 	form input[type="text"], 
-	form input[type="password"]					{ width:90%; }
+	form input[type="password"]					{ width:75%; }
 	.form-row .dk_container 					{ width:100%; }
 }
 form.submit-inline 								{ position:relative }
@@ -217,3 +217,4 @@ form .refresh.open p span.extra-img					{ background-position: -33px -161px; }
 form .refresh.open input:hover + span.extra-img			{ background-position: -33px 0px; }
 form .refresh.open p:hover span.extra-img:hover		{ background-position: -33px -54px; cursor:pointer; }
 .hidden-form-rows									{ display:none; }
+.signup .form-row.with-checkbox						{ margin-top:1em; }

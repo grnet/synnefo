@@ -6,18 +6,16 @@ function group_form_show_resources(el){
 		if( $(this).hasClass(id) ) {
 			 
 			//$(this).appendTo('.visible');
-			$(this).show('slow');
-			 
+			$(this).show('slow');		 
 			$(this).find('input').first().focus();
-			console.info($(this).find('input').first());
-			 
+ 
 		 
 		}
 	});
-	//egg = $('.visible').find('.'+id).find('input').first();
+	 
 	 
 	if ($('.quotas-form .with-info .with-errors input[type="text"]')){
-		$(this)[0].focus();	
+		$('.quotas-form .with-info .with-errors input[type="text"]').first().focus();	
 	}
 	
 	
@@ -317,7 +315,6 @@ $(document).ready(function() {
 	
 	
 	$('#group_create_form').submit(function(){
-		
 		var flag = 0;		 
 		$('.quotas-form .group input[type="text"]').each(function() {
 	 		var value = $(this).val();
@@ -337,6 +334,13 @@ $(document).ready(function() {
 			return false;
 			
 		}
+		 
+		
+		if ($('.not-visible .group .with-errors').length >0 ){
+			//$('.not-visible .group .with-errors').first().find('input[type="text"]').focus();
+			 
+			return false;
+		}
 		 	
 		  
 		 
@@ -345,7 +349,15 @@ $(document).ready(function() {
 	//goToByScroll("top");
 	$('.quotas-form .form-row.with-errors input[type="text"]').first().focus();
 	
-	
+	// change error colors in quotas forms
+	$('.quotas-form .quota input[type="text"]').focusout(function() {
+	  $(this).parents('.with-errors').addClass('strong-error');
+	   
+	});
+	$('.quotas-form .quota input[type="text"]').focusin(function() {
+	  $(this).parents('.with-errors').removeClass('strong-error');
+	   
+	});
 	
 	
 });

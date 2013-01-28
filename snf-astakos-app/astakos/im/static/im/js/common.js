@@ -321,6 +321,10 @@ $(document).ready(function() {
       	$('#hand').hide();
     
     });  
+    
+    $('.pagination a.disabled').click(function(e){
+    	e.preventDefault();
+    });
 	  
 	  
      

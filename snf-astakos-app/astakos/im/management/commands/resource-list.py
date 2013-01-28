@@ -69,4 +69,4 @@ class Command(NoArgsCommand):
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
-            self.stdout.write(line.encode('utf8') + '\n')
+            self.stdout.write(line + '\n')

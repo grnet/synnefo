@@ -75,7 +75,7 @@ class Command(BaseCommand):
 
             for project in projects:
                 line = ' '.join(f.rjust(w) for f, w in zip(project, columns))
-                self.stdout.write(line.encode('utf8') + '\n')
+                self.stdout.write(line + '\n')
 
             if execute:
                 self.stdout.write('%d projects have been terminated.\n' %(length,))

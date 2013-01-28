@@ -78,7 +78,7 @@ class Command(BaseCommand):
     def show_info(self, info):
         for key, val in info.items():
             line = '%s: %s\n' % (key.rjust(22), val)
-            self.stdout.write(line.encode('utf8'))
+            self.stdout.write(line)
         self.stdout.write('\n')
 
 

@@ -38,6 +38,7 @@ from astakos.im.util import model_to_dict
 
 from ._common import format
 
+import uuid
 
 class Command(BaseCommand):
     args = "<user ID or email>"
@@ -47,14 +48,19 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a user ID or email")
 
-        email_or_id = args[0]
-        if email_or_id.isdigit():
-            users = AstakosUser.objects.filter(id=int(email_or_id))
+        identifier = args[0]
+        if identifier.isdigit():
+            users = AstakosUser.objects.filter(id=int(identifier))
         else:
-            users = AstakosUser.objects.filter(email__iexact=email_or_id)
+            try:
+                uuid.UUID(identifier)
+            except:
+                users = AstakosUser.objects.filter(email__iexact=identifier)
+            else:
+                users = AstakosUser.objects.filter(uuid=identifier)
         if users.count() == 0:
-            field = 'id' if email_or_id.isdigit() else 'email'
-            msg = "Unknown user with %s '%s'" % (field, email_or_id)
+            field = 'id' if identifier.isdigit() else 'email'
+            msg = "Unknown user with %s '%s'" % (field, identifier)
             raise CommandError(msg)
 
         for user in users:

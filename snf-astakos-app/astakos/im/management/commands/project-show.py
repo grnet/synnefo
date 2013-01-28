@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
-from astakos.im.models import ProjectApplication, Project
+from astakos.im.models import Chain
 
 from ._common import format_bool, format_date
 
@@ -45,32 +45,32 @@ class Command(BaseCommand):
     help = "Show project details"
 
     option_list = BaseCommand.option_list + (
-        make_option('--app',
+        make_option('--pending',
                     action='store_true',
-                    dest='app',
+                    dest='pending',
                     default=False,
-                    help="Show application details instead"),
+                    help="Show pending modification too"),
     )
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide ID or name")
+            raise CommandError("Please provide project ID or name")
+
+        show_pending = bool(options['pending'])
 
         name_or_id = args[0]
         is_id = name_or_id.isdigit()
         if is_id:
             name_or_id = int(name_or_id)
 
-        search_application = True if options['app'] else False
+        chains = get_chains(name_or_id, is_id)
+        infolist = collect_info(chains, show_pending)
 
-        infolist = (app_info(name_or_id, is_id) if search_application
-                    else project_info(name_or_id, is_id))
-
-        if not infolist:
-            kind = 'project application' if search_application else 'project'
-            field = 'id' if is_id else 'name'
-            msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
-            raise CommandError(msg)
+        # if not infolist:
+        #     kind = 'project application' if search_application else 'project'
+        #     field = 'id' if is_id else 'name'
+        #     msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
+        #     raise CommandError(msg)
 
         for info in infolist:
             self.show_info(info)
@@ -82,19 +82,46 @@ class Command(BaseCommand):
         self.stdout.write('\n')
 
 
+def get_chains(name_or_id, is_id):
+    if is_id:
+        try:
+            return [Chain.objects.get(chain=name_or_id)]
+        except Chain.DoesNotExist:
+            return []
+    else:
+        return Chain.objects.search_by_name(name_or_id)
+
+def collect_info(chains, pending):
+    states = [chain.full_state() for chain in chains]
+
+    infolist = []
+    for state in states:
+        infolist += (chain_fields(state, pending))
+    return infolist
+
+def chain_fields((s, project, app), request=False):
+    l = []
+    if project:
+        l = [project_fields(s, project, app)]
+        if request and s in Chain.PENDING_STATES:
+            l.append(app_fields(app))
+    else:
+        l = [app_fields(app)]
+    return l
+
 def app_fields(app):
     d = OrderedDict([
-            ('application id', app.id),
             ('project id', app.chain),
+            ('application id', app.id),
             ('name', app.name),
-            ('owner', app.owner),
             ('status', app.state_display()),
+            ('owner', app.owner),
             ('homepage', app.homepage),
             ('description', app.description),
-            ('issue date', format_date(app.issue_date)),
-            ('start date', format_date(app.start_date)),
-            ('end date', format_date(app.end_date)),
-            ('comments', app.comments),
+            ('comments for review', app.comments),
+            ('request issue date', format_date(app.issue_date)),
+            ('request start date', format_date(app.start_date)),
+            ('request end date', format_date(app.end_date)),
             ('resources', app.resource_policies),
             ('join policy', app.member_join_policy_display),
             ('leave policy', app.member_leave_policy_display),
@@ -104,23 +131,33 @@ def app_fields(app):
     return d
 
 
-def project_fields(project):
+def project_fields(s, project, last_app):
     app = project.application
+
     d = OrderedDict([
             ('project id', project.id),
             ('application id', app.id),
             ('name', project.name),
-            ('owner', app.owner),
-            ('status', project.admin_state_display()),
-            ('creation date', format_date(project.creation_date)),
+            ('status', Chain.state_display(s)),
             ])
+    if s in Chain.PENDING_STATES:
+        d.update([('pending application', last_app.id)])
+
+    d.update([('owner', app.owner),
+              ('homepage', app.homepage),
+              ('description', app.description),
+              ('comments for review', app.comments),
+              ('request issue date', format_date(app.issue_date)),
+              ('request start date', format_date(app.start_date)),
+              ('creation date', format_date(project.creation_date)),
+              ('request end date', format_date(app.end_date)),
+              ])
+
     deact_date = project.deactivation_date
     if deact_date is not None:
         d['deactivation date'] = format_date(deact_date)
 
     d.update([
-            ('homepage', app.homepage),
-            ('description', app.description),
             ('resources', app.resource_policies),
             ('join policy', app.member_join_policy_display),
             ('leave policy', app.member_leave_policy_display),
@@ -143,23 +180,3 @@ def project_fields(project):
         d['membership requests'] = ', '.join(requested)
 
     return d
-
-
-def app_info(name_or_id, is_id):
-    try:
-        apps = ([ProjectApplication.objects.get(id=name_or_id)]
-                if is_id
-                else ProjectApplication.objects.search_by_name(name_or_id))
-        return [app_fields(app) for app in apps]
-    except ProjectApplication.DoesNotExist:
-            return []
-
-
-def project_info(name_or_id, is_id):
-    try:
-        projects = ([Project.objects.get(id=name_or_id)]
-                    if is_id
-                    else Project.objects.search_by_name(name_or_id))
-        return [project_fields(project) for project in projects]
-    except Project.DoesNotExist:
-        return []

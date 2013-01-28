@@ -1,0 +1,11 @@
+PROJECTS="\
+ snf-common\
+ snf-webproject\
+ snf-astakos-app\
+ snf-cyclades-app\
+ snf-cyclades-gtools\
+ snf-pithos-app\
+ snf-pithos-backend\
+ snf-pithos-tools\
+ snf-quotaholder-app\
+ snf-tools"

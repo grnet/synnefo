@@ -235,6 +235,19 @@ class ImagesTestCase(unittest.TestCase):
         cls.temp_image_name = \
             SNF_TEST_PREFIX + cls.imageid + ".diskdump"
 
+    @classmethod
+    def tearDownClass(cls):
+        """Remove local files"""
+        try:
+            temp_file = os.path.join(cls.temp_dir, cls.temp_image_name)
+            os.unlink(temp_file)
+        except:
+            pass
+        try:
+            os.rmdir(cls.temp_dir)
+        except:
+            pass
+
     def test_001_list_images(self):
         """Test image list actually returns images"""
         self.assertGreater(len(self.images), 0)
@@ -295,6 +308,24 @@ class ImagesTestCase(unittest.TestCase):
         properties = {'OSFAMILY': "linux", 'ROOT_PARTITION': 1}
         self.plankton.register(self.temp_image_name, location,
                                params, properties)
+        # Get image id
+        details = self.plankton.list_public(detail=True)
+        detail = filter(
+            lambda x: x['owner'] == PITHOS_USER and
+            x['name'] == self.temp_image_name,
+            details)
+        self.assertEqual(len(detail), 1)
+        cls = type(self)
+        cls.temp_image_id = detail[0]['id']
+        log.info("Image registered with id %s" % detail[0]['id'])
+
+    def test_008_cleanup_image(self):
+        """Cleanup image test"""
+        log.info("Cleanup image test")
+        # Remove image from pithos+
+        pithos_client = PithosClient(PITHOS, TOKEN, PITHOS_USER)
+        pithos_client.container = "images"
+        pithos_client.del_object(self.temp_image_name)
 
 
 # --------------------------------------------------------------------
@@ -2109,7 +2140,7 @@ def main():
                      'network_spawn': NetworkTestCase}
         seq_cases = []
         if 'all' in opts.tests:
-            seq_cases = [UnauthorizedTestCase, ImagesTestCase,
+            seq_cases = [UnauthorizedTestCase, CImagesTestCase,
                          FlavorsTestCase, ServersTestCase,
                          PithosTestCase, ServerTestCase,
                          NetworkTestCase]

@@ -23,7 +23,7 @@ USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
 USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
                             'http://127.0.0.1:8000/feedback/')
 USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'http:127.0.0.1:8000/login/')
+                         'http://127.0.0.1:8000/login/')
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
                              'http://localhost:8000/im/authenticate/')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})

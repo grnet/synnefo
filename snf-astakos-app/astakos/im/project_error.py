@@ -31,41 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.retry_xctx import RetryTransactionHandler
-from astakos.im.notification_xctx import NotificationTransactionContext
-from astakos.im.models import sync_projects
-from astakos.im.project_error import project_error_view
+from django.http import HttpRequest
+from django.core.urlresolvers import reverse
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.utils.translation import ugettext as _
+from astakos.im.util import restrict_next
+from astakos.im.settings import COOKIE_DOMAIN
+import astakos.im.messages as astakos_messages
 
-# USAGE
-# =====
-# @project_transaction_context(sync=True)
-# def a_view(args, ctx=None):
-#     ...
-#     if ctx:
-#         ctx.mark_rollback()
-#     ...
-#     return http response
-#
-# OR (more cleanly)
-#
-# def a_view(args):
-#     with project_transaction_context(sync=True) as ctx:
-#         ...
-#         ctx.mark_rollback()
-#         ...
-#         return http response
+def project_error_view(*args, **kwargs):
+    if not args:
+        m = "need a request as first argument"
+        raise AssertionError(m)
 
-def project_transaction_context(**kwargs):
-    return RetryTransactionHandler(ctx=ProjectTransactionContext,
-                                   on_fail=project_error_view,
-                                   **kwargs)
+    request = args[0]
+    if not isinstance(request, HttpRequest):
+        m = "need a request as first argument"
+        raise AssertionError(m)
 
-class ProjectTransactionContext(NotificationTransactionContext):
-    def __init__(self, sync=False, **kwargs):
-        self._sync = sync
-        NotificationTransactionContext.__init__(self, **kwargs)
-
-    def postprocess(self):
-        if self._sync:
-            sync_projects()
-        NotificationTransactionContext.postprocess(self)
+    next = reverse('astakos.im.views.project_list')
+    m = _(astakos_messages.GENERIC_ERROR)
+    messages.error(request, m)
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    return redirect(next)

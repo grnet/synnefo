@@ -78,6 +78,7 @@ from astakos.im.models import (
     AstakosUser, ApprovalTerms,
     EmailChange, RESOURCE_SEPARATOR,
     AstakosUserAuthProvider, PendingThirdPartyUser,
+    PendingMembershipError,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
@@ -111,6 +112,7 @@ from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
 from astakos.im.project_xctx import project_transaction_context
+from astakos.im.retry_xctx import RetryException
 
 logger = logging.getLogger(__name__)
 
@@ -1361,6 +1363,8 @@ def project_leave(request, chain_id, ctx=None):
         leave_project(chain_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
@@ -1383,6 +1387,8 @@ def project_cancel(request, chain_id, ctx=None):
         cancel_membership(chain_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
@@ -1403,6 +1409,8 @@ def project_accept_member(request, chain_id, user_id, ctx=None):
         m = accept_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
@@ -1425,6 +1433,8 @@ def project_remove_member(request, chain_id, user_id, ctx=None):
         m = remove_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
@@ -1447,6 +1457,8 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         m = reject_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))

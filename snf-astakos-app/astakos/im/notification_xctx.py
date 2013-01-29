@@ -31,7 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.lib.db.xctx import TransactionContext, TransactionHandler
+from synnefo.lib.db.xctx import TransactionContext
+from astakos.im.retry_xctx import RetryTransactionHandler
 from astakos.im.notifications import Notification
 
 # USAGE
@@ -54,7 +55,7 @@ from astakos.im.notifications import Notification
 #         return http response
 
 def notification_transaction_context(**kwargs):
-    return TransactionHandler(ctx=NotificationTransactionContext, **kwargs)
+    return RetryTransactionHandler(ctx=NotificationTransactionContext, **kwargs)
 
 
 class NotificationTransactionContext(TransactionContext):

@@ -853,10 +853,9 @@ class ModularBackend(BaseBackend):
                 account_quota = long(self._get_policy(account_node)['quota'])
                 account_usage = self._get_statistics(account_node)[1] + size_delta
                 if (account_quota > 0 and account_usage > account_quota):
-                    logger.error('account_quota: %s, account_usage: %s' % (
+                    raise QuotaError('account quota exceeded: limit: %s, usage: %s' % (
                         account_quota, account_usage
                     ))
-                    raise QuotaError
 
         # Check container quota.
         container_quota = long(self._get_policy(container_node)['quota'])
@@ -864,10 +863,9 @@ class ModularBackend(BaseBackend):
         if (container_quota > 0 and container_usage > container_quota):
             # This must be executed in a transaction, so the version is
             # never created if it fails.
-            logger.error('container_quota: %s, container_usage: %s' % (
+            raise QuotaError('container quota exceeded: limit: %s, usage: %s' % (
                 container_quota, container_usage
             ))
-            raise QuotaError
 
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,
@@ -1292,16 +1290,20 @@ class ModularBackend(BaseBackend):
         if not self.using_external_quotaholder:
             return
 
-        serial = self.quotaholder.issue_commission(
-                context     =   {},
-                target      =   account,
-                key         =   '1',
-                clientkey   =   'pithos',
-                ownerkey    =   '',
-                name        =   details['path'] if 'path' in details else '',
-                provisions  =   (('pithos+', 'pithos+.diskspace', size),)
-        )
-        self.serials.append(serial)
+        try:
+            serial = self.quotaholder.issue_commission(
+                    context     =   {},
+                    target      =   account,
+                    key         =   '1',
+                    clientkey   =   'pithos',
+                    ownerkey    =   '',
+                    name        =   details['path'] if 'path' in details else '',
+                    provisions  =   (('pithos+', 'pithos+.diskspace', size),)
+            )
+        except BaseException, e:
+            raise QuotaError(e)
+        else:
+            self.serials.append(serial)
 
     def _report_object_change(self, user, account, path, details={}):
         details.update({'user': user})

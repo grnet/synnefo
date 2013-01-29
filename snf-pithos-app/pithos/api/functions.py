@@ -979,8 +979,8 @@ def object_write(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1027,8 +1027,8 @@ def object_write_form(request, v_account, v_container, v_object):
         raise Forbidden('Not allowed')
     except ItemNotExists:
         raise ItemNotFound('Container does not exist')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
 
     response = HttpResponse(status=201)
     response['ETag'] = checksum
@@ -1312,8 +1312,8 @@ def object_update(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,

@@ -37,18 +37,9 @@ distribute_setup.use_setuptools()
 
 import os
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('quotaholder_django', 'version', HERE)
-except ImportError:
-    pass
 
 from quotaholder_django.version import __version__
 
@@ -70,35 +61,34 @@ INSTALL_REQUIRES = [
 ]
 
 setup(
-    name = 'snf-quotaholder-app',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://code.grnet.gr/',
-    description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
-    classifiers = CLASSIFIERS,
+    name='snf-quotaholder-app',
+    version=VERSION,
+    license='BSD',
+    url='http://code.grnet.gr/',
+    description=SHORT_DESCRIPTION,
+    long_description=README + '\n\n' + CHANGES,
+    classifiers=CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Package author',
+    author_email='author@grnet.gr',
+    maintainer='Package maintainer',
+    maintainer_email='maintainer@grnet.gr',
 
-    packages = PACKAGES,
-    include_package_data = True,
-    package_data = {
+    packages=PACKAGES,
+    include_package_data=True,
+    package_data={
         'quotaholder_django.quotaholder_app': ['fixtures/*.json']
     },
     #scripts = [
     #    'quotaholder_django/quotaholder-manage',
     #],
-    zip_safe = False,
-    install_requires = INSTALL_REQUIRES,
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
-    entry_points = {
+    zip_safe=False,
+    install_requires=INSTALL_REQUIRES,
+    dependency_links=['http://docs.dev.grnet.gr/pypi'],
+    entry_points={
      'synnefo': [
          'web_apps = quotaholder_django.synnefo_settings:apps',
          'urls = quotaholder_django.urls:urlpatterns',
          ]
       },
 )
-

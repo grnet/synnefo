@@ -81,7 +81,10 @@ def uenc(thing, encoding=None):
         encoding = uenc_encoding
 
     if isinstance(thing, unicode):
-        return thing.encode(encoding)
+        try:
+            return thing.encode(encoding)
+        except (UnicodeEncodeError, LookupError):
+            return repr(thing.encode('UTF-8'))
 
     return str(thing)
 

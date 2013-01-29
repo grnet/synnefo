@@ -49,7 +49,6 @@ import socket
 import sys
 import time
 import tempfile
-import guestfs
 from base64 import b64encode
 from IPy import IP
 from multiprocessing import Process, Queue
@@ -278,20 +277,6 @@ class ImagesTestCase(unittest.TestCase):
         temp_file = os.path.join(self.temp_dir, self.temp_image_name)
         with open(temp_file, "wb+") as f:
             pithos_client.download_object(image_location[3], f)
-
-        log.info("Mount downloaded image and inject personality file")
-        # XXX: The image is shrinked to the size of the
-        #      underlying device. To avoid increasing it's size
-        #      delete the `.aptitude' directory.
-        g = guestfs.GuestFS()
-        g.add_drive_opts(temp_file, format="raw", readonly=0)
-        g.launch()
-        partitions = g.list_partitions()
-        g.mount(partitions[0], "/")
-        g.rm_rf("/root/.aptitude")
-        g.write("/root/temp.txt", "This is a personality file.")
-        g.umount_all()
-        g.close()
 
     def test_007_upload_image(self):
         """Upload and register image"""

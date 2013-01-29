@@ -40,7 +40,7 @@ from django.contrib.auth.forms import (
     UserCreationForm, AuthenticationForm,
     PasswordResetForm, PasswordChangeForm,
     SetPasswordForm)
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
 from django.utils.http import int_to_base36
@@ -64,10 +64,11 @@ from astakos.im.settings import (
     RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
-    PROJECT_MEMBER_LEAVE_POLICIES)
+    PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
+    RESOURCES_PRESENTATION_DATA)
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
-    send_change_email, submit_application, do_accept_membership_checks)
+    send_change_email, submit_application, accept_membership_checks)
 
 from astakos.im.util import reserved_email, reserved_verified_email, \
                             get_query, model_to_dict
@@ -239,6 +240,10 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         widget=forms.HiddenInput(),
         label=''
     )
+    email = forms.EmailField(
+        label='Contact email',
+        help_text = 'This is needed for contact purposes. It doesn&#39;t need to be the same with the one you provided to login previously. '
+    )
 
     class Meta:
         model = AstakosUser
@@ -254,6 +259,9 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
             kwargs.pop('request')
 
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+
+        if not get_latest_terms():
+            del self.fields['has_signed_terms']
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
@@ -425,17 +433,18 @@ class ProfileForm(forms.ModelForm):
     user during the next login will not to be redirected to profile page.
     """
     renew = forms.BooleanField(label='Renew token', required=False)
+    uuid = forms.CharField(label='User id', required=False)
 
     class Meta:
         model = AstakosUser
         fields = ('email', 'first_name', 'last_name', 'auth_token',
-                  'auth_token_expires')
+                  'auth_token_expires', 'uuid')
 
     def __init__(self, *args, **kwargs):
         self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('email', 'auth_token', 'auth_token_expires')
+        ro_fields = ('email', 'auth_token', 'auth_token_expires', 'uuid')
         if instance and instance.id:
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
@@ -451,6 +460,7 @@ class ProfileForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
 
 
 class FeedbackForm(forms.Form):
@@ -488,7 +498,13 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 raise forms.ValidationError(_(astakos_messages.ACCOUNT_INACTIVE))
 
             if not user.has_usable_password():
-                raise forms.ValidationError(_(astakos_messages.UNUSABLE_PASSWORD))
+                provider = auth_providers.get_provider('local')
+                available_providers = user.auth_providers.all()
+                available_providers = ",".join(p.settings.get_title_display for p in \
+                                                   available_providers)
+                message = astakos_messages.UNUSABLE_PASSWORD % \
+                    (provider.get_method_prompt_display, available_providers)
+                raise forms.ValidationError(message)
 
             if not user.can_change_password():
                 raise forms.ValidationError(_(astakos_messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD))
@@ -516,7 +532,10 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             }
             from_email = settings.SERVER_EMAIL
             send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
-                      t.render(Context(c)), from_email, [user.email])
+                      t.render(Context(c)),
+                      from_email,
+                      [user.email],
+                      connection=get_connection())
 
 
 class EmailChangeForm(forms.ModelForm):
@@ -531,9 +550,12 @@ class EmailChangeForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
-    def save(self, email_template_name, request, commit=True):
+    def save(self, request, email_template_name='registration/email_change_email.txt', commit=True):
         ec = super(EmailChangeForm, self).save(commit=False)
         ec.user = request.user
+        # delete pending email changes
+        request.user.emailchanges.all().delete()
+
         activation_key = hashlib.sha1(
             str(random()) + smart_str(ec.new_email_address))
         ec.activation_key = activation_key.hexdigest()
@@ -689,7 +711,11 @@ app_end_date_help    =  _("""
         You can always re-apply for an extension, if you need.""")
 
 join_policy_label    =  _("Joining policy")
+app_member_join_policy_help    =  _("""
+        Text fo member_join_policy.""")
 leave_policy_label   =  _("Leaving policy")
+app_member_leave_policy_help    =  _("""
+        Text fo member_leave_policy.""")
 
 max_members_label    =  _("Maximum member count")
 max_members_help     =  _("""
@@ -740,12 +766,14 @@ class ProjectApplicationForm(forms.ModelForm):
 
     member_join_policy  = forms.TypedChoiceField(
         label     = join_policy_label,
+        help_text = app_member_join_policy_help,
         initial   = 2,
         coerce    = int,
         choices   = join_policies)
 
     member_leave_policy = forms.TypedChoiceField(
         label     = leave_policy_label,
+        help_text = app_member_leave_policy_help,
         coerce    = int,
         choices   = leave_policies)
 
@@ -832,6 +860,8 @@ class ProjectApplicationForm(forms.ModelForm):
                         d.update(dict(service=s, resource=r, uplimit=None))
                     append(d)
 
+        ordered_keys = RESOURCES_PRESENTATION_DATA['resources_order']
+        policies = sorted(policies, key=lambda r:ordered_keys.index(r['str_repr']))
         return policies
 
     def save(self, commit=True):
@@ -870,15 +900,15 @@ class AddProjectMembersForm(forms.Form):
         help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP), required=True)
 
     def __init__(self, *args, **kwargs):
-        application_id = kwargs.pop('application_id', None)
-        if application_id:
-            self.project = Project.objects.get(application__id=application_id)
+        chain_id = kwargs.pop('chain_id', None)
+        if chain_id:
+            self.project = Project.objects.get(id=chain_id)
         self.request_user = kwargs.pop('request_user', None)
         super(AddProjectMembersForm, self).__init__(*args, **kwargs)
 
     def clean(self):
         try:
-            do_accept_membership_checks(self.project, self.request_user)
+            accept_membership_checks(self.project, self.request_user)
         except PermissionDenied, e:
             raise forms.ValidationError(e)
 
@@ -910,6 +940,126 @@ class ProjectMembersSortForm(forms.Form):
         required=True
     )
 
+
 class ProjectSearchForm(forms.Form):
     q = forms.CharField(max_length=200, label='Search project', required=False)
+
+
+class ExtendedProfileForm(ProfileForm):
+    """
+    Profile form that combines `email change` and `password change` user
+    actions by propagating submited data to internal EmailChangeForm
+    and ExtendedPasswordChangeForm objects.
+    """
+
+    password_change_form = None
+    email_change_form = None
+
+    password_change = False
+    email_change = False
+
+    extra_forms_fields = {
+        'email': ['new_email_address'],
+        'password': ['old_password', 'new_password1', 'new_password2']
+    }
+
+    fields = ('email')
+    change_password = forms.BooleanField(initial=False, required=False)
+    change_email = forms.BooleanField(initial=False, required=False)
+
+    email_changed = False
+    password_changed = False
+
+    def __init__(self, *args, **kwargs):
+        session_key = kwargs.get('session_key', None)
+        self.fields_list = [
+                'email',
+                'new_email_address',
+                'first_name',
+                'last_name',
+                'auth_token',
+                'auth_token_expires',
+                'old_password',
+                'new_password1',
+                'new_password2',
+                'change_email',
+                'change_password',
+                'uuid'
+        ]
+
+        super(ExtendedProfileForm, self).__init__(*args, **kwargs)
+        self.session_key = session_key
+        if self.instance.can_change_password():
+            self.password_change = True
+        else:
+            self.fields_list.remove('old_password')
+            self.fields_list.remove('new_password1')
+            self.fields_list.remove('new_password2')
+            self.fields_list.remove('change_password')
+            del self.fields['change_password']
+
+
+        if EMAILCHANGE_ENABLED and self.instance.can_change_email():
+            self.email_change = True
+        else:
+            self.fields_list.remove('new_email_address')
+            self.fields_list.remove('change_email')
+            del self.fields['change_email']
+
+        self._init_extra_forms()
+        self.save_extra_forms = []
+        self.success_messages = []
+        self.fields.keyOrder = self.fields_list
+
+
+    def _init_extra_form_fields(self):
+        if self.email_change:
+            self.fields.update(self.email_change_form.fields)
+            self.fields['new_email_address'].required = False
+
+        if self.password_change:
+            self.fields.update(self.password_change_form.fields)
+            self.fields['old_password'].required = False
+            self.fields['old_password'].label = _('Password')
+            self.fields['old_password'].initial = 'password'
+            self.fields['new_password1'].required = False
+            self.fields['new_password2'].required = False
+
+    def _update_extra_form_errors(self):
+        if self.cleaned_data.get('change_password'):
+            self.errors.update(self.password_change_form.errors)
+        if self.cleaned_data.get('change_email'):
+            self.errors.update(self.email_change_form.errors)
+
+    def _init_extra_forms(self):
+        self.email_change_form = EmailChangeForm(self.data)
+        self.password_change_form = ExtendedPasswordChangeForm(user=self.instance,
+                                   data=self.data, session_key=self.session_key)
+        self._init_extra_form_fields()
+
+    def is_valid(self):
+        password, email = True, True
+        profile = super(ExtendedProfileForm, self).is_valid()
+        if profile and self.cleaned_data.get('change_password', None):
+
+            password = self.password_change_form.is_valid()
+            self.save_extra_forms.append('password')
+        if profile and self.cleaned_data.get('change_email'):
+            self.fields['new_email_address'].required = True
+            email = self.email_change_form.is_valid()
+            self.save_extra_forms.append('email')
+
+        if not password or not email:
+            self._update_extra_form_errors()
+
+        return all([profile, password, email])
+
+    def save(self, request, *args, **kwargs):
+        if 'email' in self.save_extra_forms:
+            self.email_change_form.save(request, *args, **kwargs)
+            self.email_changed = True
+        if 'password' in self.save_extra_forms:
+            self.password_change_form.save(*args, **kwargs)
+            self.password_changed = True
+        return super(ExtendedProfileForm, self).save(*args, **kwargs)
 

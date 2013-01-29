@@ -52,14 +52,14 @@ from synnefo.lib import astakos
 def warn(*msgs):
     print "WARNING: %s" % ' '.join(msgs)
 
-get_username = functools.partial(astakos.get_username,
+get_displayname = functools.partial(astakos.get_displayname,
                                  settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
-                                 url=settings.ASTAKOS_URL.replace('authenticate',
-                                                                 'service/api/v2.0/users'))
+                                 url=settings.ASTAKOS_URL.replace('im/authenticate',
+                                                                 'service/api/user_catalogs'))
 get_user_uuid = functools.partial(astakos.get_user_uuid,
                                  settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
-                                 url=settings.ASTAKOS_URL.replace('authenticate',
-                                                                 'service/api/v2.0/users'))
+                                 url=settings.ASTAKOS_URL.replace('im/authenticate',
+                                                                 'service/api/user_catalogs'))
 
 def _validate_db_state(usernames):
 

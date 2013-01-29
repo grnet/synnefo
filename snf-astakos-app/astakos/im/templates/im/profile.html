@@ -1,5 +1,9 @@
 {% extends "im/account_base.html" %}
 
+{% block headjs %}
+	{{ block.super }}	 
+	<script src="{{ IM_STATIC_URL }}js/auth_methods.js"></script>	
+{% endblock %}	
 {% block body %}
 
 <h2>GENERAL INFO</h2>
@@ -15,19 +19,11 @@
         <input type="submit" class="submit altcol" value="UPDATE" />
     </div>
 </form>
-
-
+ 
 
 <div class="full-dotted">
     {% include "im/profile_auth_methods.html" %}
 </div>
 
-<div class="full-dotted right-align">
-	<ul class="options">
-        {% for s in services %}
-		    <li><a href="{{s.url}}" class="blue">Take me to {{s.name}}></a></li>
-        {% endfor %}
-	</ul>
-		 
-</div>
+ 
 {% endblock body %}

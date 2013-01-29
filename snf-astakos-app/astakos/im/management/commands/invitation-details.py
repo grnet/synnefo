@@ -65,4 +65,4 @@ class Command(BaseCommand):
 
         for key, val in sorted(kv.items()):
             line = '%s: %s\n' % (key.rjust(18), val)
-            self.stdout.write(line.encode('utf8'))
+            self.stdout.write(line)

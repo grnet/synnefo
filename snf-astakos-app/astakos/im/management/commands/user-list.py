@@ -68,8 +68,8 @@ class Command(NoArgsCommand):
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
 
-        labels = ('id', 'email', 'real name', 'active', 'admin', 'providers')
-        columns = (3, 24, 24, 6, 5, 12, 24)
+        labels = ('id', 'email', 'real name', 'active', 'admin', 'uuid', 'providers')
+        columns = (3, 24, 24, 6, 5, 12, 36, 24)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -81,9 +81,10 @@ class Command(NoArgsCommand):
             id = str(user.id)
             active = format_bool(user.is_active)
             admin = format_bool(user.is_superuser)
+            uuid = user.uuid or ''
             fields = (
                 id, user.email, user.realname, active, admin, \
-                        user.auth_providers_display
+                        uuid, user.auth_providers_display
             )
 
             if options['csv']:
@@ -91,4 +92,4 @@ class Command(NoArgsCommand):
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
-            self.stdout.write(line.encode('utf8') + '\n')
+            self.stdout.write(line + '\n')

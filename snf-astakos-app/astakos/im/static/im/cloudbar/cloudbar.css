@@ -22,15 +22,22 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 .cloudbar .profile ul li a:hover				{ color:#3582AC;}
 .cloudbar .profile  a							{ padding-right:20px; width:auto; }
 .cloudbar .profile .user a span					{ padding:0 20px;   background:url(../images/arrow-lt.png) no-repeat right center;}
-.cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png); }
+.cloudbar .profile .full a span                 { background-image:url(../images/arrow-down.png);}
 .cloudbar .profile .full a.open span			{ background-image:url(../images/arrow-up.png); }
 .cloudbar .profile .full ul 					{ border:1px dashed #000; border-top:0 none; border-right:0 none;}
 .cloudbar .profile ul li a                      { padding-right:0; background:none; color:#000; display:block; width:100%;}
 .cloudbar ul.services                           { margin:0; padding:0; }
-.cloudbar ul.services li                        { float:left; height:35px; line-height:35px; text-align:center; padding: 0 30px; list-style:none outside;}
-.cloudbar ul.services li:first-child            { padding:0 5px;}
+.cloudbar ul.services li                        { float:left; height:35px; line-height:35px; text-align:center; padding: 0; list-style:none outside;}
+.cloudbar ul.services li:first-child a          { padding:0 5px;}
 .cloudbar ul.services li.active                 { background:#333;}
-.cloudbar ul.services li:hover                  { background:#444; } 
+.cloudbar ul.services li:hover                  { background:#444; }
+.cloudbar ul.services li a						{ padding:0 30px; display:block; } 
+.cloudbar .red-border							{ border:2px solid red; }
+.cloudbar ul.services li.red-border				{ height:31px; line-height:31px; margin-left:0px; margin-right:0px; }
+.cloudbar .profile:hover ul						{ display:block; }
+.cloudbar .profile:hover .full span				{ background-image:none; } 
+.cloudbar .profile .user.full > a:hover,
+.cloudbar .profile .user.full > a:hover span 		{ cursor:default; }
 
 @media screen and (max-width : 480px) 		{ 
 	.cloudbar .profile 							{ float:none; }	 

@@ -27,6 +27,9 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.13 (Jun 21, 2013)        Proxy identity management services
+\                          Uuid to displayname translation
+0.9 (Feb 17, 2012)         Change permissions model.
 0.10 (Jul 18, 2012)        Support for bulk COPY/MOVE/DELETE
 \                          Optionally include public objects in listings.
 0.9 (Feb 17, 2012)         Change permissions model.
@@ -72,7 +75,7 @@ Revision                   Description
 \                          Create object using hashmap.
 0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
 \                          Allow for publicly available objects via ``https://hostname/public``.
-\                          Support time-variant account/container listings. 
+\                          Support time-variant account/container listings.
 \                          Add source version when duplicating with ``PUT``/``COPY``.
 \                          Request version in object ``HEAD``/``GET`` requests (list versions with ``GET``).
 0.2 (May 31, 2011)         Add object meta listing and filtering in containers.
@@ -105,6 +108,79 @@ force                   Force logout current user (no value parameter)
 When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding ``user`` and ``token`` parameters, which contain the account and token fields respectively.
 
 A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
+
+User feedback
+-------------
+
+Client software using Pithos, should forward to the ``/feedback`` URI. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+feedback_msg            Feedback message
+feedback_data           Additional information about service client status
+======================  =========================
+
+|
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          User authentication token
+====================  ===========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+502 (Bad Gateway)           Send feedback failure
+400 (Bad Request)           Method not allowed or invalid message data
+401 (Unauthorized)          Missing or expired user token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+User translation catalogs
+-------------------------
+
+Client software using Pithos, should forward to the ``/user_catalogs`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          User authentication token
+====================  ===========================
+
+The request body is a json formatted dictionary containing a list with uuids and another list of displaynames to translate.
+
+Example request content:
+
+::
+
+  {"displaynames": ["user1@example.com", "user2@example.com"],
+   "uuids":["ff53baa9-c025-4d56-a6e3-963db0438830", "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8"]}
+
+Example reply:
+
+::
+
+  {"displayname_catalog": {"user1@example.com": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
+                        "user2@example.com": "816351c7-7405-4f26-a968-6380cf47ba1f"},
+  'uuid_catalog': {"a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8": "user1@example.com",
+                   "ff53baa9-c025-4d56-a6e3-963db0438830": "user2@example.com"}}
+
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed or request body is not json formatted
+401 (Unauthorized)          Missing or expired or invalid user token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
 
 The Pithos API
 --------------

@@ -104,17 +104,15 @@ def _get_verified_quota(statistics):
             continue
         try:
             assert item.size == db_item.size, \
-                '%d[%d], size: %d != %d' % (
-                    item.node, item.cluster, item.size, db_item.size)
+                '%d[%s][%d], size: %d != %d' % (
+                    item.node, item.path, item.cluster, item.size, db_item.size)
         except AssertionError, e:
             print e
-            continue
-        else:
-            append(AddQuotaPayload(
+        append(AddQuotaPayload(
                 holder=item.path,
                 resource='pithos+.diskspace',
                 key=ENTITY_KEY,
-                quantity=db_item.size,
+                quantity=item.size,
                 capacity=0,
                 import_limit=0,
                 export_limit=0))

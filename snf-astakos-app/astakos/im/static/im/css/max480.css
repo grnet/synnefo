@@ -5,3 +5,7 @@
 
 /* forms */
 form .form-row .extra-link						{   float:none; position:static; margin-left:15px;}
+.stats .bar div									{ width:250px; }
+.auth_methods h3								{ float:none; }
+.widjets li										{ width:100%; }
+.widjets li div									{ background:none; margin:0; }

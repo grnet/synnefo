@@ -299,7 +299,12 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'verbose_name':'private network'
             }
 
-        }
+        },
+
+        'groups_order': ['storage', 'compute', 'network'],
+        'resources_order': ['pithos+.diskspace', 'cyclades.disk',
+                            'cyclades.cpu', 'cyclades.ram', 'cyclades.vm',
+                            'cyclades.network.private']
 
     })
 
@@ -322,3 +327,7 @@ PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
                                 {'1':'automatically accepted',
                                  '2':'owner accepts',
                                  '3':'closed'})
+
+ACTIVATION_REDIRECT_URL = getattr(settings,
+                                  'ASTAKOS_ACTIVATION_REDIRECT_URL',
+                                  "/im/landing")

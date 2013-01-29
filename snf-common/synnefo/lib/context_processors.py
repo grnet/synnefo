@@ -39,6 +39,10 @@ def cloudbar(request):
             'https://accounts.okeanos.grnet.gr/im/get_services')
     CB_MENU_URL = getattr(settings, 'CLOUDBAR_MENU_URL',
             'https://accounts.okeanos.grnet.gr/im/get_menu')
+    CB_HEIGHT = getattr(settings, 'CLOUDBAR_HEIGHT',
+            '35')
+    CB_BGCOLOR = getattr(settings, 'CLOUDBAR_BACKGROUND_COLOR',
+            '#000000')
 
     CB_CODE = """
     <script type="text/javascript">
@@ -47,16 +51,28 @@ def cloudbar(request):
         var CLOUDBAR_ACTIVE_SERVICE = "%(active_service)s";
         var GET_SERVICES_URL = "%(services_url)s";
         var GET_MENU_URL = "%(menu_url)s";
+        var CLOUDBAR_HEIGHT = '%(height)s';
 
         $(document).ready(function(){
             $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
-        })
+        });
+
     </script>
+    <style>
+        body {
+            border-top: %(height)spx solid %(bg_color)s;
+        }
+        body .cloudbar {
+            height: %(height)spx;
+        }
+    </style>
 """ % {'location': CB_LOCATION,
        'active_service': CB_ACTIVE_SERVICE,
        'cookie_name': CB_COOKIE_NAME,
        'services_url': CB_SERVICES_URL,
-       'menu_url': CB_MENU_URL}
+       'menu_url': CB_MENU_URL,
+       'height': str(CB_HEIGHT),
+       'bg_color': CB_BGCOLOR}
 
     CB_CODE = mark_safe(CB_CODE)
 

@@ -3,196 +3,203 @@
 {% load astakos_tags filters django_tables2 %}
 
 {% block page.body %}
-{% with object.project.approved_members as approved_members %}
+{% with object.project as project %}
 <div class="projects">
-	
-
-	<h2>
-        <em>
-            {% if user_owns_project %}
-            [ PROJECT {% if object.is_modification %} MODIFICATION {% endif %}{{ object.state_display|upper }} 
-            {% if object.last_follower %} - 
-            <a
-                href="{% url astakos.im.views.project_detail object.last_follower.pk %}">MODIFICATION PENDING</a>
-            {% endif %}]
-            {%  else %}
-                {% if user in approved_members %}
-                    [ ACCEPTED MEMBER ]
-                {% else %}
-                {% if member_status == 0 %}
-                    [ JOIN REQUESTED ]
-                {% else %}
-                    [ NOT A MEMBER ]
-                {% endif %}
-                {% endif %}
-                {% endif %}
-                {% if user_owns_project %}
-            {% else %}
-            {% endif %}
-        </em>
-        <span>{% if object.is_modification %}
-            <span class="extratitle">MODIFICATION OF </span>{% endif %}{{ object.name|upper }}</span>
-        {% if user_owns_project %}
-        {% if object.last_follower %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.last_follower.pk %}">REQUEST MODIFICATION</a>
+  <h2>
+    <em>
+      {% if owner_mode %}
+        {% if project_view %}
+          [ PROJECT {{ object.project_state_display|upper }}
+          {% if object.has_pending_modifications %} -
+             <a href="{% url astakos.im.views.project_app object.last_pending.pk %}">
+               MODIFICATION PENDING</a>
+          {% endif %}]
         {% else %}
-        <br /><a style="font-size:0.7em" href="{% url astakos.im.views.project_update object.pk %}">MODIFY</a>
+          <!-- application view -->
+          [ PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
+          {{ object.state_display|upper }} ]
         {% endif %}
-        {% else %}
-        {% if member_status == -1 %}
-         - 
-            <a style="font-size:0.7em" 
-href="{% url astakos.im.views.project_join object.pk %}">JOIN</a>
-        {% endif %}
-            {% if  user in approve_members %}
-         - 
-            <a style="font-size:0.7em" 
-href="{% url astakos.im.views.project_leave object.pk %}">LEAVE</a>
-            {% else %}
-            {% endif %}
-            {% endif %}
-	 </h2>
-	 
-	 <div class="full-dotted">
-		 <h3>PROJECT DETAILS</h3>
-		 <dl class="alt-style">
-		 	<dt>Name</dt>
-		 	<dd>{{ object.name }}&nbsp;</dd>
-		 	<dt>Homepage url</dt>
-            <dd>
-                {% if object.homepage%}
-                    <a href="{{ object.homepage }}">{{ object.homepage }}</a>
-                {% else %}
-                    Not set yet
-                {% endif %}
-            </dd>
-		 	<dt>Description</dt>
-		 	<dd>{{ object.description }}&nbsp;</dd>
-            
-            
-		 	<dt>Issue date</dt>
-		 	<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>Start date</dt>
-		 	<dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>End Date</dt>
-		 	<dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
-		 	<dt>Comments</dt>
-		 	<dd>{{ object.comments }}&nbsp;</dd>
-		 	<dt>Status</dt>
-		 	<dd>{{ object.state_display }}</dd>
-		 	<dt>Owner</dt>
-		 	<dd>{% if user == object.owner %}
-                        Me
-                {% else%}
-                    {{object.owner.realname}} {% if user.is_superuser %}({{object.owner.email}}){% endif %}
-                {% endif %}
-                &nbsp;
-            </dd>
 
-            {% comment %}
-		 	<dt>Precursor Application</dt>
-		 	<dd>
-		 	    {% if object.precursor_application %}
-                    <a href="{% url project_detail object.precursor_application.id %}">{{object.precursor_application.id}}</a>
-                {% endif %}
-                &nbsp;
-		 	</dd>
-		 	<dt>Follower Application</dt>
-		 	<dd>
-		 	    {% if object.follower %}
-                    <a href="{% url project_detail object.follower.id %}">{{object.follower.id}}</a>
-                {% endif %}
-                &nbsp;
-            </dd>
-            {% endcomment %}
-		 </dl>
-	 </div>
-	 <div class="full-dotted">
-		 <h3>MEMBERSHIP OPTIONS</h3>
-		 <dl class="alt-style">
-		 	<dt>Max participants</dt>
-		 	<dd>{% if object.limit_on_members_number%}{{object.limit_on_members_number}}{% else %}&nbsp;{% endif %}</dd>
-		 	<dt>Member join policy</dt>
-            <dd>
-                {{ join_policies|lookup:object.member_join_policy|title }}
-            </dd>
-		 	<dt>Member leave policy</dt>
-            <dd>
-                {{ leave_policies|lookup:object.member_leave_policy|title }}
-            </dd>
-		 </dl>
-	 </div>
-	 <div class="full-dotted">
-		 <h3>RESOURCES</h3>
-		 {% if object.projectresourcegrant_set.all %}
-	     <dl class="alt-style">	
-	 		{% for rp in object.projectresourcegrant_set.all %}
-		 		<dt>
-       				Max {% if rp.resource.is_abbreviation %}{{ rp.resource.verbose_name|upper }}{% else %}{{ rp.resource.verbose_name }}{% endif %}{% if not rp.resource.unit %}s {% endif  %}  per user
-       			</dt>
-		 		<dd>
-       			{% if rp.member_capacity %}
-       				 {% if rp.resource.unit %}
-       				 	{{ rp.member_capacity|sizeof_fmt }}
-       				 {% else %}
-       				 	{{ rp.member_capacity|isinf }}
-       				 {% endif %}
-       			{% else %}
-       				Unlimited
-       			{% endif %}
-       			</dd>
-       		{% empty %}
-       			No resources
-	 		{% endfor %}
-	 		
-	 		
-	 	</dl>
-		{% else %}
-            <p>No resources</p>
-        {% endif %} 
-    </div>
-
-     {% if user_owns_project %}
-         {% if object.project.is_alive %}
-         <div class="full-dotted">
-             <h3>MEMBERS</h3>
-             {% if members_table %}
-                  {% render_table members_table %}
-             {% endif %}
-         </div>
-         
-         
-        
-        <div class="full-dotted">
-            <form action="{% url project_detail object.id %}#members-table" method="post" class="withlabels" >{% csrf_token %}
-                <h2>Enroll more members</h2>
-                    {% with addmembers_form as form %}
-                        {% include "im/form_render.html" %}
-                    {% endwith %}
-                    <div class="form-row submit">
-                        <input type="submit" class="submit altcol" value="ADD MEMBERS" />
-                    </div>
-            </form>
-        </div>
+      {% else %}
+        <!-- third user -->
+        <!-- assert in project view -->
+        <!-- there is always a project, may be deactivated -->
+        [
+        {% if project.is_deactivated %}
+        PROJECT {{ project.state_display|upper }} -
         {% endif %}
-        {% comment %}
-        {% if modifications_table %}
-         <div class="full-dotted">
-             <h3>MODIFICATION REQUESTS</h3>
-             {% render_table modifications_table %}
-         </div>
-         {% endif %}
-         {% endcomment %}
+        {{ mem_display|upper }} ]
+      {% endif %}
+    </em>
+
+    <span>
+      {% if not project_view %}
+        <!-- owner mode only assumed -->
+        {% if object.is_modification %}
+          <span class="extratitle">MODIFICATION OF </span>
+        {% endif %}
+      {% endif %}
+      {{ object.name|upper }}
+    </span>
+
+    <!-- make room for buttons -->
+    {% if owner_mode or can_join_request or can_leave_request %}
+      <br />
     {% endif %}
-    <div class="full-dotted">
-        <p>
-        	<a href="{% url project_list %}">&lt; Back to Projects</a>
-        </p>
-        </ul>
-    </div>
-     
-    
-</div>
 
-{% endwith %} 
+    {% if owner_mode %}
+      <a style="font-size:0.7em"
+         href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
+
+      {% with object.last_pending_incl_me as last_pending %}
+      {% if last_pending %}
+        -
+        <a style="font-size:0.7em"
+           href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
+          CANCEL {% if object.project_exists %} MODIFICATION {% else %}
+          PROJECT {% endif %} REQUEST
+        </a>
+      {% endif %}
+      {% endwith %}
+
+      <!-- only one is possible, perhaps add cancel button too -->
+      {% if can_join_request or can_leave_request %}
+        <br />
+      {% endif %}
+    {% endif %}
+
+    {% if can_join_request %}
+      <a style="font-size:0.7em"
+         href="{% url astakos.im.views.project_join project.pk %}">JOIN</a>
+    {% endif %}
+
+    {% if can_leave_request %}
+      <a style="font-size:0.7em"
+         href="{% url astakos.im.views.project_leave project.pk %}">LEAVE</a>
+    {% endif %}
+  </h2>
+
+  <div class="full-dotted">
+    <h3>PROJECT DETAILS</h3>
+    <dl class="alt-style">
+      <dt>Name</dt>
+      <dd>{{ object.name }}&nbsp;</dd>
+      <dt>Homepage url</dt>
+      <dd>
+        {% if object.homepage%}
+        <a href="{{ object.homepage }}">{{ object.homepage }}</a>
+        {% else %}
+        Not set yet
+        {% endif %}
+      </dd>
+      <dt>Description</dt>
+      <dd>{{ object.description }}&nbsp;</dd>
+
+      {% if owner_mode %}
+        <dt>Application date</dt>
+        <dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
+      {% endif %}
+
+      <dt>Start date</dt>
+      <dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
+      <dt>End Date</dt>
+      <dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
+
+      {% if owner_mode %}
+        <dt>Comments</dt>
+        <dd>{{ object.comments }}&nbsp;</dd>
+      {% endif %}
+
+      <dt>Owner</dt>
+      <dd>
+        {% if owner_mode %}
+        Me
+        {% else %}
+        {{object.owner.realname}} {% if user.is_superuser %}({{object.owner.email}}){% endif %}
+        {% endif %}
+        &nbsp;
+      </dd>
+    </dl>
+  </div>
+
+  <div class="full-dotted">
+    <h3>MEMBERSHIP OPTIONS</h3>
+    <dl class="alt-style">
+      <dt>Max participants</dt>
+      <dd>
+        {% if object.limit_on_members_number %}
+        {{object.limit_on_members_number}}
+        {% else %}&nbsp;{% endif %}
+      </dd>
+      <dt>Member join policy</dt>
+      <dd>
+        {{ object.member_join_policy_display|title }}
+      </dd>
+      <dt>Member leave policy</dt>
+      <dd>
+        {{ object.member_leave_policy_display|title }}
+      </dd>
+    </dl>
+  </div>
+
+  <div class="full-dotted">
+    <h3>RESOURCES</h3>
+    {% if object.projectresourcegrant_set.all %}
+    <dl class="alt-style">
+      {% for rp in object.projectresourcegrant_set.all %}
+      <dt>Max {{rp.resource.pluralized_display_name}} per user</dt>
+      <dd>{{rp.display_member_capacity}}</dd>
+      {% empty %}
+      No resources
+      {% endfor %}
+    </dl>
+    {% else %}
+    <p>No resources</p>
+    {% endif %}
+  </div>
+
+  {% if owner_mode and project_view %}
+    {% if object.project.is_alive %}
+      <div class="full-dotted">
+        <h3>MEMBERS</h3>
+        {% if members_table %}
+        {% render_table members_table %}
+        {% endif %}
+      </div>
+
+      {% if not project.is_deactivated %}
+        <div class="full-dotted">
+          <form action="{% url project_detail object.chain %}#members-table"
+                method="post" class="withlabels" >
+            {% csrf_token %}
+            <h2>Enroll more members</h2>
+            {% with addmembers_form as form %}
+            {% include "im/form_render.html" %}
+            {% endwith %}
+            <div class="form-row submit">
+              <input type="submit" class="submit altcol" value="ADD MEMBERS" />
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    {% comment %}
+      {% if modifications_table %}
+      <div class="full-dotted">
+        <h3>MODIFICATION REQUESTS</h3>
+        {% render_table modifications_table %}
+      </div>
+      {% endif %}
+    {% endcomment %}
+
+  {% endif %}
+
+  <div class="full-dotted">
+    <p>
+      <a href="{% url project_list %}">&lt; Back to Projects</a>
+    </p>
+  </div>
+
+{% endwith %}
 {% endblock %}

@@ -65,13 +65,14 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
-                                 SERVICE_TOKEN, COOKIE_NAME, USER_INFO_URL,
+                                 COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS)
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
-from synnefo.lib.astakos import get_user_uuid, get_username
+from synnefo.lib.astakos import (get_user_uuid, get_displayname,
+                                 get_uuids, get_displaynames)
 
 import logging
 import re
@@ -163,13 +164,6 @@ def get_account_headers(request):
     return meta, groups
 
 
-def put_account_translation_headers(response, accounts):
-    for x in accounts:
-        k = smart_str('X-Account-Presentation-%s' % x, strings_only=True)
-        v = smart_str(retrieve_username(x), strings_only=True)
-        response[k] = v
-
-
 def put_account_headers(response, meta, groups, policy):
     if 'count' in meta:
         response['X-Account-Container-Count'] = meta['count']
@@ -240,9 +234,8 @@ def put_object_headers(response, meta, restricted=False):
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
-        modified_by = retrieve_username(meta['modified_by'])
         response['X-Object-Modified-By'] = smart_str(
-            modified_by, strings_only=True)
+            meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))
@@ -294,29 +287,37 @@ def is_uuid(str):
     else:
        return True
 
-def retrieve_username(uuid):
+##########################
+# USER CATALOG utilities #
+##########################
+
+def retrieve_displayname(token, uuid):
     try:
-        return get_username(
-            SERVICE_TOKEN, uuid, USER_INFO_URL, AUTHENTICATION_USERS)
+        return get_displayname(
+            token, uuid, USER_CATALOG_URL, AUTHENTICATION_USERS)
     except:
-        # if it fails just leave the metadata intact
+        # if it fails just leave the input intact
         return uuid
 
-def retrieve_uuid(username):
-    if is_uuid(username):
-        return username
+def retrieve_displaynames(token, uuids):
+    return get_displaynames(
+        token, uuids, USER_CATALOG_URL, AUTHENTICATION_USERS)
 
-    try:
-        return get_user_uuid(
-            SERVICE_TOKEN, username, USER_INFO_URL, AUTHENTICATION_USERS)
-    except Exception, e:
-        if e.args:
-            status = e.args[-1]
-            if status == 404:
-                raise ItemNotExists(username)
-        raise
+def retrieve_uuid(token, displayname):
+    if is_uuid(displayname):
+        return displayname
 
-def replace_permissions_username(holder):
+    uuid = get_user_uuid(
+        token, displayname, USER_CATALOG_URL, AUTHENTICATION_USERS)
+    if not uuid:
+        raise ItemNotExists(displayname)
+    return uuid
+
+def retrieve_uuids(token, displaynames):
+    return get_uuids(
+        token, displaynames, USER_CATALOG_URL, AUTHENTICATION_USERS)
+
+def replace_permissions_displayname(token, holder):
     try:
         # check first for a group permission
         account, group = holder.split(':')
@@ -325,14 +326,14 @@ def replace_permissions_username(holder):
     else:
         return ':'.join([retrieve_uuid(account), group])
 
-def replace_permissions_uuid(holder):
+def replace_permissions_uuid(token, holder):
     try:
         # check first for a group permission
         account, group = holder.split(':')
     except ValueError:
-        return retrieve_username(holder)
+        return retrieve_displayname(holder)
     else:
-        return ':'.join([retrieve_username(account), group])
+        return ':'.join([retrieve_displayname(account), group])
 
 def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
     if permissions is None:
@@ -341,9 +342,10 @@ def update_sharing_meta(request, permissions, v_account, v_container, v_object, 
     if len(perms) == 0:
         return
 
-    perms['read'] = [replace_permissions_uuid(x) for x in perms.get('read', [])]
-    perms['write'] = \
-        [replace_permissions_uuid(x) for x in perms.get('write', [])]
+    # replace uuid with displayname
+#    perms['read'] = [replace_permissions_uuid(request.token, x) for x in perms.get('read', [])]
+#    perms['write'] = \
+#        [replace_permissions_uuid(request.token, x) for x in perms.get('write', [])]
 
     ret = []
 
@@ -595,15 +597,15 @@ def get_sharing(request):
             raise BadRequest(
                 'Bad X-Object-Sharing header value: missing prefix')
 
-    # replace username with uuid
-    try:
-        ret['read'] = \
-            [replace_permissions_username(x) for x in ret.get('read', [])]
-        ret['write'] = \
-            [replace_permissions_username(x) for x in ret.get('write', [])]
-    except ItemNotExists, e:
-        raise BadRequest(
-            'Bad X-Object-Sharing header value: unknown account: %s' % e)
+    # replace displayname with uuid
+#    try:
+#        ret['read'] = \
+#            [replace_permissions_displayname(request.token, x) for x in ret.get('read', [])]
+#        ret['write'] = \
+#            [replace_permissions_displayname(request.token, x) for x in ret.get('write', [])]
+#    except ItemNotExists, e:
+#        raise BadRequest(
+#            'Bad X-Object-Sharing header value: unknown account: %s' % e)
 
     # Keep duplicates only in write list.
     dups = [x for x in ret.get(
@@ -1037,9 +1039,6 @@ def request_serialization(request, format_allowed=False):
 
     return 'text'
 
-class User(unicode):
-    pass
-
 def get_pithos_usage(usage):
     for u in usage:
         if u.get('name') == 'pithos+.diskspace':
@@ -1070,11 +1069,9 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                     if  getattr(request, 'user', None) is None:
                         raise Unauthorized('Access denied')
                     assert getattr(request, 'user_uniq', None) != None
-                    request.user_uniq = User(request.user_uniq)
-                    request.user_uniq.uuid = request.user.get('uuid')
-                    request.user_usage = get_pithos_usage(
-                        request.user.get('usage'))
-                
+                    request.user_usage = get_pithos_usage(request.user.get('usage', []))
+                    request.token = request.GET.get('X-Auth-Token', request.META.get('HTTP_X_AUTH_TOKEN', token))
+
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:
                     raise BadRequest('Container name too large.')

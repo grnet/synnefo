@@ -10,20 +10,13 @@
 {% block page.body %}
 <h2>
     {% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
-    / <span class="subtitle">
-    	{% if show_form %}
-    		FORM
-    	{% else %}
-    		{% if update_form %}CONFIRM{% else %}CONFIRM{% endif %}
-    	{% endif %}
-    </span>
      
 </h2>
 
 {% if not show_form %}
 <p>These are the specifications of the Project you want to create. If you hit the "Submit" button
 this form will be officially sent to GRNET for review. Please make sure the following reflect
-exactly your request. After submitting, there is no way to modify your Project request. </p>
+exactly your request.</p>
 {% endif %}
 
 {% if show_form %}
@@ -158,7 +151,7 @@ exactly your request. After submitting, there is no way to modify your Project r
 			    	<div class="form-row">
 			    		<p class="clearfix">
 			    			<label for="{{'id_'|add:rname|add:'_uplimit'}}_proxy" >
-								Total {% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if not rdata.unit %}s {% endif  %}  per user
+                                Total {{rdata.pluralized_display_name}} per user
 							</label>
 			    			<input 	type="text" 
 			       						id="{{'id_'|add:rname|add:'_uplimit'}}_proxy" 

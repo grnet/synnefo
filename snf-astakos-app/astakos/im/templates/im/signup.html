@@ -1,35 +1,66 @@
 {% extends 'im/base_two_cols.html' %}
-
+{% load astakos_tags i18n %}
 {% block page.title %}
-    Signup
+{% trans "Signup" %}
 {% endblock %}
 
 {% block body.left %}
-    <img class="pic" src="{{ IM_STATIC_URL }}images/pictures/accounts_3.png" />
+<div class="centered">
+ 
+{% if third_party_token %} 
+	<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
+{% else %} 
+	<img class="pic" src="{{ IM_STATIC_URL }}images/ringer1.png" />
+{% endif %}
+</div> 
 {% comment %}{% include "im/services_description.html" %}{% endcomment %}
 {% endblock body.left %}
 
 {% block body.right %}
-    {% if "local" in im_modules %}
-      <div class="form-stacked">
-        <form action="{% url signup %}" method="post"
-            class="innerlabels signup">{% csrf_token %}
-            <h2><span>SIGN UP</span></h2>
-            <input type="hidden" name="next" value="{{ next }}">
-            <input type="hidden" name="code" value="{{ code }}">
-            <input type="hidden" name="provider" value={{ provider|default:"local" }}>
-            {% if third_party_token %}
-            <input type="hidden" name="third_party_token" value={{ third_party_token }}>
-            {% endif %}
-            {% with signup_form as form %}
-            {% include "im/form_render.html" %}
-            {% endwith %}
-            <div class="form-row submit">
-                
-                <input type="submit" class="submit altcol" value="SUBMIT" />
-                <a href="{% url index %}" class="back">x CANCEL</a>
-            </div>
-        </form>
-      </div>
-    {% endif %}
+<h2>{% trans "SIGN UP" %}</h2>
+{% if not third_party_token and not signup_form.errors %}
+ 
+<p>{% trans "Choose one of the following sign up methods." %}</p>
+ 
+<div class="extralogin">
+{% for provider_obj in auth_providers %}
+	{% if provider_obj.is_available_for_create %}
+		{% if provider_obj.module == 'local' %}
+			<a href="#" class="submit standalone" id="signup-classic">CLASSIC</a>
+            {% if "local" in im_modules %}
+            {% include "im/auth/signup_form.html" %}
+		    {% endif %}
+		{% else %}
+			{% if provider_obj.module == 'shibboleth' %}
+				<a href="{% provider_login_url provider_obj %}" class="submit standalone">ACADEMIC</a>
+			{% else %}
+			<a href="{% provider_login_url provider_obj %}" title="{{ provider_obj.get_title_display }}" class="icons">
+				<img src=" {{ provider_obj.get_icon_url_display }}" alt="{{ provider_obj.get_title_display }}">
+			</a>
+			{% endif %}
+		{% endif %}
+ 	{% endif %}
+    {% endfor %}
+</div>
+{% else %}
+
+<p>Hello, it seems this is the first time you try to <br>access the service.
+Please provide us with the<br> following information to complete your
+registration process. <br><br></p>
+
+{% include "im/auth/signup_form.html" %}
+{% endif %}
+<script>
+$(document).ready(function(){
+    $("#signup-classic").click(function(e){
+        e.preventDefault();
+        $(this).siblings('.form-stacked').slideToggle();
+    	pic = $(this).parents('.rt').siblings('.lt').find('img.pic');
+    	var src = (pic.attr('src') === '{{ IM_STATIC_URL }}images/ringer1.png')
+            ? '{{ IM_STATIC_URL }}images/ringer2.png'
+            : '{{ IM_STATIC_URL }}images/ringer1.png';
+        pic.attr('src', src);
+    })
+});    
+</script>    
 {% endblock %}

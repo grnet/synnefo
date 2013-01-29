@@ -58,8 +58,10 @@ from pithos.api.util import (
     copy_or_move_object, get_int_parameter, get_content_length,
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
-    api_method, retrieve_username, retrieve_uuid,
-    put_account_translation_headers)
+    api_method,
+#    retrieve_uuid
+)
+
 from pithos.api.settings import UPDATE_MD5
 
 from pithos.backends.base import (
@@ -184,7 +186,6 @@ def account_list(request):
             response.status_code = 204
             return response
         response.status_code = 200
-        put_account_translation_headers(response, accounts)
         response.content = '\n'.join(accounts) + '\n'
         return response
 
@@ -200,7 +201,6 @@ def account_list(request):
         except NotAllowedError:
             raise Forbidden('Not allowed')
         else:
-            meta['account_presentation'] = retrieve_username(x)
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(
                 meta, 'until_timestamp', 'x_account_until_timestamp')
@@ -231,8 +231,6 @@ def account_meta(request, v_account):
             external_quota=request.user_usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
-        for k in groups:
-            groups[k] = [retrieve_username(x) for x in groups[k]]
         policy = request.backend.get_account_policy(
             request.user_uniq, v_account, external_quota=request.user_usage)
     except NotAllowedError:
@@ -253,12 +251,12 @@ def account_update(request, v_account):
     #                       badRequest (400)
 
     meta, groups = get_account_headers(request)
-    for k in groups:
-        try:
-            groups[k] = [retrieve_uuid(x) for x in groups[k]]
-        except ItemNotExists, e:
-            raise BadRequest(
-                'Bad X-Account-Group header value: unknown account: %s' % e)
+#    for k in groups:
+#        try:
+#            groups[k] = [retrieve_uuid(request.token, x) for x in groups[k]]
+#        except ItemNotExists, e:
+#            raise BadRequest(
+#                'Bad X-Account-Group header value: unknown account: %s' % e)
     replace = True
     if 'update' in request.GET:
         replace = False
@@ -613,9 +611,15 @@ def object_list(request, v_account, v_container):
         object_permissions = {}
         object_public = {}
         if until is None:
-            name_idx = len('/'.join((v_account, v_container, '')))
+            name = '/'.join((v_account, v_container, ''))
+            name_idx = len(name)
             for x in request.backend.list_object_permissions(request.user_uniq,
                                                              v_account, v_container, prefix):
+
+                # filter out objects which are not under the container
+                if name != x[:name_idx]:
+                    continue
+
                 object = x[name_idx:]
                 object_permissions[object] = request.backend.get_object_permissions(
                     request.user_uniq, v_account, v_container, object)
@@ -629,9 +633,6 @@ def object_list(request, v_account, v_container):
 
     object_meta = []
     for meta in objects:
-        modified_by = meta.get('modified_by')
-        if modified_by:
-            meta['modified_by'] = retrieve_username(modified_by)
         if len(meta) == 1:
             # Virtual objects/directories.
             object_meta.append(meta)
@@ -978,8 +979,8 @@ def object_write(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1026,8 +1027,8 @@ def object_write_form(request, v_account, v_container, v_object):
         raise Forbidden('Not allowed')
     except ItemNotExists:
         raise ItemNotFound('Container does not exist')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
 
     response = HttpResponse(status=201)
     response['ETag'] = checksum
@@ -1311,8 +1312,8 @@ def object_update(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,

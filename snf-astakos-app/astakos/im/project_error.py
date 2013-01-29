@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,22 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand, CommandError
-from django.db import transaction
+from django.http import HttpRequest
+from django.core.urlresolvers import reverse
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.utils.translation import ugettext as _
+from astakos.im.util import restrict_next
+from astakos.im.settings import COOKIE_DOMAIN
+import astakos.im.messages as astakos_messages
 
-from astakos.im.models import trigger_sync
+def project_error_view(*args, **kwargs):
+    if not args:
+        m = "need a request as first argument"
+        raise AssertionError(m)
 
-import logging
-logger = logging.getLogger(__name__)
+    request = args[0]
+    if not isinstance(request, HttpRequest):
+        m = "need a request as first argument"
+        raise AssertionError(m)
 
-
-class Command(NoArgsCommand):
-    help = "Trigger quota syncing in the Quotaholder"
-
-    @transaction.commit_on_success
-    def handle_noargs(self, **options):
-        try:
-            trigger_sync()
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Syncing failed.")
+    next = reverse('astakos.im.views.project_list')
+    m = _(astakos_messages.GENERIC_ERROR)
+    messages.error(request, m)
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    return redirect(next)

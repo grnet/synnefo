@@ -31,30 +31,40 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand, CommandError
+from optparse import make_option
 
-from astakos.im.models import AstakosUser, Resource
-from astakos.im.endpoints.qh import register_users, register_resources
+from django.core.management.base import BaseCommand, CommandError
 
-import logging
-logger = logging.getLogger(__name__)
+from astakos.im.models import ProjectApplication
+from astakos.im.functions import approve_application
+from astakos.im.project_xctx import project_transaction_context
 
+class Command(BaseCommand):
+    args = "<project application id>"
+    help = "Approve project application"
 
-class Command(NoArgsCommand):
-    help = "Send user information and resource quota in the Quotaholder"
+    def handle(self, *args, **options):
+        if len(args) < 1:
+            raise CommandError("Please provide an application id")
 
-    def handle_noargs(self, **options):
         try:
-            resources = list(Resource.objects.all())
-	    print("Registering resources")
-            register_resources(resources)
-	    print("Registering users")
-            users = list(AstakosUser.objects.verified().all())
-            if users:
-                register_users(users)
-            else:
-                print(" -> No verified users found.")
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Syncing failed.")
+            id = int(args[0])
+        except ValueError:
+            raise CommandError('Invalid id')
+        else:
+            try:
+                # Is it a project application id?
+                app = ProjectApplication.objects.get(id=id)
+            except ProjectApplication.DoesNotExist:
+                raise CommandError('Invalid id')
 
+            approve(app)
+
+@project_transaction_context(sync=True)
+def approve(app, ctx=None):
+    try:
+        approve_application(app)
+    except BaseException as e:
+        if ctx:
+            ctx.mark_rollback()
+            raise CommandError(e)

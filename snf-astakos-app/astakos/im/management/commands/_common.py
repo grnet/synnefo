@@ -65,6 +65,26 @@ def format_date(d):
     else:
         return 'in ' + timeuntil(d)
 
+def format_dict(d, level=1, ident=22):
+    l = ['%s: %s\n' % (k.rjust(level*ident), format(v, level+1)) \
+            for k, v in sorted(d.iteritems())]
+    l.insert(0, '\n')
+    return ''.join(l)
+
+def format_set(s):
+    return list(s)
+
+def format(obj, level=1, ident=22):
+    if isinstance(obj, bool):
+        return format_bool(obj)
+    elif isinstance(obj, datetime):
+        return format_date(obj)
+    elif isinstance(obj, dict):
+        return format_dict(obj, level, ident)
+    elif isinstance(obj, set):
+        return format_set(obj)
+    else:
+        return obj
 
 def get_astakosuser_content_type():
     try:

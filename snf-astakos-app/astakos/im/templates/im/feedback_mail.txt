@@ -3,7 +3,7 @@ Feedback message:
 
 User info:
 ID: {{ user.id }}
-Email: {{ user.email }}
+Email: {{ user.username }}
 
 User application data:
 {{ data|safe }}

@@ -1,14 +1,24 @@
 {% extends "im/account_base.html" %}
 
-{% block body %}
-<form action="{% url email_change %}" method="post"
-    class="withlabels">{% csrf_token %}
+ 
 
-    {% include "im/form_render.html" %}
+{% block body %} 
+<div class="two-cols clearfix">
+	<div class="lt">
+		<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
+	</div>
+	<div class="rt">
+		<form action="{% url email_change %}" method="post"
+		    class="innerlabels">{% csrf_token %}
+		
+		    {% include "im/form_render.html" %}
+		
+		    <div class="form-row submit">
+		        <input type="hidden" name="next" value="{{ next }}">
+		        <input type="submit" class="submit altcol" value="CHANGE" />
+		    </div>
+		</form>
+	</div>
+</div>
 
-    <div class="form-row submit">
-        <input type="hidden" name="next" value="{{ next }}">
-        <input type="submit" class="submit altcol" value="CHANGE" />
-    </div>
-</form>
 {% endblock body %}

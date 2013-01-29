@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,37 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+from synnefo.lib.db.xctx import TransactionHandler
+from time import sleep
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+class RetryException(Exception):
+    pass
 
-from astakos.im.models import ProjectApplication
-from astakos.im.functions import approve_application
- 
-class Command(BaseCommand):
-    args = "<project application id>"
-    help = "Update project state"
+class RetryTransactionHandler(TransactionHandler):
+    def __init__(self, retries=3, retry_wait=1.0, on_fail=None, **kwargs):
+        self.retries    = retries
+        self.retry_wait = retry_wait
+        self.on_fail    = on_fail
+        TransactionHandler.__init__(self, **kwargs)
 
-    @transaction.commit_manually
-    def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide a group identifier")
-        
-        try:
-            id = int(args[0])
-        except ValueError:
-            raise CommandError('Invalid id')
-        else:
-            try:
-                # Is it a project application id?
-                app = ProjectApplication.objects.get(id=id)
-            except ProjectApplication.DoesNotExist:
-                raise CommandError('Invalid id')
-            try:
-                approve_application(app)
-            except BaseException, e:
-                transaction.rollback()
-                raise CommandError(e)
-            else:
-                transaction.commit()
+    def __call__(self, func):
+        def wrap(*args, **kwargs):
+            while True:
+                try:
+                    f = TransactionHandler.__call__(self, func)
+                    return f(*args, **kwargs)
+                except RetryException:
+                    self.retries -= 1
+                    if self.retries <= 0:
+                        f = self.on_fail
+                        if not callable(f):
+                            raise
+                        return f(*args, **kwargs)
+                    sleep(self.retry_wait)
+        return wrap

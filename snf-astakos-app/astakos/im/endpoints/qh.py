@@ -46,6 +46,8 @@ if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
     from kamaki.clients.quotaholder import QH_PRACTICALLY_INFINITE
 
+from synnefo.util.number import strbigdec
+
 ENTITY_KEY = '1'
 
 
@@ -73,17 +75,57 @@ def set_quota(payload):
     logger.info('set_quota: %s rejected: %s' % (payload, result))
     return result
 
-def qh_get_quota(user, resources):
+def get_entity(payload):
+    c = get_client()
+    if not c:
+        return
+    result = c.get_entity(context={}, get_entity=payload)
+    logger.info('get_entity: %s reply: %s' % (payload, result))
+    return result
+
+def get_holding(payload):
+    c = get_client()
+    if not c:
+        return
+    result = c.get_holding(context={}, get_holding=payload)
+    logger.info('get_holding: %s reply: %s' % (payload, result))
+    return result
+
+def qh_get_holdings(users, resources):
+    payload = []
+    append = payload.append
+    for user in users:
+        for resource in resources:
+            append((user.uuid, resource, ENTITY_KEY),)
+    result = get_holding(payload)
+    return result
+
+def quota_limits_per_user_from_get(lst):
+    quotas = {}
+    for holder, resource, q, c, il, el, imp, exp, ret, rel, flags in lst:
+        userquotas = quotas.get(holder, {})
+        userquotas[resource] = QuotaValues(quantity=q, capacity=c,
+                                           import_limit=il, export_limit=el)
+        quotas[holder] = userquotas
+    return quotas
+
+def qh_get_quota(users, resources):
     c = get_client()
     if not c:
         return
     payload = []
     append = payload.append
-    for r in resources:
-        append((user.uuid, r, ENTITY_KEY),)
+    for user in users:
+        for resource in resources:
+            append((user.uuid, resource, ENTITY_KEY),)
+
     result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
     logger.info('get_quota: %s rejected: %s' % (payload, result))
     return result
+
+def qh_get_quota_limits(users, resources):
+    result = qh_get_quota(users, resources)
+    return quota_limits_per_user_from_get(result)
 
 def create_entity(payload):
     c = get_client()
@@ -114,13 +156,19 @@ CreateEntityPayload = namedtuple('CreateEntityPayload', ('entity',
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',
-                                         'import_limit',
+                                        'import_limit',
                                          'export_limit'))
 
-QuotaValues = namedtuple('QuotaValues', ('quantity',
-                                         'capacity',
-                                         'import_limit',
-                                         'export_limit'))
+class QuotaValues(namedtuple('QuotaValues', ('quantity',
+                                             'capacity',
+                                             'import_limit',
+                                             'export_limit'))):
+    __slots__ = ()
+    def __dir__(self):
+            return ['quantity', 'capacity', 'import_limit', 'export_limit']
+
+    def __str__(self):
+        return '\t'.join(['%s=%s' % (f, strbigdec(getattr(self, f))) for f in dir(self)])
 
 def add_quota_values(q1, q2):
     return QuotaValues(
@@ -129,15 +177,18 @@ def add_quota_values(q1, q2):
         import_limit = q1.import_limit + q2.import_limit,
         export_limit = q1.export_limit + q2.export_limit)
 
-def qh_register_user(user):
-    return register_users([user])
+def qh_register_user_with_quotas(user):
+    return register_users_with_quotas([user])
 
-def register_users(users):
-    rejected = create_users(users)
+def register_users_with_quotas(users):
+    rejected = register_users(users)
     if not rejected:
         register_quotas(users)
 
-def create_users(users):
+def register_users(users):
+    if not users:
+        return
+
     payload = list(CreateEntityPayload(
                     entity=u.uuid,
                     owner='system',
@@ -146,12 +197,34 @@ def create_users(users):
     return create_entity(payload)
 
 def register_quotas(users):
+    if not users:
+        return
+
     payload = []
     append = payload.append
     for u in users:
         for resource, q in u.all_quotas().iteritems():
             append( SetQuotaPayload(
                     holder=u.uuid,
+                    resource=resource,
+                    key=ENTITY_KEY,
+                    quantity=q.quantity,
+                    capacity=q.capacity,
+                    import_limit=q.import_limit,
+                    export_limit=q.export_limit,
+                    flags=0))
+    return set_quota(payload)
+
+def send_quotas(userquotas):
+    if not userquotas:
+        return
+
+    payload = []
+    append = payload.append
+    for holder, quotas in userquotas.iteritems():
+        for resource, q in quotas.iteritems():
+            append( SetQuotaPayload(
+                    holder=holder,
                     resource=resource,
                     key=ENTITY_KEY,
                     quantity=q.quantity,
@@ -170,6 +243,11 @@ def register_services(services):
     return create_entity(payload)
 
 def register_resources(resources):
+    try:
+        QH_PRACTICALLY_INFINITE
+    except NameError:
+        return
+
     payload = list(SetQuotaPayload(
             holder=resource.service,
             resource=resource,
@@ -180,6 +258,20 @@ def register_resources(resources):
             export_limit=QH_PRACTICALLY_INFINITE,
             flags=0) for resource in resources)
     return set_quota(payload)
+
+def qh_check_users(users):
+    payload = [(u.uuid, ENTITY_KEY) for u in users]
+    result = get_entity(payload)
+    uuids = [entity for (entity, owner) in result]
+
+    existing = []
+    nonexisting = []
+    for u in users:
+        if u.uuid in uuids:
+            existing.append(u)
+        else:
+            nonexisting.append(u)
+    return (existing, nonexisting)
 
 def qh_add_quota(serial, sub_list, add_list):
     if not QUOTAHOLDER_URL:

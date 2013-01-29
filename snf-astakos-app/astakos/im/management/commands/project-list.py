@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,11 +35,11 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import ProjectApplication
+from astakos.im.models import Chain
 from ._common import format_bool
 
 class Command(NoArgsCommand):
-    help = "List resources"
+    help = "List projects"
 
     option_list = NoArgsCommand.option_list + (
         make_option('-c',
@@ -47,15 +47,16 @@ class Command(NoArgsCommand):
                     dest='csv',
                     default=False,
                     help="Use pipes to separate values"),
+        make_option('--skip',
+                    action='store_true',
+                    dest='skip',
+                    default=False,
+                    help="Skip cancelled and terminated projects"),
     )
 
     def handle_noargs(self, **options):
-        apps = ProjectApplication.objects.select_related().all().order_by('id')
-
-        labels = (
-            'Application', 'Precursor', 'Status', 'Name', 'Project', 'Status'
-        )
-        columns = (11, 10, 14, 30, 10, 10)
+        labels = ('ProjectID', 'Name', 'Owner', 'Status')
+        columns = (9, 24, 24, 23)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -63,32 +64,17 @@ class Command(NoArgsCommand):
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
-        for app in apps:
-            precursor = app.precursor_application
-            prec_id = precursor.id if precursor else ''
+        chain_dict = Chain.objects.all_full_state()
+        if options['skip']:
+            chain_dict = do_skip(chain_dict)
 
-            try:
-                project = app.project
-                project_id = project.id
-                if project.is_alive:
-                    status = 'ALIVE'
-                elif project.is_terminated:
-                    status = 'TERMINATED'
-                elif project.is_suspended:
-                    status = 'SUSPENDED'
-                else:
-                    status = 'UNKNOWN'
-            except:
-                project_id = ''
-                status     = ''
+        for info in chain_info(chain_dict):
 
             fields = (
-                str(app.id),
-                str(prec_id),
-                app.state_display(),
-                app.name,
-                str(project_id),
-                status
+                info['projectid'],
+                info['name'],
+                info['owner'],
+                info['status'],
             )
 
             if options['csv']:
@@ -96,4 +82,27 @@ class Command(NoArgsCommand):
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
-            self.stdout.write(line.encode('utf8') + '\n')
+            self.stdout.write(line + '\n')
+
+def do_skip(chain_dict):
+    d = {}
+    for chain, (state, project, app) in chain_dict.iteritems():
+        if state not in Chain.SKIP_STATES:
+            d[chain] = (state, project, app)
+    return d
+
+def chain_info(chain_dict):
+    l = []
+    for chain, (state, project, app) in chain_dict.iteritems():
+        status = Chain.state_display(state)
+        if state in Chain.PENDING_STATES:
+            status += " %s" % (app.id,)
+
+        d = {
+            'projectid' : str(chain),
+            'name'  : str(project.name if project else app.name),
+            'owner' : app.owner.realname,
+            'status': status,
+            }
+        l.append(d)
+    return l

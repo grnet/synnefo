@@ -76,7 +76,7 @@ $(document).ready(function(){
     if (ACTIVE_MENU == "accounts") { user.addClass("hover active")}
     var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
-    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString();
+    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString().split("?")[0];
 
     $.getJSON(get_menu_url, function(data) {
         $.each(data, function(i,el) {
@@ -94,6 +94,7 @@ $(document).ready(function(){
                 user.addClass('full');
             }
         });
+    
     });
     
     //profile.filter(".user a").attr("href", 
@@ -105,18 +106,24 @@ $(document).ready(function(){
     bar.append(profile).append(services);
     
 
+    root.css('border-top', 'none');
     root.prepend(bar);
     var firstlink = profile.find("ul li:first-child a").attr("href");
     profile.find(".user > a").attr("href", firstlink);
 
     // ie fix
-    user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
-    $('html').live('click', function(e){
-	 	$('.cloudbar .profile .full>a').removeClass('open');
-	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
-	});
+    user.hover(function(){
+      equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
+      $(this).addClass("hover")}, function(){$(this).removeClass("hover")});
+     
+		$('.cloudbar .profile .full>a').live('click', function(e){
+	   		
+	   		e.stopPropagation();
+	        e.preventDefault();
+		});
+	 
  
-   
+   /*
    	$('.cloudbar .profile .full>a').live('click', function(e){
    		
    		e.stopPropagation();
@@ -126,7 +133,8 @@ $(document).ready(function(){
    		$(this).toggleClass('open');
    		
    	});
-
+*/
+	 
     
 });
 

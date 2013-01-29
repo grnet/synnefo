@@ -41,7 +41,7 @@ class Command(BaseCommand):
     help = "Perform administration checks on projects"
 
     option_list = BaseCommand.option_list + (
-        make_option('--expire',
+        make_option('--check-expired',
                     action='store_true',
                     dest='expire',
                     default=False,

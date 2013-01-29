@@ -57,7 +57,7 @@ class Blocker(object):
             if params['blockpool']:
                 from radosblocker import RadosBlocker
                 self.rblocker = RadosBlocker(**params)
-        except:
+	except KeyError:
             pass
 
         self.fblocker = FileBlocker(**params)

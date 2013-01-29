@@ -47,7 +47,7 @@ class Mapper(object):
             if params['mappool']:
                 from radosmapper import RadosMapper
                 self.rmap = RadosMapper(**params)
-        except:
+	except KeyError:
             pass
 
         self.fmap = FileMapper(**params)

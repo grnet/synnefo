@@ -78,12 +78,12 @@ def _compute_statistics(nodes):
         s = s.where(table['nodes'].c.node == table['versions'].c.node)
         s = s.where(table['nodes'].c.node.in_(select_descendants))
         d2 = dict(conn.execute(s).fetchall())
-        
-        for cluster in clusters: 
+
+        for cluster in clusters:
             try:
                 size = d2[cluster]
             except KeyError:
-                size = 0 
+                size = 0
             append(Statistics(
                 node=node,
                 path=path,
@@ -117,8 +117,8 @@ def _get_verified_quota(statistics):
                 import_limit=0,
                 export_limit=0))
     return add_quota
-             
-    
+
+
 class Command(NoArgsCommand):
     help = "Set quotaholder account quotas"
 
@@ -126,7 +126,7 @@ class Command(NoArgsCommand):
         try:
             if not backend.quotaholder_url:
                 raise CommandError('Quotaholder component url is not set')
-            
+
             if not backend.quotaholder_token:
                 raise CommandError('Quotaholder component token is not set')
 
@@ -135,20 +135,28 @@ class Command(NoArgsCommand):
             s = s.where(and_(table['nodes'].c.node != 0,
                              table['nodes'].c.parent == 0))
             account_nodes = conn.execute(s).fetchall()
-            
+
             # compute account statistics
             statistics = _compute_statistics(account_nodes)
 
             # verify and send quota
             add_quota = _get_verified_quota(statistics)
 
-            result = backend.quotaholder.add_quota(
-                context={},
-                clientkey='pithos',
-            serial=42,
-            sub_quota=[],
-            add_quota=add_quota)
-            if result:
-                raise CommandError(result)
-        finally:      
+            while True:
+                result = backend.quotaholder.add_quota(
+                    context={},
+                    clientkey='pithos',
+                serial=42,
+                sub_quota=[],
+                add_quota=add_quota)
+
+                if not result:
+                    break
+
+                missing = [x[0] for x in result]
+                self.stdout.write(
+                    'Unknown quotaholder accounts: %s\n' % ','.join(missing))
+                self.stdout.write('Try sending quota usage for the rest...\n')
+                add_quota[:] = [x for x in add_quota if not x.holder in missing]
+        finally:
             backend.close()

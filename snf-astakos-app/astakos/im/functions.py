@@ -719,15 +719,14 @@ def deny_application(application_id):
     application.deny()
     application_deny_notify(application)
 
-def approve_application(app):
-
-    app_id = app if isinstance(app, int) else app.id
+def approve_application(app_id):
 
     try:
         objects = ProjectApplication.objects.select_for_update()
         application = objects.get(id=app_id)
     except ProjectApplication.DoesNotExist:
-        raise PermissionDenied()
+        m = _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID % (app_id,))
+        raise PermissionDenied(m)
 
     if not application.can_approve():
         m = _(astakos_messages.APPLICATION_CANNOT_APPROVE % (

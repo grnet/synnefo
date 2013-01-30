@@ -52,13 +52,7 @@ class Command(BaseCommand):
         except ValueError:
             raise CommandError('Invalid id')
         else:
-            try:
-                # Is it a project application id?
-                app = ProjectApplication.objects.get(id=id)
-            except ProjectApplication.DoesNotExist:
-                raise CommandError('Invalid id')
-
-            approve(app)
+            approve(id)
 
 @project_transaction_context(sync=True)
 def approve(app, ctx=None):

@@ -2530,14 +2530,11 @@ def create_astakos_user(u):
     except BaseException, e:
         logger.exception(e)
 
-
-def fix_superusers(sender, **kwargs):
+def fix_superusers():
     # Associate superusers with AstakosUser
     admins = User.objects.filter(is_superuser=True)
     for u in admins:
         create_astakos_user(u)
-post_syncdb.connect(fix_superusers)
-
 
 def user_post_save(sender, instance, created, **kwargs):
     if not created:
@@ -2560,4 +2557,3 @@ def renew_token(sender, instance, **kwargs):
         instance.renew_token()
 pre_save.connect(renew_token, sender=AstakosUser)
 pre_save.connect(renew_token, sender=Service)
-

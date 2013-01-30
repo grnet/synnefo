@@ -45,14 +45,10 @@ clusters = (CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED)
 
 Statistics = namedtuple('Statistics', ('node', 'path', 'size', 'cluster'))
 
-AddQuotaPayload = namedtuple('AddQuotaPayload', ('holder',
-                                                 'resource',
-                                                 'key',
-                                                 'quantity',
-                                                 'capacity',
-                                                 'import_limit',
-                                                 'export_limit'))
-
+ResetHoldingPayload = namedtuple('ResetHoldingPayload', (
+                                 'entity', 'resource', 'key',
+                                 'imported', 'exported', 'returned', 'released')
+)
 ENTITY_KEY= '1'
 
 backend = get_backend()
@@ -91,10 +87,10 @@ def _compute_statistics(nodes):
             cluster=cluster))
     return statistics
 
-def _get_verified_quota(statistics):
-    """ Verify statistics and set quotaholder account quota """
-    add_quota = []
-    append = add_quota.append
+def _get_verified_usage(statistics):
+    """ Verify statistics and set quotaholder account usage """
+    reset_holding = []
+    append = reset_holding.append
     for item in statistics:
         s = select([table['statistics'].c.size])
         s = s.where(table['statistics'].c.node == item.node)
@@ -108,19 +104,19 @@ def _get_verified_quota(statistics):
                     item.node, item.path, item.cluster, item.size, db_item.size)
         except AssertionError, e:
             print e
-        append(AddQuotaPayload(
-                holder=item.path,
+        append(ResetHoldingPayload(
+                entity=item.path,
                 resource='pithos+.diskspace',
                 key=ENTITY_KEY,
-                quantity=item.size,
-                capacity=0,
-                import_limit=0,
-                export_limit=0))
-    return add_quota
+                imported=item.size,
+                exported=0,
+                returned=0,
+                released=0))
+    return reset_holding
 
 
 class Command(NoArgsCommand):
-    help = "Set quotaholder account quotas"
+    help = "Set quotaholder account usage"
 
     def handle_noargs(self, **options):
         try:
@@ -139,24 +135,25 @@ class Command(NoArgsCommand):
             # compute account statistics
             statistics = _compute_statistics(account_nodes)
 
-            # verify and send quota
-            add_quota = _get_verified_quota(statistics)
+            # verify and send usage
+            reset_holding = _get_verified_usage(statistics)
 
             while True:
-                result = backend.quotaholder.add_quota(
+                result = backend.quotaholder.reset_holding(
                     context={},
                     clientkey='pithos',
-                serial=42,
-                sub_quota=[],
-                add_quota=add_quota)
+                    reset_holding=reset_holding)
 
                 if not result:
                     break
 
-                missing = [x[0] for x in result]
+                missing_entities = [reset_holding[x].entity for x in result]
                 self.stdout.write(
-                    'Unknown quotaholder accounts: %s\n' % ','.join(missing))
-                self.stdout.write('Try sending quota usage for the rest...\n')
-                add_quota[:] = [x for x in add_quota if not x.holder in missing]
+                        'Unknown quotaholder accounts: %s\n' %
+                        ','.join(missing_entities))
+                self.stdout.write('Retrying sending quota usage for the rest...\n')
+                missing_indexes = set(result)
+                reset_holding = [x for i, x in enumerate(reset_holding)
+                                 if i not in missing_indexes]
         finally:
             backend.close()

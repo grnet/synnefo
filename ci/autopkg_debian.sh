@@ -1,8 +1,11 @@
 #!/usr/bin/env sh
+set -e
 
-BUILD_NUMBER=$1
-BUILDBOT_BUILD_DIR=buildpkg_debian
+BUILD_DIR=$1
+BUILD_NUMBER=$2
+PACKAGES_DIR=$1/$2
 
+shift
 shift
 
 TEMP_DIR=$(mktemp -d /tmp/devflow_autopkg_XXXXXXX)
@@ -11,7 +14,7 @@ TEMP_DIR=$(mktemp -d /tmp/devflow_autopkg_XXXXXXX)
 devflow-autopkg snapshot -b $TEMP_DIR $@
 
 # MOVE the packages
-mkdir -p buildpkg_debian/$BUILD_NUMBER
-mv -n $TEMP_DIR/* $BUILDBOT_BUILD_DIR/$BUILD_NUMBER/
+mkdir -p $PACKAGES_DIR
+mv -n $TEMP_DIR/* $PACKAGES_DIR
 
-echo "Moved packages to: $(pwd)/$BUILDBOT_BUILD_DIR/$BUILD_NUMBER"
+echo "Moved packages to: $(pwd)/$PACKAGES_DIR"

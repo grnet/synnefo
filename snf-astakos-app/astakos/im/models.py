@@ -314,9 +314,14 @@ class AstakosUserManager(UserManager):
         Returns a username to uuid mapping for the usernames appearing in l.
         If l is None returns the mapping for all existing users.
         """
-        q = self.filter(uuid__in=l) if l != None else self
-        q = self.filter(username__in=l) if l != None else self
-        return dict(q.values_list('username', 'uuid'))
+        if l is not None:
+            lmap = dict((x.lower(), x) for x in l)
+            q = self.filter(username__in=lmap.keys())
+            values = ((lmap[n], u) for n, u in q.values_list('username', 'uuid'))
+        else:
+            q = self
+            values = self.values_list('username', 'uuid')
+        return dict(values)
 
 
 

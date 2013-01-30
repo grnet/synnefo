@@ -9,26 +9,26 @@
     <em>
       {% if owner_mode %}
         {% if project_view %}
-          [ PROJECT {{ object.project_state_display|upper }}
+           PROJECT {{ object.project_state_display|upper }}
           {% if object.has_pending_modifications %} -
              <a href="{% url astakos.im.views.project_app object.last_pending.pk %}">
                MODIFICATION PENDING</a>
-          {% endif %}]
+          {% endif %}
         {% else %}
           <!-- application view -->
-          [ PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
-          {{ object.state_display|upper }} ]
+           PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
+          {{ object.state_display|upper }} 
         {% endif %}
 
       {% else %}
         <!-- third user -->
         <!-- assert in project view -->
         <!-- there is always a project, may be deactivated -->
-        [
+        
         {% if project.is_deactivated %}
         PROJECT {{ project.state_display|upper }} -
         {% endif %}
-        {{ mem_display|upper }} ]
+        {{ mem_display|upper }} 
       {% endif %}
     </em>
 

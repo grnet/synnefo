@@ -565,20 +565,20 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul								{ overflow:hidden; padding:0; }
 .auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; position:relative;}
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
-.auth_methods ul li a:hover img					{ margin-top:-233px; }
+.auth_methods ul li a:hover img					{ margin-top:-240px; }
 .auth_methods ul li span.extra-message			{ display:none;  color:#F6921E; position:absolute; left:140px; top:13px; }
 .auth_methods ul li span.extra-message em		{ font-style:normal; background:#fff; }
 .auth_methods ul li span.extra-message em span	{ display:inline-block; max-width:420px; vertical-align: middle;  }
 .auth_methods ul li a:hover + span 				{ display:inline; } 
 .auth_methods .dialog-wrap						{ color:#F24E53; display:none; margin-top:1em; }
 .auth_methods .dialog-wrap .submit				{ min-width:10px; text-transform:uppercase; margin-right:10px; }
-.auth_methods ul li a.noaction:hover img		{ margin-top:-55px }
+.auth_methods ul li a.noaction:hover img		{ margin-top:-60px }
 .auth_methods ul li a.noaction:hover			{ cursor:default; }
 .auth_methods ul li a.noaction:focus			{ outline:0 none; }
 .auth_methods ul li a.canremove:hover img,
-.auth_methods .assigned ul li.remove a img		{ margin-top:-112px; }
+.auth_methods .assigned ul li.remove a img		{ margin-top:-120px; }
 .auth_methods .assigned ul li span.extra-message{ color:#F24E53;}
-.auth_methods .assigned ul li a img				{ margin-top:-55px }
+.auth_methods .assigned ul li a img				{ margin-top:-60px }
 .auth_methods .assigned, 
 .auth_methods .notassigned						{ margin-bottom:40px; }
 .auth_methods .assigned span.details			{   color:grey; display:inline-block; max-width:400px;  vertical-align:middle; position:absolute; left:140px; top:13px;}

@@ -196,15 +196,16 @@ All requests must include an ``X-Auth-Token`` - as a header, or a parameter.
 
 The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
-=========================  ================================
-Return Code                Description
-=========================  ================================
-400 (Bad Request)          The request is invalid
-401 (Unauthorized)         Missing or invalid token
-403 (Forbidden)            Request not allowed
-404 (Not Found)            The requested resource was not found
-503 (Service Unavailable)  The request cannot be completed because of an internal error
-=========================  ================================
+==============================  ================================
+Return Code                     Description
+==============================  ================================
+400 (Bad Request)               The request is invalid
+401 (Unauthorized)              Missing or invalid token
+403 (Forbidden)                 Request not allowed
+404 (Not Found)                 The requested resource was not found
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+503 (Service Unavailable)       The request cannot be completed because of an internal error
+==============================  ================================
 
 Top Level
 ^^^^^^^^^

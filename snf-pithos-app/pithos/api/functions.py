@@ -494,6 +494,7 @@ def container_delete(request, v_account, v_container):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     until = get_int_parameter(request.GET.get('until'))
 
@@ -509,6 +510,8 @@ def container_delete(request, v_account, v_container):
         raise ItemNotFound('Container does not exist')
     except ContainerNotEmpty:
         raise Conflict('Container is not empty')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
 
 
@@ -866,6 +869,7 @@ def object_write(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
@@ -1012,6 +1016,7 @@ def object_write_form(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     request.upload_handlers = [SaveToBackendHandler(request)]
     if 'X-Object-Data' not in request.FILES:
@@ -1044,6 +1049,7 @@ def object_copy(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     dest_account = request.META.get('HTTP_DESTINATION_ACCOUNT')
     if not dest_account:
@@ -1085,6 +1091,7 @@ def object_move(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     dest_account = request.META.get('HTTP_DESTINATION_ACCOUNT')
     if not dest_account:
@@ -1336,6 +1343,7 @@ def object_delete(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     until = get_int_parameter(request.GET.get('until'))
     delimiter = request.GET.get('delimiter')
@@ -1348,6 +1356,8 @@ def object_delete(request, v_account, v_container, v_object):
         raise Forbidden('Not allowed')
     except ItemNotExists:
         raise ItemNotFound('Object does not exist')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
 
 

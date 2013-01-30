@@ -43,8 +43,8 @@ else:
     from synnefo.settings import (VMS_USER_QUOTA, MAX_VMS_PER_USER,
                                   NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 
-from synnefo.lib.quotaholder.api import (NoCapacityError, NoQuantityError)
-from synnefo.lib.commissioning import CallError
+from kamaki.clients.quotaholder.api import (NoCapacityError, NoQuantityError)
+from kamaki.clients.commissioning import CallError
 
 import logging
 log = logging.getLogger(__name__)

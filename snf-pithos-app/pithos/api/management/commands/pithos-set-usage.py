@@ -84,7 +84,7 @@ def _compute_statistics(nodes):
                 node=node,
                 path=path,
                 size=size,
-            cluster=cluster))
+                cluster=cluster))
     return statistics
 
 def _get_verified_usage(statistics):
@@ -104,14 +104,15 @@ def _get_verified_usage(statistics):
                     item.node, item.path, item.cluster, item.size, db_item.size)
         except AssertionError, e:
             print e
-        append(ResetHoldingPayload(
-                entity=item.path,
-                resource='pithos+.diskspace',
-                key=ENTITY_KEY,
-                imported=item.size,
-                exported=0,
-                returned=0,
-                released=0))
+        if item.cluster == CLUSTER_NORMAL:
+            append(ResetHoldingPayload(
+                    entity=item.path,
+                    resource='pithos+.diskspace',
+                    key=ENTITY_KEY,
+                    imported=item.size,
+                    exported=0,
+                    returned=0,
+                    released=0))
     return reset_holding
 
 

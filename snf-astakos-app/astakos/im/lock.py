@@ -41,6 +41,7 @@ def with_lock(retries=3, retry_wait=1.0):
 
             transaction.commit()
 
+            _retries = retries
             cursor = connection.cursor()
             locked = True
             try:
@@ -54,8 +55,8 @@ def with_lock(retries=3, retry_wait=1.0):
                     if locked:
                         break
 
-                    retries -= 1
-                    if retries <= 0:
+                    _retries -= 1
+                    if _retries <= 0:
                         return False
                     sleep(retry_wait)
 

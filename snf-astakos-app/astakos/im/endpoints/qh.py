@@ -235,12 +235,26 @@ def send_quotas(userquotas):
     return set_quota(payload)
 
 def register_services(services):
-    payload = list(CreateEntityPayload(
-                    entity=service,
-                    owner='system',
-                    key=ENTITY_KEY,
-                    ownerkey='') for service in set(services))
-    return create_entity(payload)
+    def payload(services):
+        return list(CreateEntityPayload(
+                entity=service,
+                owner='system',
+                key=ENTITY_KEY,
+                ownerkey='')
+                    for service in set(services))
+
+    if not services:
+        return
+    existing = create_entity(payload(services))
+    if 0 < len(existing) < len(services):
+        nonexisting = [s for i, s in enumerate(services)
+                       if i not in existing]
+        r = create_entity(payload(nonexisting))
+        if r:
+            failed = [s for i, s in enumerate(nonexisting)
+                      if i in r]
+            m = "Failed to register services: %s" % (failed,)
+            raise RuntimeError(m)
 
 def register_resources(resources):
     try:

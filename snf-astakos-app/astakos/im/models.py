@@ -214,7 +214,6 @@ class Resource(models.Model):
             return '%ss' % self.display_name
         return self.display_name
 
-
 def load_service_resources():
     ss = []
     rs = []
@@ -225,20 +224,32 @@ def load_service_resources():
             name=service_name,
             defaults={'url': url}
         )
+        if not created:
+            service.url = url
+            service.save()
+
         ss.append(service)
 
         for resource in resources:
             try:
                 resource_name = resource.pop('name', '')
                 r, created = Resource.objects.get_or_create(
-                    service=service,
-                    name=resource_name,
-                    defaults=resource)
+                        service=service, name=resource_name,
+                        defaults=resource)
+                if not created:
+                    r.desc = resource['desc']
+                    r.unit = resource.get('unit', None)
+                    r.group = resource['group']
+                    r.uplimit = resource['uplimit']
+                    r.save()
+
                 rs.append(r)
 
             except Exception, e:
                 print "Cannot create resource ", resource_name
+                import traceback; traceback.print_exc()
                 continue
+
     register_services(ss)
     register_resources(rs)
 

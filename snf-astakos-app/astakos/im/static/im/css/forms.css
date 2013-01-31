@@ -113,7 +113,7 @@ form .with-hidden							{ display:none; }
 #okeanos_recaptcha label.recaptcha_only_if_image,
 #okeanos_recaptcha label.recaptcha_only_if_audio{ position:absolute; top:auto; bottom:11px; }
 #okeanos_recaptcha a.recaptcha_audio_cant_hear_link { margin-left:20px;  }
-#okeanos_recaptcha #recaptcha_response_field	{ width:220px; float:left; margin-left:-1px;  }
+#okeanos_recaptcha #recaptcha_response_field	{ width:170px; float:left; margin-left:-1px;  }
 #okeanos_recaptcha .img							{ width:23px; float:left; height:23px; overflow:hidden; margin:8px; }
 #okeanos_recaptcha .img a						{ display:block; width:100%; height:100%; background:url(../images/refresh_lg.png) no-repeat top left; text-indent:-100px }
 #okeanos_recaptcha .img-refresh	a				{ background:url(../images/refresh_lg.png); }

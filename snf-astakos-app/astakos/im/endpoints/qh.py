@@ -267,7 +267,7 @@ def register_resources(resources):
             resource=resource,
             key=ENTITY_KEY,
             quantity=QH_PRACTICALLY_INFINITE,
-            capacity=0,
+            capacity=QH_PRACTICALLY_INFINITE,
             import_limit=QH_PRACTICALLY_INFINITE,
             export_limit=QH_PRACTICALLY_INFINITE,
             flags=0) for resource in resources)

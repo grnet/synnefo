@@ -32,7 +32,7 @@ import datetime
 from django.utils import importlib
 
 from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
-                              BACKEND_PER_USER, ARCHIPELAGOS_BACKENDS)
+                              BACKEND_PER_USER, ARCHIPELAGO_BACKENDS)
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
 from synnefo.api.util import backend_public_networks
@@ -106,10 +106,10 @@ def get_available_backends():
 
 def filter_archipelagos_backends(available_backends, disk_template):
     if disk_template.startswith("ext_"):
-        available_backends = filter(lambda x: x.id in ARCHIPELAGOS_BACKENDS,
+        available_backends = filter(lambda x: x.id in ARCHIPELAGO_BACKENDS,
                                     available_backends)
     else:
-        available_backends = filter(lambda x: x.id not in ARCHIPELAGOS_BACKENDS,
+        available_backends = filter(lambda x: x.id not in ARCHIPELAGO_BACKENDS,
                                     available_backends)
     return available_backends
 

@@ -780,6 +780,7 @@ class ProjectApplicationForm(forms.ModelForm):
     limit_on_members_number = forms.IntegerField(
         label     = max_members_label,
         help_text = max_members_help,
+        min_value = 0,
         required  = False)
 
     class Meta:

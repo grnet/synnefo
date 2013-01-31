@@ -421,6 +421,14 @@ def get_project_by_id(project_id):
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
 
+def get_project_by_name(name):
+    try:
+        return Project.objects.get(name=name)
+    except Project.DoesNotExist:
+        raise IOError(
+            _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
+
+
 def get_project_for_update(project_id):
     try:
         return Project.objects.select_for_update().get(id=project_id)

@@ -217,12 +217,15 @@ class Resource(models.Model):
 def load_service_resources():
     ss = []
     rs = []
-    for service_name, data in SERVICES.iteritems():
+    counter = 0
+    for service_name, data in sorted(SERVICES.iteritems()):
         url = data.get('url')
+        order = data.get('order', counter)
+        counter = order + 1
         resources = data.get('resources') or ()
         service, created = Service.objects.get_or_create(
             name=service_name,
-            defaults={'url': url}
+            defaults={'url': url, 'order': order}
         )
         if not created:
             service.url = url

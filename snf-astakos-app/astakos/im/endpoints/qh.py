@@ -72,7 +72,7 @@ def set_quota(payload):
     if not c:
         return
     result = c.set_quota(context={}, clientkey=clientkey, set_quota=payload)
-    logger.info('set_quota: %s rejected: %s' % (payload, result))
+    logger.debug('set_quota: %s rejected: %s' % (payload, result))
     return result
 
 def get_entity(payload):
@@ -80,7 +80,7 @@ def get_entity(payload):
     if not c:
         return
     result = c.get_entity(context={}, get_entity=payload)
-    logger.info('get_entity: %s reply: %s' % (payload, result))
+    logger.debug('get_entity: %s reply: %s' % (payload, result))
     return result
 
 def get_holding(payload):
@@ -88,7 +88,7 @@ def get_holding(payload):
     if not c:
         return
     result = c.get_holding(context={}, get_holding=payload)
-    logger.info('get_holding: %s reply: %s' % (payload, result))
+    logger.debug('get_holding: %s reply: %s' % (payload, result))
     return result
 
 def qh_get_holdings(users, resources):
@@ -120,7 +120,7 @@ def qh_get_quota(users, resources):
             append((user.uuid, resource, ENTITY_KEY),)
 
     result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
-    logger.info('get_quota: %s rejected: %s' % (payload, result))
+    logger.debug('get_quota: %s rejected: %s' % (payload, result))
     return result
 
 def qh_get_quota_limits(users, resources):
@@ -133,7 +133,7 @@ def create_entity(payload):
         return
     result = c.create_entity(
         context={}, clientkey=clientkey, create_entity=payload)
-    logger.info('create_entity: %s rejected: %s' % (payload, result))
+    logger.debug('create_entity: %s rejected: %s' % (payload, result))
     return result
 
 SetQuotaPayload = namedtuple('SetQuotaPayload', ('holder',

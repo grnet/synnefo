@@ -142,3 +142,14 @@ def remove_group_permission(group, pname):
         return 1
     except Permission.DoesNotExist:
         return -1
+
+def shortened(s, limit, suffix=True):
+    length = len(s)
+    if length <= limit:
+        return s
+    else:
+        display = limit - 2
+        if suffix:
+            return '..' + s[-display:]
+        else:
+            return s[:display] + '..'

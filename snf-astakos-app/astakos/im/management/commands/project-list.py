@@ -36,7 +36,8 @@ from optparse import make_option
 from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import Chain
-from ._common import format_bool
+from ._common import format_bool, shortened
+
 
 class Command(NoArgsCommand):
     help = "List projects"
@@ -55,8 +56,8 @@ class Command(NoArgsCommand):
     )
 
     def handle_noargs(self, **options):
-        labels = ('ProjectID', 'Name', 'Owner', 'Status')
-        columns = (9, 24, 24, 23)
+        labels = ('ProjID', 'Name', 'Owner', 'Status', 'AppID')
+        columns = (7, 23, 23, 20, 7)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -70,17 +71,24 @@ class Command(NoArgsCommand):
 
         for info in chain_info(chain_dict):
 
-            fields = (
-                info['projectid'],
-                info['name'],
-                info['owner'],
-                info['status'],
-            )
+            fields = [
+                (info['projectid'], False),
+                (info['name'], True),
+                (info['owner'], True),
+                (info['status'], False),
+                (info['appid'], False),
+            ]
 
             if options['csv']:
                 line = '|'.join(fields)
             else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+                output = []
+                for (field, shorten), width in zip(fields, columns):
+                    s = shortened(field, width) if shorten else field
+                    s = s.rjust(width)
+                    output.append(s)
+
+                line = ' '.join(output)
 
             self.stdout.write(line + '\n')
 
@@ -96,13 +104,16 @@ def chain_info(chain_dict):
     for chain, (state, project, app) in chain_dict.iteritems():
         status = Chain.state_display(state)
         if state in Chain.PENDING_STATES:
-            status += " %s" % (app.id,)
+            appid = str(app.id)
+        else:
+            appid = ""
 
         d = {
             'projectid' : str(chain),
-            'name'  : str(project.name if project else app.name),
+            'name'  : str(project.application.name if project else app.name),
             'owner' : app.owner.realname,
             'status': status,
+            'appid' : appid,
             }
         l.append(d)
     return l

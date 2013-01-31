@@ -333,7 +333,7 @@ def create_server(serials, request):
             flavor.disk_provider = provider
             flavor.disk_origin = None
             if provider == 'vlmc':
-                flavor.disk_origin = image['backend_id']
+                flavor.disk_origin = image['checksum']
                 image['backend_id'] = 'null'
         else:
             flavor.disk_provider = None

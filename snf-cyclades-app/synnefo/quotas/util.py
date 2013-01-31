@@ -42,8 +42,8 @@ def get_db_holdings(users=None):
     """Get holdings from Cyclades DB."""
     holdings = {}
 
-    vms = VirtualMachine.objects
-    networks = Network.objects
+    vms = VirtualMachine.objects.filter(deleted=False)
+    networks = Network.objects.filter(deleted=False)
 
     if users:
         assert(type(users) is list)

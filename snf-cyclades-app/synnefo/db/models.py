@@ -55,7 +55,7 @@ class Flavor(models.Model):
     ram = models.IntegerField('RAM size in MiB', default=0)
     disk = models.IntegerField('Disk size in GiB', default=0)
     disk_template = models.CharField('Disk template', max_length=32,
-            default=settings.DEFAULT_GANETI_DISK_TEMPLATE)
+                       default=settings.DEFAULT_GANETI_DISK_TEMPLATE)
     deleted = models.BooleanField('Deleted', default=False)
 
     class Meta:
@@ -78,7 +78,7 @@ class Backend(models.Model):
     username = models.CharField('Username', max_length=64, blank=True,
                                 null=True)
     password_hash = models.CharField('Password', max_length=128, blank=True,
-                                null=True)
+                                     null=True)
     # Sha1 is up to 40 characters long
     hash = models.CharField('Hash', max_length=40, editable=False, null=False)
     # Unique index of the Backend, used for the mac-prefixes of the
@@ -128,9 +128,9 @@ class Backend(models.Model):
 
     def create_hash(self):
         """Create a hash for this backend. """
-        return sha1('%s%s%s%s' % \
-                (self.clustername, self.port, self.username, self.password)) \
-                .hexdigest()
+        sha = sha1('%s%s%s%s' %
+                   (self.clustername, self.port, self.username, self.password))
+        return sha.hexdigest()
 
     @property
     def password(self):
@@ -147,7 +147,8 @@ class Backend(models.Model):
         super(Backend, self).save(*args, **kwargs)
         if self.hash != old_hash:
             # Populate the new hash to the new instances
-            self.virtual_machines.filter(deleted=False).update(backend_hash=self.hash)
+            self.virtual_machines.filter(deleted=False)\
+                                 .update(backend_hash=self.hash)
 
     def delete(self, *args, **kwargs):
         # Integrity Error if non-deleted VMs are associated with Backend
@@ -192,7 +193,8 @@ BACKEND_STATUSES = (
 
 
 class QuotaHolderSerial(models.Model):
-    serial = models.BigIntegerField(null=False, primary_key=True, db_index=True)
+    serial = models.BigIntegerField(null=False, primary_key=True,
+                                    db_index=True)
     pending = models.BooleanField(default=True, db_index=True)
     accepted = models.BooleanField(default=False)
     rejected = models.BooleanField(default=False)
@@ -209,12 +211,12 @@ class QuotaHolderSerial(models.Model):
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
     ACTIONS = (
-       ('CREATE', 'Create VM'),
-       ('START', 'Start VM'),
-       ('STOP', 'Shutdown VM'),
-       ('SUSPEND', 'Admin Suspend VM'),
-       ('REBOOT', 'Reboot VM'),
-       ('DESTROY', 'Destroy VM')
+        ('CREATE', 'Create VM'),
+        ('START', 'Start VM'),
+        ('STOP', 'Shutdown VM'),
+        ('SUSPEND', 'Admin Suspend VM'),
+        ('REBOOT', 'Reboot VM'),
+        ('DESTROY', 'Destroy VM')
     )
 
     # The internal operating state of a VM
@@ -296,7 +298,7 @@ class VirtualMachine(models.Model):
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
     serial = models.ForeignKey(QuotaHolderSerial,
-                              related_name='virtual_machine', null=True)
+                               related_name='virtual_machine', null=True)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -422,8 +424,8 @@ class Network(models.Model):
     )
 
     ACTIONS = (
-       ('CREATE', 'Create Network'),
-       ('DESTROY', 'Destroy Network'),
+        ('CREATE', 'Create Network'),
+        ('DESTROY', 'Destroy Network'),
     )
 
     RSAPI_STATE_FROM_OPER_STATE = {
@@ -435,36 +437,36 @@ class Network(models.Model):
 
     FLAVORS = {
         'CUSTOM': {
-             'mode': 'bridged',
-             'link': settings.DEFAULT_BRIDGE,
-             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
-             'tags': None,
-             'desc': "Basic flavor used for a bridged network",
+            'mode': 'bridged',
+            'link': settings.DEFAULT_BRIDGE,
+            'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+            'tags': None,
+            'desc': "Basic flavor used for a bridged network",
         },
         'IP_LESS_ROUTED': {
-             'mode': 'routed',
-             'link': settings.DEFAULT_ROUTING_TABLE,
-             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
-             'tags': 'ip-less-routed',
-             'desc': "Flavor used for an IP-less routed network using"
-                     " Proxy ARP",
+            'mode': 'routed',
+            'link': settings.DEFAULT_ROUTING_TABLE,
+            'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+            'tags': 'ip-less-routed',
+            'desc': "Flavor used for an IP-less routed network using"
+                    " Proxy ARP",
         },
         'MAC_FILTERED': {
-             'mode': 'bridged',
-             'link': settings.DEFAULT_MAC_FILTERED_BRIDGE,
-             'mac_prefix': 'pool',
-             'tags': 'private-filtered',
-             'desc': "Flavor used for bridged networks that offer isolation"
-                     " via filtering packets based on their src "
-                     " MAC (ebtables)",
+            'mode': 'bridged',
+            'link': settings.DEFAULT_MAC_FILTERED_BRIDGE,
+            'mac_prefix': 'pool',
+            'tags': 'private-filtered',
+            'desc': "Flavor used for bridged networks that offer isolation"
+                    " via filtering packets based on their src "
+                    " MAC (ebtables)",
         },
         'PHYSICAL_VLAN': {
-             'mode': 'bridged',
-             'link': 'pool',
-             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
-             'tags': 'physical-vlan',
-             'desc': "Flavor used for bridged network that offer isolation"
-                     " via dedicated physical vlan",
+            'mode': 'bridged',
+            'link': 'pool',
+            'mac_prefix': settings.DEFAULT_MAC_PREFIX,
+            'tags': 'physical-vlan',
+            'desc': "Flavor used for bridged network that offer isolation"
+                    " via dedicated physical vlan",
         },
     }
 
@@ -528,8 +530,10 @@ class Network(models.Model):
         backends = [backend] if backend\
                              else Backend.objects.filter(offline=False)
         for backend in backends:
-            if not BackendNetwork.objects.filter(backend=backend, network=self)\
-                                 .exists():
+            backend_exists =\
+                BackendNetwork.objects.filter(backend=backend, network=self)\
+                                      .exists()
+            if not backend_exists:
                 BackendNetwork.objects.create(backend=backend, network=self)
 
     def get_pool(self):
@@ -564,8 +568,8 @@ class Network(models.Model):
             self.status = status
 
         def __str__(self):
-            return repr('<opcode: %s, status: %s>' % (self.opcode,
-                    self.status))
+            return repr('<opcode: %s, status: %s>'
+                        % (self.opcode, self.status))
 
     class InvalidActionError(Exception):
         def __init__(self, action):
@@ -647,8 +651,8 @@ class BackendNetwork(models.Model):
             try:
                 utils.validate_mac(mac_prefix + ":00:00:00")
             except utils.InvalidMacAddress:
-                raise utils.InvalidMacAddress("Invalid MAC prefix '%s'" % \
-                                               mac_prefix)
+                raise utils.InvalidMacAddress("Invalid MAC prefix '%s'" %
+                                              mac_prefix)
             self.mac_prefix = mac_prefix
 
 
@@ -754,7 +758,7 @@ class VirtualMachineDiagnosticManager(models.Manager):
 
     def since(self, vm, created_since, **kwargs):
         return self.get_query_set().filter(vm=vm, created__gt=created_since,
-                **kwargs)
+                                           **kwargs)
 
 
 class VirtualMachineDiagnostic(models.Model):

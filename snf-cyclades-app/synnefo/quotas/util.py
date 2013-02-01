@@ -65,7 +65,7 @@ def get_db_holdings(users=None):
 
     # Get resources related with networks
     net_resources = networks.values("userid")\
-                                    .annotate(num=Count("id"))
+                            .annotate(num=Count("id"))
     for net_res in net_resources:
         user = net_res['userid']
         if user not in holdings:
@@ -99,7 +99,6 @@ def get_quotaholder_holdings(users=[]):
 
 
 def decode_holding(holding):
-    entity, resource, imported, exported, returned, released = \
-            holding
+    entity, resource, imported, exported, returned, released = holding
     res = resource.replace("cyclades.", "")
     return (res, imported - exported + returned - released)

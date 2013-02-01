@@ -69,10 +69,12 @@ class Command(BaseCommand):
                     continue
                 reset_holding = []
                 for res, val in resources.items():
-                    reset_holding.append((user, "cyclades." + res, "1", val, 0, 0, 0))
+                    reset_holding.append((user, "cyclades." + res, "1", val, 0,
+                                          0, 0))
                 if not options['dry_run']:
                     try:
-                        qh.reset_holding(context={}, reset_holding=reset_holding)
+                        qh.reset_holding(context={},
+                                         reset_holding=reset_holding)
                     except Exception as e:
                         self.stderr.write("Can not set up holding:%s" % e)
                 else:

@@ -54,11 +54,11 @@ class Command(BaseCommand):
         accepted, rejected = quotas.resolve_pending_commissions()
 
         if accepted:
-            self.stdout.write("Pending accepted commissions:\n %s\n" \
+            self.stdout.write("Pending accepted commissions:\n %s\n"
                               % list_to_string(accepted))
 
         if rejected:
-            self.stdout.write("Pending rejected commissions:\n %s\n" \
+            self.stdout.write("Pending rejected commissions:\n %s\n"
                               % list_to_string(rejected))
 
         if fix and (accepted or rejected):

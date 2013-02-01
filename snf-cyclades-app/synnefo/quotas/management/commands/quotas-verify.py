@@ -86,11 +86,11 @@ class Command(BaseCommand):
         db_extra = db_res - qh_res
         if db_extra:
             for res in db_extra:
-                write("Resource %s exists in DB for %s but not in QH\n"\
+                write("Resource %s exists in DB for %s but not in QH\n"
                       % (res, user))
         qh_extra = qh_res - db_res
         if qh_extra:
             for res in qh_extra:
-                write("Resource %s exists in QH for %s but not in DB\n"\
+                write("Resource %s exists in QH for %s but not in DB\n"
                       % (res, user))
         return False

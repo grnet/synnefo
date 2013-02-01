@@ -77,8 +77,8 @@ class DummyQuotaholderClient(object):
             if resource == "cyclades.network.private":
                 user_networks = Network.objects.filter(userid=userid,
                                                        deleted=False).count()
-                user_network_limit = NETWORKS_USER_QUOTA.get(userid,
-                                                         MAX_NETWORKS_PER_USER)
+                user_network_limit =\
+                    NETWORKS_USER_QUOTA.get(userid, MAX_NETWORKS_PER_USER)
                 if user_networks + size >= user_network_limit:
                     raise NoQuantityError()
 
@@ -244,14 +244,14 @@ def create_commission(user, resources, delete=False):
         resources = invert_resources(resources)
     provisions = [('cyclades', 'cyclades.' + r, s)
                   for r, s in resources.items()]
-    return  {"context":    {},
-             "target":     user,
-             "key":        "1",
-             "clientkey":  "cyclades",
-             #"owner":      "",
-             #"ownerkey":   "1",
-             "name":       "",
-             "provisions": provisions}
+    return {"context": {},
+            "target": user,
+            "key": "1",
+            "clientkey": "cyclades",
+            #"owner":      "",
+            #"ownerkey":   "1",
+            "name": "",
+            "provisions": provisions}
 
 ##
 ## Reconcile pending commissions

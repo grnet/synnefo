@@ -34,9 +34,9 @@
 from django.conf import settings
 
 CACHE_BACKEND = getattr(settings, 'VMAPI_CACHE_BACKEND',
-    settings.CACHE_BACKEND)
+                        settings.CACHE_BACKEND)
 CACHE_KEY_PREFIX = getattr(settings, 'VMAPI_CACHE_KEY_PREFIX',
-    'vmapi')
+                           'vmapi')
 RESET_PARAMS = getattr(settings, 'VMAPI_RESET_PARAMS', True)
 BASE_URL = getattr(settings, 'VMAPI_BASE_URL',
-                       'https://cyclades.okeanos.grnet.gr/')
+                   'https://cyclades.okeanos.grnet.gr/')

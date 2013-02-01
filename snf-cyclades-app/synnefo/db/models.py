@@ -65,7 +65,8 @@ class Flavor(models.Model):
     @property
     def name(self):
         """Returns flavor name (generated)"""
-        return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
+        return u'C%dR%dD%d%s' % (self.cpu, self.ram, self.disk,
+                                 self.disk_template)
 
     def __unicode__(self):
         return str(self.id)

@@ -1530,7 +1530,15 @@ def project_app_dismiss(request, application_id, ctx=None):
 
     # XXX: dismiss application also does authorization
     dismiss_application(application_id, request_user=request.user)
-    return redirect(reverse('project_list'))
+
+    chain_id = None
+    chain_id = get_related_project_id(application_id)
+    if chain_id:
+        next = reverse('project_detail', args=(chain_id,))
+    else:
+        next = reverse('project_list')
+    return redirect(next)
+
 
 def landing(request):
     return render_response(

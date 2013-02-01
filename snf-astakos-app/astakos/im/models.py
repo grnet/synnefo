@@ -1596,6 +1596,21 @@ class ProjectApplication(models.Model):
     def has_pending_modifications(self):
         return bool(self.last_pending())
 
+    def denied_modifications(self):
+        q = self.chained_applications()
+        q = q.filter(Q(state=self.DENIED))
+        q = q.filter(~Q(id=self.id))
+        return q
+
+    def last_denied(self):
+        try:
+            return self.denied_modifications().order_by('-id')[0]
+        except IndexError:
+            return None
+
+    def has_denied_modifications(self):
+        return bool(self.last_denied())
+
     def is_applied(self):
         try:
             self.project

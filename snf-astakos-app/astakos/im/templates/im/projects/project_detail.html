@@ -13,6 +13,12 @@
           {% if object.has_pending_modifications %} -
              <a href="{% url astakos.im.views.project_app object.last_pending.pk %}">
                MODIFICATION PENDING</a>
+          {% else %}
+             <!-- note that pending modifications have priority -->
+             {% if object.has_denied_modifications %} -
+             <a href="{% url astakos.im.views.project_app object.last_denied.pk %}">
+               MODIFICATION DENIED</a>
+             {% endif %}
           {% endif %}
         {% else %}
           <!-- application view -->

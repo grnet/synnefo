@@ -1620,12 +1620,6 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return None
 
-    def can_be_approved(self):
-        return self.state == self.PENDING
-
-    def can_be_dismissed(self):
-        return self.state == self.DENIED
-
     def can_cancel(self):
         return self.state == self.PENDING
 

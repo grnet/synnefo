@@ -65,7 +65,7 @@
       {% endif %}
 
       {% if admin_mode %}
-          {% if object.can_be_approved %}
+          {% if object.can_approve %}
               - <a style="font-size:0.7em"
                   href="{% url astakos.im.views.project_app_approve object.pk %}">
                   APPROVE</a>
@@ -76,7 +76,7 @@
       {% endif %}
 
       {% if owner_mode %}
-          {% if object.can_be_dismissed %}
+          {% if object.can_dismiss %}
              - <a style="font-size:0.7em"
                 href="{% url astakos.im.views.project_app_dismiss object.pk %}">
                 DISMISS</a>

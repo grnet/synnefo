@@ -664,7 +664,8 @@ def submit_application(kw, request_user=None):
 
         if (request_user and
             (not precursor.owner == request_user and
-             not request_user.is_superuser)):
+             not request_user.is_superuser
+             and not request_user.is_project_admin())):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 

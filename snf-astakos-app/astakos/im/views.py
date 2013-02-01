@@ -1144,7 +1144,8 @@ def project_modify(request, application_id):
     except ProjectApplication.DoesNotExist:
         raise Http404
 
-    if not request.user.owns_application(app):
+    user = request.user
+    if not (user.owns_application(app) or user.is_project_admin(app.id)):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
@@ -1249,11 +1250,11 @@ def common_detail(request, chain_or_app_id, project_view=True):
     user = request.user
     is_project_admin = user.is_project_admin(application_id=application.id)
     is_owner = user.owns_application(application)
-    if not is_owner and not project_view:
+    if not (is_owner or is_project_admin) and not project_view:
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    if (not is_owner and project_view and
+    if (not (is_owner or is_project_admin) and project_view and
         not user.non_owner_can_view(project)):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)

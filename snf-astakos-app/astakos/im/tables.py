@@ -286,7 +286,7 @@ class UserProjectApplicationsTable(UserTable):
                 project = record.project
                 return self.user.membership_display(project)
             except Project.DoesNotExist:
-                return _(Unknown)
+                return _("Unknown")
 
     def render_members_count(self, record, *args, **kwargs):
         append = ""

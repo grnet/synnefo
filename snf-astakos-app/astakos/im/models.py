@@ -68,7 +68,7 @@ from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
     SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     register_users, send_quotas, qh_check_users, qh_get_quota_limits,
@@ -427,6 +427,9 @@ class AstakosUser(User):
         p = Permission.objects.get(codename=pname,
                                    content_type=get_content_type())
         self.user_permissions.remove(p)
+
+    def is_project_admin(self, application_id=None):
+        return self.uuid in PROJECT_ADMINS
 
     @property
     def invitation(self):
@@ -815,6 +818,8 @@ class AstakosUser(User):
             return m.user_friendly_state_display()
 
     def non_owner_can_view(self, maybe_project):
+        if self.is_project_admin():
+            return True
         if maybe_project is None:
             return False
         project = maybe_project
@@ -1422,8 +1427,11 @@ class ProjectApplicationManager(ForUpdateManager):
         """
         Return projects accessed by specified user.
         """
-        participates_filters = Q(owner=user) | Q(applicant=user) | \
-                               Q(project__projectmembership__person=user)
+        if user.is_project_admin():
+            participates_filters = Q()
+        else:
+            participates_filters = Q(owner=user) | Q(applicant=user) | \
+                                   Q(project__projectmembership__person=user)
 
         return self.user_visible_by_chain(participates_filters).order_by('issue_date').distinct()
 
@@ -1611,6 +1619,12 @@ class ProjectApplication(models.Model):
             return project
         except Project.DoesNotExist:
             return None
+
+    def can_be_approved(self):
+        return self.state == self.PENDING
+
+    def can_be_dismissed(self):
+        return self.state == self.DENIED
 
     def can_cancel(self):
         return self.state == self.PENDING

@@ -331,3 +331,6 @@ PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
 ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
+
+# Users that can approve or deny project applications from the web.
+PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())

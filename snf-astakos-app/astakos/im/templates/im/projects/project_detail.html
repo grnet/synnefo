@@ -7,7 +7,7 @@
 <div class="projects">
   <h2>
     <em>
-      {% if owner_mode %}
+      {% if owner_mode or admin_mode %}
         {% if project_view %}
            PROJECT {{ object.project_state_display|upper }}
           {% if object.has_pending_modifications %} -
@@ -43,25 +43,45 @@
     </span>
 
     <!-- make room for buttons -->
-    {% if owner_mode or can_join_request or can_leave_request %}
+    {% if owner_mode or admin_mode or can_join_request or can_leave_request %}
       <br />
     {% endif %}
 
-    {% if owner_mode %}
+    {% if owner_mode or admin_mode %}
       <a style="font-size:0.7em"
          href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
 
-      {% with object.last_pending_incl_me as last_pending %}
-      {% if last_pending %}
-        -
-        <a style="font-size:0.7em"
-           href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
-          CANCEL {% if object.project_exists %} MODIFICATION {% else %}
-          PROJECT {% endif %} REQUEST
-        </a>
+      {% if owner_mode %}
+          {% with object.last_pending_incl_me as last_pending %}
+          {% if last_pending %}
+            -
+            <a style="font-size:0.7em"
+               href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
+              CANCEL {% if object.project_exists %} MODIFICATION {% else %}
+              PROJECT {% endif %} REQUEST
+            </a>
+          {% endif %}
+          {% endwith %}
       {% endif %}
-      {% endwith %}
 
+      {% if admin_mode %}
+          {% if object.can_be_approved %}
+              - <a style="font-size:0.7em"
+                  href="{% url astakos.im.views.project_app_approve object.pk %}">
+                  APPROVE</a>
+              - <a style="font-size:0.7em"
+                  href="{% url astakos.im.views.project_app_deny object.pk %}">
+                  DENY</a>
+          {% endif %}
+      {% endif %}
+
+      {% if owner_mode %}
+          {% if object.can_be_dismissed %}
+             - <a style="font-size:0.7em"
+                href="{% url astakos.im.views.project_app_dismiss object.pk %}">
+                DISMISS</a>
+          {% endif %}
+      {% endif %}
       <!-- only one is possible, perhaps add cancel button too -->
       {% if can_join_request or can_leave_request %}
         <br />

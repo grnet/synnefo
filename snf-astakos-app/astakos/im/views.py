@@ -100,8 +100,9 @@ from astakos.im.functions import (
     SendNotificationError,
     accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member, can_join_request, can_leave_request,
-    cancel_application, get_related_project_id,
-    get_by_chain_or_404)
+    get_related_project_id, get_by_chain_or_404,
+    approve_application, deny_application,
+    cancel_application, dismiss_application)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
@@ -1246,6 +1247,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
     modifications_table = None
 
     user = request.user
+    is_project_admin = user.is_project_admin(application_id=application.id)
     is_owner = user.owns_application(application)
     if not is_owner and not project_view:
         m = _(astakos_messages.NOT_ALLOWED)
@@ -1277,6 +1279,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
             'addmembers_form':addmembers_form,
             'members_table': members_table,
             'owner_mode': is_owner,
+            'admin_mode': is_project_admin,
             'modifications_table': modifications_table,
             'mem_display': mem_display,
             'can_join_request': can_join_req,
@@ -1472,6 +1475,61 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context(sync=True)
+def project_app_approve(request, application_id, ctx=None):
+
+    if not request.user.is_project_admin():
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    approve_application(application_id)
+    chain_id = get_related_project_id(application_id)
+    return redirect(reverse('project_detail', args=(chain_id,)))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_deny(request, application_id, ctx=None):
+
+    if not request.user.is_project_admin():
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    deny_application(application_id)
+    return redirect(reverse('project_list'))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_dismiss(request, application_id, ctx=None):
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    if not request.user.owns_application(app):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    # XXX: dismiss application also does authorization
+    dismiss_application(application_id, request_user=request.user)
+    return redirect(reverse('project_list'))
 
 def landing(request):
     return render_response(

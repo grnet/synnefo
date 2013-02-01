@@ -684,8 +684,8 @@ app_home_widget      =  forms.TextInput(
 
 app_desc_label       =  _("Description")
 app_desc_help        =  _("""
-        Please provide a short but descriptive abstract of your Project,
-        so that anyone searching can quickly understand
+        Please provide a short but descriptive abstract of your
+        Project, so that anyone searching can quickly understand
         what this Project is about.""")
 
 app_comment_label    =  _("Comments for review (private)")
@@ -694,7 +694,7 @@ app_comment_help     =  _("""
         of this application (e.g. background and rationale to
         support your request).
         The comments are strictly for the review process
-        and will not be published.""")
+        and will not be made public.""")
 
 app_start_date_label =  _("Start date")
 app_start_date_help  =  _("""
@@ -705,26 +705,24 @@ app_start_date_help  =  _("""
 app_end_date_label   =  _("Termination date")
 app_end_date_help    =  _("""
         At this date, the project will be automatically terminated
-        and its resource grants revoked from all members.
-        Unless you know otherwise,
-        it is best to start with a conservative estimation.
+        and its resource grants revoked from all members. If you are
+        not certain, it is best to start with a conservative estimation.
         You can always re-apply for an extension, if you need.""")
 
 join_policy_label    =  _("Joining policy")
 app_member_join_policy_help    =  _("""
-        Text fo member_join_policy.""")
+        Select how new members are accepted into the project.""")
 leave_policy_label   =  _("Leaving policy")
 app_member_leave_policy_help    =  _("""
-        Text fo member_leave_policy.""")
+        Select how new members can leave the project.""")
 
 max_members_label    =  _("Maximum member count")
 max_members_help     =  _("""
         Specify the maximum number of members this project may have,
         including the owner. Beyond this number, no new members
         may join the project and be granted the project resources.
-        Unless you certainly for otherwise,
-        it is best to start with a conservative limit.
-        You can always request a raise when you need it.""")
+        If you are not certain, it is best to start with a conservative
+        limit. You can always request a raise when you need it.""")
 
 join_policies = PROJECT_MEMBER_JOIN_POLICIES.iteritems()
 leave_policies = PROJECT_MEMBER_LEAVE_POLICIES.iteritems()

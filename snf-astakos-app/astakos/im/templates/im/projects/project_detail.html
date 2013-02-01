@@ -141,7 +141,7 @@
         {% if owner_mode %}
         Me
         {% else %}
-        {{object.owner.realname}} {% if user.is_superuser %}({{object.owner.email}}){% endif %}
+        {{object.owner.realname}} {% if admin_mode or user.is_superuser %}({{object.owner.email}}){% endif %}
         {% endif %}
         &nbsp;
       </dd>
@@ -173,7 +173,7 @@
     {% if object.projectresourcegrant_set.all %}
     <dl class="alt-style">
       {% for rp in object.projectresourcegrant_set.all %}
-      <dt>Max {{rp.resource.pluralized_display_name}} per user</dt>
+      <dt>{{rp.resource.pluralized_display_name}} per user</dt>
       <dd>{{rp.display_member_capacity}}</dd>
       {% empty %}
       No resources

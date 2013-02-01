@@ -39,6 +39,7 @@ from django.views import debug
 
 import re
 
+
 def mail_admins_safe(subject, message, fail_silently=False, connection=None):
     '''
     Wrapper function to cleanse email body from sensitive content before
@@ -46,10 +47,11 @@ def mail_admins_safe(subject, message, fail_silently=False, connection=None):
     '''
 
     HIDDEN_ALL = settings.HIDDEN_SETTINGS + "|" + settings.HIDDEN_COOKIES
-    message = re.sub("((\S+)?(%s)(\S+)?(:|\=)( )?)('|\"?)\S+('|\"?)" \
-                % HIDDEN_ALL, r"\1*******", message)
+    message = re.sub("((\S+)?(%s)(\S+)?(:|\=)( )?)('|\"?)\S+('|\"?)"
+                     % HIDDEN_ALL, r"\1*******", message)
 
     return mail.mail_admins_plain(subject, message, fail_silently, connection)
+
 
 class CleanseSettingsMiddleware(object):
     def __init__(self):

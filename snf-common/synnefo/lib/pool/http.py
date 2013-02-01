@@ -35,9 +35,9 @@ from synnefo.lib.pool import ObjectPool
 from select import select
 
 from httplib import (
-        HTTPConnection  as http_class,
-        HTTPSConnection as https_class,
-        ResponseNotReady
+    HTTPConnection as http_class,
+    HTTPSConnection as https_class,
+    ResponseNotReady
 )
 
 from new import instancemethod
@@ -72,12 +72,12 @@ def put_http_connection(conn):
 class HTTPConnectionPool(ObjectPool):
 
     _scheme_to_class = {
-            'http': http_class,
-            'https': https_class,
+        'http': http_class,
+        'https': https_class,
     }
 
     def __init__(self, scheme, netloc, size=None):
-        log.debug("INIT-POOL: Initializing pool of size %d, scheme: %s, " \
+        log.debug("INIT-POOL: Initializing pool of size %d, scheme: %s, "
                   "netloc: %s", size, scheme, netloc)
         ObjectPool.__init__(self, size=size)
 

@@ -33,6 +33,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+
 def strbigdec(bignum, nr_lsd=12):
     all_digits = str(bignum)
     ms_digits = all_digits[:-nr_lsd]
@@ -52,4 +53,3 @@ def strbigdec(bignum, nr_lsd=12):
     else:
         display = "[%s%1.0e]" % (approx, ms_num)
     return display
-

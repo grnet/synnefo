@@ -33,41 +33,42 @@
 
 import datetime
 
+
 def split_time(value):
-  """Splits time as floating point number into a tuple.
+    """Splits time as floating point number into a tuple.
 
-  @param value: Time in seconds
-  @type value: int or float
-  @return: Tuple containing (seconds, microseconds)
+    @param value: Time in seconds
+    @type value: int or float
+    @return: Tuple containing (seconds, microseconds)
 
-  """
-  (seconds, microseconds) = divmod(int(value * 1000000), 1000000)
+    """
+    (seconds, microseconds) = divmod(int(value * 1000000), 1000000)
 
-  assert 0 <= seconds, \
-    "Seconds must be larger than or equal to 0, but are %s" % seconds
-  assert 0 <= microseconds <= 999999, \
-    "Microseconds must be 0-999999, but are %s" % microseconds
+    assert 0 <= seconds, \
+        "Seconds must be larger than or equal to 0, but are %s" % seconds
+    assert 0 <= microseconds <= 999999, \
+        "Microseconds must be 0-999999, but are %s" % microseconds
 
-  return (int(seconds), int(microseconds))
+    return (int(seconds), int(microseconds))
 
 
 def merge_time(timetuple):
-  """Merges a tuple into a datetime object
+    """Merges a tuple into a datetime object
 
-  @param timetuple: Time as tuple, (seconds, microseconds)
-  @type timetuple: tuple
-  @return: Time as a datetime object
+    @param timetuple: Time as tuple, (seconds, microseconds)
+    @type timetuple: tuple
+    @return: Time as a datetime object
 
-  """
-  (seconds, microseconds) = timetuple
+    """
+    (seconds, microseconds) = timetuple
 
-  assert 0 <= seconds, \
-    "Seconds must be larger than or equal to 0, but are %s" % seconds
-  assert 0 <= microseconds <= 999999, \
-    "Microseconds must be 0-999999, but are %s" % microseconds
+    assert 0 <= seconds, \
+        "Seconds must be larger than or equal to 0, but are %s" % seconds
+    assert 0 <= microseconds <= 999999, \
+        "Microseconds must be 0-999999, but are %s" % microseconds
 
-  t1 = float(seconds) + (float(microseconds) * 0.000001)
-  return datetime.datetime.fromtimestamp(t1)
+    t1 = float(seconds) + (float(microseconds) * 0.000001)
+    return datetime.datetime.fromtimestamp(t1)
 
 
 def case_unique(iterable):
@@ -85,4 +86,3 @@ def case_unique(iterable):
         return list(set(iterable) - set(icase))
 
     return []
-

@@ -35,6 +35,7 @@
 
 uenc_encoding = 'UTF-8'
 
+
 def uenc_set_encoding(encoding=None):
     """Set the default encoding for uenc()
 
@@ -65,6 +66,7 @@ def uenc_set_encoding(encoding=None):
 
     uenc_encoding = encoding
 
+
 def uenc(thing, encoding=None):
     """Encode the argument into a string.
 
@@ -89,4 +91,3 @@ def uenc(thing, encoding=None):
     return str(thing)
 
 uenc_set_encoding()
-

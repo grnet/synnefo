@@ -33,11 +33,7 @@
 
 from django.conf import settings
 
-ACCOUNT_AUTHENTICATION_FAILED           =   'Authentication with this account failed.'
 ACCOUNT_ALREADY_ACTIVE                  =   'This account is already active.'
-ACCOUNT_PENDING_ACTIVATION              =   'Your account request is pending activation.'
-ACCOUNT_PENDING_MODERATION              =   'Your account request is pending moderation.'
-ACCOUNT_INACTIVE                        =   'Your account is disabled.'
 ACCOUNT_NOT_ACTIVE                      =   'User account is not active.'
 ACCOUNT_RESEND_ACTIVATION               =   'It seems that an activation email has been sent to you, but you have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email.</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
@@ -50,7 +46,7 @@ PASSWORD_RESET_DONE                     =   'An email with details on how to cha
 PASSWORD_RESET_CONFIRM_DONE             =   'Your password has changed successfully. You can now login using your new password.'
 PASSWORD_CHANGED                        =   'Your new password was set successfully.'
 
-ACCOUNT_RESEND_ACTIVATION_PROMPT        =   'Resend activation email'
+ACCOUNT_RESEND_ACTIVATION               =   'Resend activation email'
 ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'
 
 ACCOUNT_UNKNOWN                         =   'It seems there is no account with those .'
@@ -66,9 +62,6 @@ EMAIL_CHANGE_REGISTERED                 =   'Your request for changing your emai
 OBJECT_CREATED                          =   'The %(verbose_name)s was created successfully.'
 USER_MEMBERSHIP_REJECTED                =   'Request by %s to join the project has been rejected.'
 BILLING_ERROR                           =   'Service response status: %(status)d'
-LOGOUT_SUCCESS                          =   'Logged out successfully.'
-LOGIN_SUCCESS                           =   'Logged in successfully, using %s.'
-LOCAL_LOGIN_SUCCESS                     =   'Logged in successfully.'
 
 GENERIC_ERROR                           =   'Hmm... It seems something bad has happened, and we don\'t know the details right now. \
                                                Please contact the administrators by email for more details.'
@@ -106,7 +99,6 @@ SIGN_TERMS                              =   'Please, you need to \'Agree with th
 CAPTCHA_VALIDATION_ERR                  =   'You have not entered the correct words. Please try again.'
 SUSPENDED_LOCAL_ACC                     =   'This account does not have a local password. \
                                                Please try logging in using an external login provider (e.g.: twitter)'
-UNUSABLE_PASSWORD                       =   '%s is not enabled for your account. You can may access your account by logging in with %s.'
 EMAIL_UNKNOWN                           =   'This email address doesn\'t have an associated user account. \
                                                Please make sure you have registered, before proceeding.'
 INVITATION_EMAIL_EXISTS                 =   'An invitation has already been sent to this email.'
@@ -133,6 +125,7 @@ INVITATION_SEND_ERR                     =   EMAIL_SEND_ERR % 'invitation'
 GREETING_SEND_ERR                       =   EMAIL_SEND_ERR % 'greeting'
 FEEDBACK_SEND_ERR                       =   EMAIL_SEND_ERR % 'feedback'
 CHANGE_EMAIL_SEND_ERR                   =   EMAIL_SEND_ERR % 'feedback'
+
 NOTIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'notification'
 DETAILED_NOTIFICATION_SEND_ERR          =   'Failed to send %(subject)s notification to %(recipients)s.'
 
@@ -187,7 +180,6 @@ USER_LEAVE_REQUEST_SUBMITTED            =   'Your request to leave the project h
 USER_JOIN_REQUEST_SUBMITTED             =   'Your request to join the project has been submitted successfully.'
 USER_JOINED_PROJECT                     =   'You have joined the project.'
 USER_REQUEST_CANCELLED                  =   'Your request to join the project has been cancelled.'
-
 APPLICATION_CANNOT_APPROVE              =   "Cannot approve application %s in state '%s'"
 APPLICATION_CANNOT_DENY                 =   "Cannot deny application %s in state '%s'"
 APPLICATION_CANNOT_DISMISS              =   "Cannot dismiss application %s in state '%s'"
@@ -210,23 +202,44 @@ PENDING_APPLICATION_LIMIT_MODIFY = \
      "Consider cancelling any unnecessary ones.")
 
 # Auth providers messages
-AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled."
-AUTH_PROVIDER_NOT_ACTIVE_FOR_LOGIN           =   "Login using '%(provider)s' is disabled."
-AUTH_PROVIDER_NOT_ACTIVE_FOR_USER            =   "You cannot login using '%(provider)s'."
-AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Sign up using '%(provider)s' is disabled."
-AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "You cannot add %(provider)s login method."
-AUTH_PROVIDER_ADDED                          =   "%s enabled for this account."
-AUTH_PROVIDER_REMOVED                        =   "%s removed for this account."
-AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method."
+AUTH_PROVIDER_LOGIN_SUCCESS                  =   "Logged in successfully, using {method_prompt}."
+AUTH_PROVIDER_LOGOUT_SUCCESS                 =   "Logged out successfully."
+AUTH_PROVIDER_LOGOUT_SUCCESS_EXTRA           =   "You may still be logged in at {title} though. Consider logging out from there too."
+AUTH_PROVIDER_NOT_ACTIVE                     =   "'{method_prompt}' is disabled."
+AUTH_PROVIDER_LOGIN_DISABLED                 =   "Logging in using '{method_prompt}' is disabled for your account."
+AUTH_PROVIDER_ADD_DISABLED                   =   "{method_prompt} is disabled for your account."
+AUTH_PROVIDER_NOT_ACTIVE_FOR_USER            =   "You cannot login using '{method_prompt}'."
+AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Sign up using '{method_prompt}' is disabled."
+AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "You cannot add {method_prompt}."
+AUTH_PROVIDER_ADDED                          =   "{method_prompt} enabled for this account."
+AUTH_PROVIDER_SWITCHED                       =   "{method_prompt} changed for this account."
+AUTH_PROVIDER_REMOVED                        =   "{method_prompt} removed for this account."
+AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add {method_prompt}."
 AUTH_PROVIDER_ADD_EXISTS                     =   "It seems that this account is already assigned to another user."
 AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be assigned once you login to your account."
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
-AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is required. Add one from your profile page."
+AUTH_PROVIDER_REQUIRED                       =   "{method_prompt} is required. Add one from your profile page."
 AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD         =   "Changing password is not supported."
 AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   None
+AUTH_PROVIDER_UNUSABLE_PASSWORD              =   '{method_prompt} is not enabled' \
+                                                 ' for your account. You can access your account by logging in with' \
+                                                 ' {available_methods_links}.'
+AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   ''
+AUTH_PROVIDER_AUTHENTICATION_FAILED          =   'Authentication with this account failed.'
 
-EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add the '%s' login method to your existing account from your " \
-                                                 " <a href='%s'>profile page</a>"
+
+AUTH_PROVIDER_PENDING_REGISTRATION =  '''A pending registration exists for
+{title} account {username}. The email used for the registration is
+{user_email}. If you decide to procceed with the signup process once again,
+all pending registrations will be deleted.'''
+
+AUTH_PROVIDER_PENDING_RESEND_ACTIVATION      =   '<a href="{resend_activation_url}">Click here to resend activation email.</a>'
+AUTH_PROVIDER_PENDING_MODERATION             =   'Your account request is pending moderation.'
+AUTH_PROVIDER_PENDING_ACTIVATION             =   'Your account request is pending activation.'
+AUTH_PROVIDER_ACCOUNT_INACTIVE                        =   'Your account is disabled.'
+
+AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT        =   "You can add {method_prompt} to your existing account from your " \
+                                                 " <a href='{profile_url}'>profile page</a>"
 
 messages = locals().keys()
 for msg in messages:

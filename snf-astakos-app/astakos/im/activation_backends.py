@@ -222,9 +222,8 @@ class SimpleBackend(ActivationBackend):
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):
             return True
-        if astakos_settings.MODERATION_ENABLED:
-            return False
-        return True
+
+        return user.get_auth_provider().get_automoderate_policy
 
 
 class ActivationResult(object):

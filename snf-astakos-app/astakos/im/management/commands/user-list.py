@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import AstakosUser, AstakosUserAuthProvider
+from astakos.im.models import AstakosUser, AstakosUserAuthProvider, Group
 
 from ._common import format, filter_results
 
@@ -56,6 +56,16 @@ class Command(NoArgsCommand):
                     dest='pending',
                     default=False,
                     help="List only users pending activation"),
+        make_option('--auth-providers',
+                    action='store_true',
+                    dest='auth_providers',
+                    default=False,
+                    help="Display user authentication providers"),
+        make_option('--group',
+                    action='append',
+                    dest='groups',
+                    default=None,
+                    help="Only show users that belong to the specified goups"),
         make_option('-n',
                     action='store_true',
                     dest='pending_send_mail',

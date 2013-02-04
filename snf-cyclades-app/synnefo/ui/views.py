@@ -245,7 +245,7 @@ def user_quota(request):
         settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
                 settings.MAX_NETWORKS_PER_USER)
 
-    if 'usage' in request.user:
+    if request.user and 'usage' in request.user:
         quota = dict(zip([q['name'] for q in request.user['usage']],
                          request.user['usage']))
 

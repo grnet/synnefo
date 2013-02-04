@@ -69,7 +69,7 @@ from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
     PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
-    membership_change_notify,
+    membership_change_notify, membership_enroll_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
@@ -585,8 +585,8 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    membership_enroll_notify(project, membership.person)
 
-    # TODO send proper notification
     return membership
 
 def leave_project_checks(project):

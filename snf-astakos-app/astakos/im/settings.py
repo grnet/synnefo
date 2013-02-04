@@ -161,6 +161,9 @@ PROJECT_SUSPENSION_SUBJECT = getattr(
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
     '%s alpha2 testing project membership changed (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_ENROLL_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_ENROLL_SUBJECT',
+    '%s alpha2 testing project enrollment (%%(name)s)' % SITENAME)
 
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')

@@ -34,9 +34,7 @@
 from django.db.models import Sum, Count
 
 from synnefo.db.models import VirtualMachine, Network
-from synnefo.quotas import get_quota_holder
-from synnefo.lib.quotaholder.api.exception import NoEntityError
-
+from synnefo.quotas import get_quota_holder, NoEntityError
 
 def get_db_holdings(users=None):
     """Get holdings from Cyclades DB."""

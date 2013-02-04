@@ -1088,7 +1088,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                              AUTHENTICATION_URL,
                              AUTHENTICATION_USERS,
                              token,
-                             user_required)
+                             request_usage)
                     if  getattr(request, 'user', None) is None:
                         raise Unauthorized('Access denied')
                     assert getattr(request, 'user_uniq', None) != None

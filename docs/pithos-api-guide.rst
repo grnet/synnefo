@@ -27,7 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.13 (Jun 21, 2013)        Proxy identity management services
+0.13 (Jan 21, 2013)        Proxy identity management services
 \                          Uuid to displayname translation
 0.9 (Feb 17, 2012)         Change permissions model.
 0.10 (Jul 18, 2012)        Support for bulk COPY/MOVE/DELETE
@@ -114,6 +114,14 @@ User feedback
 
 Client software using Pithos, should forward to the ``/feedback`` URI. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
 
+========================= =========  ==================
+Uri                       Method     Description
+========================= =========  ==================
+``/feedback``             POST       Send feedback
+========================= =========  ==================
+
+|
+
 ======================  =========================
 Request Parameter Name  Value
 ======================  =========================
@@ -145,6 +153,14 @@ User translation catalogs
 -------------------------
 
 Client software using Pithos, should forward to the ``/user_catalogs`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+================================ =========  ==================
+Uri                              Method     Description
+================================ =========  ==================
+``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+================================ =========  ==================
+
+|
 
 ====================  ===========================
 Request Header Name   Value

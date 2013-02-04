@@ -59,6 +59,12 @@ n = table(
     column('path', sa.String(2048))
 )
 
+v = table(
+    'versions',
+    column('node', sa.Integer),
+    column('muser', sa.String(2048))
+)
+
 p = table(
     'public',
     column('public_id', sa.Integer),
@@ -97,6 +103,15 @@ def upgrade():
             continue
         path = sep.join([uuid, rest])
         u = n.update().where(n.c.node == node).values({'path':path})
+        connection.execute(u)
+
+    s = sa.select([v.c.node, v.c.muser])
+    versions = connection.execute(s).fetchall()
+    for node, muser in versions:
+        uuid = get_uuid(muser)
+        if not uuid:
+            continue
+        u = v.update().where(v.c.node == node).values({'muser':uuid})
         connection.execute(u)
 
     s = sa.select([p.c.public_id, p.c.path])
@@ -169,6 +184,15 @@ def downgrade():
             continue
         path = sep.join([displayname, rest])
         u = n.update().where(n.c.node == node).values({'path':path})
+        connection.execute(u)
+
+    s = sa.select([v.c.node, v.c.muser])
+    versions = connection.execute(s).fetchall()
+    for node, muser in versions:
+        displayname = get_displayname(muser)
+        if not displayname:
+            continue
+        u = v.update().where(v.c.node == node).values({'muser':displayname})
         connection.execute(u)
 
     s = sa.select([p.c.public_id, p.c.path])

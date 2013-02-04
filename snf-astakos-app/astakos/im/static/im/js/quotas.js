@@ -26,6 +26,20 @@ function group_form_show_resources(el){
 }
 
 
+function group_form_toggle_resources(el){
+	
+
+	var id = el.attr('id');
+	$('.quotas-form .group').each(function() {
+		if( $(this).hasClass(id) ) {
+			 
+			//$(this).appendTo('.visible');
+			$(this).toggle('slow');		  
+		}
+	});
+}
+
+
 function bytesToSize2(bytes) {
     var sizes = [ 'n/a', 'bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
     var i = +Math.floor(Math.log(bytes) / Math.log(1024));
@@ -58,7 +72,7 @@ $(document).ready(function() {
 		
  		// prevent extra actions if it is checked		 
 		if ( $(this).hasClass('selected')){
-			e.preventDefault();
+			group_form_toggle_resources($(this));
 		} else {
 			
 			// show the relevant fieldsets

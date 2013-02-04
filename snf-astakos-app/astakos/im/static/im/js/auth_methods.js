@@ -1,5 +1,6 @@
 $(document).ready(function() {
-	 	
+	 
+	 var defaultPassword = 'password';
 	 	
 	 $('.auth_methods .canremove').click( function(e) {
     	e.preventDefault(e);
@@ -26,6 +27,7 @@ $(document).ready(function() {
 	/* complex form js */
 	
 	// Intresting divs
+	
 	
 	emailDiv = $('#id_email').parents('.form-row');
 	newEmailDiv = $('#id_new_email_address').parents('.form-row');
@@ -91,41 +93,46 @@ $(document).ready(function() {
 		
 		id = $(this).attr('id');
 		 
-	 
+	   if ( id == 'email-span') { var $checkbox = $('input#id_change_email:checkbox'); } 
+	   if ( id == 'password-span') { var $checkbox = $('input#id_change_password:checkbox'); }
 	 	
 	 	if ( !($(this).parents('.form-row').hasClass('open')) ){
 	 		$('.form-row').each(function() {
 				if( $(this).hasClass(id) ) {
-					console.info($(this).find('input[type="text"]'));
 					$(this).find('input').val('');
 					$(this).removeClass('with-errors');
 					$(this).find('.form-error').hide();
 				}
 			}); 
+	 		$checkbox.removeAttr('checked');
+	 		if ( id == 'password-span') { 
+	 			$('#id_old_password').val(defaultPassword);
+	 		}
 			$(this).parents('.form-row').removeClass('with-errors');
 			$(this).parents('.form-row').find('.form-error').hide();
 			
-	 	} 	else {
+	 	} else {
 	 		// focus on first input
+			$checkbox.attr('checked','checked');
 	 		if ( id == 'email-span') { newEmailDiv.find('input').focus(); } 
-	 		if ( id == 'password-span') { oldPasswordDiv.find('input').focus(); }
+	 		 
+	 		if ( id == 'password-span') { 
+	 			oldPasswordDiv.find('input').focus(); 
+	 			oldPasswordDiv.find('input').val('');
+	 		
+	 		}
 	 	}
-	 	
 	 	 
 	});
-	
-	//  check uncheck checkbox
-	$('#email-span').click(function(){ 
-       var $checkbox = $('input#id_change_email:checkbox');
-       $checkbox.attr('checked', !$checkbox.attr('checked'));
- 	});
-	
-	//  check uncheck checkbox
-	$('#password-span').click(function(){ 
-       var $checkbox = $('input#id_change_password:checkbox');
-       $checkbox.attr('checked', !$checkbox.attr('checked'));
- 	});
-	
+ 
+ 	$('#id_old_password').focus(function(){
+		$(this).val('');
+		var h = $('.form-row').first().outerHeight();
+		$(this).parents('.form-row').next('.hidden-form-rows').find('.form-row').css('height', h);
+		$(this).parents('.form-row').addClass('open');
+		$(this).parents('.form-row').next('.hidden-form-rows').slideDown('slow');
+		$('input#id_change_password:checkbox').attr('checked','checked'); 
+	});
 	// refresh token
 	authTokenDiv.addClass('refresh');
 	authTokenDiv.append('<a id="token-confirm" class="submit" href="#">Confirm token change</a>');
@@ -155,7 +162,9 @@ $(document).ready(function() {
       	$(this).siblings('span.info').find('span').hide();
       });
 	
-	/* end of complex form js */
+	
+	  
+ 	/* end of complex form js */
 	
 	 
 	    

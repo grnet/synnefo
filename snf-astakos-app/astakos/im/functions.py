@@ -453,6 +453,8 @@ def create_membership(project, user):
         project = get_project_by_id(project)
     if isinstance(user, int):
         user = get_user_by_id(user)
+
+    #TODO: low level check on whether user is registered in quotaholder
     m = ProjectMembership(
         project=project,
         person=user,

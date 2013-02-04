@@ -2077,6 +2077,10 @@ class ProjectMembershipManager(ForUpdateManager):
              Q(state=ProjectMembership.PROJECT_DEACTIVATED))
         return self.filter(q)
 
+    def actually_accepted(self):
+        q = self.model.Q_ACTUALLY_ACCEPTED
+        return self.filter(q)
+
     def requested(self):
         return self.filter(state=ProjectMembership.REQUESTED)
 
@@ -2091,6 +2095,7 @@ class ProjectMembership(models.Model):
 
     REQUESTED           =   0
     ACCEPTED            =   1
+    LEAVE_REQUESTED     =   5
     # User deactivation
     USER_SUSPENDED      =   10
     # Project deactivation
@@ -2100,12 +2105,16 @@ class ProjectMembership(models.Model):
 
     ASSOCIATED_STATES   =   set([REQUESTED,
                                  ACCEPTED,
+                                 LEAVE_REQUESTED,
                                  USER_SUSPENDED,
                                  PROJECT_DEACTIVATED])
 
     ACCEPTED_STATES     =   set([ACCEPTED,
+                                 LEAVE_REQUESTED,
                                  USER_SUSPENDED,
                                  PROJECT_DEACTIVATED])
+
+    ACTUALLY_ACCEPTED   =   set([ACCEPTED, LEAVE_REQUESTED])
 
     state               =   models.IntegerField(default=REQUESTED,
                                                 db_index=True)
@@ -2128,10 +2137,12 @@ class ProjectMembership(models.Model):
 
     # Compiled queries
     Q_ACCEPTED_STATES = ~Q(state=REQUESTED) & ~Q(state=REMOVED)
+    Q_ACTUALLY_ACCEPTED = Q(state=ACCEPTED) | Q(state=LEAVE_REQUESTED)
 
     MEMBERSHIP_STATE_DISPLAY = {
         REQUESTED           : _('Requested'),
         ACCEPTED            : _('Accepted'),
+        LEAVE_REQUESTED     : _('Leave Requested'),
         USER_SUSPENDED      : _('Suspended'),
         PROJECT_DEACTIVATED : _('Accepted'), # sic
         REMOVED             : _('Pending removal'),
@@ -2140,6 +2151,7 @@ class ProjectMembership(models.Model):
     USER_FRIENDLY_STATE_DISPLAY = {
         REQUESTED           : _('Join requested'),
         ACCEPTED            : _('Accepted member'),
+        LEAVE_REQUESTED     : _('Requested to leave'),
         USER_SUSPENDED      : _('Suspended member'),
         PROJECT_DEACTIVATED : _('Accepted member'), # sic
         REMOVED             : _('Pending removal'),
@@ -2205,7 +2217,57 @@ class ProjectMembership(models.Model):
         self.save()
 
     def can_leave(self):
-        return self.can_remove()
+        return self.state in self.ACCEPTED_STATES
+
+    def leave_request(self):
+        if self.is_pending:
+            m = _("%s: attempt to request to leave while is pending") % (self,)
+            raise AssertionError(m)
+
+        if not self.can_leave():
+            m = _("%s: attempt to request to leave in state '%s'") % (
+                self, self.state)
+            raise AssertionError(m)
+
+        self.leave_request_date = datetime.now()
+        self.state = self.LEAVE_REQUESTED
+        self.save()
+
+    def can_deny_leave(self):
+        return self.state == self.LEAVE_REQUESTED
+
+    def leave_request_deny(self):
+        if self.is_pending:
+            m = _("%s: attempt to deny leave request while is pending") % (
+                self,)
+            raise AssertionError(m)
+
+        if not self.can_deny_leave():
+            m = _("%s: attempt to deny leave request in state '%s'") % (
+                self, self.state)
+            raise AssertionError(m)
+
+        self.leave_request_date = None
+        self.state = self.ACCEPTED
+        self.save()
+
+    def can_cancel_leave(self):
+        return self.state == self.LEAVE_REQUESTED
+
+    def leave_request_cancel(self):
+        if self.is_pending:
+            m = _("%s: attempt to cancel leave request while is pending") % (
+                self,)
+            raise AssertionError(m)
+
+        if not self.can_cancel_leave():
+            m = _("%s: attempt to cancel leave request in state '%s'") % (
+                self, self.state)
+            raise AssertionError(m)
+
+        self.leave_request_date = None
+        self.state = self.ACCEPTED
+        self.save()
 
     def can_remove(self):
         return self.state in self.ACCEPTED_STATES
@@ -2299,7 +2361,7 @@ class ProjectMembership(models.Model):
             raise AssertionError(m)
 
         state = self.state
-        if state == self.ACCEPTED:
+        if state in self.ACTUALLY_ACCEPTED:
             pending_application = self.pending_application
             if pending_application is None:
                 m = _("%s: attempt to sync an empty pending application") % (
@@ -2344,7 +2406,8 @@ class ProjectMembership(models.Model):
             raise AssertionError(m)
 
         state = self.state
-        if state in [self.ACCEPTED, self.PROJECT_DEACTIVATED, self.REMOVED]:
+        if state in [self.ACCEPTED, self.LEAVE_REQUESTED,
+                     self.PROJECT_DEACTIVATED, self.REMOVED]:
             self.pending_application = None
             self.pending_serial = None
             self.save()
@@ -2384,6 +2447,7 @@ def sync_finish_serials(serials_to_ack=None):
 
 def pre_sync_projects(sync=True):
     ACCEPTED = ProjectMembership.ACCEPTED
+    LEAVE_REQUESTED = ProjectMembership.LEAVE_REQUESTED
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     psfu = Project.objects.select_for_update()
 
@@ -2392,7 +2456,7 @@ def pre_sync_projects(sync=True):
         for project in modified:
             objects = project.projectmembership_set.select_for_update()
 
-            memberships = objects.filter(state=ACCEPTED)
+            memberships = objects.actually_accepted()
             for membership in memberships:
                 membership.is_pending = True
                 membership.save()
@@ -2405,7 +2469,10 @@ def pre_sync_projects(sync=True):
             memberships = objects.filter(state=PROJECT_DEACTIVATED)
             for membership in memberships:
                 membership.is_pending = True
-                membership.state = ACCEPTED
+                if membership.leave_request_date is None:
+                    membership.state = ACCEPTED
+                else:
+                    membership.state = LEAVE_REQUESTED
                 membership.save()
 
     deactivating = list(psfu.deactivating_projects())
@@ -2415,7 +2482,7 @@ def pre_sync_projects(sync=True):
 
             # Note: we keep a user-level deactivation
             # (e.g. USER_SUSPENDED) intact
-            memberships = objects.filter(state=ACCEPTED)
+            memberships = objects.actually_accepted()
             for membership in memberships:
                 membership.is_pending = True
                 membership.state = PROJECT_DEACTIVATED
@@ -2425,7 +2492,7 @@ def pre_sync_projects(sync=True):
 
 def do_sync_projects():
 
-    ACCEPTED = ProjectMembership.ACCEPTED
+    ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
     objects = ProjectMembership.objects.select_for_update()
 
     sub_quota, add_quota = [], []
@@ -2444,7 +2511,7 @@ def do_sync_projects():
                 membership, membership.pending_serial)
             raise AssertionError(m)
 
-        if membership.state == ACCEPTED:
+        if membership.state in ACTUALLY_ACCEPTED:
             membership.pending_application = membership.project.application
 
         membership.pending_serial = serial
@@ -2465,15 +2532,16 @@ def do_sync_projects():
     return serial
 
 def post_sync_projects():
-    ACCEPTED = ProjectMembership.ACCEPTED
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
+    Q_ACTUALLY_ACCEPTED = ProjectMembership.Q_ACTUALLY_ACCEPTED
     psfu = Project.objects.select_for_update()
 
     modified = psfu.modified_projects()
     for project in modified:
         objects = project.projectmembership_set.select_for_update()
 
-        memberships = list(objects.filter(state=ACCEPTED, is_pending=True))
+        memberships = list(objects.filter(Q_ACTUALLY_ACCEPTED &
+                                          Q(is_pending=True)))
         if not memberships:
             project.is_modified = False
             project.save()
@@ -2491,7 +2559,7 @@ def post_sync_projects():
     for project in deactivating:
         objects = project.projectmembership_set.select_for_update()
 
-        memberships = list(objects.filter(Q(state=ACCEPTED) |
+        memberships = list(objects.filter(Q_ACTUALLY_ACCEPTED |
                                           Q(is_pending=True)))
         if not memberships:
             project.deactivate()

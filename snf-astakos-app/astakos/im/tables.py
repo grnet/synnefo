@@ -45,7 +45,7 @@ import django_tables2 as tables
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
 from astakos.im.functions import (join_project_checks,
-                                  leave_project_checks,
+                                  can_leave_request,
                                   cancel_membership_checks)
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
@@ -197,8 +197,7 @@ def action_extra_context(application, table, self):
             pass
 
         try:
-            leave_project_checks(project)
-            can_leave = True
+            can_leave = can_leave_request(project, user)
         except PermissionDenied:
             pass
 
@@ -332,16 +331,14 @@ def member_action_extra_context(membership, table, col):
         urls = ['astakos.im.views.project_reject_member',
                 'astakos.im.views.project_accept_member']
         actions = [_('Reject'), _('Accept')]
-        prompts = [_('Are you sure you want to reject this member ?'),
-                   _('Are you sure you want to accept this member ?')]
+        prompts = [_('Are you sure you want to reject this member?'),
+                   _('Are you sure you want to accept this member?')]
         confirms = [True, True]
 
-    if membership.state == ProjectMembership.ACCEPTED:
+    if membership.state in ProjectMembership.ACTUALLY_ACCEPTED:
         urls = ['astakos.im.views.project_remove_member']
         actions = [_('Remove')]
-        if table.user == membership.person:
-            actions = [_('Leave')]
-        prompts = [_('Are you sure you want to remove this member ?')]
+        prompts = [_('Are you sure you want to remove this member?')]
         confirms = [True, True]
 
 

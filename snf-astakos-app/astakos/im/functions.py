@@ -624,8 +624,7 @@ def leave_project(project_id, user_id):
         membership.remove()
         auto_accepted = True
     else:
-        membership.leave_request_date = datetime.now()
-        membership.save()
+        membership.leave_request()
         membership_leave_request_notify(project, membership.person)
     return auto_accepted
 

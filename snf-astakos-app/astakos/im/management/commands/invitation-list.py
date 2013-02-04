@@ -67,9 +67,9 @@ class Command(NoArgsCommand):
             id = str(invitation.id)
             code = str(invitation.code)
             consumed = format_bool(invitation.is_consumed)
-            fields = (
-                id, invitation.inviter.email, invitation.username, invitation.realname,
-                code, consumed)
+            fields = (format(elem) for elem in \
+                        (id, invitation.inviter.email, invitation.username,
+                         invitation.realname, code, consumed))
 
             if options['csv']:
                 line = '|'.join(fields)

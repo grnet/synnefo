@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import Chain
-from ._common import format_bool, shortened
+from ._common import format, shortened
 
 
 class Command(NoArgsCommand):
@@ -71,13 +71,13 @@ class Command(NoArgsCommand):
 
         for info in chain_info(chain_dict):
 
-            fields = [
+            fields = [(format(elem) for elem in (
                 (info['projectid'], False),
                 (info['name'], True),
                 (info['owner'], True),
                 (info['status'], False),
                 (info['appid'], False),
-            ]
+            )]
 
             if options['csv']:
                 line = '|'.join(fields)

@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import Chain, ProjectApplication
 
-from ._common import format_bool, format_date
+from ._common import format
 
 
 class Command(BaseCommand):
@@ -86,7 +86,7 @@ class Command(BaseCommand):
 
     def show_info(self, info):
         for key, val in info.items():
-            line = '%s: %s\n' % (key.rjust(22), val)
+            line = '%s: %s\n' % (key.rjust(22), format(val))
             self.stdout.write(line)
         self.stdout.write('\n')
 
@@ -140,9 +140,9 @@ def app_fields(app):
             ('homepage', app.homepage),
             ('description', app.description),
             ('comments for review', app.comments),
-            ('request issue date', format_date(app.issue_date)),
-            ('request start date', format_date(app.start_date)),
-            ('request end date', format_date(app.end_date)),
+            ('request issue date', app.issue_date),
+            ('request start date', app.start_date),
+            ('request end date', app.end_date),
             ('resources', app.resource_policies),
             ('join policy', app.member_join_policy_display),
             ('leave policy', app.member_leave_policy_display),
@@ -168,15 +168,15 @@ def project_fields(s, project, last_app):
               ('homepage', app.homepage),
               ('description', app.description),
               ('comments for review', app.comments),
-              ('request issue date', format_date(app.issue_date)),
-              ('request start date', format_date(app.start_date)),
-              ('creation date', format_date(project.creation_date)),
-              ('request end date', format_date(app.end_date)),
+              ('request issue date', app.issue_date),
+              ('request start date', app.start_date),
+              ('creation date', project.creation_date),
+              ('request end date', app.end_date),
               ])
 
     deact_date = project.deactivation_date
     if deact_date is not None:
-        d['deactivation date'] = format_date(deact_date)
+        d['deactivation date'] = deact_date
 
     mem_limit = app.limit_on_members_number
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"

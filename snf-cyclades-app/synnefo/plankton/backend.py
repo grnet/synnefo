@@ -55,11 +55,15 @@ import warnings
 
 from operator import itemgetter
 from time import gmtime, strftime
-from functools import wraps
+from functools import wraps, partial
 
 from django.conf import settings
 
 from pithos.backends.base import NotAllowedError as PithosNotAllowedError
+import synnefo.lib.astakos as lib_astakos
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 PLANKTON_DOMAIN = 'plankton'
@@ -68,6 +72,20 @@ PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
                  'status')
+
+TRANSLATE_UUIDS = getattr(settings, 'TRANSLATE_UUIDS', False)
+
+def get_displaynames(names):
+    try:
+        auth_url = settings.ASTAKOS_URL
+        url = auth_url.replace('im/authenticate', 'service/api/user_catalogs')
+        token = settings.CYCLADES_ASTAKOS_SERVICE_TOKEN
+        uuids = lib_astakos.get_displaynames(token, names, url=url)
+    except Exception, e:
+        logger.exception(e)
+        return {}
+
+    return uuids
 
 
 def get_location(account, container, object):
@@ -158,7 +176,15 @@ class ImageBackend(object):
         image['id'] = meta['uuid']
         image['is_public'] = '*' in permissions.get('read', [])
         image['location'] = location
-        image['owner'] = account
+        if TRANSLATE_UUIDS:
+            displaynames = get_displaynames([account])
+            if account in displaynames:
+                display_account = displaynames[account]
+            else:
+                display_account = 'unknown'
+            image['owner'] = display_account
+        else:
+            image['owner'] = account
         image['size'] = meta['bytes']
         image['store'] = 'pithos'
         image['updated_at'] = format_timestamp(meta['modified'])
@@ -305,7 +331,6 @@ class ImageBackend(object):
             # To get shared images, we connect as shared_from member and
             # get the list shared by us
             user = shared_from
-            accounts = [self.user]
         else:
             user = None if public else self.user
             accounts = backend.list_accounts(user)

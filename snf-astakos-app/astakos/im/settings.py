@@ -341,5 +341,9 @@ ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
 
+# If true, this enables a ui compatibility layer for the introduction of UUIDs
+# in identity management. WARNING: Setting to True will break your installation.
+TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
+
 # Users that can approve or deny project applications from the web.
 PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())

@@ -40,7 +40,7 @@ from django.http import HttpRequest
 from django.utils.translation import ugettext as _
 
 from astakos.im.settings import (
-    COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, LOGGING_LEVEL)
+    COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, LOGGING_LEVEL, TRANSLATE_UUIDS)
 
 import astakos.im.messages as astakos_messages
 
@@ -69,8 +69,9 @@ class Cookie():
 
     @property
     def is_valid(self):
-        return self.uuid == getattr(self.user, 'uuid', '') and \
-            self.auth_token == getattr(self.user, 'auth_token', '')
+        cookie_attribute = 'uuid' if not TRANSLATE_UUIDS else 'username'
+        return (self.uuid == getattr(self.user, cookie_attribute, '') and
+                self.auth_token == getattr(self.user, 'auth_token', ''))
 
     @property
     def user(self):
@@ -81,7 +82,10 @@ class Cookie():
             raise ValueError(_(astakos_messages.NO_RESPONSE))
         user = self.user
         expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-        cookie_value = quote(user.uuid + '|' + user.auth_token)
+        if TRANSLATE_UUIDS:
+            cookie_value = quote(user.username + '|' + user.auth_token)
+        else:
+            cookie_value = quote(user.uuid + '|' + user.auth_token)
         self.response.set_cookie(
             COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
             domain=COOKIE_DOMAIN, secure=COOKIE_SECURE

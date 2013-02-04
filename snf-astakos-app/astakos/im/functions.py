@@ -70,6 +70,7 @@ from astakos.im.models import (
     PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
+    membership_request_notify, membership_leave_request_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
@@ -615,13 +616,16 @@ def leave_project(project_id, user_id):
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
         raise PermissionDenied(m)
 
+    auto_accepted = False
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
+        auto_accepted = True
     else:
         membership.leave_request_date = datetime.now()
         membership.save()
-    return membership
+        membership_leave_request_notify(project, membership.person)
+    return auto_accepted
 
 def join_project_checks(project):
     checkAlive(project)
@@ -644,11 +648,16 @@ def join_project(project_id, user_id):
     join_project_checks(project)
     membership = create_membership(project, user_id)
 
+    auto_accepted = False
     join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
-    return membership
+        auto_accepted = True
+    else:
+        membership_request_notify(project, membership.person)
+
+    return auto_accepted
 
 def submit_application(kw, request_user=None):
 

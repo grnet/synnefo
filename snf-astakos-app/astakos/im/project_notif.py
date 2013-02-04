@@ -42,6 +42,30 @@ def membership_enroll_notify(project, user):
     except NotificationError, e:
         logger.error(e.message)
 
+def membership_request_notify(project, requested_user):
+    try:
+        notification = build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(settings.PROJECT_MEMBERSHIP_REQUEST_SUBJECT) % project.__dict__,
+            template= 'im/projects/project_membership_request_notification.txt',
+            dictionary={'object':project, 'user':requested_user.realname})
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+def membership_leave_request_notify(project, requested_user):
+    try:
+        notification = build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(settings.PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT) % project.__dict__,
+            template= 'im/projects/project_membership_leave_request_notification.txt',
+            dictionary={'object':project, 'user':requested_user.realname})
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
 def application_submit_notify(application):
     try:
         notification = build_notification(

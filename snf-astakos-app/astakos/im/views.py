@@ -1343,9 +1343,12 @@ def project_join(request, chain_id, ctx=None):
 
     try:
         chain_id = int(chain_id)
-        join_project(chain_id, request.user)
-        # TODO: distinct messages for request/auto accept ???
-        messages.success(request, _(astakos_messages.USER_JOIN_REQUEST_SUBMITED))
+        auto_accepted = join_project(chain_id, request.user)
+        if auto_accepted:
+            m = _(astakos_messages.USER_JOINED_PROJECT)
+        else:
+            m = _(astakos_messages.USER_JOIN_REQUEST_SUBMITTED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1367,7 +1370,12 @@ def project_leave(request, chain_id, ctx=None):
 
     try:
         chain_id = int(chain_id)
-        leave_project(chain_id, request.user)
+        auto_accepted = leave_project(chain_id, request.user)
+        if auto_accepted:
+            m = _(astakos_messages.USER_LEFT_PROJECT)
+        else:
+            m = _(astakos_messages.USER_LEAVE_REQUEST_SUBMITTED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except PendingMembershipError as e:
@@ -1392,6 +1400,8 @@ def project_cancel(request, chain_id, ctx=None):
     try:
         chain_id = int(chain_id)
         cancel_membership(chain_id, request.user)
+        m = _(astakos_messages.USER_REQUEST_CANCELLED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except PendingMembershipError as e:
@@ -1425,7 +1435,7 @@ def project_accept_member(request, chain_id, user_id, ctx=None):
             ctx.mark_rollback()
     else:
         realname = escape(m.person.realname)
-        msg = _(astakos_messages.USER_JOINED_PROJECT) % locals()
+        msg = _(astakos_messages.USER_MEMBERSHIP_ACCEPTED) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
@@ -1473,7 +1483,7 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
             ctx.mark_rollback()
     else:
         realname = escape(m.person.realname)
-        msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
+        msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 

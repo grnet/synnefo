@@ -186,6 +186,7 @@ UNKNOWN_PROJECT_ID                      =   'There is no project identified by %
 UNKNOWN_IDENTIFIER                      =   'Unknown identifier.'
 PENDING_MEMBERSHIP_LEAVE                =   'Your request is pending moderation by the Project owner.'
 USER_MEMBERSHIP_ACCEPTED                =   '%(realname)s has been accepted in the project.'
+USER_MEMBERSHIP_REMOVED                 =   '%(realname)s has been removed from the project.'
 USER_LEFT_PROJECT                       =   'You have left the project.'
 USER_LEAVE_REQUEST_SUBMITTED            =   'Your request to leave the project has been submitted successfully.'
 USER_JOIN_REQUEST_SUBMITTED             =   'Your request to join the project has been submitted successfully.'

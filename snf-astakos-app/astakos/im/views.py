@@ -1459,7 +1459,7 @@ def project_remove_member(request, chain_id, user_id, ctx=None):
             ctx.mark_rollback()
     else:
         realname = escape(m.person.realname)
-        msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
+        msg = _(astakos_messages.USER_MEMBERSHIP_REMOVED) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 

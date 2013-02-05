@@ -118,7 +118,7 @@ def reconcile_networks(conflicting_ips=False):
                     continue
 
             try:
-                gnet = ganeti_networks[b][network.id]
+                gnet = ganeti_networks[bend][network.id]
             except KeyError:
                 # Network does not exist in backend. If the network action is
                 # DESTROY, then we must destroy the network in the backend.

@@ -38,6 +38,7 @@ ACCOUNT_ALREADY_ACTIVE                  =   'This account is already active.'
 ACCOUNT_PENDING_ACTIVATION              =   'Your account request is pending activation.'
 ACCOUNT_PENDING_MODERATION              =   'Your account request is pending moderation.'
 ACCOUNT_INACTIVE                        =   'Your account is disabled.'
+ACCOUNT_NOT_ACTIVE                      =   'User account is not active.'
 ACCOUNT_RESEND_ACTIVATION               =   'It seems that an activation email has been sent to you, but you have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email.</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
 

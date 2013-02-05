@@ -312,9 +312,6 @@ class AstakosUserManager(UserManager):
     def verified(self):
         return self.filter(email_verified=True)
 
-    def verified(self):
-        return self.filter(email_verified=True)
-
     def uuid_catalog(self, l=None):
         """
         Returns a uuid to username mapping for the uuids appearing in l.
@@ -2607,7 +2604,7 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
     return _sync_users(users, sync)
 
 def sync_all_users(sync=True, retries=3, retry_wait=1.0):
-    users = AstakosUser.objects.filter(is_active=True)
+    users = AstakosUser.objects.verified()
     return sync_users(users, sync, retries, retry_wait)
 
 class ProjectMembershipHistory(models.Model):

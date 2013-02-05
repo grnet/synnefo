@@ -462,7 +462,10 @@ def create_membership(project, user):
     if isinstance(user, int):
         user = get_user_by_id(user)
 
-    #TODO: low level check on whether user is registered in quotaholder
+    if not user.is_active:
+        m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
+        raise PermissionDenied(m)
+
     m = ProjectMembership(
         project=project,
         person=user,

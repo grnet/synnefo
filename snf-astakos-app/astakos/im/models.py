@@ -2428,6 +2428,19 @@ def new_serial():
     s.delete()
     return serial
 
+class SyncError(Exception):
+    pass
+
+def reset_serials(serials):
+    sfu = ProjectMembership.objects.select_for_update()
+    memberships = list(sfu.filter(pending_serial__in=serials))
+
+    if memberships:
+        for membership in memberships:
+            membership.reset_sync()
+
+        transaction.commit()
+
 def sync_finish_serials(serials_to_ack=None):
     if serials_to_ack is None:
         serials_to_ack = qh_query_serials([])
@@ -2494,7 +2507,7 @@ def pre_sync_projects(sync=True):
 
     return (modified, reactivating, deactivating)
 
-def do_sync_projects():
+def set_sync_projects(exclude=None):
 
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
     objects = ProjectMembership.objects.select_for_update()
@@ -2515,6 +2528,12 @@ def do_sync_projects():
                 membership, membership.pending_serial)
             raise AssertionError(m)
 
+        if exclude is not None:
+            uuid = membership.person.uuid
+            if uuid in exclude:
+                logger.warning("Excluded from sync: %s" % uuid)
+                continue
+
         if membership.state in ACTUALLY_ACCEPTED:
             membership.pending_application = membership.project.application
 
@@ -2523,17 +2542,29 @@ def do_sync_projects():
         membership.save()
 
     transaction.commit()
-    # ProjectApplication.approve() unblocks here
-    # and can set PENDING an already PENDING membership
-    # which has been scheduled to sync with the old project.application
-    # Need to check in ProjectMembership.set_sync()
+    return serial, sub_quota, add_quota
 
+def do_sync_projects():
+    serial, sub_quota, add_quota = set_sync_projects()
     r = qh_add_quota(serial, sub_quota, add_quota)
-    if r:
-        m = "cannot sync serial: %d" % serial
-        raise RuntimeError(m)
+    if not r:
+        return serial
 
-    return serial
+    m = "cannot sync serial: %d" % serial
+    logger.error(m)
+    logger.error("Failed: %s" % r)
+
+    reset_serials([serial])
+    uuids = set(uuid for (uuid, resource) in r)
+    serial, sub_quota, add_quota = set_sync_projects(exclude=uuids)
+    r = qh_add_quota(serial, sub_quota, add_quota)
+    if not r:
+        return serial
+
+    m = "cannot sync serial: %d" % serial
+    logger.error(m)
+    logger.error("Failed: %s" % r)
+    raise SyncError(m)
 
 def post_sync_projects():
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED

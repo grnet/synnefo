@@ -58,4 +58,9 @@ class RetryTransactionHandler(TransactionHandler):
                             raise
                         return f(*args, **kwargs)
                     sleep(self.retry_wait)
+                except BaseException:
+                    f = self.on_fail
+                    if not callable(f):
+                        raise
+                    return f(*args, **kwargs)
         return wrap

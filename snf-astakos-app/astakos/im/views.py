@@ -57,6 +57,7 @@ from django.http import (
 from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
@@ -1218,8 +1219,10 @@ def common_detail(request, chain_or_app_id, project_view=True):
                 chain_id=int(chain_id),
                 request_user=request.user)
             addmembers(request, chain_id, addmembers_form)
+            if addmembers_form.is_valid():
+                addmembers_form = AddProjectMembersForm()  # clear form data
         else:
-            addmembers_form = AddProjectMembersForm()
+            addmembers_form = AddProjectMembersForm()  # initialize form
 
         project, application = get_by_chain_or_404(chain_id)
         if project:
@@ -1417,7 +1420,7 @@ def project_accept_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = m.person.realname
+        realname = escape(m.person.realname)
         msg = _(astakos_messages.USER_JOINED_PROJECT) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
@@ -1441,7 +1444,7 @@ def project_remove_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = m.person.realname
+        realname = escape(m.person.realname)
         msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
@@ -1465,7 +1468,7 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = m.person.realname
+        realname = escape(m.person.realname)
         msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))

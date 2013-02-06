@@ -1,9 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-BUILD_DIR=$1
-BUILD_NUMBER=$2
-PACKAGES_DIR=$1/$2
+PACKAGES_DIR=$1
 
 shift
 shift

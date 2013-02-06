@@ -4,7 +4,6 @@ set -e
 PACKAGES_DIR=$1
 
 shift
-shift
 
 TEMP_DIR=$(mktemp -d /tmp/devflow_autopkg_XXXXXXX)
 

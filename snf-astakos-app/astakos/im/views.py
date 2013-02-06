@@ -829,7 +829,6 @@ def change_email(request, activation_key=None,
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
 
     if request.user.is_authenticated():
-        messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
     # TODO: check if moderation is only enabled for local login

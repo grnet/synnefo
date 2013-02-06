@@ -41,6 +41,7 @@ from synnefo.lib.utils import merge_time
 
 log = logging.getLogger(__name__)
 
+
 def handle_message_delivery(func):
     """ Generic decorator for handling messages.
 
@@ -145,7 +146,8 @@ def if_update_required(func):
 
         if db_time and event_time <= db_time:
             format_ = "%d/%m/%y %H:%M:%S:%f"
-            log.debug("Ignoring message %s.\nevent_timestamp: %s db_timestamp: %s",
+            log.debug("Ignoring message %s.\nevent_timestamp: %s"
+                      " db_timestamp: %s",
                       msg,
                       event_time.strftime(format_),
                       db_time.strftime(format_))
@@ -246,10 +248,10 @@ def update_build_progress(vm, msg, event_time):
     if msg['type'] == 'image-helper':
         # for helper task events join subtype to diagnostic source and
         # set task name as diagnostic message
-        if msg.get('subtype', None) and msg.get('subtype') in ['task-start',
-              'task-end']:
-            message = msg.get('task', message)
-            source = "%s-%s" % (source, msg.get('subtype'))
+        if msg.get('subtype', None):
+            if msg.get('subtype') in ['task-start', 'task-end']:
+                message = msg.get('task', message)
+                source = "%s-%s" % (source, msg.get('subtype'))
 
         if msg.get('subtype', None) == 'warning':
             level = 'WARNING'
@@ -271,7 +273,7 @@ def update_build_progress(vm, msg, event_time):
 
     # create the diagnostic entry
     backend.create_instance_diagnostic(vm, message, source, level, event_time,
-        details=details)
+                                       details=details)
 
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])

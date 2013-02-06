@@ -52,13 +52,15 @@ class Command(BaseCommand):
         make_option('--port', dest='port', default=5080),
         make_option('--user', dest='username'),
         make_option('--pass', dest='password'),
-        make_option('--no-check', action='store_false',
+        make_option(
+            '--no-check', action='store_false',
             dest='check', default=True,
             help="Do not perform credentials check and resources update"),
-        make_option('--no-init', action='store_false',
+        make_option(
+            '--no-init', action='store_false',
             dest='init', default=True,
             help="Do not perform initialization of the Backend Model")
-        )
+    )
 
     @transaction.commit_on_success
     def handle(self, **options):
@@ -119,15 +121,15 @@ class Command(BaseCommand):
             net.create_backend_network(backend)
             result = create_network_synced(net, backend)
             if result[0] != "success":
-                self.stdout.write('\nError Creating Network %s: %s\n' %\
+                self.stdout.write('\nError Creating Network %s: %s\n' %
                                   (net.backend_id, result[1]))
             else:
                 self.stdout.write('Successfully created Network: %s\n' %
-                                 net.backend_id)
+                                  net.backend_id)
             result = connect_network_synced(network=net, backend=backend)
             if result[0] != "success":
-                self.stdout.write('\nError Connecting Network %s: %s\n' %\
+                self.stdout.write('\nError Connecting Network %s: %s\n' %
                                   (net.backend_id, result[1]))
             else:
                 self.stdout.write('Successfully connected Network: %s\n' %
-                                 net.backend_id)
+                                  net.backend_id)

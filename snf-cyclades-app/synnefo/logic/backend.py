@@ -170,12 +170,12 @@ def process_ganeti_nics(ganeti_nics):
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
         nic = {
-               'index': i,
-               'network': net,
-               'mac': mac,
-               'ipv4': ipv4,
-               'ipv6': ipv6,
-               'firewall_profile': firewall_profile}
+            'index': i,
+            'network': net,
+            'mac': mac,
+            'ipv4': ipv4,
+            'ipv6': ipv6,
+            'firewall_profile': firewall_profile}
 
         new_nics.append(nic)
     return new_nics
@@ -186,11 +186,11 @@ def nics_changed(old_nics, new_nics):
     if len(old_nics) != len(new_nics):
         return True
     for old_nic, new_nic in zip(old_nics, new_nics):
-        if not (old_nic.ipv4 == new_nic['ipv4'] and\
-                old_nic.ipv6 == new_nic['ipv6'] and\
-                old_nic.mac == new_nic['mac'] and\
-                old_nic.firewall_profile == new_nic['firewall_profile'] and\
-                old_nic.index == new_nic['index'] and\
+        if not (old_nic.ipv4 == new_nic['ipv4'] and
+                old_nic.ipv6 == new_nic['ipv6'] and
+                old_nic.mac == new_nic['mac'] and
+                old_nic.firewall_profile == new_nic['firewall_profile'] and
+                old_nic.index == new_nic['index'] and
                 old_nic.network == new_nic['network']):
             return True
     return False
@@ -243,7 +243,7 @@ def update_network_state(serials, network):
     old_state = network.state
 
     backend_states = [s.operstate for s in
-                     network.backend_networks.filter(backend__offline=False)]
+                      network.backend_networks.filter(backend__offline=False)]
     if not backend_states:
         network.state = 'PENDING'
         network.save()
@@ -332,7 +332,7 @@ def process_create_progress(vm, etime, progress):
 
 
 def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
-    details=None):
+                               details=None):
     """
     Create virtual machine instance diagnostic entry.
 
@@ -344,7 +344,9 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
     :param details: Additional details or debug information.
     """
     VirtualMachineDiagnostic.objects.create_for_vm(vm, level, source=source,
-            source_date=etime, message=message, details=details)
+                                                   source_date=etime,
+                                                   message=message,
+                                                   details=details)
 
 
 def create_instance(vm, public_nic, flavor, image, password=None):
@@ -389,9 +391,9 @@ def create_instance(vm, public_nic, flavor, image, password=None):
     kw['dry_run'] = settings.TEST
 
     kw['beparams'] = {
-       'auto_balance': True,
-       'vcpus': flavor.cpu,
-       'memory': flavor.ram}
+        'auto_balance': True,
+        'vcpus': flavor.cpu,
+        'memory': flavor.ram}
 
     kw['osparams'] = {
         'config_url': vm.config_url,
@@ -497,7 +499,7 @@ def _create_network(network, backend):
         bn = BackendNetwork.objects.get(network=network, backend=backend)
         mac_prefix = bn.mac_prefix
     except BackendNetwork.DoesNotExist:
-        raise Exception("BackendNetwork for network '%s' in backend '%s'"\
+        raise Exception("BackendNetwork for network '%s' in backend '%s'"
                         " does not exist" % (network.id, backend.id))
 
     with pooled_rapi_client(backend) as client:
@@ -605,8 +607,9 @@ def set_firewall_profile(vm, profile):
 
         # XXX NOP ModifyInstance call to force process_net_status to run
         # on the dispatcher
+        os_name = settings.GANETI_CREATEINSTANCE_KWARGS['os']
         client.ModifyInstance(vm.backend_vm_id,
-                         os_name=settings.GANETI_CREATEINSTANCE_KWARGS['os'])
+                              os_name=os_name)
 
 
 def get_ganeti_instances(backend=None, bulk=False):
@@ -661,8 +664,8 @@ def get_physical_resources(backend):
     for n in nodes:
         # Filter out drained, offline and not vm_capable nodes since they will
         # not take part in the vm allocation process
-        if n['vm_capable'] and not n['drained'] and not n['offline']\
-           and n['cnodes']:
+        can_host_vms = n['vm_capable'] and not (n['drained'] or n['offline'])
+        if can_host_vms and n['cnodes']:
             for a in attr:
                 res[a] += int(n[a])
     return res
@@ -737,7 +740,7 @@ def wait_for_job(client, jobid):
     status = result['job_info'][0]
     while status not in ['success', 'error', 'cancel']:
         result = client.WaitForJobChange(jobid, ['status', 'opresult'],
-                                        [result], None)
+                                         [result], None)
         status = result['job_info'][0]
 
     if status == 'success':

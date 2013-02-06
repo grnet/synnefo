@@ -42,7 +42,6 @@ from optparse import make_option
 
 from synnefo.settings import PUBLIC_USE_POOL
 from django.core.management.base import BaseCommand
-from django.db import transaction
 
 from synnefo.db.models import Backend, Network, BackendNetwork
 from synnefo.db.pools import IPPool
@@ -76,7 +75,7 @@ Network reconciliation can detect and fix the following cases:
         make_option('--conflicting-ips', action='store_true',
                     dest='conflicting_ips', default=False,
                     help='Detect conflicting ips')
-        )
+    )
 
     def handle(self, **options):
         global fix, write
@@ -192,9 +191,9 @@ def reconcile_stale_network(backend_network):
     if fix:
         etime = datetime.datetime.now()
         backend_mod.process_network_status(backend_network, etime, 0,
-                                          "OP_NETWORK_REMOVE",
-                                          "success",
-                                          "Reconciliation simulated event")
+                                           "OP_NETWORK_REMOVE",
+                                           "success",
+                                           "Reconciliation simulated event")
         write("F: Reconciled event: OP_NETWORK_REMOVE\n")
 
 
@@ -223,9 +222,9 @@ def reconcile_unsynced_network(network, backend, backend_network):
         write("F: Issuing OP_NETWORK_CONNECT\n")
         etime = datetime.datetime.now()
         backend_mod.process_network_status(backend_network, etime, 0,
-                                          "OP_NETWORK_CONNECT",
-                                          "success",
-                                          "Reconciliation simulated eventd")
+                                           "OP_NETWORK_CONNECT",
+                                           "success",
+                                           "Reconciliation simulated eventd")
 
 
 def reconcile_ip_pools(network, available_maps, reserved_maps):
@@ -257,7 +256,7 @@ def detect_conflicting_ips(network):
         for i in distinct_ips:
             ips.remove(i)
         for i in ips:
-            machines = [utils.id_to_instance_name(x[1]) \
+            machines = [utils.id_to_instance_name(x[1])
                         for x in machine_ips if x[0] == i]
             write('D: Conflicting IP:%s Machines: %s\n' %
                   (i, ', '.join(machines)))

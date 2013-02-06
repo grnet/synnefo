@@ -49,9 +49,9 @@ class GanetiRapiPoolTest(TestCase):
 
     def test_invalid_get(self, rclient):
         self.assertRaises(ValueError, rapi_pool.get_rapi_client, 1, 'amxixa',
-                         None, '5080', 'user', 'pass')
+                          None, '5080', 'user', 'pass')
         self.assertRaises(ValueError, rapi_pool.get_rapi_client, 1, 'amxixa',
-                         'Foo', None, 'user', 'pass')
+                          'Foo', None, 'user', 'pass')
 
     def test_get_from_pool(self, rclient):
         cl = rapi_pool.get_rapi_client(1, 'dummyhash', 'cluster1', '5080',
@@ -71,7 +71,7 @@ class GanetiRapiPoolTest(TestCase):
         rapi_pool.put_rapi_client(cl)
         rclient.reset_mock()
         rapi_pool.get_rapi_client(1, 'dummyhash3', 'cluster2', '5080',
-                                        'user', 'new_pass')
+                                  'user', 'new_pass')
         rclient.assert_called_once_with("cluster2", "5080", "user", "new_pass")
         self.assertFalse('dummyhash2' in rapi_pool._pools)
 

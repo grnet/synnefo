@@ -83,14 +83,14 @@ class Command(BaseCommand):
         make_option('--fix-build-errors', action='store_true',
                     dest='fix_build_errors', default=False,
                     help='Fix (remove) instances with build errors'),
-         make_option('--fix-unsynced-nics', action='store_true',
-                    dest='fix_unsynced_nics', default=False,
-                    help='Fix unsynced nics between DB and Ganeti'),
+        make_option('--fix-unsynced-nics', action='store_true',
+                     dest='fix_unsynced_nics', default=False,
+                     help='Fix unsynced nics between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
         make_option('--backend-id', default=None, dest='backend-id',
                     help='Reconcilie VMs only for this backend'),
-        )
+    )
 
     def _process_args(self, options):
         keys_detect = [k for k in options.keys() if k.startswith('detect_')]
@@ -197,7 +197,10 @@ class Command(BaseCommand):
                 "servers in the DB:" % len(stale)
             for vm in VirtualMachine.objects.filter(pk__in=stale):
                 event_time = datetime.datetime.now()
-                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(
+                    vm=vm,
+                    etime=event_time,
+                    jobid=-0,
                     opcode='OP_INSTANCE_REMOVE', status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -223,7 +226,8 @@ class Command(BaseCommand):
                 opcode = "OP_INSTANCE_REBOOT" if ganeti_up \
                          else "OP_INSTANCE_SHUTDOWN"
                 event_time = datetime.datetime.now()
-                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(
+                    vm=vm, etime=event_time, jobid=-0,
                     opcode=opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -267,11 +271,12 @@ class Command(BaseCommand):
                         print 'Network of nic %d of vm %s is None. ' \
                               'Can not reconcile' % (i, vm.backend_vm_id)
                 event_time = datetime.datetime.now()
-                backend_mod.process_net_status(vm=vm, etime=event_time, nics=final_nics)
+                backend_mod.process_net_status(vm=vm, etime=event_time,
+                                               nics=final_nics)
             print >> sys.stderr, "    ...done"
 
 
 def mac2eui64(mac, prefixstr):
     process = subprocess.Popen(["mac2eui64", mac, prefixstr],
-                                stdout=subprocess.PIPE)
+                               stdout=subprocess.PIPE)
     return process.stdout.read().rstrip()

@@ -109,5 +109,5 @@ class Cookie():
             else:
                 if self.is_set:
                     self.__delete()
-	except AttributeError:
-	    pass
+        except AttributeError:
+            pass

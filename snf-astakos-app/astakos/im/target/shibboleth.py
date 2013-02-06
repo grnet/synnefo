@@ -90,6 +90,7 @@ def login(
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
+        eppn = "124"
         if not eppn:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN) % {
                 'domain': settings.BASEURL,

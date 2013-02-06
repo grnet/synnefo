@@ -644,7 +644,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
             extra_message = provider.get_logout_message_display
             if extra_message:
                 message += '<br />' + extra_message
-        messages.add_message(request, messages.SUCCESS, mark_safe(message))
+        messages.success(request, message)
         response['Location'] = reverse('index')
         response.status_code = 301
     return response

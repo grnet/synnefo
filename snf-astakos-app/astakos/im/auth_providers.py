@@ -239,6 +239,7 @@ class ShibbolethAuthProvider(AuthProvider):
     login_template = 'im/auth/shibboleth_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
     logout_from_provider_text = 'Please close all browser windows to complete logout from your Academic account, too.'
+    logout_message = logout_from_provider_text
 
     method_prompt = _('Academic account')
 

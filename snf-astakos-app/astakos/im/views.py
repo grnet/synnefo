@@ -1192,11 +1192,7 @@ def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
 @project_transaction_context(sync=True)
-def addmembers(request, chain_id, ctx=None):
-    addmembers_form = AddProjectMembersForm(
-        request.POST,
-        chain_id=int(chain_id),
-        request_user=request.user)
+def addmembers(request, chain_id, addmembers_form, ctx=None):
     if addmembers_form.is_valid():
         try:
             chain_id = int(chain_id)
@@ -1217,9 +1213,13 @@ def common_detail(request, chain_or_app_id, project_view=True):
     if project_view:
         chain_id = chain_or_app_id
         if request.method == 'POST':
-            addmembers(request, chain_id)
-
-        addmembers_form = AddProjectMembersForm()
+            addmembers_form = AddProjectMembersForm(
+                request.POST,
+                chain_id=int(chain_id),
+                request_user=request.user)
+            addmembers(request, chain_id, addmembers_form)
+        else:
+            addmembers_form = AddProjectMembersForm()
 
         project, application = get_by_chain_or_404(chain_id)
         if project:

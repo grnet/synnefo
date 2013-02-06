@@ -66,9 +66,15 @@
             // network views
             "networks/":                        "networks_view",
             // network views
-            "disks/":                        	"disks_view"
+            "disks/":                        	"disks_view",
+            ":hash":                            "fallback"
         },
-        
+          
+        fallback: function() {
+            this.navigate("machines/icon/");
+            this.index();
+        },
+
         show_welcome: function() {
             if (snf.storage.vms.length == 0) {
                 ui.main.show_empty();

@@ -1174,6 +1174,10 @@ class PendingThirdPartyUser(models.Model):
         self.last_login = datetime.now()
         self.token = default_token_generator.make_token(self)
 
+    def existing_user(self):
+        return AstakosUser.objects.filter(auth_providers__module=self.provider,
+                                         auth_providers__identifier=self.third_party_identifier)
+
 class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)

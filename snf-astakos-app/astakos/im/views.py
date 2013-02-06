@@ -487,12 +487,20 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
     except AstakosUser.DoesNotExist:
         instance = None
 
+    pending_user = None
     third_party_token = request.REQUEST.get('third_party_token', None)
     if third_party_token:
         pending = get_object_or_404(PendingThirdPartyUser,
                                     token=third_party_token)
         provider = pending.provider
         instance = pending.get_user_instance()
+        if pending.existing_user().count() > 0:
+            pending_user = pending.existing_user().get()
+            if request.method == "GET":
+                messages.warning(request, pending_user.get_inactive_message())
+
+
+    extra_context['pending_user_exists'] = pending_user
 
     try:
         if not backend:

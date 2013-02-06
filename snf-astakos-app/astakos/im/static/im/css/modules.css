@@ -35,7 +35,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg.error                              	{ background-color:#EF4F54; color: #fff}
 .top-msg.warning                                { background-color:#F6921E; color: #fff}
 .top-msg.info                                 	{ background-color:#C3C3B9; color: #fff}
-.top-msg.warning a                              { color: #fff}
+.top-msg.warning a                              { color: #4F3515}
 .top-msg.info a                                 { color: #222}
 
 /* container */

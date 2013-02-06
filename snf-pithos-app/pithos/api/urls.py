@@ -56,4 +56,5 @@ if settings.PROXY_USER_SERVICES:
         '',
         (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'),
         (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'),
-        (r'^user_catalog/?$', 'pithos.api.delegate.delegate_to_user_catalogs_service'))
+        (r'^user_catalogs/?$',
+            'pithos.api.delegate.delegate_to_user_catalogs_service'))

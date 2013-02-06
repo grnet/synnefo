@@ -721,6 +721,9 @@ class AstakosUser(User):
                           kwargs={'uidb36':int_to_base36(self.id),
                                   'token':token_generator.make_token(self)})
 
+    def get_primary_auth_provider(self):
+        return self.get_auth_providers().filter()[0]
+
     def get_auth_providers(self):
         return self.auth_providers
 

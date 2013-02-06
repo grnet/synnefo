@@ -310,10 +310,7 @@ class ImagesTestCase(unittest.TestCase):
                                params, properties)
         # Get image id
         details = self.plankton.list_public(detail=True)
-        detail = filter(
-            lambda x: x['owner'] == PITHOS_USER and
-            x['name'] == self.temp_image_name,
-            details)
+        detail = filter(lambda x: x['location'] == location, details)
         self.assertEqual(len(detail), 1)
         cls = type(self)
         cls.temp_image_id = detail[0]['id']

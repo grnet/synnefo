@@ -30,7 +30,7 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-:
+
 from optparse import make_option
 from datetime import datetime
 
@@ -40,10 +40,10 @@ from astakos.im.models import fix_superusers
 
 
 class Command(NoArgsCommand):
-    help = "Turn superusers created by syncdb to AstakosUser"
+    help = "Transform superusers created by syncdb into AstakosUser instances"
 
     def handle(self, **options):
         try:
             fix_superusers()
         except BaseException, e:
-            raise CommandError(e
+            raise CommandError(e)

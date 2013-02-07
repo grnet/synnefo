@@ -64,7 +64,7 @@ setup(
     name='snf-quotaholder-app',
     version=VERSION,
     license='BSD',
-    url='http://www.synnefo.org/',
+    url='https://code.grnet.gr/projects/synnefo',
     description=SHORT_DESCRIPTION,
     long_description=README + '\n\n' + CHANGES,
     classifiers=CLASSIFIERS,

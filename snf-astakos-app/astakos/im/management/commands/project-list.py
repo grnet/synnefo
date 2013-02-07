@@ -53,11 +53,16 @@ class Command(NoArgsCommand):
                     dest='skip',
                     default=False,
                     help="Skip cancelled and terminated projects"),
+        make_option('--full',
+                    action='store_true',
+                    dest='full',
+                    default=False,
+                    help="Do not shorten long names"),
     )
 
     def handle_noargs(self, **options):
-        labels = ('ProjID', 'Name', 'Owner', 'Status', 'AppID')
-        columns = (7, 23, 23, 20, 7)
+        labels = ('ProjID', 'Name', 'Applicant', 'Email', 'Status', 'AppID')
+        columns = (7, 23, 20, 20, 17, 7)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -69,12 +74,15 @@ class Command(NoArgsCommand):
         if options['skip']:
             chain_dict = do_skip(chain_dict)
 
+        allow_shorten = not options['full']
+
         for info in chain_info(chain_dict):
 
             fields = [
                 (info['projectid'], False),
                 (info['name'], True),
-                (info['owner'], True),
+                (info['applicant'], True),
+                (info['email'], True),
                 (info['status'], False),
                 (info['appid'], False),
                 ]
@@ -86,7 +94,8 @@ class Command(NoArgsCommand):
             else:
                 output = []
                 for (field, shorten), width in zip(fields, columns):
-                    s = shortened(field, width) if shorten else field
+                    s = (shortened(field, width) if shorten and allow_shorten
+                         else field)
                     s = s.rjust(width)
                     output.append(s)
 
@@ -113,7 +122,8 @@ def chain_info(chain_dict):
         d = {
             'projectid' : str(chain),
             'name'  : str(project.application.name if project else app.name),
-            'owner' : app.owner.realname,
+            'applicant' : app.applicant.realname,
+            'email' : app.applicant.email,
             'status': status,
             'appid' : appid,
             }

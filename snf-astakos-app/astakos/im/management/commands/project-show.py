@@ -137,6 +137,7 @@ def app_fields(app):
             ('name', app.name),
             ('status', app.state_display()),
             ('owner', app.owner),
+            ('applicant', app.applicant),
             ('homepage', app.homepage),
             ('description', app.description),
             ('comments for review', app.comments),
@@ -165,6 +166,7 @@ def project_fields(s, project, last_app):
         d.update([('pending application', last_app.id)])
 
     d.update([('owner', app.owner),
+              ('applicant', app.applicant),
               ('homepage', app.homepage),
               ('description', app.description),
               ('comments for review', app.comments),

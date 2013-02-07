@@ -51,7 +51,7 @@ from astakos.version import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Synnefo Identity Management Service'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -181,12 +181,15 @@ setup(
     name='snf-astakos-app',
     version=VERSION,
     license='BSD',
-    url='http://code.grnet.gr/projects/astakos',
+    url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=README + '\n\n' + CHANGES,
     classifiers=CLASSIFIERS,
-    author='GRNET',
-    author_email='astakos@grnet.gr',
+
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
     packages=find_packages(),
     include_package_data=True,

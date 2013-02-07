@@ -49,7 +49,7 @@ from synnefo.versions.common import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Base layer for all of Synnefo related software'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
@@ -71,7 +71,7 @@ setup(
     name = 'snf-common',
     version = VERSION,
     license = 'BSD',
-    url = 'http://code.grnet.gr/',
+    url = 'http://www.synnefo.org/',
     description = SHORT_DESCRIPTION,
     long_description=README + '\n\n' +  CHANGES,
     classifiers = CLASSIFIERS,

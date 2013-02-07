@@ -38,8 +38,10 @@ from astakos.im.functions import check_expiration
 from astakos.im.project_xctx import cmd_project_transaction_context
 
 class Command(BaseCommand):
-    help = "Perform administration checks on projects"
+    help = """
+    Check for and perform due administration tasks (e.g. termination)"
 
+    """
     option_list = BaseCommand.option_list + (
         make_option('--check-expired',
                     action='store_true',

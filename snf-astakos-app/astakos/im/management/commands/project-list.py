@@ -40,7 +40,7 @@ from ._common import format, shortened
 
 
 class Command(NoArgsCommand):
-    help = "List projects"
+    help = "List projects and project status"
 
     option_list = NoArgsCommand.option_list + (
         make_option('-c',

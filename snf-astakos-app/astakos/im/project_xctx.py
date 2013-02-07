@@ -60,6 +60,10 @@ def project_transaction_context(**kwargs):
                                    on_fail=project_error_view,
                                    **kwargs)
 
+def cmd_project_transaction_context(**kwargs):
+    return RetryTransactionHandler(ctx=ProjectTransactionContext,
+                                   **kwargs)
+
 class ProjectTransactionContext(NotificationTransactionContext):
     def __init__(self, sync=False, **kwargs):
         self._sync = sync

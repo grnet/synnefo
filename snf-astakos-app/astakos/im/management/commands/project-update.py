@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from astakos.im.functions import terminate, suspend, resume
-from astakos.im.project_xctx import project_transaction_context
+from astakos.im.project_xctx import cmd_project_transaction_context
 
 class Command(BaseCommand):
     args = "<project id>"
@@ -74,7 +74,7 @@ class Command(BaseCommand):
             elif options['suspend']:
                 run_command(suspend, id)
 
-@project_transaction_context(sync=True)
+@cmd_project_transaction_context(sync=True)
 def run_command(func, id, ctx=None):
     try:
         func(id)

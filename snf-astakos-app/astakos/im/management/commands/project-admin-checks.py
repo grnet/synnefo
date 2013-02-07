@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.functions import check_expiration
-from astakos.im.project_xctx import project_transaction_context
+from astakos.im.project_xctx import cmd_project_transaction_context
 
 class Command(BaseCommand):
     help = "Perform administration checks on projects"
@@ -86,7 +86,7 @@ class Command(BaseCommand):
         if options['expire']:
             self.expire(execute=execute)
 
-    @project_transaction_context(sync=True)
+    @cmd_project_transaction_context(sync=True)
     def expire(self, execute=False, ctx=None):
         try:
             projects = check_expiration(execute=execute)

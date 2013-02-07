@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import ProjectApplication
 from astakos.im.functions import approve_application
-from astakos.im.project_xctx import project_transaction_context
+from astakos.im.project_xctx import cmd_project_transaction_context
 
 class Command(BaseCommand):
     args = "<project application id>"
@@ -54,7 +54,7 @@ class Command(BaseCommand):
         else:
             approve(id)
 
-@project_transaction_context(sync=True)
+@cmd_project_transaction_context(sync=True)
 def approve(app, ctx=None):
     try:
         approve_application(app)

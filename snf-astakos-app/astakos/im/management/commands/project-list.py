@@ -71,13 +71,15 @@ class Command(NoArgsCommand):
 
         for info in chain_info(chain_dict):
 
-            fields = [(format(elem) for elem in (
+            fields = [format(elem) for elem in (
                 (info['projectid'], False),
                 (info['name'], True),
                 (info['owner'], True),
                 (info['status'], False),
                 (info['appid'], False),
             )]
+
+            fields = [(format(elem), flag) for (elem, flag) in fields]
 
             if options['csv']:
                 line = '|'.join(fields)

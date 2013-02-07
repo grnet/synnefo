@@ -1,11 +1,11 @@
 Source: synnefo
 Section: python
 Priority: optional
-Maintainer: Dimitris Aragiorgis <dimara@grnet.gr>
+Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
 Build-Depends: debhelper (>= 8), python-all (>= 2.5)
 Standards-Version: 3.9.2
 XS-Python-Version: >= 2.6
-Homepage: https://code.grnet.gr/projects/synnefo
+Homepage: http://www.synnefo.org
 Vcs-Browser: https://code.grnet.gr/git/synnefo
 
 Package: synnefo

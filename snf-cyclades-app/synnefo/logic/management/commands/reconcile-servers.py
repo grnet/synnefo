@@ -84,8 +84,8 @@ class Command(BaseCommand):
                     dest='fix_build_errors', default=False,
                     help='Fix (remove) instances with build errors'),
         make_option('--fix-unsynced-nics', action='store_true',
-                     dest='fix_unsynced_nics', default=False,
-                     help='Fix unsynced nics between DB and Ganeti'),
+                    dest='fix_unsynced_nics', default=False,
+                    help='Fix unsynced nics between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
         make_option('--backend-id', default=None, dest='backend-id',
@@ -160,8 +160,9 @@ class Command(BaseCommand):
         if options['detect_build_errors']:
             build_errors = reconciliation.instances_with_build_errors(D, G)
             if len(build_errors) > 0:
-                print >> sys.stderr, "The os for the following server IDs was "\
-                                     "not build successfully:"
+                msg = "The os for the following server IDs was not build"\
+                      " successfully:"
+                print >> sys.stderr, msg
                 print "    " + "\n    ".join(
                     ["%d" % x for x in build_errors])
             elif verbosity == 2:
@@ -172,13 +173,15 @@ class Command(BaseCommand):
                 if not nics:
                     print ''.ljust(18) + 'None'
                 for index, info in nics.items():
-                    print ''.ljust(18) + 'nic/' + str(index) + ': MAC: %s, IP: %s, Network: %s' % \
-                      (info['mac'], info['ipv4'], info['network'])
+                    print ''.ljust(18) + 'nic/' + str(index) +\
+                          ': MAC: %s, IP: %s, Network: %s' % \
+                          (info['mac'], info['ipv4'], info['network'])
 
             unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
             if len(unsynced_nics) > 0:
-                print >> sys.stderr, "The NICs of servers with the following IDs "\
-                                     "are unsynced:"
+                msg = "The NICs of the servers with the following IDs are"\
+                      " unsynced:"
+                print >> sys.stderr, msg
                 for id, nics in unsynced_nics.items():
                     print ''.ljust(2) + '%6d:' % id
                     print ''.ljust(8) + '%8s:' % 'DB'
@@ -233,19 +236,20 @@ class Command(BaseCommand):
             print >> sys.stderr, "    ...done"
 
         if options['fix_build_errors'] and len(build_errors) > 0:
-            print >> sys.stderr, "Setting the state of %d build-errors VMs:" % \
-                len(build_errors)
+            print >> sys.stderr, "Setting the state of %d build-errors VMs:" %\
+                                 len(build_errors)
             for id in build_errors:
                 vm = VirtualMachine.objects.get(pk=id)
                 event_time = datetime.datetime.now()
-                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(
+                    vm=vm, etime=event_time, jobid=-0,
                     opcode="OP_INSTANCE_CREATE", status='error',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced_nics'] and len(unsynced_nics) > 0:
             print >> sys.stderr, "Setting the nics of %d out-of-sync VMs:" % \
-                                  len(unsynced_nics)
+                                 len(unsynced_nics)
             for id, nics in unsynced_nics.items():
                 vm = VirtualMachine.objects.get(pk=id)
                 nics = nics[1]  # Ganeti nics

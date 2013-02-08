@@ -41,7 +41,22 @@ from astakos.im.project_xctx import cmd_project_transaction_context
 
 class Command(BaseCommand):
     args = "<project application id>"
-    help = "Approve project application"
+    help = """
+    Approve a pending project application
+
+    You can discover projects with a pending application with
+    (the last column <AppID> is the application to be approved):
+
+        snf-manage project-list --pending
+
+    You can examine a specific application with:
+
+        snf-manage project-show --app <AppId>
+
+    For a given project, you can examine a pending application with:
+
+        snf-manage project-show <project> --pending
+"""
 
     def handle(self, *args, **options):
         if len(args) < 1:

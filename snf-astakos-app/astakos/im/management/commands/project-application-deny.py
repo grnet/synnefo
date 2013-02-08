@@ -42,7 +42,22 @@ from astakos.im.functions import deny_application
 
 class Command(BaseCommand):
     args = "<project application id>"
-    help = "Deny a project application"
+    help = """
+    Deny a project application
+
+    You can discover projects with a pending application with
+    (the last column <AppID> is the application to be denied):
+
+        snf-manage project-list --pending
+
+    You can examine a specific application with:
+
+        snf-manage project-show --app <AppId>
+
+    For a given project, you can examine a pending application with:
+
+        snf-manage project-show <project> --pending
+"""
 
     @transaction.commit_on_success
     def handle(self, *args, **options):

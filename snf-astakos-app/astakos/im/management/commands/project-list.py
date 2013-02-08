@@ -40,7 +40,34 @@ from ._common import format, shortened
 
 
 class Command(NoArgsCommand):
-    help = "List projects and project status"
+    help = """
+    List projects and project status.
+
+    Project status can be one of:
+      Pending              an application <AppId> for a new project
+
+      Active               an active project
+
+      Active - Pending     an active project with
+                           a pending modification <AppId>
+
+      Denied               an application for a new project,
+                           denied by the admin
+
+      Dismissed            a denied project, dismissed by the applicant
+
+      Cancelled            an application for a new project,
+                           cancelled by the applicant
+
+      Suspended            a project suspended by the admin;
+                           it can later be resumed
+
+      Suspended - Pending  a suspended project with
+                           a pending modification <AppId>
+
+      Terminated           a terminated project; its name can be claimed
+                           by a new project
+"""
 
     option_list = NoArgsCommand.option_list + (
         make_option('-c',
@@ -58,6 +85,11 @@ class Command(NoArgsCommand):
                     dest='full',
                     default=False,
                     help="Do not shorten long names"),
+        make_option('--pending',
+                    action='store_true',
+                    dest='pending',
+                    default=False,
+                    help="Show only projects with a pending application"),
     )
 
     def handle_noargs(self, **options):
@@ -73,6 +105,9 @@ class Command(NoArgsCommand):
         chain_dict = Chain.objects.all_full_state()
         if options['skip']:
             chain_dict = do_skip(chain_dict)
+
+        if options['pending']:
+            chain_dict = pending_only(chain_dict)
 
         allow_shorten = not options['full']
 
@@ -102,6 +137,13 @@ class Command(NoArgsCommand):
                 line = ' '.join(output)
 
             self.stdout.write(line + '\n')
+
+def pending_only(chain_dict):
+    d = {}
+    for chain, (state, project, app) in chain_dict.iteritems():
+        if state in Chain.PENDING_STATES:
+            d[chain] = (state, project, app)
+    return d
 
 def do_skip(chain_dict):
     d = {}

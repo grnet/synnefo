@@ -42,20 +42,31 @@ from ._common import format
 
 class Command(BaseCommand):
     args = "<id or name>"
-    help = "Show project details"
+    help = """
+    Show project details.
+
+    Command comes in two forms:
+        project-show <id>    Look up project by id
+
+        project-show <name>  Look up all projects whose name
+                             contains the given string
+"""
 
     option_list = BaseCommand.option_list + (
         make_option('--app',
                     action='store_true',
                     dest='app',
                     default=False,
-                    help="Show application details instead"),
+                    help="Show details of applications instead of projects"
+                    ),
         make_option('--pending',
                     action='store_true',
                     dest='pending',
                     default=False,
-                    help="Show pending modification too"),
-    )
+                    help=("For a given project, show also pending modifications "
+                          "(applications), if any")
+                    ),
+        )
 
     def handle(self, *args, **options):
         if len(args) != 1:

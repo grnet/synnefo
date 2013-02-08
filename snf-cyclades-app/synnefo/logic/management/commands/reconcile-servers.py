@@ -36,7 +36,6 @@ logic/reconciliation.py for a description of reconciliation rules.
 """
 import sys
 import datetime
-import subprocess
 
 from optparse import make_option
 
@@ -45,6 +44,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
 from synnefo.logic import reconciliation, utils
 from synnefo.logic import backend as backend_mod
+from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.management.common import get_backend
 
 
@@ -274,9 +274,3 @@ class Command(BaseCommand):
                 backend_mod.process_net_status(vm=vm, etime=event_time,
                                                nics=final_nics)
             print >> sys.stderr, "    ...done"
-
-
-def mac2eui64(mac, prefixstr):
-    process = subprocess.Popen(["mac2eui64", mac, prefixstr],
-                               stdout=subprocess.PIPE)
-    return process.stdout.read().rstrip()

@@ -43,8 +43,6 @@ These are the individual Ganeti hooks for Synnefo.
 
 import sys
 import os
-import subprocess
-
 import json
 import socket
 import logging
@@ -54,12 +52,7 @@ from time import time
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
 from synnefo.lib.utils import split_time
-
-
-def mac2eui64(mac, prefixstr):
-    process = subprocess.Popen(["mac2eui64", mac, prefixstr],
-                                stdout=subprocess.PIPE)
-    return process.stdout.read().rstrip()
+from synnefo.util.mac2eui64 import mac2eui64
 
 
 def ganeti_net_status(logger, environ):

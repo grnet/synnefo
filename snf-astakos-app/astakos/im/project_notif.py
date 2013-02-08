@@ -49,7 +49,7 @@ def membership_request_notify(project, requested_user):
             [project.application.owner.email],
             _(settings.PROJECT_MEMBERSHIP_REQUEST_SUBJECT) % project.__dict__,
             template= 'im/projects/project_membership_request_notification.txt',
-            dictionary={'object':project, 'user':requested_user.realname})
+            dictionary={'object':project, 'user':requested_user.email})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)
@@ -61,7 +61,7 @@ def membership_leave_request_notify(project, requested_user):
             [project.application.owner.email],
             _(settings.PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT) % project.__dict__,
             template= 'im/projects/project_membership_leave_request_notification.txt',
-            dictionary={'object':project, 'user':requested_user.realname})
+            dictionary={'object':project, 'user':requested_user.email})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)

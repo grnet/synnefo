@@ -1441,8 +1441,8 @@ def project_accept_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = escape(m.person.realname)
-        msg = _(astakos_messages.USER_MEMBERSHIP_ACCEPTED) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_ACCEPTED) % email
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
@@ -1465,8 +1465,8 @@ def project_remove_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = escape(m.person.realname)
-        msg = _(astakos_messages.USER_MEMBERSHIP_REMOVED) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_REMOVED) % email
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
@@ -1489,8 +1489,8 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = escape(m.person.realname)
-        msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % email
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 

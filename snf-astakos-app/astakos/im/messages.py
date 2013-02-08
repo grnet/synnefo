@@ -128,9 +128,6 @@ SWITCH_ACCOUNT_SUCCESS                  =   'Account successfully switched to %(
 ADD_GROUP_MEMBERS_Q_HELP                =   'Add a comma separated list of user emails, eg. user1@user.com, user2@user.com'
 ASTAKOSUSER_GROUPS_HELP                 =   'In addition to the permissions assigned manually, \
                                                this user will also get all permissions coming from his/her groups.'
-EMAIL_CHANGE_NEW_ADDR_HELP              =   'Provide a new email address. Until you verify the new address by \
-                                               following the activation link that will be sent to it, your old \
-                                               email address will remain active.'
 
 EMAIL_SEND_ERR                          =   'Failed to send %s.'
 ADMIN_NOTIFICATION_SEND_ERR             =   EMAIL_SEND_ERR % 'admin notification'

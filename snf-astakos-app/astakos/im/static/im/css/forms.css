@@ -79,6 +79,7 @@ form span.info em 							{ display:block; overflow:hidden;  position:absolute; l
 form span.info:hover em 					{ background-position:-4px -3px; }
 form span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 8px; min-height:50px; display:none; font-size:0.846em;}
 form span.info:hover span 					{ display:block; }
+form span.extra-img:hover +span.info span	{ display:block; }
 form .with-errors span.info					{ display:none;}
 form p										{ margin-bottom:0;position:relative;}
 form input[readonly=true] 					{ /*background-color: #ddd;*/ color: #5e5e5e; }

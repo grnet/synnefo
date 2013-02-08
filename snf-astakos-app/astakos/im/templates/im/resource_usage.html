@@ -42,10 +42,18 @@
 					</div>
 					<div class="bar" data-steps="">
 						<div>
-							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
-                                <em data-value="{{ rdata.ratio }}" class="value {% if rdata.ratio > 18 %}hovered{% endif %}
-">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
+							{% if rdata.ratio > 18 %}
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;" class="hovered">
+                                <em data-value="{{ rdata.ratio }}" class="value">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
 							</span>
+							{% else %}
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
+                                	&nbsp;
+							</span>
+							<em data-value="{{ rdata.ratio }}" class="value">
+                                	{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;
+                                </em>
+							{% endif %}
 						</div>
 					</div>
 		 		</li>

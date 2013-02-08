@@ -242,7 +242,9 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     )
     email = forms.EmailField(
         label='Contact email',
-        help_text = 'This is needed for contact purposes. It doesn&#39;t need to be the same with the one you provided to login previously. '
+        help_text = 'This is needed for contact purposes. ' \
+        'It doesn&#39;t need to be the same with the one you ' \
+        'provided to login previously. '
     )
 
     class Meta:
@@ -432,6 +434,7 @@ class ProfileForm(forms.ModelForm):
     The class defines a save method which sets ``is_verified`` to True so as the
     user during the next login will not to be redirected to profile page.
     """
+    email = forms.EmailField(label='E-mail address',help_text='email help_text')
     renew = forms.BooleanField(label='Renew token', required=False)
     uuid = forms.CharField(label='User id', required=False)
 
@@ -1020,6 +1023,7 @@ class ExtendedProfileForm(ProfileForm):
             self.fields.update(self.password_change_form.fields)
             self.fields['old_password'].required = False
             self.fields['old_password'].label = _('Password')
+            self.fields['old_password'].help_text = _('Password help_text')
             self.fields['old_password'].initial = 'password'
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False

@@ -359,9 +359,13 @@ class AstakosUser(User):
     invitations = models.IntegerField(
         _('Invitations left'), default=INVITATIONS_PER_LEVEL.get(user_level, 0))
 
-    auth_token = models.CharField(_('Authentication Token'), max_length=32,
-                  null=True, blank=True, help_text=_('Renew authentication token'))
-    auth_token_created = models.DateTimeField(_('Token creation date'), null=True)
+    auth_token = models.CharField(_('Authentication Token'), 
+                                  max_length=32,
+                                  null=True, 
+                                  blank=True, 
+                                  help_text = _( 'test' ))
+    auth_token_created = models.DateTimeField(_('Token creation date'), 
+                                              null=True)
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
 
@@ -1129,7 +1133,8 @@ class PendingThirdPartyUser(models.Model):
                                  null=True)
     affiliation = models.CharField('Affiliation', max_length=255, blank=True,
                                    null=True)
-    username = models.CharField(_('username'), max_length=30, unique=True, help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
+    username = models.CharField(_('username'), max_length=30, unique=True,  
+                                help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
     token = models.CharField(_('Token'), max_length=255, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     info = models.TextField(default="", null=True, blank=True)

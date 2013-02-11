@@ -90,4 +90,29 @@ def uenc(thing, encoding=None):
 
     return str(thing)
 
+
+def udec(thing, encoding=None):
+    """Decode the argument into a unicode object.
+
+    If the thing is already a unicode object, nothing happens to it.
+    If it is a string object, it is decoded into a unicode object as
+    specified by the encoding argument.
+    If the thing is another type of object, str() is called on it.
+
+    If the encoding argument is not specified, the module's default
+    is used instead. See uenc_set_encoding() for setting the default.
+
+    """
+    if encoding is None:
+        encoding = uenc_encoding
+
+    if isinstance(thing, unicode):
+        return thing
+
+    try:
+        return thing.decode(encoding)
+    except UnicodeDecodeError:
+        return repr(thing.decode('ISO-8859-1'))
+
+
 uenc_set_encoding()

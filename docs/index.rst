@@ -95,6 +95,10 @@ architecture and the internals of Synnefo components (currently out-of-date!).
    Developer's Guide <dev-guide>
    Integrator's Guide <intgrt-guide>
 
+.. toctree::
+   :maxdepth: 1
+
+   Upgrade to v0.13 <upgrade-0.13>
 
 List of all Synnefo components
 ==============================

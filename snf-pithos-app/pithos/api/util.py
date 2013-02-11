@@ -281,10 +281,12 @@ def update_manifest_meta(request, v_account, meta):
         meta['checksum'] = md5.hexdigest().lower()
 
 def is_uuid(str):
+    if str is None:
+        return False
     try:
         uuid.UUID(str)
     except ValueError:
-       return False
+        return False
     else:
        return True
 

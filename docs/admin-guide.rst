@@ -548,7 +548,13 @@ Block Storage Service (Archipelago)
 
 Overview
 --------
-Archipelago offers Copy-On-Write snapshotable volumes based on pithos images
+Archipelago offers Copy-On-Write snapshotable volumes. Pithos images can be used
+to provision a volume with Copy-On-Write semantics (i.e. a clone). Snapshots
+offer a unique deduplicated image of a volume, that reflects the volume state
+during snapshot creation and are indistinguishable from a Pithos image.
+
+Archipelago is used by Cyclades and Ganeti for fast provisioning of VMs based on
+CoW volumes.
 
 Architecture
 ------------
@@ -578,8 +584,11 @@ Installation
 Archipelago consists of
 
 * ``libxseg0``: libxseg used to communicate over shared memory segments
+* ``python-xseg``: python bindings for libxseg
 * ``archipelago-kernel-dkms``: contains archipelago kernel modules to provide
   block devices to be used as vm disks
+* ``python-archipelago``: archipelago python module. Includes archipelago and
+  vlmc functionality.
 * ``archipelago``: user space tools and peers for the archipelago management and
   volume composition
 * ``archipelago-ganeti``: ganeti ext storage scripts, that enable ganeti to
@@ -594,11 +603,11 @@ Performing
 should fetch all the required packages and get you up 'n going with archipelago
 
 Bare in mind, that custom librados is required, which is provided in the apt
-repo of grnet.
+repo of GRNet.
 
 
-Librados is a dependency of archipelago, even if you do not intend to use
-archipelago over RADOS
+For now, librados is a dependency of archipelago, even if you do not intend to
+use archipelago over RADOS.
 
 Configuration
 -------------
@@ -623,9 +632,8 @@ These are:
 The settings for RADOS storage backend are:
 
 * ``RADOS_POOL_MAPS``: The pool where archipelago and pithos map blocks reside.
-  (Defaults to "maps")
 * ``RADOS_POOL_BLOCKS``: The pool where archipelago and pithos data blocks
-  reside. (Defaults to "blocks")
+  reside.
 
 Examples can be found in the conf file.
 
@@ -655,12 +663,27 @@ Working with Archipelago
 ------------------------
 
 ``archipelago`` provides basic functionality for archipelago.
+
+Usage:
+
+.. code-block:: console
+
+  $ archipelago [-u] command
+
+
 Currently it supports the following commands:
 
-* ``start``
-* ``stop``
-* ``restart``
+* ``start [peer]``
+  Starts archipelago or the specified peer.
+* ``stop [peer]``
+  Stops archipelago or the specified peer.
+* ``restart [peer]``
+  Restarts archipelago or the specified peer.
 * ``status``
+  Show the status of archipelago.
+
+Available peers: ``blockerm``, ``blockerb``, ``mapperd``, ``vlmcd``.
+
 
 ``start``, ``stop``, ``restart`` can be combined with the ``-u / --user`` option
 to affect only the userspace peers supporting archipelago.
@@ -673,7 +696,7 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
 
 * ``vlmc map <volumename>``: maps the volume to a xsegbd device.
 
-* ``vlmc unmap </dev/xsegbd[1-..]``: unmaps the specified device from the
+* ``vlmc unmap </dev/xsegbd[1-..]>``: unmaps the specified device from the
   system.
 
 * ``vlmc create <volumename> --snap <snapname> --size <size>``: creates a new
@@ -694,6 +717,9 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
 * ``vlmc list``: provides a list of archipelago volumes. Currently only works
   with RADOS storage backend.
 
+* ``vlmc info <volumename>``: shows volume information. Currently returns only
+  volume size.
+
 * ``vlmc open <volumename>``: opens an archipelago volume. That is, taking all
   the necessary locks and also make the rest of the infrastructure aware of the
   operation.
@@ -708,7 +734,7 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
 
 * ``vlmc lock <volumename>``: locks a volume. This step allow the administrator
   to lock an archipelago volume, independently from the rest of the
-  insfrastrure.
+  infrastrure.
 
 * ``vlmc unlock [-f] <volumename>``: unlocks a volume. This allow the
   administrator to unlock a volume, independently from the rest of the

@@ -2027,7 +2027,7 @@ class Project(models.Model):
             django.exceptions.PermissionDenied
             astakos.im.models.AstakosUser.DoesNotExist
         """
-        if isinstance(user, int):
+        if isinstance(user, (int, long)):
             user = AstakosUser.objects.get(user=user)
 
         m, created = ProjectMembership.objects.get_or_create(
@@ -2042,7 +2042,7 @@ class Project(models.Model):
             astakos.im.models.AstakosUser.DoesNotExist
             astakos.im.models.ProjectMembership.DoesNotExist
         """
-        if isinstance(user, int):
+        if isinstance(user, (int, long)):
             user = AstakosUser.objects.get(user=user)
 
         m = ProjectMembership.objects.get(person=user, project=self)

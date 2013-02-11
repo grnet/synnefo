@@ -96,7 +96,7 @@ class DjangoBackend(BaseBackend):
         """
         Returns an AstakosUser having this id.
         """
-        if not isinstance(id, int):
+        if not isinstance(id, (int, long)):
             raise TypeError('User id should be of type int')
         return self._lookup_object(AstakosUser, id=id)
 
@@ -104,7 +104,7 @@ class DjangoBackend(BaseBackend):
         """
         Returns an Service having this id.
         """
-        if not isinstance(id, int):
+        if not isinstance(id, (int, long)):
             raise TypeError('Service id should be of type int')
         return self._lookup_object(Service, id=id)
 

@@ -457,9 +457,9 @@ def get_user_by_uuid(uuid):
         raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
 
 def create_membership(project, user):
-    if isinstance(project, int):
+    if isinstance(project, (int, long)):
         project = get_project_by_id(project)
-    if isinstance(user, int):
+    if isinstance(user, (int, long)):
         user = get_user_by_id(user)
 
     if not user.is_active:
@@ -478,9 +478,9 @@ def create_membership(project, user):
         return m
 
 def get_membership_for_update(project, user):
-    if isinstance(project, int):
+    if isinstance(project, (int, long)):
         project = get_project_by_id(project)
-    if isinstance(user, int):
+    if isinstance(user, (int, long)):
         user = get_user_by_id(user)
     try:
         sfu = ProjectMembership.objects.select_for_update()

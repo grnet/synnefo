@@ -83,6 +83,7 @@ from .managers import ForUpdateManager
 
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
+from synnefo.util.text import uenc, udec
 
 logger = logging.getLogger(__name__)
 
@@ -1892,9 +1893,13 @@ class Project(models.Model):
     Q_DEACTIVATED = Q_TERMINATED | Q_SUSPENDED
 
     def __str__(self):
-        return _("<project %s '%s'>") % (self.id, self.application.name)
+        return uenc(_("<project %s '%s'>") %
+                    (self.id, udec(self.application.name)))
 
     __repr__ = __str__
+
+    def __unicode__(self):
+        return _("<project %s '%s'>") % (self.id, self.application.name)
 
     STATE_DISPLAY = {
         APPROVED   : 'Active',
@@ -2180,8 +2185,8 @@ class ProjectMembership(models.Model):
         #index_together = [["project", "state"]]
 
     def __str__(self):
-        return _("<'%s' membership in '%s'>") % (
-                self.person.username, self.project)
+        return uenc(_("<'%s' membership in '%s'>") % (
+                self.person.username, self.project))
 
     __repr__ = __str__
 

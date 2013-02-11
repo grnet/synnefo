@@ -163,7 +163,7 @@ def chain_info(chain_dict):
 
         d = {
             'projectid' : str(chain),
-            'name'  : str(project.application.name if project else app.name),
+            'name'  : project.application.name if project else app.name,
             'applicant' : app.applicant.realname,
             'email' : app.applicant.email,
             'status': status,

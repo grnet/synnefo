@@ -81,21 +81,9 @@ class TransactionHandler(object):
 
     def __call__(self, func):
         def wrap(*args, **kwargs):
-            ctx = self.__enter__()
-            kwargs['ctx'] = ctx
-            typ = value = trace = None
-            result = None
-            try:
-                result = func(*args, **kwargs)
-            except Exception as e:
-                typ = type(e)
-                value = e
-                trace = None
-            finally:
-                silent = self.__exit__(typ, value, trace)
-                if not silent and value:
-                    raise value
-            return result
+            with self as ctx:
+                kwargs['ctx'] = ctx
+                return func(*args, **kwargs)
         return wrap
 
     def __enter__(self):

@@ -6,11 +6,5 @@ GRANT ALL PRIVILEGES ON DATABASE astakos_test TO tester;
 Setup the database:
 ./setup.sh
 
-Launch server:
-./launch.sh
-
-Initialize (the first time you set up the database):
-./init.sh
-
-In terminal 1: ./submit-and-approve.py 1 dummy
-In terminal 2: ./join-and-leave.py 1 dummy
+Run test:
+./stress.py

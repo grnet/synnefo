@@ -36,14 +36,14 @@ from datetime import datetime, timedelta
 from astakos.im.models import AstakosUser, PendingMembershipError
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application)
-from astakos.im.project_xctx import project_transaction_context
+from astakos.im.project_xctx import cmd_project_transaction_context
 from astakos.im.retry_xctx import RetryException
 
-@project_transaction_context(sync=True)
+@cmd_project_transaction_context(sync=True)
 def join(proj_id, user_id, ctx=None):
     join_project(proj_id, user_id)
 
-@project_transaction_context(sync=True)
+@cmd_project_transaction_context(sync=True)
 def leave(proj_id, user_id, ctx=None):
     try:
         leave_project(proj_id, user_id)
@@ -51,7 +51,7 @@ def leave(proj_id, user_id, ctx=None):
         print e
         raise RetryException()
 
-@project_transaction_context(sync=True)
+@cmd_project_transaction_context(sync=True)
 def submit(name, user_id, prec, ctx=None):
     try:
         owner = AstakosUser.objects.get(id=user_id)
@@ -73,6 +73,6 @@ def submit(name, user_id, prec, ctx=None):
     app = submit_application(data, request_user=owner)
     return app.id
 
-@project_transaction_context(sync=True)
+@cmd_project_transaction_context(sync=True)
 def approve(app_id, ctx=None):
     approve_application(app_id)

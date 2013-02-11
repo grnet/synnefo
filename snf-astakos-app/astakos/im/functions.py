@@ -414,6 +414,14 @@ def get_related_project_id(application_id):
     except:
         return None
 
+def get_chain_of_application_id(application_id):
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+        chain = app.chain
+        return chain.chain
+    except:
+        return None
+
 def get_project_by_id(project_id):
     try:
         return Project.objects.get(id=project_id)

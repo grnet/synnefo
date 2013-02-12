@@ -326,7 +326,7 @@ class Node(DBWorker):
         row = r.fetchone()
         r.close()
         if not row:
-            return (), 0
+            return (), 0, ()
         nr, size = row[0], -row[1] if row[1] else 0
         mtime = time()
         self.statistics_update(parent, -nr, size, mtime, cluster)
@@ -381,7 +381,7 @@ class Node(DBWorker):
         nr, size = row[0], row[1]
         r.close()
         if not nr:
-            return (), 0
+            return (), 0, ()
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
 

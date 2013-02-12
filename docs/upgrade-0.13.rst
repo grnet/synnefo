@@ -211,11 +211,15 @@ discarding data from all but one.
 
 - Make sure this setting is set::
 
-    # cyclades: CYCLADES_ASTAKOS_SERVICE_TOKEN
+    # cyclades:     CYCLADES_ASTAKOS_SERVICE_TOKEN = 'secretstring'
 
   from the value in::
 
     cyclades.host$ snf-manage service-list
+
+- The Cyclades user interface needs to translate uuids to displaynames::
+
+    # cyclades:     UI_USER_CATALOG_URL = 'https://astakos.host/user_catalogs/'
 
 - VMAPI needs a **memcached** backend. To install::
 

@@ -46,10 +46,9 @@ clusters = (CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED)
 Statistics = namedtuple('Statistics', ('node', 'path', 'size', 'cluster'))
 
 ResetHoldingPayload = namedtuple('ResetHoldingPayload', (
-                                 'entity', 'resource', 'key',
-                                 'imported', 'exported', 'returned', 'released')
-)
-ENTITY_KEY= '1'
+                'entity', 'resource', 'key',
+                'imported', 'exported', 'returned', 'released'))
+ENTITY_KEY = '1'
 
 backend = get_backend()
 table = {}
@@ -59,12 +58,13 @@ table['statistics'] = backend.node.statistics
 table['policy'] = backend.node.policy
 conn = backend.node.conn
 
+
 def _compute_statistics(nodes):
     statistics = []
     append = statistics.append
     for path, node in nodes:
         select_children = select(
-            [table['nodes'].c.node]).where(table['nodes'].c.parent==node)
+            [table['nodes'].c.node]).where(table['nodes'].c.parent == node)
         select_descendants = select([table['nodes'].c.node]).where(
             or_(table['nodes'].c.parent.in_(select_children),
                 table['nodes'].c.node.in_(select_children)))
@@ -87,8 +87,9 @@ def _compute_statistics(nodes):
                 cluster=cluster))
     return statistics
 
+
 def _get_verified_usage(statistics):
-    """ Verify statistics and set quotaholder account usage """
+    """Verify statistics and set quotaholder account usage"""
     reset_holding = []
     append = reset_holding.append
     for item in statistics:
@@ -100,8 +101,9 @@ def _get_verified_usage(statistics):
             continue
         try:
             assert item.size == db_item.size, \
-                '%d[%s][%d], size: %d != %d' % (
-                    item.node, item.path, item.cluster, item.size, db_item.size)
+                    '%d[%s][%d], size: %d != %d' % (
+                            item.node, item.path, item.cluster,
+                            item.size, db_item.size)
         except AssertionError, e:
             print e
         if item.cluster == CLUSTER_NORMAL:
@@ -152,7 +154,8 @@ class Command(NoArgsCommand):
                 self.stdout.write(
                         'Unknown quotaholder accounts: %s\n' %
                         ','.join(missing_entities))
-                self.stdout.write('Retrying sending quota usage for the rest...\n')
+                m = 'Retrying sending quota usage for the rest...\n'
+                self.stdout.write(m)
                 missing_indexes = set(result)
                 reset_holding = [x for i, x in enumerate(reset_holding)
                                  if i not in missing_indexes]

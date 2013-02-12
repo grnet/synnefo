@@ -47,6 +47,7 @@ table['nodes'] = backend.node.nodes
 table['policy'] = backend.node.policy
 conn = backend.node.conn
 
+
 class Command(NoArgsCommand):
     help = "Export account quota policies"
 
@@ -64,7 +65,7 @@ class Command(NoArgsCommand):
                          table['nodes'].c.parent == 0))
         s = s.where(table['nodes'].c.node == table['policy'].c.node)
         s = s.where(table['policy'].c.key == 'quota')
-    
+
         location = os.path.abspath(options['location'])
         try:
             f = open(location, 'w')

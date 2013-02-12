@@ -1155,11 +1155,16 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
-Upgrade Notes
-=============
+Synnefo Upgrade Notes
+=====================
 
-Cyclades upgrade notes
-----------------------
+.. toctree::
+   :maxdepth: 1
+
+   upgrade-0.13
+
+Older Cyclades upgrade notes
+============================
 
 .. toctree::
    :maxdepth: 2

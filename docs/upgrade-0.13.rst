@@ -1,6 +1,7 @@
 Upgrade to Synnefo v0.13
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+The bulk of the upgrade to v0.13 is about user and quota migrations.
 In summary, the migration process has 3 steps:
 
 1. Run some commands and scripts to diagnose and extract some migration data
@@ -34,11 +35,11 @@ entries in Cyclades and Pithos.  For each service we need to reduce those
 multiple accounts into one, either merging them together, or deleting and
 discarding data from all but one.
 
-2.1 Find duplicate email entries
---------------------------------
+2.1 Find duplicate email entries in Astakos
+-------------------------------------------
 (script: ``find_astakos_users_with_conflicting_emails.py``)::
 
-    $ cat << EOF > find_astakos_users_with_conflicting_emails.py
+    astakos-host$ cat << EOF > find_astakos_users_with_conflicting_emails.py
     import os
     import sys
     
@@ -58,13 +59,16 @@ discarding data from all but one.
     
     EOF
 
-    $ python ./find_astakos_users_with_conflicting_emails.py
+    astakos-host$ python ./find_astakos_users_with_conflicting_emails.py
 
-2.1 Remove duplicate users by their id
---------------------------------------
+
+.. _remove_astakos_duplicate:
+
+2.1 Remove duplicate users in Astakos by their id
+-------------------------------------------------
 (script: ``delete_astakos_users.py``)::
 
-    $ cat << EOF > delete_astakos_users.py
+    astakos-host$ cat << EOF > delete_astakos_users.py
     import os
     import sys
     from time import sleep
@@ -109,13 +113,15 @@ discarding data from all but one.
 
     EOF
 
-    $ python ./delete_astakos_users.py 30 40
+    astakos-host$ python ./delete_astakos_users.py 30 40
 
-**MAKE SURE THAT YOU HAVE RESOLVED ALL CONFLICTS**
+.. warning::
+
+    MAKE SURE THAT YOU HAVE RESOLVED ALL CONFLICTS
 
 
-3. Upgrade synnefo
-==================
+3. Upgrade Synnefo and configure settings
+=========================================
 
 3.1 Install the new versions of packages
 ----------------------------------------
@@ -138,7 +144,7 @@ discarding data from all but one.
                             kamaki \
 
                            
-    cyclades.host$ apt-get install \
+    pithos.host$ apt-get install \
                             snf-common \
                             snf-webproject
                             snf-pithos-backend \
@@ -146,22 +152,32 @@ discarding data from all but one.
                             snf-pithos-webclient \
                             kamaki \
 
-
-3.2 Sync and migrate Django db
+3.2 Sync and migrate Django DB
 ------------------------------
 
 ::
 
-    $ snf-manage syncdb
-    $ snf-manage migrate
-    # at this point, astakos has created uuids for all users
-    # (note: we have deleted duplicate-email users earlier).
-    }}}
+    astakos-host$ snf-manage syncdb
+    astakos-host$ snf-manage migrate
 
-    === 3.4 Setup service settings ===
+    cyclades-host$ snf-manage syncdb
+    cyclades-host$ snf-manage migrate
 
-    '''a.''' Setup quotaholder, and all services that contact it.
-    {{{ 
+.. note::
+
+    After the migration, Astakos has created uuids for all users,
+    and has set the uuid as the public identifier of a user.
+    This uuid is to be used both at other services (Cyclades, Pithos)
+    and at the clientside (kamaki client settings).
+
+    Duplicate-email users have been deleted earlier in
+    :ref:`remove_astakos_duplicate`
+
+3.3 Setup quota settings for all services
+-----------------------------------------
+
+::
+
     # Service       Setting                       Value
     # quotaholder:  QUOTAHOLDER_TOKEN          = <random string>
 
@@ -177,57 +193,60 @@ discarding data from all but one.
     # pithos:       PITHOS_QUOTAHOLDER_URL     = http://quotaholder.host/quotaholder/v
     # All services must match the quotaholder token and url configured for quotaholder.
 
+3.4 Setup astakos
+-----------------
 
-3.3 Setup cyclades astakos service token
-----------------------------------------
+- **Remove** this redirection from astakos front-end web server::
 
-::
+        RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
+
+    (see `<http://docs.dev.grnet.gr/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
+
+- Enable users to change their contact email with the setting::
+
+      # astakos:        ASTAKOS_EMAILCHANGE_ENABLED = True
+
+3.6 Setup Cyclades
+------------------
+
+- Make sure this setting is set::
 
     # cyclades: CYCLADES_ASTAKOS_SERVICE_TOKEN
 
-from the value in::
+  from the value in::
 
-    cyclades.host $ snf-manage service-list
+    cyclades.host$ snf-manage service-list
 
-3.4 Setup pithos-to-astakos
----------------------------
+- VMAPI needs a **memcached** backend. To install::
 
-::
+        apt-get install memcached
+        apt-get install python-memcache
+
+
+  Set the IP address and port of the memcached deamon::
+
+    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211"
+    VMAPI_BASE_URL = "https://cyclades.okeanos.grnet.gr/"
+
+  .. note::
+
+    - These settings are needed in all Cyclades workers.
+
+    - memcached must be reachable from all Cyclades workers.
+
+    - For more information about configuring django to use memcached:
+      https://docs.djangoproject.com/en/1.2/topics/cache
+
+3.6 Setup Pithos
+----------------
+
+- Pithos forwards user catalog services to Astakos so that web clients may
+  access them for uuid-displayname translations::
 
     # pithos:       PITHOS_USER_CATALOG_URL    = https://astakos.host/user_catalogs/
     # pithos:       PITHOS_USER_FEEDBACK_URL   = https://astakos.host/feedback/
     # pithos:       PITHOS_USER_LOGIN_URL      = https://astakos.host/login/
     # pithos:       #PITHOS_PROXY_USER_SERVICES = True # Set False if astakos & pithos are on the same host
-
-3.5 Setup astakos
------------------
-
-**Remove** this redirection from astakos front-end web server::
-
-    RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
-
-(see `<http://docs.dev.grnet.gr/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
-
-3.6 Setup Cyclades VMAPI
-------------------------
-
-VMAPI needs a **memcached** backend. To install::
-
-    apt-get install memcached
-    apt-get install python-memcache
-
-The memcached must be reachable from all Cyclades workers.
-
-Set the IP address and port of the memcached deamon::
-
-    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211"
-    VMAPI_BASE_URL = "https://cyclades.okeanos.grnet.gr/"
-
-These settings are needed in all Cyclades workers.
-
-For more information about configuring django to use memcached:
-
-    https://docs.djangoproject.com/en/1.2/topics/cache
 
 
 4. Start astakos and quota services
@@ -236,7 +255,8 @@ E.g.::
 
     astakos.host$ service gunicorn restart
 
-.. _astakos-load-label:
+
+.. _astakos-load-resources:
 
 5. Load resource definitions into Astakos
 =========================================
@@ -297,23 +317,27 @@ Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
         }
     }
 
-Note that before v0.13 only `cyclades.vm`, `cyclades.network.private`,
-and `pithos+.diskspace` existed (not with this names, of course).
-However, limits to the new resources must also be set.
+.. note::
 
-If the intetion is to keep a resource unlimited,
-(counting on that VM creation will be limited by other resources' limit)
-it is best to calculate a value that is too large to be reached because
-of other limits (and available flavours), but not much larger than
-needed because this might confuse users who do not readily understand
-that multiple limits apply and flavors are limited.
+    Before v0.13, only `cyclades.vm`, `cyclades.network.private`,
+    and `pithos+.diskspace` existed (not with this names, of course).
+    However, limits to the new resources must also be set.
+
+    If the intetion is to keep a resource unlimited, (counting on that VM
+    creation will be limited by other resources' limit) it is best to calculate
+    a value that is too large to be reached because of other limits (and
+    available flavours), but not much larger than needed because this might
+    confuse users who do not readily understand that multiple limits apply and
+    flavors are limited.
 
 
-6. Migrate Cyclades user names
-==============================
+6. Migrate Services user names to uuids
+=======================================
 
-6.1 Doublecheck cyclades before user case/uuid migration
---------------------------------------------------------
+
+
+6.1 Double-check cyclades before user case/uuid migration
+---------------------------------------------------------
 
 ::
 
@@ -369,29 +393,38 @@ Finally, migrate pithos account name to uuid::
 Migrate from pithos native to astakos/quotaholder.
 This requires a file to be transfered from Cyclades to Astakos::
 
-    pithos.host$ snf-manage pithos-export-quota --location=limits.tab
-    pithos.host$ rsync -avP limits.tab astakos.host:
-    astakos.host$ snf-manage user-set-initial-quota limits.tab
+    pithos.host$ snf-manage pithos-export-quota --location=pithos-quota.txt
+    pithos.host$ rsync -avP pithos-quota.txt astakos.host:
+    astakos.host$ snf-manage user-set-initial-quota pithos-quota.txt
 
-Note that `pithos-export-quota` will only export quotas that are not equal to
-the defaults in Pithos. Therefore, it is possible to both change or maintain
-the default quotas across the migration. To maintain quotas the new default
-pithos+.diskpace limit in Astakos must be equal to the (old) default quota
-limit in Pithos. Change either one of them make them equal.
+.. _export-quota-note:
 
-see :ref:`astakos-load-label` on how to set the (new) default quotas in Astakos.
+.. note::
+
+    `pithos-export-quota` will only export quotas that are not equal to the
+    defaults in Pithos. Therefore, it is possible to both change or maintain
+    the default quotas across the migration. To maintain quotas the new default
+    pithos+.diskpace limit in Astakos must be equal to the (old) default quota
+    limit in Pithos. Change either one of them make them equal.
+
+    see :ref:`astakos-load-resources` on how to set the (new) default quotas in Astakos.
 
 7.2 Migrate Cyclades quota limits to Astakos
 --------------------------------------------
 
 ::
 
-    $ ???
+    cyclades.host$ snf-manage cyclades-export-quota --location=cyclades-quota.txt
+    cyclades.host$ rsync -avP cyclades-quota.txt astakos.host:
+    astakos.host$ snf-manage user-set-initial-quota cyclades-quota.txt
+
+`cyclades-export-quota` will only export quotas that are not equal to the defaults.
+See :ref:`note above <export-quota-note>`.
 
 8. Enforce the new quota limits migrated to Astakos
 ===================================================
 The following should report all users not having quota limits set
-because the effective quota database has not been initialized yet.::
+because the effective quota database has not been initialized yet. ::
 
     astakos.host$ snf-manage astakos-quota --verify
 
@@ -406,23 +439,22 @@ database with the quota limits that are derived from policies in Astakos
 9. Initialize resource usage
 ============================
 
-The effective quota database (quotaholder) has just been initialized and
-knows nothing of the current resource usage. Each service must send its
-current usage.
+The effective quota database (quotaholder) has just been initialized and knows
+nothing of the current resource usage. Therefore, each service must send it in.
 
-9.1 Initialize Cyclades resource usage
---------------------------------------
-
-::
-
-    cyclades.host$ snf-manage cyclades-reset-usage
-
-9.2 Initialize Pithos resource usage
+9.1 Initialize Pithos resource usage
 ------------------------------------
 
 ::
 
     cyclades.host$ snf-manage pithos-reset-usage
+
+9.2 Initialize Cyclades resource usage
+--------------------------------------
+
+::
+
+    cyclades.host$ snf-manage cyclades-reset-usage
 
 10. Install periodic project maintainance checks
 ================================================
@@ -432,7 +464,7 @@ a management command has to be run periodically
 
     astakos.host$ snf-manage project-control --terminate-expired
 
-A list of expired projects can be extracted ::
+A list of expired projects can be extracted with::
 
     astakos.host$ snf-manage project-control --list-expired
 

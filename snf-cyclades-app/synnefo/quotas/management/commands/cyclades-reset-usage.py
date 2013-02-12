@@ -39,17 +39,12 @@ from synnefo.quotas.util import get_db_holdings
 
 
 class Command(BaseCommand):
-    help = "Reconcile quotas with Quotaholder"
+    help = """Reset cyclades.* usage values in Quotaholder"""
     output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
                     help="Verify quotas only for this user"),
-        make_option("--fix", dest="fix",
-                    action='store_true',
-                    default=False,
-                    help="Fix pending commissions"
-                    ),
         make_option("--dry-run", dest="dry_run",
                     action='store_true',
                     default=False),

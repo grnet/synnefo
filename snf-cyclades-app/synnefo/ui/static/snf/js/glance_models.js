@@ -38,6 +38,11 @@
             return val;
         },
 
+        get_owner: function() {
+            return this.get('owner') || 'Unknown';
+        },
+
+
         display_size: function() {
             return this.get_readable_size();
         },

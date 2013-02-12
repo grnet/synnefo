@@ -70,11 +70,27 @@ class Command(NoArgsCommand):
 """
 
     option_list = NoArgsCommand.option_list + (
-        make_option('-c',
+        make_option('--all',
                     action='store_true',
-                    dest='csv',
+                    dest='all',
                     default=False,
-                    help="Use pipes to separate values"),
+                    help="List all projects (default)"),
+        make_option('--new',
+                    action='store_true',
+                    dest='new',
+                    default=False,
+                    help="List only new project requests"),
+        make_option('--modified',
+                    action='store_true',
+                    dest='modified',
+                    default=False,
+                    help="List only projects with pending modification"),
+        make_option('--pending',
+                    action='store_true',
+                    dest='pending',
+                    default=False,
+                    help=("Show only projects with a pending application "
+                          "(equiv. --modified --new)")),
         make_option('--skip',
                     action='store_true',
                     dest='skip',
@@ -85,31 +101,46 @@ class Command(NoArgsCommand):
                     dest='full',
                     default=False,
                     help="Do not shorten long names"),
-        make_option('--pending',
+        make_option('-c',
                     action='store_true',
-                    dest='pending',
+                    dest='csv',
                     default=False,
-                    help="Show only projects with a pending application"),
-    )
+                    help="Use pipes to separate values"),
+        )
 
     def handle_noargs(self, **options):
+        allow_shorten = not options['full']
+        csv = options['csv']
+
+        chain_dict = Chain.objects.all_full_state()
+
+        if not options['all']:
+            f_states = []
+            if options['new']:
+                f_states.append(Chain.PENDING)
+            if options['modified']:
+                f_states += Chain.MODIFICATION_STATES
+            if options['pending']:
+                f_states.append(Chain.PENDING)
+                f_states += Chain.MODIFICATION_STATES
+            if options['skip']:
+                if not f_states:
+                    f_states = Chain.RELEVANT_STATES
+
+            if f_states:
+                chain_dict = filter_by_state(chain_dict, f_states)
+
+        self.show(csv, allow_shorten, chain_dict)
+
+    def show(self, csv, allow_shorten, chain_dict):
         labels = ('ProjID', 'Name', 'Applicant', 'Email', 'Status', 'AppID')
         columns = (7, 23, 20, 20, 17, 7)
 
-        if not options['csv']:
+        if not csv:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
-
-        chain_dict = Chain.objects.all_full_state()
-        if options['skip']:
-            chain_dict = do_skip(chain_dict)
-
-        if options['pending']:
-            chain_dict = pending_only(chain_dict)
-
-        allow_shorten = not options['full']
 
         for info in chain_info(chain_dict):
 
@@ -124,7 +155,7 @@ class Command(NoArgsCommand):
 
             fields = [(format(elem), flag) for (elem, flag) in fields]
 
-            if options['csv']:
+            if csv:
                 line = '|'.join(fields)
             else:
                 output = []
@@ -138,17 +169,10 @@ class Command(NoArgsCommand):
 
             self.stdout.write(line + '\n')
 
-def pending_only(chain_dict):
+def filter_by_state(chain_dict, states):
     d = {}
     for chain, (state, project, app) in chain_dict.iteritems():
-        if state in Chain.PENDING_STATES:
-            d[chain] = (state, project, app)
-    return d
-
-def do_skip(chain_dict):
-    d = {}
-    for chain, (state, project, app) in chain_dict.iteritems():
-        if state not in Chain.SKIP_STATES:
+        if state in states:
             d[chain] = (state, project, app)
     return d
 

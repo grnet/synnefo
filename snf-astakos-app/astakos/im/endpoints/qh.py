@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -109,6 +109,22 @@ def quota_limits_per_user_from_get(lst):
         quotas[holder] = userquotas
     return quotas
 
+def quotas_per_user_from_get(lst):
+    limits = {}
+    counters = {}
+    for holder, resource, q, c, il, el, imp, exp, ret, rel, flags in lst:
+        userlimits = limits.get(holder, {})
+        userlimits[resource] = QuotaValues(quantity=q, capacity=c,
+                                           import_limit=il, export_limit=el)
+        limits[holder] = userlimits
+
+        usercounters = counters.get(holder, {})
+        usercounters[resource] = QuotaCounters(imported=imp, exported=exp,
+                                               returned=ret, released=rel)
+        counters[holder] = usercounters
+    return limits, counters
+
+
 def qh_get_quota(users, resources):
     c = get_client()
     if not c:
@@ -126,6 +142,10 @@ def qh_get_quota(users, resources):
 def qh_get_quota_limits(users, resources):
     result = qh_get_quota(users, resources)
     return quota_limits_per_user_from_get(result)
+
+def qh_get_quotas(users, resources):
+    result = qh_get_quota(users, resources)
+    return quotas_per_user_from_get(result)
 
 def create_entity(payload):
     c = get_client()
@@ -156,8 +176,14 @@ CreateEntityPayload = namedtuple('CreateEntityPayload', ('entity',
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',
-                                        'import_limit',
+                                         'import_limit',
                                          'export_limit'))
+
+QuotaCounters = namedtuple('QuotaCounters', ('imported',
+                                             'exported',
+                                             'returned',
+                                             'released'))
+
 
 class QuotaValues(namedtuple('QuotaValues', ('quantity',
                                              'capacity',

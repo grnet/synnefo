@@ -1,4 +1,6 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# encoding: utf-8
+
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,52 +35,26 @@
 
 from optparse import make_option
 
+from astakos.im.models import load_service_resources
 from django.core.management.base import BaseCommand, CommandError
-from astakos.im.functions import terminate, suspend, resume
-from astakos.im.project_xctx import cmd_project_transaction_context
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
-    args = "<project id>"
-    help = "Update project state"
+    args = ""
+    help = "Register service resources"
 
     option_list = BaseCommand.option_list + (
-        make_option('--terminate',
+        make_option('--load-service-resources',
                     action='store_true',
-                    dest='terminate',
+                    dest='load',
                     default=False,
-                    help="Terminate project"),
-        make_option('--resume',
-                    action='store_true',
-                    dest='resume',
-                    default=False,
-                    help="Resume project"),
-        make_option('--suspend',
-                    action='store_true',
-                    dest='suspend',
-                    default=False,
-                    help="Suspend project")
+                    help=("Load initial data for services and their resources "
+                          "on quotaholder")),
     )
 
     def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide a project id")
-        try:
-            id = int(args[0])
-        except ValueError:
-            raise CommandError('Invalid id')
-        else:
-            if options['terminate']:
-                run_command(terminate, id)
-            elif options['resume']:
-                run_command(resume, id)
-            elif options['suspend']:
-                run_command(suspend, id)
-
-@cmd_project_transaction_context(sync=True)
-def run_command(func, id, ctx=None):
-    try:
-        func(id)
-    except BaseException as e:
-        if ctx:
-            ctx.mark_rollback()
-        raise CommandError(e)
+        if options['load']:
+            load_service_resources()

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -71,7 +71,7 @@ from astakos.im.settings import (
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quotas, qh_check_users, qh_get_quota_limits,
+    register_users, send_quotas, qh_check_users, qh_get_quotas,
     register_services, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials,
     QuotaValues, add_quota_values)
@@ -447,8 +447,11 @@ class AstakosUser(User):
             quotas[resource] = user_quota.quota_values()
         return quotas
 
-    def all_quotas(self):
-        quotas = self.initial_quotas()
+    def all_quotas(self, initial=None):
+        if initial is None:
+            quotas = self.initial_quotas()
+        else:
+            quotas = dict(initial)
 
         objects = self.projectmembership_set.select_related()
         memberships = objects.filter(is_active=True)
@@ -1358,6 +1361,20 @@ class Chain(models.Model):
                       SUSPENDED_PENDING,
                       TERMINATED_PENDING,
                       ]
+
+    MODIFICATION_STATES = [APPROVED_PENDING,
+                           SUSPENDED_PENDING,
+                           TERMINATED_PENDING,
+                           ]
+
+    RELEVANT_STATES = [PENDING,
+                       DENIED,
+                       APPROVED,
+                       APPROVED_PENDING,
+                       SUSPENDED,
+                       SUSPENDED_PENDING,
+                       TERMINATED_PENDING,
+                       ]
 
     SKIP_STATES = [DISMISSED,
                    CANCELLED,
@@ -2629,10 +2646,16 @@ def sync_projects(sync=True, retries=3, retry_wait=1.0):
     return _sync_projects(sync)
 
 def all_users_quotas(users):
+    initial = {}
     quotas = {}
+    info = {}
     for user in users:
-        quotas[user.uuid] = user.all_quotas()
-    return quotas
+        uuid = user.uuid
+        info[uuid] = user.email
+        init = user.initial_quotas()
+        initial[uuid] = init
+        quotas[user.uuid] = user.all_quotas(initial=init)
+    return initial, quotas, info
 
 def sync_users(users, sync=True, retries=3, retry_wait=1.0):
     @with_lock(retries, retry_wait)
@@ -2641,14 +2664,16 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
 
         existing, nonexisting = qh_check_users(users)
         resources = get_resource_names()
-        registered_quotas = qh_get_quota_limits(existing, resources)
-        astakos_quotas = all_users_quotas(users)
+        qh_limits, qh_counters = qh_get_quotas(existing, resources)
+        astakos_initial, astakos_quotas, info = all_users_quotas(users)
 
         if sync:
             r = register_users(nonexisting)
             r = send_quotas(astakos_quotas)
 
-        return (existing, nonexisting, registered_quotas, astakos_quotas)
+        return (existing, nonexisting,
+                qh_limits, qh_counters,
+                astakos_initial, astakos_quotas, info)
     return _sync_users(users, sync)
 
 def sync_all_users(sync=True, retries=3, retry_wait=1.0):

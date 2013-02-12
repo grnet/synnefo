@@ -40,7 +40,7 @@ from collections import namedtuple
 from django.utils.translation import ugettext as _
 
 from astakos.im.settings import (
-        QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
+    QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
 
 if QUOTAHOLDER_URL:
     from kamaki.clients.quotaholder import QuotaholderClient
@@ -58,6 +58,8 @@ inf = float('inf')
 clientkey = 'astakos'
 
 _client = None
+
+
 def get_client():
     global _client
     if _client:
@@ -67,6 +69,7 @@ def get_client():
     _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
     return _client
 
+
 def set_quota(payload):
     c = get_client()
     if not c:
@@ -74,6 +77,7 @@ def set_quota(payload):
     result = c.set_quota(context={}, clientkey=clientkey, set_quota=payload)
     logger.debug('set_quota: %s rejected: %s' % (payload, result))
     return result
+
 
 def get_entity(payload):
     c = get_client()
@@ -83,6 +87,7 @@ def get_entity(payload):
     logger.debug('get_entity: %s reply: %s' % (payload, result))
     return result
 
+
 def get_holding(payload):
     c = get_client()
     if not c:
@@ -90,6 +95,7 @@ def get_holding(payload):
     result = c.get_holding(context={}, get_holding=payload)
     logger.debug('get_holding: %s reply: %s' % (payload, result))
     return result
+
 
 def qh_get_holdings(users, resources):
     payload = []
@@ -100,6 +106,7 @@ def qh_get_holdings(users, resources):
     result = get_holding(payload)
     return result
 
+
 def quota_limits_per_user_from_get(lst):
     quotas = {}
     for holder, resource, q, c, il, el, imp, exp, ret, rel, flags in lst:
@@ -108,6 +115,7 @@ def quota_limits_per_user_from_get(lst):
                                            import_limit=il, export_limit=el)
         quotas[holder] = userquotas
     return quotas
+
 
 def quotas_per_user_from_get(lst):
     limits = {}
@@ -139,13 +147,16 @@ def qh_get_quota(users, resources):
     logger.debug('get_quota: %s rejected: %s' % (payload, result))
     return result
 
+
 def qh_get_quota_limits(users, resources):
     result = qh_get_quota(users, resources)
     return quota_limits_per_user_from_get(result)
 
+
 def qh_get_quotas(users, resources):
     result = qh_get_quota(users, resources)
     return quotas_per_user_from_get(result)
+
 
 def create_entity(payload):
     c = get_client()
@@ -190,11 +201,14 @@ class QuotaValues(namedtuple('QuotaValues', ('quantity',
                                              'import_limit',
                                              'export_limit'))):
     __slots__ = ()
+
     def __dir__(self):
             return ['quantity', 'capacity', 'import_limit', 'export_limit']
 
     def __str__(self):
-        return '\t'.join(['%s=%s' % (f, strbigdec(getattr(self, f))) for f in dir(self)])
+        return '\t'.join(['%s=%s' % (f, strbigdec(getattr(self, f)))
+                          for f in dir(self)])
+
 
 def add_quota_values(q1, q2):
     return QuotaValues(
@@ -203,24 +217,28 @@ def add_quota_values(q1, q2):
         import_limit = q1.import_limit + q2.import_limit,
         export_limit = q1.export_limit + q2.export_limit)
 
+
 def qh_register_user_with_quotas(user):
     return register_users_with_quotas([user])
+
 
 def register_users_with_quotas(users):
     rejected = register_users(users)
     if not rejected:
         register_quotas(users)
 
+
 def register_users(users):
     if not users:
         return
 
     payload = list(CreateEntityPayload(
-                    entity=u.uuid,
-                    owner='system',
-                    key=ENTITY_KEY,
-                    ownerkey='') for u in users)
+            entity=u.uuid,
+            owner='system',
+            key=ENTITY_KEY,
+            ownerkey='') for u in users)
     return create_entity(payload)
+
 
 def register_quotas(users):
     if not users:
@@ -230,7 +248,7 @@ def register_quotas(users):
     append = payload.append
     for u in users:
         for resource, q in u.all_quotas().iteritems():
-            append( SetQuotaPayload(
+            append(SetQuotaPayload(
                     holder=u.uuid,
                     resource=resource,
                     key=ENTITY_KEY,
@@ -241,6 +259,7 @@ def register_quotas(users):
                     flags=0))
     return set_quota(payload)
 
+
 def send_quotas(userquotas):
     if not userquotas:
         return
@@ -249,7 +268,7 @@ def send_quotas(userquotas):
     append = payload.append
     for holder, quotas in userquotas.iteritems():
         for resource, q in quotas.iteritems():
-            append( SetQuotaPayload(
+            append(SetQuotaPayload(
                     holder=holder,
                     resource=resource,
                     key=ENTITY_KEY,
@@ -259,6 +278,7 @@ def send_quotas(userquotas):
                     export_limit=q.export_limit,
                     flags=0))
     return set_quota(payload)
+
 
 def register_services(services):
     def payload(services):
@@ -282,6 +302,7 @@ def register_services(services):
             m = "Failed to register services: %s" % (failed,)
             raise RuntimeError(m)
 
+
 def register_resources(resources):
     try:
         QH_PRACTICALLY_INFINITE
@@ -299,6 +320,7 @@ def register_resources(resources):
             flags=0) for resource in resources)
     return set_quota(payload)
 
+
 def qh_check_users(users):
     payload = [(u.uuid, ENTITY_KEY) for u in users]
     result = get_entity(payload)
@@ -312,6 +334,7 @@ def qh_check_users(users):
         else:
             nonexisting.append(u)
     return (existing, nonexisting)
+
 
 def qh_add_quota(serial, sub_list, add_list):
     if not QUOTAHOLDER_URL:
@@ -343,6 +366,7 @@ def qh_add_quota(serial, sub_list, add_list):
 
     return result
 
+
 def qh_query_serials(serials):
     if not QUOTAHOLDER_URL:
         return ()
@@ -353,6 +377,7 @@ def qh_query_serials(serials):
                              clientkey=clientkey,
                              serials=serials)
     return result
+
 
 def qh_ack_serials(serials):
     if not QUOTAHOLDER_URL:
@@ -415,22 +440,22 @@ def _usage_units(timeline, after, before, details=0):
 
         target = point['target']
         if details:
-            yield  (target,
-                    point['resource'],
-                    point['name'],
-                    issue_time,
-                    uu_cost,
-                    uu_total)
+            yield (target,
+                   point['resource'],
+                   point['name'],
+                   issue_time,
+                   uu_cost,
+                   uu_total)
 
     if not t_total:
         return
 
-    yield  (target,
-            'total',
-            point['resource'],
-            issue_time,
-            uu_total / t_total,
-            uu_total)
+    yield (target,
+           'total',
+           point['resource'],
+           issue_time,
+           uu_total / t_total,
+           uu_total)
 
 
 def usage_units(timeline, after, before, details=0):
@@ -454,22 +479,22 @@ def traffic_units(timeline, after, before, details=0):
         tu_total += tu
 
         if details:
-            yield  (target,
-                    point['resource'],
-                    point['name'],
-                    issue_time,
-                    tu,
-                    tu_total)
+            yield (target,
+                   point['resource'],
+                   point['name'],
+                   issue_time,
+                   tu,
+                   tu_total)
 
     if not tu_total:
         return
 
-    yield  (target,
-            'total',
-            point['resource'],
-            issue_time,
-            tu_total // len(timeline),
-            tu_total)
+    yield (target,
+           'total',
+           point['resource'],
+           issue_time,
+           tu_total // len(timeline),
+           tu_total)
 
 
 def timeline_charge(entity, resource, after, before, details, charge_type):

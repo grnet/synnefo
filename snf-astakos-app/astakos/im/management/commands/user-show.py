@@ -41,6 +41,7 @@ from ._common import format
 
 import uuid
 
+
 class Command(BaseCommand):
     args = "<user ID or email>"
     help = "Show user info"

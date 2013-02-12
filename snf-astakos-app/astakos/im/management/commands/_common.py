@@ -66,6 +66,7 @@ def format_date(d):
     else:
         return 'in ' + timeuntil(d)
 
+
 def format_dict(d, level=1, ident=22):
     iteritems = d.iteritems()
     if not isinstance(d, OrderedDict):
@@ -76,8 +77,10 @@ def format_dict(d, level=1, ident=22):
     l.insert(0, '\n')
     return ''.join(l)
 
+
 def format_set(s):
     return list(s)
+
 
 def format(obj, level=1, ident=22):
     if isinstance(obj, bool):
@@ -90,6 +93,7 @@ def format(obj, level=1, ident=22):
         return format_set(obj)
     else:
         return obj
+
 
 def get_astakosuser_content_type():
     try:
@@ -147,6 +151,7 @@ def remove_group_permission(group, pname):
         return 1
     except Permission.DoesNotExist:
         return -1
+
 
 def shortened(s, limit, suffix=True):
     length = len(s)

@@ -106,7 +106,7 @@ class Command(NoArgsCommand):
                     dest='csv',
                     default=False,
                     help="Use pipes to separate values"),
-        )
+    )
 
     def handle_noargs(self, **options):
         allow_shorten = not options['full']
@@ -151,7 +151,7 @@ class Command(NoArgsCommand):
                 (info['email'], True),
                 (info['status'], False),
                 (info['appid'], False),
-                ]
+            ]
 
             fields = [(format(elem), flag) for (elem, flag) in fields]
 
@@ -169,12 +169,14 @@ class Command(NoArgsCommand):
 
             self.stdout.write(line + '\n')
 
+
 def filter_by_state(chain_dict, states):
     d = {}
     for chain, (state, project, app) in chain_dict.iteritems():
         if state in states:
             d[chain] = (state, project, app)
     return d
+
 
 def chain_info(chain_dict):
     l = []
@@ -186,12 +188,12 @@ def chain_info(chain_dict):
             appid = ""
 
         d = {
-            'projectid' : str(chain),
-            'name'  : project.application.name if project else app.name,
-            'applicant' : app.applicant.realname,
-            'email' : app.applicant.email,
+            'projectid': str(chain),
+            'name': project.application.name if project else app.name,
+            'applicant': app.applicant.realname,
+            'email': app.applicant.email,
             'status': status,
-            'appid' : appid,
-            }
+            'appid': appid,
+        }
         l.append(d)
     return l

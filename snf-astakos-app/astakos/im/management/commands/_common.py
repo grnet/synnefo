@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -37,6 +37,7 @@ from django.utils.timesince import timesince, timeuntil
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
+from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
 
 DEFAULT_CONTENT_TYPE = None
@@ -66,8 +67,12 @@ def format_date(d):
         return 'in ' + timeuntil(d)
 
 def format_dict(d, level=1, ident=22):
-    l = ['%s: %s\n' % (k.rjust(level*ident), format(v, level+1)) \
-            for k, v in sorted(d.iteritems())]
+    iteritems = d.iteritems()
+    if not isinstance(d, OrderedDict):
+        iteritems = sorted(iteritems)
+
+    l = ['%s: %s\n' % (k.rjust(level*ident), format(v, level+1))
+         for k, v in iteritems]
     l.insert(0, '\n')
     return ''.join(l)
 

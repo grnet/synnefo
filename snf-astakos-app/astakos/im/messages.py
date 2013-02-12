@@ -68,7 +68,7 @@ USER_MEMBERSHIP_REJECTED                =   'Request by %s to join the project h
 BILLING_ERROR                           =   'Service response status: %(status)d'
 LOGOUT_SUCCESS                          =   'Logged out successfully.'
 LOGIN_SUCCESS                           =   'Logged in successfully, using %s.'
-LOCAL_LOGIN_SUCCESS                     =   'Logged in successfully, using your local account.'
+LOCAL_LOGIN_SUCCESS                     =   'Logged in successfully.'
 
 GENERIC_ERROR                           =   'Hmm... It seems something bad has happened, and we don\'t know the details right now. \
                                                Please contact the administrators by email for more details.'

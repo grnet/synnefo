@@ -554,7 +554,8 @@ offer a unique deduplicated image of a volume, that reflects the volume state
 during snapshot creation and are indistinguishable from a Pithos image.
 
 Archipelago is used by Cyclades and Ganeti for fast provisioning of VMs based on
-CoW volumes.
+CoW volumes. Moreover, it enables live migration of thinly-provisioned VMs with
+no physically shared storage.
 
 Architecture
 ------------

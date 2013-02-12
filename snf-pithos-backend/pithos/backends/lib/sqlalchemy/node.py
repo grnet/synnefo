@@ -438,6 +438,12 @@ class Node(DBWorker):
         self.conn.execute(s).close()
         return True
 
+    def node_accounts(self):
+        s = select([self.nodes.c.path])
+        s = s.where(and_(self.nodes.c.node != 0, self.nodes.c.parent == 0))
+        account_nodes = self.conn.execute(s).fetchall()
+        return sorted(i[0] for i in account_nodes)
+
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
                    self.policy.c.node == node)

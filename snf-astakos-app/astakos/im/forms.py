@@ -434,7 +434,7 @@ class ProfileForm(forms.ModelForm):
     The class defines a save method which sets ``is_verified`` to True so as the
     user during the next login will not to be redirected to profile page.
     """
-    email = forms.EmailField(label='E-mail address',help_text='email help_text')
+    email = forms.EmailField(label='E-mail address', help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
     uuid = forms.CharField(label='User id', required=False)
 
@@ -1018,12 +1018,14 @@ class ExtendedProfileForm(ProfileForm):
         if self.email_change:
             self.fields.update(self.email_change_form.fields)
             self.fields['new_email_address'].required = False
+            self.fields['email'].help_text = _('Request email change')
 
         if self.password_change:
             self.fields.update(self.password_change_form.fields)
             self.fields['old_password'].required = False
             self.fields['old_password'].label = _('Password')
-            self.fields['old_password'].help_text = _('Password help_text')
+            self.fields['old_password'].help_text = _('Change your local '
+                                                      'password')
             self.fields['old_password'].initial = 'password'
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False

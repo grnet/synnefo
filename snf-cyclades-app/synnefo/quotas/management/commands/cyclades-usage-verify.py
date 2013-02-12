@@ -39,11 +39,18 @@ from synnefo.management.common import pprint_table
 
 
 class Command(BaseCommand):
+    help = """
+    Verify that cyclades.* resource usage.
+
+    Verify that usage calculated from Cyclades DB agrees with the usage
+    recorded in the effective quota database (Quotaholder)
+
+    """
     output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
-                    help="Verify quotas only for this user"),
+                    help="Verify usage only for this user"),
     )
 
     def handle(self, *args, **options):

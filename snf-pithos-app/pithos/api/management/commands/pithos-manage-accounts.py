@@ -38,16 +38,19 @@ from django.core.management.base import NoArgsCommand, CommandError
 from pithos.api.swiss_army import SwissArmy
 
 
+def double_list_str(l):
+    return '\n'.join(', '.join(sublist) for sublist in l)
+
 class Command(NoArgsCommand):
     help = "Quotas migration helper"
 
     option_list = NoArgsCommand.option_list + (
-        make_option('--duplicate',
+        make_option('--list-duplicate',
                     dest='duplicate-accounts',
                     action="store_true",
-                    default=True,
+                    default=False,
                     help="Display case insensitive duplicate accounts."),
-        make_option('--existing',
+        make_option('--list-all',
                     dest='existing-accounts',
                     action="store_true",
                     default=False,
@@ -56,11 +59,11 @@ class Command(NoArgsCommand):
                     dest='merge_accounts',
                     action='store_true',
                     default=False,
-                    help="Merge SOURCE_ACCOUNT and DEST_ACCOUNT."),
+                    help="Merge SRC_ACCOUNT and DEST_ACCOUNT."),
         make_option('--delete-account',
                     dest='delete_account',
                     action='store',
-                    help="Account to be deleted."),
+                    help="Delete DELETE_ACCOUNT."),
         make_option('--src-account',
                     dest='src_account',
                     action='store',
@@ -68,7 +71,7 @@ class Command(NoArgsCommand):
         make_option('--dest-account',
                     dest='dest_account',
                     action='store',
-                    help="Account where SOURCE_ACCOUNT contents will move."),
+                    help="Account where SRC_ACCOUNT contents will be copied."),
         make_option('--dry',
                     dest='dry',
                     action="store_true",
@@ -79,8 +82,13 @@ class Command(NoArgsCommand):
     def handle(self, *args, **options):
         try:
             utils = SwissArmy()
-            self.strict = options.get('strict')
             self.dry = options.get('dry')
+
+            if not options.get('duplicate-accounts') and \
+                not options.get('existing-accounts') and \
+                not options.get('merge_accounts') and \
+                not options.get('delete_account'):
+                self.print_help('pithos-manage-accounts', '')
 
             if options.get('duplicate-accounts') and \
                     not options.get('existing-accounts') and \
@@ -88,8 +96,8 @@ class Command(NoArgsCommand):
                     not options.get('delete_account'):
                 duplicates = utils.duplicate_accounts()
                 if duplicates:
-                    msg = "The following case insensitive duplicates found: %r"
-                    raise CommandError(msg % duplicates)
+                    msg = "The following case insensitive duplicates found:\n%s"
+                    raise CommandError(msg % double_list_str(duplicates))
                 else:
                     print "No duplicate accounts are found."
 
@@ -111,7 +119,8 @@ class Command(NoArgsCommand):
                                          only_stats=True)
 
                 confirm = raw_input("Type 'yes' if you are sure you want"
-                                    " to remove those entries: ")
+                                    " to move those entries to %s: " %\
+                                    dest_account)
                 if not confirm == 'yes':
                     return
                 else:

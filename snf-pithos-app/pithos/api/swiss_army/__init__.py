@@ -64,7 +64,8 @@ class SwissArmy():
         for i in range(len(accounts)):
             account = accounts[i]
             matcher = re.compile(account, re.IGNORECASE)
-            duplicate = filter(matcher.match, accounts[i + 1:])
+            duplicate = filter(matcher.match, (i for i in accounts[i + 1:] \
+                if len(i) == len(account)))
             if duplicate:
                 duplicate.insert(0, account)
                 duplicates.append(duplicate)
@@ -111,11 +112,15 @@ class SwissArmy():
 
     def move_object(self, src_account, src_container, src_name,
                     dest_account, dry=True, silent=False):
+        if src_account not in self.existing_accounts():
+            raise NameError('%s does not exist' % src_account)
+        if dest_account not in self.existing_accounts():
+            raise NameError('%s does not exist' % dest_account)
 
         trans = self.backend.wrapper.conn.begin()
         try:
-            self._move_object(src_account, src_container, src_name,
-                    dest_account)
+            self._copy_object(src_account, src_container, src_name,
+                              dest_account, move=True)
 
             if dry:
                 if not silent:
@@ -129,8 +134,8 @@ class SwissArmy():
             trans.rollback()
             raise
 
-    def _move_object(self, src_account, src_container, src_name,
-                    dest_account):
+    def _copy_object(self, src_account, src_container, src_name,
+                    dest_account, move=False):
         path = os.path.join(src_container, src_name)
         fullpath = os.path.join(src_account, path)
         dest_container = src_container
@@ -173,8 +178,9 @@ class SwissArmy():
                                      meta={}, replace_meta=False,
                                      permissions=permissions)
 
-        self.backend.delete_object(src_account, src_account, src_container,
-                                   src_name)
+        if move:
+            self.backend.delete_object(src_account, src_account,
+                                       src_container, src_name)
 
         dest_path, dest_node = self.backend._lookup_object(dest_account,
                                                            dest_container,
@@ -190,7 +196,7 @@ class SwissArmy():
             fullpath = '/'.join([dest_account, dest_container, dest_name])
             self.backend.permissions.public_set(fullpath)
 
-    def _merge_account(self, src_account, dest_account):
+    def _merge_account(self, src_account, dest_account, delete_src=False):
             # TODO: handle exceptions
             # copy all source objects
             for path in self.list_all_objects(src_account):
@@ -198,7 +204,7 @@ class SwissArmy():
                     '/%s' % path)
 
                 # give read permissions to the dest_account
-                permissions  = self.backend.get_object_permissions(
+                permissions = self.backend.get_object_permissions(
                     src_account, src_account, src_container, src_name)
                 if permissions:
                     permissions = permissions[2]
@@ -210,18 +216,24 @@ class SwissArmy():
                                                        src_name,
                                                        permissions)
 
-                self._move_object(src_account, src_container, src_name,
-                                 dest_account)
+                self._copy_object(src_account, src_container, src_name,
+                                 dest_account, move=delete_src)
 
             # move groups also
             groups = self.backend.get_account_groups(src_account, src_account)
             (v.replace(src_account, dest_account) for v in groups.values())
             self.backend.update_account_groups(dest_account, dest_account,
                                                groups)
-            self._delete_account(src_account)
+            if delete_src:
+                self._delete_account(src_account)
 
     def merge_account(self, src_account, dest_account, only_stats=True,
-                      dry=True, silent=False):
+                      dry=True, silent=False, delete_src=False):
+        if src_account not in self.existing_accounts():
+            raise NameError('%s does not exist' % src_account)
+        if dest_account not in self.existing_accounts():
+            raise NameError('%s does not exist' % dest_account)
+
         if only_stats:
             print "The following %s's entries will be moved to %s:" \
                 % (src_account, dest_account)
@@ -233,7 +245,7 @@ class SwissArmy():
 
         trans = self.backend.wrapper.conn.begin()
         try:
-            self._merge_account(src_account, dest_account)
+            self._merge_account(src_account, dest_account, delete_src)
 
             if dry:
                 if not silent:
@@ -242,7 +254,7 @@ class SwissArmy():
             else:
                 trans.commit()
                 if not silent:
-                    msg = "%s merged into %s and deleted."
+                    msg = "%s merged into %s."
                     print msg % (src_account, dest_account)
         except:
             trans.rollback()
@@ -262,6 +274,8 @@ class SwissArmy():
         self.backend.delete_account(account, account)
 
     def delete_account(self, account, only_stats=True, dry=True, silent=False):
+        if account not in self.existing_accounts():
+            raise NameError('%s does not exist' % account)
         if only_stats:
             print "The following %s's entries will be removed:" % account
             print "Objects: %r" % self.list_all_objects(account)

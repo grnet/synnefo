@@ -260,7 +260,7 @@ class SwissArmyTests(unittest.TestCase):
         self.utils.merge_account('Account1', 'account1', only_stats=False,
                                  dry=False, silent=True)
 
-        self.assertTrue('Account1' not in self.utils.existing_accounts())
+        self.assertTrue('Account1' in self.utils.existing_accounts())
         self.assertTrue('account1' in self.utils.existing_accounts())
 
         # assert container has been created
@@ -303,16 +303,8 @@ class SwissArmyTests(unittest.TestCase):
         self.utils.merge_account('Account1', 'account1', only_stats=False,
                                  dry=False, silent=True)
 
-        self.utils.merge_account('Account1', 'account1', only_stats=False,
-                                 dry=False, silent=True)
-
-        try:
-            self.utils.backend.get_container_meta('Account1', 'Account1',
-                                                  'container1', 'pithos')
-        except NameError:
-            pass
-        else:
-            self.fail('Container not deleted')
+        self.assertTrue('Account1' in self.utils.existing_accounts())
+        self.assertTrue('account1' in self.utils.existing_accounts())
 
         try:
             self.utils.backend.get_container_meta('account1', 'account1',
@@ -357,13 +349,8 @@ class SwissArmyTests(unittest.TestCase):
         self.utils.merge_account('Account1', 'account1', only_stats=False,
                                  dry=False, silent=True)
 
-        try:
-            self.utils.backend.get_container_meta('Account1', 'Account1',
-                                                  'container1', 'pithos')
-        except NameError:
-            pass
-        else:
-            self.fail('Container not deleted')
+        self.assertTrue('Account1' in self.utils.existing_accounts())
+        self.assertTrue('account1' in self.utils.existing_accounts())
 
         try:
             self.utils.backend.get_container_meta('account1', 'account1',

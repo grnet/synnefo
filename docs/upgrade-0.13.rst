@@ -215,7 +215,7 @@ discarding data from all but one.
 
   from the value in::
 
-    cyclades.host$ snf-manage service-list
+    astakos.host$ snf-manage service-list
 
 - The Cyclades user interface needs to translate uuids to displaynames::
 

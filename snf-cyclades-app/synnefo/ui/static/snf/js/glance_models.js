@@ -122,7 +122,7 @@
 
         get_personal_images: function() {
             return _.filter(this.active(), function(i) { 
-                return i.get_owner() == snf.user.username 
+                return i.get_owner_uuid() == snf.user.username;
             });
         },
 
@@ -134,7 +134,7 @@
             return _.filter(this.active(), function(i){ 
                 return !_.include(_.keys(snf.config.system_images_owners), 
                                   i.get_owner()) && 
-                               i.get_owner() != snf.user.username &&
+                               i.get_owner_uuid() != snf.user.username &&
                                !i.is_public();
             });
         }

@@ -635,6 +635,9 @@
             synnefo.config.login_redirect = '{{ login_redirect }}';
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
 
+            synnefo.config.translate_uuids = {{ translate_uuids|safe }};
+            synnefo.config.user_catalog_url = {{ user_catalog_url|safe }};
+
             synnefo.config.network_suggested_subnets = {{ network_suggested_subnets|safe }};
             synnefo.config.network_available_types = {{ network_available_types|safe }};
             synnefo.config.network_allow_duplicate_vm_nics = {{ network_allow_duplicate_vm_nics }};

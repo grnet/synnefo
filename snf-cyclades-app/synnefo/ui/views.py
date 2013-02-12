@@ -150,6 +150,9 @@ AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
+USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/user_catalogs')
+TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
+
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -173,6 +176,8 @@ def home(request):
                'request': request,
                'current_lang': get_language() or 'en',
                'compute_api_url': json.dumps(COMPUTE_API_URL),
+               'user_catalog_url': json.dumps(USER_CATALOG_URL),
+               'translate_uuids': json.dumps(TRANSLATE_UUIDS),
                 # update interval settings
                'update_interval': UPDATE_INTERVAL,
                'update_interval_increase': UPDATE_INTERVAL_INCREASE,

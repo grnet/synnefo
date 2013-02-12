@@ -16,9 +16,9 @@ Guide you will be able to understand every component and all the interactions
 between them. It is a good idea to first go through the Quick Administrator's
 Guide before proceeding.
 
-.. image:: images/synnefo-architecture1.png
+.. image:: images/synnefo-arch2.png
    :width: 100%
-   :target: _images/synnefo-architecture1.png
+   :target: _images/synnefo-arch2.png
 
 
 
@@ -557,17 +557,27 @@ Archipelago is used by Cyclades and Ganeti for fast provisioning of VMs based on
 CoW volumes. Moreover, it enables live migration of thinly-provisioned VMs with
 no physically shared storage.
 
-Architecture
-------------
+Archipelago Architecture
+------------------------
+
 .. image:: images/archipelago-architecture.png
    :width: 50%
    :target: _images/archipelago-architecture.png
 
+.. _syn+archip+rados:
+
+Overview of Synnefo + Archipelago + RADOS
+-----------------------------------------
+
+.. image:: images/synnefo-arch3.png
+   :width: 100%
+   :target: _images/synnefo-arch3.png
+
 Prereqs
 -------
+
 The administrator must initialize the storage backend where archipelago volume
 blocks will reside.
-
 
 In case of a files backend, the administrator must create two directories. One
 for the archipelago data blocks and one for the archipelago map blocks. These
@@ -579,9 +589,9 @@ In case of a RADOS backend, the administrator must create two rados pools, one
 for data blocks, and one for the map blocks. These pools, must be the same pools
 used in pithos, in order to enable volume creation based on pithos images.
 
-
 Installation
 ------------
+
 Archipelago consists of
 
 * ``libxseg0``: libxseg used to communicate over shared memory segments
@@ -702,15 +712,15 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
 
 * ``vlmc create <volumename> --snap <snapname> --size <size>``: creates a new
   volume named <volumename> from snapshot name <snapname> with size <size>.
-    The ``--snap`` and ``--size`` are optional, but at least one of them is
-    mandatory. e.g:
+  The ``--snap`` and ``--size`` are optional, but at least one of them is
+  mandatory. e.g:
 
-    ``vlmc create <volumename> --snap <snapname>`` creates a volume named
-    volumename from snapshot snapname. The size of the volume is the same as
-    the size of the snapshot.
+  ``vlmc create <volumename> --snap <snapname>`` creates a volume named
+  volumename from snapshot snapname. The size of the volume is the same as
+  the size of the snapshot.
 
-    ``vlmc create <volumename> --size <size>`` creates an empty volume of size
-    <size> named <volumename>.
+  ``vlmc create <volumename> --size <size>`` creates an empty volume of size
+  <size> named <volumename>.
 
 * ``vlmc remove <volumename>``: removes the volume and all the related
   archipelago blocks from storage.
@@ -859,7 +869,8 @@ Currently, RabbitMQ is used by the following components:
   the above components, and updates the Cyclades DB accordingly.
 
 Installation
-````````````
+~~~~~~~~~~~~
+
 Please check the RabbitMQ documentation which covers extensively the
 `installation of RabbitMQ server <http://www.rabbitmq.com/download.html>`_ and
 the setup of a `RabbitMQ cluster <http://www.rabbitmq.com/clustering.html>`_.
@@ -951,35 +962,197 @@ By default, the Django webapp and snf-manage logs to syslog, while
 Scaling up to multiple nodes
 ============================
 
-Here we will describe how to deploy all services, interconnected with each
-other, on multiple physical nodes.
+Here we will describe how should a large scale Synnefo deployment look like. Make
+sure you are familiar with Synnefo and Ganeti before proceeding with this section.
+This means you should at least have already set up successfully a working Synnefo
+deployment as described in the :ref:`Admin's Quick Installation Guide
+<quick-install-admin-guide>` and also read the Administrator's Guide until this
+section.
 
-synnefo components
-------------------
+Graph of a scale-out Synnefo deployment
+---------------------------------------
 
-You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <cyclades-architecture>`.
+Each box in the following graph corresponds to a distinct physical node:
 
-Please see the page of each synnefo software component for specific
-installation instructions, where applicable.
+.. image:: images/synnefo-arch2-roles.png
+   :width: 100%
+   :target: _images/synnefo-arch2-roles.png
 
-Install the following synnefo components:
+The above graph is actually the same with the one at the beginning of this
+:ref:`guide <admin-guide>`, with the only difference that here we show the
+Synnefo roles of each physical node. These roles are described in the
+following section.
 
-Nodes of type :ref:`APISERVER <APISERVER_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`
-Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
-Nodes of type :ref:`LOGIC <LOGIC_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`.
+Physical Node roles
+-------------------
 
+As appears in the previous graph, a scale-out Synnefo deployment consists of
+multiple physical nodes that have the following roles:
+
+* **WEBSERVER**: A web server running in front of gunicorn (e.g.: Apache, nginx)
+* **ASTAKOS**: The Astakos application (gunicorn)
+* **ASTAKOS_DB**: The Astakos database (postgresql)
+* **PITHOS**: The Pithos application (gunicorn)
+* **PITHOS_DB**: The Pithos database (postgresql)
+* **CYCLADES**: The Cyclades application (gunicorn)
+* **CYCLADES_DB**: The Cyclades database (postgresql)
+* **MQ**: The message queue (RabbitMQ)
+* **GANETI_MASTER**: The Ganeti master of a Ganeti cluster
+* **GANETI_NODE** : A VM-capable Ganeti node of a Ganeti cluster
+
+You will probably also have:
+
+* **CMS**: The CMS used as a frotend portal for the Synnefo services
+* **NS**: A nameserver serving all other nodes
+* **CLIENT**: A machine that runs the Synnefo clients (e.g.: kamaki, Web UI),
+              most of the times, the end user's local machine
+
+From this point we will also refer to the following groups of roles:
+
+* **SYNNEFO**: [ **ASTAKOS**, **ASTAKOS_DB**, **PITHOS**, **PITHOS_DB**, **CYCLADES**, **CYCLADES_DB**, **MQ**, **CMS**]
+* **G_BACKEND**: [**GANETI_MASTER**, **GANETI_NODE**]
+
+Of course, when deploying Synnefo you can combine multiple of the above roles on a
+single physical node, but if you are trying to scale out, the above separation
+gives you significant advantages.
+
+So, in the next section we will take a look on what components you will have to
+install on each physical node depending on its Synnefo role. We assume the graph's
+architecture.
+
+Components for each role
+------------------------
+
+When deploying Synnefo in large scale, you need to install different Synnefo
+or/and third party components on different physical nodes according to their
+Synnefo role, as stated in the previous section.
+
+Specifically:
+
+Role **WEBSERVER**
+    * Synnefo components: `None`
+    * 3rd party components: Apache
+Role **ASTAKOS**
+    * Synnefo components: `snf-webproject`, `snf-astakos-app`
+    * 3rd party components: Django, Gunicorn
+Role **ASTAKOS_DB**
+    * Synnefo components: `None`
+    * 3rd party components: PostgreSQL
+Role **PITHOS**
+    * Synnefo components: `snf-webproject`, `snf-pithos-app`, `snf-pithos-webclient`
+    * 3rd party components: Django, Gunicorn
+Role **PITHOS_DB**
+    * Synnefo components: `None`
+    * 3rd party components: PostgreSQL
+Role **CYCLADES**
+    * Synnefo components: `snf-webproject`, `snf-cyclades-app`, `snf-vncauthproxy`
+    * 3rd party components: Django Gunicorn
+Role **CYCLADES_DB**
+    * Synnefo components: `None`
+    * 3rd party components: PostgreSQL
+Role **MQ**
+    * Synnefo components: `None`
+    * 3rd party components: RabbitMQ
+Role **GANETI_MASTER**
+    * Synnefo components: `snf-cyclades-gtools`
+    * 3rd party components: Ganeti
+Role **GANETI_NODE**
+    * Synnefo components: `snf-cyclades-gtools`, `snf-network`, `snf-image`, `nfdhcpd`
+    * 3rd party components: Ganeti
+Role **CMS**
+    * Synnefo components: `snf-webproject`, `snf-cloudcms`
+    * 3rd party components: Django, Gunicorn
+Role **NS**
+    * Synnefo components: `None`
+    * 3rd party components: BIND
+Role **CLIENT**
+    * Synnefo components: `kamaki`, `snf-image-creator`
+    * 3rd party components: `None`
+
+Example scale out installation
+------------------------------
+
+In this section we describe an example of a medium scale installation which
+combines multiple roles on 10 different physical nodes. We also provide a
+:ref:`guide <i-synnefo>` to help with such an install.
+
+We assume that we have the following 10 physical nodes with the corresponding
+roles:
+
+Node1:
+    **WEBSERVER**, **ASTAKOS**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-astakos-app <i-astakos>`
+Node2:
+    **WEBSERVER**, **PITHOS**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-pithos-app <i-pithos>`
+        * :ref:`snf-pithos-webclient <i-pithos>`
+Node3:
+    **WEBSERVER**, **CYCLADES**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-cyclades-app <i-cyclades>`
+        * :ref:`snf-vncauthproxy <i-cyclades>`
+Node4:
+    **WEBSERVER**, **CMS**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-cloudcms <i-cms>`
+Node5:
+    **ASTAKOS_DB**, **PITHOS_DB**, **CYCLADES_DB**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`postgresql <i-db>`
+Node6:
+    **MQ**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`rabbitmq <i-mq>`
+Node7:
+    **GANETI_MASTER**, **GANETI_NODE**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`general <i-backends>`
+        * :ref:`ganeti <i-ganeti>`
+        * :ref:`snf-cyclades-gtools <i-gtools>`
+        * :ref:`snf-network <i-network>`
+        * :ref:`snf-image <i-image>`
+        * :ref:`nfdhcpd <i-network>`
+Node8:
+    **GANETI_NODE**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`general <i-backends>`
+        * :ref:`ganeti <i-ganeti>`
+        * :ref:`snf-cyclades-gtools <i-gtools>`
+        * :ref:`snf-network <i-network>`
+        * :ref:`snf-image <i-image>`
+        * :ref:`nfdhcpd <i-network>`
+Node9:
+    **GANETI_NODE**
+      Guide sections:
+        `Same as Node8`
+Node10:
+    **GANETI_NODE**
+      Guide sections:
+        `Same as Node8`
+
+All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
 Upgrade Notes

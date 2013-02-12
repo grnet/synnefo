@@ -1258,11 +1258,10 @@ In the above command:
  * ``img_passwd``: the arbitrary root password of your new instance
  * ``img_format``: set to ``diskdump`` to reflect the type of the uploaded Image
  * ``img_id``: If you want to deploy an Image stored on Pithos+ (our case), this
-               should have the format
-               ``pithos://<username>/<container>/<filename>``:
-                * ``username``: ``user@example.com`` (defined during Astakos sign up)
-                * ``container``: ``pithos`` (default, if the Web UI was used)
-                * ``filename``: the name of file (visible also from the Web UI)
+               should have the format ``pithos://<username>/<container>/<filename>``:
+               * ``username``: ``user@example.com`` (defined during Astakos sign up)
+               * ``container``: ``pithos`` (default, if the Web UI was used)
+               * ``filename``: the name of file (visible also from the Web UI)
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
                        properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
                        <https://code.grnet.gr/projects/snf-image/wiki/Image_Format#Image-Properties>`_

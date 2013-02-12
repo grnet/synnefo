@@ -33,6 +33,7 @@ First install:
 In `/etc/synnefo/snf-webproject.conf` add:
 
 .. code-block:: console
+
    from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
    monkey_patch_psycopg2()
 

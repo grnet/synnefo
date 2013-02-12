@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import *
+from django.conf import settings
 
 urlpatterns = patterns('',
     (r'^ui/', include('synnefo.ui.urls')),
@@ -44,4 +45,11 @@ urlpatterns = patterns('',
     (r'^plankton/', include('synnefo.plankton.urls')),
     (r'^helpdesk/', include('synnefo.helpdesk.urls')),
 )
+
+PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)
+if PROXY_USER_SERVICES:
+    urlpatterns += patterns(
+        '',
+        (r'^feedback/?$', 'synnefo.api.delegate.delegate_to_feedback_service'),
+        (r'^user_catalogs/?$', 'synnefo.api.delegate.delegate_to_user_catalogs_service'))
 

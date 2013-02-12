@@ -124,3 +124,5 @@ SECRET_ENCRYPTION_KEY= "Password Encryption Key"
 # using a user uuid)
 CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
 
+# Astakos user_catalogs endpoint
+CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'

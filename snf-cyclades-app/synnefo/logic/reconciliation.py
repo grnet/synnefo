@@ -147,8 +147,13 @@ def instances_with_build_errors(D, G):
     for i in idD & idG:
         if not G[i] and D[i] == 'BUILD':
             vm = VirtualMachine.objects.get(id=i)
-            # Check time to avoid many rapi calls
-            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+            if not vm.backendjobid:  # VM has not been enqueued in the backend
+                if datetime.now() > vm.created + timedelta(seconds=120):
+                    # If a job has not been enqueued after 2 minutues, then
+                    # it must be a stale entry..
+                    failed.add(i)
+            elif datetime.now() > vm.backendtime + timedelta(seconds=30):
+                # Check time to avoid many rapi calls
                 with pooled_rapi_client(vm) as c:
                     try:
                         job_info = c.GetJobStatus(job_id=vm.backendjobid)

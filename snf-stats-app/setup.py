@@ -41,13 +41,6 @@ from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo_stats', 'version', HERE)
-except ImportError:
-    pass
-
 from synnefo_stats.version import __version__
 
 # Package info

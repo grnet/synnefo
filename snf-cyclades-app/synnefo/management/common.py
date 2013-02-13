@@ -211,6 +211,8 @@ def filter_results(objects, filter_by):
         return objects.exclude(**exclude_dict)
     except FieldError as e:
         raise CommandError(e)
+    except Exception as e:
+        raise CommandError("Can not filter results: %s" % e)
 
 
 def check_backend_credentials(clustername, port, username, password):

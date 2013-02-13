@@ -56,14 +56,14 @@ class RetryTransactionHandler(TransactionHandler):
                 except RetryException as e:
                     self.retries -= 1
                     if self.retries <= 0:
-                        logger.error(e)
+                        logger.exception(e)
                         f = self.on_fail
                         if not callable(f):
                             raise
                         return f(*args, **kwargs)
                     sleep(self.retry_wait)
                 except BaseException as e:
-                    logger.error(e)
+                    logger.exception(e)
                     f = self.on_fail
                     if not callable(f):
                         raise

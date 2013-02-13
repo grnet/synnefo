@@ -224,6 +224,7 @@ def create_network(serials, request):
         network.create_backend_network()
     except:
         transaction.rollback()
+        raise
     else:
         transaction.commit()
 

@@ -44,8 +44,10 @@ from synnefo.api.faults import ItemNotFound
 from django.core.exceptions import FieldError
 
 from synnefo.api.util import validate_network_size
-from synnefo.settings import MAX_CIDR_BLOCK
+from synnefo.settings import (MAX_CIDR_BLOCK, CYCLADES_ASTAKOS_SERVICE_TOKEN,
+                              ASTAKOS_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
+from synnefo.lib import astakos
 
 
 def format_bool(b):
@@ -59,7 +61,6 @@ def parse_bool(string):
         return False
     else:
         raise Exception("Can not parse string %s to bool" % string)
-
 
 
 def format_date(d):
@@ -259,3 +260,18 @@ def pprint_table(out, table, headers=None, separator=None):
     for row in table:
         print >> out, sep.join((val.rjust(width).encode('utf8') \
                                 for val, width in zip(row, widths)))
+
+
+class UUIDCache(object):
+    def __init__(self):
+        self.users = {}
+
+    def get_user(self, uuid):
+        if not uuid in self.users:
+            astakos_url = ASTAKOS_URL.replace("im/authenticate",
+                                              "service/api/user_catalogs")
+            self.users[uuid] = \
+            astakos.get_displayname(token=CYCLADES_ASTAKOS_SERVICE_TOKEN,
+                                    url=astakos_url, uuid=uuid)
+
+        return self.users[uuid]

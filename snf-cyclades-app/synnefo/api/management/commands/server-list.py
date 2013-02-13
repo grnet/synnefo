@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import (format_vm_state, get_backend,
-                                       filter_results, pprint_table)
+                                       filter_results, pprint_table, UUIDCache)
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
 
@@ -75,7 +75,12 @@ class Command(BaseCommand):
             help="Filter results. Comma seperated list of key `cond` val pairs"
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"operstate=STARTED,id>=22\"."
-                 " Available keys are: %s" % ", ".join(FIELDS))
+                 " Available keys are: %s" % ", ".join(FIELDS)),
+        make_option('--uuids',
+            action='store_true',
+            dest='use_uuids',
+            default=False,
+            help="Display UUIDs instead of user emails"),
         )
 
     def handle(self, *args, **options):
@@ -104,6 +109,7 @@ class Command(BaseCommand):
             servers = filter_results(servers, filter_by)
 
         cache = ImageCache()
+        ucache = UUIDCache()
 
         headers = ('id', 'name', 'owner', 'flavor', 'image', 'state',
                    'backend')
@@ -124,7 +130,14 @@ class Command(BaseCommand):
 
             state = format_vm_state(server)
 
-            fields = (str(server.id), name, server.userid, flavor, image,
+            user = server.userid
+            if not options['use_uuids']:
+                try:
+                    user = ucache.get_user(server.userid)
+                except:
+                    pass
+
+            fields = (str(server.id), name, user, flavor, image,
                       state, str(server.backend))
             table.append(fields)
 

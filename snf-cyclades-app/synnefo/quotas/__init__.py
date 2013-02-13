@@ -66,7 +66,7 @@ class DummyQuotaholderClient(object):
         userid = commission_info["target"]
         for provision in provisions:
             entity, resource, size = provision
-            if resource == "cyclades.vm":
+            if resource == "cyclades.vm" and size > 0:
                 user_vms = VirtualMachine.objects.filter(userid=userid,
                                                          deleted=False).count()
                 user_vm_limit = VMS_USER_QUOTA.get(userid, MAX_VMS_PER_USER)
@@ -74,7 +74,7 @@ class DummyQuotaholderClient(object):
                           user_vm_limit)
                 if user_vms + size >= user_vm_limit:
                     raise NoQuantityError()
-            if resource == "cyclades.network.private":
+            if resource == "cyclades.network.private" and size > 0:
                 user_networks = Network.objects.filter(userid=userid,
                                                        deleted=False).count()
                 user_network_limit =\

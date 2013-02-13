@@ -280,7 +280,7 @@ def send_change_email(
         url = request.build_absolute_uri(url)
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME,
-             'support': DEFAULT_CONTACT_EMAIL}
+             'support': DEFAULT_CONTACT_EMAIL, 'ec': ec}
         from_email = settings.SERVER_EMAIL
         send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
                   from_email, [ec.new_email_address],

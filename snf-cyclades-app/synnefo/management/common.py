@@ -197,7 +197,7 @@ def filter_results(objects, filter_by):
             "<=": "__lte",
             "=<": "__lte",
             "<":  "__lt",
-            "=":  ""
+            "=":  "",
         }
         for op, new_op in OP_MAP.items():
             if op in query:

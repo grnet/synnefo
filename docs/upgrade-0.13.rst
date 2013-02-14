@@ -324,6 +324,25 @@ Duplicate user found?
     cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=KPap@grnet.gr
     # (only KPap will be deleted not kpap)
 
+6.2 Double-check pithos before user case/uuid migration
+---------------------------------------------------------
+
+::
+
+    pithos.host$ snf-manage pithos-manage-accounts --list-duplicate
+
+Duplicate user found?
+
+- either *merge* (merge will merge all resources to one user)::
+
+    pithos.host$ snf-manage pithos-manage-accounts --merge-accounts --src-account=SPapagian@grnet.gr --dest-account=spapagian@grnet.gr
+    # (SPapagian@grnet.gr's contents will be merged into spapagian@grnet.gr, but SPapagian@grnet.gr account will still exist)
+
+- finally *delete* ::
+
+    pithos.host$ snf-manage pithos-manage-accounts --delete-account=SPapagian@grnet.gr
+    # (only SPapagian@grnet.gr will be deleted not spapagian@grnet.gr)
+
 6.2 Migrate Cyclades users (email case/uuid)
 --------------------------------------------
 

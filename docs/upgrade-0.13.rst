@@ -15,17 +15,21 @@ In summary, the migration process has 3 steps:
    it will be needed during a second-phase of UUID and quota migrations, that
    also uses data extracted from step 1.
 
+
 .. warning::
+ 
+    It is strongly suggested that you keep separate database backups
+    for each service after the completion of each of step.
 
-    It is highly suggested that you keep separate database backups for each 
-    service after the completion of each of step.
+1. Bring web services down, backup databases
+============================================
 
+1. All web services must be brought down so that the database maintains a
+   predictable and consistent state during the migration process.
 
-1. Bring all services down
-==========================
+2. Backup databases for recovery to a pre-migration state.
 
-All web services must be brought down so that the database maintains a 
-predictable and consistent state as the migration is being executed.
+3. Keep the database servers running during the migration process
 
 
 2. Prepare astakos user migration to case insensitive emails
@@ -40,13 +44,35 @@ entries in Cyclades and Pithos.  For each service we need to reduce those
 multiple accounts into one, either merging them together, or deleting and
 discarding data from all but one.
 
+.. _find_duplicate_emails:
+
 2.1 Find duplicate email entries in Astakos
 -------------------------------------------
 (script: ``find_astakos_users_with_conflicting_emails.py``)::
 
-    astakos-host$ wget https://code.grnet.gr/projects/synnefo/repository/revisions/release-0.13/raw/contrib/upgrade-013/find_astakos_users_with_conflicting_emails.py
-    astakos-host$ python ./find_astakos_users_with_conflicting_emails.py
+    astakos-host$ cat << EOF > find_astakos_users_with_conflicting_emails.py
+    #!/usr/bin/env python
+    import os
+    import sys
 
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+
+    import astakos
+    from astakos.im.models import AstakosUser as A
+
+
+    def user_filter(user):
+        return A.objects.filter(email__iexact=user.email).count() > 1
+
+    all_users = list(A.objects.all())
+    userlist = [(str(u.pk) + ': ' + str(u.email) + ' (' + str(u.is_active) + ', ' +
+                 str(u.date_joined) + ')') for u in filter(user_filter, all_users)]
+
+    sys.stderr.write("id email (is_active, creation date)\n")
+    print "\n".join(userlist)
+    EOF
+
+    astakos-host$ python ./find_astakos_users_with_conflicting_emails.py
 
 .. _remove_astakos_duplicate:
 
@@ -54,16 +80,63 @@ discarding data from all but one.
 -------------------------------------------------
 (script: ``delete_astakos_users.py``)::
 
-    astakos-host$ wget https://code.grnet.gr/projects/synnefo/repository/revisions/release-0.13/raw/contrib/upgrade-013/delete_astakos_users.py
+    astakos-host$ cat << EOF > delete_astakos_users.py
+    #!/usr/bin/env python
+
+    import os
+    import sys
+    from time import sleep
+
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+
+    import astakos
+    from astakos.im.models import AstakosUser as A
+
+
+    def user_filter(user):
+        return A.objects.filter(email__iexact=user.email).count() > 1
+
+    argv = sys.argv
+    argc = len(sys.argv)
+
+    if argc < 2:
+        print "Usage: ./delete_astakos_users.py <id>..."
+        raise SystemExit()
+
+    id_list = [int(x) for x in argv[1:]]
+
+    print ""
+    print "This will permanently delete the following users:\n"
+    print "id  email (is_active, creation date)"
+    print "--  --------------------------------"
+
+    users = A.objects.filter(id__in=id_list)
+    for user in users:
+        print "%s: %s (%s, %s)" % (user.id, user.email, user.is_active,
+                                   user.date_joined)
+
+    print "\nExecute? (yes/no): ",
+    line = raw_input().rstrip()
+    if line != 'yes':
+        print "\nCancelled"
+        raise SystemExit()
+
+    print "\nConfirmed."
+    sleep(2)
+    for user in users:
+        print "deleting %s: %s" % (user.id, user.email)
+        user.delete()
+
+    EOF
+
     astakos-host$ python ./delete_astakos_users.py 30 40
 
 .. warning::
 
-    After you finish with duplicate accounts cleanup using the 
-    ``delete_astakos_users.py`` script, execute the 
-    ``find_astakos_users_with_conflicting_emails.py`` once again and make sure 
-    that it reports no such users and all duplicate email conflicts have been 
-    resolved.
+    After deleting users with the ``delete_astakos_users.py`` script,
+    check again with ``find_astakos_users_with_conflicting_emails.py``
+    (as in :ref:`find_duplicate_emails`)
+    to make sure that no duplicate email conflicts remain.
 
 
 3. Upgrade Synnefo and configure settings
@@ -98,14 +171,13 @@ discarding data from all but one.
                             snf-pithos-webclient \
                             kamaki \
 
-.. note::
-
-  If you get questioned about stale content types during the
-  migration process, answer ``no`` and let the migration finish.
-
-
 3.2 Sync and migrate Django DB
 ------------------------------
+
+.. note::
+
+   If you are asked about stale content types during the migration process,
+   answer 'no' and let the migration finish.
 
 ::
 
@@ -173,34 +245,20 @@ discarding data from all but one.
 
     # cyclades:     UI_USER_CATALOG_URL = 'https://astakos.host/user_catalogs/'
 
-- Since version 0.13, Synnefo uses **VMAPI** in order to prevent sensitive data
-  needed by 'snf-image' to be stored in Ganeti configuration (e.g. VM
-  password). This is achieved by storing all sensitive information to a CACHE
-  backend and exporting it via VMAPI. The cache entries are invalidated after
-  the first request. Synnefo uses **memcached** as a django cache backend.
-  To install::
+- VMAPI needs a **memcached** backend. To install::
 
         apt-get install memcached
         apt-get install python-memcache
 
 
-  You will also need to configure Cyclades to use the memcached cache backend.
-  Namely, you need to set IP address and port of the memcached daemon, and the
-  default timeout (seconds tha value is stored in the cache)::
+  Set the IP address and port of the memcached deamon::
 
-    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=3600"
-
-
-  Finally, set the BASE_URL for the VMAPI, which is actually the base URL of
-  Cyclades::
-
+    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211"
     VMAPI_BASE_URL = "https://cyclades.okeanos.grnet.gr/"
 
   .. note::
 
     - These settings are needed in all Cyclades workers.
-
-    - VMAPI_CACHE_BACKEND just overrides django's CACHE_BACKEND setting
 
     - memcached must be reachable from all Cyclades workers.
 
@@ -223,8 +281,12 @@ discarding data from all but one.
 ===================================
 E.g.::
 
-    astakos.host$ service gunicorn restart
+    astakos.host$ service gunicorn start
 
+.. warning::
+
+    To ensure consistency, prevent public access to astakos during migrations.
+    This can be done via firewall or webserver access control.
 
 .. _astakos-load-resources:
 
@@ -305,23 +367,22 @@ Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
 =======================================
 
 
-
 6.1 Double-check cyclades before user case/uuid migration
 ---------------------------------------------------------
 
 ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --validate
+    cyclades.host$ snf-manage cyclades-astakos-migrate --validate
 
 Duplicate user found?
 
 - either *merge* (merge will merge all resources to one user)::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --merge-user=kpap@grnet.gr
+    cyclades.host$ snf-manage cyclades-astakos-migrate --merge-user=kpap@grnet.gr
 
 - or *delete* ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=KPap@grnet.gr
+    cyclades.host$ snf-manage cyclades-astakos-migrate --delete-user=KPap@grnet.gr
     # (only KPap will be deleted not kpap)
 
 6.2 Double-check pithos before user case/uuid migration
@@ -348,7 +409,7 @@ Duplicate user found?
 
 ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --migrate-users
+    cyclades.host$ snf-manage cyclades-astakos-migrate --migrate-users
 
 - if invalid usernames are found, verify that they do not exist in astakos::
 
@@ -356,7 +417,7 @@ Duplicate user found?
 
 - if no user exists::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=<userid>
+    cyclades.host$ snf-manage cyclades-astakos-migrate --delete-user=<userid>
 
 6.3 Migrate Pithos user names
 -----------------------------
@@ -436,7 +497,7 @@ nothing of the current resource usage. Therefore, each service must send it in.
 
 ::
 
-    cyclades.host$ snf-manage pithos-reset-usage
+    pithos.host$ snf-manage pithos-reset-usage
 
 9.2 Initialize Cyclades resource usage
 --------------------------------------

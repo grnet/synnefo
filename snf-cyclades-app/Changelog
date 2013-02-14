@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+v0.13.0
+*******
+  * Remove 'snf-admin' and 'snf-cloud' tools
+
 v0.12.0
 *******
 

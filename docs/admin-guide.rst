@@ -931,7 +931,7 @@ import the Django settings.
 
 Additionally, administrative tasks can be performed via the admin web interface
 located in /admin. Only users of type ADMIN can access the admin pages. To
-change the type of a user to ADMIN, snf-admin can be used:
+change the type of a user to ADMIN, snf-manage can be used:
 
 .. code-block:: console
 

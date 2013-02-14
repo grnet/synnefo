@@ -209,8 +209,6 @@ setup(
     entry_points = {
      'console_scripts': [
          'snf-dispatcher = synnefo.logic.dispatcher:main',
-         'snf-admin = synnefo.tools.admin:main',
-         'snf-cloud = synnefo.tools.cloud:main',
          ],
      'synnefo': [
          'default_settings = synnefo.app_settings.default',
@@ -222,4 +220,3 @@ setup(
          ]
       },
 )
-

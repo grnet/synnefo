@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,19 +33,19 @@ from django.db.models.query import QuerySet
 
 
 class ForUpdateManager(Manager):
-    """ Model manager implementing SELECT .. FOR UPDATE statement
+    """Model manager implementing SELECT .. FOR UPDATE statement
 
-        This manager implements select_for_update() method in order to use
-        row-level locking in the database and guarantee exclusive access, since
-        this method is only implemented in Django>=1.4.
+    This manager implements select_for_update() method in order to use
+    row-level locking in the database and guarantee exclusive access, since
+    this method is only implemented in Django>=1.4.
 
-        Non-blocking reads are not implemented, and each query including a row
-        that is locked by another transaction will block until the lock is
-        released. Also care must be taken in order to avoid deadlocks or retry
-        transactions that abort due to deadlocks.
+    Non-blocking reads are not implemented, and each query including a row
+    that is locked by another transaction will block until the lock is
+    released. Also care must be taken in order to avoid deadlocks or retry
+    transactions that abort due to deadlocks.
 
-        Example:
-            networks = Network.objects.select_for_update().filter(public=True)
+    Example:
+        networks = Network.objects.select_for_update().filter(public=True)
 
     """
 
@@ -54,7 +54,7 @@ class ForUpdateManager(Manager):
 
 
 class ForUpdateQuerySet(QuerySet):
-    """ QuerySet implmenting SELECT .. FOR UPDATE statement
+    """QuerySet implmenting SELECT .. FOR UPDATE statement
 
     This QuerySet overrides filter and get methods in order to implement
     select_for_update() statement, by appending 'FOR UPDATE' to the end
@@ -84,9 +84,7 @@ class ForUpdateQuerySet(QuerySet):
 
 
 def for_update(query):
-    """ Rewrite query using SELECT .. FOR UPDATE.
-
-    """
+    """Rewrite query using SELECT .. FOR UPDATE."""
     if 'sqlite' in connections[query.db].settings_dict['ENGINE'].lower():
         # SQLite  does not support FOR UPDATE
         return query
@@ -96,10 +94,10 @@ def for_update(query):
 
 
 class ProtectedDeleteManager(ForUpdateManager):
-    """ Manager for protecting Backend deletion.
+    """Manager for protecting Backend deletion.
 
-        Call Backend delete() method in order to prevent deletion
-        of Backends that host non-deleted VirtualMachines.
+    Call Backend delete() method in order to prevent deletion
+    of Backends that host non-deleted VirtualMachines.
 
     """
 

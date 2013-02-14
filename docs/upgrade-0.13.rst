@@ -171,6 +171,12 @@ discarding data from all but one.
                             snf-pithos-webclient \
                             kamaki \
 
+.. note::
+
+  If you get questioned about stale content types during the
+  migration process, answer ``no`` and let the migration finish.
+
+
 3.2 Sync and migrate Django DB
 ------------------------------
 
@@ -372,17 +378,17 @@ Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
 
 ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate --validate
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --validate
 
 Duplicate user found?
 
 - either *merge* (merge will merge all resources to one user)::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate --merge-user=kpap@grnet.gr
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --merge-user=kpap@grnet.gr
 
 - or *delete* ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate --delete-user=KPap@grnet.gr
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=KPap@grnet.gr
     # (only KPap will be deleted not kpap)
 
 6.2 Double-check pithos before user case/uuid migration
@@ -409,7 +415,7 @@ Duplicate user found?
 
 ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate --migrate-users
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --migrate-users
 
 - if invalid usernames are found, verify that they do not exist in astakos::
 
@@ -417,7 +423,7 @@ Duplicate user found?
 
 - if no user exists::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate --delete-user=<userid>
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=<userid>
 
 6.3 Migrate Pithos user names
 -----------------------------

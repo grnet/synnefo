@@ -15,12 +15,17 @@ In summary, the migration process has 3 steps:
    it will be needed during a second-phase of UUID and quota migrations, that
    also uses data extracted from step 1.
 
+.. warning::
+
+    It is highly suggested that you keep separate database backups for each 
+    service after the completion of each of step.
+
 
 1. Bring all services down
 ==========================
 
-All services must be brought down so that the database maintains a predictable
-and consistent state as the migration is being executed.
+All web services must be brought down so that the database maintains a 
+predictable and consistent state as the migration is being executed.
 
 
 2. Prepare astakos user migration to case insensitive emails
@@ -39,26 +44,7 @@ discarding data from all but one.
 -------------------------------------------
 (script: ``find_astakos_users_with_conflicting_emails.py``)::
 
-    astakos-host$ cat << EOF > find_astakos_users_with_conflicting_emails.py
-    import os
-    import sys
-    
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
-    
-    import astakos
-    from astakos.im.models import AstakosUser as A
-    
-    def user_filter(user):
-        return A.objects.filter(email__iexact=user.email).count() > 1
-    
-    all_users = list(A.objects.all())
-    userlist = [(str(u.pk) + ': ' + str(u.email))
-                for u in filter(user_filter, all_users)]
-    sys.stderr.write("id: email\n")
-    print "\n".join(userlist)
-    
-    EOF
-
+    astakos-host$ wget https://code.grnet.gr/projects/synnefo/repository/revisions/release-0.13/raw/contrib/upgrade-013/find_astakos_users_with_conflicting_emails.py
     astakos-host$ python ./find_astakos_users_with_conflicting_emails.py
 
 
@@ -68,56 +54,16 @@ discarding data from all but one.
 -------------------------------------------------
 (script: ``delete_astakos_users.py``)::
 
-    astakos-host$ cat << EOF > delete_astakos_users.py
-    import os
-    import sys
-    from time import sleep
-
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
-
-    import astakos
-    from astakos.im.models import AstakosUser as A
-
-    def user_filter(user):
-        return A.objects.filter(email__iexact=user.email).count() > 1
-
-    argv = sys.argv
-    argc = len(sys.argv)
-
-    if argc < 2:
-        print "Usage: ./delete_astakos_users.py <id>..."
-        raise SystemExit()
-
-    id_list = [int(x) for x in argv[1:]]
-
-    print ""
-    print "This will permanently delete the following users:\n"
-    print "id: email"
-    print "--  -----"
-
-    users = A.objects.filter(id__in=id_list)
-    for user in users:
-        print "%s: %s" % (user.id, user.email)
-
-    print "\nExecute? (yes/no): ",
-    line = raw_input().rstrip()
-    if line != 'yes':
-        print "\nCancelled"
-        raise SystemExit()
-
-    print "\nConfirmed."
-    sleep(2)
-    for user in users:
-        print "deleting %s: %s" % (user.id, user.email)
-        user.delete()
-
-    EOF
-
+    astakos-host$ wget https://code.grnet.gr/projects/synnefo/repository/revisions/release-0.13/raw/contrib/upgrade-013/delete_astakos_users.py
     astakos-host$ python ./delete_astakos_users.py 30 40
 
 .. warning::
 
-    MAKE SURE THAT YOU HAVE RESOLVED ALL CONFLICTS
+    After you finish with duplicate accounts cleanup using the 
+    ``delete_astakos_users.py`` script, execute the 
+    ``find_astakos_users_with_conflicting_emails.py`` once again and make sure 
+    that it reports no such users and all duplicate email conflicts have been 
+    resolved.
 
 
 3. Upgrade Synnefo and configure settings
@@ -151,6 +97,12 @@ discarding data from all but one.
                             snf-pithos-app \
                             snf-pithos-webclient \
                             kamaki \
+
+.. note::
+
+  If you get questioned about stale content types during the
+  migration process, answer ``no`` and let the migration finish.
+
 
 3.2 Sync and migrate Django DB
 ------------------------------
@@ -282,7 +234,7 @@ E.g.::
 Configure and load the available resources per service
 and associated default limits into Astakos::
 
-    astakos.host$ snf-manage astakos-load-service-resources
+    astakos.host$ snf-manage astakos-init --load-service-resources
 
 Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
 
@@ -359,17 +311,17 @@ Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
 
 ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-0.13 --validate
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --validate
 
 Duplicate user found?
 
 - either *merge* (merge will merge all resources to one user)::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-0.13 --merge-user=kpap@grnet.gr
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --merge-user=kpap@grnet.gr
 
 - or *delete* ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-0.13 --delete-user=KPap@grnet.gr
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=KPap@grnet.gr
     # (only KPap will be deleted not kpap)
 
 6.2 Migrate Cyclades users (email case/uuid)
@@ -377,7 +329,7 @@ Duplicate user found?
 
 ::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-0.13 --migrate-users
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --migrate-users
 
 - if invalid usernames are found, verify that they do not exist in astakos::
 
@@ -385,22 +337,22 @@ Duplicate user found?
 
 - if no user exists::
 
-    cyclades.host$ snf-manage cyclades-astakos-migrate-0.13 --delete-user=<userid>
+    cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=<userid>
 
 6.3 Migrate Pithos user names
 -----------------------------
 
 Check if alembic has not been initialized ::
 
-    pithos.host$ pithos-migrate-0.13 current
+    pithos.host$ pithos-migrate current
 
 - If alembic current is None (e.g. okeanos.io) ::
 
-    pithos.host$ pithos-migrate-0.13 stamp 3dd56e750a3
+    pithos.host$ pithos-migrate stamp 3dd56e750a3
 
 Finally, migrate pithos account name to uuid::
 
-    pithos.host$ pithos-migrate-0.13 upgrade head
+    pithos.host$ pithos-migrate upgrade head
 
 7. Migrate old quota limits
 ===========================

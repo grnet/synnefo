@@ -132,10 +132,7 @@ class Command(BaseCommand):
 
             user = server.userid
             if not options['use_uuids']:
-                try:
-                    user = ucache.get_user(server.userid)
-                except:
-                    pass
+                user = ucache.get_user(server.userid)
 
             fields = (str(server.id), name, user, flavor, image,
                       state, str(server.backend))

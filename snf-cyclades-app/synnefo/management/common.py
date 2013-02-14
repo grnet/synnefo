@@ -263,15 +263,26 @@ def pprint_table(out, table, headers=None, separator=None):
 
 
 class UUIDCache(object):
+    """UUUID-to-email cache
+
+    """
+
+    astakos_url = ASTAKOS_URL.replace("im/authenticate",
+                                      "service/api/user_catalogs")
+
     def __init__(self):
         self.users = {}
 
     def get_user(self, uuid):
+        """Do the uuid-to-email resolving
+        """
+
         if not uuid in self.users:
-            astakos_url = ASTAKOS_URL.replace("im/authenticate",
-                                              "service/api/user_catalogs")
-            self.users[uuid] = \
-            astakos.get_displayname(token=CYCLADES_ASTAKOS_SERVICE_TOKEN,
-                                    url=astakos_url, uuid=uuid)
+            try:
+                self.users[uuid] = \
+                astakos.get_displayname(token=CYCLADES_ASTAKOS_SERVICE_TOKEN,
+                                        url=UUIDCache.astakos_url, uuid=uuid)
+            except Exception:
+                return uuid
 
         return self.users[uuid]

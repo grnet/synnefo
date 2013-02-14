@@ -964,8 +964,17 @@ def object_write(request, v_account, v_container, v_object):
         content_length = get_content_length(request)  # Required by the API.
 
         src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
+
         if not src_account:
             src_account = request.user_uniq
+        else:
+            if TRANSLATE_UUIDS:
+                try:
+                    src_account = retrieve_uuid(getattr(request, 'token', None),
+                                                src_account)
+                except ItemNotExists:
+                    ItemNotFound('Invalid source account')
+
         if move_from:
             try:
                 src_container, src_name = split_container_object_string(

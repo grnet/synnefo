@@ -75,6 +75,7 @@ Install pithos web UI with:
 
    # apt-get install snf-pithos-webclient
 
+
 In `/etc/synnefo/webclient.conf` add:
 
 .. code-block:: console

@@ -868,6 +868,7 @@ Currently, RabbitMQ is used by the following components:
 * `snf-dispatcher`: This daemon, consumes the messages that are sent from
   the above components, and updates the Cyclades DB accordingly.
 
+
 Installation
 ~~~~~~~~~~~~
 

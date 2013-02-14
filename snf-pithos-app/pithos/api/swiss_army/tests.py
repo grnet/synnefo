@@ -101,7 +101,7 @@ class SwissArmyTests(unittest.TestCase):
                 continue
             try:
                 # check first for a group permission
-                owner, group = holder.split(':')
+                owner, group = holder.split(':', 1)
             except ValueError:
                 holders = [holder]
             else:

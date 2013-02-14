@@ -335,7 +335,7 @@ def replace_permissions_displayname(token, holder):
         return holder
     try:
         # check first for a group permission
-        account, group = holder.split(':')
+        account, group = holder.split(':', 1)
     except ValueError:
         return retrieve_uuid(token, holder)
     else:
@@ -346,7 +346,7 @@ def replace_permissions_uuid(token, holder):
         return holder
     try:
         # check first for a group permission
-        account, group = holder.split(':')
+        account, group = holder.split(':', 1)
     except ValueError:
         return retrieve_displayname(token, holder)
     else:

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -466,8 +466,6 @@ def get_user_by_uuid(uuid):
         raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
 
 def create_membership(project, user):
-    if isinstance(project, (int, long)):
-        project = get_project_by_id(project)
     if isinstance(user, (int, long)):
         user = get_user_by_id(user)
 
@@ -475,20 +473,18 @@ def create_membership(project, user):
         m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
         raise PermissionDenied(m)
 
-    m = ProjectMembership(
+    m, created = ProjectMembership.objects.get_or_create(
         project=project,
-        person=user,
-        request_date=datetime.now())
-    try:
-        m.save()
-    except IntegrityError, e:
-        raise IOError(_(astakos_messages.MEMBERSHIP_REQUEST_EXISTS))
-    else:
+        person=user)
+
+    if created:
         return m
+    else:
+        msg = _(astakos_messages.MEMBERSHIP_REQUEST_EXISTS)
+        raise PermissionDenied(msg)
+
 
 def get_membership_for_update(project, user):
-    if isinstance(project, (int, long)):
-        project = get_project_by_id(project)
     if isinstance(user, (int, long)):
         user = get_user_by_id(user)
     try:
@@ -601,7 +597,7 @@ def remove_membership(project_id, user, request_user=None):
 def enroll_member(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
     accept_membership_checks(project, request_user)
-    membership = create_membership(project_id, user)
+    membership = create_membership(project, user)
 
     if not membership.can_accept():
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)

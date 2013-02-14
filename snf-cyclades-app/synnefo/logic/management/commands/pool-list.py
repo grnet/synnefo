@@ -38,6 +38,7 @@ from util import pool_table_from_type
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
+
 class Command(BaseCommand):
     help = "List available pools"
     output_transaction = True

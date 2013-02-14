@@ -53,7 +53,7 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         invitations = Invitation.objects.all().order_by('id')
-        
+
         labels = ('id', 'inviter', 'email', 'real name', 'code', 'consumed')
         columns = (3, 24, 24, 24, 20, 4, 8)
 
@@ -67,13 +67,13 @@ class Command(NoArgsCommand):
             id = str(invitation.id)
             code = str(invitation.code)
             consumed = format_bool(invitation.is_consumed)
-            fields = (
-                id, invitation.inviter.email, invitation.username, invitation.realname,
-                code, consumed)
+            fields = (format(elem) for elem in \
+                        (id, invitation.inviter.email, invitation.username,
+                         invitation.realname, code, consumed))
 
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
-            self.stdout.write(line.encode('utf8') + '\n')
+            self.stdout.write(line + '\n')

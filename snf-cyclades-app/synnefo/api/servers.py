@@ -305,6 +305,19 @@ def create_server(serials, request):
     else:
         transaction.commit()
 
+    # Fix flavor for archipelago
+    password = util.random_password()
+    disk_template, provider = util.get_flavor_provider(flavor)
+    if provider:
+        flavor.disk_template = disk_template
+        flavor.disk_provider = provider
+        flavor.disk_origin = None
+        if provider == 'vlmc':
+            flavor.disk_origin = image['checksum']
+            image['backend_id'] = 'null'
+    else:
+        flavor.disk_provider = None
+
     try:
         # Issue commission
         serial = quotas.issue_vm_commission(user_id, flavor)
@@ -325,18 +338,7 @@ def create_server(serials, request):
             action="CREATE",
             serial=serial)
 
-        password = util.random_password()
-
-        disk_template, provider = util.get_flavor_provider(flavor)
-        if provider:
-            flavor.disk_template = disk_template
-            flavor.disk_provider = provider
-            flavor.disk_origin = None
-            if provider == 'vlmc':
-                flavor.disk_origin = image['backend_id']
-                image['backend_id'] = 'null'
-        else:
-            flavor.disk_provider = None
+        log.info("Created entry in DB for VM '%s'", vm)
 
         # dispatch server created signal
         server_created.send(sender=vm, created_vm_params={
@@ -347,34 +349,41 @@ def create_server(serials, request):
             'img_properties': json.dumps(image['metadata']),
         })
 
-        try:
-            jobID = create_instance(vm, nic, flavor, image)
-        except GanetiApiError:
-            vm.delete()
-            raise
-
-        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                user_id, vm, nic, backend, str(jobID))
-
-        vm.backendjobid = jobID
-        vm.save()
-
+        # Also we must create the VM metadata in the same transaction.
         for key, val in metadata.items():
             VirtualMachineMetadata.objects.create(
                 meta_key=key,
                 meta_value=val,
                 vm=vm)
-
-        server = vm_to_dict(vm, detail=True)
-        server['status'] = 'BUILD'
-        server['adminPass'] = password
-
-        respsone = render_server(request, server, status=202)
     except:
         transaction.rollback()
         raise
     else:
         transaction.commit()
+
+    try:
+        jobID = create_instance(vm, nic, flavor, image)
+        # At this point the job is enqueued in the Ganeti backend
+        vm.backendjobid = jobID
+        vm.save()
+        transaction.commit()
+        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
+                 user_id, vm, nic, backend, str(jobID))
+    except GanetiApiError as e:
+        log.exception("Can not communicate to backend %s: %s. Deleting VM %s",
+                      backend, e, vm)
+        vm.delete()
+        transaction.commit()
+        raise
+    except:
+        transaction.rollback()
+        raise
+
+    server = vm_to_dict(vm, detail=True)
+    server['status'] = 'BUILD'
+    server['adminPass'] = password
+
+    respsone = render_server(request, server, status=202)
 
     return respsone
 

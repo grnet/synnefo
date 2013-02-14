@@ -76,7 +76,7 @@ class AuthProvider(object):
     module = None
     module_active = False
     module_enabled = False
-    one_per_user = False
+    one_per_user = True
     login_prompt = _('Login using ')
     primary_login_prompt = _('Login using ')
     login_message = None
@@ -85,6 +85,8 @@ class AuthProvider(object):
     remote_logout_url = None
     logout_from_provider_text = None
     icon_url = None
+    icon_medium_url = None
+    method_prompt = None
 
     def get_message(self, msg, **kwargs):
         params = kwargs
@@ -98,8 +100,25 @@ class AuthProvider(object):
     def add_url(self):
         return reverse(self.login_view)
 
-    def __init__(self, user=None):
+    @property
+    def provider_details(self):
+        if self.user:
+            if self.identifier:
+                self._provider_details = \
+                    self.user.get_auth_providers().get(module=self.module,
+                                                       identifier=self.identifier).__dict__
+            else:
+                self._provider_details = self.user.get(module=self.module).__dict__
+        return self._provider_details
+
+    def __init__(self, user=None, identifier=None, provider_details=None):
         self.user = user
+        self.identifier = identifier
+
+        self._provider_details = None
+        if provider_details:
+            self._provider_details = provider_details
+
         for tpl in ['login_prompt', 'login', 'signup_prompt']:
             tpl_name = '%s_%s' % (tpl, 'template')
             override = self.get_setting(tpl_name)
@@ -121,7 +140,14 @@ class AuthProvider(object):
 
         if not self.icon_url:
             self.icon_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons/%s.png' %
-                                       self.get_title_display.lower())
+                                       self.module.lower())
+
+        if not self.icon_medium_url:
+            self.icon_medium_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons-medium/%s.png' %
+                                       self.module.lower())
+
+        if not self.method_prompt:
+            self.method_prompt = _('%s login method') % self.get_title_display
 
     def __getattr__(self, key):
         if not key.startswith('get_'):
@@ -150,6 +176,9 @@ class AuthProvider(object):
 
         return getattr(settings, attr, default)
 
+    def is_available_for_remove(self):
+        return self.is_active() and self.get_setting('CAN_REMOVE', True)
+
     def is_available_for_login(self):
         """ A user can login using authentication provider"""
         return self.is_active() and self.get_setting('CAN_LOGIN',
@@ -177,8 +206,9 @@ class LocalAuthProvider(AuthProvider):
     module = 'local'
     title = _('Local password')
     description = _('Create a local password for your account')
-    add_prompt =  _('Create a local password for your account')
-    login_prompt = _('if you already have a username and password')
+    add_prompt =  _('Enable Classic login for your account')
+    details_tpl = _('Username: %(username)s')
+    login_prompt = _('Classic login (username/password)')
     signup_prompt = _('New to ~okeanos ?')
     signup_link_prompt = _('create an account now')
     login_view = 'password_change'
@@ -190,8 +220,6 @@ class LocalAuthProvider(AuthProvider):
     login_template = 'im/auth/local_login_form.html'
     login_prompt_template = 'im/auth/local_login_prompt.html'
     signup_prompt_template = 'im/auth/local_signup_prompt.html'
-    details_tpl = _('You can login to your account using your'
-                    ' %(auth_backend)s password.')
 
     @property
     def extra_actions(self):
@@ -200,27 +228,27 @@ class LocalAuthProvider(AuthProvider):
 
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
-    title = _('Academic account (Shibboleth)')
-    add_prompt = _('Allows you to login to your account using your academic '
-                    'account')
-    details_tpl = _('Shibboleth account \'%(identifier)s\' is connected to your '
-                    ' account.')
-    user_title = _('Academic credentials (%(identifier)s)')
-    primary_login_prompt = _('If you are a student/researcher/faculty you can'
-                             ' login using your university-credentials in'
-                             ' the following page')
+    title = _('Academic account')
+    add_prompt = _('Enable Academic login for your account')
+    details_tpl = _('Identifier: %(identifier)s')
+    user_title = _('Academic account (%(identifier)s)')
+    primary_login_prompt = _('If you are a student, professor or researcher you '
+                             'can login using your academic account.')
     login_view = 'astakos.im.target.shibboleth.login'
 
     login_template = 'im/auth/shibboleth_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
-    logout_from_provider_text = ' at your Academic account (shibboleth)'
+    logout_from_provider_text = 'Please close all browser windows to complete logout from your Academic account, too.'
+    logout_message = logout_from_provider_text
+
+    method_prompt = _('Academic account')
 
 
 class TwitterAuthProvider(AuthProvider):
     module = 'twitter'
     title = _('Twitter')
-    add_prompt = _('Allows you to login to your account using Twitter')
-    details_tpl = _('Twitter screen name: %(info_screen_name)s')
+    add_prompt = _('Enable Twitter login for your account')
+    details_tpl = _('Username: %(info_screen_name)s')
     user_title = _('Twitter (%(info_screen_name)s)')
     login_view = 'astakos.im.target.twitter.login'
 
@@ -231,8 +259,8 @@ class TwitterAuthProvider(AuthProvider):
 class GoogleAuthProvider(AuthProvider):
     module = 'google'
     title = _('Google')
-    add_prompt = _('Allows you to login to your account using Google')
-    details_tpl = _('Google account: %(info_email)s')
+    add_prompt = _('Enable Google login for your account')
+    details_tpl = _('Email: %(info_email)s')
     user_title = _('Google (%(info_email)s)')
     login_view = 'astakos.im.target.google.login'
 
@@ -243,18 +271,21 @@ class GoogleAuthProvider(AuthProvider):
 class LinkedInAuthProvider(AuthProvider):
     module = 'linkedin'
     title = _('LinkedIn')
-    add_prompt = _('Allows you to login to your account using LinkedIn')
+    add_prompt = _('Enable LinkedIn login for your account')
+    details_tpl = _('Email: %(info_emailAddress)s')
     user_title = _('LinkedIn (%(info_emailAddress)s)')
-    details_tpl = _('LinkedIn account: %(info_emailAddress)s')
     login_view = 'astakos.im.target.linkedin.login'
 
     login_template = 'im/auth/third_party_provider_generic_login.html'
     login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
 
 
-def get_provider(id, user_obj=None, default=None):
+def get_provider(id, user_obj=None, default=None, identifier=None, provider_details={}):
     """
     Return a provider instance from the auth providers registry.
     """
-    return PROVIDERS.get(id, default)(user_obj)
+    if not id in PROVIDERS:
+        raise Exception('Invalid auth provider requested "%s"' % id)
+
+    return PROVIDERS.get(id, default)(user_obj, identifier, provider_details)
 

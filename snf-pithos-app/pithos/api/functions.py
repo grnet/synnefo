@@ -42,7 +42,7 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
-from synnefo.lib.astakos import get_user
+from synnefo.lib.astakos import get_user, get_uuids as _get_uuids
 
 from pithos.api.faults import (
     Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
@@ -58,9 +58,13 @@ from pithos.api.util import (
     copy_or_move_object, get_int_parameter, get_content_length,
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
-    api_method, retrieve_username, retrieve_uuid,
-    put_account_translation_headers)
-from pithos.api.settings import UPDATE_MD5
+    api_method, is_uuid,
+    retrieve_uuid, retrieve_displayname, retrieve_uuids, retrieve_displaynames
+)
+
+from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
+                                 SERVICE_TOKEN, AUTHENTICATION_URL,
+                                 AUTHENTICATION_USERS)
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
@@ -71,8 +75,20 @@ from pithos.backends.filter import parse_filters
 import logging
 import hashlib
 
-
 logger = logging.getLogger(__name__)
+
+def get_uuids(names):
+    try:
+        uuids = _get_uuids(SERVICE_TOKEN, names,
+                           url=AUTHENTICATION_URL.replace(
+                                            'im/authenticate',
+                                            'service/api/user_catalogs'),
+                           override_users=AUTHENTICATION_USERS)
+    except Exception, e:
+        logger.exception(e)
+        return {}
+
+    return uuids
 
 
 @csrf_exempt
@@ -92,6 +108,13 @@ def top_demux(request):
 
 @csrf_exempt
 def account_demux(request, v_account):
+    if TRANSLATE_UUIDS:
+        if not is_uuid(v_account):
+            uuids = get_uuids([v_account])
+            if not uuids or not v_account in uuids:
+                return HttpResponse(status=404)
+            v_account = uuids[v_account]
+
     if request.method == 'HEAD':
         return account_meta(request, v_account)
     elif request.method == 'POST':
@@ -104,6 +127,13 @@ def account_demux(request, v_account):
 
 @csrf_exempt
 def container_demux(request, v_account, v_container):
+    if TRANSLATE_UUIDS:
+        if not is_uuid(v_account):
+            uuids = get_uuids([v_account])
+            if not uuids or not v_account in uuids:
+                return HttpResponse(status=404)
+            v_account = uuids[v_account]
+
     if request.method == 'HEAD':
         return container_meta(request, v_account, v_container)
     elif request.method == 'PUT':
@@ -121,6 +151,13 @@ def container_demux(request, v_account, v_container):
 @csrf_exempt
 def object_demux(request, v_account, v_container, v_object):
     # Helper to avoid placing the token in the URL when loading objects from a browser.
+    if TRANSLATE_UUIDS:
+        if not is_uuid(v_account):
+            uuids = get_uuids([v_account])
+            if not uuids or not v_account in uuids:
+                return HttpResponse(status=404)
+            v_account = uuids[v_account]
+
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)
     elif request.method == 'GET':
@@ -179,12 +216,14 @@ def account_list(request):
     accounts = request.backend.list_accounts(request.user_uniq, marker, limit)
 
     if request.serialization == 'text':
+        if TRANSLATE_UUIDS:
+            accounts = retrieve_displaynames(
+                    getattr(request, 'token', None), accounts)
         if len(accounts) == 0:
             # The cloudfiles python bindings expect 200 if json/xml.
             response.status_code = 204
             return response
         response.status_code = 200
-        put_account_translation_headers(response, accounts)
         response.content = '\n'.join(accounts) + '\n'
         return response
 
@@ -200,7 +239,6 @@ def account_list(request):
         except NotAllowedError:
             raise Forbidden('Not allowed')
         else:
-            meta['account_presentation'] = retrieve_username(x)
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(
                 meta, 'until_timestamp', 'x_account_until_timestamp')
@@ -208,6 +246,14 @@ def account_list(request):
                 meta['X-Account-Group'] = printable_header_dict(
                     dict([(k, ','.join(v)) for k, v in groups.iteritems()]))
             account_meta.append(printable_header_dict(meta))
+
+    if TRANSLATE_UUIDS:
+        uuids = list(d['name'] for d in account_meta)
+        catalog = retrieve_displaynames(
+                getattr(request, 'token', None), uuids, return_dict=True)
+        for meta in account_meta:
+            meta['name'] = catalog.get(meta.get('name'))
+
     if request.serialization == 'xml':
         data = render_to_string('accounts.xml', {'accounts': account_meta})
     elif request.serialization == 'json':
@@ -231,8 +277,11 @@ def account_meta(request, v_account):
             external_quota=request.user_usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
-        for k in groups:
-            groups[k] = [retrieve_username(x) for x in groups[k]]
+
+        if TRANSLATE_UUIDS:
+            for k in groups:
+                groups[k] = retrieve_displaynames(
+                        getattr(request, 'token', None), groups[k])
         policy = request.backend.get_account_policy(
             request.user_uniq, v_account, external_quota=request.user_usage)
     except NotAllowedError:
@@ -254,11 +303,24 @@ def account_update(request, v_account):
 
     meta, groups = get_account_headers(request)
     for k in groups:
-        try:
-            groups[k] = [retrieve_uuid(x) for x in groups[k]]
-        except ItemNotExists, e:
-            raise BadRequest(
-                'Bad X-Account-Group header value: unknown account: %s' % e)
+        if TRANSLATE_UUIDS:
+            try:
+                groups[k] = retrieve_uuids(
+                        getattr(request, 'token', None),
+                        groups[k],
+                        fail_silently=False)
+            except ItemNotExists, e:
+                raise BadRequest(
+                        'Bad X-Account-Group header value: %s' % e)
+        else:
+            try:
+                retrieve_displaynames(
+                    getattr(request, 'token', None),
+                    groups[k],
+                    fail_silently=False)
+            except ItemNotExists, e:
+                raise BadRequest(
+                        'Bad X-Account-Group header value: %s'  % e)
     replace = True
     if 'update' in request.GET:
         replace = False
@@ -496,6 +558,7 @@ def container_delete(request, v_account, v_container):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     until = get_int_parameter(request.GET.get('until'))
 
@@ -511,6 +574,8 @@ def container_delete(request, v_account, v_container):
         raise ItemNotFound('Container does not exist')
     except ContainerNotEmpty:
         raise Conflict('Container is not empty')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
 
 
@@ -613,9 +678,15 @@ def object_list(request, v_account, v_container):
         object_permissions = {}
         object_public = {}
         if until is None:
-            name_idx = len('/'.join((v_account, v_container, '')))
+            name = '/'.join((v_account, v_container, ''))
+            name_idx = len(name)
             for x in request.backend.list_object_permissions(request.user_uniq,
                                                              v_account, v_container, prefix):
+
+                # filter out objects which are not under the container
+                if name != x[:name_idx]:
+                    continue
+
                 object = x[name_idx:]
                 object_permissions[object] = request.backend.get_object_permissions(
                     request.user_uniq, v_account, v_container, object)
@@ -629,9 +700,14 @@ def object_list(request, v_account, v_container):
 
     object_meta = []
     for meta in objects:
-        modified_by = meta.get('modified_by')
-        if modified_by:
-            meta['modified_by'] = retrieve_username(modified_by)
+        if TRANSLATE_UUIDS:
+            modified_by = meta.get('modified_by')
+            if modified_by:
+                l = retrieve_displaynames(
+                        getattr(request, 'token', None), [meta['modified_by']])
+                if l is not None and len(l) == 1:
+                    meta['modified_by'] = l[0]
+
         if len(meta) == 1:
             # Virtual objects/directories.
             object_meta.append(meta)
@@ -657,6 +733,7 @@ def object_list(request, v_account, v_container):
             if public:
                 update_public_meta(public, meta)
             object_meta.append(printable_header_dict(meta))
+
     if request.serialization == 'xml':
         data = render_to_string(
             'objects.xml', {'container': v_container, 'objects': object_meta})
@@ -711,7 +788,7 @@ def object_meta(request, v_account, v_container, v_object):
         return response
 
     response = HttpResponse(status=200)
-    put_object_headers(response, meta)
+    put_object_headers(response, meta, token=getattr(request, 'token', None))
     return response
 
 
@@ -847,7 +924,8 @@ def object_read(request, v_account, v_container, v_object):
             data = json.dumps(d)
 
         response = HttpResponse(data, status=200)
-        put_object_headers(response, meta)
+        put_object_headers(
+                response, meta, token=getattr(request, 'token', None))
         response['Content-Length'] = len(data)
         return response
 
@@ -865,6 +943,7 @@ def object_write(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
@@ -885,8 +964,17 @@ def object_write(request, v_account, v_container, v_object):
         content_length = get_content_length(request)  # Required by the API.
 
         src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
+
         if not src_account:
             src_account = request.user_uniq
+        else:
+            if TRANSLATE_UUIDS:
+                try:
+                    src_account = retrieve_uuid(getattr(request, 'token', None),
+                                                src_account)
+                except ItemNotExists:
+                    ItemNotFound('Invalid source account')
+
         if move_from:
             try:
                 src_container, src_name = split_container_object_string(
@@ -978,8 +1066,8 @@ def object_write(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1011,6 +1099,7 @@ def object_write_form(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     request.upload_handlers = [SaveToBackendHandler(request)]
     if 'X-Object-Data' not in request.FILES:
@@ -1026,8 +1115,8 @@ def object_write_form(request, v_account, v_container, v_object):
         raise Forbidden('Not allowed')
     except ItemNotExists:
         raise ItemNotFound('Container does not exist')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
 
     response = HttpResponse(status=201)
     response['ETag'] = checksum
@@ -1043,6 +1132,7 @@ def object_copy(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     dest_account = request.META.get('HTTP_DESTINATION_ACCOUNT')
     if not dest_account:
@@ -1084,6 +1174,7 @@ def object_move(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     dest_account = request.META.get('HTTP_DESTINATION_ACCOUNT')
     if not dest_account:
@@ -1311,8 +1402,8 @@ def object_update(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except QuotaError:
-        raise RequestEntityTooLarge('Quota exceeded')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,
@@ -1335,6 +1426,7 @@ def object_delete(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    #                       requestentitytoolarge (413)
 
     until = get_int_parameter(request.GET.get('until'))
     delimiter = request.GET.get('delimiter')
@@ -1347,6 +1439,8 @@ def object_delete(request, v_account, v_container, v_object):
         raise Forbidden('Not allowed')
     except ItemNotExists:
         raise ItemNotFound('Object does not exist')
+    except QuotaError, e:
+        raise RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
 
 

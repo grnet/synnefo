@@ -40,6 +40,7 @@ engine = inflect.engine()
 from urllib import quote
 from functools import wraps
 from datetime import datetime
+from synnefo.lib.ordereddict import OrderedDict
 
 from django_tables2 import RequestConfig
 
@@ -56,6 +57,7 @@ from django.http import (
 from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
@@ -77,16 +79,18 @@ from astakos.im.models import (
     AstakosUser, ApprovalTerms,
     EmailChange, RESOURCE_SEPARATOR,
     AstakosUserAuthProvider, PendingThirdPartyUser,
+    PendingMembershipError,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
 from astakos.im.forms import (
-    LoginForm, InvitationForm, ProfileForm,
+    LoginForm, InvitationForm,
     FeedbackForm, SignApprovalTermsForm,
     EmailChangeForm,
     ProjectApplicationForm, ProjectSortForm,
     AddProjectMembersForm, ProjectSearchForm,
     ProjectMembersSortForm)
+from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from astakos.im.functions import (
     send_feedback, SendMailError,
     logout as auth_logout,
@@ -94,17 +98,23 @@ from astakos.im.functions import (
     invite,
     send_activation as send_activation_func,
     SendNotificationError,
-    accept_membership, reject_membership, remove_membership,
-    leave_project, join_project, enroll_member)
+    accept_membership, reject_membership, remove_membership, cancel_membership,
+    leave_project, join_project, enroll_member, can_join_request, can_leave_request,
+    get_related_project_id, get_by_chain_or_404,
+    approve_application, deny_application,
+    cancel_application, dismiss_application)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
     RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
+    ACTIVATION_REDIRECT_URL,
     MODERATION_ENABLED)
 from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers
+from astakos.im.project_xctx import project_transaction_context
+from astakos.im.retry_xctx import RetryException
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +259,19 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     )
 
 
+@require_http_methods(["POST"])
+@valid_astakos_user_required
+def update_token(request):
+    """
+    Update api token view.
+    """
+    user = request.user
+    user.renew_token()
+    user.save()
+    messages.success(request, astakos_messages.TOKEN_UPDATED)
+    return HttpResponseRedirect(reverse('edit_profile'))
+
+
 @require_http_methods(["GET", "POST"])
 @valid_astakos_user_required
 @transaction.commit_manually
@@ -375,19 +398,25 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
         if form.is_valid():
             try:
                 prev_token = request.user.auth_token
-                user = form.save()
-                form = ProfileForm(
-                    instance=user,
-                    session_key=request.session.session_key
-                )
+                user = form.save(request=request)
                 next = restrict_next(
                     request.POST.get('next'),
                     domain=COOKIE_DOMAIN
                 )
-                if next:
-                    return redirect(next)
                 msg = _(astakos_messages.PROFILE_UPDATED)
                 messages.success(request, msg)
+
+                if form.email_changed:
+                    msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
+                    messages.success(request, msg)
+                if form.password_changed:
+                    msg = _(astakos_messages.PASSWORD_CHANGED)
+                    messages.success(request, msg)
+
+                if next:
+                    return redirect(next)
+                else:
+                    return redirect(reverse('edit_profile'))
             except ValueError, ve:
                 messages.success(request, ve)
     elif request.method == "GET":
@@ -458,12 +487,20 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
     except AstakosUser.DoesNotExist:
         instance = None
 
+    pending_user = None
     third_party_token = request.REQUEST.get('third_party_token', None)
     if third_party_token:
         pending = get_object_or_404(PendingThirdPartyUser,
                                     token=third_party_token)
         provider = pending.provider
         instance = pending.get_user_instance()
+        if pending.existing_user().count() > 0:
+            pending_user = pending.existing_user().get()
+            if request.method == "GET":
+                messages.warning(request, pending_user.get_inactive_message())
+
+
+    extra_context['pending_user_exists'] = pending_user
 
     try:
         if not backend:
@@ -615,7 +652,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
             extra_message = provider.get_logout_message_display
             if extra_message:
                 message += '<br />' + extra_message
-        messages.add_message(request, messages.SUCCESS, mark_safe(message))
+        messages.success(request, message)
         response['Location'] = reverse('index')
         response.status_code = 301
     return response
@@ -645,7 +682,10 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return index(request)
 
     try:
-        activate_func(user, greeting_email_template_name, helpdesk_email_template_name, verify_email=True)
+        activate_func(user, greeting_email_template_name,
+                      helpdesk_email_template_name, verify_email=True)
+        messages.success(request, _(astakos_messages.ACCOUNT_ACTIVATED))
+        next = ACTIVATION_REDIRECT_URL or next
         response = prepare_response(request, user, next, renew=True)
         transaction.commit()
         return response
@@ -682,7 +722,13 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
     if not term:
         messages.error(request, _(astakos_messages.NO_APPROVAL_TERMS))
         return HttpResponseRedirect(reverse('index'))
-    f = open(term.location, 'r')
+    try:
+        f = open(term.location, 'r')
+    except IOError:
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        return render_response(
+            template_name, context_instance=get_context(request, extra_context))
+
     terms = f.read()
 
     if request.method == 'POST':
@@ -711,7 +757,6 @@ def approval_terms(request, term_id=None, template_name='im/approval_terms.html'
 
 
 @require_http_methods(["GET", "POST"])
-@valid_astakos_user_required
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -721,14 +766,16 @@ def change_email(request, activation_key=None,
     extra_context = extra_context or {}
 
 
+    if not astakos_settings.EMAILCHANGE_ENABLED:
+        raise PermissionDenied
+
     if activation_key:
         try:
             user = EmailChange.objects.change_email(activation_key)
-            if request.user.is_authenticated() and request.user == user:
+            if request.user.is_authenticated() and request.user == user or not \
+                    request.user.is_authenticated():
                 msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
-                auth_logout(request)
-                response = prepare_response(request, user)
                 transaction.commit()
                 return HttpResponseRedirect(reverse('edit_profile'))
         except ValueError, e:
@@ -757,8 +804,6 @@ def change_email(request, activation_key=None,
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            # delete pending email changes
-            request.user.emailchanges.all().delete()
             ec = form.save(email_template_name, request)
         except SendMailError, e:
             msg = e
@@ -784,9 +829,9 @@ def change_email(request, activation_key=None,
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
 
     if request.user.is_authenticated():
-        messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
+    # TODO: check if moderation is only enabled for local login
     if astakos_settings.MODERATION_ENABLED:
         raise PermissionDenied
 
@@ -802,14 +847,8 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
             messages.success(request, msg)
         except SendMailError, e:
             messages.error(request, e)
-    return render_response(
-        template_name,
-        login_form = LoginForm(request=request),
-        context_instance = get_context(
-            request,
-            extra_context
-        )
-    )
+
+    return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET"])
@@ -874,6 +913,9 @@ def remove_auth_provider(request, pk):
 
     if provider.can_remove():
         provider.delete()
+        message = astakos_messages.AUTH_PROVIDER_REMOVED % \
+                            provider.settings.get_method_prompt_display
+        messages.success(request, message)
         return HttpResponseRedirect(reverse('edit_profile'))
     else:
         raise PermissionDenied
@@ -884,16 +926,15 @@ def how_it_works(request):
         'im/how_it_works.html',
         context_instance=get_context(request))
 
-@transaction.commit_manually
+@project_transaction_context()
 def _create_object(request, model=None, template_name=None,
         template_loader=template_loader, extra_context=None, post_save_redirect=None,
         login_required=False, context_processors=None, form_class=None,
-        msg=None):
+        msg=None, ctx=None):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
     """
-    rollback = False
     response = None
 
     if extra_context is None: extra_context = {}
@@ -925,13 +966,9 @@ def _create_object(request, model=None, template_name=None,
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
-
         if response == None:
             # Create the template, context, response
             if not template_name:
@@ -945,17 +982,16 @@ def _create_object(request, model=None, template_name=None,
             response = HttpResponse(t.render(c))
         return response
 
-@transaction.commit_manually
+@project_transaction_context()
 def _update_object(request, model=None, object_id=None, slug=None,
         slug_field='slug', template_name=None, template_loader=template_loader,
         extra_context=None, post_save_redirect=None, login_required=False,
         context_processors=None, template_object_name='object',
-        form_class=None, msg=None):
+        form_class=None, msg=None, ctx=None):
     """
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
     """
-    rollback = False
     response = None
 
     if extra_context is None: extra_context = {}
@@ -988,12 +1024,8 @@ def _update_object(request, model=None, object_id=None, slug=None,
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        ctx.mark_rollback()
     finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
         if response == None:
             if not template_name:
                 template_name = "%s/%s_form.html" %\
@@ -1026,8 +1058,22 @@ def project_add(request):
     )
     else:
         resource_catalog = [
-            (g, filter(lambda r: r.get('group', '') == g, result.data)) \
+            [g, filter(lambda r: r.get('group', '') == g, result.data)] \
                 for g in resource_groups]
+
+    # order resources
+    groups_order = RESOURCES_PRESENTATION_DATA.get('groups_order')
+    resources_order = RESOURCES_PRESENTATION_DATA.get('resources_order')
+    resource_catalog = sorted(resource_catalog, key=lambda g:groups_order.index(g[0]))
+
+    resource_groups_list = sorted([(k,v) for k,v in resource_groups.items()],
+                                  key=lambda f:groups_order.index(f[0]))
+    resource_groups = OrderedDict(resource_groups_list)
+    for index, group in enumerate(resource_catalog):
+        resource_catalog[index][1] = sorted(resource_catalog[index][1],
+                                            key=lambda r: resources_order.index(r['str_repr']))
+
+
     extra_context = {
         'resource_catalog':resource_catalog,
         'resource_groups':resource_groups,
@@ -1066,7 +1112,50 @@ def project_list(request):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-def project_update(request, application_id):
+@project_transaction_context()
+def project_app_cancel(request, application_id, ctx=None):
+    chain_id = None
+    try:
+        application_id = int(application_id)
+        chain_id = get_related_project_id(application_id)
+        cancel_application(application_id, request.user)
+    except (IOError, PermissionDenied), e:
+        messages.error(request, e)
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        if ctx:
+            ctx.mark_rollback()
+    else:
+        msg = _(astakos_messages.APPLICATION_CANCELLED)
+        messages.success(request, msg)
+
+    next = request.GET.get('next')
+    if not next:
+        if chain_id:
+            next = reverse('astakos.im.views.project_detail', args=(chain_id,))
+        else:
+            next = reverse('astakos.im.views.project_list')
+
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    return redirect(next)
+
+
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_modify(request, application_id):
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    user = request.user
+    if not (user.owns_application(app) or user.is_project_admin(app.id)):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
     resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
     resource_catalog = ()
     result = callpoint.list_resources()
@@ -1103,69 +1192,106 @@ def project_update(request, application_id):
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_on_success
-def project_detail(request, application_id):
-    addmembers_form = AddProjectMembersForm()
-    if request.method == 'POST':
-        addmembers_form = AddProjectMembersForm(
-            request.POST,
-            application_id=int(application_id),
-            request_user=request.user)
-        if addmembers_form.is_valid():
-            try:
-                rollback = False
-                application_id = int(application_id)
-                map(lambda u: enroll_member(
-                        application_id,
-                        u,
-                        request_user=request.user),
-                    addmembers_form.valid_users)
-            except (IOError, PermissionDenied), e:
-                messages.error(request, e)
-            except BaseException, e:
-                rollback = True
-                messages.error(request, e)
-            finally:
-                if rollback == True:
-                    transaction.rollback()
-                else:
-                    transaction.commit()
-            addmembers_form = AddProjectMembersForm()
+def project_app(request, application_id):
+    return common_detail(request, application_id, project_view=False)
 
-    rollback = False
+@require_http_methods(["GET", "POST"])
+@signed_terms_required
+@login_required
+def project_detail(request, chain_id):
+    return common_detail(request, chain_id)
 
-    application = get_object_or_404(ProjectApplication, pk=application_id)
-    try:
-        members = application.project.projectmembership_set.select_related()
-    except Project.DoesNotExist:
-        members = ProjectMembership.objects.none()
+@project_transaction_context(sync=True)
+def addmembers(request, chain_id, addmembers_form, ctx=None):
+    if addmembers_form.is_valid():
+        try:
+            chain_id = int(chain_id)
+            map(lambda u: enroll_member(
+                    chain_id,
+                    u,
+                    request_user=request.user),
+                addmembers_form.valid_users)
+        except (IOError, PermissionDenied), e:
+            messages.error(request, e)
+        except BaseException, e:
+            if ctx:
+                ctx.mark_rollback()
+            messages.error(request, e)
 
-    members_table = tables.ProjectApplicationMembersTable(application,
-                                                          members,
-                                                          user=request.user,
-                                                          prefix="members_")
-    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(members_table)
+def common_detail(request, chain_or_app_id, project_view=True):
+    project = None
+    if project_view:
+        chain_id = chain_or_app_id
+        if request.method == 'POST':
+            addmembers_form = AddProjectMembersForm(
+                request.POST,
+                chain_id=int(chain_id),
+                request_user=request.user)
+            addmembers(request, chain_id, addmembers_form)
+            if addmembers_form.is_valid():
+                addmembers_form = AddProjectMembersForm()  # clear form data
+        else:
+            addmembers_form = AddProjectMembersForm()  # initialize form
+
+        project, application = get_by_chain_or_404(chain_id)
+        if project:
+            members = project.projectmembership_set.select_related()
+            members_table = tables.ProjectMembersTable(project,
+                                                       members,
+                                                       user=request.user,
+                                                       prefix="members_")
+            RequestConfig(request, paginate={"per_page": PAGINATE_BY}
+                          ).configure(members_table)
+
+        else:
+            members_table = None
+
+    else: # is application
+        application_id = chain_or_app_id
+        application = get_object_or_404(ProjectApplication, pk=application_id)
+        members_table = None
+        addmembers_form = None
 
     modifications_table = None
-    if application.follower:
-        following_applications = list(application.followers())
-        following_applications.reverse()
-        modifications_table = \
-            tables.ProjectModificationApplicationsTable(following_applications,
-                                                       user=request.user,
-                                                       prefix="modifications_")
+
+    user = request.user
+    is_project_admin = user.is_project_admin(application_id=application.id)
+    is_owner = user.owns_application(application)
+    if not (is_owner or is_project_admin) and not project_view:
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    if (not (is_owner or is_project_admin) and project_view and
+        not user.non_owner_can_view(project)):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    following_applications = list(application.pending_modifications())
+    following_applications.reverse()
+    modifications_table = (
+        tables.ProjectModificationApplicationsTable(following_applications,
+                                                    user=request.user,
+                                                    prefix="modifications_"))
+
+    mem_display = user.membership_display(project) if project else None
+    can_join_req = can_join_request(project, user) if project else False
+    can_leave_req = can_leave_request(project, user) if project else False
 
     return object_detail(
         request,
         queryset=ProjectApplication.objects.select_related(),
-        object_id=application_id,
+        object_id=application.id,
         template_name='im/projects/project_detail.html',
         extra_context={
+            'project_view': project_view,
             'addmembers_form':addmembers_form,
             'members_table': members_table,
-            'user_owns_project': request.user.owns_project(application),
+            'owner_mode': is_owner,
+            'admin_mode': is_project_admin,
             'modifications_table': modifications_table,
-            'member_status': application.user_status(request.user)
+            'mem_display': mem_display,
+            'can_join_request': can_join_req,
+            'can_leave_request': can_leave_req,
             })
 
 @require_http_methods(["GET", "POST"])
@@ -1194,6 +1320,11 @@ def project_search(request):
 
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
+    if request.method == "POST":
+        table.caption = _('SEARCH RESULTS')
+    else:
+        table.caption = _('ALL PROJECTS')
+
     RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
 
     return object_list(
@@ -1210,57 +1341,83 @@ def project_search(request):
 @require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_join(request, application_id):
+@project_transaction_context(sync=True)
+def project_join(request, chain_id, ctx=None):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_detail',
-                       args=(application_id,))
+                       args=(chain_id,))
 
-    rollback = False
     try:
-        application_id = int(application_id)
-        join_project(application_id, request.user)
-        # TODO: distinct messages for request/auto accept ???
-        messages.success(request, _(astakos_messages.USER_JOIN_REQUEST_SUBMITED))
+        chain_id = int(chain_id)
+        auto_accepted = join_project(chain_id, request.user)
+        if auto_accepted:
+            m = _(astakos_messages.USER_JOINED_PROJECT)
+        else:
+            m = _(astakos_messages.USER_JOIN_REQUEST_SUBMITTED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
+        if ctx:
+            ctx.mark_rollback()
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "GET"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_leave(request, application_id):
+@project_transaction_context(sync=True)
+def project_leave(request, chain_id, ctx=None):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
-    rollback = False
     try:
-        application_id = int(application_id)
-        leave_project(application_id, request.user)
+        chain_id = int(chain_id)
+        auto_accepted = leave_project(chain_id, request.user)
+        if auto_accepted:
+            m = _(astakos_messages.USER_LEFT_PROJECT)
+        else:
+            m = _(astakos_messages.USER_LEAVE_REQUEST_SUBMITTED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
+        if ctx:
+            ctx.mark_rollback()
+    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    return redirect(next)
+
+@require_http_methods(["POST"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_cancel(request, chain_id, ctx=None):
+    next = request.GET.get('next')
+    if not next:
+        next = reverse('astakos.im.views.project_list')
+
+    try:
+        chain_id = int(chain_id)
+        cancel_membership(chain_id, request.user)
+        m = _(astakos_messages.USER_REQUEST_CANCELLED)
+        messages.success(request, m)
+    except (IOError, PermissionDenied), e:
+        messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
+    except BaseException, e:
+        logger.exception(e)
+        messages.error(request, _(astakos_messages.GENERIC_ERROR))
+        if ctx:
+            ctx.mark_rollback()
 
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
@@ -1268,82 +1425,145 @@ def project_leave(request, application_id):
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_accept_member(request, application_id, user_id):
-    rollback = False
+@project_transaction_context(sync=True)
+def project_accept_member(request, chain_id, user_id, ctx=None):
     try:
-        application_id = int(application_id)
+        chain_id = int(chain_id)
         user_id = int(user_id)
-        m = accept_membership(application_id, user_id, request.user)
+        m = accept_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     else:
-        realname = m.person.realname
-        msg = _(astakos_messages.USER_JOINED_PROJECT) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_ACCEPTED) % email
         messages.success(request, msg)
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
-    return redirect(reverse('project_detail', args=(application_id,)))
+    return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_remove_member(request, application_id, user_id):
-    rollback = False
+@project_transaction_context(sync=True)
+def project_remove_member(request, chain_id, user_id, ctx=None):
     try:
-        application_id = int(application_id)
+        chain_id = int(chain_id)
         user_id = int(user_id)
-        m = remove_membership(application_id, user_id, request.user)
+        m = remove_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     else:
-        realname = m.person.realname
-        msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_REMOVED) % email
         messages.success(request, msg)
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
-    return redirect(reverse('project_detail', args=(application_id,)))
+    return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
-@transaction.commit_manually
-def project_reject_member(request, application_id, user_id):
-    rollback = False
+@project_transaction_context()
+def project_reject_member(request, chain_id, user_id, ctx=None):
     try:
-        application_id = int(application_id)
+        chain_id = int(chain_id)
         user_id = int(user_id)
-        m = reject_membership(application_id, user_id, request.user)
+        m = reject_membership(chain_id, user_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+    except PendingMembershipError as e:
+        raise RetryException()
     except BaseException, e:
         logger.exception(e)
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
-        rollback = True
+        if ctx:
+            ctx.mark_rollback()
     else:
-        realname = m.person.realname
-        msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % email
         messages.success(request, msg)
-    finally:
-        if rollback:
-            transaction.rollback()
-        else:
-            transaction.commit()
-    return redirect(reverse('project_detail', args=(application_id,)))
+    return redirect(reverse('project_detail', args=(chain_id,)))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context(sync=True)
+def project_app_approve(request, application_id, ctx=None):
+
+    if not request.user.is_project_admin():
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    approve_application(application_id)
+    chain_id = get_related_project_id(application_id)
+    return redirect(reverse('project_detail', args=(chain_id,)))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_deny(request, application_id, ctx=None):
+
+    if not request.user.is_project_admin():
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    deny_application(application_id)
+    return redirect(reverse('project_list'))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_dismiss(request, application_id, ctx=None):
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    if not request.user.owns_application(app):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    # XXX: dismiss application also does authorization
+    dismiss_application(application_id, request_user=request.user)
+
+    chain_id = None
+    chain_id = get_related_project_id(application_id)
+    if chain_id:
+        next = reverse('project_detail', args=(chain_id,))
+    else:
+        next = reverse('project_list')
+    return redirect(next)
 
 
+def landing(request):
+    return render_response(
+        'im/landing.html',
+        context_instance=get_context(request))
+
+
+def api_access(request):
+    return render_response(
+        'im/api_access.html',
+        context_instance=get_context(request))

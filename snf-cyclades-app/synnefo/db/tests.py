@@ -48,9 +48,10 @@ from mock import patch
 class FlavorTest(TestCase):
     def test_flavor_name(self):
         """Test a flavor object name method."""
-        flavor = mfact.FlavorFactory(cpu=1, ram=1024, disk=40)
-        self.assertEqual(flavor.name, "C1R1024D40", "flavor.name is not"
-                " generated correctly. Name is %s instead of C1R1055D40" %
+        flavor = mfact.FlavorFactory(cpu=1, ram=1024, disk=40,
+                                     disk_template="temp")
+        self.assertEqual(flavor.name, "C1R1024D40temp", "flavor.name is not"
+                " generated correctly. Name is %s instead of C1R1024D40temp" %
                 flavor.name)
 
 

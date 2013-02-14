@@ -14,3 +14,10 @@ form .form-row .extra-link 						{ padding-top:0; }
 .faq .two-cols .rt								{ width:auto; }
 .faq .two-cols .lt								{ width:auto; }
 dl.alt-style									{ width:auto; }
+
+.stats ul li									{ background-image:url(../images/dots.jpg); padding-bottom:2em; }
+.stats .img-wrap								{ margin:0 auto;float:none;}
+.landing-page .dotted							{ background:url(../images/dots.jpg) repeat-x center bottom ; }
+#token-confirm									{ position:relative; top:8px; left:auto; }
+
+form.submit-inline .form-row.submit				{ position:static; margin-top:20px; }

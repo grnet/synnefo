@@ -1,54 +1,59 @@
 <div class="auth_methods">
     <h2>LOGIN METHODS</h2>
-    <ul>
-        {% for provider in user_providers %}
-        <li>
-            <a href="#">{{ provider.title_display }}</a>
-            <div class="wrap">
-                <p>{{ provider.details_display }}</p>
-                <div class="actions">
+ 
+    <div class="assigned">
+        <h3>Enabled</h3>
+        <ul>
+        	{% for userauthprovider in user_providers %}
+        	<li>
+        		{% if userauthprovider.can_remove %}
+        				<a href="#" class="canremove">
+		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
+                          alt="{{ userauthprovider.settings.get_title_display }}" />
+		                </a>
+		                
+		                <span  class="extra-message"><em><span>Remove authentication method</span></em></span>
+		                <span class="details">{{ userauthprovider.details_display }}</span>
+                      	<div class="dialog-wrap">
+                        	 
+				<p>Are you sure you want to remove {{ userauthprovider.settings.get_title_display }} from your authentication methods? </p>
+ 
+							<p>
+								<a href="{% url remove_auth_provider userauthprovider.pk %}" class="submit">Yes</a>
+								<a href="#" class="no submit">No</a>
+							</p>
+                        </div>	
 
-                      {% for name, url in provider.settings.extra_actions %}
-                      <a href="{{ url }}" title="{{ name }}">{{ name }}</a>
-                      {% endfor %}
-                      {% if provider.can_remove %}
-                          <div class="dialog-wrap">
-                            <a href="#" title="disable" class="red">Disable x</a>
-                            <div class="dialog">
-                              Are you sure you want to disable this method?<br />
-                              <a href="{% url remove_auth_provider provider.pk %}" 
-                                class="yes submit">Yes</a>&nbsp;&nbsp;&nbsp;<a href="#" class="no submit">No</a>
-                            </div>	
-                          </div>
-                            
-                      {% endif %}
-                </div>
-            </div>
-        </li>
-        {% empty %}
-        <li>No available authentication methods</li>
-        {% endfor %}
-        
-    </ul>
-    <ul class="notassigned">
-        <li>
-            <a href="#">+ Add new login method</a>
-            
-            <div class="wrap">
-                {% for provider in user_available_providers %}
-                <p><a href="{{ provider.add_url }}?force_login=1">
-                  {{ provider.get_title_display }}</a><br />
-                <span class="description">
-                  {{ provider.get_add_prompt_display }}
-                </span>
-                  </p>
-                {% empty %}
-                No available providers 
-                {% endfor %}	
-            </div>
-            
-        </li>
-    </ul>
+                  {% else %}
+                  	<a href="javascript:void(0);" class="noaction">
+		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
+                          alt="{{ userauthprovider.settings.get_title_display }}" />
+		                </a>
+		                <span class="details">{{ userauthprovider.details_display }}</span>
+                      	 
+                                              
+ 
+                  {% endif %}
+        	</li>
+        	{% empty %}
+        		No available providers 
+        	{% endfor %}
+        </ul>
+    </div>
+    <div class="notassigned">
+        <h3>Available</h3>
+        <ul>
+        	{% for provider in user_available_providers %}
+        	<li>
+        		<a href="{{ provider.add_url }}?force_login=1">
+                  <img src="{{ provider.get_icon_medium_url_display }}" alt="{{ provider.get_title_display }}" /></a>
+                <span  class="extra-message"><em><span>{{ provider.get_add_prompt_display }}</span></em></span>
+        	</li>
+        	{% empty %}
+        		No available providers 
+        	{% endfor %}
+        </ul>
+    </div>
     
 </div>
 

@@ -46,7 +46,10 @@ class NullHandler(logging.Handler):
 
 class LoggingConfigMiddleware:
     def __init__(self):
-        '''Initialise the logging setup from settings, called on first request.'''
+        """Initialise the logging setup from settings.
+
+        Logging setup is initialized only in the first request.
+        """
         logging_setting = getattr(settings, 'LOGGING_SETUP', None)
         if logging_setting:
             # Disable handlers that are not used by any logger.

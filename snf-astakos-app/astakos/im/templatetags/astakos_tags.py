@@ -183,7 +183,7 @@ def get_grant_value(rname, form):
 
 @register.tag(name="provider_login_url")
 @basictag(takes_context=True)
-def provider_login_url(context, provider):
+def provider_login_url(context, provider, from_login=False):
     request = context['request'].REQUEST
     next = request.get('next', None)
     code = request.get('code', None)
@@ -196,6 +196,8 @@ def provider_login_url(context, provider):
         attrs['code'] = code
     if key:
         attrs['key'] = key
+    if from_login:
+        attrs['from_login'] = 1
 
     url = provider.add_url
 

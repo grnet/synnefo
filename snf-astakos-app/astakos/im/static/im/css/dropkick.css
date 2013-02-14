@@ -13,22 +13,23 @@
 
 /* dropkick select extra styles */
 
-.form-row .dk_container							{ border-radius:0; margin-bottom:0; border: 1px solid gray; height: 21px; letter-spacing: 1px; line-height: 22px; margin-bottom: -1px; width:270px; padding:0.8em; padding-left:1.5em; font-weight:normal; font-family: 'Didact Gothic', Verdana, sans-serif; font-size:1em; background:transparent; color:#808080;}
-.form-row .dk_toggle  							{ border-radius:0;  padding:0 0 10px;  border:0 none;   text-decoration:none;background-image:url(../images/arrow-down_grey.png); background-position:85% 5px;}
-.form-row .dk_toggle:hover						{ text-decoration:none; }
+.form-row .dk_container							{ border-radius:0; margin-bottom:0; border: 1px solid gray; height: 21px; letter-spacing: 1px; line-height: 22px; margin-bottom: -1px; width:270px; padding:0.8em; padding-left:1.5em; font-weight:normal; font-family: 'Didact Gothic', Verdana, sans-serif; font-size:1em; background:transparent; border-color:#adadad;}
+.form-row .dk_toggle  							{ border-radius:0;  padding:0 0 10px;  border:0 none;   text-decoration:none;background-image:url(../images/select-arrow-down_grey.png); background-position:75% 5px;}
+.form-row .dk_toggle:hover						{ text-decoration:none; background-image:url(../images/select-arrow-down_yellow.png); background-position:75% 6px; }
 .form-row .dk_open								{ background:transparent; box-shadow: none; }
-.form-row .dk_open .dk_toggle					{ background-color:transparent; border:0 none; color:#000; box-shadow: none;}
+.form-row .dk_open .dk_toggle					{ background-color:transparent; border:0 none; color:#000; box-shadow: none; background-image:url(../images/select-arrow-down_black.png); background-position:75% 6px;}
 .form-row .dk_focus .dk_toggle					{ background-color:transparent;  border:0 none; color:#000; box-shadow: none;}
 .1form-row .dk_options							{ display:block; }
 .form-row .dk_options							{ box-shadow:none; border-radius:0; z-index:3; margin:6px -1px 0; width:auto; left:0;}
 .form-row .dk_options li						{ float:none; margin:0; padding:0; }
-.form-row .dk_options a							{ font-weight:normal;color:#808080; padding:5px 1.5em;  border-bottom-color: #ccc;height:auto; width:auto;  }
+.form-row .dk_options a							{ font-weight:normal; color:#222; padding:8px 1.5em;  border-bottom-color: #ccc; border-bottom:0 none; height:auto; width:auto;  }
 .form-row .dk_options a:hover					{ border-bottom-color: #ccc }
-.form-row .dk_options_inner						{ padding:0; margin:0; box-shadow:none; text-shadow:none;  border-radius:0; border:1px solid #ccc ; margin-top:4px;}
+.form-row .dk_container.dk_open					{ border-color: #000; }
+.form-row .dk_options_inner						{ padding:0; margin:0; box-shadow:none; text-shadow:none;  border-radius:0; border:1px solid #000 ; border-top:1px solid #ccc; margin-top:4px;}
 .form-row .dk-options_inner li					{ list-style:none outside; }
 .form-row .dk_options a:hover, 
-.form-row .dk_option_current a					{ text-shadow:none; background-color: #fff; text-decoration:none; color:#F89A1C}
-.form-row .dk_toggle 							{ height:17px; overflow:hidden; }
+.form-row .dk_option_current a					{ text-shadow:none; background-color: #fff; text-decoration:none; color:#F89A1C; }
+.form-row .dk_toggle 							{ height:22px; overflow:hidden; }
 .form-row .dk_toggle span						{ width:220px;white-space: nowrap; overflow: hidden; /*text-overflow: ellipsis;*/ display:block; }
 /* end custom theme */
 

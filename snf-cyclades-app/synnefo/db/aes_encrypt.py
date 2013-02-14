@@ -29,7 +29,7 @@ def decrypt(s):
 
 
 def encrypt_db_charfield(plaintext):
-    if plaintext == None:
+    if not plaintext:
         return plaintext
     salt = "".join([choice(letters + digits) for i in xrange(SALT_LEN)])
 
@@ -42,7 +42,7 @@ def encrypt_db_charfield(plaintext):
 
 
 def decrypt_db_charfield(ciphertext):
-    if ciphertext == None:
+    if not ciphertext:
         return ciphertext
     has_prefix = ciphertext.startswith(DB_ENCRYPTED_FIELD_PREFIX + ':')
     if not has_prefix:  # Non-encoded value

@@ -41,6 +41,7 @@ from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
 from astakos.im.api.callpoint import AstakosCallpoint
+from astakos.im.functions import activate
 
 def filter_custom_options(options):
     base_dests = list(
@@ -63,9 +64,9 @@ class Command(BaseCommand):
                     help="Set user's password"),
         make_option('--active',
                     action='store_true',
-                    dest='is_active',
+                    dest='active',
                     default=False,
-                    help="Activate user"),
+                    help="Set active"),
         make_option('--admin',
                     action='store_true',
                     dest='is_superuser',
@@ -86,7 +87,7 @@ class Command(BaseCommand):
             raise CommandError("Invalid number of arguments")
 
         email, first_name, last_name = (args[i].decode('utf8') for i in range(3))
-        
+
         try:
             validate_email(email)
         except ValidationError:
@@ -103,9 +104,7 @@ class Command(BaseCommand):
         try:
             c = AstakosCallpoint()
             r = c.create_users((u,)).next()
-        except socket.error, e:
-            raise CommandError(e)
-        except ValidationError, e:
+        except BaseException, e:
             raise CommandError(e)
         else:
             if not r.is_success:

@@ -1,13 +1,36 @@
 {% extends "im/email.txt" %}
 
 {% block gr_content %}
-Για να ανανεώσετε τον email σας για την υπηρεσία {{ site_name }} της ΕΔΕΤ κατά την alpha2 (δεύτερη δοκιμαστική) φάση λειτουργίας της, χρησιμοποιήστε τον σύνδεσμο: {{url}}
+Παραλήπτης: {{ ec.new_email_address }}
+
+Ο χρήστης '{{ ec.user.email }}', πιθανότατα εσείς, ζήτησε να συνδεθεί η 
+διεύθυνση '{{ ec.new_email_address }}' με το λογαριασμό του στην alpha2 
+δοκιμαστική έκδοση του {{ site_name }}.
+
+Για να επιβεβαιώσετε ότι αυτή η διεύθυνση email ανήκει στον παραπάνω 
+λογαριασμό, ακολουθήστε τον εξής σύνδεσμο:
+
+{{ url }}
+
+Αν δεν έχετε ζητήσει να συνδεθεί η διεύθυνση email σας με αυτόν τον λογαριασμό, 
+δεν χρειάζεται να κάνετε τίποτε, παρακαλώ αγνοήστε αυτό το μήνυμα.
 {% endblock %}
 
 {% block gr_note %}{% endblock%}
 
 {% block en_content %}
-To change your email for GRNET's {{ site_name }} for its alpha2 testing phase service, you can use the  link: {{ url }}.
+Recipient: {{ ec.new_email_address }}
+
+The user '{{ ec.user.email }}', most likely owned by you, requested to assign 
+the email address '{{ ec.new_email_address }}' with the corresponding 'alpha2 
+version of {{ site_name }}' account.
+
+To confirm the change of the email please visit the following link:
+
+{{ url }}
+
+In case you are not aware of the email change request please ignore this
+message.
 {% endblock %}
 
 {% block en_note %}{% endblock%}

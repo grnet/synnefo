@@ -229,7 +229,7 @@
     // Image model
     models.Image = models.Model.extend({
         path: 'images',
-
+        
         get_size: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
@@ -261,6 +261,10 @@
             return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
+        get_owner_uuid: function() {
+            return this.get('owner_uuid');
+        },
+
         is_system_image: function() {
           var owner = this.get_owner();
           return _.include(_.keys(synnefo.config.system_images_owners), owner)
@@ -268,7 +272,7 @@
 
         owned_by: function(user) {
           if (!user) { user = synnefo.user }
-          return user.username == this.get_owner();
+          return user.username == this.get('owner_uuid');
         },
 
         display_owner: function() {
@@ -1740,8 +1744,48 @@
         },
 
         parse: function (resp, xhr) {
-            var data = _.map(resp.images.values, _.bind(this.parse_meta, this));
-            return resp.images.values;
+            var parsed = _.map(resp.images.values, _.bind(this.parse_meta, this));
+            parsed = this.fill_owners(parsed);
+            return parsed;
+        },
+
+        fill_owners: function(images) {
+            // do translate uuid->displayname if needed
+            // store display name in owner attribute for compatibility
+            var uuids = [];
+
+            var images = _.map(images, function(img, index) {
+                if (synnefo.config.translate_uuids) {
+                    uuids.push(img['owner']);
+                }
+                img['owner_uuid'] = img['owner'];
+                return img;
+            });
+            
+            if (uuids.length > 0) {
+                var handle_results = function(data) {
+                    _.each(images, function (img) {
+                        img['owner'] = data.uuid_catalog[img['owner_uuid']];
+                    });
+                }
+                // notice the async false
+                var uuid_map = this.translate_uuids(uuids, false, 
+                                                    handle_results)
+            }
+            return images;
+        },
+
+        translate_uuids: function(uuids, async, cb) {
+            var url = synnefo.config.user_catalog_url;
+            var data = JSON.stringify({'uuids': uuids});
+          
+            // post to user_catalogs api
+            snf.api.sync('create', undefined, {
+                url: url,
+                data: data,
+                async: async,
+                success:  cb
+            });
         },
 
         get_meta_key: function(img, key) {

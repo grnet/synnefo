@@ -43,7 +43,10 @@ urlpatterns = patterns(
     'astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
     url(r'^login/?$', 'index', {}, name='login'),
+    url(r'^landing/?$', 'landing', {}, name='landing'),
+    url(r'^profile/update_token?$', 'update_token', {}, name='update_token'),
     url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
+    url(r'^api_access/?$', 'api_access', {}, name='api_access'),
     url(r'^feedback/?$', 'feedback', {}, name='feedback'),
     url(r'^signup/?$', 'signup', {'on_success': 'index', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
     url(r'^logout/?$', 'logout', {'template': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='logout'),
@@ -57,15 +60,21 @@ urlpatterns = patterns(
 #    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
 
     url(r'^projects/add/?$', 'project_add', {}, name='project_add'),
-    url(r'^projects/update/(?P<application_id>\d+)/?$', 'project_update', {}, name='project_update'),
     url(r'^projects/?$', 'project_list', {}, name='project_list'),
     url(r'^projects/search/?$', 'project_search', {}, name='project_search'),
-    url(r'^projects/(?P<application_id>\d+)/?$', 'project_detail', {}, name='project_detail'),
-    url(r'^projects/(?P<application_id>\d+)/join/?$', 'project_join', {}, name='project_join'),
-    url(r'^projects/(?P<application_id>\d+)/leave/?$', 'project_leave', {}, name='project_leave'),
-    url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
-    url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
-    url(r'^projects/(?P<application_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    url(r'^projects/(?P<chain_id>\d+)/?$', 'project_detail', {}, name='project_detail'),
+    url(r'^projects/(?P<chain_id>\d+)/join/?$', 'project_join', {}, name='project_join'),
+    url(r'^projects/(?P<chain_id>\d+)/leave/?$', 'project_leave', {}, name='project_leave'),
+    url(r'^projects/(?P<chain_id>\d+)/cancel/?$', 'project_cancel', {}, name='project_cancel'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    url(r'^projects/app/(?P<application_id>\d+)/?$', 'project_app', {}, name='project_app'),
+    url(r'^projects/app/(?P<application_id>\d+)/modify$', 'project_modify', {}, name='project_modify'),
+    url(r'^projects/app/(?P<application_id>\d+)/approve$', 'project_app_approve', {}, name='project_app_approve'),
+    url(r'^projects/app/(?P<application_id>\d+)/deny$', 'project_app_deny', {}, name='project_app_deny'),
+    url(r'^projects/app/(?P<application_id>\d+)/dismiss$', 'project_app_dismiss', {}, name='project_app_dismiss'),
+    url(r'^projects/app/(?P<application_id>\d+)/cancel$', 'project_app_cancel', {}, name='project_app_cancel'),
 
     url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {}, name='remove_auth_provider'),
@@ -78,10 +87,6 @@ if EMAILCHANGE_ENABLED:
         url(r'^email_change/?$', 'change_email', {}, name='email_change'),
         url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
             name='email_change_confirm'))
-
-urlpatterns += patterns(
-    'astakos.im.target',
-    url(r'^login/redirect/?$', 'redirect.login'))
 
 if 'local' in IM_MODULES:
     urlpatterns += patterns(
@@ -153,8 +158,3 @@ urlpatterns += patterns(
 urlpatterns += patterns(
     'astakos.im.api.user',
     url(r'^authenticate/?$', 'authenticate'))
-
-urlpatterns += patterns(
-    'astakos.im.api.service',
-    url(r'^service/api/v2.0/feedback/?$', 'send_feedback'),
-    url(r'^service/api/v2.0/users/?$', 'get_user_info'))

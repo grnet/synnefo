@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -37,6 +37,7 @@ from django.utils.timesince import timesince, timeuntil
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
+from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
 
 DEFAULT_CONTENT_TYPE = None
@@ -64,6 +65,34 @@ def format_date(d):
         return timesince(d) + ' ago'
     else:
         return 'in ' + timeuntil(d)
+
+
+def format_dict(d, level=1, ident=22):
+    iteritems = d.iteritems()
+    if not isinstance(d, OrderedDict):
+        iteritems = sorted(iteritems)
+
+    l = ['%s: %s\n' % (k.rjust(level*ident), format(v, level+1))
+         for k, v in iteritems]
+    l.insert(0, '\n')
+    return ''.join(l)
+
+
+def format_set(s):
+    return list(s)
+
+
+def format(obj, level=1, ident=22):
+    if isinstance(obj, bool):
+        return format_bool(obj)
+    elif isinstance(obj, datetime):
+        return format_date(obj)
+    elif isinstance(obj, dict):
+        return format_dict(obj, level, ident)
+    elif isinstance(obj, set):
+        return format_set(obj)
+    else:
+        return obj
 
 
 def get_astakosuser_content_type():
@@ -122,3 +151,15 @@ def remove_group_permission(group, pname):
         return 1
     except Permission.DoesNotExist:
         return -1
+
+
+def shortened(s, limit, suffix=True):
+    length = len(s)
+    if length <= limit:
+        return s
+    else:
+        display = limit - 2
+        if suffix:
+            return '..' + s[-display:]
+        else:
+            return s[:display] + '..'

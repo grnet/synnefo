@@ -39,11 +39,15 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Service, Resource
-from astakos.im.api.faults import Fault, ItemNotFound, InternalServerError, BadRequest
+from astakos.im.api.faults import (
+    Fault, ItemNotFound, InternalServerError, BadRequest)
 from astakos.im.settings import (
     INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL)
+from astakos.im.forms import FeedbackForm
+from astakos.im.functions import send_feedback as send_feedback_func
 
 import logging
 logger = logging.getLogger(__name__)
@@ -108,8 +112,10 @@ def get_services(request):
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
+    from_location = request.GET.get('location')
     index_url = reverse('index')
-    l = [{'url': absolute(request, index_url), 'name': "Sign in"}]
+
+    l = [{'url': absolute(request, index_url), 'name': _("Sign in")}]
     if user.is_authenticated():
         l = []
         append = l.append
@@ -118,25 +124,36 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         append(item(
                url=absolute(request, reverse('index')),
                name=user.email))
-        append(item(url=absolute(request, reverse('edit_profile')),
-               name="My account"))
         if with_extra_links:
-            if EMAILCHANGE_ENABLED:
-                append(item(
-                       url=absolute(request, reverse('email_change')),
-                       name="Change email"))
+            append(item(
+                url=absolute(request, reverse('landing')),
+                name="Overview"))
+        if with_signout:
+            append(item(
+                   url=absolute(request, reverse('edit_profile')),
+                   name="Dashboard"))
+        if with_extra_links:
+            append(item(url=absolute(request, reverse('edit_profile')),
+                    name="Profile"))
+
+        if with_extra_links:
             if INVITATIONS_ENABLED:
                 append(item(
                        url=absolute(request, reverse('invite')),
                        name="Invitations"))
 
+
+            append(item(
+                   url=absolute(request, reverse('resource_usage')),
+                   name="Usage"))
             if QUOTAHOLDER_URL:
                 append(item(
                        url=absolute(request, reverse('project_list')),
                        name="Projects"))
-            append(item(
-                   url=absolute(request, reverse('resource_usage')),
-                   name="Usage"))
+            #append(item(
+                #url=absolute(request, reverse('api_access')),
+                #name="API Access"))
+
             append(item(
                    url=absolute(request, reverse('feedback')),
                    name="Contact"))
@@ -189,3 +206,51 @@ class MenuItem(dict):
         super(MenuItem, self).__setattribute__(name, value)
         if name == 'current_path':
             self.__set_is_active__()
+
+def __get_uuid_displayname_catalogs(request, user_call=True):
+    # Normal Response Codes: 200
+    # Error Response Codes: badRequest (400)
+
+    try:
+        input_data = json.loads(request.raw_post_data)
+    except:
+        raise BadRequest('Request body should be json formatted.')
+    else:
+        uuids = input_data.get('uuids', [])
+        if uuids == None and user_call:
+            uuids = []
+        displaynames = input_data.get('displaynames', [])
+        if displaynames == None and user_call:
+            displaynames = []
+        d  = {'uuid_catalog':AstakosUser.objects.uuid_catalog(uuids),
+              'displayname_catalog':AstakosUser.objects.displayname_catalog(displaynames)}
+
+        response = HttpResponse()
+        response.status = 200
+        response.content = json.dumps(d)
+        response['Content-Type'] = 'application/json; charset=UTF-8'
+        response['Content-Length'] = len(response.content)
+        return response
+
+def __send_feedback(request, email_template_name='im/feedback_mail.txt', user=None):
+    if not user:
+        auth_token = request.POST.get('auth', '')
+        if not auth_token:
+            raise BadRequest('Missing user authentication')
+
+        try:
+            user = AstakosUser.objects.get(auth_token=auth_token)
+        except AstakosUser.DoesNotExist:
+            raise BadRequest('Invalid user authentication')
+
+    form = FeedbackForm(request.POST)
+    if not form.is_valid():
+        raise BadRequest('Invalid data')
+
+    msg = form.cleaned_data['feedback_msg']
+    data = form.cleaned_data['feedback_data']
+    try:
+        send_feedback_func(msg, data, user, email_template_name)
+    except:
+        return HttpResponse(status=502)
+    return HttpResponse(status=200)

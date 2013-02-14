@@ -34,7 +34,6 @@ from synnefo.db.models import (Network, BackendNetwork,
 from synnefo.db.pools import EmptyPool
 
 
-
 class Command(BaseCommand):
     help = 'Check consistency of unique resources.'
 
@@ -58,17 +57,16 @@ class Command(BaseCommand):
         bridges = []
         for i in xrange(0, bridge_pool.size()):
             if not bridge_pool.is_available(i, index=True) and \
-               not bridge_pool.is_reserved(i, index=True):
-                bridges.append(bridge_pool.index_to_value(i))
+                not bridge_pool.is_reserved(i, index=True):
+                    bridges.append(bridge_pool.index_to_value(i))
 
         write("Used bridges from Pool: %d\n" % len(bridges))
 
         network_bridges = Network.objects.filter(flavor='PHYSICAL_VLAN',
-                                                deleted=False)\
+                                                 deleted=False)\
                                          .values_list('link', flat=True)
 
-        write("Used bridges from Networks: %d\n" %
-                          len(network_bridges))
+        write("Used bridges from Networks: %d\n" % len(network_bridges))
 
         set_network_bridges = set(network_bridges)
         if len(network_bridges) > len(set_network_bridges):
@@ -80,8 +78,7 @@ class Command(BaseCommand):
                 write("Duplicated bridge: %s. " % bridge)
                 write("Used by the following Networks:\n")
                 nets = Network.objects.filter(deleted=False, link=bridge)
-                write("  " + "\n  ".join([str(net.id) for net in nets])\
-                                  + "\n")
+                write("  " + "\n  ".join([str(net.id) for net in nets]) + "\n")
 
     def detect_mac_prefixes(self):
         write = self.stdout.write
@@ -107,9 +104,9 @@ class Command(BaseCommand):
 
         network_mac_prefixes = \
             Network.objects.filter(deleted=False, flavor='MAC_FILTERED')\
-                            .values_list('mac_prefix', flat=True)
+                           .values_list('mac_prefix', flat=True)
         write("Used MAC prefixes from Networks: %d\n" %
-                          len(network_mac_prefixes))
+              len(network_mac_prefixes))
 
         set_network_mac_prefixes = set(network_mac_prefixes)
         if len(network_mac_prefixes) > len(set_network_mac_prefixes):
@@ -122,8 +119,7 @@ class Command(BaseCommand):
                 write("Used by the following Networks:\n")
                 nets = Network.objects.filter(deleted=False,
                                               mac_prefix=mac_prefix)
-                write("  " + "\n  ".join([str(net.id) for net in nets])\
-                                  + "\n")
+                write("  " + "\n  ".join([str(net.id) for net in nets]) + "\n")
 
     def detect_unique_mac_prefixes(self):
         write = self.stdout.write
@@ -132,8 +128,10 @@ class Command(BaseCommand):
         write("Checking uniqueness of BackendNetwork prefixes.\n")
         write("---------------------------------------\n")
 
-        mac_prefixes = BackendNetwork.objects.filter(deleted=False, network__flavor='MAC_FILTERED')\
-                                      .values_list('mac_prefix', flat=True)
+        back_networks = BackendNetwork.objects
+        mac_prefixes = back_networks.filter(deleted=False,
+                                            network__flavor='MAC_FILTERED')\
+                                    .values_list('mac_prefix', flat=True)
         set_mac_prefixes = set(mac_prefixes)
         if len(mac_prefixes) > len(set_mac_prefixes):
             write("Found duplicated mac_prefixes:\n")
@@ -145,5 +143,4 @@ class Command(BaseCommand):
                 write("Used by the following BackendNetworks:\n")
                 nets = BackendNetwork.objects.filter(deleted=False,
                                                      mac_prefix=mac_prefix)
-                write("  " + "\n  ".join([str(net.id) for net in nets])\
-                                  + "\n")
+                write("  " + "\n  ".join([str(net.id) for net in nets]) + "\n")

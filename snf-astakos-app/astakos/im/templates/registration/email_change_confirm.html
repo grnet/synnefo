@@ -1,8 +1,16 @@
-{% extends 'im/one_col_base.html'%}
+{% extends "im/account_base.html" %}
 
-{%block page.title %}Email change{% endblock %}
-{% block body %}
-<div class="section">
-    <p>Email change sent.</p>
+ 
+
+{% block body %} 
+<div class="two-cols clearfix">
+	<div class="lt">
+		<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
+	</div>
+	<div class="rt">
+		<p>Email change sent.</p>
+	</div>
 </div>
-{% endblock %}
+
+{% endblock body %}
+ 

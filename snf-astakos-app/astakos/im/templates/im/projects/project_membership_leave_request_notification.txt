@@ -1,0 +1,6 @@
+--- A translation in English follows ---
+
+Ο χρήστης {{user}} επιθυμεί να διαγραφεί από το project {{object.name}}.
+--
+
+User {{user}} requests to leave project {{object.name}}.

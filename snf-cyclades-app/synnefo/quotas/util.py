@@ -34,16 +34,14 @@
 from django.db.models import Sum, Count
 
 from synnefo.db.models import VirtualMachine, Network
-from synnefo.quotas import get_quota_holder
-from synnefo.lib.quotaholder.api.exception import NoEntityError
-
+from synnefo.quotas import get_quota_holder, NoEntityError
 
 def get_db_holdings(users=None):
     """Get holdings from Cyclades DB."""
     holdings = {}
 
-    vms = VirtualMachine.objects
-    networks = Network.objects
+    vms = VirtualMachine.objects.filter(deleted=False)
+    networks = Network.objects.filter(deleted=False)
 
     if users:
         assert(type(users) is list)
@@ -65,7 +63,7 @@ def get_db_holdings(users=None):
 
     # Get resources related with networks
     net_resources = networks.values("userid")\
-                                    .annotate(num=Count("id"))
+                            .annotate(num=Count("id"))
     for net_res in net_resources:
         user = net_res['userid']
         if user not in holdings:
@@ -99,7 +97,6 @@ def get_quotaholder_holdings(users=[]):
 
 
 def decode_holding(holding):
-    entity, resource, imported, exported, returned, released = \
-            holding
+    entity, resource, imported, exported, returned, released = holding
     res = resource.replace("cyclades.", "")
     return (res, imported - exported + returned - released)

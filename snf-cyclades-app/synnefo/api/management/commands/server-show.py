@@ -34,7 +34,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import (format_bool, format_date,
                                        format_vm_state, get_vm,
-                                       get_image)
+                                       get_image, UUIDCache)
 
 
 class Command(BaseCommand):
@@ -60,7 +60,8 @@ class Command(BaseCommand):
         kv = {
             'id': server.id,
             'name': server.name,
-            'owner': userid,
+            'owner_uuid': userid,
+            'owner_name': UUIDCache().get_user(userid),
             'created': format_date(server.created),
             'updated': format_date(server.updated),
             'image': image,

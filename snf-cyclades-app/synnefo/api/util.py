@@ -208,6 +208,8 @@ def get_image_dict(image_id, user_id):
     image['format'] = img['disk_format']
     image['metadata'] = dict((key.upper(), val) \
                              for key, val in properties.items())
+    image['checksum'] = img['checksum']
+
     return image
 
 

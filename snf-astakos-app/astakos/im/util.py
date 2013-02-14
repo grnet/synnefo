@@ -114,9 +114,9 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     //pithos.okeanos.grnet.gr/im/feedback
     >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
     https://pithos.okeanos.grnet.gr/im/feedback
-    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr')
+    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr')
     None
-    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
+    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
     pithos://127.0.0,1
     >>> print restrict_next('node1.example.com', '.okeanos.grnet.gr')
     None
@@ -228,7 +228,7 @@ def get_properties(obj):
             return getattr(_class, attr)
         except AttributeError:
             return
- 
+
     return (i for i in vars(obj.__class__) \
         if isinstance(get_class_attr(obj.__class__, i), property))
 

@@ -20,7 +20,7 @@ body {
     background: url("../images/body-bg.png") repeat-x #FFFFFF;
     text-align:center;
     font-size: 16px;
-    background-position: 0px 35px; 
+    background-position: 0px 34px; 
     overflow-y: scroll;
 }
 

@@ -43,8 +43,6 @@ These are the individual Ganeti hooks for Synnefo.
 
 import sys
 import os
-import subprocess
-
 import json
 import socket
 import logging
@@ -54,12 +52,7 @@ from time import time
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
 from synnefo.lib.utils import split_time
-
-
-def mac2eui64(mac, prefixstr):
-    process = subprocess.Popen(["mac2eui64", mac, prefixstr],
-                                stdout=subprocess.PIPE)
-    return process.stdout.read().rstrip()
+from synnefo.util.mac2eui64 import mac2eui64
 
 
 def ganeti_net_status(logger, environ):
@@ -85,7 +78,7 @@ def ganeti_net_status(logger, environ):
         if env.startswith("GANETI_INSTANCE_NIC"):
             s = env.replace("GANETI_INSTANCE_NIC", "").split('_', 1)
             if len(s) == 2 and s[0].isdigit() and\
-               s[1] in ('MAC', 'IP', 'BRIDGE', 'NETWORK'):
+                    s[1] in ('MAC', 'IP', 'BRIDGE', 'NETWORK'):
                 index = int(s[0])
                 key = key_to_attr[s[1]]
 
@@ -126,12 +119,14 @@ def ganeti_net_status(logger, environ):
     ganeti_nic_count = int(environ['GANETI_INSTANCE_NIC_COUNT'])
     if len(indexes) != ganeti_nic_count:
         logger.error("I have %d NICs, Ganeti says number of NICs is %d",
-            len(indexes), ganeti_nic_count)
+                     len(indexes), ganeti_nic_count)
         raise Exception("Inconsistent number of NICs in Ganeti environment")
 
     if indexes != range(0, len(indexes)):
-        logger.error("Ganeti NIC indexes are not consecutive starting at zero.");
-        logger.error("NIC indexes are: %s. Environment is: %s", indexes, environ)
+        msg = "Ganeti NIC indexes are not consecutive starting at zero."
+        logger.error(msg)
+        msg = "NIC indexes are: %s. Environment is: %s" % (indexes, environ)
+        logger.error(msg)
         raise Exception("Unexpected inconsistency in the Ganeti environment")
 
     # Construct the notification
@@ -200,7 +195,9 @@ class PostStartHook(GanetiHook):
     def run(self):
         if self.on_master():
             notifs = []
-            notifs.append(("net", ganeti_net_status(self.logger, self.environ)))
+            notifs.append(("net",
+                           ganeti_net_status(self.logger, self.environ))
+                          )
 
             self.publish_msgs(notifs)
 
@@ -221,15 +218,17 @@ def main():
         op = os.environ['GANETI_HOOKS_PATH']
         phase = os.environ['GANETI_HOOKS_PHASE']
     except KeyError:
-        raise Exception("Environment missing one of: " \
-            "GANETI_INSTANCE_NAME, GANETI_HOOKS_PATH, GANETI_HOOKS_PHASE")
+        raise Exception("Environment missing one of: "
+                        "GANETI_INSTANCE_NAME, GANETI_HOOKS_PATH,"
+                        " GANETI_HOOKS_PHASE")
 
     prefix = instance.split('-')[0]
 
     # FIXME: The hooks should only run for Synnefo instances.
     # Uncomment the following lines for a shared Ganeti deployment.
     # Currently, the following code is commented out because multiple
-    # backend prefixes are used in the same Ganeti installation during development.
+    # backend prefixes are used in the same Ganeti installation during
+    # development.
     #if not instance.startswith(settings.BACKEND_PREFIX_ID):
     #    logger.warning("Ignoring non-Synnefo instance %s", instance)
     #    return 0
@@ -245,7 +244,8 @@ def main():
     try:
         hook = hooks[(op, phase)](logger, os.environ, instance, prefix)
     except KeyError:
-        raise Exception("No hook found for operation = '%s', phase = '%s'" % (op, phase))
+        raise Exception("No hook found for operation = '%s', phase = '%s'" %
+                        (op, phase))
     return hook.run()
 
 if __name__ == "__main__":

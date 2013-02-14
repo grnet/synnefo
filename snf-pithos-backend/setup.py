@@ -42,12 +42,6 @@ from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-try:
-    # try to update the version file
-    from synnefo.util import version
-    version.update_version('pithos.backends', 'version', HERE)
-except ImportError:
-    pass
 
 from pithos.backends.version import __version__
 
@@ -55,7 +49,7 @@ from pithos.backends.version import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Backend library for Pithos file storage service'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)

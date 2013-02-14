@@ -3,13 +3,8 @@
 Synnefo Developer's Guide
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the complete Synnefo Developer's Guide
-
-Tying it all up with kamaki
-===========================
-
-kamaki
-------
+This is the complete Synnefo Developer's Guide. Here we document all Synnefo APIs
+to allow external developers write independent tools that interact with Synnefo.
 
 IM API (Astakos)
 ================
@@ -49,10 +44,10 @@ This is the Plankton Image API:
    Image API <plankton-api-guide>
 
 
-Storage API (Pithos+)
+Storage API (Pithos)
 =====================
 
-This is the Pithos+ Object Storage API:
+This is the Pithos Object Storage API:
 
 .. toctree::
    :maxdepth: 2
@@ -67,8 +62,8 @@ take into account before writing his own client for the above APIs. Before,
 starting your client implementation, make sure you have thoroughly read the
 corresponding Synnefo API.
 
-Pithos+ clients
----------------
+Pithos clients
+--------------
 
 User Experience
 ~~~~~~~~~~~~~~~

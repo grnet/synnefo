@@ -271,7 +271,6 @@ containing the following:
      RewriteEngine On
      RewriteCond %{THE_REQUEST} ^.*(\\r|\\n|%0A|%0D).* [NC]
      RewriteRule ^(.*)$ - [F,L]
-     RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
 
      SSLEngine on
      SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
@@ -822,6 +821,10 @@ this options:
    PITHOS_AUTHENTICATION_USERS = None
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
+   PITHOS_USER_CATALOG_URL = 'http://node1.example.com/user_catalogs'
+   PITHOS_USER_FEEDBACK_URL = 'http://node1.example.com/feedback'
+   PITHOS_USER_LOGIN_URL = 'http://node1.example.com/login'
+
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ app where to
 find the pithos+ backend database. Above we tell pithos+ that its database is
@@ -854,7 +857,7 @@ Then we need to setup the web UI and connect it to astakos. To do so, edit
 .. code-block:: console
 
    PITHOS_UI_LOGIN_URL = "https://node1.example.com/im/login?next="
-   PITHOS_UI_FEEDBACK_URL = "https://node1.example.com/im/feedback"
+   PITHOS_UI_FEEDBACK_URL = "https://node2.example.com/feedback"
 
 The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
 you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
@@ -1255,11 +1258,10 @@ In the above command:
  * ``img_passwd``: the arbitrary root password of your new instance
  * ``img_format``: set to ``diskdump`` to reflect the type of the uploaded Image
  * ``img_id``: If you want to deploy an Image stored on Pithos+ (our case), this
-               should have the format
-               ``pithos://<username>/<container>/<filename>``:
-                * ``username``: ``user@example.com`` (defined during Astakos sign up)
-                * ``container``: ``pithos`` (default, if the Web UI was used)
-                * ``filename``: the name of file (visible also from the Web UI)
+               should have the format ``pithos://<username>/<container>/<filename>``:
+               * ``username``: ``user@example.com`` (defined during Astakos sign up)
+               * ``container``: ``pithos`` (default, if the Web UI was used)
+               * ``filename``: the name of file (visible also from the Web UI)
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
                        properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
                        <https://code.grnet.gr/projects/snf-image/wiki/Image_Format#Image-Properties>`_
@@ -1285,6 +1287,7 @@ If everything works, you have successfully connected Ganeti with Pithos+. Let's
 move on to networking now.
 
 .. warning::
+
     You can bypass the networking sections and go straight to
     :ref:`Cyclades Ganeti tools <cyclades-gtools>`, if you do not want to setup
     the Cyclades Network Service, but only the Cyclades Compute Service

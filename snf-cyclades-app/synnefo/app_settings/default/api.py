@@ -67,8 +67,8 @@ APPEND_SLASH = False
 # e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
 BACKEND_PER_USER = {}
 
-# List of backend IDs used *only* for archipelagos.
-ARCHIPELAGOS_BACKENDS = []
+# List of backend IDs used *only* for archipelago.
+ARCHIPELAGO_BACKENDS = []
 
 # Quota
 # Maximum number of VMs a user is allowed to have.
@@ -124,3 +124,5 @@ SECRET_ENCRYPTION_KEY= "Password Encryption Key"
 # using a user uuid)
 CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
 
+# Astakos user_catalogs endpoint
+CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'

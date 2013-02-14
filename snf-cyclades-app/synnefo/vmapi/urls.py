@@ -31,8 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import include, patterns, url
+from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns('synnefo.vmapi.views',
-    url(r'^server-params/(?P<uuid>.*)$', 'server_params', name="vmapi_server_params"),
-)
+                       url(r'^server-params/(?P<uuid>.*)$', 'server_params',
+                           name="vmapi_server_params"),)

@@ -43,8 +43,9 @@ else:
     from synnefo.settings import (VMS_USER_QUOTA, MAX_VMS_PER_USER,
                                   NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 
-from synnefo.lib.quotaholder.api import (NoCapacityError, NoQuantityError)
-from synnefo.lib.commissioning import CallError
+from kamaki.clients.quotaholder.api import (NoCapacityError, NoQuantityError,
+                                            NoEntityError)
+from kamaki.clients.commissioning import CallError
 
 import logging
 log = logging.getLogger(__name__)
@@ -66,21 +67,31 @@ class DummyQuotaholderClient(object):
         userid = commission_info["target"]
         for provision in provisions:
             entity, resource, size = provision
-            if resource == "cyclades.vm":
+            if resource == "cyclades.vm" and size > 0:
                 user_vms = VirtualMachine.objects.filter(userid=userid,
                                                          deleted=False).count()
                 user_vm_limit = VMS_USER_QUOTA.get(userid, MAX_VMS_PER_USER)
                 log.debug("Users VMs %s User Limits %s", user_vms,
                           user_vm_limit)
-                if user_vms + size >= user_vm_limit:
-                    raise NoQuantityError()
-            if resource == "cyclades.network.private":
+                if user_vms + size > user_vm_limit:
+                    raise NoQuantityError(source='cyclades',
+                                          target=userid,
+                                          resource=resource,
+                                          requested=size,
+                                          current=user_vms,
+                                          limit=user_vm_limit)
+            if resource == "cyclades.network.private" and size > 0:
                 user_networks = Network.objects.filter(userid=userid,
                                                        deleted=False).count()
-                user_network_limit = NETWORKS_USER_QUOTA.get(userid,
-                                                         MAX_NETWORKS_PER_USER)
-                if user_networks + size >= user_network_limit:
-                    raise NoQuantityError()
+                user_network_limit =\
+                    NETWORKS_USER_QUOTA.get(userid, MAX_NETWORKS_PER_USER)
+                if user_networks + size > user_network_limit:
+                    raise NoQuantityError(source='cyclades',
+                                          target=userid,
+                                          resource=resource,
+                                          requested=size,
+                                          current=user_networks,
+                                          limit=user_network_limit)
 
         return None
 
@@ -187,11 +198,11 @@ def issue_commission(**commission_info):
     with get_quota_holder() as qh:
         try:
             serial = qh.issue_commission(**commission_info)
-        except (NoCapacityError, NoQuantityError):
-            raise OverLimit("Limit exceeded for your account")
+        except (NoCapacityError, NoQuantityError) as e:
+            msg, details = render_quotaholder_exception(e)
+            raise OverLimit(msg, details=details)
         except CallError as e:
-            if e.call_error in ["NoCapacityError", "NoQuantityError"]:
-                raise OverLimit("Limit exceeded for your account")
+            log.exception("Unexpected error")
             raise
 
     if serial:
@@ -244,14 +255,14 @@ def create_commission(user, resources, delete=False):
         resources = invert_resources(resources)
     provisions = [('cyclades', 'cyclades.' + r, s)
                   for r, s in resources.items()]
-    return  {"context":    {},
-             "target":     user,
-             "key":        "1",
-             "clientkey":  "cyclades",
-             #"owner":      "",
-             #"ownerkey":   "1",
-             "name":       "",
-             "provisions": provisions}
+    return {"context": {},
+            "target": user,
+            "key": "1",
+            "clientkey": "cyclades",
+            #"owner":      "",
+            #"ownerkey":   "1",
+            "name": "",
+            "provisions": provisions}
 
 ##
 ## Reconcile pending commissions
@@ -318,3 +329,24 @@ def get_quotaholder_pending():
         pending_serials = qh.get_pending_commissions(context={},
                                                      clientkey='cyclades')
     return pending_serials
+
+
+def render_quotaholder_exception(e):
+    resource_name = {"vm": "Virtual Machine",
+                     "cpu": "CPU",
+                     "ram": "RAM",
+                     "network.private": "Private Network"}
+    res = e.resource.replace("cyclades.", "", 1)
+    try:
+        resource = resource_name[res]
+    except KeyError:
+        resource = res
+
+    requested = e.requested
+    current = e.current
+    limit = e.limit
+    msg = "Resource Limit Exceeded for your account."
+    details = "Limit for resource '%s' exceeded for your account."\
+              " Current value: %s, Limit: %s, Requested: %s"\
+              % (resource, current, limit, requested)
+    return msg, details

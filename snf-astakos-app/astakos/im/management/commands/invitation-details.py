@@ -35,7 +35,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import Invitation
 
-from ._common import format_bool, format_date
+from ._common import format
 
 
 class Command(BaseCommand):
@@ -56,13 +56,13 @@ class Command(BaseCommand):
             'real name': invitation.realname,
             'email': invitation.username,
             'code': invitation.code,
-            'consumed': format_bool(invitation.is_consumed),
-            'date created': format_date(invitation.created),
-            'date consumed': format_date(invitation.consumed),
+            'consumed': invitation.is_consumed,
+            'date created': invitation.created,
+            'date consumed': invitation.consumed,
             'inviter real name': invitation.inviter.realname,
             'invitater email': invitation.inviter.email,
         }
 
         for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(18), val)
-            self.stdout.write(line.encode('utf8'))
+            line = '%s: %s\n' % (key.rjust(18), format(val))
+            self.stdout.write(line)

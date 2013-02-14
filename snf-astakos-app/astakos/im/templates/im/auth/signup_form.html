@@ -1,0 +1,23 @@
+<div class="form-stacked">
+  <form action="{% url signup %}" method="post"
+      class="innerlabels signup">{% csrf_token %}
+       
+      <input type="hidden" name="next" value="{{ next }}">
+      <input type="hidden" name="code" value="{{ code }}">
+      <input type="hidden" name="provider" value={{ provider|default:"local" }}>
+      {% if third_party_token %}
+      <input type="hidden" name="third_party_token" value={{ third_party_token }}>
+      {% endif %}
+      {% with signup_form as form %}
+      {% include "im/form_render.html" %}
+      {% endwith %}
+      <div class="form-row submit">
+          
+          <input type="submit" class="submit altcol" value="SUBMIT" />
+          	{% if third_party_token %}
+				<a href={%url index %} class="rt-link">CANCEL</a>
+			{% endif %}
+      </div>
+  </form>
+</div>
+

@@ -38,18 +38,13 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-try:
-    # try to update the version file
-    from synnefo.util import version
-    version.update_version('pithos.tools', 'version', HERE)
-except ImportError:
-    pass
 
 from pithos.tools.version import __version__
 
@@ -57,7 +52,7 @@ from pithos.tools.version import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Tools for Pithos file storage service'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -175,15 +170,15 @@ setup(
     name='snf-pithos-tools',
     version=VERSION,
     license='BSD',
-    url='http://code.grnet.gr/',
+    url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=README + '\n\n' + CHANGES,
     classifiers=CLASSIFIERS,
 
-    author='Package author',
-    author_email='author@grnet.gr',
-    maintainer='Package maintainer',
-    maintainer_email='maintainer@grnet.gr',
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
     namespace_packages=['pithos'],
     packages=PACKAGES,
@@ -192,8 +187,7 @@ setup(
     package_data=find_package_data('.'),
     zip_safe=False,
 
-    dependency_links=[
-        'http://docs.dev.grnet.gr/pypi/'],
+    dependency_links=['http://docs.dev.grnet.gr/pypi/'],
 
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRES,

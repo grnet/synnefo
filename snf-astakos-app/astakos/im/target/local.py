@@ -115,7 +115,6 @@ def login(request, on_failure='im/login.html'):
         # a third party provider account
         try:
             request.user.add_pending_auth_provider(third_party_token)
-            messages.success(request, _(astakos_messages.AUTH_PROVIDER_ADDED))
         except PendingThirdPartyUser.DoesNotExist:
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
 
@@ -165,10 +164,18 @@ def password_change(request, template_name='registration/password_change_form.ht
         form = password_change_form(**form_kwargs)
         if form.is_valid():
             form.save()
+            if create_password:
+                provider = auth_providers.get_provider('local')
+                message = _(astakos_messages.AUTH_PROVIDER_ADDED) % provider.get_method_prompt_display
+                messages.success(request, message)
+            else:
+                messages.success(request,
+                                 astakos_messages.PASSWORD_RESET_CONFIRM_DONE)
             return HttpResponseRedirect(post_change_redirect)
     else:
         form = password_change_form(user=request.user)
     return render_to_response(template_name, {
         'form': form,
-    }, context_instance=RequestContext(request))
+    }, context_instance=RequestContext(request, {'create_password':
+                                                 create_password}))
 

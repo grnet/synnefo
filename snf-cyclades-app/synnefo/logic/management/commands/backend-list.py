@@ -43,11 +43,11 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
+    )
 
     def handle(self, *args, **options):
         if args:

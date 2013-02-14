@@ -40,6 +40,7 @@ from synnefo.vmapi import settings
 
 log = getLogger('synnefo.vmapi')
 
+
 def server_params(request, uuid):
     if not uuid:
         raise Http404
@@ -54,4 +55,3 @@ def server_params(request, uuid):
         backend.set(cache_key, None)
 
     return HttpResponse(params, content_type="application/json")
-

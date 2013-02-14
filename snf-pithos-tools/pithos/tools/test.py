@@ -71,12 +71,12 @@ class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
         self.client = Pithos_Client(get_url(), get_auth(), get_user())
-        
+
         #keep track of initial containers
         self.initial_containers = self.client.list_containers()
         if self.initial_containers == '':
             self.initial_containers = []
-        
+
         self._clean_account()
         self.invalid_client = Pithos_Client(get_url(), get_auth(), 'invalid')
 
@@ -85,7 +85,7 @@ class BaseTestCase(unittest.TestCase):
 
         #keep track of initial account meta
         self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
-        
+
         self.extended = {
             'container':(
                 'name',
@@ -123,7 +123,7 @@ class BaseTestCase(unittest.TestCase):
 #             if c not in self.initial_containers:
                 self.client.delete_container(c, delimiter='/')
                 self.client.delete_container(c)
-    
+
     def assert_status(self, status, codes):
         l = [elem for elem in self.return_codes]
         if type(codes) == types.ListType:
@@ -264,7 +264,7 @@ class AccountHead(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['apples', 'bananas', 'kiwis', 'oranges', 'pears']))
         self.containers.sort()
-        
+
         for item in self.containers:
             self.client.create_container(item)
 
@@ -320,7 +320,7 @@ class AccountGet(BaseTestCase):
         #create some containers
         self.containers = list(set(self.initial_containers + ['apples', 'bananas', 'kiwis', 'oranges', 'pears']))
         self.containers.sort()
-        
+
         for item in self.containers:
             self.client.create_container(item)
 
@@ -382,7 +382,7 @@ class AccountGet(BaseTestCase):
                 self.assertEqual(len(c), len(self.containers) + 1)
             except Fault, f:
                 self.failIf(f.status == 304) #fail if not modified
-    
+
     def test_if_modified_since_invalid_date(self):
         c = self.client.list_containers(if_modified_since='')
         self.assertEqual(len(c), len(self.containers))
@@ -427,7 +427,7 @@ class AccountPost(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['apples', 'bananas', 'kiwis', 'oranges', 'pears']))
         self.containers.sort()
-        
+
         for item in self.containers:
             self.client.create_container(item)
 
@@ -546,53 +546,53 @@ class ContainerGet(BaseTestCase):
             self.obj.append(self.upload_random_data(self.container[0], o))
         for o in o_names[8:]:
             self.obj.append(self.upload_random_data(self.container[1], o))
-    
+
     def test_list_shared(self):
         self.client.share_object(self.container[0], self.obj[0]['name'], ('*',))
         objs = self.client.list_objects(self.container[0], shared=True)
         self.assertEqual(objs, [self.obj[0]['name']])
-        
+
         # create child object
         self.upload_random_data(self.container[0], strnextling(self.obj[0]['name']))
         objs = self.client.list_objects(self.container[0], shared=True)
         self.assertEqual(objs, [self.obj[0]['name']])
-        
+
         # test inheritance
         self.client.create_folder(self.container[1], 'folder')
         self.client.share_object(self.container[1], 'folder', ('*',))
         self.upload_random_data(self.container[1], 'folder/object')
         objs = self.client.list_objects(self.container[1], shared=True)
         self.assertEqual(objs, ['folder', 'folder/object'])
-    
+
     def test_list_public(self):
         self.client.publish_object(self.container[0], self.obj[0]['name'])
         objs = self.client.list_objects(self.container[0], public=True)
         self.assertEqual(objs, [self.obj[0]['name']])
-        
+
         # create child object
         self.upload_random_data(self.container[0], strnextling(self.obj[0]['name']))
         objs = self.client.list_objects(self.container[0], public=True)
         self.assertEqual(objs, [self.obj[0]['name']])
-        
+
         # test inheritance
         self.client.create_folder(self.container[1], 'folder')
         self.client.publish_object(self.container[1], 'folder')
         self.upload_random_data(self.container[1], 'folder/object')
         objs = self.client.list_objects(self.container[1], public=True)
         self.assertEqual(objs, ['folder'])
-    
+
     def test_list_shared_public(self):
         self.client.share_object(self.container[0], self.obj[0]['name'], ('*',))
         self.client.publish_object(self.container[0], self.obj[1]['name'])
         objs = self.client.list_objects(self.container[0], shared=True, public=True)
         self.assertEqual(objs, [self.obj[0]['name'], self.obj[1]['name']])
-        
+
         # create child object
         self.upload_random_data(self.container[0], strnextling(self.obj[0]['name']))
         self.upload_random_data(self.container[0], strnextling(self.obj[1]['name']))
         objs = self.client.list_objects(self.container[0], shared=True, public=True)
         self.assertEqual(objs, [self.obj[0]['name'], self.obj[1]['name']])
-        
+
         # test inheritance
         self.client.create_folder(self.container[1], 'folder1')
         self.client.share_object(self.container[1], 'folder1', ('*',))
@@ -602,7 +602,7 @@ class ContainerGet(BaseTestCase):
         o = self.upload_random_data(self.container[1], 'folder2/object')
         objs = self.client.list_objects(self.container[1], shared=True, public=True)
         self.assertEqual(objs, ['folder1', 'folder1/object', 'folder2'])
-    
+
     def test_list_objects(self):
         objects = self.client.list_objects(self.container[0])
         l = [elem['name'] for elem in self.obj[:8]]
@@ -796,7 +796,7 @@ class ContainerPut(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['c1', 'c2']))
         self.containers.sort()
-    
+
     def test_create(self):
         self.client.create_container(self.containers[0])
         containers = self.client.list_containers()
@@ -846,7 +846,7 @@ class ContainerDelete(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['c1', 'c2']))
         self.containers.sort()
-        
+
         for c in self.containers:
             self.client.create_container(c)
 
@@ -861,13 +861,13 @@ class ContainerDelete(BaseTestCase):
 
     def test_delete_invalid(self):
         self.assert_raises_fault(404, self.client.delete_container, 'c3')
-    
+
     def test_delete_contents(self):
         self.client.create_folder(self.containers[0], 'folder-1')
         self.upload_random_data(self.containers[1], 'folder-1/%s' % o_names[0])
         self.client.create_folder(self.containers[0], 'folder-1/subfolder')
         self.client.create_folder(self.containers[0], 'folder-2/%s' % o_names[1])
-                
+
         objects = self.client.list_objects(self.containers[0])
         self.client.delete_container(self.containers[0], delimiter='/')
         for o in objects:
@@ -879,7 +879,7 @@ class ObjectGet(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['c1', 'c2']))
         self.containers.sort()
-        
+
         #create some containers
         for c in self.containers:
             self.client.create_container(c)
@@ -911,11 +911,11 @@ class ObjectGet(BaseTestCase):
                                                       restricted=True,
                                                       version=v)
         (self.assertTrue(k not in v_meta) for k in meta.keys())
-        
+
         #update obejct
         data = get_random_data()
         self.client.update_object(c, o['name'], StringIO(data))
-        
+
         aa = self.client.retrieve_object_versionlist(c, o['name'])['versions']
         self.assert_versionlist_structure(aa)
         self.assertEqual(len(a)+1, len(aa))
@@ -1347,7 +1347,7 @@ class ObjectPut(BaseTestCase):
         self.assert_object_exists(self.container, 'large-object')
         self.assertEqual(data, self.client.retrieve_object(self.container,
                                                            'large-object'))
-        
+
         r = self.client.retrieve_object_hashmap(self.container,'large-object')
         hashes = r['hashes']
         block_size = int(r['block_size'])
@@ -1355,7 +1355,7 @@ class ObjectPut(BaseTestCase):
         l = len(data)
         block_num = l/block_size if l/block_size != 0 else l/block_size + 1
         self.assertEqual(block_num, len(hashes))
-        
+
         #wrong manifestation
         self.client.create_manifestation(self.container, 'large-object',
                                          '%s/invalid' % self.container)
@@ -1392,7 +1392,7 @@ class ObjectCopy(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['c1', 'c2']))
         self.containers.sort()
-        
+
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
@@ -1455,14 +1455,14 @@ class ObjectCopy(BaseTestCase):
         self.assert_raises_fault(404, self.client.copy_object, self.containers[1],
                                  self.obj['name'], self.containers[1],
                                  'testcopy', meta)
-    
+
     def test_copy_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
         self.client.create_folder(self.containers[0], 'dir/subdir')
         self.upload_random_data(self.containers[0], 'dir/object1.jpg', length=1024)
         self.upload_random_data(self.containers[0], 'dir/subdir/object2.pdf', length=2*1024)
         self.client.create_folder(self.containers[0], 'dirs')
-        
+
         objects = self.client.list_objects(self.containers[0], prefix='dir')
         self.client.copy_object(self.containers[0], 'dir', self.containers[1], 'dir-backup', delimiter='/')
         for object in objects[:-1]:
@@ -1473,13 +1473,13 @@ class ObjectCopy(BaseTestCase):
             t = ('content-length', 'x-object-hash', 'content-type')
             (self.assertEqual(meta0[elem], meta1[elem]) for elem in t)
         self.assert_object_not_exists(self.containers[1], objects[-1])
-        
+
 class ObjectMove(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['c1', 'c2']))
         self.containers.sort()
-        
+
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
@@ -1511,8 +1511,8 @@ class ObjectMove(BaseTestCase):
 
         #assert src object no more exists
         self.assert_object_not_exists(self.containers[0], self.obj['name'])
-    
-    
+
+
     def test_move_dir(self):
         meta = {}
         self.client.create_folder(self.containers[0], 'dir')
@@ -1525,7 +1525,7 @@ class ObjectMove(BaseTestCase):
         meta['dir/subdir/object2.pdf'] = self.client.retrieve_object_metadata(self.containers[0], 'dir/subdir/object2.pdf')
         self.client.create_folder(self.containers[0], 'dirs')
         meta['dirs'] = self.client.retrieve_object_metadata(self.containers[0], 'dirs')
-        
+
         objects = self.client.list_objects(self.containers[0], prefix='dir')
         self.client.move_object(self.containers[0], 'dir', self.containers[1], 'dir-backup', delimiter='/')
         for object in objects[:-1]:
@@ -1542,7 +1542,7 @@ class ObjectPost(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = list(set(self.initial_containers + ['c1', 'c2']))
         self.containers.sort()
-        
+
         for c in self.containers:
             self.client.create_container(c)
         self.obj = []
@@ -1576,7 +1576,7 @@ class ObjectPost(BaseTestCase):
                                                         self.containers[0],
                                                         self.obj[0]['name'],
                                                         **more)
-            
+
             #perform update metadata
             more = {'α': 'β' * 256}
             status = self.client.update_object_metadata(self.containers[0],
@@ -1584,7 +1584,7 @@ class ObjectPost(BaseTestCase):
                                                         **more)[0]
             #assert request accepted
             self.assertEqual(status, 202)
-            
+
             #assert old metadata are still there
             headers = self.client.retrieve_object_metadata(self.containers[0],
                                                            self.obj[0]['name'],
@@ -1593,14 +1593,14 @@ class ObjectPost(BaseTestCase):
             for k,v in more.items():
                 self.assertTrue(k in headers.keys())
                 self.assertTrue(headers[k], v)
-            
+
             #out of limits
             more = {'α': 'β' * 257}
             self.assert_raises_fault(400, self.client.update_object_metadata,
                                                         self.containers[0],
                                                         self.obj[0]['name'],
                                                         **more)
-    
+
     def test_update_object(self,
                            first_byte_pos=0,
                            last_byte_pos=499,
@@ -1822,7 +1822,7 @@ class ObjectDelete(BaseTestCase):
         BaseTestCase.setUp(self)
         self.containers = ['c1', 'c2']
         self.containers.extend(self.initial_containers)
-        
+
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
@@ -1835,14 +1835,14 @@ class ObjectDelete(BaseTestCase):
         #assert item not found
         self.assert_raises_fault(404, self.client.delete_object, self.containers[1],
                                  self.obj['name'])
-    
+
     def test_delete_dir(self):
         self.client.create_folder(self.containers[0], 'dir')
         self.client.create_folder(self.containers[0], 'dir/subdir')
         self.upload_random_data(self.containers[0], 'dir/object1.jpg', length=1024)
         self.upload_random_data(self.containers[0], 'dir/subdir/object2.pdf', length=2*1024)
         self.client.create_folder(self.containers[0], 'dirs')
-        
+
         objects = self.client.list_objects(self.containers[0], prefix='dir')
         self.client.delete_object(self.containers[0], 'dir', delimiter='/')
         for object in objects[:-1]:
@@ -1863,7 +1863,7 @@ class ListSharing(BaseTestCase):
             self.o1_sharing = token, account
             self.client.share_object('c1', 'o1', (account,), read=True)
             break
-        
+
     def test_list_other_shared(self):
         self.other = Pithos_Client(get_url(),
                               self.o1_sharing[0],
@@ -1892,84 +1892,80 @@ class List(BaseTestCase):
                 self.client.share_object(c, 'o1', ['papagian'], read=True)
             if i%2 != 0:
                 self.client.publish_object(c, 'o2')
-    
+
     def test_shared_public(self):
         diff = lambda l: set(l) - set(self.initial_containers)
-        
+
         func, kwargs = self.client.list_containers, {'shared':True}
         l = func(**kwargs)
         self.assertEqual(set(['c1', 'c2']), diff(l))
         self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
-        
+
         func, kwargs = self.client.list_containers, {'public':True}
         l = func(**kwargs)
         self.assertEqual(set(['c1', 'c3']), diff(l))
         self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
-        
+
         func, kwargs = self.client.list_containers, {'shared':True, 'public':True}
         l = func(**kwargs)
         self.assertEqual(set(['c1', 'c2', 'c3']), diff(l))
         self.assertEqual(l, [e['name'] for e in func(format='json', **kwargs)])
-        
-        
+
         func, args, kwargs = self.client.list_objects, ['c1'], {'shared':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o1'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
+
         func, args, kwargs = self.client.list_objects, ['c1'], {'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o2'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
+
         func, args, kwargs = self.client.list_objects, ['c1'], {'shared':True, 'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o1', 'o2'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
-        
+
         func, args, kwargs = self.client.list_objects, ['c2'], {'shared':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o1'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
+
         func, args, kwargs = self.client.list_objects, ['c2'], {'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, '')
         self.assertEqual([], func(*args, format='json', **kwargs))
-        
+
         func, args, kwargs = self.client.list_objects, ['c2'], {'shared':True, 'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o1'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
-        
+
         func, args, kwargs = self.client.list_objects, ['c3'], {'shared':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, '')
         self.assertEqual([], func(*args, format='json', **kwargs))
-        
+
         func, args, kwargs = self.client.list_objects, ['c3'], {'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o2'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
+
         func, args, kwargs = self.client.list_objects, ['c3'], {'shared':True, 'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, ['o2'])
         self.assertEqual(l, [e['name'] for e in func(*args, format='json', **kwargs)])
-        
-        
+
         func, args, kwargs = self.client.list_objects, ['c4'], {'shared':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, '')
         self.assertEqual([], func(*args, format='json', **kwargs))
-        
+
         func, args, kwargs = self.client.list_objects, ['c4'], {'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, '')
         self.assertEqual([], func(*args, format='json', **kwargs))
-        
+
         func, args, kwargs = self.client.list_objects, ['c4'], {'shared':True, 'public':True}
         l = func(*args, **kwargs)
         self.assertEqual(l, '')
@@ -2167,10 +2163,10 @@ class TestUTF8(BaseTestCase):
 class TestPermissions(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        
+
         if not OTHER_ACCOUNTS:
             raise Warning('No other accounts avalaible for running this test.')
-        
+
         #create a group
         self.authorized = ['chazapis', 'verigak', 'gtsouk']
         groups = {'pithosdev':','.join(self.authorized)}

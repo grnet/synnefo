@@ -46,12 +46,13 @@ class Command(BaseCommand):
                                # an SQL transaction
 
     def handle(self, *args, **options):
+        write = self.stdout.write
         if len(args) < 1:
             raise CommandError("Please provide a backend ID")
 
         backend = get_backend(args[0])
 
-        self.stdout.write('Trying to remove backend: %s\n' % backend.clustername)
+        write('Trying to remove backend: %s\n' % backend.clustername)
 
         vms_in_backend = VirtualMachine.objects.filter(backend=backend,
                                                        deleted=False)
@@ -59,14 +60,15 @@ class Command(BaseCommand):
         if vms_in_backend:
             raise CommandError('Backend hosts non-deleted vms. Can not delete')
 
-        networks = BackendNetwork.objects.filter(backend=backend, deleted=False)
+        networks = BackendNetwork.objects.filter(backend=backend,
+                                                 deleted=False)
         networks = [net.network.backend_id for net in networks]
 
         backend.delete()
 
-        self.stdout.write('Successfully removed backend.\n')
+        write('Successfully removed backend.\n')
 
         if networks:
-            self.stdout.write('Left the following orphans networks in Ganeti:\n')
-            self.stdout.write('  ' + '\n  * '.join(networks) + '\n')
-            self.stdout.write('Manually remove them.\n')
+            write('Left the following orphans networks in Ganeti:\n')
+            write('  ' + '\n  * '.join(networks) + '\n')
+            write('Manually remove them.\n')

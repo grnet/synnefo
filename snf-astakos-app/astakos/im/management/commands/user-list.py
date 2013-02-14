@@ -37,7 +37,7 @@ from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import AstakosUser
 
-from ._common import format_bool
+from ._common import format
 
 
 class Command(NoArgsCommand):
@@ -68,8 +68,8 @@ class Command(NoArgsCommand):
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
 
-        labels = ('id', 'email', 'real name', 'active', 'admin', 'providers')
-        columns = (3, 24, 24, 6, 5, 12, 24)
+        labels = ('id', 'email', 'real name', 'active', 'admin', 'uuid', 'providers')
+        columns = (3, 24, 24, 6, 5, 12, 36, 24)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -79,16 +79,20 @@ class Command(NoArgsCommand):
 
         for user in users:
             id = str(user.id)
-            active = format_bool(user.is_active)
-            admin = format_bool(user.is_superuser)
-            fields = (
-                id, user.email, user.realname, active, admin, \
-                        user.auth_providers_display
-            )
+            active = user.is_active
+            admin = user.is_superuser
+            uuid = user.uuid or ''
+            fields = (format(elem) for elem in (
+                            id,
+                            user.email,
+                            user.realname,
+                            active, admin, uuid,
+                            user.auth_providers_display
+            ))
 
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
-            self.stdout.write(line.encode('utf8') + '\n')
+            self.stdout.write(line + '\n')

@@ -137,15 +137,10 @@ class AstakosCallpoint():
         b = get_backend()
         rejected = b.add_resources(service_id, update, resources)
         return rejected
-    
+
     def remove_resources(self, service_id, ids=()):
         b = get_backend()
         rejected = b.remove_resources(service_id, ids)
         return rejected
-    
-#     def create_groups(self, groups=()):
-#         b = get_backend()
-#         rejected = (b.create_group(**g) for g in groups)
-#         return rejected
 
 API_Callpoint = AstakosCallpoint

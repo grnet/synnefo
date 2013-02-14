@@ -38,8 +38,10 @@ from django.core import signals
 
 from synnefo.vmapi.settings import CACHE_KEY_PREFIX, CACHE_BACKEND
 
+
 def get_uuid():
     return str(uuid4())
+
 
 def get_key(*args):
     args = map(str, filter(bool, list(args)))
@@ -54,4 +56,3 @@ backend = get_cache(CACHE_BACKEND)
 # here.
 if hasattr(backend, 'close'):
     signals.request_finished.connect(backend.close)
-

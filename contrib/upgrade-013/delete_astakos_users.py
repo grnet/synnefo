@@ -24,12 +24,13 @@ id_list = [int(x) for x in argv[1:]]
 
 print ""
 print "This will permanently delete the following users:\n"
-print "id: email"
-print "--  -----"
+print "id  email (is_active, creation date)"
+print "--  --------------------------------"
 
 users = A.objects.filter(id__in=id_list)
 for user in users:
-    print "%s: %s" % (user.id, user.email)
+    print "%s: %s (%s, %s)" % (user.id, user.email, user.is_active,
+                               user.date_joined)
 
 print "\nExecute? (yes/no): ",
 line = raw_input().rstrip()

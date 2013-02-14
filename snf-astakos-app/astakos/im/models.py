@@ -2091,13 +2091,19 @@ class Project(models.Model):
 
     ### Deactivation calls
 
+    def unset_modified(self):
+        self.is_modified = False
+        self.save()
+
     def deactivate(self):
         self.deactivation_date = datetime.now()
         self.is_active = False
+        self.save()
 
     def reactivate(self):
         self.deactivation_date = None
         self.is_active = True
+        self.save()
 
     def terminate(self):
         self.deactivation_reason = 'TERMINATED'
@@ -2233,8 +2239,7 @@ class PendingMembershipError(Exception):
 class ProjectMembershipManager(ForUpdateManager):
 
     def any_accepted(self):
-        q = (Q(state=ProjectMembership.ACCEPTED) |
-             Q(state=ProjectMembership.PROJECT_DEACTIVATED))
+        q = self.model.Q_ACTUALLY_ACCEPTED
         return self.filter(q)
 
     def actually_accepted(self):
@@ -2258,8 +2263,6 @@ class ProjectMembership(models.Model):
     LEAVE_REQUESTED     =   5
     # User deactivation
     USER_SUSPENDED      =   10
-    # Project deactivation
-    PROJECT_DEACTIVATED =   100
 
     REMOVED             =   200
 
@@ -2267,12 +2270,12 @@ class ProjectMembership(models.Model):
                                  ACCEPTED,
                                  LEAVE_REQUESTED,
                                  USER_SUSPENDED,
-                                 PROJECT_DEACTIVATED])
+                                 ])
 
     ACCEPTED_STATES     =   set([ACCEPTED,
                                  LEAVE_REQUESTED,
                                  USER_SUSPENDED,
-                                 PROJECT_DEACTIVATED])
+                                 ])
 
     ACTUALLY_ACCEPTED   =   set([ACCEPTED, LEAVE_REQUESTED])
 
@@ -2304,7 +2307,6 @@ class ProjectMembership(models.Model):
         ACCEPTED            : _('Accepted'),
         LEAVE_REQUESTED     : _('Leave Requested'),
         USER_SUSPENDED      : _('Suspended'),
-        PROJECT_DEACTIVATED : _('Accepted'), # sic
         REMOVED             : _('Pending removal'),
         }
 
@@ -2313,7 +2315,6 @@ class ProjectMembership(models.Model):
         ACCEPTED            : _('Accepted member'),
         LEAVE_REQUESTED     : _('Requested to leave'),
         USER_SUSPENDED      : _('Suspended member'),
-        PROJECT_DEACTIVATED : _('Accepted member'), # sic
         REMOVED             : _('Pending removal'),
         }
 
@@ -2368,12 +2369,8 @@ class ProjectMembership(models.Model):
         now = datetime.now()
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
-        if self.project.is_approved():
-            self.state = self.ACCEPTED
-            self.is_pending = True
-        else:
-            self.state = self.PROJECT_DEACTIVATED
-
+        self.state = self.ACCEPTED
+        self.is_pending = True
         self.save()
 
     def can_leave(self):
@@ -2515,6 +2512,14 @@ class ProjectMembership(models.Model):
 
         return (sub_list, add_list)
 
+    def is_fully_applied(self, project=None):
+        if project is None:
+            project = self.project
+        if project.is_deactivated():
+            return self.application is None
+        else:
+            return self.application_id == project.application_id
+
     def set_sync(self):
         if not self.is_pending:
             m = _("%s: attempt to sync a non pending membership") % (self,)
@@ -2523,13 +2528,9 @@ class ProjectMembership(models.Model):
         state = self.state
         if state in self.ACTUALLY_ACCEPTED:
             pending_application = self.pending_application
-            if pending_application is None:
-                m = _("%s: attempt to sync an empty pending application") % (
-                    self,)
-                raise AssertionError(m)
 
             self.application = pending_application
-            self.is_active = True
+            self.is_active = (self.application is not None)
 
             self.pending_application = None
             self.pending_serial = None
@@ -2537,20 +2538,7 @@ class ProjectMembership(models.Model):
             # project.application may have changed in the meantime,
             # in which case we stay PENDING;
             # we are safe to check due to select_for_update
-            if self.application == self.project.application:
-                self.is_pending = False
-            self.save()
-
-        elif state == self.PROJECT_DEACTIVATED:
-            if self.pending_application:
-                m = _("%s: attempt to sync in state '%s' "
-                      "with a pending application") % (self, state)
-                raise AssertionError(m)
-
-            self.application = None
-            self.is_active = False
-            self.pending_serial = None
-            self.is_pending = False
+            self.is_pending = not self.is_fully_applied()
             self.save()
 
         elif state == self.REMOVED:
@@ -2566,8 +2554,7 @@ class ProjectMembership(models.Model):
             raise AssertionError(m)
 
         state = self.state
-        if state in [self.ACCEPTED, self.LEAVE_REQUESTED,
-                     self.PROJECT_DEACTIVATED, self.REMOVED]:
+        if state in [self.ACCEPTED, self.LEAVE_REQUESTED, self.REMOVED]:
             self.pending_application = None
             self.pending_serial = None
             self.save()
@@ -2620,49 +2607,26 @@ def sync_finish_serials(serials_to_ack=None):
     qh_ack_serials(list(serials_to_ack))
     return len(memberships)
 
+def _pre_sync_projects(projects):
+    for project in projects:
+        objects = project.projectmembership_set
+        memberships = objects.actually_accepted().select_for_update()
+        for membership in memberships:
+            if not membership.is_fully_applied(project):
+                membership.is_pending = True
+                membership.save()
+
 def pre_sync_projects(sync=True):
-    ACCEPTED = ProjectMembership.ACCEPTED
-    LEAVE_REQUESTED = ProjectMembership.LEAVE_REQUESTED
-    PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     objs = Project.objects
 
     modified = list(objs.modified_projects().select_for_update())
-    if sync:
-        for project in modified:
-            objects = project.projectmembership_set
-
-            memberships = objects.actually_accepted().select_for_update()
-            for membership in memberships:
-                membership.is_pending = True
-                membership.save()
-
     reactivating = list(objs.reactivating_projects().select_for_update())
-    if sync:
-        for project in reactivating:
-            objects = project.projectmembership_set
-
-            q = objects.filter(state=PROJECT_DEACTIVATED)
-            memberships = q.select_for_update()
-            for membership in memberships:
-                membership.is_pending = True
-                if membership.leave_request_date is None:
-                    membership.state = ACCEPTED
-                else:
-                    membership.state = LEAVE_REQUESTED
-                membership.save()
-
     deactivating = list(objs.deactivating_projects().select_for_update())
-    if sync:
-        for project in deactivating:
-            objects = project.projectmembership_set
 
-            # Note: we keep a user-level deactivation
-            # (e.g. USER_SUSPENDED) intact
-            memberships = objects.actually_accepted().select_for_update()
-            for membership in memberships:
-                membership.is_pending = True
-                membership.state = PROJECT_DEACTIVATED
-                membership.save()
+    if sync:
+        _pre_sync_projects(modified)
+        _pre_sync_projects(reactivating)
+        _pre_sync_projects(deactivating)
 
 #    transaction.commit()
     return (modified, reactivating, deactivating)
@@ -2694,8 +2658,10 @@ def set_sync_projects(exclude=None):
                 logger.warning("Excluded from sync: %s" % uuid)
                 continue
 
-        if membership.state in ACTUALLY_ACCEPTED:
-            membership.pending_application = membership.project.application
+        project = membership.project
+        if (membership.state in ACTUALLY_ACCEPTED and
+            not project.is_deactivated()):
+            membership.pending_application = project.application
 
         membership.pending_serial = serial
         membership.get_diff_quotas(sub_quota, add_quota)
@@ -2726,37 +2692,27 @@ def do_sync_projects():
     logger.error("Failed: %s" % r)
     raise SyncError(m)
 
+def _post_sync_projects(projects, action):
+    for project in projects:
+        objects = project.projectmembership_set
+        memberships = objects.actually_accepted().select_for_update()
+        for membership in memberships:
+            if not membership.is_fully_applied(project):
+                break
+        else:
+            action(project)
+
 def post_sync_projects():
-    PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
-    Q_ACTUALLY_ACCEPTED = ProjectMembership.Q_ACTUALLY_ACCEPTED
     objs = Project.objects
 
     modified = objs.modified_projects().select_for_update()
-    for project in modified:
-        objects = project.projectmembership_set
-        q = objects.filter(Q_ACTUALLY_ACCEPTED & Q(is_pending=True))
-        memberships = list(q.select_for_update())
-        if not memberships:
-            project.is_modified = False
-            project.save()
+    _post_sync_projects(modified, lambda p: p.unset_modified())
 
     reactivating = objs.reactivating_projects().select_for_update()
-    for project in reactivating:
-        objects = project.projectmembership_set
-        q = objects.filter(Q(state=PROJECT_DEACTIVATED) | Q(is_pending=True))
-        memberships = list(q.select_for_update())
-        if not memberships:
-            project.reactivate()
-            project.save()
+    _post_sync_projects(reactivating, lambda p: p.reactivate())
 
     deactivating = objs.deactivating_projects().select_for_update()
-    for project in deactivating:
-        objects = project.projectmembership_set
-        q = objects.filter(Q_ACTUALLY_ACCEPTED | Q(is_pending=True))
-        memberships = list(q.select_for_update())
-        if not memberships:
-            project.deactivate()
-            project.save()
+    _post_sync_projects(deactivating, lambda p: p.deactivate())
 
     transaction.commit()
 

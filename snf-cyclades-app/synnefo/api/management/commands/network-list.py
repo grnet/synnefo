@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import format_bool, filter_results
+from synnefo.management.common import format_bool, filter_results, UUIDCache
 from synnefo.db.models import Network
 from synnefo.management.common import pprint_table
 
@@ -70,8 +70,12 @@ class Command(BaseCommand):
             help="Filter results. Comma seperated list of key 'cond' val pairs"
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"name=Network-1,link!=prv0\"."
-                 " Available keys are: %s" % ", ".join(FIELDS))
-
+                 " Available keys are: %s" % ", ".join(FIELDS)),
+        make_option('--uuids',
+            action='store_true',
+            dest='use_uuids',
+            default=False,
+            help="Display UUIDs instead of user emails"),
         )
 
     def handle(self, *args, **options):
@@ -98,12 +102,19 @@ class Command(BaseCommand):
         else:
             headers.extend(['IPv4 Subnet', 'IPv4 Gateway'])
 
+        if options['use_uuids'] is False:
+            ucache = UUIDCache()
+
         table = []
         for network in networks.order_by("id"):
+            user = network.userid
+            if options['use_uuids'] is False:
+                user = ucache.get_user(network.userid)
+
             fields = [str(network.id),
                       network.name,
                       network.flavor,
-                      network.userid or '',
+                      user or '',
                       network.mac_prefix or '',
                       str(network.dhcp),
                       network.state,

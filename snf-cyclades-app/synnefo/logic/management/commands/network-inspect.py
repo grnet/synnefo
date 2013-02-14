@@ -33,8 +33,10 @@
 
 import json
 
+from optparse import make_option
+
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network
+from synnefo.management.common import get_network, UUIDCache
 
 from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
@@ -44,6 +46,14 @@ from util import pool_map_chunks
 
 class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
+
+    option_list = BaseCommand.option_list + (
+        make_option('--uuids',
+            action='store_true',
+            dest='use_uuids',
+            default=False,
+            help="Display UUIDs instead of user emails"),
+        )
 
     def handle(self, *args, **options):
         write = self.stdout.write
@@ -56,7 +66,13 @@ class Command(BaseCommand):
         labels = ('name', 'backend-name', 'state', 'owner', 'subnet',
                   'gateway', 'mac_prefix', 'link', 'public', 'dhcp', 'flavor',
                   'deleted', 'action', 'pool')
-        fields = (net.name, net.backend_id, net.state, str(net.userid),
+
+        user = net.userid
+        if options['use_uuids'] is False:
+            ucache = UUIDCache()
+            user = ucache.get_user(net.userid)
+
+        fields = (net.name, net.backend_id, net.state, user or '',
                   str(net.subnet), str(net.gateway), str(net.mac_prefix),
                   str(net.link), str(net.public),  str(net.dhcp),
                   str(net.flavor), str(net.deleted), str(net.action),

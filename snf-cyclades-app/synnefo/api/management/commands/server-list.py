@@ -109,7 +109,8 @@ class Command(BaseCommand):
             servers = filter_results(servers, filter_by)
 
         cache = ImageCache()
-        ucache = UUIDCache()
+        if options['use_uuids'] is False:
+            ucache = UUIDCache()
 
         headers = ('id', 'name', 'owner', 'flavor', 'image', 'state',
                    'backend')
@@ -131,7 +132,7 @@ class Command(BaseCommand):
             state = format_vm_state(server)
 
             user = server.userid
-            if not options['use_uuids']:
+            if options['use_uuids'] is False:
                 user = ucache.get_user(server.userid)
 
             fields = (str(server.id), name, user, flavor, image,

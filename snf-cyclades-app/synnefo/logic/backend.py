@@ -349,7 +349,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, public_nic, flavor, image, password=None):
+def create_instance(vm, public_nic, flavor, image):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -400,10 +400,6 @@ def create_instance(vm, public_nic, flavor, image, password=None):
         # Store image id and format to Ganeti
         'img_id': image['backend_id'],
         'img_format': image['format']}
-
-    if password:
-        # Only for admin created VMs !!
-        kw['osparams']['img_passwd'] = password
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)

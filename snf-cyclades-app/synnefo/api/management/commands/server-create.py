@@ -162,7 +162,7 @@ class Command(BaseCommand):
 
         try:
             # Create the instance in Backend
-            jobID = create_instance(vm, nic, flavor, image, password)
+            jobID = create_instance(vm, nic, flavor, image)
 
             vm.backendjobid = jobID
             vm.save()

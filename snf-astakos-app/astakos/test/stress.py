@@ -51,9 +51,11 @@ from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im.functions import get_chain_of_application_id
 from views import submit, approve, join, leave
 
-
 USERS = {}
 PROJECTS = {}
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def random_name():
@@ -68,7 +70,7 @@ def random_email():
     first = ''.join(choice(alphabet) for _ in xrange(length))
 
     alphabet = u'abcdef'
-    length = randint(2,4)
+    length = randint(2, 4)
     last = ''.join(choice(alphabet) for _ in xrange(length))
     return first + '@' + last
 
@@ -100,7 +102,7 @@ class SubmitApproveT(threading.Thread):
         owner = choice(USERS.keys())
         p_name = random_name()
         submit_and_approve(p_name, owner, None, self.repeat,
-                           prefix=self.getName())
+                           prefix=self.name)
 
 
 def submit_and_approve(name, user_id, prec, repeat, prefix=""):
@@ -110,20 +112,22 @@ def submit_and_approve(name, user_id, prec, repeat, prefix=""):
     for i in range(repeat):
         try:
             now = datetime.datetime.now()
-            print '%s%s: submitting with precursor %s' % (prefix, now, prec)
+            logger.info('%s%s: submitting with precursor %s'
+                        % (prefix, now, prec))
             app_id = submit(name, user_id, prec)
             prec = app_id
         except Exception as e:
-            print e
+            logger.exception(e)
         try:
             now = datetime.datetime.now()
             pid = get_chain_of_application_id(app_id)
-            print '%s%s: approving application %s of project %s' % (
-                prefix, now, app_id, pid)
+            logger.info('%s%s: approving application %s of project %s'
+                        % (prefix, now, app_id, pid))
             approve(app_id)
             PROJECTS[pid] = True
         except Exception as e:
-            print e
+            logger.exception(e)
+
 
 class JoinLeaveT(threading.Thread):
     def __init__(self, *args, **kwargs):
@@ -138,7 +142,7 @@ class JoinLeaveT(threading.Thread):
                 pid = choice(projects)
                 break
             sleep(0.1)
-        join_and_leave(pid, owner, self.repeat, prefix=self.getName())
+        join_and_leave(pid, owner, self.repeat, prefix=self.name)
 
 
 def join_and_leave(proj_id, user_id, repeat, prefix=""):
@@ -148,18 +152,19 @@ def join_and_leave(proj_id, user_id, repeat, prefix=""):
     for i in range(repeat):
         try:
             now = datetime.datetime.now()
-            print '%s%s: user %s joining project %s' % (
-                prefix, now, user_id, proj_id)
+            logger.info('%s%s: user %s joining project %s'
+                        % (prefix, now, user_id, proj_id))
             join(proj_id, user_id)
         except Exception as e:
-            print e
+            logger.exception(e)
+
         try:
             now = datetime.datetime.now()
-            print '%s%s: user %s leaving project %s' % (
-                prefix, now, user_id, proj_id)
+            logger.info('%s%s: user %s leaving project %s'
+                        % (prefix, now, user_id, proj_id))
             leave(proj_id, user_id)
         except Exception as e:
-            print e
+            logger.exception(e)
 
 
 def test(users, projects, memb, repeat):
@@ -172,6 +177,10 @@ def test(users, projects, memb, repeat):
 
     for i in range(memb):
         JoinLeaveT(repeat=repeat).start()
+
+    for thread in threading.enumerate():
+        if thread is not threading.currentThread():
+            thread.join()
 
 
 def main():
@@ -192,8 +201,16 @@ def main():
                       dest='repeat',
                       default=20,
                       help="Number of iterations (default=20)")
+    parser.add_option('-q', '--quiet',
+                      action='store_true',
+                      dest='quiet',
+                      default=False,
+                      help="Print only errors")
 
     (options, args) = parser.parse_args()
+
+    if options.quiet:
+        logger.setLevel(logging.WARNING)
 
     users = int(options.users)
     projects = int(options.projects)

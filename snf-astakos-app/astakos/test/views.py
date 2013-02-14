@@ -51,7 +51,7 @@ def leave(proj_id, user_id, ctx=None):
         print e
         raise RetryException()
 
-@cmd_project_transaction_context(sync=True)
+@cmd_project_transaction_context()
 def submit(name, user_id, prec, ctx=None):
     try:
         owner = AstakosUser.objects.get(id=user_id)

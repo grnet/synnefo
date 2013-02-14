@@ -36,8 +36,8 @@ from config import run_test_case
 from config import rand_string
 from config import printf
 
-from synnefo.lib.commissioning import CallError
-from synnefo.lib.quotaholder.api import (
+from kamaki.clients.commissioning import CallError
+from kamaki.clients.quotaholder.api import (
                             QH_PRACTICALLY_INFINITE,
                             InvalidDataError,
                             InvalidKeyError, NoEntityError,

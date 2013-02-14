@@ -1656,8 +1656,8 @@ class ProjectApplication(models.Model):
 
     def _get_project_for_update(self):
         try:
-            objects = Project.objects.select_for_update()
-            project = objects.get(id=self.chain)
+            objects = Project.objects
+            project = objects.get_for_update(id=self.chain)
             return project
         except Project.DoesNotExist:
             return None
@@ -2459,8 +2459,9 @@ class SyncError(Exception):
     pass
 
 def reset_serials(serials):
-    sfu = ProjectMembership.objects.select_for_update()
-    memberships = list(sfu.filter(pending_serial__in=serials))
+    objs = ProjectMembership.objects
+    q = objs.filter(pending_serial__in=serials).select_for_update()
+    memberships = list(q)
 
     if memberships:
         for membership in memberships:
@@ -2473,8 +2474,9 @@ def sync_finish_serials(serials_to_ack=None):
         serials_to_ack = qh_query_serials([])
 
     serials_to_ack = set(serials_to_ack)
-    sfu = ProjectMembership.objects.select_for_update()
-    memberships = list(sfu.filter(pending_serial__isnull=False))
+    objs = ProjectMembership.objects
+    q = objs.filter(pending_serial__isnull=False).select_for_update()
+    memberships = list(q)
 
     if memberships:
         for membership in memberships:
@@ -2493,24 +2495,25 @@ def pre_sync_projects(sync=True):
     ACCEPTED = ProjectMembership.ACCEPTED
     LEAVE_REQUESTED = ProjectMembership.LEAVE_REQUESTED
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
-    psfu = Project.objects.select_for_update()
+    objs = Project.objects
 
-    modified = list(psfu.modified_projects())
+    modified = list(objs.modified_projects().select_for_update())
     if sync:
         for project in modified:
-            objects = project.projectmembership_set.select_for_update()
+            objects = project.projectmembership_set
 
-            memberships = objects.actually_accepted()
+            memberships = objects.actually_accepted().select_for_update()
             for membership in memberships:
                 membership.is_pending = True
                 membership.save()
 
-    reactivating = list(psfu.reactivating_projects())
+    reactivating = list(objs.reactivating_projects().select_for_update())
     if sync:
         for project in reactivating:
-            objects = project.projectmembership_set.select_for_update()
+            objects = project.projectmembership_set
 
-            memberships = objects.filter(state=PROJECT_DEACTIVATED)
+            q = objects.filter(state=PROJECT_DEACTIVATED)
+            memberships = q.select_for_update()
             for membership in memberships:
                 membership.is_pending = True
                 if membership.leave_request_date is None:
@@ -2519,31 +2522,32 @@ def pre_sync_projects(sync=True):
                     membership.state = LEAVE_REQUESTED
                 membership.save()
 
-    deactivating = list(psfu.deactivating_projects())
+    deactivating = list(objs.deactivating_projects().select_for_update())
     if sync:
         for project in deactivating:
-            objects = project.projectmembership_set.select_for_update()
+            objects = project.projectmembership_set
 
             # Note: we keep a user-level deactivation
             # (e.g. USER_SUSPENDED) intact
-            memberships = objects.actually_accepted()
+            memberships = objects.actually_accepted().select_for_update()
             for membership in memberships:
                 membership.is_pending = True
                 membership.state = PROJECT_DEACTIVATED
                 membership.save()
 
+#    transaction.commit()
     return (modified, reactivating, deactivating)
 
 def set_sync_projects(exclude=None):
 
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
-    objects = ProjectMembership.objects.select_for_update()
+    objects = ProjectMembership.objects
 
     sub_quota, add_quota = [], []
 
     serial = new_serial()
 
-    pending = objects.filter(is_pending=True)
+    pending = objects.filter(is_pending=True).select_for_update()
     for membership in pending:
 
         if membership.pending_application:
@@ -2596,33 +2600,31 @@ def do_sync_projects():
 def post_sync_projects():
     PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
     Q_ACTUALLY_ACCEPTED = ProjectMembership.Q_ACTUALLY_ACCEPTED
-    psfu = Project.objects.select_for_update()
+    objs = Project.objects
 
-    modified = psfu.modified_projects()
+    modified = objs.modified_projects().select_for_update()
     for project in modified:
-        objects = project.projectmembership_set.select_for_update()
-
-        memberships = list(objects.filter(Q_ACTUALLY_ACCEPTED &
-                                          Q(is_pending=True)))
+        objects = project.projectmembership_set
+        q = objects.filter(Q_ACTUALLY_ACCEPTED & Q(is_pending=True))
+        memberships = list(q.select_for_update())
         if not memberships:
             project.is_modified = False
             project.save()
 
-    reactivating = psfu.reactivating_projects()
+    reactivating = objs.reactivating_projects().select_for_update()
     for project in reactivating:
-        objects = project.projectmembership_set.select_for_update()
-        memberships = list(objects.filter(Q(state=PROJECT_DEACTIVATED) |
-                                          Q(is_pending=True)))
+        objects = project.projectmembership_set
+        q = objects.filter(Q(state=PROJECT_DEACTIVATED) | Q(is_pending=True))
+        memberships = list(q.select_for_update())
         if not memberships:
             project.reactivate()
             project.save()
 
-    deactivating = psfu.deactivating_projects()
+    deactivating = objs.deactivating_projects().select_for_update()
     for project in deactivating:
-        objects = project.projectmembership_set.select_for_update()
-
-        memberships = list(objects.filter(Q_ACTUALLY_ACCEPTED |
-                                          Q(is_pending=True)))
+        objects = project.projectmembership_set
+        q = objects.filter(Q_ACTUALLY_ACCEPTED | Q(is_pending=True))
+        memberships = list(q.select_for_update())
         if not memberships:
             project.deactivate()
             project.save()

@@ -440,15 +440,14 @@ def get_project_by_name(name):
 
 def get_project_for_update(project_id):
     try:
-        return Project.objects.select_for_update().get(id=project_id)
+        return Project.objects.get_for_update(id=project_id)
     except Project.DoesNotExist:
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
 
 def get_application_for_update(application_id):
     try:
-        objects = ProjectApplication.objects.select_for_update()
-        return objects.get(id=application_id)
+        return ProjectApplication.objects.get_for_update(id=application_id)
     except ProjectApplication.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % application_id
         raise IOError(m)
@@ -488,8 +487,8 @@ def get_membership_for_update(project, user):
     if isinstance(user, (int, long)):
         user = get_user_by_id(user)
     try:
-        sfu = ProjectMembership.objects.select_for_update()
-        m = sfu.get(project=project, person=user)
+        objs = ProjectMembership.objects
+        m = objs.get_for_update(project=project, person=user)
         if m.is_pending:
             raise PendingMembershipError()
         return m
@@ -684,8 +683,8 @@ def submit_application(kw, request_user=None):
     precursor = None
     precursor_id = kw.get('precursor_application', None)
     if precursor_id is not None:
-        sfu = ProjectApplication.objects.select_for_update()
-        precursor = sfu.get(id=precursor_id)
+        objs = ProjectApplication.objects
+        precursor = objs.get_for_update(id=precursor_id)
         kw['precursor_application'] = precursor
 
         if (request_user and
@@ -702,8 +701,9 @@ def submit_application(kw, request_user=None):
     else:
         chain = precursor.chain
         application.chain = chain
-        sfu = ProjectApplication.objects.select_for_update()
-        pending = sfu.filter(chain=chain, state=ProjectApplication.PENDING)
+        objs = ProjectApplication.objects
+        q = objs.filter(chain=chain, state=ProjectApplication.PENDING)
+        pending = q.select_for_update()
         for app in pending:
             app.state = ProjectApplication.REPLACED
             app.save()
@@ -749,8 +749,8 @@ def deny_application(application_id):
 def approve_application(app_id):
 
     try:
-        objects = ProjectApplication.objects.select_for_update()
-        application = objects.get(id=app_id)
+        objects = ProjectApplication.objects
+        application = objects.get_for_update(id=app_id)
     except ProjectApplication.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID % (app_id,))
         raise PermissionDenied(m)

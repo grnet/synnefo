@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -199,25 +199,26 @@ class CallSerial(Model):
         unique_together = (('serial', 'clientkey'),)
 
 
-def _access(*args, **kwargs):
-    method = args[0]
-    model = args[1]
-    args = args[2:]
+def _get(*args, **kwargs):
+    model = args[0]
+    args = args[1:]
     o = model.objects
-    try:
-        if kwargs['for_update']:
-            del kwargs['for_update']
-            o = o.select_for_update()
-    except KeyError:
-        pass
-    f = getattr(o, method)
+
+    for_update = kwargs.pop('for_update', False)
+    f = o.get_for_update if for_update else o.get
     return f(*args, **kwargs)
 
-def _get(*args, **kwargs):
-    return _access('get', *args, **kwargs)
 
 def _filter(*args, **kwargs):
-    return _access('filter', *args, **kwargs)
+    model = args[0]
+    args = args[1:]
+    o = model.objects
+
+    for_update = kwargs.pop('for_update', False)
+    q = o.filter(*args, **kwargs)
+    q = q.select_for_update() if for_update else q
+    return q
+
 
 def db_get_holding(*args, **kwargs):
     return _get(Holding, *args, **kwargs)

@@ -71,7 +71,8 @@ class Command(BaseCommand):
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"name=Network-1,link!=prv0\"."
                  " Available keys are: %s" % ", ".join(FIELDS)),
-        make_option('--uuids',
+        make_option(
+            '--uuids',
             action='store_true',
             dest='use_uuids',
             default=False,
@@ -82,6 +83,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
+        use_uuids = options["use_uuids"]
         if options['deleted']:
             networks = Network.objects.all()
         else:
@@ -102,13 +104,13 @@ class Command(BaseCommand):
         else:
             headers.extend(['IPv4 Subnet', 'IPv4 Gateway'])
 
-        if options['use_uuids'] is False:
+        if not use_uuids:
             ucache = UUIDCache()
 
         table = []
         for network in networks.order_by("id"):
             user = network.userid
-            if options['use_uuids'] is False:
+            if not use_uuids:
                 user = ucache.get_user(network.userid)
 
             fields = [str(network.id),

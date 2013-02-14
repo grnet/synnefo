@@ -44,10 +44,14 @@ from synnefo.api.faults import ItemNotFound
 from django.core.exceptions import FieldError
 
 from synnefo.api.util import validate_network_size
-from synnefo.settings import (MAX_CIDR_BLOCK, CYCLADES_ASTAKOS_SERVICE_TOKEN,
-                              ASTAKOS_URL)
+from synnefo.settings import (MAX_CIDR_BLOCK,
+                              CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              CYCLADES_USER_CATALOG_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.lib import astakos
+
+import logging
+log = logging.getLogger(__name__)
 
 
 def format_bool(b):
@@ -263,26 +267,22 @@ def pprint_table(out, table, headers=None, separator=None):
 
 
 class UUIDCache(object):
-    """UUUID-to-email cache
-
-    """
-
-    astakos_url = ASTAKOS_URL.replace("im/authenticate",
-                                      "service/api/user_catalogs")
+    """UUID-to-email cache"""
 
     def __init__(self):
         self.users = {}
 
     def get_user(self, uuid):
-        """Do the uuid-to-email resolving
-        """
+        """Do the uuid-to-email resolving"""
 
         if not uuid in self.users:
             try:
-                self.users[uuid] = \
-                astakos.get_displayname(token=CYCLADES_ASTAKOS_SERVICE_TOKEN,
-                                        url=UUIDCache.astakos_url, uuid=uuid)
-            except Exception:
+                self.users[uuid] =\
+                    astakos.get_displayname(token=ASTAKOS_TOKEN,
+                                            url=CYCLADES_USER_CATALOG_URL,
+                                            uuid=uuid)
+            except Exception as e:
+                log.error("Can not get display name for uuid %s: %s", uuid, e)
                 return uuid
 
         return self.users[uuid]

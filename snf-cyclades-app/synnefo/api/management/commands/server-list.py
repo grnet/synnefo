@@ -76,17 +76,19 @@ class Command(BaseCommand):
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"operstate=STARTED,id>=22\"."
                  " Available keys are: %s" % ", ".join(FIELDS)),
-        make_option('--uuids',
+        make_option(
+            '--uuids',
             action='store_true',
             dest='use_uuids',
             default=False,
             help="Display UUIDs instead of user emails"),
-        )
+    )
 
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
+        use_uuids = options["use_uuids"]
         if options['backend_id']:
             backend = get_backend(options['backend_id'])
             servers = backend.virtual_machines
@@ -109,7 +111,7 @@ class Command(BaseCommand):
             servers = filter_results(servers, filter_by)
 
         cache = ImageCache()
-        if options['use_uuids'] is False:
+        if not use_uuids:
             ucache = UUIDCache()
 
         headers = ('id', 'name', 'owner', 'flavor', 'image', 'state',
@@ -132,7 +134,7 @@ class Command(BaseCommand):
             state = format_vm_state(server)
 
             user = server.userid
-            if options['use_uuids'] is False:
+            if not use_uuids:
                 user = ucache.get_user(server.userid)
 
             fields = (str(server.id), name, user, flavor, image,

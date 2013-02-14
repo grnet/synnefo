@@ -49,22 +49,24 @@ class ForUpdateManager(Manager):
 
     """
 
-    def __init__(self, *args, **kwargs):
-        super(ForUpdateManager, self).__init__(*args, **kwargs)
-        self._select_for_update = False
+    def select_for_update(self, *args, **kwargs):
+        return ForUpdateQuerySet(self.model, using=self.db)
+
+
+class ForUpdateQuerySet(QuerySet):
+    """ QuerySet implmenting SELECT .. FOR UPDATE statement
+
+    This QuerySet overrides filter and get methods in order to implement
+    select_for_update() statement, by appending 'FOR UPDATE' to the end
+    for the SQL query.
+
+    """
 
     def filter(self, *args, **kwargs):
-        query = self.get_query_set().filter(*args, **kwargs)
-        if self._select_for_update:
-            self._select_for_update = False
-            return for_update(query)
-        else:
-            return query
+        query = super(ForUpdateQuerySet, self).filter(*args, **kwargs)
+        return for_update(query)
 
     def get(self, *args, **kwargs):
-        if not self._select_for_update:
-            return self.get_query_set().get(*args, **kwargs)
-
         query = self.filter(*args, **kwargs)
         query = list(query)
         num = len(query)
@@ -79,10 +81,6 @@ class ForUpdateManager(Manager):
             "get() returned more than one %s -- it returned %s! "
             "Lookup parameters were %s" %
             (self.model._meta.object_name, num, kwargs))
-
-    def select_for_update(self, *args, **kwargs):
-        self._select_for_update = True
-        return self
 
 
 def for_update(query):

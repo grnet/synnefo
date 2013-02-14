@@ -254,16 +254,16 @@ def pprint_table(out, table, headers=None, separator=None):
     t_length = sum(widths) + len(sep) * (len(widths) - 1)
     if headers:
         # pretty print the headers
-        print >> out, sep.join((val.rjust(width) for val, width \
-                                                 in zip(headers, widths)))
+        print >> out, sep.join((val.rjust(width)
+                               for val, width in zip(headers, widths)))
         print >> out, "-" * t_length
         # remove headers
         table = table[1:]
 
     # print the rest table
     for row in table:
-        print >> out, sep.join((val.rjust(width).encode('utf8') \
-                                for val, width in zip(row, widths)))
+        print >> out, sep.join((val.rjust(width).encode('utf8')
+                               for val, width in zip(row, widths)))
 
 
 class UUIDCache(object):

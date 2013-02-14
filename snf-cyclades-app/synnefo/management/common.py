@@ -44,8 +44,14 @@ from synnefo.api.faults import ItemNotFound
 from django.core.exceptions import FieldError
 
 from synnefo.api.util import validate_network_size
-from synnefo.settings import MAX_CIDR_BLOCK
+from synnefo.settings import (MAX_CIDR_BLOCK,
+                              CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              CYCLADES_USER_CATALOG_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
+from synnefo.lib import astakos
+
+import logging
+log = logging.getLogger(__name__)
 
 
 def format_bool(b):
@@ -59,7 +65,6 @@ def parse_bool(string):
         return False
     else:
         raise Exception("Can not parse string %s to bool" % string)
-
 
 
 def format_date(d):
@@ -196,7 +201,7 @@ def filter_results(objects, filter_by):
             "<=": "__lte",
             "=<": "__lte",
             "<":  "__lt",
-            "=":  ""
+            "=":  "",
         }
         for op, new_op in OP_MAP.items():
             if op in query:
@@ -249,13 +254,35 @@ def pprint_table(out, table, headers=None, separator=None):
     t_length = sum(widths) + len(sep) * (len(widths) - 1)
     if headers:
         # pretty print the headers
-        print >> out, sep.join((val.rjust(width) for val, width \
-                                                 in zip(headers, widths)))
+        print >> out, sep.join((val.rjust(width)
+                               for val, width in zip(headers, widths)))
         print >> out, "-" * t_length
         # remove headers
         table = table[1:]
 
     # print the rest table
     for row in table:
-        print >> out, sep.join((val.rjust(width).encode('utf8') \
-                                for val, width in zip(row, widths)))
+        print >> out, sep.join((val.rjust(width).encode('utf8')
+                               for val, width in zip(row, widths)))
+
+
+class UUIDCache(object):
+    """UUID-to-email cache"""
+
+    def __init__(self):
+        self.users = {}
+
+    def get_user(self, uuid):
+        """Do the uuid-to-email resolving"""
+
+        if not uuid in self.users:
+            try:
+                self.users[uuid] =\
+                    astakos.get_displayname(token=ASTAKOS_TOKEN,
+                                            url=CYCLADES_USER_CATALOG_URL,
+                                            uuid=uuid)
+            except Exception as e:
+                log.error("Can not get display name for uuid %s: %s", uuid, e)
+                return uuid
+
+        return self.users[uuid]

@@ -751,7 +751,7 @@ This user should have an id with a value of ``1``. It should also have an
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage user-modify --set-active 1
+   root@node1:~ # snf-manage user-update --set-active 1
 
 This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
@@ -1828,7 +1828,7 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
                                --gateway=5.6.7.1 \
                                --subnet6=2001:648:2FFC:1322::/64 \
                                --gateway6=2001:648:2FFC:1322::1 \
-                               --public --dhcp --type=CUSTOM_BRIDGED \
+                               --public --dhcp --flavor=CUSTOM \
                                --name=public_network \
                                --backend-id=1
 
@@ -1883,7 +1883,7 @@ Also, change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
 
 .. code-block:: console
 
-   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
+   DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 Servers restart
 ---------------

@@ -1185,6 +1185,7 @@ List of differences from the OOS API:
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.
 * Purge container/object history with the ``until`` parameter in ``DELETE``.
+* Bulk COPY/MOVE/DELETE objects starting with prefix
 
 Clarifications/suggestions:
 

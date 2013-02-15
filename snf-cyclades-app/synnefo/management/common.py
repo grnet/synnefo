@@ -46,7 +46,7 @@ from django.core.exceptions import FieldError
 from synnefo.api.util import validate_network_size
 from synnefo.settings import (MAX_CIDR_BLOCK,
                               CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              CYCLADES_USER_CATALOG_URL)
+                              ASTAKOS_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.lib import astakos
 
@@ -269,6 +269,9 @@ def pprint_table(out, table, headers=None, separator=None):
 class UUIDCache(object):
     """UUID-to-email cache"""
 
+    user_catalogs_url = ASTAKOS_URL.replace("im/authenticate",
+                                            "service/api/user_catalogs")
+
     def __init__(self):
         self.users = {}
 
@@ -277,9 +280,9 @@ class UUIDCache(object):
 
         if not uuid in self.users:
             try:
-                self.users[uuid] =\
+                self.users[uuid] = \
                     astakos.get_displayname(token=ASTAKOS_TOKEN,
-                                            url=CYCLADES_USER_CATALOG_URL,
+                                            url=UUIDCache.user_catalogs_url,
                                             uuid=uuid)
             except Exception as e:
                 log.error("Can not get display name for uuid %s: %s", uuid, e)

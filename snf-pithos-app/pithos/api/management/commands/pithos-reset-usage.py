@@ -34,6 +34,7 @@
 from django.core.management.base import NoArgsCommand, CommandError
 
 from collections import namedtuple
+from optparse import make_option
 from sqlalchemy import func
 from sqlalchemy.sql import select, and_, or_
 
@@ -121,6 +122,13 @@ def _get_verified_usage(statistics):
 class Command(NoArgsCommand):
     help = "Set quotaholder account usage"
 
+    option_list = NoArgsCommand.option_list + (
+        make_option('-a',
+                    dest='accounts',
+                    action='append',
+                    help="Account to reset quota"),
+    )
+
     def handle_noargs(self, **options):
         try:
             if not backend.quotaholder_url:
@@ -133,7 +141,12 @@ class Command(NoArgsCommand):
             s = select([table['nodes'].c.path, table['nodes'].c.node])
             s = s.where(and_(table['nodes'].c.node != 0,
                              table['nodes'].c.parent == 0))
+            if options['accounts']:
+                s = s.where(table['nodes'].c.path.in_(options['accounts']))
             account_nodes = conn.execute(s).fetchall()
+
+            if not account_nodes:
+                raise CommandError('No accounts found.')
 
             # compute account statistics
             statistics = _compute_statistics(account_nodes)
@@ -153,7 +166,7 @@ class Command(NoArgsCommand):
                 missing_entities = [reset_holding[x].entity for x in result]
                 self.stdout.write(
                         'Unknown quotaholder accounts: %s\n' %
-                        ','.join(missing_entities))
+                        ', '.join(missing_entities))
                 m = 'Retrying sending quota usage for the rest...\n'
                 self.stdout.write(m)
                 missing_indexes = set(result)

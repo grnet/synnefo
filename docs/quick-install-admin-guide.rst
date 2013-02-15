@@ -1126,29 +1126,16 @@ handle image files stored on Pithos+. It also needs `python-psycopg2` to be able
 to access the Pithos+ database. This is why, we also install them on *all*
 VM-capable Ganeti nodes.
 
-Now, you need to download and save the corresponding helper package. Please see
-`here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
-assume that you installed snf-image-host version 0.4.4-1. Then, you need
-snf-image-helper v0.4.4-1 on *both* nodes:
-
-.. code-block:: console
-
-   # cd /var/lib/snf-image/helper/
-   # wget https://code.grnet.gr/attachments/download/1058/snf-image-helper_0.4.4-1_all.deb
-
-.. warning:: Be careful: Do NOT install the snf-image-helper debian package.
-             Just put it under /var/lib/snf-image/helper/
-
-Once, you have downloaded the snf-image-helper package, create the helper VM by
+After `snf-image-host` has been installed successfully, create the helper VM by
 running on *both* nodes:
 
 .. code-block:: console
 
-   # ln -s snf-image-helper_0.4.4-1_all.deb snf-image-helper.deb
    # snf-image-update-helper
 
 This will create all the needed files under ``/var/lib/snf-image/helper/`` for
-snf-image-host to run successfully.
+snf-image-host to run successfully, and it may take a few minutes depending on
+your Internet connection.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -1192,13 +1179,13 @@ supported Image formats.
 
 .. _snf-image-images:
 
-snf-image's actual Images
--------------------------
+Actual Images for snf-image
+---------------------------
 
 Now that snf-image is installed successfully we need to provide it with some
 Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
 ``ntfsdump`` or ``diskdump`` format. We recommend the use of the ``diskdump``
-format. For more information about snf-image's Image formats see `here
+format. For more information about snf-image Image formats see `here
 <https://code.grnet.gr/projects/snf-image/wiki/Image_Format>`_.
 
 :ref:`snf-image <snf-image>` also supports three (3) different locations for the

@@ -54,7 +54,8 @@ from synnefo.logic import backend
 
 log = getLogger('synnefo.api')
 
-urlpatterns = patterns('synnefo.api.networks',
+urlpatterns = patterns(
+    'synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
     (r'^/(\w+)(?:.json|.xml)?$', 'network_demux'),
@@ -97,7 +98,7 @@ def network_to_dict(network, user_id, detail=True):
         d['public'] = network.public
 
         attachments = [util.construct_nic_id(nic)
-                       for nic in network.nics.filter(machine__userid=user_id)\
+                       for nic in network.nics.filter(machine__userid=user_id)
                                               .order_by('machine')]
         d['attachments'] = {'values': attachments}
     return d
@@ -200,21 +201,21 @@ def create_network(serials, request):
         try:
             mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
             network = Network.objects.create(
-                    name=name,
-                    userid=user_id,
-                    subnet=subnet,
-                    subnet6=subnet6,
-                    gateway=gateway,
-                    gateway6=gateway6,
-                    dhcp=dhcp,
-                    flavor=flavor,
-                    mode=mode,
-                    link=link,
-                    mac_prefix=mac_prefix,
-                    tags=tags,
-                    action='CREATE',
-                    state='PENDING',
-                    serial=serial)
+                name=name,
+                userid=user_id,
+                subnet=subnet,
+                subnet6=subnet6,
+                gateway=gateway,
+                gateway6=gateway6,
+                dhcp=dhcp,
+                flavor=flavor,
+                mode=mode,
+                link=link,
+                mac_prefix=mac_prefix,
+                tags=tags,
+                action='CREATE',
+                state='PENDING',
+                serial=serial)
         except EmptyPool:
             log.error("Failed to allocate resources for network of type: %s",
                       flavor)
@@ -304,7 +305,6 @@ def delete_network(request, network_id):
 
     if net.machines.all():  # Nics attached on network
         raise NetworkInUse('Machines are connected to network.')
-
 
     net.action = 'DESTROY'
     net.save()

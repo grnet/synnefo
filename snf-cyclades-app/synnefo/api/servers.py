@@ -57,7 +57,8 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 from logging import getLogger
 log = getLogger('synnefo.api')
 
-urlpatterns = patterns('synnefo.api.servers',
+urlpatterns = patterns(
+    'synnefo.api.servers',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_servers', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'server_demux'),
@@ -128,7 +129,7 @@ def vm_to_dict(vm, detail=False):
     if detail:
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
-                        else vm.buildpercentage
+            else vm.buildpercentage
         d['hostId'] = vm.hostid
         d['updated'] = util.isoformat(vm.updated)
         d['created'] = util.isoformat(vm.created)
@@ -229,7 +230,7 @@ def list_servers(request, detail=False):
     else:
         user_vms = user_vms.filter(deleted=False)
 
-    servers = [vm_to_dict(server, detail)\
+    servers = [vm_to_dict(server, detail)
                for server in user_vms.order_by('id')]
 
     if request.serialization == 'xml':
@@ -455,11 +456,11 @@ def delete_server(request, server_id):
 # additional server actions
 ARBITRARY_ACTIONS = ['console', 'firewallProfile']
 
+
 @util.api_method('POST')
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
-
 
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")

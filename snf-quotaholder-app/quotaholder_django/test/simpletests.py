@@ -164,6 +164,25 @@ class QHAPITest(QHTestCase):
         r = self.qh.get_entity(get_entity=[(self.e_name, self.e_key), (e, k)])
         self.assertEqual(r, [(self.e_name, 'system')])
 
+    def test_0051_get_entity(self):
+        e = self.rand_entity()
+        k = Key.random()
+        e1, k1 = self.new_entity()
+        e2, k2 = self.new_entity()
+        e3, k3 = self.new_entity(e1, k1)
+        r = self.qh.get_entity(get_entity=[(self.e_name, self.e_key),
+                                           (e, k),
+                                           (e2, k2),
+                                           (e2, k2+'wrong'),
+                                           (e3, k3),
+                                           (e3, k3),
+                                           ])
+        self.assertEqual(r, [(self.e_name, 'system'),
+                             (e2, 'system'),
+                             (e3, e1),
+                             (e3, e1),
+                             ])
+
     def test_006_get_set_limits(self):
 
         p1, limits1 = self.rand_policy_limits()

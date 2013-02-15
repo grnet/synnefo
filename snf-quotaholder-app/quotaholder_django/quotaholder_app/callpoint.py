@@ -140,12 +140,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         entities = []
         append = entities.append
 
-        for entity, key in get_entity:
-            try:
-                e = Entity.objects.get(entity=entity, key=key)
-            except Entity.DoesNotExist:
-                continue
+        names = [entity for entity, key in get_entity]
+        es = Entity.objects.select_related(depth=1).filter(entity__in=names)
+        data = {}
+        for e in es:
+            data[e.entity] = e
 
+        for entity, key in get_entity:
+            e = data.get(entity, None)
+            if e is None or e.key != key:
+                continue
             append((entity, e.owner.entity))
 
         return entities
@@ -445,10 +449,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         quotas = []
         append = quotas.append
 
+        entities = set(e for e, r, k in get_quota)
+        hs = Holding.objects.select_related().filter(entity__in=entities)
+        holdings = {}
+        for h in hs:
+            holdings[(h.entity_id, h.resource)] = h
+
         for entity, resource, key in get_quota:
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
-            except Holding.DoesNotExist:
+                h = holdings[(entity, resource)]
+            except:
                 continue
 
             if h.entity.key != key:

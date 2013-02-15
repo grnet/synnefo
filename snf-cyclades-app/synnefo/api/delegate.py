@@ -53,21 +53,6 @@ from synnefo.lib.pool.http import get_http_connection
 logger = logging.getLogger(__name__)
 
 
-def delegate_to_login_service(request):
-    url = USER_LOGIN_URL
-    if not url:
-        return HttpResponseNotFound()
-
-    p = urlparse(url)
-    if request.is_secure():
-        proto = 'https://'
-    else:
-        proto = 'http://'
-    params = dict([(k, v) for k, v in request.GET.items()])
-    uri = proto + p.netloc + p.path + '?' + urlencode(params)
-    return HttpResponseRedirect(uri)
-
-
 def proxy(request, url, headers={}, body=None):
     p = urlparse(url)
 

@@ -38,7 +38,7 @@ from synnefo.db.pools.tests import *
 
 from synnefo.db.models import *
 from synnefo.db import models_factory as mfact
-from synnefo.db.pools import IPPool
+from synnefo.db.pools import IPPool, EmptyPool
 
 from django.db import IntegrityError
 from django.core.exceptions import MultipleObjectsReturned
@@ -202,7 +202,7 @@ class BackendNetworkTest(TestCase):
 
 class BridgePoolTest(TestCase):
     def test_no_pool(self):
-        self.assertRaises(BridgePoolTable.DoesNotExist,
+        self.assertRaises(EmptyPool,
                           BridgePoolTable.get_pool)
 
     def test_two_pools(self):

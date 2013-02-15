@@ -36,6 +36,7 @@ import uuid
 import logging
 import json
 import math
+import copy
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -266,7 +267,7 @@ def _quota_values(capacity):
 
 def get_default_quota():
     _DEFAULT_QUOTA = {}
-    resources = Resource.objects.all()
+    resources = Resource.objects.select_related('service').all()
     for resource in resources:
         capacity = resource.uplimit
         limits = _quota_values(capacity)
@@ -276,7 +277,7 @@ def get_default_quota():
 
 def get_resource_names():
     _RESOURCE_NAMES = []
-    resources = Resource.objects.all()
+    resources = Resource.objects.select_related('service').all()
     _RESOURCE_NAMES = [resource.full_name() for resource in resources]
     return _RESOURCE_NAMES
 
@@ -443,36 +444,6 @@ class AstakosUser(User):
             return Invitation.objects.get(username=self.email)
         except Invitation.DoesNotExist:
             return None
-
-    def initial_quotas(self):
-        quotas = dict(get_default_quota())
-        for user_quota in self.policies:
-            resource = user_quota.resource.full_name()
-            quotas[resource] = user_quota.quota_values()
-        return quotas
-
-    def all_quotas(self, initial=None):
-        if initial is None:
-            quotas = self.initial_quotas()
-        else:
-            quotas = dict(initial)
-
-        objects = self.projectmembership_set.select_related()
-        memberships = objects.filter(is_active=True)
-        for membership in memberships:
-            application = membership.application
-            if application is None:
-                m = _("missing application for active membership %s"
-                      % (membership,))
-                raise AssertionError(m)
-
-            grants = application.projectresourcegrant_set.all()
-            for grant in grants:
-                resource = grant.resource.full_name()
-                prev = quotas.get(resource, 0)
-                new = add_quota_values(prev, grant.member_quota_values())
-                quotas[resource] = new
-        return quotas
 
     @property
     def policies(self):
@@ -843,6 +814,61 @@ class AstakosUser(User):
 
     def settings(self):
         return UserSetting.objects.filter(user=self)
+
+
+def initial_quotas(users):
+    initial = {}
+    default_quotas = get_default_quota()
+
+    for user in users:
+        uuid = user.uuid
+        initial[uuid] = dict(default_quotas)
+
+    objs = AstakosUserQuota.objects.select_related()
+    orig_quotas = objs.filter(user__in=users)
+    for user_quota in orig_quotas:
+        uuid = user_quota.uuid
+        user_init = initial.get(uuid, {})
+        resource = user_quota.resource.full_name()
+        user_init[resource] = user_quota.quota_values()
+        initial[uuid] = user_init
+
+    return initial
+
+
+def users_quotas(users, initial=None):
+    if initial is None:
+        quotas = initial_quotas(users)
+    else:
+        quotas = copy.deepcopy(initial)
+
+    objs = ProjectMembership.objects.select_related('application', 'person')
+    memberships = objs.filter(person__in=users, is_active=True)
+
+    apps = set(m.application for m in memberships if m.application is not None)
+    objs = ProjectResourceGrant.objects.select_related()
+    grants = objs.filter(project_application__in=apps)
+
+    for membership in memberships:
+        uuid = membership.person.uuid
+        userquotas = quotas.get(uuid, {})
+
+        application = membership.application
+        if application is None:
+            m = _("missing application for active membership %s"
+                  % (membership,))
+            raise AssertionError(m)
+
+        for grant in grants:
+            if grant.project_application_id != application.id:
+                continue
+            resource = grant.resource.full_name()
+            prev = userquotas.get(resource, 0)
+            new = add_quota_values(prev, grant.member_quota_values())
+            userquotas[resource] = new
+        quotas[uuid] = userquotas
+
+    return quotas
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -2665,27 +2691,22 @@ def sync_projects(sync=True, retries=3, retry_wait=1.0):
         return (pending, projects_log)
     return _sync_projects(sync)
 
-def all_users_quotas(users):
-    initial = {}
-    quotas = {}
-    info = {}
-    for user in users:
-        uuid = user.uuid
-        info[uuid] = user.email
-        init = user.initial_quotas()
-        initial[uuid] = init
-        quotas[user.uuid] = user.all_quotas(initial=init)
-    return initial, quotas, info
+
 
 def sync_users(users, sync=True, retries=3, retry_wait=1.0):
     @with_lock(retries, retry_wait)
     def _sync_users(users, sync):
         sync_finish_serials()
 
+        info = {}
+        for user in users:
+            info[user.uuid] = user.email
+
         existing, nonexisting = qh_check_users(users)
         resources = get_resource_names()
         qh_limits, qh_counters = qh_get_quotas(existing, resources)
-        astakos_initial, astakos_quotas, info = all_users_quotas(users)
+        astakos_initial = initial_quotas(users)
+        astakos_quotas = users_quotas(users, astakos_initial)
 
         if sync:
             r = register_users(nonexisting)
@@ -2695,6 +2716,7 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
                 qh_limits, qh_counters,
                 astakos_initial, astakos_quotas, info)
     return _sync_users(users, sync)
+
 
 def sync_all_users(sync=True, retries=3, retry_wait=1.0):
     users = AstakosUser.objects.verified()

@@ -171,6 +171,12 @@ discarding data from all but one.
                             snf-pithos-webclient \
                             kamaki \
 
+
+    ganeti.node$ apt-get install \
+                            snf-cyclades-gtools \
+                            snf-pithos-backend \
+                            kamaki \
+
 .. note::
 
   If you get questioned about stale content types during the
@@ -294,9 +300,10 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
 
   Finally, set the BASE_URL for the VMAPI, which is actually the base URL of
-  Cyclades, again in ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``::
+  Cyclades, again in ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``. Make sure
+  the domain is exaclty the same, so that no re-directs happen ::
 
-    VMAPI_BASE_URL = "https://cyclades.okeanos.grnet.gr/"
+    VMAPI_BASE_URL = "https://cyclades.synnefo.local"
 
   .. note::
 

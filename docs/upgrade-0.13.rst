@@ -251,20 +251,33 @@ discarding data from all but one.
 
     # cyclades:     UI_USER_CATALOG_URL = 'https://astakos.host/user_catalogs/'
 
-- VMAPI needs a **memcached** backend. To install::
+- Since version 0.13, Synnefo uses **VMAPI** in order to prevent sensitive data
+  needed by 'snf-image' to be stored in Ganeti configuration (e.g. VM
+  password). This is achieved by storing all sensitive information to a CACHE
+  backend and exporting it via VMAPI. The cache entries are invalidated after
+  the first request. Synnefo uses **memcached** as a django cache backend.
+  To install::
 
         apt-get install memcached
         apt-get install python-memcache
 
+  You will also need to configure Cyclades to use the memcached cache backend.
+  Namely, you need to set IP address and port of the memcached daemon, and the
+  default timeout (seconds tha value is stored in the cache)::
 
-  Set the IP address and port of the memcached deamon::
+    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=3600"
 
-    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211"
+
+  Finally, set the BASE_URL for the VMAPI, which is actually the base URL of
+  Cyclades::
+
     VMAPI_BASE_URL = "https://cyclades.okeanos.grnet.gr/"
 
   .. note::
 
     - These settings are needed in all Cyclades workers.
+
+    - VMAPI_CACHE_BACKEND just overrides django's CACHE_BACKEND setting
 
     - memcached must be reachable from all Cyclades workers.
 

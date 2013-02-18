@@ -4,20 +4,7 @@ from django.conf import settings
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
 
-# OAuth2 Twitter credentials.
-TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
-TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
-TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
-                                  False)
 
-
-# OAuth2 Google credentials.
-GOOGLE_CLIENT_ID = getattr(settings, 'ASTAKOS_GOOGLE_CLIENT_ID', '')
-GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
-
-# OAuth2 LinkedIn credentials.
-LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
-LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
 DEFAULT_USER_LEVEL = getattr(settings, 'ASTAKOS_DEFAULT_USER_LEVEL', 4)
 
@@ -227,7 +214,7 @@ AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
 
-# Set how many objects should be displayed per page in show all groups page
+# Set how many objects should be displayed per page in show all projects page
 PAGINATE_BY_ALL = getattr(settings, 'ASTAKOS_PAGINATE_BY_ALL', 15)
 
 # Enforce token renewal on password change/reset
@@ -347,3 +334,17 @@ TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
 
 # Users that can approve or deny project applications from the web.
 PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
+
+# OAuth2 Twitter credentials.
+TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
+TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
+TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
+                                  False)
+
+# OAuth2 Google credentials.
+GOOGLE_CLIENT_ID = getattr(settings, 'ASTAKOS_GOOGLE_CLIENT_ID', '')
+GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
+
+# OAuth2 LinkedIn credentials.
+LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
+LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')

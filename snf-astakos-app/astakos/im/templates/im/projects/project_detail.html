@@ -7,28 +7,34 @@
 <div class="projects">
   <h2>
     <em>
-      {% if owner_mode %}
+      {% if owner_mode or admin_mode %}
         {% if project_view %}
-          [ PROJECT {{ object.project_state_display|upper }}
+           PROJECT {{ object.project_state_display|upper }}
           {% if object.has_pending_modifications %} -
              <a href="{% url astakos.im.views.project_app object.last_pending.pk %}">
                MODIFICATION PENDING</a>
-          {% endif %}]
+          {% else %}
+             <!-- note that pending modifications have priority -->
+             {% if object.has_denied_modifications %} -
+             <a href="{% url astakos.im.views.project_app object.last_denied.pk %}">
+               MODIFICATION DENIED</a>
+             {% endif %}
+          {% endif %}
         {% else %}
           <!-- application view -->
-          [ PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
-          {{ object.state_display|upper }} ]
+           PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
+          {{ object.state_display|upper }} 
         {% endif %}
 
       {% else %}
         <!-- third user -->
         <!-- assert in project view -->
         <!-- there is always a project, may be deactivated -->
-        [
+        
         {% if project.is_deactivated %}
         PROJECT {{ project.state_display|upper }} -
         {% endif %}
-        {{ mem_display|upper }} ]
+        {{ mem_display|upper }} 
       {% endif %}
     </em>
 
@@ -43,25 +49,45 @@
     </span>
 
     <!-- make room for buttons -->
-    {% if owner_mode or can_join_request or can_leave_request %}
+    {% if owner_mode or admin_mode or can_join_request or can_leave_request %}
       <br />
     {% endif %}
 
-    {% if owner_mode %}
+    {% if owner_mode or admin_mode %}
       <a style="font-size:0.7em"
          href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
 
-      {% with object.last_pending_incl_me as last_pending %}
-      {% if last_pending %}
-        -
-        <a style="font-size:0.7em"
-           href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
-          CANCEL {% if object.project_exists %} MODIFICATION {% else %}
-          PROJECT {% endif %} REQUEST
-        </a>
+      {% if owner_mode %}
+          {% with object.last_pending_incl_me as last_pending %}
+          {% if last_pending %}
+            -
+            <a style="font-size:0.7em"
+               href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
+              CANCEL {% if object.project_exists %} MODIFICATION {% else %}
+              PROJECT {% endif %} REQUEST
+            </a>
+          {% endif %}
+          {% endwith %}
       {% endif %}
-      {% endwith %}
 
+      {% if admin_mode %}
+          {% if object.can_approve %}
+              - <a style="font-size:0.7em"
+                  href="{% url astakos.im.views.project_app_approve object.pk %}">
+                  APPROVE</a>
+              - <a style="font-size:0.7em"
+                  href="{% url astakos.im.views.project_app_deny object.pk %}">
+                  DENY</a>
+          {% endif %}
+      {% endif %}
+
+      {% if owner_mode %}
+          {% if object.can_dismiss %}
+             - <a style="font-size:0.7em"
+                href="{% url astakos.im.views.project_app_dismiss object.pk %}">
+                DISMISS</a>
+          {% endif %}
+      {% endif %}
       <!-- only one is possible, perhaps add cancel button too -->
       {% if can_join_request or can_leave_request %}
         <br />
@@ -115,7 +141,7 @@
         {% if owner_mode %}
         Me
         {% else %}
-        {{object.owner.realname}} {% if user.is_superuser %}({{object.owner.email}}){% endif %}
+        {{object.owner.realname}} {% if admin_mode or user.is_superuser %}({{object.owner.email}}){% endif %}
         {% endif %}
         &nbsp;
       </dd>
@@ -147,7 +173,7 @@
     {% if object.projectresourcegrant_set.all %}
     <dl class="alt-style">
       {% for rp in object.projectresourcegrant_set.all %}
-      <dt>Max {{rp.resource.pluralized_display_name}} per user</dt>
+      <dt>{{rp.resource.pluralized_display_name}} per user</dt>
       <dd>{{rp.display_member_capacity}}</dd>
       {% empty %}
       No resources

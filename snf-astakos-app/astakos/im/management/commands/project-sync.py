@@ -41,8 +41,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = "Check for pending project synchronization"
+    help = """
+    Check for and perform pending project synchronization.
 
+    Synchronization is automatic when Astakos is running.
+    This command provides manual access to the synchronization.
+
+    Details:
+
+    Changes in project resources and memberships (such as approving
+    a project or accepting a member into it) are changes in policy
+    that are recorded in Astakos. These changes have to be synchronized
+    with the quota system so that they come in effect.
+
+    The quotaholder service must be running.
+    Astakos is not required, but there should be no harm if it is
+    running, even if under online traffic.
+
+    """
     option_list = BaseCommand.option_list + (
         make_option('--check',
                     action='store_true',

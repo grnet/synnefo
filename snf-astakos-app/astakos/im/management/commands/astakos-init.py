@@ -1,4 +1,6 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# encoding: utf-8
+
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,41 +33,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from synnefo import quotas
+from astakos.im.models import load_service_resources
+from django.core.management.base import BaseCommand, CommandError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Reconcile quotas with Quotaholder"
-    output_transaction = True
+    args = ""
+    help = "Register service resources"
+
     option_list = BaseCommand.option_list + (
-        make_option("--fix", dest="fix",
+        make_option('--load-service-resources',
                     action='store_true',
+                    dest='load',
                     default=False,
-                    help="Fix pending commissions"
-                    ),
+                    help=("Load initial data for services and their resources "
+                          "on quotaholder")),
     )
 
     def handle(self, *args, **options):
-        fix = options['fix']
-
-        accepted, rejected = quotas.resolve_pending_commissions()
-
-        if accepted:
-            self.stdout.write("Pending accepted commissions:\n %s\n" \
-                              % list_to_string(accepted))
-
-        if rejected:
-            self.stdout.write("Pending rejected commissions:\n %s\n" \
-                              % list_to_string(rejected))
-
-        if fix and (accepted or rejected):
-            self.stdout.write("Fixing pending commissions..\n")
-            quotas.accept_commissions(accepted)
-            quotas.reject_commissions(rejected)
-
-
-def list_to_string(l):
-    return ",".join([str(x) for x in l])
+        if options['load']:
+            load_service_resources()

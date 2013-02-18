@@ -44,30 +44,30 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('--clustername',
-            dest='clustername',
-            help="Set backend's clustername"),
+                    dest='clustername',
+                    help="Set backend's clustername"),
         make_option('--port',
-            dest='port',
-            help="Set backend's port"),
+                    dest='port',
+                    help="Set backend's port"),
         make_option('--username',
-            dest='username',
-            help="Set backend'username"),
+                    dest='username',
+                    help="Set backend'username"),
         make_option('--password',
-            dest='password',
-            help="Set backend's password"),
+                    dest='password',
+                    help="Set backend's password"),
         make_option('--drained',
-            dest='drained',
-            choices=["True", "False"],
-            metavar="True|False",
-            help="Set the backend as drained to exclude from allocation "\
-                 "operations"),
+                    dest='drained',
+                    choices=["True", "False"],
+                    metavar="True|False",
+                    help="Set the backend as drained to exclude from"
+                         " allocation operations"),
         make_option('--offline',
-            dest='offline',
-            choices=["True", "False"],
-            metavar="True|False",
-            help="Set the backend as offline to not communicate in order "\
-                 "to avoid delays"),
-        )
+                    dest='offline',
+                    choices=["True", "False"],
+                    metavar="True|False",
+                    help="Set the backend as offline to not communicate in"
+                         " order to avoid delays"),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:

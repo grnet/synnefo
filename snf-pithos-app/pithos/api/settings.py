@@ -28,6 +28,8 @@ AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
                              'http://localhost:8000/im/authenticate/')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
+TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
+
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).

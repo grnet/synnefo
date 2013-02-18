@@ -35,7 +35,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .top-msg.error                              	{ background-color:#EF4F54; color: #fff}
 .top-msg.warning                                { background-color:#F6921E; color: #fff}
 .top-msg.info                                 	{ background-color:#C3C3B9; color: #fff}
-.top-msg.warning a                              { color: #fff}
+.top-msg.warning a                              { color: #4F3515}
 .top-msg.info a                                 { color: #222}
 
 /* container */
@@ -430,6 +430,8 @@ form.quotas-form  span.info span				{ width:285px;  }
 .quotas-form .group fieldset					{ background:transparent; margin-bottom:1em; padding-bottom:1em; }
 .quotas-form .group fieldset legend				{  }
 .quotas-form fieldset ul li.rel+li.rel			{ background:url(../images/quota-related-bg.png) no-repeat left center; }
+
+
 .quotas-form .double-checks label				{ font-size:1.077em; }
 .quotas-form .double-checks .form-row			{ float:left; margin-right:10px;}
 .quotas-form .double-checks .with-checkbox .checkbox-widget	{ left:0; }
@@ -471,22 +473,23 @@ form input[type="text"]:-ms-input-placeholder,
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}
-.stats .bar										{ padding: 0; text-align:center;  float:left; }
+.stats .bar										{ padding: 0;   float:left; }
 .stats .bar div									{ width:340px; height:30px; border:1px solid #000; margin-top:20px; overflow:hidden;}
-.stats .bar span								{ text-align:right; display:block; height:100%; position: relative; overflow: visible; }
+.stats .bar span								{ text-align:right; display:block; float:left; height:100%; position: relative; overflow: visible; }
+.stats .bar span.hovered						{  }
 .stats .bar span.value							{ background-color: transparent !important; }
 .stats .bar span em								{ color:#000; }
-.stats .bar span em.hovered 					{ color:#fff; }
+.stats .bar span.hovered em 					{ color:#fff; }
 .stats .bar em { 
     font-style:normal; 
     color:#222;  
     line-height:30px; 
     font-size:1.231em; 
     padding-left:10px; 
-    position: absolute;
-    right: 10px;
-    left: 10px;
+     
 }
+
+.stats .bar span + em							{ position: }
 .stats .red .bar span							{ background:#ef4f54; }
 .stats .yellow .bar span						{ background:#f6921e; }
 .stats .green .bar span							{ background:#55b577; }
@@ -565,20 +568,20 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods ul								{ overflow:hidden; padding:0; }
 .auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; position:relative;}
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }
-.auth_methods ul li a:hover img					{ margin-top:-233px; }
+.auth_methods ul li a:hover img					{ margin-top:-240px; }
 .auth_methods ul li span.extra-message			{ display:none;  color:#F6921E; position:absolute; left:140px; top:13px; }
 .auth_methods ul li span.extra-message em		{ font-style:normal; background:#fff; }
 .auth_methods ul li span.extra-message em span	{ display:inline-block; max-width:420px; vertical-align: middle;  }
 .auth_methods ul li a:hover + span 				{ display:inline; } 
 .auth_methods .dialog-wrap						{ color:#F24E53; display:none; margin-top:1em; }
 .auth_methods .dialog-wrap .submit				{ min-width:10px; text-transform:uppercase; margin-right:10px; }
-.auth_methods ul li a.noaction:hover img		{ margin-top:-55px }
+.auth_methods ul li a.noaction:hover img		{ margin-top:-60px }
 .auth_methods ul li a.noaction:hover			{ cursor:default; }
 .auth_methods ul li a.noaction:focus			{ outline:0 none; }
 .auth_methods ul li a.canremove:hover img,
-.auth_methods .assigned ul li.remove a img		{ margin-top:-112px; }
+.auth_methods .assigned ul li.remove a img		{ margin-top:-120px; }
 .auth_methods .assigned ul li span.extra-message{ color:#F24E53;}
-.auth_methods .assigned ul li a img				{ margin-top:-55px }
+.auth_methods .assigned ul li a img				{ margin-top:-60px }
 .auth_methods .assigned, 
 .auth_methods .notassigned						{ margin-bottom:40px; }
 .auth_methods .assigned span.details			{   color:grey; display:inline-block; max-width:400px;  vertical-align:middle; position:absolute; left:140px; top:13px;}
@@ -612,7 +615,7 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .extralogin a.icons:hover img					{ margin-top:-38px; }
 .landing-page .dotted							{ padding-bottom:40px; margin-bottom:40px; }
 .landing-page .cyclades a						{ color:#04a0af; }
-.landing-page .dashboard a						{ color:#3780b0; }get_title_display
+.landing-page .dashboard a						{ color:#3780b0; }
 .landing-page .cms a							{ color:#3780b0; }
 .landing-page .rt 								{ text-align:center;vertical-align:middle; } 
 #signup-classic									{ clear:both; }
@@ -628,9 +631,3 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .content a:visited 		{ border:0 none; }
 
 #hand											{ position:absolute; height:79px; width:61px; background:url(../images/xeraki_hover.png) no-repeat; overflow:hidden; display:none;  top:40px;}
-
-
-@media screen and (max-width : 630px) 		{ 
- 
-    
-}

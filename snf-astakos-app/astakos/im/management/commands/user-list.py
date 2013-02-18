@@ -37,7 +37,7 @@ from django.core.management.base import NoArgsCommand
 
 from astakos.im.models import AstakosUser
 
-from ._common import format_bool
+from ._common import format
 
 
 class Command(NoArgsCommand):
@@ -79,13 +79,16 @@ class Command(NoArgsCommand):
 
         for user in users:
             id = str(user.id)
-            active = format_bool(user.is_active)
-            admin = format_bool(user.is_superuser)
+            active = user.is_active
+            admin = user.is_superuser
             uuid = user.uuid or ''
-            fields = (
-                id, user.email, user.realname, active, admin, \
-                        uuid, user.auth_providers_display
-            )
+            fields = (format(elem) for elem in (
+                            id,
+                            user.email,
+                            user.realname,
+                            active, admin, uuid,
+                            user.auth_providers_display
+            ))
 
             if options['csv']:
                 line = '|'.join(fields)

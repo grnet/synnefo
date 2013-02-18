@@ -1278,6 +1278,9 @@ class ModularBackend(BaseBackend):
     # Reporting functions.
 
     def _report_size_change(self, user, account, size, details={}):
+        if size == 0:
+            return
+
         account_node = self._lookup_account(account, True)[1]
         total = self._get_statistics(account_node)[1]
         details.update({'user': user, 'total': total})

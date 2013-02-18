@@ -114,8 +114,6 @@ def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
     from_location = request.GET.get('location')
     index_url = reverse('index')
-    if from_location:
-        index_url = "%s?next=%s" % (index_url, from_location)
 
     l = [{'url': absolute(request, index_url), 'name': _("Sign in")}]
     if user.is_authenticated():
@@ -133,8 +131,8 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         if with_signout:
             append(item(
                    url=absolute(request, reverse('edit_profile')),
-                   name="Dashboard"))  
-        if with_extra_links:      
+                   name="Dashboard"))
+        if with_extra_links:
             append(item(url=absolute(request, reverse('edit_profile')),
                     name="Profile"))
 

@@ -276,7 +276,8 @@ def daemon_mode(opts):
 
 def setup_logging(opts):
     import logging
-    formatter = logging.Formatter("%(asctime)s %(name)s %(module)s [%(levelname)s] %(message)s")
+    formatter = logging.Formatter("%(asctime)s %(name)s %(module)s"
+                                  " [%(levelname)s] %(message)s")
     if opts.debug:
         log_handler = logging.StreamHandler()
         log_handler.setFormatter(formatter)

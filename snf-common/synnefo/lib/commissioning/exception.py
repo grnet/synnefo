@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -61,7 +61,7 @@ class CallError(Exception):
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__,
-                           ','.join(str_or_utf8(x) for x in self.args))
+                           ','.join(repr(x) for x in self.args))
 
     @classmethod
     def from_exception(cls, exc):
@@ -77,8 +77,11 @@ class CallError(Exception):
         return self
 
     def to_dict(self):
+        args = tuple(str_or_utf8(x) for x in self.args)
+        kwargs = dict((str_or_utf8(k), str_or_utf8(v))
+                      for k, v in self.kwargs.iteritems())
         return {'call_error': self.call_error,
-                'error_args': (self.args, self.kwargs)}
+                'error_args': (args, kwargs)}
 
     @classmethod
     def from_dict(cls, dictobj):

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,10 +35,12 @@ from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import AstakosUser, get_latest_terms
 from astakos.im.util import model_to_dict
+from synnefo.lib.ordereddict import OrderedDict
 
 from ._common import format
 
 import uuid
+
 
 class Command(BaseCommand):
     args = "<user ID or email>"
@@ -64,32 +66,40 @@ class Command(BaseCommand):
             raise CommandError(msg)
 
         for user in users:
-            kv = {
-                'id': user.id,
-                'email': user.email,
-                'first name': user.first_name,
-                'last name': user.last_name,
-                'active': user.is_active,
-                'admin': user.is_superuser,
-                'last login': user.last_login,
-                'date joined': user.date_joined,
-                'last update': user.updated,
-                #'token': user.auth_token,
-                'token expiration': user.auth_token_expires,
-                'invitations': user.invitations,
-                'invitation level': user.level,
-                'providers': user.auth_providers_display,
-                'verified': user.is_verified,
-                'has_credits': format(user.has_credits),
-                'groups': [elem.name for elem in user.groups.all()],
-                'permissions': [elem.codename for elem in user.user_permissions.all()],
-                'group_permissions': user.get_group_permissions(),
-                'email_verified': user.email_verified,
-                'username': user.username,
-                'activation_sent_date': user.activation_sent,
-                'resources': user.all_quotas(),
-                'uuid': user.uuid
-            }
+            quotas = user.all_quotas()
+            showable_quotas = {}
+            for resource, limits in quotas.iteritems():
+                showable_quotas[resource] = limits.capacity
+
+            kv = OrderedDict(
+                [
+                    ('id', user.id),
+                    ('uuid', user.uuid),
+                    ('email', user.email),
+                    ('first name', user.first_name),
+                    ('last name', user.last_name),
+                    ('active', user.is_active),
+                    ('admin', user.is_superuser),
+                    ('last login', user.last_login),
+                    ('date joined', user.date_joined),
+                    ('last update', user.updated),
+                    #('token', user.auth_token),
+                    ('token expiration', user.auth_token_expires),
+                    ('invitations', user.invitations),
+                    ('invitation level', user.level),
+                    ('providers', user.auth_providers_display),
+                    ('verified', user.is_verified),
+                    ('has_credits', format(user.has_credits)),
+                    ('groups', [elem.name for elem in user.groups.all()]),
+                    ('permissions', [elem.codename
+                                     for elem in user.user_permissions.all()]),
+                    ('group_permissions', user.get_group_permissions()),
+                    ('email_verified', user.email_verified),
+                    ('username', user.username),
+                    ('activation_sent_date', user.activation_sent),
+                    ('resources', showable_quotas),
+                ])
+
             if get_latest_terms():
                 has_signed_terms = user.signed_terms
                 kv['has_signed_terms'] = has_signed_terms

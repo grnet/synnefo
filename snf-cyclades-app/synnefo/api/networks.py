@@ -54,7 +54,8 @@ from synnefo.logic import backend
 
 log = getLogger('synnefo.api')
 
-urlpatterns = patterns('synnefo.api.networks',
+urlpatterns = patterns(
+    'synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
     (r'^/(\w+)(?:.json|.xml)?$', 'network_demux'),
@@ -97,7 +98,7 @@ def network_to_dict(network, user_id, detail=True):
         d['public'] = network.public
 
         attachments = [util.construct_nic_id(nic)
-                       for nic in network.nics.filter(machine__userid=user_id)\
+                       for nic in network.nics.filter(machine__userid=user_id)
                                               .order_by('machine')]
         d['attachments'] = {'values': attachments}
     return d
@@ -147,7 +148,7 @@ def list_networks(request, detail=False):
 
 @util.api_method('POST')
 @quotas.uses_commission
-@transaction.commit_on_success
+@transaction.commit_manually
 def create_network(serials, request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -158,47 +159,48 @@ def create_network(serials, request):
     #                       forbidden (403)
     #                       overLimit (413)
 
-    req = util.get_request_dict(request)
-    log.info('create_network %s', req)
-
     try:
-        d = req['network']
-        name = d['name']
-        # TODO: Fix this temp values:
-        subnet = d.get('cidr', '192.168.1.0/24')
-        subnet6 = d.get('cidr6', None)
-        gateway = d.get('gateway', None)
-        gateway6 = d.get('gateway6', None)
-        flavor = d.get('type', 'MAC_FILTERED')
-        public = d.get('public', False)
-        dhcp = d.get('dhcp', True)
-    except (KeyError, ValueError):
-        raise BadRequest('Malformed request.')
+        req = util.get_request_dict(request)
+        log.info('create_network %s', req)
 
-    if public:
-        raise Forbidden('Can not create a public network.')
+        try:
+            d = req['network']
+            name = d['name']
+            # TODO: Fix this temp values:
+            subnet = d.get('cidr', '192.168.1.0/24')
+            subnet6 = d.get('cidr6', None)
+            gateway = d.get('gateway', None)
+            gateway6 = d.get('gateway6', None)
+            flavor = d.get('type', 'MAC_FILTERED')
+            public = d.get('public', False)
+            dhcp = d.get('dhcp', True)
+        except (KeyError, ValueError):
+            raise BadRequest('Malformed request.')
 
-    if flavor not in Network.FLAVORS.keys():
-        raise BadRequest("Invalid network flavors %s" % flavor)
+        if public:
+            raise Forbidden('Can not create a public network.')
 
-    if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-        raise Forbidden("Can not create %s network" % flavor)
+        if flavor not in Network.FLAVORS.keys():
+            raise BadRequest("Invalid network flavors %s" % flavor)
 
-    cidr_block = int(subnet.split('/')[1])
-    if not util.validate_network_size(cidr_block):
-        raise OverLimit("Unsupported network size.")
+        if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+            raise Forbidden("Can not create %s network" % flavor)
 
-    user_id = request.user_uniq
-    serial = quotas.issue_network_commission(user_id)
-    serials.append(serial)
-    # Make the commission accepted, since in the end of this
-    # transaction the Network will have been created in the DB.
-    serial.accepted = True
-    serial.save()
+        cidr_block = int(subnet.split('/')[1])
+        if not util.validate_network_size(cidr_block):
+            raise OverLimit("Unsupported network size.")
 
-    try:
-        mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
-        network = Network.objects.create(
+        user_id = request.user_uniq
+        serial = quotas.issue_network_commission(user_id)
+        serials.append(serial)
+        # Make the commission accepted, since in the end of this
+        # transaction the Network will have been created in the DB.
+        serial.accepted = True
+        serial.save()
+
+        try:
+            mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
+            network = Network.objects.create(
                 name=name,
                 userid=user_id,
                 subnet=subnet,
@@ -214,13 +216,18 @@ def create_network(serials, request):
                 action='CREATE',
                 state='PENDING',
                 serial=serial)
-    except EmptyPool:
-        log.error("Failed to allocate resources for network of type: %s",
-                  flavor)
-        raise ServiceUnavailable("Failed to allocate resources for network")
+        except EmptyPool:
+            log.error("Failed to allocate resources for network of type: %s",
+                      flavor)
+            raise ServiceUnavailable("Failed to allocate network resources")
 
-    # Create BackendNetwork entries for each Backend
-    network.create_backend_network()
+        # Create BackendNetwork entries for each Backend
+        network.create_backend_network()
+    except:
+        transaction.rollback()
+        raise
+    else:
+        transaction.commit()
 
     # Create the network in the actual backends
     backend.create_network(network)
@@ -298,7 +305,6 @@ def delete_network(request, network_id):
 
     if net.machines.all():  # Nics attached on network
         raise NetworkInUse('Machines are connected to network.')
-
 
     net.action = 'DESTROY'
     net.save()

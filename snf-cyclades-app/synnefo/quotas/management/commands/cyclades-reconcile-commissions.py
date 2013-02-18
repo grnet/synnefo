@@ -31,54 +31,41 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
-from astakos.im.functions import terminate, suspend, resume
-from astakos.im.project_xctx import project_transaction_context
+from synnefo import quotas
+
 
 class Command(BaseCommand):
-    args = "<project id>"
-    help = "Update project state"
-
+    help = "Reconcile quotas with Quotaholder"
+    output_transaction = True
     option_list = BaseCommand.option_list + (
-        make_option('--terminate',
+        make_option("--fix", dest="fix",
                     action='store_true',
-                    dest='terminate',
                     default=False,
-                    help="Terminate project"),
-        make_option('--resume',
-                    action='store_true',
-                    dest='resume',
-                    default=False,
-                    help="Resume project"),
-        make_option('--suspend',
-                    action='store_true',
-                    dest='suspend',
-                    default=False,
-                    help="Suspend project")
+                    help="Fix pending commissions"
+                    ),
     )
 
     def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide a project id")
-        try:
-            id = int(args[0])
-        except ValueError:
-            raise CommandError('Invalid id')
-        else:
-            if options['terminate']:
-                run_command(terminate, id)
-            elif options['resume']:
-                run_command(resume, id)
-            elif options['suspend']:
-                run_command(suspend, id)
+        fix = options['fix']
 
-@project_transaction_context(sync=True)
-def run_command(func, id, ctx=None):
-    try:
-        func(id)
-    except BaseException as e:
-        if ctx:
-            ctx.mark_rollback()
-        raise CommandError(e)
+        accepted, rejected = quotas.resolve_pending_commissions()
+
+        if accepted:
+            self.stdout.write("Pending accepted commissions:\n %s\n"
+                              % list_to_string(accepted))
+
+        if rejected:
+            self.stdout.write("Pending rejected commissions:\n %s\n"
+                              % list_to_string(rejected))
+
+        if fix and (accepted or rejected):
+            self.stdout.write("Fixing pending commissions..\n")
+            quotas.accept_commissions(accepted)
+            quotas.reject_commissions(rejected)
+
+
+def list_to_string(l):
+    return ",".join([str(x) for x in l])

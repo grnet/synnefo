@@ -59,6 +59,7 @@ from kamaki.clients.compute import ComputeClient
 from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.pithos import PithosClient
+from kamaki.clients.astakos import AstakosClient
 from kamaki.clients import ClientError
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
@@ -78,7 +79,7 @@ TOKEN = None
 PLANKTON = None
 PLANKTON_USER = None
 PITHOS = None
-PITHOS_USER = None
+ASTAKOS = None
 NO_IPV6 = None
 DEFAULT_PLANKTON_USER = "images@okeanos.grnet.gr"
 NOFAILFAST = None
@@ -113,6 +114,12 @@ def _ssh_execute(hostip, username, password, command):
     output = stdout.readlines()
     ssh.close()
     return output, status
+
+
+def _get_user_id():
+    """Authenticate to astakos and get unique users id"""
+    astakos = AstakosClient(ASTAKOS, TOKEN)
+    return astakos.authenticate()['uuid']
 
 
 # --------------------------------------------------------------------
@@ -228,6 +235,9 @@ class ImagesTestCase(unittest.TestCase):
         cls.images = cls.plankton.list_public()
         cls.dimages = cls.plankton.list_public(detail=True)
         cls.result_dict = dict()
+        # Get uniq user id
+        cls.uuid = _get_user_id()
+        log.info("Uniq user id = %s" % cls.uuid)
         # Create temp directory and store it inside our class
         # XXX: In my machine /tmp has not enough space
         #      so use current directory to be sure.
@@ -296,13 +306,13 @@ class ImagesTestCase(unittest.TestCase):
         temp_file = os.path.join(self.temp_dir, self.temp_image_name)
         log.info("Upload image to pithos+")
         # Create container `images'
-        pithos_client = PithosClient(PITHOS, TOKEN, PITHOS_USER)
+        pithos_client = PithosClient(PITHOS, TOKEN, self.uuid)
         pithos_client.container = "images"
         pithos_client.container_put()
         with open(temp_file, "rb+") as f:
             pithos_client.upload_object(self.temp_image_name, f)
         log.info("Register image to plankton")
-        location = "pithos://" + PITHOS_USER + \
+        location = "pithos://" + self.uuid + \
             "/images/" + self.temp_image_name
         params = {'is_public': True}
         properties = {'OSFAMILY': "linux", 'ROOT_PARTITION': 1}
@@ -310,10 +320,7 @@ class ImagesTestCase(unittest.TestCase):
                                params, properties)
         # Get image id
         details = self.plankton.list_public(detail=True)
-        detail = filter(
-            lambda x: x['owner'] == PITHOS_USER and
-            x['name'] == self.temp_image_name,
-            details)
+        detail = filter(lambda x: x['location'] == location, details)
         self.assertEqual(len(detail), 1)
         cls = type(self)
         cls.temp_image_id = detail[0]['id']
@@ -323,7 +330,7 @@ class ImagesTestCase(unittest.TestCase):
         """Cleanup image test"""
         log.info("Cleanup image test")
         # Remove image from pithos+
-        pithos_client = PithosClient(PITHOS, TOKEN, PITHOS_USER)
+        pithos_client = PithosClient(PITHOS, TOKEN, self.uuid)
         pithos_client.container = "images"
         pithos_client.del_object(self.temp_image_name)
 
@@ -406,9 +413,11 @@ class PithosTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Initialize kamaki, get list of containers"""
+        # Get uniq user id
+        cls.uuid = _get_user_id()
+        log.info("Uniq user id = %s" % cls.uuid)
         log.info("Getting list of containers")
-
-        cls.client = PithosClient(PITHOS, TOKEN, PITHOS_USER)
+        cls.client = PithosClient(PITHOS, TOKEN, cls.uuid)
         cls.containers = cls.client.list_containers()
         cls.result_dict = dict()
 
@@ -1876,9 +1885,9 @@ def parse_arguments(args):
                       action="store", type="string", dest="pithos",
                       help="The API URI to use to reach the Pithos API",
                       default=None)
-    parser.add_option("--pithos_user",
-                      action="store", type="string", dest="pithos_user",
-                      help="Owner of the pithos account",
+    parser.add_option("--astakos",
+                      action="store", type="string", dest="astakos",
+                      help="The API URI to use to reach the Astakos API",
                       default=None)
     parser.add_option("--token",
                       action="store", type="string", dest="token",
@@ -2001,8 +2010,8 @@ def parse_arguments(args):
                 sys.exit(1)
         # `pithos' is mandatory
         _mandatory_argument(opts.pithos, "--pithos")
-        # `pithos_user' is mandatory
-        _mandatory_argument(opts.pithos_user, "--pithos_user")
+        # `astakos' is mandatory
+        _mandatory_argument(opts.astakos, "--astakos")
         # `plankton' is mandatory
         _mandatory_argument(opts.plankton, "--plankton")
 
@@ -2035,13 +2044,13 @@ def main():
 
     # Some global variables
     global API, TOKEN, PLANKTON, PLANKTON_USER
-    global PITHOS, PITHOS_USER, NO_IPV6, VERBOSE, NOFAILFAST
+    global PITHOS, ASTAKOS, NO_IPV6, VERBOSE, NOFAILFAST
     API = opts.api
     TOKEN = opts.token
     PLANKTON = opts.plankton
     PLANKTON_USER = opts.plankton_user
     PITHOS = opts.pithos
-    PITHOS_USER = opts.pithos_user
+    ASTAKOS = opts.astakos
     NO_IPV6 = opts.no_ipv6
     VERBOSE = opts.verbose
     NOFAILFAST = opts.nofailfast

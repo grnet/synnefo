@@ -56,10 +56,16 @@ class Command(BaseCommand):
     args = "<server ID>"
 
     option_list = BaseCommand.option_list + (
-        make_option('--jobs', action='store_true',
-                    dest='jobs', default=False,
-                    help="Show non-archived jobs concerning server."
-            ),
+        make_option('--jobs',
+            action='store_true',
+            dest='jobs',
+            default=False,
+            help="Show non-archived jobs concerning server."),
+        make_option('--uuids',
+            action='store_true',
+            dest='use_uuids',
+            default=False,
+            help="Display UUIDs instead of user emails"),
     )
 
     def handle(self, *args, **options):
@@ -77,7 +83,13 @@ class Command(BaseCommand):
         labels = ('name', 'owner', 'flavor', 'image', 'state', 'backend',
                   'deleted', 'action', 'backendjobid', 'backendopcode',
                   'backendjobstatus', 'backend_time')
-        fields = (vm.name, vm.userid, vm.flavor.name, image,
+
+        user = vm.userid
+        if options['use_uuids'] is False:
+            ucache = common.UUIDCache()
+            user = ucache.get_user(vm.userid)
+
+        fields = (vm.name, user, vm.flavor.name, image,
                   common.format_vm_state(vm), str(vm.backend),
                   str(vm.deleted), str(vm.action), str(vm.backendjobid),
                   str(vm.backendopcode), str(vm.backendjobstatus),

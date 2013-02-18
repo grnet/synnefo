@@ -75,7 +75,8 @@ def demux_members(request, image_id, member):
         return HttpResponseNotAllowed(['DELETE', 'PUT'])
 
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     (r'^images/$', demux),
     (r'^images/detail$', views.list_images, {'detail': True}),
     (r'^images/([\w-]+)$', demux_image),

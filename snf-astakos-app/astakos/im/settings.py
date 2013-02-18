@@ -161,6 +161,15 @@ PROJECT_SUSPENSION_SUBJECT = getattr(
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
     '%s alpha2 testing project membership changed (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_ENROLL_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_ENROLL_SUBJECT',
+    '%s alpha2 testing project enrollment (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_REQUEST_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_REQUEST_SUBJECT',
+    '%s alpha2 testing project membership request (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT',
+    '%s alpha2 testing project membership leave request (%%(name)s)' % SITENAME)
 
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
@@ -331,3 +340,10 @@ PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
 ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
+
+# If true, this enables a ui compatibility layer for the introduction of UUIDs
+# in identity management. WARNING: Setting to True will break your installation.
+TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
+
+# Users that can approve or deny project applications from the web.
+PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())

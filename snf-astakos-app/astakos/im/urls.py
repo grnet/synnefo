@@ -71,6 +71,9 @@ urlpatterns = patterns(
     url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
     url(r'^projects/app/(?P<application_id>\d+)/?$', 'project_app', {}, name='project_app'),
     url(r'^projects/app/(?P<application_id>\d+)/modify$', 'project_modify', {}, name='project_modify'),
+    url(r'^projects/app/(?P<application_id>\d+)/approve$', 'project_app_approve', {}, name='project_app_approve'),
+    url(r'^projects/app/(?P<application_id>\d+)/deny$', 'project_app_deny', {}, name='project_app_deny'),
+    url(r'^projects/app/(?P<application_id>\d+)/dismiss$', 'project_app_dismiss', {}, name='project_app_dismiss'),
     url(r'^projects/app/(?P<application_id>\d+)/cancel$', 'project_app_cancel', {}, name='project_app_cancel'),
 
     url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),

@@ -81,21 +81,9 @@ class TransactionHandler(object):
 
     def __call__(self, func):
         def wrap(*args, **kwargs):
-            ctx = self.__enter__()
-            kwargs['ctx'] = ctx
-            typ = value = trace = None
-            result = None
-            try:
-                result = func(*args, **kwargs)
-            except Exception as e:
-                typ = type(e)
-                value = e
-                trace = None
-            finally:
-                silent = self.__exit__(typ, value, trace)
-                if not silent and value:
-                    raise value
-            return result
+            with self as ctx:
+                kwargs['ctx'] = ctx
+                return func(*args, **kwargs)
         return wrap
 
     def __enter__(self):
@@ -110,7 +98,14 @@ class TransactionHandler(object):
         trigger_postprocess = False
         try:
             if value is not None: # exception
-                if transaction.is_dirty(using=db):
+                if transaction.is_dirty(using=db) or True:
+                    # Rollback, even if is not dirty.
+                    # This is a temporary bug fix for
+                    # https://code.djangoproject.com/ticket/9964 .
+                    # Django prior to 1.3 does not set a transaction
+                    # dirty when the DB throws an exception, and thus
+                    # does not trigger rollback, resulting in a
+                    # dangling aborted DB transaction.
                     transaction.rollback(using=db)
             else:
                 if transaction.is_dirty(using=db):

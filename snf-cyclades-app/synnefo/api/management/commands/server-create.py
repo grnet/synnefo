@@ -31,15 +31,18 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management import common
 
 from synnefo.db.models import VirtualMachine
 from synnefo.logic.backend import create_instance
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.api.util import allocate_public_address
+from synnefo.api import util
+from synnefo.api.servers import server_created
 
 HELP_MSG = """
 
@@ -51,8 +54,6 @@ backend-id.
 
 class Command(BaseCommand):
     help = "Create a new VM." + HELP_MSG
-
-    output_transaction = True
 
     option_list = BaseCommand.option_list + (
             make_option("--backend-id", dest="backend_id",
@@ -75,6 +76,7 @@ class Command(BaseCommand):
                         help="Password for the new server")
         )
 
+    @transaction.commit_manually
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
@@ -97,7 +99,6 @@ class Command(BaseCommand):
         if flavor_id:
             flavor = common.get_flavor(flavor_id)
 
-        # Get Image
         if image_id:
             img = common.get_image(image_id, user_id)
 
@@ -110,31 +111,65 @@ class Command(BaseCommand):
         else:
             raise CommandError("image-id is mandatory")
 
-        # Get Backend
-        if backend_id:
-            backend = common.get_backend(backend_id)
+        # Fix flavor for archipelago
+        disk_template, provider = util.get_flavor_provider(flavor)
+        if provider:
+            flavor.disk_template = disk_template
+            flavor.disk_provider = provider
+            flavor.disk_origin = None
+            if provider == 'vlmc':
+                flavor.disk_origin = image['checksum']
+                image['backend_id'] = 'null'
         else:
-            ballocator = BackendAllocator()
-            backend = ballocator.allocate(user_id, flavor)
-            if not backend:
-                raise CommandError("Can not allocate VM")
+            flavor.disk_provider = None
 
-        # Get Public address
-        (network, address) = allocate_public_address(backend)
-        if address is None:
-            raise CommandError("Can not allocate a public address."\
-                               " No available public network.")
-        nic = {'ip': address, 'network': network.backend_id}
+        try:
+            # Get Backend
+            if backend_id:
+                backend = common.get_backend(backend_id)
+            else:
+                ballocator = BackendAllocator()
+                backend = ballocator.allocate(user_id, flavor)
+                if not backend:
+                    raise CommandError("Can not allocate VM")
 
-        # Create the VM in DB
-        vm = VirtualMachine.objects.create(name=name,
-                                           backend=backend,
-                                           userid=user_id,
-                                           imageid=image_id,
-                                           flavor=flavor)
+            # Get Public address
+            (network, address) = util.allocate_public_address(backend)
+            if address is None:
+                raise CommandError("Can not allocate a public address."\
+                                   " No available public network.")
+            nic = {'ip': address, 'network': network.backend_id}
 
-        # Create the instance in Backend
-        jobID = create_instance(vm, nic, flavor, image, password, [])
+            # Create the VM in DB
+            vm = VirtualMachine.objects.create(name=name,
+                                               backend=backend,
+                                               userid=user_id,
+                                               imageid=image_id,
+                                               flavor=flavor)
+            # dispatch server created signal
+            server_created.send(sender=vm, created_vm_params={
+                'img_id': image['backend_id'],
+                'img_passwd': password,
+                'img_format': str(image['format']),
+                'img_personality': '[]',
+                'img_properties': json.dumps(image['metadata']),
+            })
+        except:
+            transaction.rollback()
+            raise
+        else:
+            transaction.commit()
 
-        self.stdout.write("Creating VM %s with IP %s in Backend %s. JobID: %s\n" % \
-                          (vm, address, backend, jobID))
+        try:
+            # Create the instance in Backend
+            jobID = create_instance(vm, nic, flavor, image)
+
+            vm.backendjobid = jobID
+            vm.save()
+            self.stdout.write("Creating VM %s with IP %s in Backend %s."
+                              " JobID: %s\n" % (vm, address, backend, jobID))
+        except:
+            transaction.rollback()
+            raise
+        else:
+            transaction.commit()

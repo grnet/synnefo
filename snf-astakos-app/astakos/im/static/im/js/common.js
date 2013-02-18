@@ -282,7 +282,7 @@ $(document).ready(function() {
     
     $('.landing-page .pithos').hover(
       function () {
-      	 el = $('.cloudbar ul.services li:nth-child(2)');
+      	 el = $('.cloudbar ul.services li:nth-child(3)');
       	 var offset = el.offset();
       	 positionX = offset.left;
       	 left = parseInt(positionX) +20;
@@ -296,7 +296,7 @@ $(document).ready(function() {
     
     $('.landing-page .cyclades').hover(
       function () {
-      	 el = $('.cloudbar ul.services li:nth-child(3)').first();
+      	 el = $('.cloudbar ul.services li:nth-child(2)').first();
       	 var offset = el.offset();
       	 positionX = offset.left;
       	 left = parseInt(positionX) +20;
@@ -326,7 +326,8 @@ $(document).ready(function() {
     	e.preventDefault();
     });
 	  
-	  
+	// fix for recaptcha fields
+	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
      
 	 
 	    

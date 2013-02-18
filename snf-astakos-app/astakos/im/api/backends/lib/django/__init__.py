@@ -46,6 +46,7 @@ from astakos.im.api.backends.base import (
     BaseBackend, SuccessResult, FailureResult)
 from astakos.im.api.backends.errors import (
     ItemNotExists, ItemExists, MissingIdentifier, MultipleItemsExist)
+from astakos.im.functions import activate
 
 from astakos.im.util import reserved_email, model_to_dict
 from astakos.im.functions import get_quota
@@ -95,7 +96,7 @@ class DjangoBackend(BaseBackend):
         """
         Returns an AstakosUser having this id.
         """
-        if not isinstance(id, int):
+        if not isinstance(id, (int, long)):
             raise TypeError('User id should be of type int')
         return self._lookup_object(AstakosUser, id=id)
 
@@ -103,7 +104,7 @@ class DjangoBackend(BaseBackend):
         """
         Returns an Service having this id.
         """
-        if not isinstance(id, int):
+        if not isinstance(id, (int, long)):
             raise TypeError('Service id should be of type int')
         return self._lookup_object(Service, id=id)
 
@@ -144,17 +145,23 @@ class DjangoBackend(BaseBackend):
         groups = kwargs.pop('groups', ())
         password = kwargs.pop('password', None)
         provider = kwargs.pop('provider', 'local')
+        active = kwargs.pop('active', False)
 
         u = self._create_object(AstakosUser, **kwargs)
 
         if password:
             u.set_password(password)
+            u.save()
+
         u.permissions = permissions
         u.policies = policies
         u.extended_groups = groups
 
         if not u.has_auth_provider(provider):
             u.add_auth_provider(provider)
+
+        if active:
+            activate(u)
 
         return self._details(u)
 
@@ -185,7 +192,7 @@ class DjangoBackend(BaseBackend):
             except ObjectDoesNotExist, e:
                 append((service, resource, e))
         return rejected
-    
+ 
     @safe
     def add_permissions(self, user_id, permissions=()):
         user = self._lookup_user(user_id)

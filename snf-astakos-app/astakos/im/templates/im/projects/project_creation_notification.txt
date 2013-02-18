@@ -9,8 +9,8 @@ Name:                           {{object.name}}
 Issue date:                     {{object.issue_date|date:"d/m/Y"}}
 Start date:                     {{object.start_date|date:"d/m/Y"}}
 End date:                       {{object.end_date|date:"d/m/Y"}}
-Member Join Policy:             {{object.member_join_policy.policy}}
-Member Leave Policy:            {{object.member_leave_policy.policy}}
+Member Join Policy:             {{object.member_join_policy_display}}
+Member Leave Policy:            {{object.member_leave_policy_display}}
 Owner:                          {{object.owner}}
 Applicant:                      {{object.applicant}}
 Maximum participant number:     {{object.limit_on_members_number}}
@@ -32,8 +32,8 @@ Name:                           {{object.name}}
 Issue date:                     {{object.issue_date|date:"d/m/Y"}}
 Start date:                     {{object.start_date|date:"d/m/Y"}}
 End date:                       {{object.end_date|date:"d/m/Y"}}
-Member Join Policy:             {{object.member_join_policy.policy}}
-Member Leave Policy:            {{object.member_leave_policy.policy}}
+Member Join Policy:             {{object.member_join_policy_display}}
+Member Leave Policy:            {{object.member_leave_policy_display}}
 Owner:                          {{object.owner}}
 Applicant:                      {{object.applicant}}
 Maximum participant number:     {{object.limit_on_members_number}}

@@ -36,7 +36,6 @@ logic/reconciliation.py for a description of reconciliation rules.
 """
 import sys
 import datetime
-import subprocess
 
 from optparse import make_option
 
@@ -45,6 +44,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
 from synnefo.logic import reconciliation, utils
 from synnefo.logic import backend as backend_mod
+from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.management.common import get_backend
 
 
@@ -83,14 +83,14 @@ class Command(BaseCommand):
         make_option('--fix-build-errors', action='store_true',
                     dest='fix_build_errors', default=False,
                     help='Fix (remove) instances with build errors'),
-         make_option('--fix-unsynced-nics', action='store_true',
+        make_option('--fix-unsynced-nics', action='store_true',
                     dest='fix_unsynced_nics', default=False,
                     help='Fix unsynced nics between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
         make_option('--backend-id', default=None, dest='backend-id',
                     help='Reconcilie VMs only for this backend'),
-        )
+    )
 
     def _process_args(self, options):
         keys_detect = [k for k in options.keys() if k.startswith('detect_')]
@@ -160,8 +160,9 @@ class Command(BaseCommand):
         if options['detect_build_errors']:
             build_errors = reconciliation.instances_with_build_errors(D, G)
             if len(build_errors) > 0:
-                print >> sys.stderr, "The os for the following server IDs was "\
-                                     "not build successfully:"
+                msg = "The os for the following server IDs was not build"\
+                      " successfully:"
+                print >> sys.stderr, msg
                 print "    " + "\n    ".join(
                     ["%d" % x for x in build_errors])
             elif verbosity == 2:
@@ -172,13 +173,15 @@ class Command(BaseCommand):
                 if not nics:
                     print ''.ljust(18) + 'None'
                 for index, info in nics.items():
-                    print ''.ljust(18) + 'nic/' + str(index) + ': MAC: %s, IP: %s, Network: %s' % \
-                      (info['mac'], info['ipv4'], info['network'])
+                    print ''.ljust(18) + 'nic/' + str(index) +\
+                          ': MAC: %s, IP: %s, Network: %s' % \
+                          (info['mac'], info['ipv4'], info['network'])
 
             unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
             if len(unsynced_nics) > 0:
-                print >> sys.stderr, "The NICs of servers with the following IDs "\
-                                     "are unsynced:"
+                msg = "The NICs of the servers with the following IDs are"\
+                      " unsynced:"
+                print >> sys.stderr, msg
                 for id, nics in unsynced_nics.items():
                     print ''.ljust(2) + '%6d:' % id
                     print ''.ljust(8) + '%8s:' % 'DB'
@@ -197,7 +200,10 @@ class Command(BaseCommand):
                 "servers in the DB:" % len(stale)
             for vm in VirtualMachine.objects.filter(pk__in=stale):
                 event_time = datetime.datetime.now()
-                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(
+                    vm=vm,
+                    etime=event_time,
+                    jobid=-0,
                     opcode='OP_INSTANCE_REMOVE', status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
@@ -223,25 +229,27 @@ class Command(BaseCommand):
                 opcode = "OP_INSTANCE_REBOOT" if ganeti_up \
                          else "OP_INSTANCE_SHUTDOWN"
                 event_time = datetime.datetime.now()
-                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(
+                    vm=vm, etime=event_time, jobid=-0,
                     opcode=opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
 
         if options['fix_build_errors'] and len(build_errors) > 0:
-            print >> sys.stderr, "Setting the state of %d build-errors VMs:" % \
-                len(build_errors)
+            print >> sys.stderr, "Setting the state of %d build-errors VMs:" %\
+                                 len(build_errors)
             for id in build_errors:
                 vm = VirtualMachine.objects.get(pk=id)
                 event_time = datetime.datetime.now()
-                backend_mod.process_op_status(vm=vm, etime=event_time, jobid=-0,
+                backend_mod.process_op_status(
+                    vm=vm, etime=event_time, jobid=-0,
                     opcode="OP_INSTANCE_CREATE", status='error',
                     logmsg='Reconciliation: simulated Ganeti event')
             print >> sys.stderr, "    ...done"
 
         if options['fix_unsynced_nics'] and len(unsynced_nics) > 0:
             print >> sys.stderr, "Setting the nics of %d out-of-sync VMs:" % \
-                                  len(unsynced_nics)
+                                 len(unsynced_nics)
             for id, nics in unsynced_nics.items():
                 vm = VirtualMachine.objects.get(pk=id)
                 nics = nics[1]  # Ganeti nics
@@ -267,11 +275,6 @@ class Command(BaseCommand):
                         print 'Network of nic %d of vm %s is None. ' \
                               'Can not reconcile' % (i, vm.backend_vm_id)
                 event_time = datetime.datetime.now()
-                backend_mod.process_net_status(vm=vm, etime=event_time, nics=final_nics)
+                backend_mod.process_net_status(vm=vm, etime=event_time,
+                                               nics=final_nics)
             print >> sys.stderr, "    ...done"
-
-
-def mac2eui64(mac, prefixstr):
-    process = subprocess.Popen(["mac2eui64", mac, prefixstr],
-                                stdout=subprocess.PIPE)
-    return process.stdout.read().rstrip()

@@ -27,8 +27,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.13 (Jun 21, 2013)        Proxy identity management services
-\                          Uuid to displayname translation
+0.13 (Jan 21, 2013)        Proxy identity management services
+\                          UUID to displayname translation
 0.9 (Feb 17, 2012)         Change permissions model.
 0.10 (Jul 18, 2012)        Support for bulk COPY/MOVE/DELETE
 \                          Optionally include public objects in listings.
@@ -114,6 +114,14 @@ User feedback
 
 Client software using Pithos, should forward to the ``/feedback`` URI. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
 
+========================= =========  ==================
+Uri                       Method     Description
+========================= =========  ==================
+``/feedback``             POST       Send feedback
+========================= =========  ==================
+
+|
+
 ======================  =========================
 Request Parameter Name  Value
 ======================  =========================
@@ -145,6 +153,14 @@ User translation catalogs
 -------------------------
 
 Client software using Pithos, should forward to the ``/user_catalogs`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+================================ =========  ==================
+Uri                              Method     Description
+================================ =========  ==================
+``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+================================ =========  ==================
+
+|
 
 ====================  ===========================
 Request Header Name   Value
@@ -196,15 +212,16 @@ All requests must include an ``X-Auth-Token`` - as a header, or a parameter.
 
 The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
-=========================  ================================
-Return Code                Description
-=========================  ================================
-400 (Bad Request)          The request is invalid
-401 (Unauthorized)         Missing or invalid token
-403 (Forbidden)            Request not allowed
-404 (Not Found)            The requested resource was not found
-503 (Service Unavailable)  The request cannot be completed because of an internal error
-=========================  ================================
+==============================  ================================
+Return Code                     Description
+==============================  ================================
+400 (Bad Request)               The request is invalid
+401 (Unauthorized)              Missing or invalid token
+403 (Forbidden)                 Request not allowed
+404 (Not Found)                 The requested resource was not found
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+503 (Service Unavailable)       The request cannot be completed because of an internal error
+==============================  ================================
 
 Top Level
 ^^^^^^^^^
@@ -435,7 +452,7 @@ update                  Do not replace metadata/groups (no value parameter)
 No reply content/headers.
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
-To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user names in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
+To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user identifiers in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
 
 ================  ===============================
 Return Code       Description

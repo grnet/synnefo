@@ -13,7 +13,7 @@ snf-tools (0.13.0)
 	  - Remove files/containers from pithos+
 	* Add two (mandatory) flags
 	  - `--pithos' for specifing pithos url
-	  - `--pithos_user' for specifing pithos account name
+	  - `--astakos' for specifing astakos url
 
  -- Ilias Tsitsimpis <iliastsi@grnet.gr> Tue, 29 Jan 2013
 

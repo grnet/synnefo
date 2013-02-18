@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,40 +31,44 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.core.management.base import NoArgsCommand, CommandError
 from optparse import make_option
+from synnefo import settings
+from os import path
 
-from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import ProjectApplication
-from astakos.im.functions import approve_application
-from astakos.im.project_xctx import project_transaction_context
+class Command(NoArgsCommand):
+    help = "Export account quota policies"
+    option_list = NoArgsCommand.option_list + (
+        make_option('--location',
+                dest='location',
+                default='exported_quota',
+                help="Where to save the output file"),
+    )
 
-class Command(BaseCommand):
-    args = "<project application id>"
-    help = "Approve project application"
-
-    def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide an application id")
+    def handle_noargs(self, **options):
+        try:
+            vms_per_user = settings.VMS_USER_QUOTA
+            nets_per_user = settings.NETWORKS_USER_QUOTA
+        except AttributeError as e:
+            raise CommandError(e)
+        location = path.abspath(options['location'])
 
         try:
-            id = int(args[0])
-        except ValueError:
-            raise CommandError('Invalid id')
-        else:
-            try:
-                # Is it a project application id?
-                app = ProjectApplication.objects.get(id=id)
-            except ProjectApplication.DoesNotExist:
-                raise CommandError('Invalid id')
-
-            approve(app)
-
-@project_transaction_context(sync=True)
-def approve(app, ctx=None):
-    try:
-        approve_application(app)
-    except BaseException as e:
-        if ctx:
-            ctx.mark_rollback()
+            f = open(location, 'w')
+        except IOError as e:
             raise CommandError(e)
+
+        for user, value in vms_per_user.items():
+            f.write(' '.join([user, "cyclades.vm", "%s" % value, '0', '0',
+                              '0']))
+            f.write('\n')
+        for user, value in nets_per_user.items():
+            f.write(' '.join([user, "cyclades.network.private", "%s" % value,
+                            '0', '0', '0']))
+            f.write('\n')
+
+        f.close()
+
+        self.stdout.write("Successfully exported cyclades per-user-quotas to"
+                          " file '%s'\n" % location)

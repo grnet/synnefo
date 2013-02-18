@@ -43,13 +43,13 @@ class Command(BaseCommand):
     help = "Resend messages from dead letter queues to original exchange"""
 
     option_list = BaseCommand.option_list + (
-            make_option('--keep-zombies',
-                action='store_true',
-                dest='keep_zombies',
-                default=False,
-                help="Do not remove messages that died more than one times"
-            ),
-        )
+        make_option(
+            '--keep-zombies',
+            action='store_true',
+            dest='keep_zombies',
+            default=False,
+            help="Do not remove messages that died more than one times"),
+    )
 
     def handle(self, *args, **options):
         verbose = (options["verbosity"] == "2")
@@ -97,7 +97,8 @@ class Command(BaseCommand):
             headers = message['headers']
             death = headers['x-death'][0]
         except KeyError:
-            log.warning("Received message without death section %s. Removing..",
+            log.warning("Received message without death section %s."
+                        "Removing..",
                         message)
             self.client.basic_nack(message)
 

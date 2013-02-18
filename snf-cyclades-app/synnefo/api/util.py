@@ -206,8 +206,10 @@ def get_image_dict(image_id, user_id):
     properties = img.get('properties', {})
     image['backend_id'] = img['location']
     image['format'] = img['disk_format']
-    image['metadata'] = dict((key.upper(), val) \
+    image['metadata'] = dict((key.upper(), val)
                              for key, val in properties.items())
+    image['checksum'] = img['checksum']
+
     return image
 
 
@@ -316,7 +318,7 @@ def get_nic_from_index(vm, nic_index):
     matching_nics = vm.nics.filter(index=nic_index)
     matching_nics_len = len(matching_nics)
     if matching_nics_len < 1:
-        raise  ItemNotFound('NIC not found on VM')
+        raise ItemNotFound('NIC not found on VM')
     elif matching_nics_len > 1:
         raise BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
@@ -377,10 +379,9 @@ def render_fault(request, fault):
     if request.serialization == 'xml':
         data = render_to_string('fault.xml', {'fault': fault})
     else:
-        d = {fault.name: {
-                'code': fault.code,
-                'message': fault.message,
-                'details': fault.details}}
+        d = {fault.name: {'code': fault.code,
+                          'message': fault.message,
+                          'details': fault.details}}
         data = json.dumps(d)
 
     resp = HttpResponse(data, status=fault.code)
@@ -466,7 +467,7 @@ def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
         raise OverLimit("Maximum number of personalities"
-                               " exceeded")
+                        " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
         try:
@@ -497,6 +498,7 @@ def get_flavor_provider(flavor):
     if disk_template.startswith("ext"):
         disk_template, provider = disk_template.split("_", 1)
     return disk_template, provider
+
 
 def values_from_flavor(flavor):
     """Get Ganeti connectivity info from flavor type.
@@ -558,12 +560,11 @@ def get_existing_users():
     from synnefo.db.models import VirtualMachine, Network
 
     keypairusernames = PublicKeyPair.objects.filter().values_list('user',
-                                                               flat=True)
+                                                                  flat=True)
     serverusernames = VirtualMachine.objects.filter().values_list('userid',
-                                                                   flat=True)
+                                                                  flat=True)
     networkusernames = Network.objects.filter().values_list('userid',
                                                             flat=True)
 
-    return set(list(keypairusernames) + list(serverusernames) + \
-           list(networkusernames))
-
+    return set(list(keypairusernames) + list(serverusernames) +
+               list(networkusernames))

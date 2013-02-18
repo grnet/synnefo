@@ -49,7 +49,7 @@ from pithos.backends.version import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Backend library for Pithos file storage service'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)

@@ -152,6 +152,7 @@ class ServerCreateAPITest(BaseAPITest):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
         mimage.return_value = {'location': 'pithos://foo',
+                               'checksum': '1234',
                                'disk_format': 'diskdump'}
         mrapi().CreateInstance.return_value = 12
         flavor = mfactory.FlavorFactory()

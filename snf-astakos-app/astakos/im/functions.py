@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -69,7 +69,8 @@ from astakos.im.models import (
     AstakosUser, ProjectMembership, ProjectApplication, Project,
     PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
-    membership_change_notify,
+    membership_change_notify, membership_enroll_notify,
+    membership_request_notify, membership_leave_request_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
@@ -278,7 +279,8 @@ def send_change_email(
         url = ec.get_url()
         url = request.build_absolute_uri(url)
         t = loader.get_template(email_template_name)
-        c = {'url': url, 'site_name': SITENAME}
+        c = {'url': url, 'site_name': SITENAME,
+             'support': DEFAULT_CONTACT_EMAIL, 'ec': ec}
         from_email = settings.SERVER_EMAIL
         send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
                   from_email, [ec.new_email_address],
@@ -413,6 +415,14 @@ def get_related_project_id(application_id):
     except:
         return None
 
+def get_chain_of_application_id(application_id):
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+        chain = app.chain
+        return chain.chain
+    except:
+        return None
+
 def get_project_by_id(project_id):
     try:
         return Project.objects.get(id=project_id)
@@ -420,17 +430,24 @@ def get_project_by_id(project_id):
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
 
+def get_project_by_name(name):
+    try:
+        return Project.objects.get(name=name)
+    except Project.DoesNotExist:
+        raise IOError(
+            _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
+
+
 def get_project_for_update(project_id):
     try:
-        return Project.objects.select_for_update().get(id=project_id)
+        return Project.objects.get_for_update(id=project_id)
     except Project.DoesNotExist:
         raise IOError(
             _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
 
 def get_application_for_update(application_id):
     try:
-        objects = ProjectApplication.objects.select_for_update()
-        return objects.get(id=application_id)
+        return ProjectApplication.objects.get_for_update(id=application_id)
     except ProjectApplication.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) % application_id
         raise IOError(m)
@@ -448,29 +465,30 @@ def get_user_by_uuid(uuid):
         raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
 
 def create_membership(project, user):
-    if isinstance(project, int):
-        project = get_project_by_id(project)
-    if isinstance(user, int):
+    if isinstance(user, (int, long)):
         user = get_user_by_id(user)
-    m = ProjectMembership(
+
+    if not user.is_active:
+        m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
+        raise PermissionDenied(m)
+
+    m, created = ProjectMembership.objects.get_or_create(
         project=project,
-        person=user,
-        request_date=datetime.now())
-    try:
-        m.save()
-    except IntegrityError, e:
-        raise IOError(_(astakos_messages.MEMBERSHIP_REQUEST_EXISTS))
-    else:
+        person=user)
+
+    if created:
         return m
+    else:
+        msg = _(astakos_messages.MEMBERSHIP_REQUEST_EXISTS)
+        raise PermissionDenied(msg)
+
 
 def get_membership_for_update(project, user):
-    if isinstance(project, int):
-        project = get_project_by_id(project)
-    if isinstance(user, int):
+    if isinstance(user, (int, long)):
         user = get_user_by_id(user)
     try:
-        sfu = ProjectMembership.objects.select_for_update()
-        m = sfu.get(project=project, person=user)
+        objs = ProjectMembership.objects
+        m = objs.get_for_update(project=project, person=user)
         if m.is_pending:
             raise PendingMembershipError()
         return m
@@ -578,15 +596,15 @@ def remove_membership(project_id, user, request_user=None):
 def enroll_member(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
     accept_membership_checks(project, request_user)
-    membership = create_membership(project_id, user)
+    membership = create_membership(project, user)
 
     if not membership.can_accept():
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise PermissionDenied(m)
 
     membership.accept()
+    membership_enroll_notify(project, membership.person)
 
-    # TODO send proper notification
     return membership
 
 def leave_project_checks(project):
@@ -615,13 +633,15 @@ def leave_project(project_id, user_id):
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
         raise PermissionDenied(m)
 
+    auto_accepted = False
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
+        auto_accepted = True
     else:
-        membership.leave_request_date = datetime.now()
-        membership.save()
-    return membership
+        membership.leave_request()
+        membership_leave_request_notify(project, membership.person)
+    return auto_accepted
 
 def join_project_checks(project):
     checkAlive(project)
@@ -644,11 +664,16 @@ def join_project(project_id, user_id):
     join_project_checks(project)
     membership = create_membership(project, user_id)
 
+    auto_accepted = False
     join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
-    return membership
+        auto_accepted = True
+    else:
+        membership_request_notify(project, membership.person)
+
+    return auto_accepted
 
 def submit_application(kw, request_user=None):
 
@@ -658,13 +683,14 @@ def submit_application(kw, request_user=None):
     precursor = None
     precursor_id = kw.get('precursor_application', None)
     if precursor_id is not None:
-        sfu = ProjectApplication.objects.select_for_update()
-        precursor = sfu.get(id=precursor_id)
+        objs = ProjectApplication.objects
+        precursor = objs.get_for_update(id=precursor_id)
         kw['precursor_application'] = precursor
 
         if (request_user and
             (not precursor.owner == request_user and
-             not request_user.is_superuser)):
+             not request_user.is_superuser
+             and not request_user.is_project_admin())):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
@@ -675,8 +701,9 @@ def submit_application(kw, request_user=None):
     else:
         chain = precursor.chain
         application.chain = chain
-        sfu = ProjectApplication.objects.select_for_update()
-        pending = sfu.filter(chain=chain, state=ProjectApplication.PENDING)
+        objs = ProjectApplication.objects
+        q = objs.filter(chain=chain, state=ProjectApplication.PENDING)
+        pending = q.select_for_update()
         for app in pending:
             app.state = ProjectApplication.REPLACED
             app.save()
@@ -719,15 +746,14 @@ def deny_application(application_id):
     application.deny()
     application_deny_notify(application)
 
-def approve_application(app):
-
-    app_id = app if isinstance(app, int) else app.id
+def approve_application(app_id):
 
     try:
-        objects = ProjectApplication.objects.select_for_update()
-        application = objects.get(id=app_id)
+        objects = ProjectApplication.objects
+        application = objects.get_for_update(id=app_id)
     except ProjectApplication.DoesNotExist:
-        raise PermissionDenied()
+        m = _(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID % (app_id,))
+        raise PermissionDenied(m)
 
     if not application.can_approve():
         m = _(astakos_messages.APPLICATION_CANNOT_APPROVE % (

@@ -35,6 +35,7 @@
 
 uenc_encoding = 'UTF-8'
 
+
 def uenc_set_encoding(encoding=None):
     """Set the default encoding for uenc()
 
@@ -65,6 +66,7 @@ def uenc_set_encoding(encoding=None):
 
     uenc_encoding = encoding
 
+
 def uenc(thing, encoding=None):
     """Encode the argument into a string.
 
@@ -88,5 +90,29 @@ def uenc(thing, encoding=None):
 
     return str(thing)
 
-uenc_set_encoding()
 
+def udec(thing, encoding=None):
+    """Decode the argument into a unicode object.
+
+    If the thing is already a unicode object, nothing happens to it.
+    If it is a string object, it is decoded into a unicode object as
+    specified by the encoding argument.
+    If the thing is another type of object, str() is called on it.
+
+    If the encoding argument is not specified, the module's default
+    is used instead. See uenc_set_encoding() for setting the default.
+
+    """
+    if encoding is None:
+        encoding = uenc_encoding
+
+    if isinstance(thing, unicode):
+        return thing
+
+    try:
+        return thing.decode(encoding)
+    except UnicodeDecodeError:
+        return repr(thing.decode('ISO-8859-1'))
+
+
+uenc_set_encoding()

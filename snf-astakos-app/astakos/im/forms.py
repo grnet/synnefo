@@ -242,7 +242,9 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     )
     email = forms.EmailField(
         label='Contact email',
-        help_text = 'This is needed for contact purposes. It doesn&#39;t need to be the same with the one you provided to login previously. '
+        help_text = 'This is needed for contact purposes. ' \
+        'It doesn&#39;t need to be the same with the one you ' \
+        'provided to login previously. '
     )
 
     class Meta:
@@ -432,6 +434,7 @@ class ProfileForm(forms.ModelForm):
     The class defines a save method which sets ``is_verified`` to True so as the
     user during the next login will not to be redirected to profile page.
     """
+    email = forms.EmailField(label='E-mail address', help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
     uuid = forms.CharField(label='User id', required=False)
 
@@ -684,8 +687,8 @@ app_home_widget      =  forms.TextInput(
 
 app_desc_label       =  _("Description")
 app_desc_help        =  _("""
-        Please provide a short but descriptive abstract of your Project,
-        so that anyone searching can quickly understand
+        Please provide a short but descriptive abstract of your
+        Project, so that anyone searching can quickly understand
         what this Project is about.""")
 
 app_comment_label    =  _("Comments for review (private)")
@@ -694,7 +697,7 @@ app_comment_help     =  _("""
         of this application (e.g. background and rationale to
         support your request).
         The comments are strictly for the review process
-        and will not be published.""")
+        and will not be made public.""")
 
 app_start_date_label =  _("Start date")
 app_start_date_help  =  _("""
@@ -705,26 +708,24 @@ app_start_date_help  =  _("""
 app_end_date_label   =  _("Termination date")
 app_end_date_help    =  _("""
         At this date, the project will be automatically terminated
-        and its resource grants revoked from all members.
-        Unless you know otherwise,
-        it is best to start with a conservative estimation.
+        and its resource grants revoked from all members. If you are
+        not certain, it is best to start with a conservative estimation.
         You can always re-apply for an extension, if you need.""")
 
 join_policy_label    =  _("Joining policy")
 app_member_join_policy_help    =  _("""
-        Text fo member_join_policy.""")
+        Select how new members are accepted into the project.""")
 leave_policy_label   =  _("Leaving policy")
 app_member_leave_policy_help    =  _("""
-        Text fo member_leave_policy.""")
+        Select how new members can leave the project.""")
 
 max_members_label    =  _("Maximum member count")
 max_members_help     =  _("""
         Specify the maximum number of members this project may have,
         including the owner. Beyond this number, no new members
         may join the project and be granted the project resources.
-        Unless you certainly for otherwise,
-        it is best to start with a conservative limit.
-        You can always request a raise when you need it.""")
+        If you are not certain, it is best to start with a conservative
+        limit. You can always request a raise when you need it.""")
 
 join_policies = PROJECT_MEMBER_JOIN_POLICIES.iteritems()
 leave_policies = PROJECT_MEMBER_LEAVE_POLICIES.iteritems()
@@ -780,6 +781,7 @@ class ProjectApplicationForm(forms.ModelForm):
     limit_on_members_number = forms.IntegerField(
         label     = max_members_label,
         help_text = max_members_help,
+        min_value = 0,
         required  = False)
 
     class Meta:
@@ -915,7 +917,7 @@ class AddProjectMembersForm(forms.Form):
         q = self.cleaned_data.get('q') or ''
         users = q.split(',')
         users = list(u.strip() for u in users if u)
-        db_entries = AstakosUser.objects.filter(email__in=users)
+        db_entries = AstakosUser.objects.verified().filter(email__in=users)
         unknown = list(set(users) - set(u.email for u in db_entries))
         if unknown:
             raise forms.ValidationError(
@@ -1016,11 +1018,14 @@ class ExtendedProfileForm(ProfileForm):
         if self.email_change:
             self.fields.update(self.email_change_form.fields)
             self.fields['new_email_address'].required = False
+            self.fields['email'].help_text = _('Request email change')
 
         if self.password_change:
             self.fields.update(self.password_change_form.fields)
             self.fields['old_password'].required = False
             self.fields['old_password'].label = _('Password')
+            self.fields['old_password'].help_text = _('Change your local '
+                                                      'password')
             self.fields['old_password'].initial = 'password'
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False

@@ -45,7 +45,7 @@ import django_tables2 as tables
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
 from astakos.im.functions import (join_project_checks,
-                                  leave_project_checks,
+                                  can_leave_request,
                                   cancel_membership_checks)
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
@@ -197,8 +197,7 @@ def action_extra_context(application, table, self):
             pass
 
         try:
-            leave_project_checks(project)
-            can_leave = True
+            can_leave = can_leave_request(project, user)
         except PermissionDenied:
             pass
 
@@ -286,7 +285,7 @@ class UserProjectApplicationsTable(UserTable):
                 project = record.project
                 return self.user.membership_display(project)
             except Project.DoesNotExist:
-                return _(Unknown)
+                return _("Unknown")
 
     def render_members_count(self, record, *args, **kwargs):
         append = ""
@@ -332,16 +331,14 @@ def member_action_extra_context(membership, table, col):
         urls = ['astakos.im.views.project_reject_member',
                 'astakos.im.views.project_accept_member']
         actions = [_('Reject'), _('Accept')]
-        prompts = [_('Are you sure you want to reject this member ?'),
-                   _('Are you sure you want to accept this member ?')]
+        prompts = [_('Are you sure you want to reject this member?'),
+                   _('Are you sure you want to accept this member?')]
         confirms = [True, True]
 
-    if membership.state == ProjectMembership.ACCEPTED:
+    if membership.state in ProjectMembership.ACTUALLY_ACCEPTED:
         urls = ['astakos.im.views.project_remove_member']
         actions = [_('Remove')]
-        if table.user == membership.person:
-            actions = [_('Leave')]
-        prompts = [_('Are you sure you want to remove this member ?')]
+        prompts = [_('Are you sure you want to remove this member?')]
         confirms = [True, True]
 
 
@@ -353,7 +350,6 @@ def member_action_extra_context(membership, table, col):
     return context
 
 class ProjectMembersTable(UserTable):
-    name = tables.Column(accessor="person.last_name", verbose_name=_('Name'))
     email = tables.Column(accessor="person.email", verbose_name=_('Email'))    
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
@@ -367,18 +363,11 @@ class ProjectMembersTable(UserTable):
         if not self.user.owns_project(self.project):
             self.exclude = ('project_action', )
 
-
-    def render_name(self, value, record, *args, **kwargs):
-        return record.person.realname
-
     def render_status(self, value, record, *args, **kwargs):
         return record.state_display()
 
     class Meta:
         template = "im/table_render.html"
-        model = ProjectMembership
-        fields = ('name', 'status')
-        sequence = ('name', 'email', 'status', 'project_action')
         attrs = {'id': 'members-table', 'class': 'members-table alt-style'}
         empty_text = _('No members')
 

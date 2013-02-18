@@ -34,6 +34,9 @@
 from synnefo.lib.db.xctx import TransactionHandler
 from time import sleep
 
+import logging
+logger = logging.getLogger(__name__)
+
 class RetryException(Exception):
     pass
 
@@ -50,12 +53,19 @@ class RetryTransactionHandler(TransactionHandler):
                 try:
                     f = TransactionHandler.__call__(self, func)
                     return f(*args, **kwargs)
-                except RetryException:
+                except RetryException as e:
                     self.retries -= 1
                     if self.retries <= 0:
+                        logger.exception(e)
                         f = self.on_fail
                         if not callable(f):
                             raise
                         return f(*args, **kwargs)
                     sleep(self.retry_wait)
+                except BaseException as e:
+                    logger.exception(e)
+                    f = self.on_fail
+                    if not callable(f):
+                        raise
+                    return f(*args, **kwargs)
         return wrap

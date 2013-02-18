@@ -39,11 +39,18 @@ from synnefo.management.common import pprint_table
 
 
 class Command(BaseCommand):
+    help = """
+    Verify that cyclades.* resource usage.
+
+    Verify that usage calculated from Cyclades DB agrees with the usage
+    recorded in the effective quota database (Quotaholder)
+
+    """
     output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
-                    help="Verify quotas only for this user"),
+                    help="Verify usage only for this user"),
     )
 
     def handle(self, *args, **options):
@@ -86,11 +93,11 @@ class Command(BaseCommand):
         db_extra = db_res - qh_res
         if db_extra:
             for res in db_extra:
-                write("Resource %s exists in DB for %s but not in QH\n"\
+                write("Resource %s exists in DB for %s but not in QH\n"
                       % (res, user))
         qh_extra = qh_res - db_res
         if qh_extra:
             for res in qh_extra:
-                write("Resource %s exists in QH for %s but not in DB\n"\
+                write("Resource %s exists in QH for %s but not in DB\n"
                       % (res, user))
         return False

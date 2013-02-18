@@ -39,17 +39,12 @@ from synnefo.quotas.util import get_db_holdings
 
 
 class Command(BaseCommand):
-    help = "Reconcile quotas with Quotaholder"
+    help = """Reset cyclades.* usage values in Quotaholder"""
     output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
                     help="Verify quotas only for this user"),
-        make_option("--fix", dest="fix",
-                    action='store_true',
-                    default=False,
-                    help="Fix pending commissions"
-                    ),
         make_option("--dry-run", dest="dry_run",
                     action='store_true',
                     default=False),
@@ -69,10 +64,12 @@ class Command(BaseCommand):
                     continue
                 reset_holding = []
                 for res, val in resources.items():
-                    reset_holding.append((user, "cyclades." + res, "1", val, 0, 0, 0))
+                    reset_holding.append((user, "cyclades." + res, "1", val, 0,
+                                          0, 0))
                 if not options['dry_run']:
                     try:
-                        qh.reset_holding(context={}, reset_holding=reset_holding)
+                        qh.reset_holding(context={},
+                                         reset_holding=reset_holding)
                     except Exception as e:
                         self.stderr.write("Can not set up holding:%s" % e)
                 else:

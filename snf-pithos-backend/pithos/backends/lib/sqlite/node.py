@@ -274,7 +274,7 @@ class Node(DBWorker):
         execute(q, args)
         nr, size = self.fetchone()
         if not nr:
-            return (), 0
+            return (), 0, ()
         mtime = time()
         self.statistics_update(parent, -nr, -size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
@@ -324,7 +324,7 @@ class Node(DBWorker):
         execute(q, args)
         nr, size = self.fetchone()
         if not nr:
-            return (), 0
+            return (), 0, ()
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
 

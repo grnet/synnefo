@@ -34,6 +34,10 @@
 from django.db import transaction
 from django.db import connection
 from time import sleep
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def with_lock(retries=3, retry_wait=1.0):
     def wrap(func):
@@ -41,6 +45,7 @@ def with_lock(retries=3, retry_wait=1.0):
 
             transaction.commit()
 
+            _retries = retries
             cursor = connection.cursor()
             locked = True
             try:
@@ -54,8 +59,8 @@ def with_lock(retries=3, retry_wait=1.0):
                     if locked:
                         break
 
-                    retries -= 1
-                    if retries <= 0:
+                    _retries -= 1
+                    if _retries <= 0:
                         return False
                     sleep(retry_wait)
 
@@ -63,6 +68,12 @@ def with_lock(retries=3, retry_wait=1.0):
 
             finally:
                 if locked:
+                    try:
+                        transaction.commit()
+                    except Exception as e:
+                        logger.exception(e)
+                        transaction.rollback()
+
                     cursor.execute("SELECT pg_advisory_unlock(1)")
                     cursor.fetchall()
         return inner

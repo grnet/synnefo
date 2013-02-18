@@ -57,6 +57,7 @@ from django.http import (
 from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.http import urlencode
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import (
@@ -99,8 +100,9 @@ from astakos.im.functions import (
     SendNotificationError,
     accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member, can_join_request, can_leave_request,
-    cancel_application, get_related_project_id,
-    get_by_chain_or_404)
+    get_related_project_id, get_by_chain_or_404,
+    approve_application, deny_application,
+    cancel_application, dismiss_application)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
@@ -485,12 +487,20 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
     except AstakosUser.DoesNotExist:
         instance = None
 
+    pending_user = None
     third_party_token = request.REQUEST.get('third_party_token', None)
     if third_party_token:
         pending = get_object_or_404(PendingThirdPartyUser,
                                     token=third_party_token)
         provider = pending.provider
         instance = pending.get_user_instance()
+        if pending.existing_user().count() > 0:
+            pending_user = pending.existing_user().get()
+            if request.method == "GET":
+                messages.warning(request, pending_user.get_inactive_message())
+
+
+    extra_context['pending_user_exists'] = pending_user
 
     try:
         if not backend:
@@ -642,7 +652,7 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
             extra_message = provider.get_logout_message_display
             if extra_message:
                 message += '<br />' + extra_message
-        messages.add_message(request, messages.SUCCESS, mark_safe(message))
+        messages.success(request, message)
         response['Location'] = reverse('index')
         response.status_code = 301
     return response
@@ -819,7 +829,6 @@ def change_email(request, activation_key=None,
 def send_activation(request, user_id, template_name='im/login.html', extra_context=None):
 
     if request.user.is_authenticated():
-        messages.error(request, _(astakos_messages.ALREADY_LOGGED_IN))
         return HttpResponseRedirect(reverse('edit_profile'))
 
     # TODO: check if moderation is only enabled for local login
@@ -1142,7 +1151,8 @@ def project_modify(request, application_id):
     except ProjectApplication.DoesNotExist:
         raise Http404
 
-    if not request.user.owns_application(app):
+    user = request.user
+    if not (user.owns_application(app) or user.is_project_admin(app.id)):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
@@ -1192,11 +1202,7 @@ def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
 @project_transaction_context(sync=True)
-def addmembers(request, chain_id, ctx=None):
-    addmembers_form = AddProjectMembersForm(
-        request.POST,
-        chain_id=int(chain_id),
-        request_user=request.user)
+def addmembers(request, chain_id, addmembers_form, ctx=None):
     if addmembers_form.is_valid():
         try:
             chain_id = int(chain_id)
@@ -1217,9 +1223,15 @@ def common_detail(request, chain_or_app_id, project_view=True):
     if project_view:
         chain_id = chain_or_app_id
         if request.method == 'POST':
-            addmembers(request, chain_id)
-
-        addmembers_form = AddProjectMembersForm()
+            addmembers_form = AddProjectMembersForm(
+                request.POST,
+                chain_id=int(chain_id),
+                request_user=request.user)
+            addmembers(request, chain_id, addmembers_form)
+            if addmembers_form.is_valid():
+                addmembers_form = AddProjectMembersForm()  # clear form data
+        else:
+            addmembers_form = AddProjectMembersForm()  # initialize form
 
         project, application = get_by_chain_or_404(chain_id)
         if project:
@@ -1243,12 +1255,13 @@ def common_detail(request, chain_or_app_id, project_view=True):
     modifications_table = None
 
     user = request.user
+    is_project_admin = user.is_project_admin(application_id=application.id)
     is_owner = user.owns_application(application)
-    if not is_owner and not project_view:
+    if not (is_owner or is_project_admin) and not project_view:
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    if (not is_owner and project_view and
+    if (not (is_owner or is_project_admin) and project_view and
         not user.non_owner_can_view(project)):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
@@ -1274,6 +1287,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
             'addmembers_form':addmembers_form,
             'members_table': members_table,
             'owner_mode': is_owner,
+            'admin_mode': is_project_admin,
             'modifications_table': modifications_table,
             'mem_display': mem_display,
             'can_join_request': can_join_req,
@@ -1336,9 +1350,12 @@ def project_join(request, chain_id, ctx=None):
 
     try:
         chain_id = int(chain_id)
-        join_project(chain_id, request.user)
-        # TODO: distinct messages for request/auto accept ???
-        messages.success(request, _(astakos_messages.USER_JOIN_REQUEST_SUBMITED))
+        auto_accepted = join_project(chain_id, request.user)
+        if auto_accepted:
+            m = _(astakos_messages.USER_JOINED_PROJECT)
+        else:
+            m = _(astakos_messages.USER_JOIN_REQUEST_SUBMITTED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except BaseException, e:
@@ -1360,7 +1377,12 @@ def project_leave(request, chain_id, ctx=None):
 
     try:
         chain_id = int(chain_id)
-        leave_project(chain_id, request.user)
+        auto_accepted = leave_project(chain_id, request.user)
+        if auto_accepted:
+            m = _(astakos_messages.USER_LEFT_PROJECT)
+        else:
+            m = _(astakos_messages.USER_LEAVE_REQUEST_SUBMITTED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except PendingMembershipError as e:
@@ -1385,6 +1407,8 @@ def project_cancel(request, chain_id, ctx=None):
     try:
         chain_id = int(chain_id)
         cancel_membership(chain_id, request.user)
+        m = _(astakos_messages.USER_REQUEST_CANCELLED)
+        messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     except PendingMembershipError as e:
@@ -1417,8 +1441,8 @@ def project_accept_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = m.person.realname
-        msg = _(astakos_messages.USER_JOINED_PROJECT) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_ACCEPTED) % email
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
@@ -1441,8 +1465,8 @@ def project_remove_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = m.person.realname
-        msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_REMOVED) % email
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
@@ -1465,10 +1489,73 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         if ctx:
             ctx.mark_rollback()
     else:
-        realname = m.person.realname
-        msg = _(astakos_messages.USER_LEFT_PROJECT) % locals()
+        email = escape(m.person.email)
+        msg = _(astakos_messages.USER_MEMBERSHIP_REJECTED) % email
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context(sync=True)
+def project_app_approve(request, application_id, ctx=None):
+
+    if not request.user.is_project_admin():
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    approve_application(application_id)
+    chain_id = get_related_project_id(application_id)
+    return redirect(reverse('project_detail', args=(chain_id,)))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_deny(request, application_id, ctx=None):
+
+    if not request.user.is_project_admin():
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    deny_application(application_id)
+    return redirect(reverse('project_list'))
+
+@require_http_methods(["POST", "GET"])
+@signed_terms_required
+@login_required
+@project_transaction_context()
+def project_app_dismiss(request, application_id, ctx=None):
+    try:
+        app = ProjectApplication.objects.get(id=application_id)
+    except ProjectApplication.DoesNotExist:
+        raise Http404
+
+    if not request.user.owns_application(app):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    # XXX: dismiss application also does authorization
+    dismiss_application(application_id, request_user=request.user)
+
+    chain_id = None
+    chain_id = get_related_project_id(application_id)
+    if chain_id:
+        next = reverse('project_detail', args=(chain_id,))
+    else:
+        next = reverse('project_list')
+    return redirect(next)
+
 
 def landing(request):
     return render_response(

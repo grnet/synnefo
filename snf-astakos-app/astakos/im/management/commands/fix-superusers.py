@@ -32,28 +32,18 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from datetime import datetime
 
-from django.core.management.base import BaseCommand, CommandError
-from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.core.management.base import NoArgsCommand, CommandError
 
-from astakos.im.models import ProjectApplication
-from astakos.im.functions import deny_application
+from astakos.im.models import fix_superusers
 
-class Command(BaseCommand):
-    args = "<project application id>"
-    help = "Deny a project application"
 
-    @transaction.commit_on_success
-    def handle(self, *args, **options):
-        if len(args) < 1:
-            raise CommandError("Please provide an application identifier")
+class Command(NoArgsCommand):
+    help = "Transform superusers created by syncdb into AstakosUser instances"
+
+    def handle(self, **options):
         try:
-            app_id = int(args[0])
-        except ValueError:
-            raise CommandError('Invalid id')
-        else:
-            try:
-                deny_application(app_id)
-            except (PermissionDenied, IOError):
-                raise CommandError('Invalid id')
+            fix_superusers()
+        except BaseException, e:
+            raise CommandError(e)

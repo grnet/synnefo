@@ -98,7 +98,6 @@ class Command(BaseCommand):
              'last_name':last_name
         }
         u.update(filter_custom_options(options))
-        u.pop('active')
         if not u.get('password'):
             u['password'] = AstakosUser.objects.make_random_password()
 
@@ -111,10 +110,6 @@ class Command(BaseCommand):
             if not r.is_success:
                 raise CommandError(r.reason)
             else:
-                if options['active']:
-                    user_id = r.data.get('id')
-                    user = AstakosUser.objects.get(id = user_id)
-                    activate(user)
                 self.stdout.write('User created successfully ')
                 if not options.get('password'):
                     self.stdout.write('with password: %s\n' % u['password'])

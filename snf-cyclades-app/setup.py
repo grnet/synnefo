@@ -183,15 +183,15 @@ setup(
     name = 'snf-cyclades-app',
     version = VERSION,
     license = 'BSD',
-    url = 'http://code.grnet.gr/',
+    url = 'http://www.synnefo.org/',
     description = SHORT_DESCRIPTION,
     long_description=README + '\n\n' +  CHANGES,
     classifiers = CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
     namespace_packages = ['synnefo', 'synnefo.versions'],
     packages = PACKAGES,
@@ -209,8 +209,6 @@ setup(
     entry_points = {
      'console_scripts': [
          'snf-dispatcher = synnefo.logic.dispatcher:main',
-         'snf-admin = synnefo.tools.admin:main',
-         'snf-cloud = synnefo.tools.cloud:main',
          ],
      'synnefo': [
          'default_settings = synnefo.app_settings.default',
@@ -222,4 +220,3 @@ setup(
          ]
       },
 )
-

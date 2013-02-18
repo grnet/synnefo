@@ -220,7 +220,7 @@ def list_image_members(request, image_id):
     """
 
     members = [{'member_id': user, 'can_share': False}
-                for user in request.backend.list_users(image_id)]
+               for user in request.backend.list_users(image_id)]
     data = json.dumps({'members': members}, indent=settings.DEBUG)
     return HttpResponse(data)
 

@@ -125,6 +125,7 @@ def merge_user(username):
         key.user = username.lower()
         key.save()
 
+
 def migrate_user(username, uuid):
     """
     Warn: no transaction handling. Consider wrapping within another function.
@@ -134,7 +135,7 @@ def migrate_user(username, uuid):
     keys = PublicKeyPair.objects.filter(user__exact=username)
 
     for o in itertools.chain(vms, networks):
-        o.userid = uuid
+        o.userid = uuid or o.userid
         o.save()
 
     for key in keys:
@@ -154,11 +155,12 @@ def migrate_users(usernames, dry=True):
         try:
             uuid = get_user_uuid(u)
             print "%s -> %s" % (u, uuid)
+            if not uuid:
+                raise Exception("No uuid for %s" % u)
             migrate_user(u, uuid)
             count += 1
         except Exception, e:
             print "ERROR: User id migration failed (%s)" % e
-
 
     if dry:
         print "Skipping database commit."
@@ -166,10 +168,6 @@ def migrate_users(usernames, dry=True):
     else:
         transaction.commit()
         print "Migrated %d users" % count
-
-
-def migrate_quotas(usernames):
-    pass
 
 
 class Command(NoArgsCommand):
@@ -185,17 +183,14 @@ class Command(NoArgsCommand):
                     dest='validate',
                     action="store_true",
                     default=True,
-                    help="Check if cyclades database contents are valid for migration."),
+                    help=("Check if cyclades database contents are valid for "
+                          "migration.")),
         make_option('--migrate-users',
                     dest='migrate_users',
                     action="store_true",
                     default=False,
-                    help="Convert emails to uuids for all users stored in database."),
-        make_option('--migrate-quotas',
-                    dest='migrate_quota',
-                    action="store_true",
-                    default=False,
-                    help="Store existing vms/networks usage/limits to quotaholder."),
+                    help=("Convert emails to uuids for all users stored in "
+                          "database.")),
         make_option('--merge-user',
                     dest='merge_user',
                     default=False,
@@ -227,7 +222,7 @@ class Command(NoArgsCommand):
                                         'merge_user'])
         if len(filter(bool, conflicting)) > 1:
             raise CommandError('You can use only one of --validate,'
-                               '--migrate-userids, migrate-quotas')
+                               '--migrate-users')
 
     def handle(self, *args, **options):
         self.resolve_conflicts(options)
@@ -261,5 +256,3 @@ class Command(NoArgsCommand):
 
         if options.get('user_entries'):
             delete_user(options.get('user_entries'))
-
-

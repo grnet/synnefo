@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,27 +32,91 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.functions import check_expiration
-from astakos.im.project_xctx import project_transaction_context
+from django.core.management.base import BaseCommand, CommandError
+from astakos.im.functions import (terminate, suspend, resume, check_expiration,
+                                  approve_application, deny_application)
+from astakos.im.project_xctx import cmd_project_transaction_context
+
 
 class Command(BaseCommand):
-    help = "Perform administration checks on projects"
+    help = "Manage projects and applications"
 
     option_list = BaseCommand.option_list + (
+        make_option('--approve',
+                    dest='approve',
+                    metavar='<application id>',
+                    help="Approve a project application"),
+        make_option('--deny',
+                    dest='deny',
+                    metavar='<application id>',
+                    help="Deny a project application"),
+        make_option('--terminate',
+                    dest='terminate',
+                    metavar='<project id>',
+                    help="Terminate a project"),
+        make_option('--suspend',
+                    dest='suspend',
+                    metavar='<project id>',
+                    help="Suspend a project"),
+        make_option('--unsuspend',
+                    dest='resume',
+                    metavar='<project id>',
+                    help="Resume a suspended project"),
         make_option('--check-expired',
                     action='store_true',
-                    dest='expire',
+                    dest='check_expired',
                     default=False,
                     help="Check projects for expiration"),
-        make_option('--execute',
+        make_option('--terminate-expired',
                     action='store_true',
-                    dest='execute',
+                    dest='terminate_expired',
                     default=False,
-                    help="Perform the actual operation"),
+                    help="Terminate all expired projects"),
     )
 
+    def handle(self, *args, **options):
+
+        pid = options['terminate']
+        if pid is not None:
+            self.run_command(terminate, pid)
+            return
+
+        pid = options['resume']
+        if pid is not None:
+            self.run_command(resume, pid)
+            return
+
+        pid = options['suspend']
+        if pid is not None:
+            self.run_command(suspend, pid)
+            return
+
+        appid = options['approve']
+        if appid is not None:
+            self.run_command(approve_application, appid)
+            return
+
+        appid = options['deny']
+        if appid is not None:
+            self.run_command(deny_application, appid)
+            return
+
+        if options['check_expired']:
+            self.expire(execute=False)
+            return
+
+        if options['terminate_expired']:
+            self.expire(execute=True)
+
+    @cmd_project_transaction_context(sync=True)
+    def run_command(self, func, id, ctx=None):
+        try:
+            func(id)
+        except BaseException as e:
+            if ctx:
+                ctx.mark_rollback()
+            raise CommandError(e)
 
     def print_expired(self, projects, execute):
         length = len(projects)
@@ -61,7 +125,7 @@ class Command(BaseCommand):
         elif length == 1:
             s = '1 expired project:\n'
         else:
-            s = '%d expired projects:\n' %(length,)
+            s = '%d expired projects:\n' % (length,)
         self.stdout.write(s)
 
         if length > 0:
@@ -78,15 +142,10 @@ class Command(BaseCommand):
                 self.stdout.write(line + '\n')
 
             if execute:
-                self.stdout.write('%d projects have been terminated.\n' %(length,))
+                self.stdout.write('%d projects have been terminated.\n' % (
+                    length,))
 
-    def handle(self, *args, **options):
-
-        execute = options['execute']
-        if options['expire']:
-            self.expire(execute=execute)
-
-    @project_transaction_context(sync=True)
+    @cmd_project_transaction_context(sync=True)
     def expire(self, execute=False, ctx=None):
         try:
             projects = check_expiration(execute=execute)

@@ -10,6 +10,11 @@ MEM_CHANGE_NOTIF = {
     'template': 'im/projects/project_membership_change_notification.txt',
     }
 
+MEM_ENROLL_NOTIF = {
+    'subject' : _(settings.PROJECT_MEMBERSHIP_ENROLL_SUBJECT),
+    'template': 'im/projects/project_membership_enroll_notification.txt',
+    }
+
 SENDER = settings.SERVER_EMAIL
 ADMINS = settings.ADMINS
 
@@ -21,6 +26,42 @@ def membership_change_notify(project, user, action):
             MEM_CHANGE_NOTIF['subject'] % project.__dict__,
             template= MEM_CHANGE_NOTIF['template'],
             dictionary={'object':project, 'action':action})
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+def membership_enroll_notify(project, user):
+    try:
+        notification = build_notification(
+            SENDER,
+            [user.email],
+            MEM_ENROLL_NOTIF['subject'] % project.__dict__,
+            template= MEM_ENROLL_NOTIF['template'],
+            dictionary={'object':project})
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+def membership_request_notify(project, requested_user):
+    try:
+        notification = build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(settings.PROJECT_MEMBERSHIP_REQUEST_SUBJECT) % project.__dict__,
+            template= 'im/projects/project_membership_request_notification.txt',
+            dictionary={'object':project, 'user':requested_user.email})
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+def membership_leave_request_notify(project, requested_user):
+    try:
+        notification = build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(settings.PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT) % project.__dict__,
+            template= 'im/projects/project_membership_leave_request_notification.txt',
+            dictionary={'object':project, 'user':requested_user.email})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)

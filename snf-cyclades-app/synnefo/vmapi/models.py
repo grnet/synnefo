@@ -41,6 +41,7 @@ from synnefo.vmapi import backend, get_key, get_uuid, settings
 
 log = getLogger('synnefo.vmapi')
 
+
 def create_server_params(sender, created_vm_params, **kwargs):
     json_value = json.dumps(created_vm_params)
     uuid = get_uuid()
@@ -55,4 +56,3 @@ def create_server_params(sender, created_vm_params, **kwargs):
     return uuid
 
 server_created.connect(create_server_params)
-

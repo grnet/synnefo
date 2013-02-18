@@ -42,7 +42,7 @@ from datetime import datetime
 from mock import patch
 from synnefo.api.util import allocate_resource
 from synnefo.logic.callbacks import (update_db, update_net, update_network,
-                                    update_build_progress)
+                                     update_build_progress)
 
 now = datetime.now
 from time import time
@@ -241,7 +241,7 @@ class UpdateNetTest(TestCase):
         vm = mfactory.VirtualMachineFactory(operstate='ERROR')
         for public in [True, False]:
             net = mfactory.NetworkFactory(public=public)
-            msg = self.create_msg(nics=[{'network':net.backend_id}],
+            msg = self.create_msg(nics=[{'network': net.backend_id}],
                                   instance=vm.backend_vm_id)
             update_net(client, msg)
             client.basic_ack.assert_called_once()
@@ -264,7 +264,7 @@ class UpdateNetTest(TestCase):
         pool = net.get_pool()
         self.assertTrue(pool.is_available('10.0.0.22'))
         pool.save()
-        msg = self.create_msg(nics=[{'network':net.backend_id,
+        msg = self.create_msg(nics=[{'network': net.backend_id,
                                      'ip': '10.0.0.22',
                                      'mac': 'aa:bb:cc:00:11:22'}],
                               instance=vm.backend_vm_id)
@@ -374,7 +374,7 @@ class UpdateNetworkTest(TestCase):
         client.basic_ack.assert_called_once()
         self.assertEqual(Network.objects.get(id=net1.id).state, 'PENDING')
         self.assertEqual(BackendNetwork.objects.get(id=bn2.id).operstate,
-                        'PENDING')
+                         'PENDING')
 
     def test_remove(self, client):
         mfactory.MacPrefixPoolTableFactory()
@@ -399,7 +399,7 @@ class UpdateNetworkTest(TestCase):
                 client.basic_ack.assert_called_once()
                 db_bnet = BackendNetwork.objects.get(id=bn.id)
                 self.assertEqual(db_bnet.operstate,
-                                'DELETED')
+                                 'DELETED')
                 db_net = Network.objects.get(id=net.id)
                 self.assertEqual(db_net.state, 'DELETED', flavor)
                 self.assertTrue(db_net.deleted)
@@ -562,17 +562,21 @@ class ReconciliationTest(TestCase):
         for status in ['queued', 'waiting', 'running']:
             client.return_value.GetJobStatus.return_value = {'status': status}
             self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
-            client.return_value.GetJobStatus.assert_called_once_with(vm.backendjobid)
+            client.return_value.GetJobStatus\
+                               .assert_called_once_with(vm.backendjobid)
             client.reset_mock()
         for status in ['success', 'error', 'canceled']:
             client.return_value.GetJobStatus.return_value = {'status': status}
             self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
-            client.return_value.GetInstance.assert_called_once_with(vm.backend_vm_id)
-            client.return_value.GetJobStatus.assert_called_once_with(vm.backendjobid)
+            client.return_value.GetInstance\
+                               .assert_called_once_with(vm.backend_vm_id)
+            client.return_value.GetJobStatus\
+                               .assert_called_once_with(vm.backendjobid)
             client.reset_mock()
         from synnefo.logic.rapi import GanetiApiError
         client.return_value.GetJobStatus.side_effect = GanetiApiError('Foo')
-        self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([vm.id]))
+        self.assertEqual(reconciliation.stale_servers_in_db(D, G),
+                         set([vm.id]))
 
     def test_orphan_instances_in_ganeti(self):
         """Test discovery of orphan instances in Ganeti, without a DB entry"""
@@ -589,8 +593,8 @@ class ReconciliationTest(TestCase):
         D = {1: 'STARTED', 2: 'STARTED', 3: 'BUILD', 4: 'STARTED', 50: 'BUILD'}
         self.assertEquals(reconciliation.unsynced_operstate(D, G),
                           set([(2, 'STARTED', False),
-                           (3, 'BUILD', True), (4, 'STARTED', False),
-                           (50, 'BUILD', True)]))
+                               (3, 'BUILD', True), (4, 'STARTED', False),
+                               (50, 'BUILD', True)]))
 
 from synnefo.logic.test.rapi_pool_tests import *
 from synnefo.logic.test.utils_tests import *

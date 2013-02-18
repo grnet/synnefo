@@ -71,13 +71,14 @@ In `/etc/synnefo/pithos.conf` add:
 
 Install pithos web UI with:
 
-.. code-block::
+.. code-block:: console
 
    # apt-get install snf-pithos-webclient
 
+
 In `/etc/synnefo/webclient.conf` add:
 
-.. code-block::
+.. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
     CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'

@@ -1,7 +1,7 @@
 import pkg_resources
 import os
 import pprint
-import re
+
 
 def get_dist_from_module(modname):
     pkgroot = pkg_resources.get_provider(modname).egg_root
@@ -18,7 +18,7 @@ def get_dist_version(dist_name):
     """
     try:
         return get_dist(dist_name).version
-    except Exception, e:
+    except Exception:
         return 'unknown'
 
 
@@ -30,10 +30,10 @@ def get_component_version(modname):
     try:
         try:
             return __import__('synnefo.versions.%s' % modname,
-                    fromlist=['synnefo.versions']).__version__
+                              fromlist=['synnefo.versions']).__version__
         except ImportError:
-            return  vcs_version()
-    except Exception, e:
+            return "unknown"
+    except Exception:
         return 'unknown'
 
 
@@ -49,12 +49,13 @@ def vcs_info():
     """
     import subprocess
     callgit = lambda(cmd): subprocess.Popen(
-            ['/bin/sh', '-c', cmd],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE).communicate()[0].strip()
+        ['/bin/sh', '-c', cmd],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE).communicate()[0].strip()
 
     branch = callgit('git branch | grep -Ei "\* (.*)" | cut -f2 -d" "')
-    revid = callgit("git --no-pager log --max-count=1 | cut -f2 -d' ' | head -1")
+    revid =\
+        callgit("git --no-pager log --max-count=1 | cut -f2 -d' ' | head -1")
     revno = callgit('git --no-pager log --oneline | wc -l')
     desc = callgit('git describe --tags')
 
@@ -86,13 +87,14 @@ def get_version_from_describe(describe):
 def update_version_old(module, name='version', root="."):
     """
     Helper util to generate/replace a version.py file containing version
-    information retrieved from get_version_from_describe as a submodule of passed `module`
+    information retrieved from get_version_from_describe as a submodule of
+    passed `module`
     """
 
     # exit early if not in development environment
-    if not os.path.exists(os.path.join(root, '..', '.git')) and \
-        not os.path.exists(os.path.join(root, '.git')):
-        return
+    if not os.path.exists(os.path.join(root, '..', '.git')) and\
+       not os.path.exists(os.path.join(root, '.git')):
+            return
 
     paths = [root] + module.split(".") + ["%s.py" % name]
     module_filename = os.path.join(*paths)
@@ -101,7 +103,7 @@ __version__ = "%(version)s"
 __version_info__ = __version__.split(".")
 __version_vcs_info__ = %(vcs_info)s
     """ % dict(version=get_version_from_describe(vcs_info()[3]),
-            vcs_info=pprint.PrettyPrinter().pformat(vcs_info()))
+               vcs_info=pprint.PrettyPrinter().pformat(vcs_info()))
 
     module_file = file(module_filename, "w+")
     module_file.write(content)

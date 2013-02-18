@@ -33,8 +33,10 @@
 
 import json
 
+from optparse import make_option
+
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network
+from synnefo.management.common import get_network, UUIDCache
 
 from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
@@ -45,55 +47,70 @@ from util import pool_map_chunks
 class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
 
+    option_list = BaseCommand.option_list + (
+        make_option('--uuids',
+            action='store_true',
+            dest='use_uuids',
+            default=False,
+            help="Display UUIDs instead of user emails"),
+        )
+
     def handle(self, *args, **options):
+        write = self.stdout.write
         if len(args) != 1:
             raise CommandError("Please provide a network ID.")
 
         net = get_network(args[0])
 
         sep = '-' * 80 + '\n'
-        labels = ('name', 'backend-name', 'state', 'owner', 'subnet', 'gateway',
-                  'mac_prefix', 'link', 'public', 'dhcp', 'flavor', 'deleted',
-                  'action', 'pool')
-        fields = (net.name, net.backend_id, net.state, str(net.userid),
+        labels = ('name', 'backend-name', 'state', 'owner', 'subnet',
+                  'gateway', 'mac_prefix', 'link', 'public', 'dhcp', 'flavor',
+                  'deleted', 'action', 'pool')
+
+        user = net.userid
+        if options['use_uuids'] is False:
+            ucache = UUIDCache()
+            user = ucache.get_user(net.userid)
+
+        fields = (net.name, net.backend_id, net.state, user or '',
                   str(net.subnet), str(net.gateway), str(net.mac_prefix),
                   str(net.link), str(net.public),  str(net.dhcp),
                   str(net.flavor), str(net.deleted), str(net.action),
                   str(splitPoolMap(net.get_pool().to_map(), 64)))
 
-        self.stdout.write(sep)
-        self.stdout.write('State of Network in DB\n')
-        self.stdout.write(sep)
+        write(sep)
+        write('State of Network in DB\n')
+        write(sep)
         for l, f in zip(labels, fields):
-            self.stdout.write(l.ljust(20) + ': ' + f.ljust(20) + '\n')
+            write(l.ljust(20) + ': ' + f.ljust(20) + '\n')
 
         labels = ('Backend', 'State', 'Deleted', 'JobID', 'OpCode',
                   'JobStatus')
         for back_net in BackendNetwork.objects.filter(network=net):
-            self.stdout.write('\n')
+            write('\n')
             fields = (back_net.backend.clustername, back_net.operstate,
-                     str(back_net.deleted),  str(back_net.backendjobid),
-                     str(back_net.backendopcode),
-                     str(back_net.backendjobstatus))
+                      str(back_net.deleted),  str(back_net.backendjobid),
+                      str(back_net.backendopcode),
+                      str(back_net.backendjobstatus))
             for l, f in zip(labels, fields):
-                self.stdout.write(l.ljust(20) + ': ' + f.ljust(20) + '\n')
-        self.stdout.write('\n')
+                write(l.ljust(20) + ': ' + f.ljust(20) + '\n')
+        write('\n')
 
-        self.stdout.write(sep)
-        self.stdout.write('State of Network in Ganeti\n')
-        self.stdout.write(sep)
+        write(sep)
+        write('State of Network in Ganeti\n')
+        write(sep)
 
         for backend in Backend.objects.exclude(offline=True):
             with pooled_rapi_client(backend) as client:
                 try:
                     g_net = client.GetNetwork(net.backend_id)
-                    self.stdout.write("Backend: %s\n" % backend.clustername)
+                    write("Backend: %s\n" % backend.clustername)
                     print json.dumps(g_net, indent=2)
-                    self.stdout.write(sep)
+                    write(sep)
                 except GanetiApiError as e:
                     if e.code == 404:
-                        self.stdout.write('Network does not exist in backend %s\n' %
-                                          backend.clustername)
+                        write('Network does not exist in backend %s\n' %
+                              backend.clustername)
                     else:
                         raise e
 

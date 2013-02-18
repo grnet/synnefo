@@ -37,8 +37,6 @@ distribute_setup.use_setuptools()
 
 import os
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
@@ -49,7 +47,7 @@ from synnefo.versions.common import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Base layer for all of Synnefo related software'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
@@ -68,29 +66,28 @@ TESTS_REQUIRES = [
 ]
 
 setup(
-    name = 'snf-common',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://code.grnet.gr/',
-    description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
-    classifiers = CLASSIFIERS,
+    name='snf-common',
+    version=VERSION,
+    license='BSD',
+    url='http://www.synnefo.org/',
+    description=SHORT_DESCRIPTION,
+    long_description=README + '\n\n' + CHANGES,
+    classifiers=CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
-    namespace_packages = ['synnefo', 'synnefo.versions'],
-    packages = PACKAGES,
-    package_dir= {'': PACKAGES_ROOT},
-    include_package_data = True,
-    zip_safe = False,
+    namespace_packages=['synnefo', 'synnefo.versions'],
+    packages=PACKAGES,
+    package_dir={'': PACKAGES_ROOT},
+    include_package_data=True,
+    zip_safe=False,
 
-    install_requires = INSTALL_REQUIRES,
-    extras_require = EXTRAS_REQUIRES,
-    tests_require = TESTS_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRES,
+    tests_require=TESTS_REQUIRES,
 
-    dependency_links = ['http://docs.dev.grnet.gr/pypi']
+    dependency_links=['http://docs.dev.grnet.gr/pypi']
 )
-

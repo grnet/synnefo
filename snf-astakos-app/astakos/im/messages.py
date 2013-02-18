@@ -38,6 +38,7 @@ ACCOUNT_ALREADY_ACTIVE                  =   'This account is already active.'
 ACCOUNT_PENDING_ACTIVATION              =   'Your account request is pending activation.'
 ACCOUNT_PENDING_MODERATION              =   'Your account request is pending moderation.'
 ACCOUNT_INACTIVE                        =   'Your account is disabled.'
+ACCOUNT_NOT_ACTIVE                      =   'User account is not active.'
 ACCOUNT_RESEND_ACTIVATION               =   'It seems that an activation email has been sent to you, but you have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email.</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
 
@@ -63,14 +64,11 @@ EMAIL_CHANGE_REGISTERED                 =   'Your request for changing your emai
                                                A verification email will be sent to your new address.'
 
 OBJECT_CREATED                          =   'The %(verbose_name)s was created successfully.'
-USER_JOINED_GROUP                       =   'User %(realname)s joined the project.'
-USER_LEFT_GROUP                         =   'User %(realname)s left the project.'
-USER_MEMBERSHIP_REJECTED                =   'User\'s %(realname)s request to join the project has been rejected.'
-MEMBER_REMOVED                          =   'User %(realname)s has been successfully removed from the project.'
+USER_MEMBERSHIP_REJECTED                =   'Request by %s to join the project has been rejected.'
 BILLING_ERROR                           =   'Service response status: %(status)d'
 LOGOUT_SUCCESS                          =   'Logged out successfully.'
 LOGIN_SUCCESS                           =   'Logged in successfully, using %s.'
-LOCAL_LOGIN_SUCCESS                     =   'Logged in successfully, using your local account.'
+LOCAL_LOGIN_SUCCESS                     =   'Logged in successfully.'
 
 GENERIC_ERROR                           =   'Hmm... It seems something bad has happened, and we don\'t know the details right now. \
                                                Please contact the administrators by email for more details.'
@@ -127,9 +125,6 @@ SWITCH_ACCOUNT_SUCCESS                  =   'Account successfully switched to %(
 ADD_GROUP_MEMBERS_Q_HELP                =   'Add a comma separated list of user emails, eg. user1@user.com, user2@user.com'
 ASTAKOSUSER_GROUPS_HELP                 =   'In addition to the permissions assigned manually, \
                                                this user will also get all permissions coming from his/her groups.'
-EMAIL_CHANGE_NEW_ADDR_HELP              =   'Provide a new email address. Until you verify the new address by \
-                                               following the activation link that will be sent to it, your old \
-                                               email address will remain active.'
 
 EMAIL_SEND_ERR                          =   'Failed to send %s.'
 ADMIN_NOTIFICATION_SEND_ERR             =   EMAIL_SEND_ERR % 'admin notification'
@@ -185,9 +180,13 @@ UNKNOWN_PROJECT_APPLICATION_ID          =   'There is no project application ide
 UNKNOWN_PROJECT_ID                      =   'There is no project identified by %s.'
 UNKNOWN_IDENTIFIER                      =   'Unknown identifier.'
 PENDING_MEMBERSHIP_LEAVE                =   'Your request is pending moderation by the Project owner.'
-USER_JOINED_PROJECT                     =   '%(realname)s has joined the Project.'
-USER_LEFT_PROJECT                       =   '%(realname)s has left the Project.'
-USER_JOIN_REQUEST_SUBMITED              =   'Your request to join the project has been submitted successfully.'
+USER_MEMBERSHIP_ACCEPTED                =   '%s has been accepted in the project.'
+USER_MEMBERSHIP_REMOVED                 =   '%s has been removed from the project.'
+USER_LEFT_PROJECT                       =   'You have left the project.'
+USER_LEAVE_REQUEST_SUBMITTED            =   'Your request to leave the project has been submitted successfully.'
+USER_JOIN_REQUEST_SUBMITTED             =   'Your request to join the project has been submitted successfully.'
+USER_JOINED_PROJECT                     =   'You have joined the project.'
+USER_REQUEST_CANCELLED                  =   'Your request to join the project has been cancelled.'
 
 APPLICATION_CANNOT_APPROVE              =   "Cannot approve application %s in state '%s'"
 APPLICATION_CANNOT_DENY                 =   "Cannot deny application %s in state '%s'"

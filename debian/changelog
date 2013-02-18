@@ -1,3 +1,9 @@
+synnefo (0.13~rc2-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 18 Feb 2013 12:00:03 +0200
+
 synnefo (0.13~rc1-1) stable; urgency=low
 
   * New upstream version

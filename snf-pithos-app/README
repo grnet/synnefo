@@ -27,14 +27,14 @@ Settings
 
 Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using snf-webproject.
 
-===============================  ====================================================   ============================================================
+===============================  =====================================================  ============================================================
 Name                             Default value                                          Description
-===============================  ====================================================   ============================================================
+===============================  =====================================================  ============================================================
 PITHOS_PROXY_USER_SERVICES       True                                                   Whether to proxy user feedback and catalog services
-PITHOS_USER_CATALOG_URL          \http://127.0.0.1:8000/im/service/api/v2.0/users/      Astakos User Catalog URL
-PITHOS_USER_FEEDBACK_URL         \http://127.0.0.1:8000/im/service/api/v2.0/feedback/   Astakos User Feedback URL
-PITHOS_USER_LOGIN_URL            \http://127.0.0.1:8000/login/                          Astakos User Login URL
-PITHOS_AUTHENTICATION_URL        \http://127.0.0.1:8000/im/authenticate/                Astakos Authentication URL
+PITHOS_USER_CATALOG_URL          \http://<astakos.host>/im/service/api/v2.0/users/      Astakos User Catalog URL
+PITHOS_USER_FEEDBACK_URL         \http://<astakos.host>/im/service/api/v2.0/feedback/   Astakos User Feedback URL
+PITHOS_USER_LOGIN_URL            \http://<astakos.host>/login/                          Astakos User Login URL
+PITHOS_AUTHENTICATION_URL        \http://<astakos.host>/im/authenticate/                Astakos Authentication URL
 PITHOS_AUTHENTICATION_USERS      A dictionary of sample users (token to username)       Set to empty or None to disable
 PITHOS_BACKEND_DB_MODULE         pithos.backends.lib.sqlalchemy
 PITHOS_BACKEND_DB_CONNECTION     sqlite:////tmp/pithos-backend.db                       SQLAlchemy database connection string

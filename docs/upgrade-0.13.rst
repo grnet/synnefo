@@ -206,6 +206,8 @@ discarding data from all but one.
 3.3 Setup quota settings for all services
 -----------------------------------------
 
+Generally:
+
 ::
 
     # Service       Setting                       Value
@@ -223,53 +225,76 @@ discarding data from all but one.
     # pithos:       PITHOS_QUOTAHOLDER_URL     = http://quotaholder.host/quotaholder/v
     # All services must match the quotaholder token and url configured for quotaholder.
 
+Specifically:
+
+On the Astakos host, edit ``/etc/synnefo/20-snf-astakos-app-settings.conf``:
+
+::
+
+    QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
+    ASTAKOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
+    ASTAKOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
+
+On the Cyclades host, edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
+
+::
+
+    CYCLADES_USE_QUOTAHOLDER = True
+    CYCLADES_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
+    CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
+
+On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
+
+::
+
+    PITHOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
+    PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
+
 3.4 Setup astakos
 -----------------
 
-- **Remove** this redirection from astakos front-end web server::
+- **Remove** this redirection from astakos front-end web server ::
 
         RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
 
     (see `<http://docs.dev.grnet.gr/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
 
-- Enable users to change their contact email with the setting::
+- Enable users to change their contact email. Edit
+``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::
 
-      # astakos:        ASTAKOS_EMAILCHANGE_ENABLED = True
+    ASTAKOS_EMAILCHANGE_ENABLED = True
 
-3.6 Setup Cyclades
+3.5 Setup Cyclades
 ------------------
 
-- Make sure this setting is set::
+- Run on the Astakos host ::
 
-    # cyclades:     CYCLADES_ASTAKOS_SERVICE_TOKEN = 'secretstring'
+    # snf-manage service-list
 
-  from the value in::
+- Set the Cyclades service token in ``/etc/synnefo/20-snf-cyclades-app-api.conf`` ::
 
-    astakos.host$ snf-manage service-list
-
-- The Cyclades user interface needs to translate uuids to displaynames::
-
-    # cyclades:     UI_USER_CATALOG_URL = 'https://astakos.host/user_catalogs/'
+    CYCLADES_ASTAKOS_SERVICE_TOKEN = 'asfasdf_CycladesServiceToken_iknl'
 
 - Since version 0.13, Synnefo uses **VMAPI** in order to prevent sensitive data
   needed by 'snf-image' to be stored in Ganeti configuration (e.g. VM
   password). This is achieved by storing all sensitive information to a CACHE
   backend and exporting it via VMAPI. The cache entries are invalidated after
   the first request. Synnefo uses **memcached** as a django cache backend.
-  To install::
+  To install, run on the Cyclades host::
 
         apt-get install memcached
         apt-get install python-memcache
 
   You will also need to configure Cyclades to use the memcached cache backend.
   Namely, you need to set IP address and port of the memcached daemon, and the
-  default timeout (seconds tha value is stored in the cache)::
+  default timeout (seconds tha value is stored in the cache). Edit
+  ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf`` ::
 
     VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=3600"
 
 
   Finally, set the BASE_URL for the VMAPI, which is actually the base URL of
-  Cyclades::
+  Cyclades, again in ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``::
 
     VMAPI_BASE_URL = "https://cyclades.okeanos.grnet.gr/"
 
@@ -288,19 +313,21 @@ discarding data from all but one.
 ----------------
 
 - Pithos forwards user catalog services to Astakos so that web clients may
-  access them for uuid-displayname translations::
+  access them for uuid-displayname translations. Edit on the Pithos host
+  ``/etc/synnefo/20-snf-pithos-app-settings.conf`` ::
 
-    # pithos:       PITHOS_USER_CATALOG_URL    = https://astakos.host/user_catalogs/
-    # pithos:       PITHOS_USER_FEEDBACK_URL   = https://astakos.host/feedback/
-    # pithos:       PITHOS_USER_LOGIN_URL      = https://astakos.host/login/
-    # pithos:       #PITHOS_PROXY_USER_SERVICES = True # Set False if astakos & pithos are on the same host
+    PITHOS_USER_CATALOG_URL    = https://accounts.synnefo.local/user_catalogs/
+    PITHOS_USER_FEEDBACK_URL   = https://accounts.synnefo.local/feedback/
+    PITHOS_USER_LOGIN_URL      = https://accounts.synnefo.local/login/
+    #PITHOS_PROXY_USER_SERVICES = True # Set False if astakos & pithos are on the same host
 
 
 4. Start astakos and quota services
 ===================================
-E.g.::
+Start the webserver and gunicorn on the Astakos host. E.g.::
 
-    astakos.host$ service gunicorn start
+    # service apache2 start
+    # service gunicorn start
 
 .. warning::
 
@@ -312,12 +339,8 @@ E.g.::
 5. Load resource definitions into Astakos
 =========================================
 
-Configure and load the available resources per service
-and associated default limits into Astakos::
-
-    astakos.host$ snf-manage astakos-init --load-service-resources
-
-Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
+First, set the corresponding values on the following dict in
+``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::
 
     # Set the cloud service properties
     ASTAKOS_SERVICES = {
@@ -368,6 +391,12 @@ Example astakos settings (from `okeanos.io <https://okeanos.io/>`_)::
         }
     }
 
+Then, configure and load the available resources per service
+and associated default limits into Astakos. On the Astakos host run ::
+
+     # snf-manage astakos-init --load-service-resources
+
+
 .. note::
 
     Before v0.13, only `cyclades.vm`, `cyclades.network.private`,
@@ -413,17 +442,22 @@ Duplicate user found?
 
 Duplicate user found?
 
-- either *merge* (merge will merge all resources to one user)::
+If you want to migrate files first:
+
+- *merge* (merge will merge all resources to one user)::
 
     pithos.host$ snf-manage pithos-manage-accounts --merge-accounts --src-account=SPapagian@grnet.gr --dest-account=spapagian@grnet.gr
     # (SPapagian@grnet.gr's contents will be merged into spapagian@grnet.gr, but SPapagian@grnet.gr account will still exist)
 
-- finally *delete* ::
+- and then *delete* ::
 
     pithos.host$ snf-manage pithos-manage-accounts --delete-account=SPapagian@grnet.gr
     # (only SPapagian@grnet.gr will be deleted not spapagian@grnet.gr)
 
-6.2 Migrate Cyclades users (email case/uuid)
+If you do *NOT* want to migrate files just run the second step and delete
+the duplicate account.
+
+6.3 Migrate Cyclades users (email case/uuid)
 --------------------------------------------
 
 ::
@@ -438,7 +472,18 @@ Duplicate user found?
 
     cyclades.host$ snf-manage cyclades-astakos-migrate-013 --delete-user=<userid>
 
-6.3 Migrate Pithos user names
+Finally, if you have set manually quotas for specific users inside
+``/etc/synnefo/20-snf-cyclades-app-api.conf`` (in ``VMS_USER_QUOTA``,
+``NETWORKS_USER_QUOTA`` make sure to update them so that:
+
+1. There are no double entries wrt case sensitivity
+2. Replace all user email addresses with the corresponding UUIDs
+
+To find the UUIDs for step 2 run on the Astakos host ::
+
+     # snf-manage user-list
+
+6.4 Migrate Pithos user names
 -----------------------------
 
 Check if alembic has not been initialized ::

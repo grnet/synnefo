@@ -15,7 +15,11 @@ sample_users = {
     '0009': 'διογένης'
 }
 
-# Set to False if pithos running in the same machine with the identity management
+# Set PROXY_USER_SERVICES to True to have snf-pithos-app handle all Astakos
+# user-visible services (feedback, login, etc.) by proxying them to a running
+# Astakos.
+# Set to False if snf astakos-app is running on the same machine, so it handles
+# the requests on its own.
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
 USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',

@@ -56,12 +56,14 @@ class Command(BaseCommand):
     args = "<server ID>"
 
     option_list = BaseCommand.option_list + (
-        make_option('--jobs',
+        make_option(
+            '--jobs',
             action='store_true',
             dest='jobs',
             default=False,
             help="Show non-archived jobs concerning server."),
-        make_option('--uuids',
+        make_option(
+            '--uuids',
             action='store_true',
             dest='use_uuids',
             default=False,
@@ -102,8 +104,9 @@ class Command(BaseCommand):
             self.stdout.write(l.ljust(18) + ': ' + f.ljust(20) + '\n')
         self.stdout.write('\n')
         for nic in vm.nics.all():
-            self.stdout.write("nic/%d: IPv4: %s, MAC: %s, IPv6:%s,  Network: %s\n"\
-                              % (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network))
+            msg = "nic/%d: IPv4: %s, MAC: %s, IPv6:%s,  Network: %s\n"\
+                  % (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network)
+            self.stdout.write(msg)
 
         client = vm.get_client()
         try:
@@ -138,14 +141,15 @@ class Command(BaseCommand):
         for j in jobs:
             info = client.GetJobStatus(j)
             summary = ' '.join(info['summary'])
-            if summary.startswith("INSTANCE") and \
-               summary.find(vm.backend_vm_id) != -1:
+            job_is_relevant = summary.startswith("INSTANCE") and\
+                (summary.find(vm.backend_vm_id) != -1)
+            if job_is_relevant:
                 for i in GANETI_JOB_FIELDS:
                     value = info[i]
                     if i.find('_ts') != -1:
                         value = merge_time(value)
                     try:
-                        self.stdout.write(i.ljust(14) + ': ' + str(value) +\
+                        self.stdout.write(i.ljust(14) + ': ' + str(value) +
                                           '\n')
                     except KeyError:
                         pass

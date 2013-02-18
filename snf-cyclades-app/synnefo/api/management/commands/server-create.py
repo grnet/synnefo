@@ -56,25 +56,25 @@ class Command(BaseCommand):
     help = "Create a new VM." + HELP_MSG
 
     option_list = BaseCommand.option_list + (
-            make_option("--backend-id", dest="backend_id",
-                        help="Unique identifier of the Ganeti backend."
-                             " Use snf-manage backend-list to find out"
-                             " available backends."),
-            make_option("--name", dest="name",
-                        help="An arbitrary string for naming the server"),
-            make_option("--user-id", dest="user_id",
-                        help="Unique identifier of the owner of the server"),
-            make_option("--image-id", dest="image_id",
-                        help="Unique identifier of the image."
-                             " Use snf-manage image-list to find out"
-                             " available images."),
-            make_option("--flavor-id", dest="flavor_id",
-                        help="Unique identifier of the flavor"
-                             " Use snf-manage flavor-list to find out"
-                             " available flavors."),
-            make_option("--password", dest="password",
-                        help="Password for the new server")
-        )
+        make_option("--backend-id", dest="backend_id",
+                    help="Unique identifier of the Ganeti backend."
+                         " Use snf-manage backend-list to find out"
+                         " available backends."),
+        make_option("--name", dest="name",
+                    help="An arbitrary string for naming the server"),
+        make_option("--user-id", dest="user_id",
+                    help="Unique identifier of the owner of the server"),
+        make_option("--image-id", dest="image_id",
+                    help="Unique identifier of the image."
+                         " Use snf-manage image-list to find out"
+                         " available images."),
+        make_option("--flavor-id", dest="flavor_id",
+                    help="Unique identifier of the flavor"
+                         " Use snf-manage flavor-list to find out"
+                         " available flavors."),
+        make_option("--password", dest="password",
+                    help="Password for the new server")
+    )
 
     @transaction.commit_manually
     def handle(self, *args, **options):
@@ -106,7 +106,7 @@ class Command(BaseCommand):
             image = {}
             image['backend_id'] = img['location']
             image['format'] = img['disk_format']
-            image['metadata'] = dict((key.upper(), val) \
+            image['metadata'] = dict((key.upper(), val)
                                      for key, val in properties.items())
         else:
             raise CommandError("image-id is mandatory")
@@ -136,7 +136,7 @@ class Command(BaseCommand):
             # Get Public address
             (network, address) = util.allocate_public_address(backend)
             if address is None:
-                raise CommandError("Can not allocate a public address."\
+                raise CommandError("Can not allocate a public address."
                                    " No available public network.")
             nic = {'ip': address, 'network': network.backend_id}
 

@@ -48,12 +48,13 @@ class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
 
     option_list = BaseCommand.option_list + (
-        make_option('--uuids',
+        make_option(
+            '--uuids',
             action='store_true',
             dest='use_uuids',
             default=False,
             help="Display UUIDs instead of user emails"),
-        )
+    )
 
     def handle(self, *args, **options):
         write = self.stdout.write

@@ -45,27 +45,32 @@ class Command(BaseCommand):
     help = "List networks"
 
     option_list = BaseCommand.option_list + (
-        make_option('-c',
+        make_option(
+            '-c',
             action='store_true',
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
-        make_option('--deleted',
+        make_option(
+            '--deleted',
             action='store_true',
             dest='deleted',
             default=False,
             help="Include deleted networks"),
-        make_option('--public',
+        make_option(
+            '--public',
             action='store_true',
             dest='public',
             default=False,
             help="List only public networks"),
-        make_option('--ipv6',
+        make_option(
+            '--ipv6',
             action='store_true',
             dest='ipv6',
             default=False,
             help="Show IPv6 information of the network"),
-        make_option('--filter-by',
+        make_option(
+            '--filter-by',
             dest='filter_by',
             help="Filter results. Comma seperated list of key 'cond' val pairs"
                  " that displayed entries must satisfy. e.g."
@@ -77,7 +82,7 @@ class Command(BaseCommand):
             dest='use_uuids',
             default=False,
             help="Display UUIDs instead of user emails"),
-        )
+    )
 
     def handle(self, *args, **options):
         if args:
@@ -97,7 +102,7 @@ class Command(BaseCommand):
             networks = filter_results(networks, filter_by)
 
         headers = ['id', 'name', 'flavor', 'owner',
-                  'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']
+                   'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']
 
         if options['ipv6']:
             headers.extend(['IPv6 Subnet', 'IPv6 Gateway'])

@@ -37,26 +37,26 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_flavor
 
 
-
 class Command(BaseCommand):
     args = "<flavor id>"
     help = "Modify a flavor"
 
     option_list = BaseCommand.option_list + (
-        make_option('--set-deleted',
+        make_option(
+            '--set-deleted',
             action='store_true',
             dest='deleted',
             help="Mark a server as deleted"),
-        make_option('--set-undeleted',
+        make_option(
+            '--set-undeleted',
             action='store_true',
             dest='undeleted',
             help="Mark a server as not deleted"),
-        )
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")
-
 
         flavor = get_flavor(args[0])
 

@@ -40,10 +40,11 @@ from os import path
 class Command(NoArgsCommand):
     help = "Export account quota policies"
     option_list = NoArgsCommand.option_list + (
-        make_option('--location',
-                dest='location',
-                default='exported_quota',
-                help="Where to save the output file"),
+        make_option(
+            '--location',
+            dest='location',
+            default='exported_quota',
+            help="Where to save the output file"),
     )
 
     def handle_noargs(self, **options):
@@ -65,7 +66,7 @@ class Command(NoArgsCommand):
             f.write('\n')
         for user, value in nets_per_user.items():
             f.write(' '.join([user, "cyclades.network.private", "%s" % value,
-                            '0', '0', '0']))
+                             '0', '0', '0']))
             f.write('\n')
 
         f.close()

@@ -47,30 +47,36 @@ class Command(BaseCommand):
     help = "List servers"
 
     option_list = BaseCommand.option_list + (
-        make_option('-c',
+        make_option(
+            '-c',
             action='store_true',
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
-        make_option('--suspended',
+        make_option(
+            '--suspended',
             action='store_true',
             dest='suspended',
             default=False,
             help="List only suspended servers"),
-        make_option('--build',
+        make_option(
+            '--build',
             action='store_true',
             dest='build',
             default=False,
             help="List only servers in the building state"),
-        make_option('--deleted',
+        make_option(
+            '--deleted',
             action='store_true',
             dest='deleted',
             default=False,
             help="Include deleted servers"),
-        make_option('--backend-id',
+        make_option(
+            '--backend-id',
             dest='backend_id',
             help="List only servers of the specified backend"),
-        make_option('--filter-by',
+        make_option(
+            '--filter-by',
             dest='filter_by',
             help="Filter results. Comma seperated list of key `cond` val pairs"
                  " that displayed entries must satisfy. e.g."

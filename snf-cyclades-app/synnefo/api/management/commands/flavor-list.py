@@ -46,23 +46,26 @@ class Command(BaseCommand):
     help = "List flavors"
 
     option_list = BaseCommand.option_list + (
-        make_option('-c',
+        make_option(
+            '-c',
             action='store_true',
             dest='csv',
             default=False,
             help="Use pipes to separate values"),
-        make_option('--deleted',
+        make_option(
+            '--deleted',
             action='store_true',
             dest='deleted',
             default=False,
             help="Include deleted flavors"),
-         make_option('--filter-by',
+        make_option(
+            '--filter-by',
             dest='filter_by',
             help="Filter results. Comma seperated list of key=val pairs"
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"cpu=1,ram!=1024\"."
                  "Available keys are: %s" % ", ".join(FIELDS))
-        )
+    )
 
     def handle(self, *args, **options):
         if args:

@@ -24,34 +24,32 @@ import sqlalchemy as sa
 catalog = {}
 def get_uuid(account):
     global catalog
-    uuid = catalog.get(account)
-    if uuid:
+    uuid = catalog.get(account, -1)
+    if uuid != -1:
         return uuid
     try:
-        uuid = get_user_uuid(
+        catalog[account] = get_user_uuid(
             SERVICE_TOKEN, account, USER_CATALOG_URL, AUTHENTICATION_USERS)
+        print account, catalog[account]
     except:
         raise
     else:
-        if uuid:
-            catalog[account] = uuid
-        return uuid
+        return catalog[account]
 
 inverse_catalog = {}
 def get_displayname(account):
     global inverse_catalog
-    displayname = inverse_catalog.get(account)
-    if displayname:
+    displayname = inverse_catalog.get(account, -1)
+    if displayname != -1:
         return displayname
     try:
-        displayname = get_user_displayname(
+        inverse_catalog[account] = get_user_displayname(
             SERVICE_TOKEN, account, USER_CATALOG_URL, AUTHENTICATION_USERS)
+        print account, inverse_catalog[account]
     except:
         raise
     else:
-        if displayname:
-            catalog[account] = displayname
-        return displayname
+        return inverse_catalog[account]
 
 n = table(
     'nodes',

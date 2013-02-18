@@ -21,11 +21,11 @@ PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
                            'https://<astakos.host>/user_catalogs/')
 USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'http://<astakos.host>/feedback/')
+                            'https://<astakos.host>/feedback/')
 USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'http://<astakos.host>/login/')
+                         'https://<astakos.host>/login/')
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
-                             'http://<astakos.host>/im/authenticate/')
+                             'https://<astakos.host>/im/authenticate/')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
 TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)

@@ -43,7 +43,7 @@ from synnefo.lib.commissioning import (
     Callpoint, CorruptedError, InvalidDataError, ReturnButFail)
 from synnefo.lib.commissioning.utils.newname import newname
 
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db import transaction
 from .models import (Entity, Policy, Holding,
                      Commission, Provision, ProvisionLog, CallSerial,
@@ -478,13 +478,28 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         rejected = []
         append = rejected.append
 
+        q_holdings = Q()
+        entities = []
+        for (entity, resource, key, _, _, _, _, _) in set_quota:
+
+            q_holdings |= Q(entity=entity, resource=resource)
+            entities.append(entity)
+
+        hs = Holding.objects.filter(q_holdings).select_for_update()
+        holdings = {}
+        for h in hs:
+            holdings[(h.entity_id, h.resource)] = h
+
+        entities = Entity.objects.in_bulk(entities)
+
+        old_policies = []
+
         for (entity, resource, key,
              quantity, capacity,
              import_limit, export_limit, flags) in set_quota:
 
-            try:
-                e = Entity.objects.get(entity=entity, key=key)
-            except Entity.DoesNotExist:
+            e = entities.get(entity, None)
+            if e is None or e.key != key:
                 append((entity, resource))
                 continue
 
@@ -496,24 +511,23 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                           export_limit=export_limit)
 
             try:
-                h = db_get_holding(entity=entity, resource=resource,
-                                   for_update=True)
-                p = h.policy
+                h = holdings[(entity, resource)]
+                old_policies.append(h.policy_id)
                 h.policy = newp
                 h.flags = flags
-            except Holding.DoesNotExist:
+            except KeyError:
                 h = Holding(entity=e, resource=resource,
                             policy=newp, flags=flags)
-                p = None
 
             # the order is intentionally reversed so that it
             # would break if we are not within a transaction.
             # Has helped before.
             h.save()
             newp.save()
+            holdings[(entity, resource)] = h
 
-            if p is not None and p.holding_set.count() == 0:
-                p.delete()
+        objs = Policy.objects.annotate(refs=Count('holding'))
+        objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
             raise ReturnButFail(rejected)
@@ -536,22 +550,44 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             except CallSerial.DoesNotExist:
                 pass
 
+        sources = sub_quota + add_quota
+        q_holdings = Q()
+        entities = []
+        for (entity, resource, key, _, _, _, _) in sources:
+
+            q_holdings |= Q(entity=entity, resource=resource)
+            entities.append(entity)
+
+        hs = Holding.objects.filter(q_holdings).select_for_update()
+        holdings = {}
+        for h in hs:
+            holdings[(h.entity_id, h.resource)] = h
+
+        entities = Entity.objects.in_bulk(entities)
+
+        pids = [h.policy_id for h in hs]
+        policies = Policy.objects.in_bulk(pids)
+
+        old_policies = []
+
         for removing, source in [(True, sub_quota), (False, add_quota)]:
             for (entity, resource, key,
                  quantity, capacity,
                  import_limit, export_limit) in source:
 
-                try:
-                    e = Entity.objects.get(entity=entity, key=key)
-                except Entity.DoesNotExist:
+                e = entities.get(entity, None)
+                if e is None or e.key != key:
                     append((entity, resource))
                     continue
 
                 try:
-                    h = db_get_holding(entity=entity, resource=resource,
-                                       for_update=True)
-                    p = h.policy
-                except Holding.DoesNotExist:
+                    h = holdings[(entity, resource)]
+                    old_policies.append(h.policy_id)
+                    try:
+                        p = policies[h.policy_id]
+                    except KeyError:
+                        raise AssertionError("no policy %s" % h.policy_id)
+                except KeyError:
                     if removing:
                         append((entity, resource))
                         continue
@@ -583,9 +619,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 # Has helped before.
                 h.save()
                 newp.save()
+                policies[policy] = newp
+                holdings[(entity, resource)] = h
 
-                if p is not None and p.holding_set.count() == 0:
-                    p.delete()
+        objs = Policy.objects.annotate(refs=Count('holding'))
+        objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
             raise ReturnButFail(rejected)

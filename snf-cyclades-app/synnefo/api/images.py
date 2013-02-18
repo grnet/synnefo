@@ -51,13 +51,15 @@ from synnefo.plankton.backend import ImageBackend
 
 log = getLogger('synnefo.api')
 
-urlpatterns = patterns('synnefo.api.images',
+urlpatterns = patterns(
+    'synnefo.api.images',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_images', {'detail': True}),
     (r'^/([\w-]+)(?:.json|.xml)?$', 'image_demux'),
     (r'^/([\w-]+)/meta(?:.json|.xml)?$', 'metadata_demux'),
     (r'^/([\w-]+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux')
 )
+
 
 def demux(request):
     if request.method == 'GET':
@@ -67,6 +69,7 @@ def demux(request):
     else:
         return method_not_allowed(request)
 
+
 def image_demux(request, image_id):
     if request.method == 'GET':
         return get_image_details(request, image_id)
@@ -75,6 +78,7 @@ def image_demux(request, image_id):
     else:
         return method_not_allowed(request)
 
+
 def metadata_demux(request, image_id):
     if request.method == 'GET':
         return list_metadata(request, image_id)
@@ -82,6 +86,7 @@ def metadata_demux(request, image_id):
         return update_metadata(request, image_id)
     else:
         return method_not_allowed(request)
+
 
 def metadata_item_demux(request, image_id, key):
     if request.method == 'GET':
@@ -113,6 +118,7 @@ def image_backend(userid):
         yield backend
     finally:
         backend.close()
+
 
 @api_method('GET')
 def list_images(request, detail=False):

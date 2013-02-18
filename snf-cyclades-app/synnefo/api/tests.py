@@ -83,7 +83,7 @@ class BaseAPITest(TestCase):
             content_type = 'application/json'
         with astakos_user(user):
             response = self.client.put(url, params, content_type=content_type,
-                    *args, **kwargs)
+                                       *args, **kwargs)
         return response
 
     def assertSuccess(self, response):

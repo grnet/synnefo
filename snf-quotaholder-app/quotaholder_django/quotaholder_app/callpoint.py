@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,15 +32,15 @@
 # or implied, of GRNET S.A.
 
 from synnefo.lib.quotaholder.api import (
-                            QuotaholderAPI,
-                            QH_PRACTICALLY_INFINITE,
-                            InvalidKeyError, NoEntityError,
-                            NoQuantityError, NoCapacityError,
-                            ExportLimitError, ImportLimitError,
-                            DuplicateError)
+    QuotaholderAPI,
+    QH_PRACTICALLY_INFINITE,
+    InvalidKeyError, NoEntityError,
+    NoQuantityError, NoCapacityError,
+    ExportLimitError, ImportLimitError,
+    DuplicateError)
 
 from synnefo.lib.commissioning import (
-        Callpoint, CorruptedError, InvalidDataError, ReturnButFail)
+    Callpoint, CorruptedError, InvalidDataError, ReturnButFail)
 from synnefo.lib.commissioning.utils.newname import newname
 
 from django.db.models import Q
@@ -253,9 +253,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def _init_holding(self, entity, resource, policy,
-                            imported, exported, returned, released,
-                            flags):
+    def _init_holding(self,
+                      entity, resource, policy,
+                      imported, exported, returned, released,
+                      flags):
         try:
             h = db_get_holding(entity=entity, resource=resource,
                                for_update=True)
@@ -264,13 +265,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         h.policy = policy
         h.flags = flags
-        h.imported  = imported
+        h.imported = imported
         h.importing = imported
-        h.exported  = exported
+        h.exported = exported
         h.exporting = exported
-        h.returned  = returned
+        h.returned = returned
         h.returning = returned
-        h.released  = released
+        h.released = released
         h.releasing = released
         h.save()
 
@@ -322,13 +323,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             try:
                 h = db_get_holding(entity=entity, resource=resource,
                                    for_update=True)
-                h.imported  = imported
+                h.imported = imported
                 h.importing = imported
-                h.exported  = exported
+                h.exported = exported
                 h.exporting = exported
-                h.returned  = returned
+                h.returned = returned
                 h.returning = returned
-                h.released  = released
+                h.released = released
                 h.releasing = released
                 h.save()
             except Holding.DoesNotExist:
@@ -436,7 +437,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             holdings = e.holding_set.filter(entity=entity)
             append([[entity, h.resource,
                      h.imported, h.exported, h.returned, h.released]
-                        for h in holdings])
+                    for h in holdings])
 
         return holdings_list, rejected
 
@@ -478,12 +479,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             policy = newname('policy_')
-            newp = Policy(
-                    policy=policy,
-                    quantity=quantity,
-                    capacity=capacity,
-                    import_limit=import_limit,
-                    export_limit=export_limit)
+            newp = Policy(policy=policy,
+                          quantity=quantity,
+                          capacity=capacity,
+                          import_limit=import_limit,
+                          export_limit=export_limit)
 
             try:
                 h = db_get_holding(entity=entity, resource=resource,
@@ -509,8 +509,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def add_quota(self, context={}, clientkey=None, serial=None,
-                        sub_quota=(), add_quota=()):
+    def add_quota(self,
+                  context={}, clientkey=None, serial=None,
+                  sub_quota=(), add_quota=()):
         rejected = []
         append = rejected.append
 
@@ -617,12 +618,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return result
 
-    def issue_commission(self, context     =  {},
-                               clientkey   =  None,
-                               target      =  None,
-                               key         =  None,
-                               name        =  None,
-                               provisions  =  ()):
+    def issue_commission(self,
+                         context={},
+                         clientkey=None,
+                         target=None,
+                         key=None,
+                         name=None,
+                         provisions=()):
 
         try:
             t = Entity.objects.get(entity=target)
@@ -705,7 +707,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                           limit=limit)
             else:
                 current = (+ h.importing + h.returning
-                           - h.exported  - h.returned)
+                           - h.exported - h.returned)
                 limit = hp.capacity
                 if current - quantity > limit:
                     m = ("There is not enough capacity "
@@ -777,10 +779,10 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                           current=unavailable,
                                           limit=limit)
 
-            Provision.objects.create(serial   = commission,
-                                     entity   = e,
-                                     resource = resource,
-                                     quantity = quantity)
+            Provision.objects.create(serial=commission,
+                                     entity=e,
+                                     resource=resource,
+                                     quantity=quantity)
             if release:
                 h.returning -= quantity
                 th.releasing -= quantity
@@ -793,43 +795,48 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return serial
 
-    def _log_provision(self, commission, s_holding, t_holding,
-                             provision, log_time, reason):
+    def _log_provision(self,
+                       commission, s_holding, t_holding,
+                       provision, log_time, reason):
 
         s_entity = s_holding.entity
         s_policy = s_holding.policy
         t_entity = t_holding.entity
         t_policy = t_holding.policy
 
-        ProvisionLog.objects.create(
-                        serial              =   commission.serial,
-                        name                =   commission.name,
-                        source              =   s_entity.entity,
-                        target              =   t_entity.entity,
-                        resource            =   provision.resource,
-                        source_quantity     =   s_policy.quantity,
-                        source_capacity     =   s_policy.capacity,
-                        source_import_limit =   s_policy.import_limit,
-                        source_export_limit =   s_policy.export_limit,
-                        source_imported     =   s_holding.imported,
-                        source_exported     =   s_holding.exported,
-                        source_returned     =   s_holding.returned,
-                        source_released     =   s_holding.released,
-                        target_quantity     =   t_policy.quantity,
-                        target_capacity     =   t_policy.capacity,
-                        target_import_limit =   t_policy.import_limit,
-                        target_export_limit =   t_policy.export_limit,
-                        target_imported     =   t_holding.imported,
-                        target_exported     =   t_holding.exported,
-                        target_returned     =   t_holding.returned,
-                        target_released     =   t_holding.released,
-                        delta_quantity      =   provision.quantity,
-                        issue_time          =   commission.issue_time,
-                        log_time            =   log_time,
-                        reason              =   reason)
+        kwargs = {
+            'serial':              commission.serial,
+            'name':                commission.name,
+            'source':              s_entity.entity,
+            'target':              t_entity.entity,
+            'resource':            provision.resource,
+            'source_quantity':     s_policy.quantity,
+            'source_capacity':     s_policy.capacity,
+            'source_import_limit': s_policy.import_limit,
+            'source_export_limit': s_policy.export_limit,
+            'source_imported':     s_holding.imported,
+            'source_exported':     s_holding.exported,
+            'source_returned':     s_holding.returned,
+            'source_released':     s_holding.released,
+            'target_quantity':     t_policy.quantity,
+            'target_capacity':     t_policy.capacity,
+            'target_import_limit': t_policy.import_limit,
+            'target_export_limit': t_policy.export_limit,
+            'target_imported':     t_holding.imported,
+            'target_exported':     t_holding.exported,
+            'target_returned':     t_holding.returned,
+            'target_released':     t_holding.released,
+            'delta_quantity':      provision.quantity,
+            'issue_time':          commission.issue_time,
+            'log_time':            log_time,
+            'reason':              reason,
+        }
 
-    def accept_commission(self, context={}, clientkey=None,
-                                serials=(), reason=''):
+        ProvisionLog.objects.create(**kwargs)
+
+    def accept_commission(self,
+                          context={}, clientkey=None,
+                          serials=(), reason=''):
         log_time = now()
 
         for serial in serials:
@@ -873,8 +880,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return
 
-    def reject_commission(self, context={}, clientkey=None,
-                                serials=(), reason=''):
+    def reject_commission(self,
+                          context={}, clientkey=None,
+                          serials=(), reason=''):
         log_time = now()
 
         for serial in serials:
@@ -923,8 +931,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         pending_list = pending.values_list('serial', flat=True)
         return pending_list
 
-    def resolve_pending_commissions(self, context={}, clientkey=None,
-                                          max_serial=None, accept_set=()):
+    def resolve_pending_commissions(self,
+                                    context={}, clientkey=None,
+                                    max_serial=None, accept_set=()):
         accept_set = set(accept_set)
         pending = self.get_pending_commissions(context=context,
                                                clientkey=clientkey)
@@ -990,15 +999,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         append = timeline.append
         filterlogs = ProvisionLog.objects.filter
         if entity_set:
-            q_entity = Q(source__in = entity_set) | Q(target__in = entity_set)
+            q_entity = Q(source__in=entity_set) | Q(target__in=entity_set)
         else:
             q_entity = Q()
 
         while 1:
             logs = filterlogs(q_entity,
-                              issue_time__gt      =  after,
-                              issue_time__lte     =  before,
-                              reason__startswith  =  'ACCEPT:')
+                              issue_time__gt=after,
+                              issue_time__lte=before,
+                              reason__startswith='ACCEPT:')
 
             logs = logs.order_by('issue_time')
             #logs = logs.values()
@@ -1009,31 +1018,30 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             for g in logs:
                 if ((g.source, g.resource) not in resource_set
                     or (g.target, g.resource) not in resource_set):
-
                     continue
 
                 o = {
-                    'serial'                   :  g.serial,
-                    'source'                   :  g.source,
-                    'target'                   :  g.target,
-                    'resource'                 :  g.resource,
-                    'name'                     :  g.name,
-                    'quantity'                 :  g.delta_quantity,
-                    'source_allocated'         :  g.source_allocated(),
-                    'source_allocated_through' :  g.source_allocated_through(),
-                    'source_inbound'           :  g.source_inbound(),
-                    'source_inbound_through'   :  g.source_inbound_through(),
-                    'source_outbound'          :  g.source_outbound(),
-                    'source_outbound_through'  :  g.source_outbound_through(),
-                    'target_allocated'         :  g.target_allocated(),
-                    'target_allocated_through' :  g.target_allocated_through(),
-                    'target_inbound'           :  g.target_inbound(),
-                    'target_inbound_through'   :  g.target_inbound_through(),
-                    'target_outbound'          :  g.target_outbound(),
-                    'target_outbound_through'  :  g.target_outbound_through(),
-                    'issue_time'               :  g.issue_time,
-                    'log_time'                 :  g.log_time,
-                    'reason'                   :  g.reason,
+                    'serial':                   g.serial,
+                    'source':                   g.source,
+                    'target':                   g.target,
+                    'resource':                 g.resource,
+                    'name':                     g.name,
+                    'quantity':                 g.delta_quantity,
+                    'source_allocated':         g.source_allocated(),
+                    'source_allocated_through': g.source_allocated_through(),
+                    'source_inbound':           g.source_inbound(),
+                    'source_inbound_through':   g.source_inbound_through(),
+                    'source_outbound':          g.source_outbound(),
+                    'source_outbound_through':  g.source_outbound_through(),
+                    'target_allocated':         g.target_allocated(),
+                    'target_allocated_through': g.target_allocated_through(),
+                    'target_inbound':           g.target_inbound(),
+                    'target_inbound_through':   g.target_inbound_through(),
+                    'target_outbound':          g.target_outbound(),
+                    'target_outbound_through':  g.target_outbound_through(),
+                    'issue_time':               g.issue_time,
+                    'log_time':                 g.log_time,
+                    'reason':                   g.reason,
                 }
 
                 append(o)
@@ -1059,4 +1067,3 @@ def _isneg(x):
 
 
 API_Callpoint = QuotaholderDjangoDBCallpoint
-

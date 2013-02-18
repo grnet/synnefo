@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,13 +34,7 @@
 import logging
 
 from urlparse import urlparse
-import urllib
-import urllib2
-
-from django.http import (
-    HttpResponseNotFound, HttpResponseRedirect, HttpResponseBadRequest,
-    HttpResponse)
-from django.utils.http import urlencode
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from django.conf import settings
@@ -51,21 +45,6 @@ USER_FEEDBACK_URL = getattr(settings, 'CYCLADES_USER_FEEDBACK_URL', None)
 from synnefo.lib.pool.http import get_http_connection
 
 logger = logging.getLogger(__name__)
-
-
-def delegate_to_login_service(request):
-    url = USER_LOGIN_URL
-    if not url:
-        return HttpResponseNotFound()
-
-    p = urlparse(url)
-    if request.is_secure():
-        proto = 'https://'
-    else:
-        proto = 'http://'
-    params = dict([(k, v) for k, v in request.GET.items()])
-    uri = proto + p.netloc + p.path + '?' + urlencode(params)
-    return HttpResponseRedirect(uri)
 
 
 def proxy(request, url, headers={}, body=None):
@@ -89,17 +68,18 @@ def proxy(request, url, headers={}, body=None):
     finally:
         conn.close()
 
+
 @csrf_exempt
 def delegate_to_feedback_service(request):
     token = request.META.get('HTTP_X_AUTH_TOKEN')
     headers = {'X-Auth-Token': token}
-    return proxy(
-        request, USER_FEEDBACK_URL, headers=headers, body=request.raw_post_data)
+    return proxy(request, USER_FEEDBACK_URL, headers=headers,
+                 body=request.raw_post_data)
+
 
 @csrf_exempt
 def delegate_to_user_catalogs_service(request):
     token = request.META.get('HTTP_X_AUTH_TOKEN')
     headers = {'X-Auth-Token': token, 'content-type': 'application/json'}
-    return proxy(
-        request, USER_CATALOG_URL, headers=headers, body=request.raw_post_data)
-
+    return proxy(request, USER_CATALOG_URL, headers=headers,
+                 body=request.raw_post_data)

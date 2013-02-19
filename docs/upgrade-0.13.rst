@@ -229,6 +229,7 @@ Generally:
 
     # pithos:       PITHOS_QUOTAHOLDER_TOKEN   = <the same random string>
     # pithos:       PITHOS_QUOTAHOLDER_URL     = http://quotaholder.host/quotaholder/v
+    # pithos:       PITHOS_USE_QUOTAHOLDER     = True
     # All services must match the quotaholder token and url configured for quotaholder.
 
 Specifically:
@@ -255,6 +256,7 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
     PITHOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
     PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
+    PITHOS_USE_QUOTAHOLDER = True
 
 3.4 Setup astakos
 -----------------
@@ -352,47 +354,51 @@ First, set the corresponding values on the following dict in
     # Set the cloud service properties
     ASTAKOS_SERVICES = {
         'cyclades': {
-            #This can also be set from a management command
-            'url': 'https://cyclades.host/ui/',
-            'order': 0,
+    #        # Specifying the key 'url' will overwrite it.
+    #        # Use this to (re)set service URL.
+    #        'url': 'https://cyclades.synnefo.local/ui/',
+    #        # order services in listings, cloudbar, etc.
+    #        'order' : 1
             'resources': [{
-                'name':'disk',
-                'group':'compute',
-                'uplimit':300*1024*1024*1024,
-                'unit':'bytes',
+                'name': 'disk',
+                'group': 'compute',
+                'uplimit': 30*1024*1024*1024,
+                'unit': 'bytes',
                 'desc': 'Virtual machine disk size'
-                },{
-                'name':'cpu',
-                'group':'compute',
-                'uplimit':24,
+                }, {
+                'name': 'cpu',
+                'group': 'compute',
+                'uplimit': 6,
                 'desc': 'Number of virtual machine processors'
-                },{
-                'name':'ram',
-                'group':'compute',
-                'uplimit':40*1024*1024*1024,
-                'unit':'bytes',
+                }, {
+                'name': 'ram',
+                'group': 'compute',
+                'uplimit': 6*1024*1024*1024,
+                'unit': 'bytes',
                 'desc': 'Virtual machines'
-                },{
-                'name':'vm',
-                'group':'compute',
-                'uplimit':5,
+                }, {
+                'name': 'vm',
+                'group': 'compute',
+                'uplimit': 2,
                 'desc': 'Number of virtual machines'
-                },{
-                'name':'network.private',
-                'group':'network',
-                'uplimit':5,
+                }, {
+                'name': 'network.private',
+                'group': 'network',
+                'uplimit': 1,
                 'desc': 'Private networks'
                 }
             ]
         },
         'pithos+': {
-            'url': 'https://pithos.host/ui/',
-            'order': 1,
+    #        # Use this to (re)set service URL.
+    #        'url': 'https://pithos.synnefo.local/ui/',
+    #        # order services in listings, cloudbar, etc.
+    #        'order' : 2
             'resources':[{
-                'name':'diskspace',
-                'group':'storage',
-                'uplimit':20 * 1024 * 1024 * 1024,
-                'unit':'bytes',
+                'name': 'diskspace',
+                'group': 'storage',
+                'uplimit': 5*1024*1024*1024,
+                'unit': 'bytes',
                 'desc': 'Pithos account diskspace'
                 }]
         }

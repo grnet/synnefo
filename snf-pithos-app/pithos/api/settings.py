@@ -2,7 +2,7 @@
 from django.conf import settings
 
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
-                             'https://<astakos.host>/im/authenticate/')
+                             'https://accounts.synnefo.local/im/authenticate/')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
@@ -54,11 +54,11 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
 USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
-                           'https://<astakos.host>/user_catalogs/')
+                           'https://accounts.synnefo.local/user_catalogs/')
 USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'https://<astakos.host>/feedback/')
+                            'https://accounts.synnefo.local/feedback/')
 USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'https://<astakos.host>/login/')
+                         'https://accounts.synnefo.local/login/')
 
 # Set the quota holder component URI
 USE_QUOTAHOLDER = getattr(settings, 'PITHOS_USE_QUOTAHOLDER', False)

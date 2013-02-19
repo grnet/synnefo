@@ -4,8 +4,6 @@ from django.conf import settings
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
 
-
-
 DEFAULT_USER_LEVEL = getattr(settings, 'ASTAKOS_DEFAULT_USER_LEVEL', 4)
 
 INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
@@ -18,7 +16,7 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 
 # Address to use for outgoing emails
 DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
+    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@synnefo.local')
 
 SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
 ADMINS = getattr(settings, 'ADMINS', None)
@@ -43,10 +41,10 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
+BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.synnefo.local')
 
 # Set service name
-SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
+SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Synnefo Cloud')
 
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
@@ -165,44 +163,51 @@ QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_TOKEN', '')
 # Set the cloud service properties
 SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     'cyclades': {
-        'url': 'https://node1.example.com/ui/',
+#        # Specifying the key 'url' will overwrite it.
+#        # Use this to (re)set service URL.
+#        'url': 'https://cyclades.synnefo.local/ui/',
+#        # order services in listings, cloudbar, etc.
+#        'order' : 1
         'resources': [{
-            'name':'disk',
-            'group':'compute',
-            'uplimit':30*1024*1024*1024,
-            'unit':'bytes',
+            'name': 'disk',
+            'group': 'compute',
+            'uplimit': 30*1024*1024*1024,
+            'unit': 'bytes',
             'desc': 'Virtual machine disk size'
-            },{
-            'name':'cpu',
-            'group':'compute',
-            'uplimit':6,
+            }, {
+            'name': 'cpu',
+            'group': 'compute',
+            'uplimit': 6,
             'desc': 'Number of virtual machine processors'
-            },{
-            'name':'ram',
-            'group':'compute',
-            'uplimit':6*1024*1024*1024,
-            'unit':'bytes',
+            }, {
+            'name': 'ram',
+            'group': 'compute',
+            'uplimit': 6*1024*1024*1024,
+            'unit': 'bytes',
             'desc': 'Virtual machines'
-            },{
-            'name':'vm',
-            'group':'compute',
-            'uplimit':2,
+            }, {
+            'name': 'vm',
+            'group': 'compute',
+            'uplimit': 2,
             'desc': 'Number of virtual machines'
-            },{
-            'name':'network.private',
-            'group':'network',
-            'uplimit':1,
+            }, {
+            'name': 'network.private',
+            'group': 'network',
+            'uplimit': 1,
             'desc': 'Private networks'
             }
         ]
     },
     'pithos+': {
-        'url': 'https://node2.example.com/ui/',
+#        # Use this to (re)set service URL.
+#        'url': 'https://pithos.synnefo.local/ui/',
+#        # order services in listings, cloudbar, etc.
+#        'order' : 2
         'resources':[{
-            'name':'diskspace',
-            'group':'storage',
-            'uplimit':5 * 1024 * 1024 * 1024,
-            'unit':'bytes',
+            'name': 'diskspace',
+            'group': 'storage',
+            'uplimit': 5*1024*1024*1024,
+            'unit': 'bytes',
             'desc': 'Pithos account diskspace'
             }]
     }

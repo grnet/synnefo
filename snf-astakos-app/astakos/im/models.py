@@ -228,7 +228,7 @@ def load_service_resources():
             name=service_name,
             defaults={'url': url, 'order': order}
         )
-        if not created:
+        if not created and url is not None:
             service.url = url
             service.save()
 

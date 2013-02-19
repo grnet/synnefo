@@ -52,6 +52,8 @@ from alembic import context, command
 from pithos.backends.lib import sqlalchemy as sqlalchemy_backend
 from pithos.backends.lib.sqlalchemy import node, groups, public, xfeatures
 
+os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+
 try:
     # pithos-app case
     from synnefo.settings import PITHOS_BACKEND_DB_CONNECTION

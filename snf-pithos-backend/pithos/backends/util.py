@@ -45,6 +45,7 @@ class PithosBackendPool(ObjectPool):
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None,
                  queue_exchange=None, free_versioning=True,
+                 quotaholder_enabled=True,
                  quotaholder_url=None, quotaholder_token=None,
                  block_params=None):
         super(PithosBackendPool, self).__init__(size=size)
@@ -57,6 +58,7 @@ class PithosBackendPool(ObjectPool):
         self.block_params = block_params
         self.queue_hosts = queue_hosts
         self.queue_exchange = queue_exchange
+        self.quotaholder_enabled = quotaholder_enabled
         self.quotaholder_url = quotaholder_url
         self.quotaholder_token = quotaholder_token
         self.free_versioning = free_versioning
@@ -71,6 +73,7 @@ class PithosBackendPool(ObjectPool):
                                   block_params=self.block_params,
                                   queue_hosts=self.queue_hosts,
                                   queue_exchange=self.queue_exchange,
+                                  quotaholder_enabled=self.quotaholder_enabled,
                                   quotaholder_url=self.quotaholder_url,
                                   quotaholder_token=self.quotaholder_token,
                                   free_versioning=self.free_versioning)

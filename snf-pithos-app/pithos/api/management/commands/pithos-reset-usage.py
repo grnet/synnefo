@@ -131,6 +131,9 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         try:
+            if not backend.quotaholder_enabled:
+                raise CommandError('Quotaholder component is not enabled')
+
             if not backend.quotaholder_url:
                 raise CommandError('Quotaholder component url is not set')
 

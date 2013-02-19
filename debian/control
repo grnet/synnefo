@@ -88,6 +88,7 @@ Depends: ${misc:Depends}, ${python:Depends}, snf-common,
     python-argparse
 Replaces: snf-pithos-lib
 Provides: ${python:Provides}
+Recommends: python-ceph
 XB-Python-Version: ${python:Versions}
 Description: Synnefo File/Object Storage backend library
  This package handles the low level management for the Synnefo

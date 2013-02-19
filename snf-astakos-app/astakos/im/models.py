@@ -55,7 +55,7 @@ from django.db.models.signals import (
 from django.contrib.contenttypes.models import ContentType
 
 from django.dispatch import Signal
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.core.urlresolvers import reverse
 from django.utils.http import int_to_base36
 from django.contrib.auth.tokens import default_token_generator
@@ -1365,10 +1365,23 @@ class ChainManager(ForUpdateManager):
         return chains + app_chains
 
     def all_full_state(self):
-        d = {}
         chains = self.all()
+        cids = [c.chain for c in chains]
+        projects = Project.objects.select_related('application').in_bulk(cids)
+
+        objs = Chain.objects.annotate(latest=Max('chained_apps__id'))
+        chain_latest = dict(objs.values_list('chain', 'latest'))
+
+        objs = ProjectApplication.objects.select_related('applicant')
+        apps = objs.in_bulk(chain_latest.values())
+
+        d = {}
         for chain in chains:
-            d[chain.pk] = chain.full_state()
+            pk = chain.pk
+            project = projects.get(pk, None)
+            app = apps[chain_latest[pk]]
+            d[chain.pk] = chain.get_state(project, app)
+
         return d
 
     def of_project(self, project):
@@ -1470,10 +1483,14 @@ class Chain(models.Model):
         app = self.last_application()
         return project, app
 
-    def full_state(self):
-        project, app = self.get_elements()
+    def get_state(self, project, app):
         s = self.chain_state(project, app)
         return s, project, app
+
+    def full_state(self):
+        project, app = self.get_elements()
+        return self.get_state(project, app)
+
 
 def new_chain():
     c = Chain.objects.create()

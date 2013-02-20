@@ -186,9 +186,8 @@ def create_network(serials, request):
         if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
             raise Forbidden("Can not create %s network" % flavor)
 
-        cidr_block = int(subnet.split('/')[1])
-        if not util.validate_network_size(cidr_block):
-            raise OverLimit("Unsupported network size.")
+        # Check that user provided a valid subnet
+        util.validate_network_subnet(subnet)
 
         user_id = request.user_uniq
         serial = quotas.issue_network_commission(user_id)

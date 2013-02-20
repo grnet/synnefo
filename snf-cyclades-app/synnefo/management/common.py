@@ -91,7 +91,7 @@ def validate_network_info(options):
     gateway6 = options['gateway6']
 
     try:
-        net = ipaddr.IPv4Network(subnet)
+        net = ipaddr.IPv4Network(subnet, strict=True)
         prefix = net.prefixlen
         if not validate_network_size(prefix):
             raise CommandError("Unsupport network mask %d."

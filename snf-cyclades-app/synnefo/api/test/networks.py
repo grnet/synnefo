@@ -122,6 +122,15 @@ class NetworkAPITest(BaseAPITest):
                              json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
 
+    def test_invalid_subnet(self, mrapi):
+        """Test invalid subnet"""
+        request = {
+            'network': {'name': 'foo', 'cidr': '10.0.0.10/27'}
+            }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
     def test_list_networks(self, mrapi):
         """Test that expected list of networks is returned."""
         # Create a deleted network

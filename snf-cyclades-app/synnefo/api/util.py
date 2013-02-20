@@ -43,6 +43,7 @@ from string import digits, lowercase, uppercase
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
+from ipaddr import IPNetwork
 
 import dateutil.parser
 
@@ -237,6 +238,18 @@ def get_network(network_id, user_id, for_update=False):
         return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
+
+
+def validate_network_subnet(subnet):
+    try:
+        # Use strict option to not all subnets with host bits set
+        network = IPNetwork(subnet, strict=True)
+    except ValueError:
+        raise BadRequest("Invalid network subnet")
+
+    # Check that network size is allowed!
+    if not validate_network_size(network.prefixlen):
+        raise OverLimit("Unsupported network size")
 
 
 def validate_network_size(cidr_block):

@@ -556,8 +556,10 @@ def _create_network(network, backend):
 
     if network.public:
         conflicts_check = True
+        tags.append('public')
     else:
         conflicts_check = False
+        tags.append('private')
 
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)

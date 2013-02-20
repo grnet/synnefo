@@ -683,8 +683,6 @@ def create_network(network, backend, connect=True):
 def _create_network(network, backend):
     """Create a network."""
 
-    network_type = network.public and 'public' or 'private'
-
     tags = network.backend_tag
     if network.dhcp:
         tags.append('nfdhcpd')
@@ -715,7 +713,6 @@ def _create_network(network, backend):
                                     network6=network.subnet6,
                                     gateway=network.gateway,
                                     gateway6=network.gateway6,
-                                    network_type=network_type,
                                     mac_prefix=mac_prefix,
                                     conflicts_check=conflicts_check,
                                     tags=tags)

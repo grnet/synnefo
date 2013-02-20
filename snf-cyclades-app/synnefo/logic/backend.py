@@ -689,8 +689,10 @@ def _create_network(network, backend):
 
     if network.public:
         conflicts_check = True
+        tags.append('public')
     else:
         conflicts_check = False
+        tags.append('private')
 
     # Use a dummy network subnet for IPv6 only networks. Currently Ganeti does
     # not support IPv6 only networks. To bypass this limitation, we create the

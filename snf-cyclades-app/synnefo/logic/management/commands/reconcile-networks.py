@@ -275,8 +275,12 @@ def reconcile_orphan_networks(db_networks, ganeti_networks):
             if fix:
                 for net_id in orphans:
                     write('Disconnecting and deleting network %d\n' % net_id)
-                    network = Network.objects.get(id=net_id)
-                    backend_mod.delete_network(network, backends=[back_end])
+                    try:
+                        network = Network.objects.get(id=net_id)
+                        backend_mod.delete_network(network,
+                                                   backends=[back_end])
+                    except Network.DoesNotExist:
+                        write("Not entry for network %s in DB !!\n" % net_id)
 
 
 def get_network_pool(gnet):

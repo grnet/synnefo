@@ -411,8 +411,6 @@ def create_instance(vm, public_nic, flavor, image):
         kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
-    if vm.backend.use_hotplug():
-        kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False

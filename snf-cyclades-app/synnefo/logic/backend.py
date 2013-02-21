@@ -534,8 +534,6 @@ def create_instance(vm, nics, flavor, image):
     kw["depends"] = [[job, ["success", "error", "canceled"]]
                      for job in depend_jobs]
 
-    if vm.backend.use_hotplug():
-        kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False

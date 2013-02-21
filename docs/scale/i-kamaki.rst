@@ -13,6 +13,7 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -23,10 +24,10 @@ kamaki Setup
 ++++++++++++
 
 The following apply to ``client`` node. Here we install a command line tool
-that the end-user can use instead of web UI. Prerequisites are that the
-client node can connect to synnefo nodes by using their FQDN and that
-the user has already aquired an AUTH_TOKEN from his/her profile page after
-signing in.
+that the end-user can use instead of web UI. Prerequisites are that the client
+node can connect to synnefo nodes by using their FQDN and that the user has
+already aquired an AUTH_TOKEN and UUID from his/her profile page after signing
+in.
 
 Install the corresponding package:
 
@@ -44,7 +45,7 @@ and build the correct config file:
     # kamaki config set store.enable on
     # kamaki config set store.pithos_extensions on
     # kamaki config set store.url "https://pithos.example.com/v1"
-    # kamaki config set store.account "user@example.com"
+    # kamaki config set store.account UUID
 
     # kamaki config set global.token AUTH_TOKEN
 
@@ -80,9 +81,13 @@ and register it to plankton:
                     --property OS=debian \
                     --public
 
-
-
-
-
 Test your Setup:
 ++++++++++++++++
+
+.. code-block:: console
+
+   # kamaki store list
+   # kamaki image list
+
+And visit https://cyclades.example.com/ui/ and try to create a VM with the registered image
+or visit https://pithos.example.com/ui/ and see your uploaded image.

@@ -13,6 +13,7 @@ ns ||
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -34,17 +35,17 @@ Assumptions:
 
 For the sake of simplicity we assume we have 6 nodes assinged the following roles:
 
-========  =========  ========================   ====================
-hostname  IP         roles                      FQDN
-========  =========  ========================   ====================
-node1     4.3.2.1    ns,router,client,astakos   accounts.example.com
-node2     4.3.2.2    cyclades                   cyclades.example.com
-node3     4.3.2.3    pithos                     pithos.example.com
-node4     4.3.2.4    cms                        cms.example.com
-node5     4.3.2.5    db                         db.example.com
-node6     4.3.2.6    mq                         mq.example.com
-node1     4.3.2.100  master                     ganeti.example.com
-========  =========  ========================   ====================
+========  =========  ===========================    ====================
+hostname  IP         roles                          FQDN
+========  =========  ===========================    ====================
+node1     4.3.2.1    ns,router,client,astakos,qh    accounts.example.com
+node2     4.3.2.2    cyclades                       cyclades.example.com
+node3     4.3.2.3    pithos                         pithos.example.com
+node4     4.3.2.4    cms                            cms.example.com
+node5     4.3.2.5    db                             db.example.com
+node6     4.3.2.6    mq                             mq.example.com
+node1     4.3.2.100  master                         ganeti.example.com
+========  =========  ===========================    ====================
 
 
 First install the corresponding package:
@@ -82,6 +83,7 @@ In `/etc/bind/zones/example.com` add:
     cms             IN        CNAME   node4.example.com.
     db              IN        CNAME   node5.example.com.
     mq              IN        CNAME   node6.example.com.
+    qh              IN        CNAME   node1.example.com.
 
     node1           IN        A       4.3.2.1
     node2           IN        A       4.3.2.2
@@ -98,7 +100,7 @@ In `/etc/bind/rev/0-24.2.3.4.in-addr.arpa.zone` add:
 .. code-block:: console
 
     $TTL 86400
-    $ORIGIN 0-24.2.3.4.in-addr.arpa.
+    $ORIGIN 2.3.4.in-addr.arpa.
     @               IN      SOA     ns.example.com. admin.skata.com. (
     2012070900; the Serial Number
     172800; the Refresh Rate
@@ -148,3 +150,5 @@ In all ``synnefo`` and ``backend`` nodes add in `/etc/resolv.conf`:
 
 Test your Setup:
 ++++++++++++++++
+
+Try to ping all FQDNs.

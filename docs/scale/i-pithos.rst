@@ -13,6 +13,7 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 pithos ||
 :ref:`cyclades <i-cyclades>` ||
@@ -68,6 +69,13 @@ In `/etc/synnefo/pithos.conf` add:
     PITHOS_UPDATE_MD5 = False
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 
+    PITHOS_QUOTAHOLDER_TOKEN = '1234'
+    PITHOS_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
+
+    # Set False if astakos & pithos are on the same node
+    PITHOS_PROXY_USER_SERVICES = True
+    PITHOS_USE_QUOTAHOLDER = True
+
 
 Install pithos web UI with:
 
@@ -91,8 +99,7 @@ In `/etc/synnefo/webclient.conf` add:
     PITHOS_UI_FEEDBACK_URL = "/feedback"
 
 
-The ``PITHOS_SERVICE_TOKEN`` and ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE``  should be
-the Pithos+ token and id returned by running on the astakos node:
+XXXXXXXXXXXXXX  should be the Pithos+ token and id found on astakos node by running:
 
 .. code-block:: console
 
@@ -108,3 +115,5 @@ After configuration is done, restart services:
 
 Test your Setup:
 ++++++++++++++++
+
+Visit https://pithos.example.com/ui/ and upload files.

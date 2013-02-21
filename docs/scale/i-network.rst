@@ -12,6 +12,7 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -69,3 +70,5 @@ In router node in case you have a NAT setup run:
 
 Test your Setup:
 ++++++++++++++++
+
+Create a VM inside the public network via UI or Ganeti and see if it has internet connectivity.

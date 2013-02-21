@@ -55,7 +55,7 @@ class Notification(object):
         self, sender, recipients, subject,
         message=None, template=None, dictionary=None):
         if not message and not template:
-            raise InputError('message and template cannot be both None.')
+            raise IOError('message and template cannot be both None.')
         dictionary = dictionary or {}
         self.sender = sender
         self.recipients = recipients

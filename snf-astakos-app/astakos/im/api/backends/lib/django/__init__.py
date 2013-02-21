@@ -174,7 +174,7 @@ class DjangoBackend(BaseBackend):
             try:
                 user.add_resource_policy(**p)
             except (ObjectDoesNotExist, IntegrityError), e:
-                append((service, resource, e))
+                append((p.get('service'), p.get('resource'), e))
         return rejected
 
     @safe

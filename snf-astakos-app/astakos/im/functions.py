@@ -66,7 +66,7 @@ from astakos.im.settings import (
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
-    AstakosUser, ProjectMembership, ProjectApplication, Project,
+    AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
@@ -320,7 +320,7 @@ def invite(inviter, email, realname):
     inv = Invitation(inviter=inviter, username=email, realname=realname)
     inv.save()
     send_invitation(inv)
-    inviter.invitations = max(0, self.invitations - 1)
+    inviter.invitations = max(0, inviter.invitations - 1)
     inviter.save()
 
 def switch_account_to_shibboleth(user, local_user,
@@ -435,7 +435,7 @@ def get_project_by_name(name):
         return Project.objects.get(name=name)
     except Project.DoesNotExist:
         raise IOError(
-            _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id)
+            _(astakos_messages.UNKNOWN_PROJECT_ID) % name)
 
 
 def get_project_for_update(project_id):
@@ -462,7 +462,7 @@ def get_user_by_uuid(uuid):
     try:
         return AstakosUser.objects.get(uuid=uuid)
     except AstakosUser.DoesNotExist:
-        raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % user_id)
+        raise IOError(_(astakos_messages.UNKNOWN_USER_ID) % uuid)
 
 def create_membership(project, user):
     if isinstance(user, (int, long)):

@@ -1118,7 +1118,7 @@ class NetworkTestCase(unittest.TestCase):
 
         name = SNF_TEST_PREFIX + TEST_RUN_ID
         #previous_num = len(self.client.list_networks())
-        network = self.client.create_network(name, cidr='10.0.0.1/28')
+        network = self.client.create_network(name, cidr='10.0.1.0/28')
 
         #Test if right name is assigned
         self.assertEqual(network['name'], name)

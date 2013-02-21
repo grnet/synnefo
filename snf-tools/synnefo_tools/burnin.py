@@ -119,7 +119,11 @@ def _ssh_execute(hostip, username, password, command):
 def _get_user_id():
     """Authenticate to astakos and get unique users id"""
     astakos = AstakosClient(ASTAKOS, TOKEN)
-    return astakos.authenticate()['uuid']
+    authenticate = astakos.authenticate()
+    if 'uuid' in authenticate:
+        return authenticate['uuid']
+    else:
+        return authenticate['uniq']
 
 
 # --------------------------------------------------------------------

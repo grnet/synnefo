@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import datetime
+import ipaddr
 
 from base64 import b64encode, b64decode
 from datetime import timedelta, tzinfo
@@ -43,7 +44,6 @@ from string import digits, lowercase, uppercase
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
-from ipaddr import IPNetwork
 
 import dateutil.parser
 
@@ -240,16 +240,41 @@ def get_network(network_id, user_id, for_update=False):
         raise ItemNotFound('Network not found.')
 
 
-def validate_network_subnet(subnet):
+def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
     try:
         # Use strict option to not all subnets with host bits set
-        network = IPNetwork(subnet, strict=True)
+        network = ipaddr.IPv4Network(subnet, strict=True)
     except ValueError:
-        raise BadRequest("Invalid network subnet")
+        raise BadRequest("Invalid network IPv4 subnet")
 
     # Check that network size is allowed!
     if not validate_network_size(network.prefixlen):
-        raise OverLimit("Unsupported network size")
+        raise OverLimit(message="Unsupported network size",
+                        details="Network mask must be in range (%s, 29]" %
+                                MAX_CIDR_BLOCK)
+
+    # Check that gateway belongs to network
+    if gateway:
+        try:
+            gateway = ipaddr.IPv4Address(gateway)
+        except ValueError:
+            raise BadRequest("Invalid network IPv4 gateway")
+        if not gateway in network:
+            raise BadRequest("Invalid network IPv4 gateway")
+
+    if subnet6:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network6 = ipaddr.IPv6Network(subnet6, strict=True)
+        except ValueError:
+            raise BadRequest("Invalid network IPv6 subnet")
+        if gateway6:
+            try:
+                gateway6 = ipaddr.IPv6Address(gateway6)
+            except ValueError:
+                raise BadRequest("Invalid network IPv6 gateway")
+            if not gateway6 in network6:
+                raise BadRequest("Invalid network IPv6 gateway")
 
 
 def validate_network_size(cidr_block):

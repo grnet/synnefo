@@ -131,6 +131,48 @@ class NetworkAPITest(BaseAPITest):
                              json.dumps(request), 'json')
         self.assertBadRequest(response)
 
+    def test_invalid_gateway_1(self, mrapi):
+        request = {
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/28',
+                        'gateway': '10.0.0.0.300'}
+        }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_invalid_gateway_2(self, mrapi):
+        request = {
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/28',
+                        'gateway': '10.2.0.1'}
+        }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_invalid_network6(self, mrapi):
+        request = {
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/28',
+                        'subnet6': '10.0.0.0/28',
+                        'gateway': '10.2.0.1'}
+        }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_invalid_gateway6(self, mrapi):
+        request = {
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/28',
+                        'subnet6': '2001:0db8:0123:4567:89ab:cdef:1234:5678',
+                        'gateway': '10.2.0.1'}
+        }
+        response = self.post('/api/v1.1/networks/', 'user1',
+                             json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
     def test_list_networks(self, mrapi):
         """Test that expected list of networks is returned."""
         # Create a deleted network

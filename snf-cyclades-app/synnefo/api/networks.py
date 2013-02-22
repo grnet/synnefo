@@ -187,7 +187,7 @@ def create_network(serials, request):
             raise Forbidden("Can not create %s network" % flavor)
 
         # Check that user provided a valid subnet
-        util.validate_network_subnet(subnet)
+        util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
         user_id = request.user_uniq
         serial = quotas.issue_network_commission(user_id)

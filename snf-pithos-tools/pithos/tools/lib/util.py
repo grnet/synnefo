@@ -33,7 +33,7 @@
 
 import os
 
-DEFAULT_URL = 'https://pithos.okeanos.grnet.gr/v1'
+DEFAULT_URL = 'https://pithos.example.synnefo.org/v1'
 DEFAULT_USER = 'test'
 DEFAULT_TOKEN = '0000'
 

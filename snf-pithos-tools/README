@@ -25,6 +25,6 @@ Connection options can be set via environmental variables:
 ======================  =========================================================
 PITHOS_USER             Login user
 PITHOS_TOKEN            Login token
-PITHOS_URL              Pithos server (default: \https://pithos.okeanos.grnet.gr/v1)
+PITHOS_URL              Pithos server (default: \https://pithos.example.synnefo.org/v1)
 PITHOS_SYNC_CONTAINER   Container to sync with (default: pithos)
 ======================  =========================================================

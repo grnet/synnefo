@@ -244,21 +244,21 @@ On the Astakos host, edit ``/etc/synnefo/20-snf-astakos-app-settings.conf``:
 
     QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
     ASTAKOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    ASTAKOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.org/quotaholder/v'
+    ASTAKOS_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
 
 On the Cyclades host, edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
 
 ::
 
     CYCLADES_USE_QUOTAHOLDER = True
-    CYCLADES_QUOTAHOLDER_URL = 'https://accounts.synnefo.org/quotaholder/v'
+    CYCLADES_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
 
 On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
 ::
 
-    PITHOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.org/quotaholder/v'
+    PITHOS_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
     PITHOS_USE_QUOTAHOLDER = False # will set to True after migration
 
@@ -341,7 +341,7 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
   Cyclades, again in ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``. Make sure
   the domain is exaclty the same, so that no re-directs happen ::
 
-    VMAPI_BASE_URL = "https://cyclades.synnefo.org"
+    VMAPI_BASE_URL = "https://cyclades.example.synnefo.org"
 
   .. note::
 
@@ -361,9 +361,9 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
   access them for uuid-displayname translations. Edit on the Pithos host
   ``/etc/synnefo/20-snf-pithos-app-settings.conf`` ::
 
-    PITHOS_USER_CATALOG_URL    = https://accounts.synnefo.org/user_catalogs/
-    PITHOS_USER_FEEDBACK_URL   = https://accounts.synnefo.org/feedback/
-    PITHOS_USER_LOGIN_URL      = https://accounts.synnefo.org/login/
+    PITHOS_USER_CATALOG_URL    = https://accounts.example.synnefo.org/user_catalogs/
+    PITHOS_USER_FEEDBACK_URL   = https://accounts.example.synnefo.org/feedback/
+    PITHOS_USER_LOGIN_URL      = https://accounts.example.synnefo.org/login/
     #PITHOS_PROXY_USER_SERVICES = True # Set False if astakos & pithos are on the same host
 
 
@@ -393,7 +393,7 @@ First, set the corresponding values on the following dict in
         'cyclades': {
     #        # Specifying the key 'url' will overwrite it.
     #        # Use this to (re)set service URL.
-    #        'url': 'https://cyclades.synnefo.org/ui/',
+    #        'url': 'https://cyclades.example.synnefo.org/ui/',
     #        # order services in listings, cloudbar, etc.
     #        'order' : 1
             'resources': [{
@@ -428,7 +428,7 @@ First, set the corresponding values on the following dict in
         },
         'pithos+': {
     #        # Use this to (re)set service URL.
-    #        'url': 'https://pithos.synnefo.org/ui/',
+    #        'url': 'https://pithos.example.synnefo.org/ui/',
     #        # order services in listings, cloudbar, etc.
     #        'order' : 2
             'resources':[{

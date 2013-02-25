@@ -194,6 +194,20 @@ APPLICATION_CANNOT_DISMISS              =   "Cannot dismiss application %s in st
 APPLICATION_CANNOT_CANCEL               =   "Cannot cancel application %s in state '%s'"
 APPLICATION_CANCELLED                   =   "Your project request has been cancelled."
 
+REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
+                                     "of pending project applications: %s.")
+
+PENDING_APPLICATION_LIMIT_ADD = \
+    ("You are not allowed to create a new project "
+     "because you have reached the maximum [%s] for "
+     "pending project applications. "
+     "Consider cancelling any unnecessary ones.")
+
+PENDING_APPLICATION_LIMIT_MODIFY = \
+    ("You are not allowed to modify this project "
+     "because you have reached the maximum [%s] for "
+     "pending project applications. "
+     "Consider cancelling any unnecessary ones.")
 
 # Auth providers messages
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled."

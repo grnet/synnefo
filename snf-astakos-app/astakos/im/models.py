@@ -837,6 +837,9 @@ class AstakosUser(User):
             return False
         return True
 
+    def settings(self):
+        return UserSetting.objects.filter(user=self)
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -1193,6 +1196,17 @@ class PendingThirdPartyUser(models.Model):
 class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
+
+
+class UserSetting(models.Model):
+    user = models.ForeignKey(AstakosUser)
+    setting = models.CharField(max_length=255)
+    value = models.IntegerField()
+
+    objects = ForUpdateManager()
+
+    class Meta:
+        unique_together = ("user", "setting")
 
 
 ### PROJECTS ###

@@ -54,6 +54,7 @@ from smtplib import SMTPException
 from datetime import datetime
 from functools import wraps
 
+import astakos.im.settings as astakos_settings
 from astakos.im.settings import (
     DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
     VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
@@ -67,6 +68,7 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
+    UserSetting,
     PendingMembershipError, get_resource_names, new_chain)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
@@ -694,6 +696,11 @@ def submit_application(kw, request_user=None):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
+    reached, limit = reached_pending_application_limit(request_user.id, precursor)
+    if reached:
+        m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
+        raise PermissionDenied(m)
+
     application = ProjectApplication(**kw)
 
     if precursor is None:
@@ -808,3 +815,70 @@ def get_by_chain_or_404(chain_id):
             raise Http404
         else:
             return None, application
+
+
+def get_user_setting(user_id, key):
+    try:
+        setting = UserSetting.objects.get(
+            user=user_id, setting=key)
+        return setting.value
+    except UserSetting.DoesNotExist:
+        return getattr(astakos_settings, key)
+
+
+def set_user_setting(user_id, key, value):
+    try:
+        setting = UserSetting.objects.get_for_update(
+            user=user_id, setting=key)
+    except UserSetting.DoesNotExist:
+        setting = UserSetting(user_id=user_id, setting=key)
+    setting.value = value
+    setting.save()
+
+
+def unset_user_setting(user_id, key):
+    UserSetting.objects.filter(user=user_id, setting=key).delete()
+
+
+PENDING_APPLICATION_LIMIT_SETTING = 'PENDING_APPLICATION_LIMIT'
+
+def get_pending_application_limit(user_id):
+    key = PENDING_APPLICATION_LIMIT_SETTING
+    return get_user_setting(user_id, key)
+
+
+def set_pending_application_limit(user_id, value):
+    key = PENDING_APPLICATION_LIMIT_SETTING
+    return set_user_setting(user_id, key, value)
+
+
+def unset_pending_application_limit(user_id):
+    key = PENDING_APPLICATION_LIMIT_SETTING
+    return unset_user_setting(user_id, key)
+
+
+def _reached_pending_application_limit(user_id):
+    limit = get_pending_application_limit(user_id)
+
+    PENDING = ProjectApplication.PENDING
+    pending = ProjectApplication.objects.filter(
+        applicant__id=user_id, state=PENDING).count()
+
+    return pending >= limit, limit
+
+
+def reached_pending_application_limit(user_id, precursor=None):
+    reached, limit = _reached_pending_application_limit(user_id)
+
+    if precursor is None:
+        return reached, limit
+
+    chain = precursor.chain
+    objs = ProjectApplication.objects
+    q = objs.filter(chain=chain, state=ProjectApplication.PENDING)
+    has_pending = q.exists()
+
+    if not has_pending:
+        return reached, limit
+
+    return False, limit

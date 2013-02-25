@@ -1,0 +1,11 @@
+astakos-client
+==============
+
+Python client for the Astakos, the Identity Management Service of
+synnefo(http://www.synnefo.org)
+
+Feedback
+========
+
+For any comments or suggestions for improvement, please contact
+the synnefo development team <synnefo-devel@googlegroups.com>

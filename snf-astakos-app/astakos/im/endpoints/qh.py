@@ -74,6 +74,8 @@ def set_quota(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.set_quota(context={}, clientkey=clientkey, set_quota=payload)
     logger.debug('set_quota: %s rejected: %s' % (payload, result))
     return result
@@ -83,6 +85,8 @@ def get_entity(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.get_entity(context={}, get_entity=payload)
     logger.debug('get_entity: %s reply: %s' % (payload, result))
     return result
@@ -92,6 +96,8 @@ def get_holding(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.get_holding(context={}, get_holding=payload)
     logger.debug('get_holding: %s reply: %s' % (payload, result))
     return result
@@ -143,6 +149,8 @@ def qh_get_quota(users, resources):
         for resource in resources:
             append((user.uuid, resource, ENTITY_KEY),)
 
+    if payload == []:
+        return []
     result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
     logger.debug('get_quota: %s rejected: %s' % (payload, result))
     return result
@@ -162,6 +170,8 @@ def create_entity(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.create_entity(
         context={}, clientkey=clientkey, create_entity=payload)
     logger.debug('create_entity: %s rejected: %s' % (payload, result))

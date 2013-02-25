@@ -31,45 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.retry_xctx import RetryTransactionHandler
-from astakos.im.notification_xctx import NotificationTransactionContext
-from astakos.im.models import sync_projects
-from astakos.im.project_error import project_error_view
 
-# USAGE
-# =====
-# @project_transaction_context(sync=True)
-# def a_view(args, ctx=None):
-#     ...
-#     if ctx:
-#         ctx.mark_rollback()
-#     ...
-#     return http response
-#
-# OR (more cleanly)
-#
-# def a_view(args):
-#     with project_transaction_context(sync=True) as ctx:
-#         ...
-#         ctx.mark_rollback()
-#         ...
-#         return http response
+from django.db import transaction
+import logging
 
-def project_transaction_context(**kwargs):
-    return RetryTransactionHandler(ctx=ProjectTransactionContext,
-                                   on_fail=project_error_view,
-                                   **kwargs)
+logger = logging.getLogger(__name__)
 
-def cmd_project_transaction_context(**kwargs):
-    return RetryTransactionHandler(ctx=ProjectTransactionContext,
-                                   **kwargs)
 
-class ProjectTransactionContext(NotificationTransactionContext):
-    def __init__(self, sync=False, **kwargs):
-        self._sync = sync
-        NotificationTransactionContext.__init__(self, **kwargs)
-
-    def postprocess(self):
-        if self._sync:
-            sync_projects()
-        NotificationTransactionContext.postprocess(self)
+def commit_on_success_strict(**kwargs):
+    def wrap(func):
+        @transaction.commit_manually(**kwargs)
+        def inner(*args, **kwargs):
+            try:
+                result = func(*args, **kwargs)
+                transaction.commit()
+                return result
+            except BaseException as e:
+                logger.exception(e)
+                transaction.rollback()
+                raise
+        return inner
+    return wrap

@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from astakos.im.functions import (terminate, suspend, resume, check_expiration,
                                   approve_application, deny_application)
-from astakos.im.project_xctx import cmd_project_transaction_context
+from synnefo.lib.db.transaction import commit_on_success_strict
 
 
 class Command(BaseCommand):
@@ -117,13 +117,13 @@ class Command(BaseCommand):
             self.expire(execute=True)
 
     def run_command(self, func, *args):
-        with cmd_project_transaction_context(sync=True) as ctx:
+        @commit_on_success_strict()
+        def inner():
             try:
                 func(*args)
             except BaseException as e:
-                if ctx:
-                    ctx.mark_rollback()
                 raise CommandError(e)
+        inner()
 
     def print_expired(self, projects, execute):
         length = len(projects)
@@ -152,7 +152,7 @@ class Command(BaseCommand):
                 self.stdout.write('%d projects have been terminated.\n' % (
                     length,))
 
-    @cmd_project_transaction_context(sync=True)
+    @commit_on_success_strict()
     def expire(self, execute=False, ctx=None):
         try:
             projects = check_expiration(execute=execute)

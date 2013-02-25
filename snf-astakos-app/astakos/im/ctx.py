@@ -31,41 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.lib.db.xctx import TransactionHandler
-from time import sleep
-
+from django.contrib import messages
+from django.utils.translation import ugettext as _
+import astakos.im.messages as astakos_messages
 import logging
+
 logger = logging.getLogger(__name__)
 
-class RetryException(Exception):
-    pass
 
-class RetryTransactionHandler(TransactionHandler):
-    def __init__(self, retries=3, retry_wait=1.0, on_fail=None, **kwargs):
-        self.retries    = retries
-        self.retry_wait = retry_wait
-        self.on_fail    = on_fail
-        TransactionHandler.__init__(self, **kwargs)
+class ExceptionHandler(object):
+    def __init__(self, request):
+        self.request = request
 
-    def __call__(self, func):
-        def wrap(*args, **kwargs):
-            while True:
-                try:
-                    f = TransactionHandler.__call__(self, func)
-                    return f(*args, **kwargs)
-                except RetryException as e:
-                    self.retries -= 1
-                    if self.retries <= 0:
-                        logger.exception(e)
-                        f = self.on_fail
-                        if not callable(f):
-                            raise
-                        return f(*args, **kwargs)
-                    sleep(self.retry_wait)
-                except BaseException as e:
-                    logger.exception(e)
-                    f = self.on_fail
-                    if not callable(f):
-                        raise
-                    return f(*args, **kwargs)
-        return wrap
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        if value is not None:  # exception
+            logger.exception(value)
+            m = _(astakos_messages.GENERIC_ERROR)
+            messages.error(self.request, m)
+            return True  # suppress exception

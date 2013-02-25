@@ -452,6 +452,18 @@ class ProfileForm(forms.ModelForm):
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
 
+    def clean_email(self):
+        return self.instance.email
+
+    def clean_auth_token(self):
+        return self.instance.auth_token
+
+    def clean_auth_token_expires(self):
+        return self.instance.auth_token_expires
+
+    def clean_uuid(self):
+        return self.instance.uuid
+
     def save(self, commit=True):
         user = super(ProfileForm, self).save(commit=False)
         user.is_verified = True
@@ -999,7 +1011,6 @@ class ExtendedProfileForm(ProfileForm):
             self.fields_list.remove('new_password2')
             self.fields_list.remove('change_password')
             del self.fields['change_password']
-
 
         if EMAILCHANGE_ENABLED and self.instance.can_change_email():
             self.email_change = True

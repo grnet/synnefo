@@ -10,3 +10,4 @@ snf-pithos-backend snf-pithos-backend
 IPy python-ipy
 kamaki kamaki
 unittest2 python-unittest2
+alembic alembic

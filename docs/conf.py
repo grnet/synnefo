@@ -1,11 +1,12 @@
 import sys, os
 
-sys.path.append("../snf-cyclades-app")
+sys.path.insert(0, os.path.abspath('../snf-cyclades-app'))
+from synnefo.versions.app import __version__
 
 project = u'synnefo'
 copyright = u'2012, GRNET'
-version = '0.12'
-release = '0.12'
+version = __version__
+release = __version__
 html_title = 'synnefo ' + version
 
 templates_path = ['_templates']

@@ -54,6 +54,16 @@ def _scheme_to_class(scheme):
         return None
 
 
+def _doRequest(conn, method, url, **kwargs):
+    """The actual request. This function can easily be mocked"""
+    conn.request(method, url, **kwargs)
+    response = conn.getresponse()
+    length = response.getheader('content-length', None)
+    data = response.read(length)
+    status = int(response.status)
+    return (status, data)
+
+
 def _callAstakos(token, url, headers={}, body=None,
                  method='GET', use_pool=False):
     """Make the actual call to astakos service"""
@@ -88,11 +98,8 @@ def _callAstakos(token, url, headers={}, body=None,
 
     # Send request
     try:
-        conn.request(method, p.path + '?' + p.query, **kwargs)
-        response = conn.getresponse()
-        length = response.getheader('content-length', None)
-        data = response.read(length)
-        status = int(response.status)
+        request_url = p.path + '?' + p.query
+        (status, data) = _doRequest(conn, method, request_url, **kwargs)
     except httplib.HTTPException as err:
         logger.error("Failed to send request: %s" % err)
         raise

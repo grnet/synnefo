@@ -73,18 +73,11 @@ middlware_classes = [
 #    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
-loggers = {
-    'astakos': {
-        'handlers': ['console'],
-        'level': 'INFO'
-    }
-}
-
 static_files = {'astakos.im': ''}
 
 # The following settings will replace the default django settings
 AUTHENTICATION_BACKENDS = (
-	'astakos.im.auth_backends.EmailBackend',
+    'astakos.im.auth_backends.EmailBackend',
     'astakos.im.auth_backends.TokenBackend')
 
 LOGIN_URL = '/im/'

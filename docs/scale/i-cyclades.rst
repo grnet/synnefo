@@ -13,6 +13,7 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 cyclades ||
@@ -33,6 +34,8 @@ versions >= 0.13 :
 
     # apt-get install memcached
     # apt-get install python-memcache
+    # apt-get install kamaki
+    # apt-get install snf-pithos-backend
     # apt-get install snf-cyclades-app
 
 In `/etc/synnefo/cyclades.conf` add:
@@ -42,14 +45,18 @@ In `/etc/synnefo/cyclades.conf` add:
     MAX_CIDR_BLOCK = 21
     PUBLIC_USE_POOL = True
 
-    CUSTOM_BRIDGED_BRIDGE = 'br0'
-
     MAX_VMS_PER_USER = 5
     VMS_USER_QUOTA = {
         'user@example.com': 20,
     }
     MAX_NETWORKS_PER_USER = 3
     NETWORKS_USER_QUOTA = { 'user@example.com': 10 }
+
+    CPU_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-bar.png'
+    CPU_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-ts.png'
+    NET_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-bar.png'
+    NET_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-ts.png'
+
     GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
                              'rbd',  'sharedfile', 'ext')
     ASTAKOS_URL = 'https://accounts.example.com/im/authenticate'
@@ -71,8 +78,54 @@ In `/etc/synnefo/cyclades.conf` add:
 
     AMQP_HOSTS = ["amqp://synnefo:example_rabbitmq_passw0rd@mq.example.com:5672"]
 
+    TIMEOUT = 60 * 1000
+    UI_UPDATE_INTERVAL = 2000
+    FEEDBACK_CONTACTS = (
+        ('feedback@example.com', 'feedback@example.com'),
+    )
+    UI_LOGIN_URL = "https://accounts.example.com/im/login"
+    UI_LOGOUT_URL = "https://accounts.example.com/im/logout"
+    UI_FLAVORS_DISK_TEMPLATES_INFO = {
+        'rbd': {'name': 'Rbd',
+               'description': 'Volumes residing inside a RADOS cluster'},
+
+        'plain': {'name': 'Local',
+                 'description': 'Fast, not high available local storage (LVM)'},
+
+        'drbd': {'name': 'Standard',
+                 'description': 'High available persistent storage (DRBD)'},
+
+        'ext_vlmc': {'name': 'Tmp',
+                    'description': 'Volatile storage'},
+    }
+    UI_SUPPORT_SSH_OS_LIST = ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu',
+                              'centos', 'archlinux', 'gentoo']
+    UI_SYSTEM_IMAGES_OWNERS = {
+        'images@okeanos.io': 'system',
+    }
+
     CACHE_BACKEND = 'memcached://127.0.0.1:11211/'
     VMAPI_BASE_URL = 'https://cyclades.example.com/'
+
+    CYCLADES_QUOTAHOLDER_TOKEN = '1234'
+    CYCLADES_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
+    CYCLADES_USE_QUOTAHOLDER = True
+
+    CYCLADES_ASTAKOS_SERVICE_TOKEN = "XXXXXXXXXX"
+
+    CYCLADES_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
+
+    UI_SYSTEM_IMAGES_OWNERS = {
+        'admin@synnefo.gr': 'system',
+        'images@synnefo.gr': 'system'
+    }
+
+XXXXXXXX is the token for cyclades registered service and can be found
+in astakos node running:
+
+.. code-block:: console
+
+   snf-manage service-list
 
 
 Restart services and initialize database:
@@ -82,7 +135,7 @@ Restart services and initialize database:
    # /etc/init.d/gunicorn restart
    # /etc/init.d/apache2 restart
    # snf-manage syncdb
-   # snf-manage migrate
+   # snf-manage migrate --delete-ghost-migrations
    # snf-manage loaddata flavors
 
 Enable dispatcher:
@@ -143,7 +196,7 @@ Add the synnefo setting in :file:`/etc/synnefo/cyclades.conf`:
 
 .. code-block:: console
 
-   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
+   DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 Add public network where the VM's will eventually connect to in order to
 access Internet:
@@ -155,3 +208,14 @@ access Internet:
 
 Test your Setup:
 ++++++++++++++++
+
+In cyclades node run:
+
+.. code-block:: console
+
+    snf-manage backend-list
+    snf-manage network-list
+    snf-manage server-list
+
+Visit https://cyclades.example.com/ui/ and create a VM or network.
+

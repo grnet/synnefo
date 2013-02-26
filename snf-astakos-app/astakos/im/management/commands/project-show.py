@@ -170,7 +170,7 @@ def project_fields(s, project, last_app):
     d = OrderedDict([
             ('project id', project.id),
             ('application id', app.id),
-            ('name', project.name),
+            ('name', app.name),
             ('status', Chain.state_display(s)),
             ])
     if s in Chain.PENDING_STATES:

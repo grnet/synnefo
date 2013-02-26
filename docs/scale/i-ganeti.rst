@@ -12,6 +12,7 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -74,3 +75,12 @@ We need to add a rapi user to Ganeti so that Synnefo can talk with the backend:
 
 Test your Setup:
 ++++++++++++++++
+
+In master node run:
+
+.. code-block:: console
+
+   gnt-cluster info
+   gnt-node list
+   gnt-network list
+   gnt-instance list

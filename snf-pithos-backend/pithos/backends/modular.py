@@ -145,6 +145,7 @@ class ModularBackend(BaseBackend):
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
+                 quotaholder_enabled=True,
                  quotaholder_url=None, quotaholder_token=None,
                  free_versioning=True, block_params=None):
         db_module = db_module or DEFAULT_DB_MODULE
@@ -207,6 +208,7 @@ class ModularBackend(BaseBackend):
 
             self.queue = NoQueue()
 
+        self.quotaholder_enabled = quotaholder_enabled
         self.quotaholder_url = quotaholder_url
         self.quotaholder_token = quotaholder_token
         self.quotaholder = QuotaholderClient(quotaholder_url, quotaholder_token)
@@ -219,9 +221,7 @@ class ModularBackend(BaseBackend):
 
     @property
     def using_external_quotaholder(self):
-        if self.quotaholder_url:
-            return True
-        return False
+        return self.quotaholder_enabled
 
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):

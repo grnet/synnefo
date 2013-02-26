@@ -70,6 +70,7 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.utils import simplejson as json
+from django.contrib.auth.views import redirect_to_login
 
 import astakos.im.messages as astakos_messages
 

@@ -91,6 +91,6 @@ class Command(BaseCommand):
         if options['drained']:
             backend.drained = parse_bool(options['drained'])
         if options['offline']:
-            backend.offile = parse_bool(options['offline'])
+            backend.offline = parse_bool(options['offline'])
 
         backend.save()

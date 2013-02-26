@@ -67,7 +67,7 @@ def view(request, appname='quotaholder', version=None, callname=None):
     if (appname, version) not in callpoints:
         return HttpResponse(status=404)
 
-    if request.META['HTTP_X_AUTH_TOKEN'] != settings.QUOTAHOLDER_TOKEN:
+    if request.META.get('HTTP_X_AUTH_TOKEN') != settings.QUOTAHOLDER_TOKEN:
         return HttpResponse(status=403, content='invalid token')
 
     callpoint = callpoints[(appname, version)]
@@ -76,9 +76,9 @@ def view(request, appname='quotaholder', version=None, callname=None):
         body = callpoint.make_call_from_json(callname, body)
         status = 200
     except Exception as e:
+        logger.exception(e)
         status = 450
         if not isinstance(e, CallError):
-            logger.exception(e)
             e.args += (''.join(format_exc()),)
             e = CallError.from_exception(e)
             status = 500

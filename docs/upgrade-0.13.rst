@@ -254,6 +254,15 @@ On the Cyclades host, edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
     CYCLADES_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
 
+    # Set to False if astakos & cyclades are on the same host
+    #CYCLADES_PROXY_USER_SERVICES = True
+
+.. note::
+
+    If Cylcades and Astakos are installed on the same server,
+    set ``CYCLADES_PROXY_USER_SERVICES = False``
+
+
 On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
 ::
@@ -364,8 +373,14 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
     PITHOS_USER_CATALOG_URL    = https://accounts.example.synnefo.org/user_catalogs/
     PITHOS_USER_FEEDBACK_URL   = https://accounts.example.synnefo.org/feedback/
     PITHOS_USER_LOGIN_URL      = https://accounts.example.synnefo.org/login/
-    #PITHOS_PROXY_USER_SERVICES = True # Set False if astakos & pithos are on the same host
 
+    # Set to False if astakos & pithos are on the same host
+    #PITHOS_PROXY_USER_SERVICES = True
+
+.. note::
+
+    If Pithos and Astakos are installed on the same server,
+    set ``PITHOS_PROXY_USER_SERVICES = False``
 
 4. Start astakos and quota services
 ===================================

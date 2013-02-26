@@ -785,7 +785,7 @@ def connect_to_network(vm, nic):
 
     kwargs = {
         "instance": vm.backend_vm_id,
-        "nics": [("add", nic)],
+        "nics": [("add", "-1", nic)],
         "depends": depends,
     }
     if vm.backend.use_hotplug():

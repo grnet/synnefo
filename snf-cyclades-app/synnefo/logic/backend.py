@@ -642,14 +642,15 @@ def connect_to_network(vm, network, address=None):
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
 
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
+        return client.ModifyInstance(vm.backend_vm_id,
+                                     nics=[('add',  "-1", nic)],
                                      hotplug=vm.backend.use_hotplug(),
                                      depends=depends,
                                      dry_run=settings.TEST)
 
 
 def disconnect_from_network(vm, nic):
-    op = [('remove', nic.index, {})]
+    op = [('remove', str(nic.index), {})]
 
     log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
 

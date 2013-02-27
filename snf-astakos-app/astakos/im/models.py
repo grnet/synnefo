@@ -364,7 +364,7 @@ class AstakosUser(User):
                                   max_length=32,
                                   null=True, 
                                   blank=True, 
-                                  help_text = _( 'test' ))
+                                  help_text = _( 'Renew' ))
     auth_token_created = models.DateTimeField(_('Token creation date'), 
                                               null=True)
     auth_token_expires = models.DateTimeField(

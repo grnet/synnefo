@@ -192,7 +192,7 @@ APPLICATION_CANNOT_APPROVE              =   "Cannot approve application %s in st
 APPLICATION_CANNOT_DENY                 =   "Cannot deny application %s in state '%s'"
 APPLICATION_CANNOT_DISMISS              =   "Cannot dismiss application %s in state '%s'"
 APPLICATION_CANNOT_CANCEL               =   "Cannot cancel application %s in state '%s'"
-APPLICATION_CANCELLED                   =   "Your project request has been cancelled."
+APPLICATION_CANCELLED                   =   "Your project application has been cancelled."
 
 REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
                                      "of pending project applications: %s.")

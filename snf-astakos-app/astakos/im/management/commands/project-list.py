@@ -79,7 +79,7 @@ class Command(NoArgsCommand):
                     action='store_true',
                     dest='new',
                     default=False,
-                    help="List only new project requests"),
+                    help="List only new project applications"),
         make_option('--modified',
                     action='store_true',
                     dest='modified',

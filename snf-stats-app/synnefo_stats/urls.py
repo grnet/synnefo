@@ -35,5 +35,5 @@ from django.conf.urls.defaults import patterns
 from synnefo_stats.grapher import grapher
 
 urlpatterns = patterns('',
-    (r'^(?P<hostname>\S+)/(?P<graph_type>\S+)/$', grapher),
+    (r'^stats/(?P<hostname>\S+)/(?P<graph_type>\S+)/$', grapher),
 )

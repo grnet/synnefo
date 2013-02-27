@@ -679,7 +679,7 @@ app_name_validator   =  validators.RegexValidator(
                             _(astakos_messages.DOMAIN_VALUE_ERR),
                             'invalid')
 app_name_help        =  _("""
-        The Project's name should be in a domain format.
+        The project's name should be in a domain format.
         The domain shouldn't neccessarily exist in the real
         world but is helpful to imply a structure.
         e.g.: myproject.mylab.ntua.gr or
@@ -700,8 +700,8 @@ app_home_widget      =  forms.TextInput(
 app_desc_label       =  _("Description")
 app_desc_help        =  _("""
         Please provide a short but descriptive abstract of your
-        Project, so that anyone searching can quickly understand
-        what this Project is about.""")
+        project, so that anyone searching can quickly understand
+        what this project is about.""")
 
 app_comment_label    =  _("Comments for review (private)")
 app_comment_help     =  _("""
@@ -1029,14 +1029,16 @@ class ExtendedProfileForm(ProfileForm):
         if self.email_change:
             self.fields.update(self.email_change_form.fields)
             self.fields['new_email_address'].required = False
-            self.fields['email'].help_text = _('Request email change')
+            self.fields['email'].help_text = _('Change the email associated with '
+                                               'your account. This email will '
+                                               'remain active until you verify '
+                                               'your new one.')
 
         if self.password_change:
             self.fields.update(self.password_change_form.fields)
             self.fields['old_password'].required = False
             self.fields['old_password'].label = _('Password')
-            self.fields['old_password'].help_text = _('Change your local '
-                                                      'password')
+            self.fields['old_password'].help_text = _('Change your password.')
             self.fields['old_password'].initial = 'password'
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False

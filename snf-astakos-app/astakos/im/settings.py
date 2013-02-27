@@ -244,7 +244,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                  'verbose_name':'storage',
             },
             'network': {
-                'help_text':' Network resources (amount of Private Networks)  ',
+                'help_text':' Network resources (number of Private Networks)  ',
                 'is_abbreviation':False,
                 'report_desc':'',
                 'verbose_name':'network',

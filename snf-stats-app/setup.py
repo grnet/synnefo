@@ -60,7 +60,6 @@ INSTALL_REQUIRES = [
     'gdmodule',
     'py-rrdtool',
     'Django>=1.2, <1.3',
-    'snf-common>=0.9.0',
 ]
 
 setup(

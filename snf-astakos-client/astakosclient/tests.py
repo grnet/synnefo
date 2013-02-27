@@ -40,17 +40,18 @@ the astakos client library
 
 """
 
+import sys
 import socket
 
 import astakosclient
 
 # Use backported unittest functionality if Python < 2.7
-#try:
-#    import unittest2 as unittest
-#except ImportError:
-#    if sys.version_info < (2, 7):
-#        raise Exception("The unittest2 package is required for Python < 2.7")
-#    import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    if sys.version_info < (2, 7):
+        raise Exception("The unittest2 package is required for Python < 2.7")
+    import unittest
 
 
 # --------------------------------------------------------------------
@@ -219,3 +220,44 @@ user_2 = {"username": "user2@example.com",
           "auth_token_expires": 1461998939000,
           "id": 109,
           "uuid": "73917bca-1234-5678-a1f1-1763abcdefab"}
+
+
+# --------------------------------------------------------------------
+# The actual tests
+
+class TestCallAstakos(unittest.TestCase):
+    """Test cases for function _callAstakos"""
+
+    def test_Offline(self):
+        """Test the response we get if we don't have internet access"""
+        global token_1
+        _mockRequest([_requestOffline])
+        try:
+            astakosclient._callAstakos(
+                token_1, "https://127.0.0.1/im/authenticate")
+        except socket.error:
+            pass
+        except Exception:
+            self.fail("Should have raised socket exception")
+        else:
+            self.fail("Shouldn't succeed")
+
+    def test_OfflinePool(self):
+        """Test the response for offline as above (using pool)"""
+        global token_1
+        _mockRequest([_requestOffline])
+        try:
+            astakosclient._callAstakos(
+                token_1, "https://127.0.0.1/im/authenticate", use_pool=True)
+        except socket.error:
+            pass
+        except Exception:
+            self.fail("Should have raised socket exception")
+        else:
+            self.fail("Shouldn't succeed")
+
+
+# ----------------------------
+# Run tests
+if __name__ == "__main__":
+    unittest.main()

@@ -156,7 +156,7 @@ def _mockRequest(new_requests):
         # Rotate requests
         _mock.requests = _mock.requests[1:] + _mock.requests[:1]
         # Use first request
-        request(conn, method, url, **kwargs)
+        return request(conn, method, url, **kwargs)
 
     _mock.requests = new_requests
     # Replace `_doRequest' with our `_mock'
@@ -228,13 +228,14 @@ user_2 = {"username": "user2@example.com",
 class TestCallAstakos(unittest.TestCase):
     """Test cases for function _callAstakos"""
 
-    def test_Offline(self):
-        """Test the response we get if we don't have internet access"""
+    # ----------------------------------
+    # Test the response we get if we don't have internet access
+    def _offline(self, pool):
         global token_1
         _mockRequest([_requestOffline])
         try:
             astakosclient._callAstakos(
-                token_1, "https://127.0.0.1/im/authenticate")
+                token_1, "https://127.0.0.1/im/authenticate", use_pool=pool)
         except socket.error:
             pass
         except Exception:
@@ -242,19 +243,125 @@ class TestCallAstakos(unittest.TestCase):
         else:
             self.fail("Shouldn't succeed")
 
+    def test_Offline(self):
+        """Test _offline without pool"""
+        self._offline(False)
+
     def test_OfflinePool(self):
-        """Test the response for offline as above (using pool)"""
-        global token_1
-        _mockRequest([_requestOffline])
+        """Test _offline using pool"""
+        self._offline(True)
+
+    # ----------------------------------
+    # Test the response we get if we send invalid token
+    def _invalidToken(self, pool):
+        token = "skaksaFlBl+fasFdaf24sx=="
+        _mockRequest([_requestOk])
         try:
             astakosclient._callAstakos(
-                token_1, "https://127.0.0.1/im/authenticate", use_pool=True)
-        except socket.error:
+                token, "https://127.0.0.1/im/authenticate", use_pool=pool)
+        except Exception as (status, data):
+            if status != 401:
+                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        else:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+
+    def test_InvalidToken(self):
+        """Test _invalidToken without pool"""
+        self._invalidToken(False)
+
+    def test_InvalidTokenPool(self):
+        """Test _invalidToken using pool"""
+        self._invalidToken(True)
+
+    # ----------------------------------
+    # Test the response we get if we send invalid url
+    def _invalidUrl(self, pool):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            astakosclient._callAstakos(
+                token_1, "https://127.0.0.1/im/misspelled", use_pool=pool)
+        except Exception as (status, data):
+            if status != 404:
+                self.fail("Should have returned 404 (Not Found)")
+        else:
+            self.fail("Should have returned 404 (Not Found)")
+
+    def test_InvalidUrl(self):
+        """Test _invalidUrl without pool"""
+        self._invalidUrl(False)
+
+    def test_invalidUrlPool(self):
+        """Test _invalidUrl using pool"""
+        self._invalidUrl(True)
+
+    # ----------------------------------
+    # Test the response we get if we use an unsupported scheme
+    def _unsupportedScheme(self, pool):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            astakosclient._callAstakos(
+                token_1, "ftp://127.0.0.1/im/authenticate", use_pool=pool)
+        except ValueError:
             pass
         except Exception:
-            self.fail("Should have raised socket exception")
+            self.fail("Should have raise ValueError Exception")
         else:
-            self.fail("Shouldn't succeed")
+            self.fail("Should have raise ValueError Exception")
+
+    def test_UnsupportedScheme(self):
+        """Test _unsupportedScheme without pool"""
+        self._unsupportedScheme(False)
+
+    def test_UnsupportedSchemePool(self):
+        """Test _unsupportedScheme using pool"""
+        self._unsupportedScheme(True)
+
+    # ----------------------------------
+    # Test the response we get if we use http instead of https
+    def _httpScheme(self, pool):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            astakosclient._callAstakos(
+                token_1, "http://127.0.0.1/im/authenticate", use_pool=pool)
+        except Exception as (status, data):
+            if status != 302:
+                self.fail("Should have returned 302 (Found)")
+        else:
+            self.fail("Should have returned 302 (Found)")
+
+    def test_HttpScheme(self):
+        """Test _httpScheme without pool"""
+        self._httpScheme(False)
+
+    def test_HttpSchemePool(self):
+        """Test _httpScheme using pool"""
+        self._httpScheme(True)
+
+    # ----------------------------------
+    # Test the response we get if we use authenticate with POST
+    def _postAuthenticate(self, pool):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            astakosclient._callAstakos(
+                token_1, "https://127.0.0.1/im/authenticate",
+                use_pool=pool, method="POST")
+        except Exception as (status, data):
+            if status != 400:
+                self.fail("Should have returned 400 (Method not allowed)")
+        else:
+            self.fail("Should have returned 400 (Method not allowed)")
+
+    def test_PostAuthenticate(self):
+        """Test _postAuthenticate without pool"""
+        self._postAuthenticate(False)
+
+    def test_PostAuthenticatePool(self):
+        """Test _postAuthenticate using pool"""
+        self._postAuthenticate(True)
 
 
 # ----------------------------

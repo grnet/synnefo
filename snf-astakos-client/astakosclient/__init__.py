@@ -109,5 +109,5 @@ def _callAstakos(token, url, headers={}, body=None,
     # Return
     logger.debug("Request returned with status %s" % status)
     if status < 200 or status >= 300:
-        raise Exception(data, status)
+        raise Exception(status, data)
     return simplejson.loads(unicode(data))

@@ -56,15 +56,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
     api_spec = QuotaholderAPI()
 
-    http_exc_lookup = {
-        CorruptedError:   550,
-        InvalidDataError: 400,
-        InvalidKeyError:  401,
-        NoEntityError:    404,
-        NoQuantityError:  413,
-        NoCapacityError:  413,
-    }
-
     def init_connection(self, connection):
         if connection is not None:
             raise ValueError("Cannot specify connection args with %s" %
@@ -209,18 +200,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     h.returned, h.released, h.flags))
 
         return holdings
-
-    def _set_holding(self, entity, resource, policy, flags):
-        try:
-            h = db_get_holding(entity=entity, resource=resource,
-                               for_update=True)
-            h.policy = p
-            h.flags = flags
-            h.save()
-        except Holding.DoesNotExist:
-            h = Holding.objects.create(entity=e, resource=resource,
-                                       policy=p, flags=flags)
-        return h
 
     def set_holding(self, context=None, set_holding=()):
         rejected = []
@@ -1100,11 +1079,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
 def _add(x, y, invert=False):
     return x + y if not invert else x - y
-
-
-def _update(dest, source, attr, delta):
-    dest_attr = getattr(dest, attr)
-    dest_attr = _add(getattr(source, attr, 0), delta)
 
 
 def _isneg(x):

@@ -89,7 +89,6 @@ setup(
              'default_settings = synnefo_stats.synnefo_settings',
              'web_apps = synnefo_stats.synnefo_settings:installed_apps',
              'urls = synnefo_stats.urls:urlpatterns',
-             'loggers = synnefo_stats.synnefo_settings:loggers'
         ]
     }
 )

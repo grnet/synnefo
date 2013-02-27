@@ -37,10 +37,3 @@ Django settings metadata. To be used in setup.py snf-webproject entry points.
 """
 
 installed_apps = ['synnefo_stats']
-
-loggers = {
-    'synnefo_stats': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-}

@@ -43,6 +43,54 @@ logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------------
+# Astakos client API
+
+# A simple retry decorator
+def retry(howmany):
+    def decorator(func):
+        def f(*args, **kwargs):
+            attemps = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    is_last_attempt = attemps == howmany - 1
+                    if is_last_attempt:
+                        raise e
+                    if e.args:
+                        status = e[0]
+                        # In case of Unauthorized response
+                        # or Not Found return immediately
+                        if status == 401 or status == 404:
+                            raise e
+                    attemps += 1
+        return f
+    return decorator
+
+
+@retry(3)
+def authenticate(token, astakos_url, usage=False, use_pool=False):
+    """Check if user is an authenticated Astakos user
+
+    Keyword arguments:
+    token       -- user's token (string)
+    astakos_url -- i.e https://accounts.example.com (string)
+    usage       -- return usage information for user (boolean)
+    use_pool    -- use objpool for http requests (boolean)
+
+    In case of success return user informations (json parsed format).
+    Otherwise raise an Exception.
+
+    """
+    # XXX: use something like url.join
+    astakos_url = astakos_url.rstrip("/")
+    authentication_url = astakos_url + "/im/authenticate?"
+    if usage:
+        authentication_url += "usage=1,"
+    return _callAstakos(token, authentication_url, use_pool=use_pool)
+
+
+# --------------------------------------------------------------------
 # Private functions
 def _scheme_to_class(scheme):
     """Return the appropriate httplib class for given scheme"""
@@ -111,27 +159,3 @@ def _callAstakos(token, url, headers={}, body=None,
     if status < 200 or status >= 300:
         raise Exception(status, data)
     return simplejson.loads(unicode(data))
-
-
-# ----------------------------
-# A simple retry decorator
-def retry(howmany):
-    def decorator(func):
-        def f(*args, **kwargs):
-            attemps = 0
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    is_last_attempt = attemps == howmany - 1
-                    if is_last_attempt:
-                        raise e
-                    if e.args:
-                        status = e[0]
-                        # In case of Unauthorized response
-                        # or Not Found return immediately
-                        if status == 401 or status == 404:
-                            raise e
-                    attemps += 1
-        return f
-    return decorator

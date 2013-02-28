@@ -44,10 +44,10 @@ from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 from django.db.models import Q, Count
 from django.db.models import Q
 from .models import (Policy, Holding,
-                     Commission, Provision, ProvisionLog, CallSerial,
+                     Commission, Provision, ProvisionLog,
                      now,
                      db_get_holding, db_get_policy,
-                     db_get_commission, db_filter_provision, db_get_callserial)
+                     db_get_commission, db_filter_provision)
 
 
 class QuotaholderDjangoDBCallpoint(object):
@@ -345,21 +345,10 @@ class QuotaholderDjangoDBCallpoint(object):
         return rejected
 
     def add_quota(self,
-                  context=None, clientkey=None, serial=None,
+                  context=None,
                   sub_quota=(), add_quota=()):
         rejected = []
         append = rejected.append
-
-        if serial is not None:
-            if clientkey is None:
-                all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
-                raise QuotaholderError(all_pairs)
-            try:
-                cs = CallSerial.objects.get(serial=serial, clientkey=clientkey)
-                all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
-                raise QuotaholderError(all_pairs)
-            except CallSerial.DoesNotExist:
-                pass
 
         sources = sub_quota + add_quota
         q_holdings = Q()
@@ -431,43 +420,7 @@ class QuotaholderDjangoDBCallpoint(object):
         if rejected:
             raise QuotaholderError(rejected)
 
-        if serial is not None and clientkey is not None:
-            CallSerial.objects.create(serial=serial, clientkey=clientkey)
         return rejected
-
-    def ack_serials(self, context=None, clientkey=None, serials=()):
-        if clientkey is None:
-            return
-
-        for serial in serials:
-            try:
-                c = db_get_callserial(clientkey=clientkey,
-                                      serial=serial,
-                                      for_update=True)
-                c.delete()
-            except CallSerial.DoesNotExist:
-                pass
-        return
-
-    def query_serials(self, context=None, clientkey=None, serials=()):
-        result = []
-        append = result.append
-
-        if clientkey is None:
-            return result
-
-        if not serials:
-            cs = CallSerial.objects.filter(clientkey=clientkey)
-            return [c.serial for c in cs]
-
-        for serial in serials:
-            try:
-                db_get_callserial(clientkey=clientkey, serial=serial)
-                append(serial)
-            except CallSerial.DoesNotExist:
-                pass
-
-        return result
 
     def issue_commission(self,
                          context=None,

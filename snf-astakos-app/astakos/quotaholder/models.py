@@ -170,16 +170,6 @@ class ProvisionLog(Model):
     def target_outbound(self):
         return self.target_outbound_through() + self.target_exported
 
-class CallSerial(Model):
-
-    serial      =   BigIntegerField(null=False)
-    clientkey   =   CharField(max_length=4096, null=False)
-
-    objects     =   ForUpdateManager()
-
-    class Meta:
-        unique_together = (('serial', 'clientkey'),)
-
 
 def _get(*args, **kwargs):
     model = args[0]
@@ -210,9 +200,6 @@ def db_get_policy(*args, **kwargs):
 
 def db_get_commission(*args, **kwargs):
     return _get(Commission, *args, **kwargs)
-
-def db_get_callserial(*args, **kwargs):
-    return _get(CallSerial, *args, **kwargs)
 
 def db_filter_provision(*args, **kwargs):
     return _filter(Provision, *args, **kwargs)

@@ -262,8 +262,8 @@ class QuotaholderDjangoDBCallpoint(object):
                 reject(holder)
                 continue
 
-            append([[holder, h.resource,
-                     h.imported, h.exported, h.returned, h.released]
+            append([(holder, h.resource,
+                     h.imported, h.exported, h.returned, h.released)
                     for h in holdings])
 
         return holdings_list, rejected

@@ -31,20 +31,18 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.lib.quotaholder.api import (
-    QuotaholderAPI,
-    QH_PRACTICALLY_INFINITE,
+from astakos.quotaholder.exception import (
+    QuotaholderError,
+    CorruptedError, InvalidDataError,
     InvalidKeyError, NoEntityError,
     NoQuantityError, NoCapacityError,
     ExportLimitError, ImportLimitError,
     DuplicateError)
 
-from synnefo.lib.commissioning import (
-    Callpoint, CorruptedError, InvalidDataError, ReturnButFail)
-from synnefo.lib.commissioning.utils.newname import newname
+from astakos.quotaholder.utils.newname import newname
+from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 
 from django.db.models import Q, Count
-from django.db import transaction
 from .models import (Entity, Policy, Holding,
                      Commission, Provision, ProvisionLog, CallSerial,
                      now,
@@ -52,28 +50,7 @@ from .models import (Entity, Policy, Holding,
                      db_get_commission, db_filter_provision, db_get_callserial)
 
 
-class QuotaholderDjangoDBCallpoint(Callpoint):
-
-    api_spec = QuotaholderAPI()
-
-    def init_connection(self, connection):
-        if connection is not None:
-            raise ValueError("Cannot specify connection args with %s" %
-                             type(self).__name__)
-
-    def commit(self):
-        transaction.commit()
-
-    def rollback(self):
-        transaction.rollback()
-
-    def do_make_call(self, call_name, data):
-        call_fn = getattr(self, call_name, None)
-        if not call_fn:
-            m = "cannot find call '%s'" % (call_name,)
-            raise CorruptedError(m)
-
-        return call_fn(**data)
+class QuotaholderDjangoDBCallpoint(object):
 
     def create_entity(self, context=None, create_entity=()):
         rejected = []
@@ -95,7 +72,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                           key=key)
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def set_entity_key(self, context=None, set_entity_key=()):
@@ -113,7 +90,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             e.save()
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def list_entities(self, context=None, entity=None, key=None):
@@ -233,7 +210,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                            policy=p, flags=flags)
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def _init_holding(self,
@@ -287,7 +264,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                returned, released,
                                flags)
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def reset_holding(self, context=None, reset_holding=()):
@@ -320,7 +297,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def _check_pending(self, entity, resource):
@@ -384,7 +361,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             h.delete()
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def list_resources(self, context=None, entity=None, key=None):
@@ -507,7 +484,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def add_quota(self,
@@ -519,11 +496,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         if serial is not None:
             if clientkey is None:
                 all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
-                raise ReturnButFail(all_pairs)
+                raise QuotaholderError(all_pairs)
             try:
                 cs = CallSerial.objects.get(serial=serial, clientkey=clientkey)
                 all_pairs = [(q[0], q[1]) for q in sub_quota + add_quota]
-                raise ReturnButFail(all_pairs)
+                raise QuotaholderError(all_pairs)
             except CallSerial.DoesNotExist:
                 pass
 
@@ -601,7 +578,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
 
         if serial is not None and clientkey is not None:
             CallSerial.objects.create(serial=serial, clientkey=clientkey)
@@ -998,7 +975,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             e.delete()
 
         if rejected:
-            raise ReturnButFail(rejected)
+            raise QuotaholderError(rejected)
         return rejected
 
     def get_timeline(self, context=None, after="", before="Z", get_timeline=()):

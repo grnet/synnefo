@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 
-from synnefo.lib.commissioning import CorruptedError
 from synnefo.lib.db.intdecimalfield import intDecimalField
 
 from django.db.models import (Model, BigIntegerField, CharField,

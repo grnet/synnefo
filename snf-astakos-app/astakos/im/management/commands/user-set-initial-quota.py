@@ -41,14 +41,29 @@ from django.core.management.base import BaseCommand, CommandError
 from astakos.im.models import AstakosUser
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
-                                              'quantity',
                                               'capacity',
+                                              'quantity',
                                               'import_limit',
                                               'export_limit'))
 
 class Command(BaseCommand):
-    help = "Import account quota policies"
+    args = "<exported_quotas>"
+    help = """Import user quota limits from file
 
+    The file must contain non-empty lines, and each line must
+    contain a single-space-separated list of values:
+
+    <user> <resource name> <capacity> <quantity> <import_limit> <export_limit>
+
+    For example to grant the following user with 10 private networks
+    (independent of any he receives from projects):
+
+    6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.network.private 10 0 1000000 1000000
+
+    The last two values are arbitrarily large to represent no
+    import/export limit at all.
+
+    """
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError('Invalid number of arguments')

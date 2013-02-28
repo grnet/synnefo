@@ -33,20 +33,18 @@
 
 from config import QHTestCase
 from config import run_test_case
-from config import rand_string
 from config import printf
 
-from synnefo.lib.commissioning import CallError
-from synnefo.lib.quotaholder import (
-                            QH_PRACTICALLY_INFINITE,
+from astakos.quotaholder.exception import (
+                            QuotaholderError,
                             InvalidDataError,
-                            InvalidKeyError, NoEntityError,
                             NoQuantityError, NoCapacityError,
                             ExportLimitError, ImportLimitError,
+                            CommissionValueException,
                             DuplicateError)
-from synnefo.lib.quotaholder.api.quotaholder import (
-    Name, Key, Quantity, Capacity, ImportLimit, ExportLimit, Resource, Flags,
-    Imported, Exported, Returned, Released)
+
+from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
+from astakos.quotaholder.utils.rand import random_int, random_nat, random_name
 
 DEFAULT_HOLDING = (0, 0, 0, 0)
 
@@ -55,17 +53,12 @@ class QHAPITest(QHTestCase):
     @classmethod
     def setUpClass(self):
         QHTestCase.setUpClass()
-        e = self.rand_entity()
-        k = Key.random()
-        r = self.qh.create_entity(create_entity=[(e, 'system', k, '')])
-        self.e_name = e
-        self.e_key = k
-        self.client = self.rand_entity()
+        self.client = self.rand_holder()
 
     @classmethod
     def rand_name(self, exclude=None):
         for i in range(1,100):
-            r = Name().random()
+            r = random_name()
             if exclude is not None and r not in exclude:
                 exclude.append(r)
                 return r
@@ -76,7 +69,7 @@ class QHAPITest(QHTestCase):
     used_entities = ['system']
 
     @classmethod
-    def rand_entity(self):
+    def rand_holder(self):
         return self.rand_name(self.used_entities)
 
     used_policies = []
@@ -92,10 +85,10 @@ class QHAPITest(QHTestCase):
         return self.rand_name(self.used_resources)
 
     def rand_limits(self):
-        q = Capacity.random() # Nonnegative
-        c = Capacity.random()
-        il = ImportLimit.random()
-        el = ExportLimit.random()
+        q = random_nat()
+        c = random_nat()
+        il = random_nat()
+        el = random_nat()
         return q, c, il, el
 
     def rand_policy_limits(self):
@@ -104,99 +97,31 @@ class QHAPITest(QHTestCase):
         return p, limits
 
     def rand_flags(self):
-        return Flags.random()
+        return random_nat()
 
     def rand_counters(self):
-        return (Imported.random(), Exported.random(),
-                Returned.random(), Released.random())
-
-    def new_entity(self, parent='system', parent_key=''):
-        e = self.rand_entity()
-        k = Key.random()
-        r = self.qh.create_entity(create_entity=[(e, parent, k, parent_key)])
-        self.assertEqual(r, [])
-        return e, k
+        return tuple(random_nat() for i in range(4))
 
     def new_policy(self):
         p, limits = self.rand_policy_limits()
-        r = self.qh.set_limits(set_limits=[(p,) + limits])
-        self.assertEqual(r, [])
+        self.qh.set_limits(set_limits=[(p,) + limits])
         return p, limits
 
-    def test_001_list_entities(self):
-        r = self.qh.list_entities(entity='system', key='')
-        self.assertEqual(sorted(r), sorted(['system', self.e_name]))
-
-        with self.assertRaises(NoEntityError):
-            self.qh.list_entities(entity='doesnotexist', key='')
-
-        with self.assertRaises(InvalidDataError):
-            self.qh.list_entities(entity='system; SELECT ALL', key='')
-
-    def test_002_create_entity(self):
-        e = self.rand_entity()
-        k = Key.random()
-        r = self.qh.create_entity(
-            create_entity=[(self.e_name, 'system', self.e_key, ''),
-                           (e, self.e_name, k, self.e_key),
-                           (e, self.e_name, k, self.e_key)])
-        self.assertEqual(r, [0,2])
-
-    def test_003_release_entity(self):
-        e, k = self.new_entity()
-        r = self.qh.release_entity(release_entity=[(e, k)])
-        self.assertEqual(r, [])
-
-    def test_004_set_entity_key(self):
-        e, k = self.new_entity()
-        k1 = Key.random()
-        k2 = Key.random()
-        r = self.qh.set_entity_key(set_entity_key=[(e, k1, k2)])
-        self.assertEqual(r, [e])
-        r = self.qh.set_entity_key(set_entity_key=[(e, k, k2)])
-        self.assertEqual(r, [])
-        r = self.qh.release_entity(release_entity=[(e, k)])
-        self.assertEqual(r, [e])
-
-    def test_005_get_entity(self):
-        e = self.rand_entity()
-        k = Key.random()
-        r = self.qh.get_entity(get_entity=[(self.e_name, self.e_key), (e, k)])
-        self.assertEqual(r, [(self.e_name, 'system')])
-
-    def test_0051_get_entity(self):
-        e = self.rand_entity()
-        k = Key.random()
-        e1, k1 = self.new_entity()
-        e2, k2 = self.new_entity()
-        e3, k3 = self.new_entity(e1, k1)
-        r = self.qh.get_entity(get_entity=[(self.e_name, self.e_key),
-                                           (e, k),
-                                           (e2, k2),
-                                           (e2, k2+'wrong'),
-                                           (e3, k3),
-                                           (e3, k3),
-                                           ])
-        self.assertEqual(r, [(self.e_name, 'system'),
-                             (e2, 'system'),
-                             (e3, e1),
-                             (e3, e1),
-                             ])
-
+    @transaction.commit_on_success
     def test_006_get_set_limits(self):
 
         p1, limits1 = self.rand_policy_limits()
         limits2 = self.rand_limits()
         r = self.qh.set_limits(set_limits=[(p1,) + limits1,
                                            (p1,) + limits2])
-        self.assertEqual(r, [])
 
         p2, _ = self.rand_policy_limits()
         r = self.qh.get_limits(get_limits=[p1, p2])
         self.assertEqual(r, [(p1,) + limits2])
 
+    @transaction.commit_on_success
     def test_007_get_set_holding(self):
-        e, k = self.new_entity()
+        e = self.rand_holder()
         resource = self.rand_resource()
 
         p0 = self.rand_policy()
@@ -206,191 +131,160 @@ class QHAPITest(QHTestCase):
         p2, _ = self.new_policy()
         f2 = self.rand_flags()
 
-        # none is committed
-        r = self.qh.set_holding(set_holding=[(e, resource, k, p0, f0),
-                                             (e, resource, k, p1, f1),
-                                             (e, resource, k, p2, f2)])
-        self.assertEqual(r, [(e, resource, p0)])
+        with self.assertRaises(QuotaholderError) as cm:
+            self.qh.set_holding(set_holding=[(e, resource, p0, f0),
+                                             (e, resource, p1, f1),
+                                             (e, resource, p2, f2)])
 
-        r = self.qh.get_holding(get_holding=[(e, resource, k)])
-        self.assertEqual(r, [])
+        # Python people consider this a legal use
+        # It's even in the library docs... whatever
+        err = cm.exception
+        self.assertEqual(err.message, [(e, resource, p0)])
 
-        r = self.qh.set_holding(set_holding=[(e, resource, k, p1, f1),
-                                             (e, resource, k, p2, f2)])
-        self.assertEqual(r, [])
+        self.qh.get_holding(get_holding=[(e, resource)])
+
+        self.qh.set_holding(set_holding=[(e, resource, p1, f1),
+                                         (e, resource, p2, f2)])
 
         resource1 = self.rand_resource()
-        r = self.qh.get_holding(get_holding=[(e, resource, k),
-                                             (e, resource1, k)])
+        r = self.qh.get_holding(get_holding=[(e, resource),
+                                             (e, resource1)])
         self.assertEqual(r, [(e, resource, p2) + DEFAULT_HOLDING + (f2,)])
 
-    def test_008_get_set_quota(self):
-        e, k = self.new_entity()
+    @transaction.commit_on_success
+    def test_0080_get_set_quota(self):
+        e = self.rand_holder()
         resource = self.rand_resource()
         limits = self.rand_limits()
         limits1 = self.rand_limits()
         f = self.rand_flags()
-        r = self.qh.set_quota(set_quota=[(e, resource, k) + limits + (f,),
-                                         (e, resource, k) + limits1 + (f,)])
-        self.assertEqual(r, [])
+        self.qh.set_quota(set_quota=[(e, resource) + limits + (f,),
+                                     (e, resource) + limits1 + (f,)])
 
         resource2 = self.rand_resource()
-        r = self.qh.get_quota(get_quota=[(e, resource, k),
-                                         (e, resource2, k)])
+        r = self.qh.get_quota(get_quota=[(e, resource),
+                                         (e, resource2)])
         self.assertEqual(r, [(e, resource) + limits1 +
                              DEFAULT_HOLDING + (f,)])
 
-    def new_quota(self, entity, key, resource, limits=None):
+    def new_quota(self, holder, resource, limits=None):
         if limits is None:
             limits = self.rand_limits()
         f = self.rand_flags()
-        r = self.qh.set_quota(
-            set_quota=[(entity, resource, key) + limits + (f,)])
-        self.assertEqual(r, [])
+        self.qh.set_quota(
+            set_quota=[(holder, resource) + limits + (f,)])
         return limits
 
+    @transaction.commit_on_success
     def test_0081_add_quota(self):
-        e0, k0 = self.new_entity()
-        e1, k1 = self.new_entity()
+        e0 = self.rand_holder()
+        e1 = self.rand_holder()
         resource0 = self.rand_resource()
         resource1 = self.rand_resource()
 
-        r = self.qh.set_quota(
-            set_quota=[(e0, resource0, k0) + (5, QH_PRACTICALLY_INFINITE, 5, 6) + (0,),
-                       (e1, resource0, k1) + (5, 5, 5, 5) + (0,)])
-        self.assertEqual(r, [])
+        self.qh.set_quota(
+            set_quota=[(e0, resource0) + (5, QH_PRACTICALLY_INFINITE, 5, 6) + (0,),
+                       (e1, resource0) + (5, 5, 5, 5) + (0,)])
 
-        r = self.qh.add_quota(clientkey=self.client,
-                              serial=1,
-                              sub_quota=[(e0, resource0, k0,
-                                          0, QH_PRACTICALLY_INFINITE, 1, 1)],
-                              add_quota=[(e0, resource0, k0,
-                                          0, 3, QH_PRACTICALLY_INFINITE, 0),
-                                         # new holding
-                                         (e0, resource1, k0,
-                                          0, QH_PRACTICALLY_INFINITE, 5, 5)])
-        self.assertEqual(r, [])
+        self.qh.add_quota(sub_quota=[(e0, resource0,
+                                      0, QH_PRACTICALLY_INFINITE, 1, 1)],
+                          add_quota=[(e0, resource0,
+                                      0, 3, QH_PRACTICALLY_INFINITE, 0),
+                                     # new holding
+                                     (e0, resource1,
+                                      0, QH_PRACTICALLY_INFINITE, 5, 5)])
 
-        r = self.qh.get_quota(get_quota=[(e0, resource0, k0),
-                                         (e0, resource1, k0)])
+        r = self.qh.get_quota(get_quota=[(e0, resource0),
+                                         (e0, resource1)])
         self.assertEqual(r, [(e0, resource0, 5, 3, QH_PRACTICALLY_INFINITE+4, 5)
                              + DEFAULT_HOLDING + (0,),
                              (e0, resource1, 0, QH_PRACTICALLY_INFINITE, 5, 5)
                              + DEFAULT_HOLDING + (0,)])
 
-        # repeated serial
-        r = self.qh.add_quota(clientkey=self.client,
-                              serial=1,
-                              sub_quota=[(e0, resource1, k0,
-                                          0, QH_PRACTICALLY_INFINITE, (-5), 0)],
-                              add_quota=[(e0, resource0, k0,
-                                          0, 2, QH_PRACTICALLY_INFINITE, 0)])
-        self.assertEqual(r, [(e0, resource1), (e0, resource0)])
-
-        r = self.qh.query_serials(clientkey=self.client, serials=[1, 2])
-        self.assertEqual(r, [1])
-
-        r = self.qh.query_serials(clientkey=self.client, serials=[])
-        self.assertEqual(r, [1])
-
-        r = self.qh.query_serials(clientkey=self.client, serials=[2])
-        self.assertEqual(r, [])
-
-        r = self.qh.ack_serials(clientkey=self.client, serials=[1])
-
-        r = self.qh.query_serials(clientkey=self.client, serials=[1, 2])
-        self.assertEqual(r, [])
-
-        # idempotent
-        r = self.qh.ack_serials(clientkey=self.client, serials=[1])
-
-        # serial has been deleted
-        r = self.qh.add_quota(clientkey=self.client,
-                              serial=1,
-                              add_quota=[(e0, resource0, k0,
-                                          0, 2, QH_PRACTICALLY_INFINITE, 0)])
-        self.assertEqual(r, [])
-
-        # none is committed
-        r = self.qh.add_quota(clientkey=self.client,
-                              serial=2,
-                              add_quota=[(e1, resource0, k1,
+        with self.assertRaises(QuotaholderError) as cm:
+            self.qh.add_quota(add_quota=[(e1, resource0,
                                           0, (-10), QH_PRACTICALLY_INFINITE, 0),
-                                         (e0, resource1, k0, 1, 0, 0, 0)])
-        self.assertEqual(r, [(e1, resource0)])
+                                         (e0, resource1, 1, 0, 0, 0)])
 
-        r = self.qh.get_quota(get_quota=[(e1, resource0, k1),
-                                         (e0, resource1, k0)])
-        self.assertEqual(r, [(e1, resource0, 5, 5 , 5, 5)
-                             + DEFAULT_HOLDING + (0,),
-                             (e0, resource1, 0, QH_PRACTICALLY_INFINITE, 5, 5)
-                             + DEFAULT_HOLDING + (0,)])
+        err = cm.exception
+        self.assertEqual(err.message, [(e1, resource0)])
 
+        # r = self.qh.get_quota(get_quota=[(e1, resource0),
+        #                                  (e0, resource1)])
+        # self.assertEqual(r, [(e1, resource0, 5, 5 , 5, 5)
+        #                      + DEFAULT_HOLDING + (0,),
+        #                      (e0, resource1, 0, QH_PRACTICALLY_INFINITE, 5, 5)
+        #                      + DEFAULT_HOLDING + (0,)])
+
+    @transaction.commit_on_success
     def test_0082_max_quota(self):
-        e0, k0 = self.new_entity()
-        e1, k1 = self.new_entity()
+        e0 = self.rand_holder()
+        e1 = self.rand_holder()
         resource0 = self.rand_resource()
         resource1 = self.rand_resource()
 
-        r = self.qh.set_quota(
-            set_quota=[(e0, resource0, k0) +
+        self.qh.set_quota(
+            set_quota=[(e0, resource0) +
                        (5, QH_PRACTICALLY_INFINITE, 5, 6) + (0,)])
-        self.assertEqual(r, [])
 
-        r = self.qh.add_quota(clientkey=self.client,
-                              serial=3,
-                              add_quota=[(e0, resource0, k0,
-                                          0, QH_PRACTICALLY_INFINITE, 0, 0)])
+        self.qh.add_quota(add_quota=[(e0, resource0,
+                                      0, QH_PRACTICALLY_INFINITE, 0, 0)])
 
-        self.assertEqual(r, [])
-
-        r = self.qh.get_quota(get_quota=[(e0, resource0, k0)])
+        r = self.qh.get_quota(get_quota=[(e0, resource0)])
         self.assertEqual(r, [(e0, resource0, 5, 2*QH_PRACTICALLY_INFINITE, 5, 6)
                              + DEFAULT_HOLDING + (0,)])
 
-
-
+    @transaction.commit_on_success
     def test_0090_commissions(self):
-        e0, k0 = self.new_entity()
-        e1, k1 = self.new_entity()
+        e0 = self.rand_holder()
+        e1 = self.rand_holder()
         resource = self.rand_resource()
-        q0, c0, il0, el0 = self.new_quota(e0, k0, resource)
-        q1, c1, il1, el1 = self.new_quota(e1, k1, resource)
+        q0, c0, il0, el0 = self.new_quota(e0, resource)
+        q1, c1, il1, el1 = self.new_quota(e1, resource)
 
         most = min(c0, il0, q1, el1)
         if most < 0:
             raise AssertionError("%s <= 0" % most)
 
-        r = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
-                                     name='something',
-                                     provisions=[(e1, resource, most)])
+        @transaction.commit_on_success
+        def f():
+            return self.qh.issue_commission(clientkey=self.client, target=e0,
+                                            name='something',
+                                            provisions=[(e1, resource, most)])
+
+        r = f()
         self.assertEqual(r, 1)
 
-        with self.assertRaises(CallError):
-            self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
+        @transaction.commit_on_success
+        def f():
+            self.qh.issue_commission(clientkey=self.client, target=e0,
                                      name='something',
                                      provisions=[(e1, resource, 1)])
 
+        with self.assertRaises(CommissionValueException):
+            f()
+
         r = self.qh.get_pending_commissions(clientkey=self.client)
-        self.assertEqual(r, [1])
+        self.assertEqual(list(r), [1])
         r = self.qh.resolve_pending_commissions(clientkey=self.client,
                                                 max_serial=1, accept_set=[1])
         r = self.qh.get_pending_commissions(clientkey=self.client)
-        self.assertEqual(r, [])
+        self.assertEqual(list(r), [])
 
+    @transaction.commit_on_success
     def test_0091_commissions_exceptions(self):
-        es1, ks1 = self.new_entity()
-        es2, ks2 = self.new_entity()
-        et1, kt1 = self.new_entity()
-        et2, kt2 = self.new_entity()
+        es1 = self.rand_holder()
+        es2 = self.rand_holder()
+        et1 = self.rand_holder()
+        et2 = self.rand_holder()
         resource = self.rand_resource()
-        self.new_quota(es1, ks1, resource, (10, 5, 5, 15))
-        self.new_quota(es2, ks2, resource, (10, 5, 5, 10))
-        self.new_quota(et1, kt1, resource, (0, 15, 3, 20))
-        self.new_quota(et2, kt2, resource, (0, 15, 20, 20))
+        self.new_quota(es1, resource, (10, 5, 5, 15))
+        self.new_quota(es2, resource, (10, 5, 5, 10))
+        self.new_quota(et1, resource, (0, 15, 3, 20))
+        self.new_quota(et2, resource, (0, 15, 20, 20))
 
         with self.assertRaises(NoQuantityError) as cm:
-            self.qh.issue_commission(clientkey=self.client, target=et1, key=kt1,
+            self.qh.issue_commission(clientkey=self.client, target=et1,
                                      name='something',
                                      provisions=[(es1, resource, 12)])
         e = cm.exception
@@ -402,13 +296,12 @@ class QHAPITest(QHTestCase):
         self.assertEqual(int(e.current), 0)
 
         r = self.qh.issue_commission(clientkey=self.client, target=et1,
-                                     key=kt1,
                                      name='something',
                                      provisions=[(es1, resource, 2)])
         self.assertGreater(r, 0)
 
         with self.assertRaises(ImportLimitError) as cm:
-            self.qh.issue_commission(clientkey=self.client, target=et1, key=kt1,
+            self.qh.issue_commission(clientkey=self.client, target=et1,
                                      name='something',
                                      provisions=[(es1, resource, 2)])
         e = cm.exception
@@ -420,14 +313,12 @@ class QHAPITest(QHTestCase):
         self.assertEqual(int(e.current), 2)
 
         r = self.qh.issue_commission(clientkey=self.client, target=et2,
-                                     key=kt2,
                                      name='something',
                                      provisions=[(es2, resource, 9)])
         self.assertGreater(r, 0)
 
         with self.assertRaises(NoCapacityError) as cm:
             self.qh.issue_commission(clientkey=self.client, target=et2,
-                                     key=kt2,
                                      name='something',
                                      provisions=[(es2, resource, 1),
                                                  (es1, resource, 6)])
@@ -440,179 +331,167 @@ class QHAPITest(QHTestCase):
         # 9 actual + 1 from the first provision
         self.assertEqual(int(e.current), 10)
 
-
+    @transaction.commit_on_success
     def test_010_list_holdings(self):
-        e0, k0 = ('list_holdings_one', '1')
-        e1, k1 = ('list_holdings_two', '1')
+        e0 = 'list_holdings_one'
+        e1 = 'list_holdings_two'
         resource = 'list_holdings_resource'
         sys = 'system'
 
-        r = self.qh.create_entity(create_entity=[(e0, sys, k0, ''),
-                                                 (e1, sys, k1, '')])
-        if r:
-            raise AssertionError("cannot create entities")
-
-        self.qh.set_quota(set_quota=[(sys, resource, '', 10, 0,
+        self.qh.set_quota(set_quota=[(sys, resource, 10, 0,
                                       QH_PRACTICALLY_INFINITE,
                                       QH_PRACTICALLY_INFINITE, 0),
-                                     (e0, resource, k0, 0, 10,
+                                     (e0, resource, 0, 10,
                                       QH_PRACTICALLY_INFINITE,
                                       QH_PRACTICALLY_INFINITE, 0),
-                                     (e1, resource, k1, 0, 10,
+                                     (e1, resource, 0, 10,
                                       QH_PRACTICALLY_INFINITE,
                                       QH_PRACTICALLY_INFINITE, 0)])
 
-        s0 = self.qh.issue_commission(clientkey=self.client, target=e0, key=k0,
+        s0 = self.qh.issue_commission(clientkey=self.client, target=e0,
                                       name='a commission',
                                       provisions=[('system', resource, 3)])
 
-        s1 = self.qh.issue_commission(clientkey=self.client, target=e1, key=k1,
+        s1 = self.qh.issue_commission(clientkey=self.client, target=e1,
                                       name='a commission',
                                       provisions=[('system', resource, 4)])
 
         self.qh.accept_commission(clientkey=self.client, serials=[s0, s1])
 
-        holdings_list, rejected = self.qh.list_holdings(list_holdings=[
-                                                        (e0, k0),
-                                                        (e1, k1),
-                                                        (e0+e1, k0+k1)])
+        holdings_list, rejected = self.qh.list_holdings(
+            list_holdings=[e0, e1, e0+e1])
 
         self.assertEqual(rejected, [e0+e1])
         self.assertEqual(holdings_list, [[(e0, resource, 3, 0, 0, 0)],
                                          [(e1, resource, 4, 0, 0, 0)]])
 
 
-    def test_011_release_empty(self):
-        e, k = self.new_entity()
-        e0, k0 = self.rand_entity(), Key.random()
-
-        # none is committed
-        r = self.qh.release_entity(release_entity=[(e, k), (e0, k0)])
-        self.assertEqual(r, [e0])
-
-        r = self.qh.get_entity(get_entity=[(e, k)])
-        self.assertEqual(r, [(e, 'system')])
-
-        r = self.qh.release_entity(release_entity=[(e, k)])
-        self.assertEqual(r, [])
-
-        r = self.qh.get_entity(get_entity=[(e, k)])
-        self.assertEqual(r, [])
-
-    def test_012_release_nonempty(self):
-        e, k = self.new_entity()
-        e1, k1 = self.new_entity(e, k)
-
-        # none is committed
-        r = self.qh.release_entity(release_entity=[(e, k), (e1, k1)])
-        self.assertEqual(r, [e])
-
-        r = self.qh.get_entity(get_entity=[(e1, k1)])
-        self.assertEqual(r, [(e1, e)])
-
-        r = self.qh.release_entity(release_entity=[(e1, k1), (e, k)])
-        self.assertEqual(r, [])
-
-        r = self.qh.get_entity(get_entity=[(e1, k1)])
-        self.assertEqual(r, [])
-
-    def test_013_release_nonempty(self):
-        e, k = self.new_entity()
+    @transaction.commit_on_success
+    def test_0130_release_holding(self):
+        e = self.rand_holder()
         resource = self.rand_resource()
-        limits = self.new_quota(e, k, resource)
-        r = self.qh.release_entity(release_entity=[(e, k)])
-        self.assertEqual(r, [e])
-        r = self.qh.release_holding(release_holding=[(e, resource, k)])
-        self.assertEqual(r, [])
-        r = self.qh.release_entity(release_entity=[(e, k)])
-        self.assertEqual(r, [])
+        limits = self.new_quota(e, resource, (1, 2, 3, 4))
 
+        with self.assertRaises(QuotaholderError) as cm:
+            self.qh.release_holding(release_holding=[(e, resource)])
+
+        err = cm.exception
+        self.assertEqual(err.message, [0])
+
+    @transaction.commit_on_success
+    def test_0131_release_holding(self):
+        e = self.rand_holder()
+        resource = self.rand_resource()
+        limits = self.new_quota(e, resource, (0, 2, 3, 4))
+
+        self.qh.release_holding(release_holding=[(e, resource)])
+
+    @transaction.commit_on_success
+    def test_0132_release_holding(self):
+        resource = self.rand_resource()
+
+        es = self.rand_holder()
+        limits_s = self.new_quota(es, resource, (3, 3, 3, 3))
+        e = self.rand_holder()
+        limits = self.new_quota(e, resource, (0, 2, 3, 4))
+
+        r = self.qh.issue_commission(clientkey=self.client, target=e,
+                                     name='something',
+                                     provisions=[(es, resource, 1)])
+        self.assertGreater(r, 0)
+
+        with self.assertRaises(QuotaholderError) as cm:
+            self.qh.release_holding(release_holding=[(e, resource)])
+
+        err = cm.exception
+        self.assertEqual(err.message, [0])
+
+    @transaction.commit_on_success
     def test_014_reset_holding(self):
-        e0, k0 = self.new_entity()
-        e1, k1 = self.new_entity()
+        e0 = self.rand_holder()
+        e1 = self.rand_holder()
         resource = self.rand_resource()
         p, _ = self.new_policy()
         f = self.rand_flags()
-        r = self.qh.set_holding(set_holding=[(e1, resource, k1, p, f)])
+        r = self.qh.set_holding(set_holding=[(e1, resource, p, f)])
 
         counters = self.rand_counters()
 
-        # none is committed
-        r = self.qh.reset_holding(
-            reset_holding=[(e0, resource, k0) + counters,
-                           (e1, resource, k1) + counters])
-        self.assertEqual(r, [0])
+        with self.assertRaises(QuotaholderError) as cm:
+            self.qh.reset_holding(
+                reset_holding=[(e0, resource) + counters,
+                               (e1, resource) + counters])
 
-        r = self.qh.get_holding(get_holding=[(e1, resource, k1)])
-        self.assertEqual(r, [(e1, resource, p) + DEFAULT_HOLDING + (f,)])
+        err = cm.exception
+        self.assertEqual(err.message, [0])
 
-        r = self.qh.reset_holding(
-            reset_holding=[(e1, resource, k1) + counters])
-        self.assertEqual(r, [])
-
-        r = self.qh.get_holding(get_holding=[(e1, resource, k1)])
+        r = self.qh.get_holding(get_holding=[(e1, resource)])
         self.assertEqual(r, [(e1, resource, p) + counters + (f,)])
 
+    @transaction.commit_on_success
     def test_015_release_nocapacity(self):
         qh = self.qh
-        key = "key"
         owner = "system"
-        owner_key = ""
         source = "test_015_release_nocapacity_source"
         resource = "resource"
         target = "test_015_release_nocapacity_target"
         flags = 0
-        source_create  = [source, owner, key, owner_key]
         source_limits  = [source, 6, 0, 1000, 1000]
-        source_holding = [source, resource, key, source, flags]
-        target_create  = [target, owner, key, owner_key]
+        source_holding = [source, resource, source, flags]
         target_limits  = [target, 0, 5, 1000, 1000]
-        target_holding = [target, resource, key, target, flags]
+        target_holding = [target, resource, target, flags]
 
         failed = AssertionError("Quotaholder call failed")
-        if qh.create_entity(create_entity=[source_create, target_create]):
-            raise failed
         if qh.set_limits(set_limits=[source_limits, target_limits]):
             raise failed
         if qh.set_holding(set_holding=[source_holding, target_holding]):
             raise failed
 
-        serial = qh.issue_commission(clientkey=self.client, target=target, key=key,
-                                     name="something", provisions=[(source, resource, 5)])
+        serial = qh.issue_commission(clientkey=self.client, target=target,
+                                     name="something",
+                                     provisions=[(source, resource, 5)])
         qh.accept_commission(clientkey=self.client, serials=[serial])
 
-        holding = qh.get_holding(get_holding=[[source, resource, key]])
-        self.assertEqual(tuple(holding[0]), (source, resource, source, 0, 5, 0, 0, flags)) 
-        holding = qh.get_holding(get_holding=[[target, resource, key]])
-        self.assertEqual(tuple(holding[0]), (target, resource, target, 5, 0, 0, 0, flags)) 
+        holding = qh.get_holding(get_holding=[[source, resource]])
+        self.assertEqual(tuple(holding[0]),
+                         (source, resource, source, 0, 5, 0, 0, flags))
+        holding = qh.get_holding(get_holding=[[target, resource]])
+        self.assertEqual(tuple(holding[0]),
+                         (target, resource, target, 5, 0, 0, 0, flags))
 
-        if qh.reset_holding(reset_holding=[[target, resource, key, 10, 0, 0, 0]]):
+        if qh.reset_holding(reset_holding=[[target, resource, 10, 0, 0, 0]]):
             raise failed
 
         with self.assertRaises(NoCapacityError):
-            qh.issue_commission(clientkey=self.client, target=target, key=key,
-                                name="something", provisions=[(source, resource, 1)])
+            qh.issue_commission(clientkey=self.client, target=target,
+                                name="something",
+                                provisions=[(source, resource, 1)])
 
         with self.assertRaises(NoQuantityError):
-            qh.issue_commission(clientkey=self.client, target=target, key=key,
-                                name="something", provisions=[(source, resource, -7)])
+            qh.issue_commission(clientkey=self.client, target=target,
+                                name="something",
+                                provisions=[(source, resource, -7)])
 
         source_limits  = [source, 6, 10, 1000, 1000]
         if qh.set_limits(set_limits=[source_limits]):
             raise failed
 
-        serial = qh.issue_commission(clientkey=self.client, target=target, key=key,
-                                     name="something", provisions=[(source, resource, -1)])
+        serial = qh.issue_commission(clientkey=self.client, target=target,
+                                     name="something",
+                                     provisions=[(source, resource, -1)])
         qh.accept_commission(clientkey=self.client, serials=[serial])
 
-        holding = qh.get_holding(get_holding=[[source, resource, key]])
-        self.assertEqual(tuple(holding[0]), (source, resource, source, 0, 5, 1, 0, flags)) 
-        holding = qh.get_holding(get_holding=[[target, resource, key]])
-        self.assertEqual(tuple(holding[0]), (target, resource, target, 10, 0, 0, 1, flags)) 
+        holding = qh.get_holding(get_holding=[[source, resource]])
+        self.assertEqual(tuple(holding[0]),
+                         (source, resource, source, 0, 5, 1, 0, flags))
+        holding = qh.get_holding(get_holding=[[target, resource]])
+        self.assertEqual(tuple(holding[0]),
+                         (target, resource, target, 10, 0, 0, 1, flags))
 
         with self.assertRaises(NoCapacityError):
-            qh.issue_commission(clientkey=self.client, target=target, key=key,
-                                name="something", provisions=[(source, resource, -10)])
+            qh.issue_commission(clientkey=self.client, target=target,
+                                name="something",
+                                provisions=[(source, resource, -10)])
 
 
 if __name__ == "__main__":

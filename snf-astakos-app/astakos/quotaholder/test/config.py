@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,9 +36,12 @@ import sys
 import os
 import subprocess
 import time
-from socket import socket, AF_INET, SOCK_STREAM, IPPROTO_TCP, error as socket_error
 from errno import ECONNREFUSED
 from os.path import dirname
+
+path = os.path.dirname(os.path.realpath(__file__))
+os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
 # The following import is copied from snf-tools/syneffo_tools/burnin.py
 # Thank you John Giannelos <johngian@grnet.gr>
@@ -50,41 +53,20 @@ except ImportError:
         raise Exception("The unittest2 package is required for Python < 2.7")
     import unittest
 
-from synnefo.lib.quotaholder import QuotaholderClient
-from synnefo.lib.quotaholder.api import (InvalidKeyError, NoEntityError,
-                                         NoQuantityError, NoCapacityError,
-                                         ExportLimitError, ImportLimitError)
+from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
 
-import random 
+import random
 
 def printf(fmt, *args):
     print(fmt.format(*args))
 
-def environ_get(key, default_value = ''):
-    if os.environ.has_key(key):
-        return os.environ.get(key)
-    else:
-        return default_value
-
-# Use environ vars [TEST_]QH_{HOST, PORT}
-QH_HOST = environ_get("TEST_QH_HOST", environ_get("QH_HOST", "127.0.0.1"))
-QH_PORT = environ_get("TEST_QH_PORT", environ_get("QH_PORT", "8888"))
-
-assert QH_HOST != None
-assert QH_PORT != None
-
-printf("Will connect to QH_HOST = {0}", QH_HOST)
-printf("            and QH_PORT = {0}", QH_PORT)
-
-QH_SERVER = '{0}:{1}'.format(QH_HOST, QH_PORT)
-QH_URL = "http://{0}/quotaholder/v".format(QH_SERVER)
 
 ### DEFS ###
 def new_quota_holder_client():
     """
     Create a new quota holder api client
     """
-    return QuotaholderClient(QH_URL, 'test')
+    return QuotaholderDjangoDBCallpoint()
 
 def run_test_case(test_case):
     """
@@ -114,24 +96,11 @@ def rand_string():
 
 HERE = dirname(__file__)
 
-def init_server():
-    p = subprocess.Popen(['setsid', HERE+'/qh_init', QH_SERVER])
-    s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-    while True:
-        try:
-            s.connect((QH_HOST, int(QH_PORT)))
-            break
-        except socket_error, e:
-            if e.errno != ECONNREFUSED:
-                raise
-            time.sleep(0.1)
-    return p.pid
-
 ### CLASSES ###
 class QHTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.server = init_server()
+        subprocess.call([HERE+'/qh_init'])
         self.qh = new_quota_holder_client()
 
     def setUp(self):
@@ -139,13 +108,4 @@ class QHTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        from signal import SIGTERM
-        os.kill(-self.server, SIGTERM)
-
-
-### VARS ###
-DefaultOrCustom = {
-    True: "default",
-    False: "custom"
-}
-
+        pass

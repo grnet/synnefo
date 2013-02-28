@@ -12,6 +12,7 @@ Synnefo
 :ref:`apache <i-apache>` ||
 webproject ||
 :ref:`astakos <i-astakos>` ||
+:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -60,6 +61,8 @@ In `/etc/synnefo/snf-webproject.conf` add:
    USE_X_FORWARDED_HOST = True
 
    SECRET_KEY = 'sy6)mw6a7x%n)-example_secret_key#zzk4jo6f2=uqu!1o%)'
+
+   SESSION_COOKIE_DOMAIN = "example.com"
 
 All the above enables pooling (of connections) and greenlet context.
 

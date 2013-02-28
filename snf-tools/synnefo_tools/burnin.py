@@ -119,7 +119,11 @@ def _ssh_execute(hostip, username, password, command):
 def _get_user_id():
     """Authenticate to astakos and get unique users id"""
     astakos = AstakosClient(ASTAKOS, TOKEN)
-    return astakos.authenticate()['uuid']
+    authenticate = astakos.authenticate()
+    if 'uuid' in authenticate:
+        return authenticate['uuid']
+    else:
+        return authenticate['uniq']
 
 
 # --------------------------------------------------------------------
@@ -1118,7 +1122,7 @@ class NetworkTestCase(unittest.TestCase):
 
         name = SNF_TEST_PREFIX + TEST_RUN_ID
         #previous_num = len(self.client.list_networks())
-        network = self.client.create_network(name, cidr='10.0.0.1/28')
+        network = self.client.create_network(name, cidr='10.0.1.0/28')
 
         #Test if right name is assigned
         self.assertEqual(network['name'], name)
@@ -1188,12 +1192,16 @@ class NetworkTestCase(unittest.TestCase):
             for nic in nicsA:
                 if nic["network_id"] == self.networkid:
                     cls.priv_ip["A"] = nic["ipv4"]
+            self.result_dict["Server A private IP"] = str(cls.priv_ip["A"])
 
             for nic in nicsB:
                 if nic["network_id"] == self.networkid:
                     cls.priv_ip["B"] = nic["ipv4"]
+            self.result_dict["Server B private IP"] = str(cls.priv_ip["B"])
 
         self.assertTrue(conn_exists)
+        self.assertIsNot(cls.priv_ip["A"], "")
+        self.assertIsNot(cls.priv_ip["B"], "")
 
     def test_002a_reboot(self):
         """Rebooting server A"""
@@ -1320,7 +1328,7 @@ class NetworkTestCase(unittest.TestCase):
         self.assertTrue(s)
 
     def test_003a_setup_interface_A(self):
-        """Set up eth1 for server A"""
+        """Setup eth1 for server A"""
 
         self._skipIf(self.is_windows, "only valid for Linux servers")
 
@@ -1345,11 +1353,14 @@ class NetworkTestCase(unittest.TestCase):
         myPass = self.password['A']
 
         log.info("SSH in server A as %s/%s" % (loginname, myPass))
-        command = "ifconfig eth1 %s" % self.priv_ip["A"]
+        command = "ifconfig eth1 %s && ifconfig eth1 | " \
+                  "grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'" \
+                  % self.priv_ip["A"]
         output, status = _ssh_execute(
             hostip, loginname, myPass, command)
 
         self.assertEquals(status, 0)
+        self.assertEquals(output[0].strip(), self.priv_ip["A"])
 
     def test_003b_setup_interface_B(self):
         """Setup eth1 for server B"""
@@ -1376,11 +1387,14 @@ class NetworkTestCase(unittest.TestCase):
         myPass = self.password['B']
 
         log.info("SSH in server B as %s/%s" % (loginname, myPass))
-        command = "ifconfig eth1 %s" % self.priv_ip["B"]
+        command = "ifconfig eth1 %s && ifconfig eth1 | " \
+                  "grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'" \
+                  % self.priv_ip["B"]
         output, status = _ssh_execute(
             hostip, loginname, myPass, command)
 
         self.assertEquals(status, 0)
+        self.assertEquals(output[0].strip(), self.priv_ip["B"])
 
     def test_003c_test_connection_exists(self):
         """Ping server B from server A to test if connection exists"""

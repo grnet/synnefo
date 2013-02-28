@@ -21,7 +21,7 @@ Policies:
 {% endfor %}
 
 Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
-snf-manage project-application-approve <id>
+snf-manage project-control --approve <id>
 --
 
 The following project has been created:
@@ -44,4 +44,4 @@ Policies:
 {% endfor %}
 
 For approving it you can use the command line tool:
-snf-manage project-application-approve <id>
+snf-manage project-control --approve <id>

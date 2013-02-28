@@ -70,6 +70,7 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.utils import simplejson as json
+from django.contrib.auth.views import redirect_to_login
 
 import astakos.im.messages as astakos_messages
 
@@ -98,6 +99,7 @@ from astakos.im.functions import (
     invite,
     send_activation as send_activation_func,
     SendNotificationError,
+    reached_pending_application_limit,
     accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member, can_join_request, can_leave_request,
     get_related_project_id, get_by_chain_or_404,
@@ -1044,6 +1046,16 @@ def _update_object(request, model=None, object_id=None, slug=None,
 @signed_terms_required
 @login_required
 def project_add(request):
+
+    user = request.user
+    reached, limit = reached_pending_application_limit(user.id)
+    if reached:
+        m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
+        messages.error(request, m)
+        next = reverse('astakos.im.views.project_list')
+        next = restrict_next(next, domain=COOKIE_DOMAIN)
+        return redirect(next)
+
     resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
     resource_catalog = ()
     result = callpoint.list_resources()
@@ -1155,6 +1167,14 @@ def project_modify(request, application_id):
     if not (user.owns_application(app) or user.is_project_admin(app.id)):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
+
+    reached, limit = reached_pending_application_limit(user.id, app)
+    if reached:
+        m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
+        messages.error(request, m)
+        next = reverse('astakos.im.views.project_list')
+        next = restrict_next(next, domain=COOKIE_DOMAIN)
+        return redirect(next)
 
     resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
     resource_catalog = ()

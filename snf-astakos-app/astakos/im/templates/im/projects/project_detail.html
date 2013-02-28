@@ -63,8 +63,8 @@
             -
             <a style="font-size:0.7em"
                href="{% url astakos.im.views.project_app_cancel last_pending.pk %}">
-              CANCEL {% if object.project_exists %} MODIFICATION {% else %}
-              PROJECT {% endif %} REQUEST
+              CANCEL PROJECT {% if object.project_exists %} MODIFICATION {% else %}
+              APPLICATION {% endif %}
             </a>
           {% endif %}
           {% endwith %}

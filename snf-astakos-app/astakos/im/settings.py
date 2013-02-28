@@ -16,7 +16,7 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 
 # Address to use for outgoing emails
 DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@synnefo.local')
+    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@example.synnefo.org')
 
 SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
 ADMINS = getattr(settings, 'ADMINS', None)
@@ -41,7 +41,7 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.synnefo.local')
+BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.example.synnefo.org')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Synnefo Cloud')
@@ -165,7 +165,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     'cyclades': {
 #        # Specifying the key 'url' will overwrite it.
 #        # Use this to (re)set service URL.
-#        'url': 'https://cyclades.synnefo.local/ui/',
+#        'url': 'https://cyclades.example.synnefo.org/ui/',
 #        # order services in listings, cloudbar, etc.
 #        'order' : 1
         'resources': [{
@@ -200,7 +200,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     },
     'pithos+': {
 #        # Use this to (re)set service URL.
-#        'url': 'https://pithos.synnefo.local/ui/',
+#        'url': 'https://pithos.example.synnefo.org/ui/',
 #        # order services in listings, cloudbar, etc.
 #        'order' : 2
         'resources':[{
@@ -244,7 +244,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                  'verbose_name':'storage',
             },
             'network': {
-                'help_text':' Network resources (amount of Private Networks)  ',
+                'help_text':' Network resources (number of Private Networks)  ',
                 'is_abbreviation':False,
                 'report_desc':'',
                 'verbose_name':'network',
@@ -339,6 +339,12 @@ TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
 
 # Users that can approve or deny project applications from the web.
 PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
+
+# Maximum pending project applications per applicant.
+# This is to reduce the volume of applications
+# in case users abuse the mechanism.
+PENDING_APPLICATION_LIMIT = getattr(settings,
+                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 1)
 
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')

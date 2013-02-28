@@ -1057,9 +1057,9 @@ file in the source tree. Most of the packages needed are refered here:
                       libghc6-parallel-dev libghc6-curl-dev \
                       libghc-quickcheck2-dev hscolour hlint
                       python-support python-paramiko \
-                      python-fdsend python-ipaddr python-bitarray libjs-jquery fping
+                      python-fdsend python-ipaddr python-bitarray libjs-jquery fping pandoc
 
-Now let try to build the package:
+Now lets try to build the package:
 
 .. code-block:: console
 
@@ -1070,21 +1070,28 @@ Now let try to build the package:
                    --git-export=INDEX \
                    --git-ignore-new
 
+To be able to sign the packages a key must be found in the system to comply to the
+name and email of the last debian/changelog entry in debian branch. Please note
+that signing is optional.
+
 This will create two deb packages in build-area. You should then run in both
 nodes:
 
 .. code-block:: console
 
-   # dpkg -i ../build-area/snf-ganeti.*deb
    # dpkg -i ../build-area/ganeti-htools.*deb
+   # dpkg -i ../build-area/snf-ganeti.*deb
    # apt-get install -f
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
-both nodes, choose a domain name that resolves to a valid floating IP (let's say
-it's ``ganeti.node1.example.com``). Make sure node1 and node2 have root access
-between each other using ssh keys and not passwords. Also, make sure there is an
-lvm volume group named ``ganeti`` that will host your VMs' disks. Finally, setup
-a bridge interface on the host machines (e.g: br0). Then run on node1:
+both nodes, choose a domain name that resolves to a valid floating IP (let's
+say it's ``ganeti.node1.example.com``). Make sure node1 and node2 have same
+dsa/rsa keys and authorised_keys for password-less root ssh between each other.
+If not then skip passing --no-ssh-init but be aware that it will replace
+/root/.ssh/* related files and you might lose access to master node. Also,
+make sure there is an lvm volume group named ``ganeti`` that will host your
+VMs' disks. Finally, setup a bridge interface on the host machines (e.g: br0).
+Then run on node1:
 
 .. code-block:: console
 
@@ -1096,7 +1103,7 @@ a bridge interface on the host machines (e.g: br0). Then run on node1:
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:kernel_path=
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:vnc_bind_address=0.0.0.0
 
-   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes \
+   root@node1:~ # gnt-node add --no-ssh-key-check --master-capable=yes \
                                --vm-capable=yes node2.example.com
    root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
    root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
@@ -1829,6 +1836,7 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
                                --subnet6=2001:648:2FFC:1322::/64 \
                                --gateway6=2001:648:2FFC:1322::1 \
                                --public --dhcp --flavor=CUSTOM \
+                               --link=br0 --mode=bridged \
                                --name=public_network \
                                --backend-id=1
 
@@ -2007,10 +2015,14 @@ installation. We do this by running:
    $ kamaki config set image.url "https://node1.example.com/plankton"
    $ kamaki config set store.url "https://node2.example.com/v1"
    $ kamaki config set global.account "user@example.com"
-   $ kamaki config set global.token "bdY_example_user_tokenYUff=="
+   $ kamaki config set store.enable on
+   $ kamaki config set store.pithos_extensions on
+   $ kamaki config set store.url "https://node2.example.com/v1"
+   $ kamaki config set store.account USER_UUID
+   $ kamaki config set global.token USER_TOKEN
 
-The token at the last kamaki command is our user's (``user@example.com``) token,
-as it appears on the user's `Profile` web page on the Astakos Web UI.
+The USER_TOKEN and USER_UUID appear on the user's (``user@example.com``) `Profile` web
+page on the Astakos Web UI.
 
 You can see that the new configuration options have been applied correctly, by
 running:
@@ -2061,7 +2073,7 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 .. code-block:: console
 
    $ kamaki image register "Debian Base" \
-                           pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump \
+                           pithos://USER_UUID/images/debian_base-6.0-7-x86_64.diskdump \
                            --public \
                            --disk-format=diskdump \
                            --property OSFAMILY=linux --property ROOT_PARTITION=1 \

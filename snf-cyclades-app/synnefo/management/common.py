@@ -40,12 +40,11 @@ from django.utils.timesince import timesince, timeuntil
 from django.core.management import CommandError
 from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
 from synnefo.api.util import get_image as backend_get_image
-from synnefo.api.faults import ItemNotFound
+from synnefo.api.faults import ItemNotFound, BadRequest, OverLimit
 from django.core.exceptions import FieldError
 
-from synnefo.api.util import validate_network_size
-from synnefo.settings import (MAX_CIDR_BLOCK,
-                              CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+from synnefo.api.util import validate_network_params
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.lib import astakos
@@ -91,28 +90,9 @@ def validate_network_info(options):
     gateway6 = options['gateway6']
 
     try:
-        net = ipaddr.IPv4Network(subnet)
-        prefix = net.prefixlen
-        if not validate_network_size(prefix):
-            raise CommandError("Unsupport network mask %d."
-                               " Must be in range (%s,29] "
-                               % (prefix, MAX_CIDR_BLOCK))
-    except ValueError:
-        raise CommandError('Malformed subnet')
-    try:
-        gateway and ipaddr.IPv4Address(gateway) or None
-    except ValueError:
-        raise CommandError('Malformed gateway')
-
-    try:
-        subnet6 and ipaddr.IPv6Network(subnet6) or None
-    except ValueError:
-        raise CommandError('Malformed subnet6')
-
-    try:
-        gateway6 and ipaddr.IPv6Address(gateway6) or None
-    except ValueError:
-        raise CommandError('Malformed gateway6')
+        validate_network_params(subnet, gateway)
+    except (BadRequest, OverLimit) as e:
+        raise CommandError(e)
 
     return subnet, gateway, subnet6, gateway6
 

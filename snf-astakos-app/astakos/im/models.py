@@ -364,7 +364,11 @@ class AstakosUser(User):
                                   max_length=32,
                                   null=True, 
                                   blank=True, 
-                                  help_text = _( 'test' ))
+                                  help_text = _('Renew your authentication '
+                                                'token. Make sure to set the new '
+                                                'token in any client you may be '
+                                                'using, to preserve its '
+                                                'functionality.'))
     auth_token_created = models.DateTimeField(_('Token creation date'), 
                                               null=True)
     auth_token_expires = models.DateTimeField(
@@ -837,6 +841,9 @@ class AstakosUser(User):
             return False
         return True
 
+    def settings(self):
+        return UserSetting.objects.filter(user=self)
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -1193,6 +1200,17 @@ class PendingThirdPartyUser(models.Model):
 class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
+
+
+class UserSetting(models.Model):
+    user = models.ForeignKey(AstakosUser)
+    setting = models.CharField(max_length=255)
+    value = models.IntegerField()
+
+    objects = ForUpdateManager()
+
+    class Meta:
+        unique_together = ("user", "setting")
 
 
 ### PROJECTS ###

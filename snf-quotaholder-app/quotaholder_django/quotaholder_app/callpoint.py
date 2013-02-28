@@ -750,10 +750,11 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                            current=current,
                                            limit=limit)
 
-                current = (+ th.importing + th.returning
+                limit = tp.quantity + tp.capacity
+                current = (+ th.importing + th.returning + tp.quantity
                            - th.exported - th.released)
 
-                if current + quantity > tp.quantity + tp.capacity:
+                if current + quantity > limit:
                     m = ("There is not enough capacity "
                          "to allocate into in %s.%s" % (target, resource))
                     raise NoCapacityError(m,

@@ -71,6 +71,11 @@ class Command(BaseCommand):
             for resource, limits in quotas.iteritems():
                 showable_quotas[resource] = limits.capacity
 
+            settings_dict = {}
+            settings = user.settings()
+            for setting in settings:
+                settings_dict[setting.setting] = setting.value
+
             kv = OrderedDict(
                 [
                     ('id', user.id),
@@ -97,8 +102,12 @@ class Command(BaseCommand):
                     ('email_verified', user.email_verified),
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
-                    ('resources', showable_quotas),
                 ])
+
+            if settings_dict:
+                kv['settings'] = settings_dict
+
+            kv['resources'] = showable_quotas
 
             if get_latest_terms():
                 has_signed_terms = user.signed_terms

@@ -1757,6 +1757,7 @@ class ProjectApplication(models.Model):
         self.state = self.APPROVED
         self.response_date = now
         self.save()
+        return project
 
     @property
     def member_join_policy_display(self):
@@ -2270,7 +2271,8 @@ class ProjectMembership(models.Model):
         self._set_history_item(reason='CANCEL')
         self.delete()
 
-    def get_diff_quotas(self, sub_list=None, add_list=None):
+    def get_diff_quotas(self, sub_list=None, add_list=None,
+                        pending_application=None):
         if sub_list is None:
             sub_list = []
 
@@ -2291,7 +2293,6 @@ class ProjectMembership(models.Model):
                                capacity     = grant.member_capacity,
                                ))
 
-        pending_application = self.pending_application
         if pending_application is not None:
             new_grants = pending_application.projectresourcegrant_set.all()
             for new_grant in new_grants:
@@ -2302,6 +2303,14 @@ class ProjectMembership(models.Model):
                                ))
 
         return (sub_list, add_list)
+
+    def get_pending_application(self):
+        project = self.project
+        if project.is_deactivated():
+            return None
+        if self.state not in self.ACTUALLY_ACCEPTED:
+            return None
+        return project.application
 
 
 class Serial(models.Model):

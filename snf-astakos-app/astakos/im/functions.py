@@ -78,7 +78,7 @@ from astakos.im.project_notif import (
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
 from astakos.im.endpoints.qh import (
-    register_quotas, qh_get_quota)
+    register_quotas, qh_get_quota, qh_add_quota)
 
 import astakos.im.messages as astakos_messages
 
@@ -526,6 +526,7 @@ def accept_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    qh_sync([membership])
     logger.info("User %s has been accepted in %s." %
                 (membership.person.log_display, project))
 
@@ -585,6 +586,7 @@ def remove_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.remove()
+    qh_sync([membership])
     logger.info("User %s has been removed from %s." %
                 (membership.person.log_display, project))
 
@@ -602,8 +604,10 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    qh_sync([membership])
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
+
     membership_enroll_notify(project, membership.person)
 
     return membership
@@ -638,6 +642,7 @@ def leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
+        qh_sync([membership])
         logger.info("User %s has left %s." %
                     (membership.person.log_display, project))
         auto_accepted = True
@@ -674,6 +679,7 @@ def join_project(project_id, user_id):
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
+        qh_sync([membership])
         logger.info("User %s joined %s." %
                     (membership.person.log_display, project))
         auto_accepted = True
@@ -783,7 +789,8 @@ def approve_application(app_id):
                 application.id, application.state_display()))
         raise PermissionDenied(m)
 
-    application.approve()
+    project = application.approve()
+    qh_sync_projects([project])
     logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)
 
@@ -801,7 +808,9 @@ def terminate(project_id):
     checkAlive(project)
 
     project.terminate()
+    qh_sync_projects([project])
     logger.info("%s has been terminated." % (project))
+
     project_termination_notify(project)
 
 def suspend(project_id):
@@ -809,7 +818,9 @@ def suspend(project_id):
     checkAlive(project)
 
     project.suspend()
+    qh_sync_projects([project])
     logger.info("%s has been suspended." % (project))
+
     project_suspension_notify(project)
 
 def resume(project_id):
@@ -820,6 +831,7 @@ def resume(project_id):
         raise PermissionDenied(m)
 
     project.resume()
+    qh_sync_projects([project])
     logger.info("%s has been unsuspended." % (project))
 
 def get_by_chain_or_404(chain_id):
@@ -900,3 +912,26 @@ def reached_pending_application_limit(user_id, precursor=None):
         return reached, limit
 
     return False, limit
+
+
+def qh_sync_projects(projects):
+    memberships = []
+    append = memberships.append
+    for project in projects:
+        ms = project.projectmembership_set.all().select_for_update()
+        memberships += list(ms)
+
+    qh_sync(memberships)
+
+
+def qh_sync(memberships):
+    sub_quota, add_quota = [], []
+    for membership in memberships:
+        pending_application = membership.get_pending_application()
+        membership.get_diff_quotas(sub_quota, add_quota, pending_application)
+        if membership.state == membership.REMOVED:
+            membership.delete()
+        else:
+            membership.application = pending_application
+            membership.save()
+    qh_add_quota(sub_quota, add_quota)

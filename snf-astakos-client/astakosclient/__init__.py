@@ -68,6 +68,8 @@ def retry(howmany):
     return decorator
 
 
+# ----------------------------
+# Authenticate
 @retry(3)
 def authenticate(token, astakos_url, usage=False, use_pool=False):
     """Check if user is an authenticated Astakos user
@@ -82,12 +84,53 @@ def authenticate(token, astakos_url, usage=False, use_pool=False):
     Otherwise raise an Exception.
 
     """
-    # XXX: use something like url.join
-    astakos_url = astakos_url.rstrip("/")
-    authentication_url = astakos_url + "/im/authenticate?"
+    if not token:
+        logger.error("authenticate: No token was given")
+        return None
+    authentication_url = urlparse.urljoin(astakos_url, "/im/authenticate")
     if usage:
-        authentication_url += "usage=1,"
+        authentication_url += "?usage=1,"
     return _callAstakos(token, authentication_url, use_pool=use_pool)
+
+
+# ----------------------------
+# Display Names
+@retry(3)
+def getDisplayNames(token, uuids, astakos_url, use_pool=False):
+    """Return a uuid_catalog dictionary for the given uuids
+
+    Keyword arguments:
+    token       -- user's token (string)
+    uuids       -- list of user ids (list of strings)
+    astakos_url -- i.e https://accounts.example.com (string)
+    use_pool    -- use objpool for http requests (boolean)
+
+    The returned uuid_catalog is a dictionary with uuids as
+    keys and the corresponding user names as values
+
+    """
+    if not token:
+        logger.error("getDisplayNames: No token was give")
+        return None
+    req_headers = {'content-type': 'application/json'}
+    req_body = simplejson.dumps({'uuids': uuids})
+    req_url = urlparse.urljoin(astakos_url, "/user_catalogs")
+
+    data = _callAstakos(token, req_url, headers=req_headers,
+                        body=req_body, method="POST", use_pool=use_pool)
+    return data.get("uuid_catalog")
+
+
+def getDisplayName(token, uuid, astakos_url, use_pool=False):
+    """Return the displayname of a uuid (see getDisplayNames)"""
+    if not token:
+        logger.error("getDisplayName: No token was give")
+        return None
+    if not uuid:
+        logger.error("getDiplayName: No uuid was given")
+        return None
+    uuid_dict = getDisplayNames(token, [uuid], astakos_url, use_pool)
+    return uuid_dict.get(uuid)
 
 
 # --------------------------------------------------------------------

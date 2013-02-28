@@ -39,23 +39,6 @@ from django.db.models import (Model, BigIntegerField, CharField,
 from django.db import transaction
 from synnefo.lib.db.managers import ForUpdateManager
 
-class Holder(Model):
-
-    attribute   =   CharField(max_length=4096, primary_key=True)
-    intval      =   BigIntegerField()
-    strval      =   CharField(max_length=4096)
-
-    objects     =   ForUpdateManager()
-
-class Entity(Model):
-
-    entity      =   CharField(max_length=4096, primary_key=True)
-    owner       =   ForeignKey('self', to_field='entity',
-                               related_name='entities')
-    key         =   CharField(max_length=4096, null=False)
-
-    objects     =   ForUpdateManager()
-
 class Policy(Model):
 
     policy          =   CharField(max_length=4096, primary_key=True)
@@ -68,7 +51,7 @@ class Policy(Model):
 
 class Holding(Model):
 
-    entity      =   ForeignKey(Entity, to_field='entity')
+    entity      =   CharField(max_length=4096, db_index=True)
     resource    =   CharField(max_length=4096, null=False)
 
     policy      =   ForeignKey(Policy, to_field='policy')
@@ -98,7 +81,7 @@ def now():
 class Commission(Model):
 
     serial      =   AutoField(primary_key=True)
-    entity      =   ForeignKey(Entity, to_field='entity')
+    entity      =   CharField(max_length=4096, db_index=True)
     name        =   CharField(max_length=4096, null=True)
     clientkey   =   CharField(max_length=4096, null=False)
     issue_time  =   CharField(max_length=24, default=now)
@@ -111,7 +94,7 @@ class Provision(Model):
                                 to_field='serial',
                                 related_name='provisions'   )
 
-    entity      =   ForeignKey(Entity, to_field='entity')
+    entity      =   CharField(max_length=4096, db_index=True)
     resource    =   CharField(max_length=4096, null=False)
     quantity    =   intDecimalField()
 
@@ -221,9 +204,6 @@ def _filter(*args, **kwargs):
 
 def db_get_holding(*args, **kwargs):
     return _get(Holding, *args, **kwargs)
-
-def db_get_entity(*args, **kwargs):
-    return _get(Entity, *args, **kwargs)
 
 def db_get_policy(*args, **kwargs):
     return _get(Policy, *args, **kwargs)

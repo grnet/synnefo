@@ -36,15 +36,6 @@ class QuotaholderError(Exception):
     pass
 
 
-
-class InvalidKeyError(QuotaholderError):
-    pass
-
-
-class NoEntityError(QuotaholderError):
-    pass
-
-
 class CorruptedError(QuotaholderError):
     pass
 

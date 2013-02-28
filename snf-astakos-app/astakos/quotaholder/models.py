@@ -51,7 +51,7 @@ class Policy(Model):
 
 class Holding(Model):
 
-    entity      =   CharField(max_length=4096, db_index=True)
+    holder      =   CharField(max_length=4096, db_index=True)
     resource    =   CharField(max_length=4096, null=False)
 
     policy      =   ForeignKey(Policy, to_field='policy')
@@ -69,7 +69,7 @@ class Holding(Model):
     objects     =   ForUpdateManager()
 
     class Meta:
-        unique_together = (('entity', 'resource'),)
+        unique_together = (('holder', 'resource'),)
 
 
 from datetime import datetime
@@ -81,7 +81,7 @@ def now():
 class Commission(Model):
 
     serial      =   AutoField(primary_key=True)
-    entity      =   CharField(max_length=4096, db_index=True)
+    holder      =   CharField(max_length=4096, db_index=True)
     name        =   CharField(max_length=4096, null=True)
     clientkey   =   CharField(max_length=4096, null=False)
     issue_time  =   CharField(max_length=24, default=now)
@@ -94,7 +94,7 @@ class Provision(Model):
                                 to_field='serial',
                                 related_name='provisions'   )
 
-    entity      =   CharField(max_length=4096, db_index=True)
+    holder      =   CharField(max_length=4096, db_index=True)
     resource    =   CharField(max_length=4096, null=False)
     quantity    =   intDecimalField()
 

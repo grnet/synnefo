@@ -221,6 +221,7 @@ Generally:
 ::
 
     # Service       Setting                       Value
+    # quotaholder:  QUOTAHOLDER_URL            = https://quotaholder.host/quotaholder/v
     # quotaholder:  QUOTAHOLDER_TOKEN          = <random string>
 
     # astakos:      ASTAKOS_QUOTAHOLDER_TOKEN  = <the same random string>
@@ -242,6 +243,7 @@ On the Astakos host, edit ``/etc/synnefo/20-snf-astakos-app-settings.conf``:
 
 ::
 
+    QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
     ASTAKOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
     ASTAKOS_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'

@@ -110,7 +110,7 @@ def _requestOk(conn, method, url, **kwargs):
 
 def _reqAuthenticate(conn, method, url, **kwargs):
     """Check if user exists and return his profile"""
-    global user_1, user_2, usage_1, usage_2
+    global user_1, user_2
 
     if conn.__class__.__name__ != "HTTPSConnection":
         return _requestStatus302(conn, method, url, **kwargs)
@@ -120,20 +120,17 @@ def _reqAuthenticate(conn, method, url, **kwargs):
 
     token = kwargs['headers']['X-Auth-Token']
     if token == token_1:
-        user = user_1
-        usage = usage_1
+        user = dict(user_1)
     elif token == token_2:
-        user = user_2
-        usage = usage_2
+        user = dict(user_2)
     else:
         # No user found
         return _requestStatus401(conn, method, url, **kwargs)
 
-    if "usage=1" in url:
-        return (200, user[:-1] + "," + usage + "}")
-    else:
+    if "usage=1" not in url:
         # Strip `usage' key from `user'
-        return (200, user)
+        del user['usage']
+    return (200, simplejson.dumps(user))
 
 
 def _reqCatalogs(conn, method, url, **kwargs):
@@ -168,64 +165,62 @@ def _mockRequest(new_requests):
 # ----------------------------
 # Local users
 token_1 = "skzleaFlBl+fasFdaf24sx=="
-user_1 = """
+user_1 = \
     {"username": "user1@example.com",
      "auth_token_created": 1359386939000,
      "name": "Example User One",
      "email": ["user1@example.com"],
      "auth_token_expires": 1361978939000,
      "id": 108,
-     "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab"}"""
-usage_1 = """
-    "usage": [
-        {"currValue": 42949672960,
-         "display_name": "System Disk",
-         "name": "cyclades.disk"},
-        {"currValue": 4,
-         "display_name": "CPU",
-         "name": "cyclades.cpu"},
-        {"currValue": 4294967296,
-         "display_name": "RAM",
-         "name": "cyclades.ram"},
-        {"currValue": 3,
-         "display_name": "VM",
-         "name": "cyclades.vm"},
-        {"currValue": 0,
-         "display_name": "private network",
-         "name": "cyclades.network.private"},
-        {"currValue": 152,
-         "display_name": "Storage Space",
-         "name": "pithos+.diskspace"}]"""
+     "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab",
+     "usage": [
+         {"currValue": 42949672960,
+          "display_name": "System Disk",
+          "name": "cyclades.disk"},
+         {"currValue": 4,
+          "display_name": "CPU",
+          "name": "cyclades.cpu"},
+         {"currValue": 4294967296,
+          "display_name": "RAM",
+          "name": "cyclades.ram"},
+         {"currValue": 3,
+          "display_name": "VM",
+          "name": "cyclades.vm"},
+         {"currValue": 0,
+          "display_name": "private network",
+          "name": "cyclades.network.private"},
+         {"currValue": 152,
+          "display_name": "Storage Space",
+          "name": "pithos+.diskspace"}]}
 
 token_2 = "fasdfDSFdf98923DF+sdfk=="
-user_2 = """
+user_2 = \
     {"username": "user2@example.com",
      "auth_token_created": 1358386938997,
      "name": "Example User Two",
      "email": ["user1@example.com"],
      "auth_token_expires": 1461998939000,
      "id": 109,
-     "uuid": "73917bca-1234-5678-a1f1-1763abcdefab"}"""
-usage_2 = """
-    "usage": [
-        {"currValue": 68719476736,
-         "display_name": "System Disk",
-         "name": "cyclades.disk"},
-        {"currValue": 1,
-         "display_name": "CPU",
-         "name": "cyclades.cpu"},
-        {"currValue": 1073741824,
-         "display_name": "RAM",
-         "name": "cyclades.ram"},
-        {"currValue": 2,
-         "display_name": "VM",
-         "name": "cyclades.vm"},
-        {"currValue": 1,
-         "display_name": "private network",
-         "name": "cyclades.network.private"},
-        {"currValue": 2341634510,
-         "display_name": "Storage Space",
-         "name": "pithos+.diskspace"}]"""
+     "uuid": "73917bca-1234-5678-a1f1-1763abcdefab",
+     "usage": [
+         {"currValue": 68719476736,
+          "display_name": "System Disk",
+          "name": "cyclades.disk"},
+         {"currValue": 1,
+          "display_name": "CPU",
+          "name": "cyclades.cpu"},
+         {"currValue": 1073741824,
+          "display_name": "RAM",
+          "name": "cyclades.ram"},
+         {"currValue": 2,
+          "display_name": "VM",
+          "name": "cyclades.vm"},
+         {"currValue": 1,
+          "display_name": "private network",
+          "name": "cyclades.network.private"},
+         {"currValue": 2341634510,
+          "display_name": "Storage Space",
+          "name": "pithos+.diskspace"}]}
 
 
 # --------------------------------------------------------------------
@@ -419,42 +414,41 @@ class TestAuthenticate(unittest.TestCase):
                 token, "https://example.com/", usage=usage, use_pool=pool)
         except:
             self.fail("Shouldn't raise an Exception")
-        json_info = simplejson.loads(unicode(user_info))
-        self.assertEqual(auth_info, json_info)
+        self.assertEqual(user_info, auth_info)
 
     def test_AuthUserOne(self):
         """Test _authUser for User 1 without pool, without usage"""
         global token_1, user_1
-        self._authUser(token_1, user_1, False, False)
+        user_info = dict(user_1)
+        del user_info['usage']
+        self._authUser(token_1, user_info, False, False)
 
     def test_AuthUserOneUsage(self):
         """Test _authUser for User 1 without pool, with usage"""
-        global token_1, user_1, usage_1
-        user_info = user_1[:-1] + "," + usage_1 + "}"
-        self._authUser(token_1, user_info, True, False)
+        global token_1, user_1
+        self._authUser(token_1, user_1, True, False)
 
     def test_AuthUserOneUsagePool(self):
         """Test _authUser for User 1 using pool, with usage"""
-        global token_1, user_1, usage_1
-        user_info = user_1[:-1] + "," + usage_1 + "}"
-        self._authUser(token_1, user_info, True, True)
+        global token_1, user_1
+        self._authUser(token_1, user_1, True, True)
 
     def test_AuthUserTwo(self):
         """Test _authUser for User 2 without pool, without usage"""
         global token_2, user_2
-        self._authUser(token_2, user_2, False, False)
+        user_info = dict(user_2)
+        del user_info['usage']
+        self._authUser(token_2, user_info, False, False)
 
     def test_AuthUserTwoUsage(self):
         """Test _authUser for User 2 without pool, with usage"""
-        global token_2, user_2, usage_2
-        user_info = user_2[:-1] + "," + usage_2 + "}"
-        self._authUser(token_2, user_info, True, False)
+        global token_2, user_2
+        self._authUser(token_2, user_2, True, False)
 
     def test_AuthUserTwoUsagePool(self):
         """Test _authUser for User 2 using pool, with usage"""
-        global token_2, user_2, usage_2
-        user_info = user_2[:-1] + "," + usage_2 + "}"
-        self._authUser(token_2, user_info, True, True)
+        global token_2, user_2
+        self._authUser(token_2, user_2, True, True)
 
     # ----------------------------------
     # Test retry functionality
@@ -464,11 +458,10 @@ class TestAuthenticate(unittest.TestCase):
         _mockRequest([_requestOffline, _requestOffline, _requestOk])
         try:
             auth_info = astakosclient.authenticate(
-                token_1, "https://example.com")
+                token_1, "https://example.com", usage=True)
         except:
             self.fail("Shouldn't raise an Exception")
-        json_info = simplejson.loads(unicode(user_1))
-        self.assertEqual(auth_info, json_info)
+        self.assertEqual(user_1, auth_info)
 
 
 # ----------------------------

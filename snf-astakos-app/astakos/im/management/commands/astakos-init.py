@@ -37,6 +37,7 @@ from optparse import make_option
 
 from astakos.im.models import load_service_resources
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.lib.db.transaction import commit_on_success_strict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,7 @@ class Command(BaseCommand):
                           "on quotaholder")),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
         if options['load']:
             load_service_resources()

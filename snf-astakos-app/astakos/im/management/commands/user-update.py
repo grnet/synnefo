@@ -44,6 +44,7 @@ from astakos.im.functions import (activate, deactivate,
                                   set_pending_application_limit,
                                   unset_pending_application_limit)
 from ._common import remove_user_permission, add_user_permission
+from synnefo.lib.db.transaction import commit_on_success_strict
 
 
 class Command(BaseCommand):
@@ -118,6 +119,7 @@ class Command(BaseCommand):
                           "project applications")),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID")

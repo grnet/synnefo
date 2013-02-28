@@ -84,9 +84,6 @@ def authenticate(token, astakos_url, usage=False, use_pool=False):
     Otherwise raise an Exception.
 
     """
-    if not token:
-        logger.error("authenticate: No token was given")
-        return None
     authentication_url = urlparse.urljoin(astakos_url, "/im/authenticate")
     if usage:
         authentication_url += "?usage=1,"
@@ -109,9 +106,6 @@ def getDisplayNames(token, uuids, astakos_url, use_pool=False):
     keys and the corresponding user names as values
 
     """
-    if not token:
-        logger.error("getDisplayNames: No token was give")
-        return None
     req_headers = {'content-type': 'application/json'}
     req_body = simplejson.dumps({'uuids': uuids})
     req_url = urlparse.urljoin(astakos_url, "/user_catalogs")
@@ -123,12 +117,10 @@ def getDisplayNames(token, uuids, astakos_url, use_pool=False):
 
 def getDisplayName(token, uuid, astakos_url, use_pool=False):
     """Return the displayname of a uuid (see getDisplayNames)"""
-    if not token:
-        logger.error("getDisplayName: No token was give")
-        return None
     if not uuid:
-        logger.error("getDiplayName: No uuid was given")
-        return None
+        m = "No uuid was given"
+        logger.error(m)
+        raise ValueError(m)
     uuid_dict = getDisplayNames(token, [uuid], astakos_url, use_pool)
     return uuid_dict.get(uuid)
 
@@ -158,10 +150,20 @@ def _doRequest(conn, method, url, **kwargs):
 def _callAstakos(token, url, headers={}, body=None,
                  method='GET', use_pool=False):
     """Make the actual call to astakos service"""
-    logger.debug("Make a %s request to %s with token %s, "
-                 "headers %s and body %s, %s using the pool" %
-                 (method, url, token, headers, body,
-                     "not" if not use_pool else ""))
+    logger.debug("Make a %s request to %s with headers %s "
+                 "and body %s, %s using the pool" %
+                 (method, url, headers, body,
+                     "without" if not use_pool else ""))
+
+    # Check input
+    if not token:
+        m = "Token not given"
+        logger.error(m)
+        raise ValueError(m)
+    if not url:
+        m = "Url not given"
+        logger.error(m)
+        raise ValueError(m)
 
     # Build request's header and body
     kwargs = {}

@@ -135,8 +135,16 @@ def _reqAuthenticate(conn, method, url, **kwargs):
 
 def _reqCatalogs(conn, method, url, **kwargs):
     """Return user catalogs"""
-    # XXX: not implemented yet
-    return [{}]
+    global token_1, token_2, user_1, user_2
+
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _requestStatus302(conn, method, url, **kwargs)
+
+    if method != "POST":
+        return _requestStatus400(conn, method, url, **kwargs)
+
+    # XXX:
+    return (200, {})
 
 
 # ----------------------------
@@ -363,6 +371,28 @@ class TestCallAstakos(unittest.TestCase):
     def test_PostAuthenticatePool(self):
         """Test _postAuthenticate using pool"""
         self._postAuthenticate(True)
+
+    # ----------------------------------
+    # Test the response if we request user_catalogs with GET
+    def _getUserCatalogs(self, pool):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            astakosclient._callAstakos(
+                token_1, "https://example.com/user_catalogs", use_pool=pool)
+        except Exception as (status, data):
+            if status != 400:
+                self.fail("Should have returned 400 (Method not allowed)")
+        else:
+            self.fail("Should have returned 400 (Method not allowed)")
+
+    def test_GetUserCatalogs(self):
+        """Test _getUserCatalogs without pool"""
+        self._getUserCatalogs(False)
+
+    def test_GetUserCatalogsPool(self):
+        """Test _getUserCatalogs using pool"""
+        self._getUserCatalogs(True)
 
 
 class TestAuthenticate(unittest.TestCase):

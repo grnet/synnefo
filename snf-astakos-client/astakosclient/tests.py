@@ -42,6 +42,7 @@ the astakos client library
 
 import sys
 import socket
+import simplejson
 
 import astakosclient
 
@@ -109,7 +110,7 @@ def _requestOk(conn, method, url, **kwargs):
 
 def _reqAuthenticate(conn, method, url, **kwargs):
     """Check if user exists and return his profile"""
-    global user_1, user_2
+    global user_1, user_2, usage_1, usage_2
 
     if conn.__class__.__name__ != "HTTPSConnection":
         return _requestStatus302(conn, method, url, **kwargs)
@@ -120,18 +121,19 @@ def _reqAuthenticate(conn, method, url, **kwargs):
     token = kwargs['headers']['X-Auth-Token']
     if token == token_1:
         user = user_1
+        usage = usage_1
     elif token == token_2:
         user = user_2
+        usage = usage_2
     else:
         # No user found
         return _requestStatus401(conn, method, url, **kwargs)
 
     if "usage=1" in url:
-        return (200, user)
+        return (200, user[:-1] + "," + usage + "}")
     else:
         # Strip `usage' key from `user'
-        del user['usage']
-        return user
+        return (200, user)
 
 
 def _reqCatalogs(conn, method, url, **kwargs):
@@ -166,60 +168,64 @@ def _mockRequest(new_requests):
 # ----------------------------
 # Local users
 token_1 = "skzleaFlBl+fasFdaf24sx=="
-user_1 = {"username": "user1@example.com",
-          "auth_token_created": 1359386939000,
-          "name": "Example User One",
-          "email": ["user1@example.com"],
-          "usage": [
-              {"currValue": 42949672960,
-               "display_name": "System Disk",
-               "name": "cyclades.disk"},
-              {"currValue": 4,
-               "display_name": "CPU",
-               "name": "cyclades.cpu"},
-              {"currValue": 4294967296,
-               "display_name": "RAM",
-               "name": "cyclades.ram"},
-              {"currValue": 3,
-               "display_name": "VM",
-               "name": "cyclades.vm"},
-              {"currValue": 0,
-               "display_name": "private network",
-               "name": "cyclades.network.private"},
-              {"currValue": 152,
-               "display_name": "Storage Space",
-               "name": "pithos+.diskspace"}],
-          "auth_token_expires": 1361978939000,
-          "id": 108,
-          "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab"}
+user_1 = """
+    {"username": "user1@example.com",
+     "auth_token_created": 1359386939000,
+     "name": "Example User One",
+     "email": ["user1@example.com"],
+     "auth_token_expires": 1361978939000,
+     "id": 108,
+     "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab"}"""
+usage_1 = """
+    "usage": [
+        {"currValue": 42949672960,
+         "display_name": "System Disk",
+         "name": "cyclades.disk"},
+        {"currValue": 4,
+         "display_name": "CPU",
+         "name": "cyclades.cpu"},
+        {"currValue": 4294967296,
+         "display_name": "RAM",
+         "name": "cyclades.ram"},
+        {"currValue": 3,
+         "display_name": "VM",
+         "name": "cyclades.vm"},
+        {"currValue": 0,
+         "display_name": "private network",
+         "name": "cyclades.network.private"},
+        {"currValue": 152,
+         "display_name": "Storage Space",
+         "name": "pithos+.diskspace"}]"""
 
 token_2 = "fasdfDSFdf98923DF+sdfk=="
-user_2 = {"username": "user2@example.com",
-          "auth_token_created": 1358386938997,
-          "name": "Example User Two",
-          "email": ["user1@example.com"],
-          "usage": [
-              {"currValue": 68719476736,
-               "display_name": "System Disk",
-               "name": "cyclades.disk"},
-              {"currValue": 1,
-               "display_name": "CPU",
-               "name": "cyclades.cpu"},
-              {"currValue": 1073741824,
-               "display_name": "RAM",
-               "name": "cyclades.ram"},
-              {"currValue": 2,
-               "display_name": "VM",
-               "name": "cyclades.vm"},
-              {"currValue": 1,
-               "display_name": "private network",
-               "name": "cyclades.network.private"},
-              {"currValue": 2341634510,
-               "display_name": "Storage Space",
-               "name": "pithos+.diskspace"}],
-          "auth_token_expires": 1461998939000,
-          "id": 109,
-          "uuid": "73917bca-1234-5678-a1f1-1763abcdefab"}
+user_2 = """
+    {"username": "user2@example.com",
+     "auth_token_created": 1358386938997,
+     "name": "Example User Two",
+     "email": ["user1@example.com"],
+     "auth_token_expires": 1461998939000,
+     "id": 109,
+     "uuid": "73917bca-1234-5678-a1f1-1763abcdefab"}"""
+usage_2 = """
+    "usage": [
+        {"currValue": 68719476736,
+         "display_name": "System Disk",
+         "name": "cyclades.disk"},
+        {"currValue": 1,
+         "display_name": "CPU",
+         "name": "cyclades.cpu"},
+        {"currValue": 1073741824,
+         "display_name": "RAM",
+         "name": "cyclades.ram"},
+        {"currValue": 2,
+         "display_name": "VM",
+         "name": "cyclades.vm"},
+        {"currValue": 1,
+         "display_name": "private network",
+         "name": "cyclades.network.private"},
+        {"currValue": 2341634510,
+         "display_name": "Storage Space",
+         "name": "pithos+.diskspace"}]"""
 
 
 # --------------------------------------------------------------------
@@ -235,7 +241,7 @@ class TestCallAstakos(unittest.TestCase):
         _mockRequest([_requestOffline])
         try:
             astakosclient._callAstakos(
-                token_1, "https://127.0.0.1/im/authenticate", use_pool=pool)
+                token_1, "https://example.com/im/authenticate", use_pool=pool)
         except socket.error:
             pass
         except Exception:
@@ -258,7 +264,7 @@ class TestCallAstakos(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             astakosclient._callAstakos(
-                token, "https://127.0.0.1/im/authenticate", use_pool=pool)
+                token, "https://example.com/im/authenticate", use_pool=pool)
         except Exception as (status, data):
             if status != 401:
                 self.fail("Should have returned 401 (Invalid X-Auth-Token)")
@@ -280,7 +286,7 @@ class TestCallAstakos(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             astakosclient._callAstakos(
-                token_1, "https://127.0.0.1/im/misspelled", use_pool=pool)
+                token_1, "https://example.com/im/misspelled", use_pool=pool)
         except Exception as (status, data):
             if status != 404:
                 self.fail("Should have returned 404 (Not Found)")
@@ -302,7 +308,7 @@ class TestCallAstakos(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             astakosclient._callAstakos(
-                token_1, "ftp://127.0.0.1/im/authenticate", use_pool=pool)
+                token_1, "ftp://example.com/im/authenticate", use_pool=pool)
         except ValueError:
             pass
         except Exception:
@@ -325,7 +331,7 @@ class TestCallAstakos(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             astakosclient._callAstakos(
-                token_1, "http://127.0.0.1/im/authenticate", use_pool=pool)
+                token_1, "http://example.com/im/authenticate", use_pool=pool)
         except Exception as (status, data):
             if status != 302:
                 self.fail("Should have returned 302 (Found)")
@@ -347,7 +353,7 @@ class TestCallAstakos(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             astakosclient._callAstakos(
-                token_1, "https://127.0.0.1/im/authenticate",
+                token_1, "https://example.com/im/authenticate",
                 use_pool=pool, method="POST")
         except Exception as (status, data):
             if status != 400:
@@ -362,6 +368,107 @@ class TestCallAstakos(unittest.TestCase):
     def test_PostAuthenticatePool(self):
         """Test _postAuthenticate using pool"""
         self._postAuthenticate(True)
+
+
+class TestAuthenticate(unittest.TestCase):
+    """Test cases for function authenticate"""
+
+    # ----------------------------------
+    # Test the response we get if we don't have internet access
+    def test_Offline(self):
+        """Test offline after 3 replies"""
+        global token_1
+        _mockRequest([_requestOffline])
+        try:
+            astakosclient.authenticate(token_1, "https://example.com")
+        except socket.error:
+            pass
+        except Exception:
+            self.fail("Should have raised socket exception")
+        else:
+            self.fail("Shouldn't succeed")
+
+    # ----------------------------------
+    # Test the response we get for invalid token
+    def _invalidToken(self, pool):
+        token = "skaksaFlBl+fasFdaf24sx=="
+        _mockRequest([_requestOk])
+        try:
+            astakosclient.authenticate(
+                token, "https://example.com", use_pool=pool)
+        except Exception as (status, data):
+            if status != 401:
+                self.fail("Should have returned 401 (Invalide X-Auth-Token)")
+        else:
+            self.fail("Should have returned 401 (Invalide X-Auth-Token)")
+
+    def test_InvalidToken(self):
+        """Test _invalidToken without pool"""
+        self._invalidToken(False)
+
+    def test_InvalidTokenPool(self):
+        """Test _invalidToken using pool"""
+        self._invalidToken(True)
+
+    #- ---------------------------------
+    # Test response for user 1
+    def _authUser(self, token, user_info, usage, pool):
+        _mockRequest([_requestOk])
+        try:
+            auth_info = astakosclient.authenticate(
+                token, "https://example.com/", usage=usage, use_pool=pool)
+        except:
+            self.fail("Shouldn't raise an Exception")
+        json_info = simplejson.loads(unicode(user_info))
+        self.assertEqual(auth_info, json_info)
+
+    def test_AuthUserOne(self):
+        """Test _authUser for User 1 without pool, without usage"""
+        global token_1, user_1
+        self._authUser(token_1, user_1, False, False)
+
+    def test_AuthUserOneUsage(self):
+        """Test _authUser for User 1 without pool, with usage"""
+        global token_1, user_1, usage_1
+        user_info = user_1[:-1] + "," + usage_1 + "}"
+        self._authUser(token_1, user_info, True, False)
+
+    def test_AuthUserOneUsagePool(self):
+        """Test _authUser for User 1 using pool, with usage"""
+        global token_1, user_1, usage_1
+        user_info = user_1[:-1] + "," + usage_1 + "}"
+        self._authUser(token_1, user_info, True, True)
+
+    def test_AuthUserTwo(self):
+        """Test _authUser for User 2 without pool, without usage"""
+        global token_2, user_2
+        self._authUser(token_2, user_2, False, False)
+
+    def test_AuthUserTwoUsage(self):
+        """Test _authUser for User 2 without pool, with usage"""
+        global token_2, user_2, usage_2
+        user_info = user_2[:-1] + "," + usage_2 + "}"
+        self._authUser(token_2, user_info, True, False)
+
+    def test_AuthUserTwoUsagePool(self):
+        """Test _authUser for User 2 using pool, with usage"""
+        global token_2, user_2, usage_2
+        user_info = user_2[:-1] + "," + usage_2 + "}"
+        self._authUser(token_2, user_info, True, True)
+
+    # ----------------------------------
+    # Test retry functionality
+    def test_OfflineRetry(self):
+        """Test retry functionality for authentication"""
+        global token_1, user_1
+        _mockRequest([_requestOffline, _requestOffline, _requestOk])
+        try:
+            auth_info = astakosclient.authenticate(
+                token_1, "https://example.com")
+        except:
+            self.fail("Shouldn't raise an Exception")
+        json_info = simplejson.loads(unicode(user_1))
+        self.assertEqual(auth_info, json_info)
 
 
 # ----------------------------

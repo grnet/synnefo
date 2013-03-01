@@ -67,13 +67,5 @@ class NoCapacityError(CommissionValueException):
     pass
 
 
-class ExportLimitError(CommissionValueException):
-    pass
-
-
-class ImportLimitError(CommissionValueException):
-    pass
-
-
 class DuplicateError(CommissionException):
     pass

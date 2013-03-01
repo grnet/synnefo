@@ -35,7 +35,6 @@ from astakos.quotaholder.exception import (
     QuotaholderError,
     CorruptedError, InvalidDataError,
     NoQuantityError, NoCapacityError,
-    ExportLimitError, ImportLimitError,
     DuplicateError)
 
 from astakos.quotaholder.utils.newname import newname
@@ -62,15 +61,13 @@ class QuotaholderDjangoDBCallpoint(object):
             except Policy.DoesNotExist:
                 continue
 
-            append((policy, p.quantity, p.capacity,
-                    p.import_limit, p.export_limit))
+            append((policy, p.quantity, p.capacity))
 
         return limits
 
     def set_limits(self, context=None, set_limits=()):
 
-        for (policy, quantity, capacity,
-             import_limit, export_limit) in set_limits:
+        for (policy, quantity, capacity) in set_limits:
 
             try:
                 policy = db_get_policy(policy=policy, for_update=True)
@@ -78,13 +75,10 @@ class QuotaholderDjangoDBCallpoint(object):
                 Policy.objects.create(policy=policy,
                                       quantity=quantity,
                                       capacity=capacity,
-                                      import_limit=import_limit,
-                                      export_limit=export_limit)
+                                      )
             else:
                 policy.quantity = quantity
                 policy.capacity = capacity
-                policy.export_limit = export_limit
-                policy.import_limit = import_limit
                 policy.save()
 
         return ()
@@ -287,7 +281,6 @@ class QuotaholderDjangoDBCallpoint(object):
             p = h.policy
 
             append((h.holder, h.resource, p.quantity, p.capacity,
-                    p.import_limit, p.export_limit,
                     h.imported, h.exported,
                     h.returned, h.released,
                     h.flags))
@@ -300,7 +293,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         q_holdings = Q()
         holders = []
-        for (holder, resource, _, _, _, _, _) in set_quota:
+        for (holder, resource, _, _, _) in set_quota:
             holders.append(holder)
 
         hs = Holding.objects.filter(holder__in=holders).select_for_update()
@@ -312,14 +305,13 @@ class QuotaholderDjangoDBCallpoint(object):
 
         for (holder, resource,
              quantity, capacity,
-             import_limit, export_limit, flags) in set_quota:
+             flags) in set_quota:
 
             policy = newname('policy_')
             newp = Policy(policy=policy,
                           quantity=quantity,
                           capacity=capacity,
-                          import_limit=import_limit,
-                          export_limit=export_limit)
+                          )
 
             try:
                 h = holdings[(holder, resource)]
@@ -353,7 +345,7 @@ class QuotaholderDjangoDBCallpoint(object):
         sources = sub_quota + add_quota
         q_holdings = Q()
         holders = []
-        for (holder, resource, _, _, _, _) in sources:
+        for (holder, resource, _, _) in sources:
             holders.append(holder)
 
         hs = Holding.objects.filter(holder__in=holders).select_for_update()
@@ -369,7 +361,7 @@ class QuotaholderDjangoDBCallpoint(object):
         for removing, source in [(True, sub_quota), (False, add_quota)]:
             for (holder, resource,
                  quantity, capacity,
-                 import_limit, export_limit) in source:
+                 ) in source:
 
                 try:
                     h = holdings[(holder, resource)]
@@ -393,14 +385,8 @@ class QuotaholderDjangoDBCallpoint(object):
                                      invert=removing)
                 newp.capacity = _add(p.capacity if p else 0, capacity,
                                      invert=removing)
-                newp.import_limit = _add(p.import_limit if p else 0,
-                                         import_limit, invert=removing)
-                newp.export_limit = _add(p.export_limit if p else 0,
-                                         export_limit, invert=removing)
 
-                new_values = [newp.capacity,
-                              newp.import_limit, newp.export_limit]
-                if any(map(_isneg, new_values)):
+                if _isneg(newp.capacity):
                     append((holder, resource))
                     continue
 
@@ -466,18 +452,6 @@ class QuotaholderDjangoDBCallpoint(object):
             hp = h.policy
 
             if not release:
-                current = h.exporting
-                limit = hp.export_limit
-                if current + quantity > limit:
-                    m = ("Export limit reached for %s.%s" % (holder, resource))
-                    raise ExportLimitError(m,
-                                           source=holder,
-                                           target=target,
-                                           resource=resource,
-                                           requested=quantity,
-                                           current=current,
-                                           limit=limit)
-
                 limit = hp.quantity + h.imported - h.releasing
                 unavailable = h.exporting - h.returned
                 available = limit - unavailable
@@ -525,18 +499,6 @@ class QuotaholderDjangoDBCallpoint(object):
             tp = th.policy
 
             if not release:
-                limit = tp.import_limit
-                current = th.importing
-                if current + quantity > limit:
-                    m = ("Import limit reached for %s.%s" % (target, resource))
-                    raise ImportLimitError(m,
-                                           source=holder,
-                                           target=target,
-                                           resource=resource,
-                                           requested=quantity,
-                                           current=current,
-                                           limit=limit)
-
                 limit = tp.quantity + tp.capacity
                 current = (+ th.importing + th.returning + tp.quantity
                            - th.exported - th.released)
@@ -600,16 +562,12 @@ class QuotaholderDjangoDBCallpoint(object):
             'resource':            provision.resource,
             'source_quantity':     s_policy.quantity,
             'source_capacity':     s_policy.capacity,
-            'source_import_limit': s_policy.import_limit,
-            'source_export_limit': s_policy.export_limit,
             'source_imported':     s_holding.imported,
             'source_exported':     s_holding.exported,
             'source_returned':     s_holding.returned,
             'source_released':     s_holding.released,
             'target_quantity':     t_policy.quantity,
             'target_capacity':     t_policy.capacity,
-            'target_import_limit': t_policy.import_limit,
-            'target_export_limit': t_policy.export_limit,
             'target_imported':     t_holding.imported,
             'target_exported':     t_holding.exported,
             'target_returned':     t_holding.returned,

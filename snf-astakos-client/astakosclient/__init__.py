@@ -85,6 +85,10 @@ class AstakosClient():
 
         """
         if logger is None:
+            logging.basicConfig(
+                format='%(asctime)s [%(levelname)s] %(name)s %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S',
+                level=logging.INFO)
             logger = logging.getLogger("astakosclient")
         logger.debug("Intialize AstakosClient: astakos_url = %s, "
                      "use_pool = %s" % (astakos_url, use_pool))

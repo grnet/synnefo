@@ -39,7 +39,7 @@ If you go for (1) you will need to walk through all the sections. If you go for
 (2), you should skip section (b), since you only need sections (a) and (c).
 
 Before getting any further we should mention the roles that `snf-deploy` refers
-to. The roles are described :ref:`here <physical-node-roles`. Note that multiple
+to. The roles are described :ref:`here <physical-node-roles>`. Note that multiple
 roles can co-exist in the same node (virtual or physical).
 
 Currently, `snf-deploy` recognizes the following combined roles:

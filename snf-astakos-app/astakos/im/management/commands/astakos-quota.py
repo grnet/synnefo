@@ -33,11 +33,11 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
 from astakos.im.models import sync_all_users, sync_users, AstakosUser
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
+from synnefo.lib.db.transaction import commit_on_success_strict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -80,17 +80,17 @@ class Command(BaseCommand):
         else:
             log = self.run(sync)
 
-        ex, nonex, qh_l, qh_c, astakos_i, diff_q, info = log
+        qh_l, qh_c, astakos_i, diff_q, info = log
 
         if list_only:
             self.list_quotas(qh_l, qh_c, astakos_i, info)
         else:
             if verify:
-                self.print_verify(nonex, qh_l, diff_q)
+                self.print_verify(qh_l, diff_q)
             if sync:
                 self.print_sync(diff_q)
 
-    @transaction.commit_on_success
+    @commit_on_success_strict()
     def run_sync_user(self, user_ident, sync):
         if is_uuid(user_ident):
             try:
@@ -116,7 +116,7 @@ class Command(BaseCommand):
             logger.exception(e)
             raise CommandError("Failed to compute quotas.")
 
-    @transaction.commit_on_success
+    @commit_on_success_strict()
     def run(self, sync):
         try:
             self.stderr.write("Calculating all quotas...\n")
@@ -165,15 +165,8 @@ class Command(BaseCommand):
                 self.stdout.write("%s (%s)\n" % (holder, user.username))
 
     def print_verify(self,
-                     nonexisting,
                      qh_limits,
                      diff_quotas):
-
-            if nonexisting:
-                self.stdout.write("Users not registered in quotaholder:\n")
-                for user in nonexisting:
-                    self.stdout.write("%s\n" % (user))
-                self.stdout.write("\n")
 
             for holder, local in diff_quotas.iteritems():
                 registered = qh_limits.pop(holder, None)

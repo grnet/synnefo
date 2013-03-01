@@ -72,17 +72,15 @@ from astakos.im.settings import (
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
 from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
-    register_users, send_quotas, qh_check_users, qh_get_quotas,
-    register_services, register_resources, qh_add_quota, QuotaLimits,
-    qh_query_serials, qh_ack_serials,
+    send_quotas, qh_get_quotas,
+    register_resources, qh_add_quota, QuotaLimits,
     QuotaValues, add_quota_values)
 from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
-from astakos.im.lock import with_lock
 from synnefo.lib.db.managers import ForUpdateManager
 
-from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
+from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
 from synnefo.util.text import uenc, udec
 
@@ -255,7 +253,6 @@ def load_service_resources():
                 import traceback; traceback.print_exc()
                 continue
 
-    register_services(ss)
     register_resources(rs)
 
 def _quota_values(capacity):
@@ -2400,242 +2397,22 @@ class ProjectMembership(models.Model):
 
         return (sub_list, add_list)
 
-    def is_fully_applied(self, project=None):
-        if project is None:
-            project = self.project
-        if project.is_deactivated():
-            return self.application is None
-        else:
-            return self.application_id == project.application_id
-
-    def set_sync(self):
-        if not self.is_pending:
-            m = _("%s: attempt to sync a non pending membership") % (self,)
-            raise AssertionError(m)
-
-        state = self.state
-        if state in self.ACTUALLY_ACCEPTED:
-            pending_application = self.pending_application
-
-            self.application = pending_application
-            self.is_active = (self.application is not None)
-
-            self.pending_application = None
-            self.pending_serial = None
-
-            # project.application may have changed in the meantime,
-            # in which case we stay PENDING;
-            # we are safe to check due to select_for_update
-            self.is_pending = not self.is_fully_applied()
-            self.save()
-
-        elif state == self.REMOVED:
-            self.delete()
-
-        else:
-            m = _("%s: attempt to sync in state '%s'") % (self, state)
-            raise AssertionError(m)
-
-    def reset_sync(self):
-        if not self.is_pending:
-            m = _("%s: attempt to reset a non pending membership") % (self,)
-            raise AssertionError(m)
-
-        state = self.state
-        if state in [self.ACCEPTED, self.LEAVE_REQUESTED, self.REMOVED]:
-            self.pending_application = None
-            self.pending_serial = None
-            self.save()
-        else:
-            m = _("%s: attempt to reset sync in state '%s'") % (self, state)
-            raise AssertionError(m)
 
 class Serial(models.Model):
     serial  =   models.AutoField(primary_key=True)
 
-def new_serial():
-    s = Serial.objects.create()
-    serial = s.serial
-    s.delete()
-    return serial
 
-class SyncError(Exception):
-    pass
-
-def reset_serials(serials):
-    objs = ProjectMembership.objects
-    q = objs.filter(pending_serial__in=serials).select_for_update()
-    memberships = list(q)
-
-    if memberships:
-        for membership in memberships:
-            membership.reset_sync()
-
-        transaction.commit()
-
-def sync_finish_serials(serials_to_ack=None):
-    if serials_to_ack is None:
-        serials_to_ack = qh_query_serials([])
-
-    serials_to_ack = set(serials_to_ack)
-    objs = ProjectMembership.objects
-    q = objs.filter(pending_serial__isnull=False).select_for_update()
-    memberships = list(q)
-
-    if memberships:
-        for membership in memberships:
-            serial = membership.pending_serial
-            if serial in serials_to_ack:
-                membership.set_sync()
-            else:
-                membership.reset_sync()
-
-        transaction.commit()
-
-    qh_ack_serials(list(serials_to_ack))
-    return len(memberships)
-
-def _pre_sync_projects(projects):
-    for project in projects:
-        objects = project.projectmembership_set
-        memberships = objects.actually_accepted().select_for_update()
-        for membership in memberships:
-            if not membership.is_fully_applied(project):
-                membership.is_pending = True
-                membership.save()
-
-def pre_sync_projects(sync=True):
-    objs = Project.objects
-
-    modified = list(objs.modified_projects().select_for_update())
-    reactivating = list(objs.reactivating_projects().select_for_update())
-    deactivating = list(objs.deactivating_projects().select_for_update())
-
-    if sync:
-        _pre_sync_projects(modified)
-        _pre_sync_projects(reactivating)
-        _pre_sync_projects(deactivating)
-
-#    transaction.commit()
-    return (modified, reactivating, deactivating)
-
-def set_sync_projects(exclude=None):
-
-    ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
-    objects = ProjectMembership.objects
-
-    sub_quota, add_quota = [], []
-
-    serial = new_serial()
-
-    pending = objects.filter(is_pending=True).select_for_update()
-    for membership in pending:
-
-        if membership.pending_application:
-            m = "%s: impossible: pending_application is not None (%s)" % (
-                membership, membership.pending_application)
-            raise AssertionError(m)
-        if membership.pending_serial:
-            m = "%s: impossible: pending_serial is not None (%s)" % (
-                membership, membership.pending_serial)
-            raise AssertionError(m)
-
-        if exclude is not None:
-            uuid = membership.person.uuid
-            if uuid in exclude:
-                logger.warning("Excluded from sync: %s" % uuid)
-                continue
-
-        project = membership.project
-        if (membership.state in ACTUALLY_ACCEPTED and
-            not project.is_deactivated()):
-            membership.pending_application = project.application
-
-        membership.pending_serial = serial
-        membership.get_diff_quotas(sub_quota, add_quota)
-        membership.save()
-
-    transaction.commit()
-    return serial, sub_quota, add_quota
-
-def do_sync_projects():
-    serial, sub_quota, add_quota = set_sync_projects()
-    r = qh_add_quota(serial, sub_quota, add_quota)
-    if not r:
-        return serial
-
-    m = "cannot sync serial: %d" % serial
-    logger.error(m)
-    logger.error("Failed: %s" % r)
-
-    reset_serials([serial])
-    uuids = set(uuid for (uuid, resource) in r)
-    serial, sub_quota, add_quota = set_sync_projects(exclude=uuids)
-    r = qh_add_quota(serial, sub_quota, add_quota)
-    if not r:
-        return serial
-
-    m = "cannot sync serial: %d" % serial
-    logger.error(m)
-    logger.error("Failed: %s" % r)
-    raise SyncError(m)
-
-def _post_sync_projects(projects, action):
-    for project in projects:
-        objects = project.projectmembership_set
-        memberships = objects.actually_accepted().select_for_update()
-        for membership in memberships:
-            if not membership.is_fully_applied(project):
-                break
-        else:
-            action(project)
-
-def post_sync_projects():
-    objs = Project.objects
-
-    modified = objs.modified_projects().select_for_update()
-    _post_sync_projects(modified, lambda p: p.unset_modified())
-
-    reactivating = objs.reactivating_projects().select_for_update()
-    _post_sync_projects(reactivating, lambda p: p.reactivate())
-
-    deactivating = objs.deactivating_projects().select_for_update()
-    _post_sync_projects(deactivating, lambda p: p.deactivate())
-
-    transaction.commit()
-
-def sync_projects(sync=True, retries=3, retry_wait=1.0):
-    @with_lock(retries, retry_wait)
-    def _sync_projects(sync):
-        sync_finish_serials()
-        # Informative only -- no select_for_update()
-        pending = list(ProjectMembership.objects.filter(is_pending=True))
-
-        projects_log = pre_sync_projects(sync)
-        if sync:
-            serial = do_sync_projects()
-            sync_finish_serials([serial])
-            post_sync_projects()
-
-        return (pending, projects_log)
-    return _sync_projects(sync)
-
-
-
-def sync_users(users, sync=True, retries=3, retry_wait=1.0):
-    @with_lock(retries, retry_wait)
+def sync_users(users, sync=True):
     def _sync_users(users, sync):
-        sync_finish_serials()
 
         info = {}
         for user in users:
             info[user.uuid] = user.email
 
-        existing, nonexisting = qh_check_users(users)
         resources = get_resource_names()
-        qh_limits, qh_counters = qh_get_quotas(existing, resources)
+        qh_limits, qh_counters = qh_get_quotas(users, resources)
         astakos_initial = initial_quotas(users)
-        astakos_quotas = users_quotas(users, astakos_initial)
+        astakos_quotas = users_quotas(users)
 
         diff_quotas = {}
         for holder, local in astakos_quotas.iteritems():
@@ -2644,18 +2421,17 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
                 diff_quotas[holder] = dict(local)
 
         if sync:
-            r = register_users(nonexisting)
             r = send_quotas(diff_quotas)
 
-        return (existing, nonexisting,
-                qh_limits, qh_counters,
+        return (qh_limits, qh_counters,
                 astakos_initial, diff_quotas, info)
+
     return _sync_users(users, sync)
 
 
-def sync_all_users(sync=True, retries=3, retry_wait=1.0):
+def sync_all_users(sync=True):
     users = AstakosUser.objects.verified()
-    return sync_users(users, sync, retries, retry_wait)
+    return sync_users(users, sync)
 
 class ProjectMembershipHistory(models.Model):
     reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']

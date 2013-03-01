@@ -79,7 +79,7 @@ from astakos.im.project_notif import (
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
 from astakos.im.endpoints.qh import (
-    register_users, register_quotas, qh_get_quota)
+    register_quotas, qh_get_quota)
 
 import astakos.im.messages as astakos_messages
 
@@ -297,7 +297,7 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
-    register_user_with_quotas(user)
+    register_user_quotas(user)
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
@@ -375,11 +375,9 @@ class SendNotificationError(SendMailError):
         super(SendNotificationError, self).__init__()
 
 
-def register_user_with_quotas(user):
-    rejected = register_users([user])
-    if not rejected:
-        quotas = users_quotas([user])
-        register_quotas(quotas)
+def register_user_quotas(user):
+    quotas = users_quotas([user])
+    register_quotas(quotas)
 
 
 def get_quota(users):

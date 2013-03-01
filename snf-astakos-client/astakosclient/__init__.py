@@ -200,6 +200,14 @@ class AstakosClient():
         return self._callAstakos(token, auth_path)
 
     # ----------------------------------
+    def _uuidCatalog(self, token, uuids, req_path):
+        req_headers = {'content-type': 'application/json'}
+        req_body = simplejson.dumps({'uuids': uuids})
+        data = self._callAstakos(
+            token, req_path, req_headers, req_body, "POST")
+        # XXX: check if exists
+        return data.get("uuid_catalog")
+
     def getDisplayNames(self, token, uuids):
         """Return a uuid_catalog dictionary for the given uuids
 
@@ -211,14 +219,8 @@ class AstakosClient():
         keys and the corresponding user names as values
 
         """
-        req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({'uuids': uuids})
         req_path = "/user_catalogs"
-
-        data = self._callAstakos(
-            token, req_path, req_headers, req_body, "POST")
-        # XXX: check if exists
-        return data.get("uuid_catalog")
+        return self._uuidCatalog(token, uuids, req_path)
 
     def getDisplayName(self, token, uuid):
         """Return the displayName of a uuid (see getDisplayNames)"""
@@ -230,7 +232,30 @@ class AstakosClient():
         # XXX: check if exists
         return uuid_dict.get(uuid)
 
+    def getServiceDisplayNames(self, token, uuids):
+        """Return a uuid_catalog dict using a service's token"""
+        req_path = "/service/api/user_catalogs"
+        return self._uuidCatalog(token, uuids, req_path)
+
+    def getServiceDisplayName(self, token, uuid):
+        """Return the displayName of a uuid using a service's token"""
+        if not uuid:
+            m = "No uuid was given"
+            self.logger.error(m)
+            raise ValueError(m)
+        uuid_dict = self.getServiceDisplayNames(token, [uuid])
+        # XXX: check if exists
+        return uuid_dict.get(uuid)
+
     # ----------------------------------
+    def _displayNameCatalog(self, token, display_names, req_path):
+        req_headers = {'content-type': 'application/json'}
+        req_body = simplejson.dumps({'displaynames': display_names})
+        data = self._callAstakos(
+            token, req_path, req_headers, req_body, "POST")
+        # XXX: check if exists
+        return data.get("displayname_catalog")
+
     def getUUIDs(self, token, display_names):
         """Return a displayname_catalog for the given names
 
@@ -242,14 +267,8 @@ class AstakosClient():
         the names as keys and the corresponding uuids as values
 
         """
-        req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({'displaynames': display_names})
         req_path = "/user_catalogs"
-
-        data = self._callAstakos(
-            token, req_path, req_headers, req_body, "POST")
-        # XXX: check if exists
-        return data.get("displayname_catalog")
+        return self._displayNameCatalog(token, display_names, req_path)
 
     def getUUID(self, token, display_name):
         """Return the uuid of a name (see getUUIDs)"""
@@ -258,6 +277,21 @@ class AstakosClient():
             self.logger.error(m)
             raise ValueError(m)
         name_dict = self.getUUIDs(token, [display_name])
+        # XXX: check if exists
+        return name_dict.get(display_name)
+
+    def getServiceUUIDs(self, token, display_names):
+        """Return a display_name catalog using a service's token"""
+        req_path = "/service/api/user_catalogs"
+        return self._displayNameCatalog(token, display_names, req_path)
+
+    def getServiceUUID(self, token, display_name):
+        """Return the uuid of a name using a service's token"""
+        if not display_name:
+            m = "No display_name was given"
+            self.logger.error(m)
+            raise ValueError(m)
+        name_dict = self.getServiceUUIDs(token, [display_name])
         # XXX: check if exists
         return name_dict.get(display_name)
 

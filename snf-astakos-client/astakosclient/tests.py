@@ -113,6 +113,7 @@ def _reqAuthenticate(conn, method, url, **kwargs):
     """Check if user exists and return his profile"""
     global user_1, user_2
 
+    # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _requestStatus302(conn, method, url, **kwargs)
 
@@ -128,6 +129,7 @@ def _reqAuthenticate(conn, method, url, **kwargs):
         # No user found
         return _requestStatus401(conn, method, url, **kwargs)
 
+    # Return
     if "usage=1" not in url:
         # Strip `usage' key from `user'
         del user['usage']
@@ -138,14 +140,27 @@ def _reqCatalogs(conn, method, url, **kwargs):
     """Return user catalogs"""
     global token_1, token_2, user_1, user_2
 
+    # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _requestStatus302(conn, method, url, **kwargs)
 
     if method != "POST":
         return _requestStatus400(conn, method, url, **kwargs)
 
-    # XXX:
-    return ({}, 200)
+    token = kwargs['headers']['X-Auth-Token']
+    if token != token_1 and token != token_2:
+        return _requestStatus401(conn, method, url, **kwargs)
+
+    # Return
+    body = simplejson.loads(kwargs['body'])
+    uuids = body['uuids']
+    catalogs = {}
+    if user_1['uuid'] in uuids:
+        catalogs[user_1['uuid']] = user_1['username']
+    if user_2['uuid'] in uuids:
+        catalogs[user_2['uuid']] = user_2['username']
+    return_catalog = {"displayname_catalog": {}, "uuid_catalog": catalogs}
+    return (simplejson.dumps(return_catalog), 200)
 
 
 # ----------------------------
@@ -429,9 +444,9 @@ class TestAuthenticate(unittest.TestCase):
             client.authenticate()
         except AstakosClientException as err:
             if err.status != 401:
-                self.fail("Should have returned 401 (Invalide X-Auth-Token)")
+                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
         else:
-            self.fail("Should have returned 401 (Invalide X-Auth-Token)")
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
     def test_InvalidToken(self):
         """Test _invalidToken without pool"""
@@ -500,6 +515,54 @@ class TestAuthenticate(unittest.TestCase):
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(user_1, auth_info)
+
+
+class TestDisplayNames(unittest.TestCase):
+    """Test cases for functions getDisplayNames/getDisplayName"""
+
+    # ----------------------------------
+    # Test the response we get for invalid token
+    def test_InvalidToken(self):
+        """Test the response we get for invalid token (without pool)"""
+        global user_1
+        token = "skaksaFlBl+fasFdaf24sx=="
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient(token, "https://example.com")
+            client.getDisplayNames([user_1['uuid']])
+        except AstakosClientException as err:
+            if err.status != 401:
+                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        else:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+
+    # ----------------------------------
+    # Get Info for both users
+    def test_DisplayNamesWithGet(self):
+        """Test getDisplayNames with both users"""
+        global token_1, user_1, user_2
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient(token_1, "https://example.com")
+            catalog = client.getDisplayNames([user_1['uuid'], user_2['uuid']])
+        except:
+            self.fail("Shouldn't raise an Exception")
+        self.assertEqual(catalog[user_1['uuid']], user_1['username'])
+        self.assertEqual(catalog[user_2['uuid']], user_2['username'])
+
+    # ----------------------------------
+    # Get info for user 1
+    def test_DisplayNameUserOne(self):
+        """Test getDisplayName for User One"""
+        global token_2, user_1
+        _mockRequest([_requestOffline, _requestOk])
+        try:
+            client = AstakosClient(
+                token_2, "https://example.com", use_pool=True, retry=2)
+            info = client.getDisplayName(user_1['uuid'])
+        except:
+            self.fail("Shouldn't raise an Exception")
+        self.assertEqual(info, user_1['username'])
 
 
 # ----------------------------
